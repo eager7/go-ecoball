@@ -346,6 +346,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				block_first1,err = actor_c.service_ababft.ledger.NewTxBlock(txs,conData)
 				block_first1.SetSignature(actor_c.service_ababft.account)
 				fmt.Println("first round block1 status root hash:",block_first1.StateHash)
+				// now is waiting for the rectification of the ledger
 				// test end
 
 
