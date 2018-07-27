@@ -618,11 +618,11 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				actor_c.status = 7
 				primary_tag = 0 // reset to zero, and the next primary will take the turn
 				// 2. reset the stateDB
-				err = actor_c.service_ababft.ledger.ResetStateDB(currentheader.Hash)
-				if err != nil {
-					log.Debug("ResetStateDB fail")
-					return
-				}
+				//err = actor_c.service_ababft.ledger.ResetStateDB(currentheader.Hash)
+				//if err != nil {
+				//	log.Debug("ResetStateDB fail")
+				//	return
+				//}
 				// send out the timeout message
 				var timeoutmsg TimeoutMsg
 				timeoutmsg.Toutmsg = new(pb.ToutMsg)
@@ -716,11 +716,11 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			actor_c.status = 8
 			primary_tag = 0
 			// reset the state of merkle tree, statehash and so on
-			err = actor_c.service_ababft.ledger.ResetStateDB(currentheader.Hash)
-			if err != nil {
-				log.Debug("ResetStateDB fail")
-				return
-			}
+			// err = actor_c.service_ababft.ledger.ResetStateDB(currentheader.Hash)
+			//if err != nil {
+			//	log.Debug("ResetStateDB fail")
+			//	return
+			//}
 			// send out the timeout message
 			var timeoutmsg TimeoutMsg
 			timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
@@ -905,7 +905,7 @@ func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_
 	// fmt.Println("before reset")
 	// reset the stateDB
 	fmt.Println("cur_header state hash:",cur_header.Height,cur_header.StateHash)
-	err = actor_c.service_ababft.ledger.ResetStateDB(cur_header.Hash)
+	// err = actor_c.service_ababft.ledger.ResetStateDB(cur_header.Hash)
 	// fmt.Println("after reset",err)
 
 	// generate the block_first_cal for comparison
