@@ -52,6 +52,7 @@
 		},
 		{
 			"checksumSHA1": "eRbZ4PwVt8tCCWsffTny/g4VltE=",
+			"origin": "github.com/ecoball/go-ecoball/vendor/github.com/ecoball/eballscan",
 			"path": "github.com/ecoball/eballscan",
 			"revision": "443aa6e3223056fd4ce206e647132bb964977e3f",
 			"revisionTime": "2018-07-26T09:17:24Z"
