@@ -9,7 +9,7 @@ import (
 
 type Token struct {
 	Name    string   `json:"index"`
-	Balance *big.Int `json:"balance"`
+	Balance *big.Int `json:"balance, omitempty"`
 }
 
 func (s *State) AccountGetBalance(index common.AccountName, token string) (*big.Int, error) {

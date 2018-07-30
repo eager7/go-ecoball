@@ -207,7 +207,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if err := c.BlockStore.BatchCommit(); err != nil {
 		return err
 	}
-	//c.StateDB.CommitToDB()
+	c.StateDB.CommitToDB()
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
 	log.Debug("state hash:", c.StateDB.GetHashRoot().HexString())
 

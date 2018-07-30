@@ -25,18 +25,18 @@ type Resource struct {
 		Used  float32 `json:"used"`
 	}
 	Net struct {
-		Staked    uint64  `json:"staked_aba"`     //total stake delegated from account to self, uint ABA
-		Delegated uint64  `json:"delegated_aba"`  //total stake delegated to account from others, uint ABA
-		Used      float32 `json:"used_byte"`      //uint Byte
-		Available float32 `json:"available_byte"` //uint Byte
-		Limit     float32 `json:"limit_byte"`     //uint Byte
+		Staked    uint64  `json:"staked_aba, omitempty"`     //total stake delegated from account to self, uint ABA
+		Delegated uint64  `json:"delegated_aba, omitempty"`  //total stake delegated to account from others, uint ABA
+		Used      float32 `json:"used_byte, omitempty"`      //uint Byte
+		Available float32 `json:"available_byte, omitempty"` //uint Byte
+		Limit     float32 `json:"limit_byte, omitempty"`     //uint Byte
 	}
 	Cpu struct {
-		Staked    uint64  `json:"staked_aba"`    //total stake delegated from account to self, uint ABA
-		Delegated uint64  `json:"delegated_aba"` //total stake delegated to account from others, uint ABA
-		Used      float32 `json:"used_ms"`       //uint ms
-		Available float32 `json:"available_ms"`  //uint ms
-		Limit     float32 `json:"limit_ms"`      //uint ms
+		Staked    uint64  `json:"staked_aba, omitempty"`    //total stake delegated from account to self, uint ABA
+		Delegated uint64  `json:"delegated_aba, omitempty"` //total stake delegated to account from others, uint ABA
+		Used      float32 `json:"used_ms, omitempty"`       //uint ms
+		Available float32 `json:"available_ms, omitempty"`  //uint ms
+		Limit     float32 `json:"limit_ms, omitempty"`      //uint ms
 	}
 }
 
@@ -67,7 +67,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 		return err
 	}
 	if from == to {
-		if err := acc.SetResourceLimits(true, cpuStaked, netStaked, cpuStakedSum, netStakedSum); err != nil {
+		if err := acc.SetResourceLimits(true, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum); err != nil {
 			return err
 		}
 	} else {
@@ -78,7 +78,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 		if err != nil {
 			return err
 		}
-		if err := accTo.SetResourceLimits(false, cpuStaked, netStaked, cpuStakedSum, netStakedSum); err != nil {
+		if err := accTo.SetResourceLimits(false, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum); err != nil {
 			return err
 		}
 		if err := s.CommitAccount(accTo); err != nil {
@@ -90,18 +90,10 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 	if err := acc.SubBalance(AbaToken, value); err != nil {
 		return err
 	}
-	amount, err := s.GetParam(cpuAmount)
-	if err != nil {
+	if err := s.CommitParam(cpuAmount, cpuStaked+cpuStakedSum); err != nil {
 		return err
 	}
-	if err := s.CommitParam(cpuAmount, cpuStaked+amount); err != nil {
-		return err
-	}
-	amount, err = s.GetParam(netAmount)
-	if err != nil {
-		return err
-	}
-	if err := s.CommitParam(netAmount, netStaked+amount); err != nil {
+	if err := s.CommitParam(netAmount, netStaked+netStakedSum); err != nil {
 		return err
 	}
 
@@ -288,6 +280,9 @@ func (a *Account) SetDelegateInfo(index common.AccountName, cpuStaked, netStaked
 	return nil
 }
 func (a *Account) UpdateResource(cpuStakedSum, netStakedSum uint64) error {
+	if cpuStakedSum == 0 || netStakedSum == 0 {
+		return errors.New("cpuStakedSum and netStakedSum can't be zero")
+	}
 	a.Cpu.Limit = float32(a.Cpu.Staked+a.Cpu.Delegated) / float32(cpuStakedSum) * BlockCpu
 	a.Cpu.Available = a.Cpu.Limit - a.Cpu.Used
 	a.Net.Limit = float32(a.Cpu.Staked+a.Net.Delegated) / float32(netStakedSum) * BlockNet

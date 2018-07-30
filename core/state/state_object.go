@@ -61,6 +61,7 @@ func NewAccount(path string, index common.AccountName, addr common.Address) (acc
 		TimeStamp:   time.Now().UnixNano() / (1000 * 1000),
 		Tokens:      make(map[string]Token, 1),
 		Permissions: make(map[string]Permission, 1),
+		Resource: Resource{},
 	}
 	perm := NewPermission(Owner, "", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
