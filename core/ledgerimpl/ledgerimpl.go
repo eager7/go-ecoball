@@ -73,8 +73,8 @@ func (l *LedgerImpl) Start() {
 
 }
 
-func (l *LedgerImpl) NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
-	return l.ChainTx.NewBlock(l, txs, consensusData)
+func (l *LedgerImpl) NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+	return l.ChainTx.NewBlock(l, txs, consensusData, timeStamp)
 }
 func (l *LedgerImpl) GetTxBlock(hash common.Hash) (*types.Block, error) {
 	return l.ChainTx.GetBlock(hash)

@@ -51,6 +51,7 @@ log_dir = "/tmp/Log/"        # log file location
 output_to_terminal = "true"	 	
 log_level = 1                # debug level	
 consensus_algorithm = "SOLO" # can set as SOLO, DPOS, ababft
+time_slot = 500              # block interval time, uint ms
 
 root_privkey = "0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6"
 root_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c"
@@ -82,6 +83,7 @@ peer_index = [ "1", "2" ]
 `
 
 var (
+	TimeSlot 		   int
 	HttpLocalPort      string
 	EcoVersion         string
 	LogDir             string
@@ -162,6 +164,7 @@ func init() {
 }
 
 func initVariable() {
+	TimeSlot = viper.GetInt("time_slot")
 	HttpLocalPort = viper.GetString("http_port")
 	EcoVersion = viper.GetString("version")
 	LogDir = viper.GetString("log_dir")

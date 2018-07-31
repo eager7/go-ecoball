@@ -227,7 +227,7 @@ func (s *State) CommitAccount(acc *Account) error {
 	if err := s.trie.TryUpdate(common.IndexToBytes(acc.Index), d); err != nil {
 		return err
 	}
-	s.RecoverResources(acc)
+	//s.RecoverResources(acc)
 	s.Accounts[common.IndexToName(acc.Index)] = *acc
 	return nil
 }

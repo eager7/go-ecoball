@@ -44,6 +44,7 @@ type ChainTx struct {
 	ConsensusStore store.Storage
 
 	CurrentHeader *types.Header
+	Geneses       *types.Header
 	StateDB       *state.State
 	ledger        ledger.Ledger
 }
@@ -84,7 +85,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @brief  create a new block, this function will execute the transaction to rebuild mpt trie
 *  @param  consensusData - the data of consensus module set
  */
-func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
+func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
 	/*var cpu float32
 	cpuFlag := true
 	var net float32
@@ -115,7 +116,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 		netFlag = false
 	}
 	c.StateDB.SetBlockLimits(cpuFlag, netFlag)*/
-	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs)
+	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, timeStamp)
 }
 
 /**
@@ -274,6 +275,7 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
  */
 func (c *ChainTx) GenesesBlockInit() error {
 	if c.CurrentHeader != nil {
+		log.Debug("geneses block is existed")
 		c.CurrentHeader.Show()
 		return nil
 	}
@@ -282,7 +284,7 @@ func (c *ChainTx) GenesesBlockInit() error {
 	if err != nil {
 		return err
 	}
-	timeStamp := tm.Unix()
+	timeStamp := tm.UnixNano() / 1000 / 1000
 
 	//TODO start
 	SecondInMs := int64(1000)
@@ -294,26 +296,17 @@ func (c *ChainTx) GenesesBlockInit() error {
 	hash := common.NewHash([]byte("EcoBall Geneses Block"))
 	conData := types.GenesesBlockInitConsensusData(timeStamp)
 
-	txs, err := geneses.PresetContract(c.StateDB, timeStamp)
-	if err != nil {
+
+	if err := geneses.PresetContract(c.StateDB); err != nil {
 		return err
 	}
-	s, err := c.StateDB.CopyState()
-	if err != nil {
-		return err
-	}
-	for i := 0; i < len(txs); i++ {
-		if _, _, _, err := c.HandleTransaction(s, txs[i]); err != nil {
-			log.Error("Handle Transaction Error:", err)
-			return err
-		}
-	}
-	hashState := s.GetHashRoot()
+
+	hashState := c.StateDB.GetHashRoot()
 	header, err := types.NewHeader(types.VersionHeader, 1, hash, hash, hashState, *conData, bloom.Bloom{}, timeStamp)
 	if err != nil {
 		return err
 	}
-	block := &types.Block{Header: header, CountTxs: uint32(len(txs)), Transactions: txs}
+	block := &types.Block{Header: header, CountTxs: 0, Transactions: nil}
 
 	if err := block.SetSignature(&config.Root); err != nil {
 		return err
@@ -323,6 +316,7 @@ func (c *ChainTx) GenesesBlockInit() error {
 		return err
 	}
 	c.CurrentHeader = block.Header
+	c.Geneses = block.Header //Store Geneses for timeStamp
 	if err := c.SaveBlock(block); err != nil {
 		log.Error("Save geneses block error:", err)
 		return err
@@ -349,6 +343,9 @@ func (c *ChainTx) RestoreCurrentHeader() (bool, error) {
 		header := new(types.Header)
 		if err := header.Deserialize([]byte(v)); err != nil {
 			return false, err
+		}
+		if header.Height == 1 {
+			c.Geneses = header //Store Geneses for timeStamp
 		}
 		if header.Height > h {
 			h = header.Height
@@ -485,7 +482,11 @@ func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, valu
 *  @param  tx - a transaction
  */
 func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction) (ret []byte, cpu, net float32, err error) {
-	start := time.Now().UnixNano()
+	start := time.Now().UnixNano() / 1000000
+	log.Debug(start, c.Geneses.TimeStamp)
+	n := (start - c.Geneses.TimeStamp) / int64(config.TimeSlot)
+	m := (c.CurrentHeader.TimeStamp - c.Geneses.TimeStamp) / int64(config.TimeSlot)
+	log.Debug(n, m, n - m)
 	switch tx.Type {
 	case types.TxTransfer:
 		payload, ok := tx.Payload.GetObject().(types.TransferInfo)
@@ -521,8 +522,8 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction) (ret 
 	default:
 		return nil, 0, 0, errors.New("the transaction's type error")
 	}
-	end := time.Now().UnixNano()
-	cpu = float32(end-start) / 1000000
+	end := time.Now().UnixNano() / 1000000
+	cpu = float32(end-start)
 	data, err := tx.Serialize()
 	if err != nil {
 		return nil, 0, 0, err
