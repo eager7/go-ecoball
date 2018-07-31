@@ -95,7 +95,12 @@ message InvokeInfo {
     bytes       Method      = 1;
     repeated ParamData Param= 2;
 }
-
+message Receipt {
+    bytes       Hash        = 1;
+    float       Cpu         = 2;
+    float       Net         = 3;
+    bytes       Result      = 4;
+}
 /**
 ** Transaction Info for Sync with nodes
 */
@@ -103,6 +108,7 @@ message Transaction {
     TxPayload               payload     = 1;
     repeated    Signature   sign        = 2;
     bytes                   hash        = 3;
+    Receipt                 Receipt     = 4;
 }
 /**
 **

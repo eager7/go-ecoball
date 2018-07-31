@@ -38,7 +38,7 @@ func ExampleTestInvoke(method string) *types.Transaction {
 		panic(err)
 		return nil
 	}
-	acc := account.Account{PrivateKey: common.FromHex(config.RootPrivkey), PublicKey: common.FromHex(config.RootPubkey), Alg: 0}
+	acc := account.Account{PrivateKey: config.Root.PrivateKey, PublicKey: config.Root.PublicKey, Alg: 0}
 	if err := invoke.SetSignature(&acc); err != nil {
 		panic(err)
 	}
@@ -53,7 +53,7 @@ func ExampleTestDeploy(code []byte) *types.Transaction {
 		panic(err)
 		return nil
 	}
-	acc := account.Account{PrivateKey: common.FromHex(config.RootPrivkey), PublicKey: common.FromHex(config.RootPubkey), Alg: 0}
+	acc := account.Account{PrivateKey: config.Root.PrivateKey, PublicKey: config.Root.PublicKey, Alg: 0}
 	if err := deploy.SetSignature(&acc); err != nil {
 		panic(err)
 	}
@@ -69,8 +69,7 @@ func ExampleTestTx() *types.Transaction {
 		fmt.Println(err)
 		return nil
 	}
-	fmt.Println(config.RootPrivkey)
-	acc := account.Account{PrivateKey: common.FromHex(config.RootPrivkey), PublicKey: common.FromHex(config.RootPubkey), Alg: 0}
+	acc := account.Account{PrivateKey: config.Root.PrivateKey, PublicKey: config.Root.PublicKey, Alg: 0}
 	if err := tx.SetSignature(&acc); err != nil {
 		fmt.Println(err)
 		return nil

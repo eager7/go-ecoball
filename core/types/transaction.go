@@ -61,6 +61,7 @@ type Transaction struct {
 	Payload    Payload            `json:"payload"`
 	Signatures []common.Signature `json:"signatures"`
 	Hash       common.Hash        `json:"hash"`
+	Receipt    Receipt
 }
 
 func NewTransaction(t TxType, from, addr common.AccountName, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
@@ -155,8 +156,9 @@ func (t *Transaction) protoBuf() (*pb.Transaction, error) {
 			Nonce:      t.Nonce,
 			Timestamp:  t.TimeStamp,
 		},
-		Sign: sig,
-		Hash: t.Hash.Bytes(),
+		Sign:    sig,
+		Hash:    t.Hash.Bytes(),
+		Receipt: &pb.Receipt{Hash: t.Hash.Bytes(), Cpu: t.Receipt.Cpu, Net: t.Receipt.Net, Result: common.CopyBytes(t.Receipt.Result)},
 	}
 	return p, nil
 }
@@ -186,18 +188,19 @@ func (t *Transaction) Deserialize(data []byte) error {
 		return errors.New("input data's length is zero")
 	}
 
-	var tx pb.Transaction
-	if err := tx.Unmarshal(data); err != nil {
+	var txPb pb.Transaction
+	if err := txPb.Unmarshal(data); err != nil {
 		return err
 	}
 
-	t.Version = tx.Payload.Version
-	t.Type = TxType(tx.Payload.Type)
-	t.From = common.AccountName(tx.Payload.From)
-	t.Permission = string(tx.Payload.Permission)
-	t.Addr = common.AccountName(tx.Payload.Addr)
-	t.Nonce = tx.Payload.Nonce
-	t.TimeStamp = tx.Payload.Timestamp
+	t.Version = txPb.Payload.Version
+	t.Type = TxType(txPb.Payload.Type)
+	t.From = common.AccountName(txPb.Payload.From)
+	t.Permission = string(txPb.Payload.Permission)
+	t.Addr = common.AccountName(txPb.Payload.Addr)
+	t.Nonce = txPb.Payload.Nonce
+	t.TimeStamp = txPb.Payload.Timestamp
+	t.Receipt = Receipt{Hash: t.Hash, Cpu: txPb.Receipt.Cpu, Net: txPb.Receipt.Net, Result: common.CopyBytes(txPb.Receipt.Result)}
 	if t.Payload == nil {
 		switch t.Type {
 		case TxTransfer:
@@ -210,22 +213,27 @@ func (t *Transaction) Deserialize(data []byte) error {
 			return errors.New("the transaction's payload must not be nil")
 		}
 	}
-	if err := t.Payload.Deserialize(tx.Payload.Payload); err != nil {
+	if err := t.Payload.Deserialize(txPb.Payload.Payload); err != nil {
 		return err
 	}
-	for i := 0; i < len(tx.Sign); i++ {
+	for i := 0; i < len(txPb.Sign); i++ {
 		sig := common.Signature{
-			PubKey:  common.CopyBytes(tx.Sign[i].PubKey),
-			SigData: common.CopyBytes(tx.Sign[i].SigData),
+			PubKey:  common.CopyBytes(txPb.Sign[i].PubKey),
+			SigData: common.CopyBytes(txPb.Sign[i].SigData),
 		}
 		t.Signatures = append(t.Signatures, sig)
 	}
-	t.Hash = common.NewHash(tx.Hash)
+	t.Hash = common.NewHash(txPb.Hash)
 
 	return nil
 }
 
 func (t *Transaction) Show() {
+	fmt.Println(t.JsonString())
+	t.Payload.Show()
+}
+
+func (t *Transaction) show() {
 	fmt.Println("\t---------------Transaction-------------")
 	fmt.Println("\tVersion        :", t.Version)
 	fmt.Println("\tFrom           :", common.IndexToName(t.From))
@@ -243,4 +251,17 @@ func (t *Transaction) Show() {
 func (t *Transaction) JsonString() string {
 	data, _ := json.Marshal(t)
 	return string(data)
+}
+
+func (t TxType) String() string {
+	switch t {
+	case TxDeploy:
+		return "deploy transaction"
+	case TxInvoke:
+		return "invoke transaction"
+	case TxTransfer:
+		return "transfer transaction"
+	default:
+		return "unknown type"
+	}
 }

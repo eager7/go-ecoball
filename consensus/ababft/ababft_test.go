@@ -32,7 +32,8 @@ var accounts []account.Account
 func TestABABFTPros(t *testing.T) {
 	log.Debug("start test for ababft")
 	// l, err := ledgerimpl.NewLedger("/tmp/geneses")
-	l, err := ledgerimpl.NewLedger("./")
+	os.RemoveAll("/tmp/ABFT/")
+	l, err := ledgerimpl.NewLedger("/tmp/ABFT")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +234,7 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 	transfer3.SetSignature(&config.Root)
 	txs = append(txs,transfer3)
 
-	block, err := ledger.NewTxBlock(txs, *con)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -320,7 +321,7 @@ func AddTokenAccount(ledger ledger.Ledger, con *types.ConsensusData, t *testing.
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)
 
-	block, err := ledger.NewTxBlock(txs, *con)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -361,7 +362,7 @@ func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	block, err := ledger.NewTxBlock(txs, *con)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -382,7 +383,7 @@ func CancelPledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *tes
 	}
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
-	block, err := ledger.NewTxBlock(txs, *con)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}

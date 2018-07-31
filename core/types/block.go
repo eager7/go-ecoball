@@ -17,6 +17,7 @@
 package types
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/account"
@@ -25,7 +26,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/trie"
 	"time"
-	"encoding/json"
 )
 
 type Block struct {
@@ -34,11 +34,10 @@ type Block struct {
 	Transactions []*Transaction
 }
 
-func NewBlock(prevHeader *Header, stateHash common.Hash, consensusData ConsensusData, txs []*Transaction) (*Block, error) {
+func NewBlock(prevHeader *Header, stateHash common.Hash, consensusData ConsensusData, txs []*Transaction, timeStamp int64) (*Block, error) {
 	if nil == prevHeader {
 		return nil, errors.New("invalid parameter preHeader")
 	}
-	timeStamp := time.Now().Unix()
 	var Bloom bloom.Bloom
 	var hashes []common.Hash
 	for _, t := range txs {
@@ -115,6 +114,7 @@ func (b *Block) protoBuf() (*pb.BlockTx, error) {
 	block.Transactions = append(block.Transactions, pbTxs...)
 	return &block, nil
 }
+
 /**
  *  @brief converts a structure into a sequence of characters
  *  @return []byte - a sequence of characters
@@ -130,6 +130,7 @@ func (b *Block) Serialize() (data []byte, err error) {
 	}
 	return data, nil
 }
+
 /**
  *  @brief converts a sequence of characters into a structure
  *  @param data - a sequence of characters
@@ -184,14 +185,14 @@ func (b *Block) JsonString() string {
 }
 
 func (b *Block) Blk2BlkTx() (*pb.BlockTx, error) {
-	block,err := b.protoBuf()
+	block, err := b.protoBuf()
 	if err != nil {
 		return nil, err
 	}
 	return block, nil
 }
 
-func (b *Block) BlkTx2Blk(blktx pb.BlockTx) (error) {
+func (b *Block) BlkTx2Blk(blktx pb.BlockTx) error {
 	dataHeader, err := blktx.Header.Marshal()
 	if err != nil {
 		return err

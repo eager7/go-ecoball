@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"math/big"
-	"time"
 )
 
 var cpuAmount = "cpu_amount"
@@ -112,7 +111,7 @@ func (s *State) SubResourceLimits(index common.AccountName, cpu, net float32) er
 	if err != nil {
 		return err
 	}
-	acc.RecoverResources(cpuStakedSum, netStakedSum)
+	//acc.RecoverResources(cpuStakedSum, netStakedSum)
 	if err := acc.SubResourceLimits(cpu, net, cpuStakedSum, netStakedSum); err != nil {
 		return err
 	}
@@ -168,7 +167,11 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 
 	return s.CommitAccount(acc)
 }
-func (s *State) RecoverResources(acc *Account) error {
+func (s *State) RecoverResources(index common.AccountName, timeStamp int64) error {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
 	cpuStakedSum, err := s.GetParam(cpuAmount)
 	if err != nil {
 		return err
@@ -177,9 +180,10 @@ func (s *State) RecoverResources(acc *Account) error {
 	if err != nil {
 		return err
 	}
-	return acc.RecoverResources(cpuStakedSum, netStakedSum)
+	acc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp)
+	return s.CommitAccount(acc)
 }
-func (s *State) RequireResources(index common.AccountName) (float32, float32, error) {
+func (s *State) RequireResources(index common.AccountName, timeStamp int64) (float32, float32, error) {
 	cpuStakedSum, err := s.GetParam(cpuAmount)
 	if err != nil {
 		return 0, 0, err
@@ -192,7 +196,7 @@ func (s *State) RequireResources(index common.AccountName) (float32, float32, er
 	if err != nil {
 		return 0, 0, err
 	}
-	acc.RecoverResources(cpuStakedSum, netStakedSum)
+	acc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp)
 	log.Debug("cpu:", acc.Cpu.Used, acc.Cpu.Available, acc.Cpu.Limit)
 	log.Debug("net:", acc.Net.Used, acc.Net.Available, acc.Net.Limit)
 	return acc.Cpu.Available, acc.Net.Available, nil
@@ -289,8 +293,8 @@ func (a *Account) UpdateResource(cpuStakedSum, netStakedSum uint64) error {
 	a.Net.Available = a.Net.Limit - a.Net.Used
 	return nil
 }
-func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64) error {
-	t := time.Now().UnixNano() / (1000 * 1000)
+func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64, timeStamp int64) error {
+	t := timeStamp / (1000 * 1000)
 	interval := 100.0 * float32(t-a.TimeStamp) / (24.0 * 60.0 * 60.0 * 1000)
 	if interval >= 100 {
 		a.Cpu.Used = 0

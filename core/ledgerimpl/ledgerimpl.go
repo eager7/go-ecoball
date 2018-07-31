@@ -73,8 +73,8 @@ func (l *LedgerImpl) Start() {
 
 }
 
-func (l *LedgerImpl) NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
-	return l.ChainTx.NewBlock(l, txs, consensusData)
+func (l *LedgerImpl) NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+	return l.ChainTx.NewBlock(l, txs, consensusData, timeStamp)
 }
 func (l *LedgerImpl) GetTxBlock(hash common.Hash) (*types.Block, error) {
 	return l.ChainTx.GetBlock(hash)
@@ -113,8 +113,8 @@ func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
 func (l *LedgerImpl) AccountGet(index common.AccountName) (*state.Account, error) {
 	return l.ChainTx.StateDB.GetAccountByName(index)
 }
-func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address) (*state.Account, error) {
-	return l.ChainTx.StateDB.AddAccount(index, addr)
+func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error) {
+	return l.ChainTx.StateDB.AddAccount(index, addr, timeStamp)
 }
 //func (l *LedgerImpl) SetResourceLimits(from, to common.AccountName, cpu, net float32) error {
 //	return l.ChainTx.StateDB.SetResourceLimits(from, to, cpu, net)
@@ -140,8 +140,8 @@ func (l *LedgerImpl) FindPermission(index common.AccountName, name string) (stri
 func (l *LedgerImpl) CheckPermission(index common.AccountName, name string, sig []common.Signature) error {
 	return l.ChainTx.StateDB.CheckPermission(index, name, sig)
 }
-func (l *LedgerImpl) RequireResources(index common.AccountName) (float32, float32, error) {
-	return l.ChainTx.StateDB.RequireResources(index)
+func (l *LedgerImpl) RequireResources(index common.AccountName, timeStamp int64) (float32, float32, error) {
+	return l.ChainTx.StateDB.RequireResources(index, timeStamp)
 }
 func (l *LedgerImpl) AccountGetBalance(index common.AccountName, token string) (uint64, error) {
 	value, err := l.ChainTx.StateDB.AccountGetBalance(index, token)

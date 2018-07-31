@@ -331,7 +331,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				// log.Debug("obtained tx list", txs[0])
 				// generate the first-round block
 				var block_first *types.Block
-				block_first,err = actor_c.service_ababft.ledger.NewTxBlock(txs,conData)
+				block_first,err = actor_c.service_ababft.ledger.NewTxBlock(txs,conData, time.Now().UnixNano())
 				block_first.SetSignature(actor_c.service_ababft.account)
 				// broadcast the first-round block to peers for them to verify the transactions and wait for the corresponding signatures back
 				block_firstround.Blockfirst = *block_first
@@ -343,7 +343,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				event.Send(event.ActorNil,event.ActorConsensus,block_firstround)
 				var block_first1 *types.Block
 				// err = actor_c.service_ababft.ledger.ResetStateDB(currentheader.Hash)
-				block_first1,err = actor_c.service_ababft.ledger.NewTxBlock(txs,conData)
+				block_first1,err = actor_c.service_ababft.ledger.NewTxBlock(txs,conData, time.Now().UnixNano())
 				block_first1.SetSignature(actor_c.service_ababft.account)
 				fmt.Println("first round block1 status root hash:",block_first1.StateHash)
 				// now is waiting for the rectification of the ledger
@@ -913,7 +913,7 @@ func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_
 	// fmt.Println("after reset",err)
 
 	// generate the block_first_cal for comparison
-	block_first_cal,err = actor_c.service_ababft.ledger.NewTxBlock(txs,condata_c)
+	block_first_cal,err = actor_c.service_ababft.ledger.NewTxBlock(txs,condata_c, time.Now().UnixNano())
 	fmt.Println("block_first_cal:",block_first_cal, block_first_cal.StateHash)
 
 	var num_txs int

@@ -14,14 +14,15 @@ import (
 var log = elog.NewLogger("native", config.LogLevel)
 
 type NativeService struct {
-	state  *state.State
-	owner  common.AccountName
-	method string
-	params []string
+	state     *state.State
+	owner     common.AccountName
+	method    string
+	params    []string
+	timeStamp int64
 }
 
-func NewNativeService(s *state.State, owner common.AccountName, method string, params []string) (*NativeService, error) {
-	ns := &NativeService{state: s, owner: owner, method: method, params: params}
+func NewNativeService(s *state.State, owner common.AccountName, method string, params []string, timeStamp int64) (*NativeService, error) {
+	ns := &NativeService{state: s, owner: owner, method: method, params: params, timeStamp: timeStamp}
 	return ns, nil
 }
 
@@ -42,7 +43,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 	case "new_account":
 		index := common.NameToIndex(ns.params[0])
 		addr := common.FormHexString(ns.params[1])
-		if _, err := ns.state.AddAccount(index, addr); err != nil {
+		if _, err := ns.state.AddAccount(index, addr, ns.timeStamp); err != nil {
 			return nil, err
 		}
 	case "set_account":
@@ -75,7 +76,7 @@ func (ns *NativeService) SystemExecute(index common.AccountName) ([]byte, error)
 			return nil, err
 		}
 
-		log.Debug(from, to, cpu, net)
+		//log.Debug(from, to, cpu, net)
 		if err := ns.state.SetResourceLimits(from, to, cpu, net); err != nil {
 			return nil, err
 		}

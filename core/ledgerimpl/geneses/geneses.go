@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/core/types"
 	//"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/state"
 	"math/big"
@@ -61,39 +60,37 @@ func GenesisBlockInit(ledger ledger.Ledger, timeStamp int64) (*types.Block, erro
 	return &block, nil
 }*/
 
-func PresetContract(s *state.State, t int64) ([]*types.Transaction, error) {
-	var txs []*types.Transaction
+func PresetContract(s *state.State, timeStamp int64) error {
 	if s == nil {
-		return nil, errors.New("state is nil")
+		return errors.New("state is nil")
 	}
 	root := common.NameToIndex("root")
 	delegate := common.NameToIndex("delegate")
 	addr := common.AddressFromPubKey(config.Root.PublicKey)
 	fmt.Println("preset insert a root account:", addr.HexString())
-	if _, err := s.AddAccount(root, addr); err != nil {
-		return nil, err
+	if _, err := s.AddAccount(root, addr, timeStamp); err != nil {
+		return err
 	}
 	if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(1000)); err != nil {
-		return nil, err
+		return err
 	}
 	fmt.Println("set root account's resource to [cpu:100, net:100]")
 	if err := s.SetResourceLimits(root, root, 100, 100); err != nil {
 		fmt.Println(err)
-		return nil, err
+		return err
 	}
 
-	if _, err := s.AddAccount(delegate, common.AddressFromPubKey(config.Delegate.PublicKey)); err != nil {
-		return nil, err
+	if _, err := s.AddAccount(delegate, common.AddressFromPubKey(config.Delegate.PublicKey), timeStamp); err != nil {
+		return err
 	}
 	if err := s.AccountAddBalance(delegate, state.AbaToken, new(big.Int).SetUint64(1000)); err != nil {
-		return nil, err
+		return err
 	}
 	fmt.Println("set root account's resource to [cpu:100, net:100]")
 	if err := s.SetResourceLimits(delegate, delegate, 100, 100); err != nil {
 		fmt.Println(err)
-		return nil, err
+		return err
 	}
 
-
-	return txs, nil
+	return nil
 }
