@@ -26,9 +26,8 @@ var worker1 = common.NameToIndex("worker1")
 var worker2 = common.NameToIndex("worker2")
 var worker3 = common.NameToIndex("worker3")
 var delegate = common.NameToIndex("delegate")
-var testN = 1
 func TestGenesesBlockInit(t *testing.T) {
-	testN ++
+	os.RemoveAll("/tmp/geneses/")
 	l, err := ledgerimpl.NewLedger("/tmp/geneses")
 	if err != nil {
 		t.Fatal(err)
@@ -42,7 +41,7 @@ func TestGenesesBlockInit(t *testing.T) {
 	ShowAccountInfo(l, t)
 	CancelPledgeContract(l, con, t)
 	ShowAccountInfo(l, t)
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 0; i++ {
 		time.Sleep(10 * time.Second)
 		fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
 	}

@@ -86,7 +86,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
-	log.Debug("----------------------------------------------------------NewBlock", timeStamp)
+	log.Debug("----------------------------------------------------------NewBlock TimeStamp", timeStamp)
 	/*var cpu float32
 	cpuFlag := true
 	var net float32
@@ -117,7 +117,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 		netFlag = false
 	}
 	c.StateDB.SetBlockLimits(cpuFlag, netFlag)*/
-	log.Warn(s.GetHashRoot().HexString())
+	log.Warn("NewBlock State", s.GetHashRoot().HexString())
 	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, timeStamp)
 }
 
@@ -156,6 +156,7 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 *  @param  block - the block need to save
  */
 func (c *ChainTx) SaveBlock(block *types.Block) error {
+	log.Debug("----------------------------------------------------------SaveBlock TimeStamp", block.TimeStamp)
 	if block == nil {
 		return errors.New("block is nil")
 	}
