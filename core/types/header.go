@@ -66,7 +66,7 @@ func NewHeader(version uint32, height uint64, prevHash, merkleHash, stateHash co
 	}
 	header := Header{
 		Version:       version,
-		TimeStamp:     timeStamp / 1000 / 1000, //convert to ms
+		TimeStamp:     timeStamp,
 		Height:        height,
 		ConsensusData: conData,
 		PrevHash:      prevHash,

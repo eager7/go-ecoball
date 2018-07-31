@@ -86,7 +86,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
-	log.Debug("----------------------------------------------------------NewBlock")
+	log.Debug("----------------------------------------------------------NewBlock", timeStamp)
 	/*var cpu float32
 	cpuFlag := true
 	var net float32
@@ -96,7 +96,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 		return nil, err
 	}
 	for i := 0; i < len(txs); i++ {
-		if ret, _, _, err := c.HandleTransaction(s, txs[i]); err != nil {
+		if ret, _, _, err := c.HandleTransaction(s, txs[i], timeStamp); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			txs[i].Show()
 			return nil, err
@@ -155,7 +155,7 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 *  @param  block - the block need to save
  */
 func (c *ChainTx) SaveBlock(block *types.Block) error {
-	log.Debug("----------------------------------------------------------SaveBlock")
+	log.Debug("----------------------------------------------------------SaveBlock", block.TimeStamp)
 	if block == nil {
 		return errors.New("block is nil")
 	}
@@ -164,7 +164,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	var net float32
 	netFlag := true
 	for i := 0; i < len(block.Transactions); i++ {
-		if _, c, n, err := c.HandleTransaction(c.StateDB, block.Transactions[i]); err != nil {
+		if _, c, n, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			return err
 		} else {
@@ -286,7 +286,7 @@ func (c *ChainTx) GenesesBlockInit() error {
 	if err != nil {
 		return err
 	}
-	timeStamp := tm.UnixNano() / 1000 / 1000
+	timeStamp := tm.UnixNano()
 
 	//TODO start
 	SecondInMs := int64(1000)
@@ -483,11 +483,11 @@ func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, valu
 *  @param  ledger - the interface of ledger impl
 *  @param  tx - a transaction
  */
-func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction) (ret []byte, cpu, net float32, err error) {
-	start := time.Now().UnixNano() / 1000000
+func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float32, err error) {
+	start := timeStamp
 	log.Debug(start, c.Geneses.TimeStamp)
-	n := (start - c.Geneses.TimeStamp) / int64(config.TimeSlot)
-	m := (c.CurrentHeader.TimeStamp - c.Geneses.TimeStamp) / int64(config.TimeSlot)
+	n := (start - c.Geneses.TimeStamp) / 1000000 / int64(config.TimeSlot)
+	m := (c.CurrentHeader.TimeStamp - c.Geneses.TimeStamp) / 1000000  / int64(config.TimeSlot)
 	log.Debug(n, m, n - m)
 	switch tx.Type {
 	case types.TxTransfer:
