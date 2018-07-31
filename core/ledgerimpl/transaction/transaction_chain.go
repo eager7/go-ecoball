@@ -513,7 +513,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		if !ok {
 			return nil, 0, 0, errors.New("transaction type error[deploy]")
 		}
-		if err := s.SetContract(tx.From, payload.TypeVm, payload.Describe, payload.Code); err != nil {
+		if err := s.SetContract(tx.Addr, payload.TypeVm, payload.Describe, payload.Code); err != nil {
 			return nil, 0, 0, err
 		}
 	case types.TxInvoke:

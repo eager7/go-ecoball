@@ -109,7 +109,7 @@ func (a *Account) SetContract(t types.VmType, des, code []byte) error {
  */
 func (a *Account) GetContract() (*types.DeployInfo, error) {
 	if a.Contract.TypeVm == 0 {
-		return nil, errors.New("this account is not set contract")
+		return nil, errors.New(fmt.Sprintf("this account[%s] is not set contract", common.IndexToName(a.Index)))
 	}
 	return &a.Contract, nil
 }

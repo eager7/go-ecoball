@@ -35,21 +35,18 @@ func TestGenesesBlockInit(t *testing.T) {
 	}
 	con, err := types.InitConsensusData(time.Now().Unix())
 	CreateAccountBlock(l, con, t)
-	//ShowAccountInfo(l, t)
+	ShowAccountInfo(l, t)
 	//AddTokenAccount(l, con, t)
-	//ContractStore(l, con, t)
-	//PledgeContract(l, con, t)
-	//ShowAccountInfo(l, t)
-	//CancelPledgeContract(l, con, t)
-	//ShowAccountInfo(l, t)
-	//time.Sleep(10 * time.Second)
-	//fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
-	//time.Sleep(10 * time.Second)
-	//fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
-	//time.Sleep(10 * time.Second)
-	//fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
-	//time.Sleep(10 * time.Second)
-	//fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
+	ContractStore(l, con, t)
+	PledgeContract(l, con, t)
+	ShowAccountInfo(l, t)
+	CancelPledgeContract(l, con, t)
+	ShowAccountInfo(l, t)
+	for i := 0; i < 4; i++ {
+		time.Sleep(10 * time.Second)
+		fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
+	}
+
 	l.StateDB().Close()
 }
 
@@ -240,27 +237,27 @@ func ContractStore(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	tokenContract, err := types.NewDeployContract(worker3, worker3, "active", types.VmWasm, "system control", code, 0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(root, worker3, "active", types.VmWasm, "system control", code, 0, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
-	tokenContract.SetSignature(&config.Worker3)
+	tokenContract.SetSignature(&config.Root)
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(worker3, worker3, "owner", "StoreSet",
-		[]string{"pct", "panchangtao"}, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(root, worker3, "owner", "StoreSet",
+		[]string{"pct", "panchangtao"}, 0, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
-	invoke.SetSignature(&config.Worker3)
+	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(worker3, worker3, "owner", "StoreGet",
+	invoke, err = types.NewInvokeContract(root, worker3, "owner", "StoreGet",
 		[]string{"pct"}, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}
-	invoke.SetSignature(&config.Worker3)
+	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
 	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
@@ -326,7 +323,7 @@ func CancelPledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *tes
 	}
 }
 
-func TestError(t *testing.T) {
+func xTestError(t *testing.T) {
 	i := 0
 	for ; ; {
 		i++

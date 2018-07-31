@@ -76,7 +76,7 @@ func (ns *NativeService) SystemExecute(index common.AccountName) ([]byte, error)
 			return nil, err
 		}
 
-		log.Debug(from, to, cpu, net)
+		//log.Debug(from, to, cpu, net)
 		if err := ns.state.SetResourceLimits(from, to, cpu, net); err != nil {
 			return nil, err
 		}

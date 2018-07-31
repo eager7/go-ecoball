@@ -18,7 +18,6 @@ package smartcontract
 
 import (
 	"errors"
-	"fmt"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract/nativeservice"
@@ -41,8 +40,8 @@ func NewContractService(s *state.State, tx *types.Transaction, timeStamp int64) 
 	if !ok {
 		return nil, errors.New("transaction type error[invoke]")
 	}
-	fmt.Println("method:", string(invoke.Method))
-	fmt.Println("param:", invoke.Param)
+	//fmt.Println("method:", string(invoke.Method))
+	//fmt.Println("param:", invoke.Param)
 	switch contract.TypeVm {
 	case types.VmNative:
 		service, err := nativeservice.NewNativeService(s, tx.Addr, string(invoke.Method), invoke.Param, timeStamp)
