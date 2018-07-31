@@ -8,3 +8,4 @@ type Receipt struct {
 	Net    float32
 	Result []byte
 }
+
