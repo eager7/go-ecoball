@@ -752,7 +752,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			log.Debug("not find the block of the corresponding height in the ledger")
 			return
 		}
-		// 3. send the found blocks
+		// 3. send the found /blocks
 		var blksyn_send Block_Syn
 		blksyn_send.Blksyn.BlksynV,err = blk_syn_v.Blk2BlkTx()
 		if err != nil {
@@ -780,6 +780,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		if height_syn_v == uint64(current_height_num) {
 			// the current_height_num has been verified
 			// 1. verify the verified block blks_v
+
+			// todo
+			// maybe only check the hash is enough
+
 			var result_v bool
 			var blk_pre *types.Block
 			blk_pre,err = actor_c.service_ababft.ledger.GetTxBlockByHeight(blks_v.Header.Height-1)
