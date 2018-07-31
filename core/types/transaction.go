@@ -229,6 +229,11 @@ func (t *Transaction) Deserialize(data []byte) error {
 }
 
 func (t *Transaction) Show() {
+	fmt.Println(t.JsonString())
+	t.Payload.Show()
+}
+
+func (t *Transaction) show() {
 	fmt.Println("\t---------------Transaction-------------")
 	fmt.Println("\tVersion        :", t.Version)
 	fmt.Println("\tFrom           :", common.IndexToName(t.From))

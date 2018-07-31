@@ -17,11 +17,11 @@
 package types
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"encoding/json"
 )
 
 type InvokeInfo struct {
@@ -84,8 +84,10 @@ func (i *InvokeInfo) Deserialize(data []byte) error {
 
 	return nil
 }
-
 func (i *InvokeInfo) Show() {
+	fmt.Println(i.JsonString())
+}
+func (i *InvokeInfo) show() {
 	fmt.Println("\t---------Show Invoke Info ----------")
 	fmt.Println("\tMethod        :", string(i.Method))
 	fmt.Println("\tParam Num     :", len(i.Param))

@@ -46,7 +46,7 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println("Hash2:", tx2.Hash.HexString())
-	if !tx2.Hash.Equals(&tx.Hash) {
+	if tx.JsonString() != tx2.JsonString() {
 		t.Fatal("hash wrong")
 	}
 	tx2.Show()
@@ -64,7 +64,7 @@ func TestDeploy(t *testing.T) {
 	if err := dep.Deserialize(data); err != nil {
 		t.Fatal(err)
 	}
-	if !dep.Hash.Equals(&deploy.Hash) {
+	if dep.JsonString() != deploy.JsonString() {
 		t.Fatal("hash mismatch")
 	}
 	dep.Show()
@@ -82,7 +82,7 @@ func TestInvoke(t *testing.T) {
 	if err := i2.Deserialize(data); err != nil {
 		t.Fatal(err)
 	}
-	if !i2.Hash.Equals(&i.Hash) {
+	if i.JsonString() != i2.JsonString() {
 		t.Fatal("hash mismatch")
 	}
 	i2.Show()
