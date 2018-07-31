@@ -27,7 +27,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"math/big"
 	"sort"
-	"time"
 	"sync"
 )
 
@@ -53,12 +52,12 @@ type Account struct {
  *  @param index - the unique id of account name created by common.NameToIndex()
  *  @param address - the account's public key
  */
-func NewAccount(path string, index common.AccountName, addr common.Address) (acc *Account, err error) {
-	log.Info("add a new account:", index)
-	fmt.Printf("index:%d\n", index)
+func NewAccount(path string, index common.AccountName, addr common.Address, timeStamp int64) (acc *Account, err error) {
+	//log.Info("add a new account:", index)
+	//fmt.Printf("index:%d\n", index)
 	acc = &Account{
 		Index:       index,
-		TimeStamp:   time.Now().UnixNano() / (1000 * 1000),
+		TimeStamp:   timeStamp,
 		Tokens:      make(map[string]Token, 1),
 		Permissions: make(map[string]Permission, 1),
 		Resource: Resource{},

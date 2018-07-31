@@ -2,7 +2,6 @@ package geneses_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
@@ -14,6 +13,9 @@ import (
 	"math/big"
 	"testing"
 	"time"
+	"os"
+	"fmt"
+	"github.com/ecoball/go-ecoball/common/event"
 )
 
 var log = elog.NewLogger("worker2", elog.InfoLog)
@@ -24,29 +26,31 @@ var worker1 = common.NameToIndex("worker1")
 var worker2 = common.NameToIndex("worker2")
 var worker3 = common.NameToIndex("worker3")
 var delegate = common.NameToIndex("delegate")
-
+var testN = 1
 func TestGenesesBlockInit(t *testing.T) {
+	testN ++
 	l, err := ledgerimpl.NewLedger("/tmp/geneses")
 	if err != nil {
 		t.Fatal(err)
 	}
 	con, err := types.InitConsensusData(time.Now().Unix())
 	CreateAccountBlock(l, con, t)
-	ShowAccountInfo(l, t)
+	//ShowAccountInfo(l, t)
 	//AddTokenAccount(l, con, t)
 	//ContractStore(l, con, t)
-	PledgeContract(l, con, t)
-	ShowAccountInfo(l, t)
-	CancelPledgeContract(l, con, t)
-	ShowAccountInfo(l, t)
-	time.Sleep(10 * time.Second)
-	fmt.Println(l.RequireResources(root))
-	time.Sleep(10 * time.Second)
-	fmt.Println(l.RequireResources(root))
-	time.Sleep(10 * time.Second)
-	fmt.Println(l.RequireResources(root))
-	time.Sleep(10 * time.Second)
-	fmt.Println(l.RequireResources(root))
+	//PledgeContract(l, con, t)
+	//ShowAccountInfo(l, t)
+	//CancelPledgeContract(l, con, t)
+	//ShowAccountInfo(l, t)
+	//time.Sleep(10 * time.Second)
+	//fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
+	//time.Sleep(10 * time.Second)
+	//fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
+	//time.Sleep(10 * time.Second)
+	//fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
+	//time.Sleep(10 * time.Second)
+	//fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
+	l.StateDB().Close()
 }
 
 func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
@@ -319,5 +323,17 @@ func CancelPledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *tes
 	}
 	if err := ledger.SaveTxBlock(block); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestError(t *testing.T) {
+	i := 0
+	for ; ; {
+		i++
+		fmt.Println("##############################################################################", i)
+		fmt.Println(os.RemoveAll("/tmp/geneses/"))
+		time.Sleep(time.Microsecond * 100)
+		TestGenesesBlockInit(t)
+		event.EventStop()
 	}
 }

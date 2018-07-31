@@ -49,6 +49,7 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	st = &State{path: path}
 	st.diskDb, err = store.NewLevelDBStore(path, 0, 0)
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 	st.db = NewDatabase(st.diskDb)
@@ -92,7 +93,7 @@ func (s *State) CopyState() (*State, error) {
  *  @param index - account's index
  *  @param addr - account's address convert from public key
  */
-func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Account, error) {
+func (s *State) AddAccount(index common.AccountName, addr common.Address, timeStamp int64) (*Account, error) {
 	key := common.IndexToBytes(index)
 	data, err := s.trie.TryGet(key)
 	if err != nil {
@@ -101,7 +102,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Acco
 	if data != nil {
 		return nil, errors.New("reduplicate name")
 	}
-	acc, err := NewAccount(s.path, index, addr)
+	acc, err := NewAccount(s.path, index, addr, timeStamp)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +302,9 @@ func (s *State) Reset(hash common.Hash) error {
 	return nil
 }
 func (s *State) Close() {
-	s.diskDb.Close()
+	if err := s.diskDb.Close(); err != nil {
+		log.Error(err)
+	}
 }
 func (s *State) Trie() Trie {
 	return s.trie

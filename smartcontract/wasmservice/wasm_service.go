@@ -37,14 +37,15 @@ import (
 var log = elog.NewLogger("wasm", config.LogLevel)
 
 type WasmService struct {
-	state  *state.State
-	tx     *types.Transaction
-	Code   []byte
-	Args   []uint64
-	Method string
+	state     *state.State
+	tx        *types.Transaction
+	Code      []byte
+	Args      []uint64
+	Method    string
+	timeStamp int64
 }
 
-func NewWasmService(s *state.State, tx *types.Transaction, contract *types.DeployInfo, invoke *types.InvokeInfo) (*WasmService, error) {
+func NewWasmService(s *state.State, tx *types.Transaction, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
 	if contract == nil {
 		return nil, errors.New("contract is nil")
 	}
@@ -54,11 +55,12 @@ func NewWasmService(s *state.State, tx *types.Transaction, contract *types.Deplo
 		return nil, err
 	}
 	ws := &WasmService{
-		state:  s,
-		tx:     tx,
-		Code:   contract.Code,
-		Args:   params,
-		Method: string(invoke.Method),
+		state:     s,
+		tx:        tx,
+		Code:      contract.Code,
+		Args:      params,
+		Method:    string(invoke.Method),
+		timeStamp: timeStamp,
 	}
 	ws.RegisterApi()
 	return ws, nil
@@ -169,9 +171,9 @@ func (ws *WasmService) AbaLog(pointer uint64) int32 {
 
 func (ws *WasmService) AbaAccountAdd(user, addr uint64) int32 {
 	name := common.PointerToString(user)
-	log.Debug("AbaAccountAdd:", name)
+	//log.Debug("AbaAccountAdd:", name)
 	address := common.FormHexString(common.PointerToString(addr))
-	_, err := ws.state.AddAccount(common.NameToIndex(name), address)
+	_, err := ws.state.AddAccount(common.NameToIndex(name), address, ws.timeStamp)
 	if err != nil {
 		log.Error(err)
 		return -1
@@ -211,7 +213,7 @@ func (ws *WasmService) AddPermission(user, perm uint64) int32 {
 	return 0
 }
 func (ws *WasmService) RequirePermission(perm string) int32 {
-	log.Debug("RequirePermission:", perm)
+	//log.Debug("RequirePermission:", perm)
 	if err := ws.state.CheckPermission(ws.tx.Addr, perm, ws.tx.Signatures); err != nil {
 		log.Error(err)
 		return -1

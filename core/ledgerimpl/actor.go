@@ -59,6 +59,8 @@ func (l *LedActor) SetLedger(ledger *LedgerImpl) {
 func (l *LedActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
+	case *actor.Stop:
+		l.pid.Stop()
 	case *actor.Restarting:
 	case *types.Transaction: //从交易池发来的确认交易信息的消息类型，需即刻返回结果
 		log.Info("Receive Transaction:", msg.Hash.HexString())

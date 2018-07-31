@@ -29,7 +29,7 @@ type ContractService interface {
 	Execute() ([]byte, error)
 }
 
-func NewContractService(s *state.State, tx *types.Transaction) (ContractService, error) {
+func NewContractService(s *state.State, tx *types.Transaction, timeStamp int64) (ContractService, error) {
 	if s == nil || tx == nil {
 		return nil, errors.New("the contract service's ledger interface or tx is nil")
 	}
@@ -45,13 +45,13 @@ func NewContractService(s *state.State, tx *types.Transaction) (ContractService,
 	fmt.Println("param:", invoke.Param)
 	switch contract.TypeVm {
 	case types.VmNative:
-		service, err := nativeservice.NewNativeService(s, tx.Addr, string(invoke.Method), invoke.Param)
+		service, err := nativeservice.NewNativeService(s, tx.Addr, string(invoke.Method), invoke.Param, timeStamp)
 		if err != nil {
 			return nil, err
 		}
 		return service, nil
 	case types.VmWasm:
-		service, err := wasmservice.NewWasmService(s, tx, contract, &invoke)
+		service, err := wasmservice.NewWasmService(s, tx, contract, &invoke, timeStamp)
 		if err != nil {
 			return nil, err
 		}

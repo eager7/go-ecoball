@@ -252,3 +252,16 @@ func (t *Transaction) JsonString() string {
 	data, _ := json.Marshal(t)
 	return string(data)
 }
+
+func (t TxType) String() string {
+	switch t {
+	case TxDeploy:
+		return "deploy transaction"
+	case TxInvoke:
+		return "invoke transaction"
+	case TxTransfer:
+		return "transfer transaction"
+	default:
+		return "unknown type"
+	}
+}

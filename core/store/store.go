@@ -27,6 +27,11 @@ import (
 
 const PathBlock = "DataBase/block"
 
+type LevelDBStore struct {
+	db    *leveldb.DB
+	batch *leveldb.Batch
+}
+
 type Storage interface {
 	Put(key, value []byte) error
 	Get(key []byte) ([]byte, error)
@@ -37,11 +42,6 @@ type Storage interface {
 	SearchAll() (result map[string]string, err error)
 	DeleteAll() error
 	NewIterator() iterator.Iterator
-}
-
-type LevelDBStore struct {
-	db    *leveldb.DB
-	batch *leveldb.Batch
 }
 
 func NewBlockStore(dirPath string) (Storage, error) {
@@ -154,8 +154,8 @@ func (l *LevelDBStore) NewBatch() Batch {
 	return &ldbBatch{db: l.db, b: new(leveldb.Batch)}
 }
 
-func (l *LevelDBStore) Close() {
-	l.db.Close()
+func (l *LevelDBStore) Close() error {
+	return l.db.Close()
 }
 
 type ldbBatch struct {

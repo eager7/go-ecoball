@@ -148,3 +148,9 @@ func Publish(pub ActorIndex, msg interface{}, sub ...ActorIndex) error {
 	}
 	return nil
 }
+
+func EventStop() {
+	for _, s := range actorList.list {
+		s.Tell(&actor.Stop{})
+	}
+}

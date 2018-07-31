@@ -117,6 +117,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 		netFlag = false
 	}
 	c.StateDB.SetBlockLimits(cpuFlag, netFlag)*/
+	log.Warn(s.GetHashRoot().HexString())
 	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, timeStamp)
 }
 
@@ -155,7 +156,6 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 *  @param  block - the block need to save
  */
 func (c *ChainTx) SaveBlock(block *types.Block) error {
-	log.Debug("----------------------------------------------------------SaveBlock", block.TimeStamp)
 	if block == nil {
 		return errors.New("block is nil")
 	}
@@ -196,6 +196,9 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	}
 	if err := c.TxsStore.BatchCommit(); err != nil {
 		return err
+	}
+	if c.StateDB.GetHashRoot().HexString() != block.StateHash.HexString() {
+		return errors.New(fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.GetHashRoot().HexString(), block.Hash.HexString()))
 	}
 
 	payload, err := block.Header.Serialize()
@@ -299,7 +302,7 @@ func (c *ChainTx) GenesesBlockInit() error {
 	conData := types.GenesesBlockInitConsensusData(timeStamp)
 
 
-	if err := geneses.PresetContract(c.StateDB); err != nil {
+	if err := geneses.PresetContract(c.StateDB, timeStamp); err != nil {
 		return err
 	}
 
@@ -425,8 +428,8 @@ func (c *ChainTx) CheckPermission(index common.AccountName, name string, sig []c
 *  @param  index - the uuid of account
 *  @param  addr - the public key of account
  */
-func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address) (*state.Account, error) {
-	return c.StateDB.AddAccount(index, addr)
+func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error) {
+	return c.StateDB.AddAccount(index, addr, timeStamp)
 }
 func (c *ChainTx) StoreSet(index common.AccountName, key, value []byte) (err error) {
 	return c.StateDB.StoreSet(index, key, value)
@@ -484,11 +487,12 @@ func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, valu
 *  @param  tx - a transaction
  */
 func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float32, err error) {
-	start := timeStamp
-	log.Debug(start, c.Geneses.TimeStamp)
-	n := (start - c.Geneses.TimeStamp) / 1000000 / int64(config.TimeSlot)
-	m := (c.CurrentHeader.TimeStamp - c.Geneses.TimeStamp) / 1000000  / int64(config.TimeSlot)
-	log.Debug(n, m, n - m)
+	start := time.Now().UnixNano()
+	//log.Debug(start, c.Geneses.TimeStamp)
+	//n := (start - c.Geneses.TimeStamp) / 1000000 / int64(config.TimeSlot)
+	//m := (c.CurrentHeader.TimeStamp - c.Geneses.TimeStamp) / 1000000  / int64(config.TimeSlot)
+	//log.Debug(n, m, n - m)
+	//timeRecover := (timeStamp - c.CurrentHeader.TimeStamp - 2 * c.Geneses.TimeStamp) / 1000000 / int64(config.TimeSlot)
 	switch tx.Type {
 	case types.TxTransfer:
 		payload, ok := tx.Payload.GetObject().(types.TransferInfo)
@@ -513,7 +517,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 			return nil, 0, 0, err
 		}
 	case types.TxInvoke:
-		service, err := smartcontract.NewContractService(s, tx)
+		service, err := smartcontract.NewContractService(s, tx, timeStamp)
 		if err != nil {
 			return nil, 0, 0, err
 		}
@@ -524,16 +528,38 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	default:
 		return nil, 0, 0, errors.New("the transaction's type error")
 	}
-	end := time.Now().UnixNano() / 1000000
-	cpu = float32(end-start)
+	end := time.Now().UnixNano()
+	if tx.Receipt.Cpu == 0{
+		cpu = float32(end-start) / 1000000.0
+		tx.Receipt.Cpu = cpu
+	} else {
+		cpu = tx.Receipt.Cpu
+	}
 	data, err := tx.Serialize()
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	net = float32(len(data))
+	if tx.Receipt.Net == 0 {
+		net = float32(len(data))
+		tx.Receipt.Net = net
+	} else {
+		net = tx.Receipt.Net
+	}
+	if tx.Receipt.Hash.IsNil() {
+		tx.Receipt.Hash = tx.Hash
+	}
+	if tx.Receipt.Result == nil {
+		tx.Receipt.Result = common.CopyBytes(ret)
+	}
+	//log.Warn("tx, Time", tx.From, timeStamp)
+	if err := s.RecoverResources(tx.From, timeStamp); err != nil {
+		return nil, 0, 0, err
+	}
+	//log.Warn("CPU, NET", cpu, net)
 	if err := s.SubResourceLimits(tx.From, cpu, net); err != nil {
 		return nil, 0, 0, err
 	}
+	//log.Warn("Handle Type", tx.Type.String(), s.GetHashRoot().HexString())
 	return ret, cpu, net, nil
 }
 
