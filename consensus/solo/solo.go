@@ -59,7 +59,7 @@ func (s *Solo) Start() error {
 				for _, v := range txList.Txs {
 					txs = append(txs, v)
 				}
-				block, err := s.ledger.NewTxBlock(txs, conData)
+				block, err := s.ledger.NewTxBlock(txs, conData, time.Now().UnixNano())
 				if err != nil {
 					log.Error("new block error:", err)
 					continue

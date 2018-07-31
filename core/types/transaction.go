@@ -61,6 +61,7 @@ type Transaction struct {
 	Payload    Payload            `json:"payload"`
 	Signatures []common.Signature `json:"signatures"`
 	Hash       common.Hash        `json:"hash"`
+	Receipt    Receipt
 }
 
 func NewTransaction(t TxType, from, addr common.AccountName, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
