@@ -17,6 +17,7 @@
 package types
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/account"
@@ -25,7 +26,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
-	"encoding/json"
 )
 
 const VersionHeader = 1
@@ -47,7 +47,15 @@ type Header struct {
 var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
 
 /**
-* New a Header and compute it's hash
+ *  @brief create a new block header, the compute this header's hash
+ *  @param version - the version of header, default 1
+ *  @param height - the height of this block
+ *  @param prevHash - the hash of perv block
+ *  @param merkleHash - the merkle hash root of transactions' hash
+ *  @param stateHash - the mpt hash root of state
+ *  @param conData - the data of consensus module
+ *  @param bloom - the bloom filter of transactions
+ *  @param timeStamp - the timeStamp of block, unit is ns
  */
 func NewHeader(version uint32, height uint64, prevHash, merkleHash, stateHash common.Hash, conData ConsensusData, bloom bloom.Bloom, timeStamp int64) (*Header, error) {
 	if version != VersionHeader {
@@ -58,7 +66,7 @@ func NewHeader(version uint32, height uint64, prevHash, merkleHash, stateHash co
 	}
 	header := Header{
 		Version:       version,
-		TimeStamp:     timeStamp,
+		TimeStamp:     timeStamp / 1000 / 1000, //convert to ms
 		Height:        height,
 		ConsensusData: conData,
 		PrevHash:      prevHash,

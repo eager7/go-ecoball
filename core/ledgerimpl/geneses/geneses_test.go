@@ -93,7 +93,7 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	block, err := ledger.NewTxBlock(txs, *con)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func SetTokenAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *tes
 	transfer.SetSignature(&config.Root)
 
 	txs := []*types.Transaction{invoke, transfer}
-	block, err := ledger.NewTxBlock(txs, *con)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +143,7 @@ func TokenAccountTransferBlock(ledger ledger.Ledger, con *types.ConsensusData, t
 		t.Fatal(err)
 	}
 	txs := []*types.Transaction{transfer}
-	block, err := ledger.NewTxBlock(txs, *con)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -217,7 +217,7 @@ func AddTokenAccount(ledger ledger.Ledger, con *types.ConsensusData, t *testing.
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)
 
-	block, err := ledger.NewTxBlock(txs, *con)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -259,7 +259,7 @@ func ContractStore(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T)
 	invoke.SetSignature(&config.Worker3)
 	txs = append(txs, invoke)
 
-	block, err := ledger.NewTxBlock(txs, *con)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -288,7 +288,7 @@ func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	block, err := ledger.NewTxBlock(txs, *con)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -309,7 +309,7 @@ func CancelPledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *tes
 	}
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
-	block, err := ledger.NewTxBlock(txs, *con)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
