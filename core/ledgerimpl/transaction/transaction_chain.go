@@ -86,11 +86,6 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
-	log.Debug("----------------------------------------------------------NewBlock TimeStamp", timeStamp)
-	/*var cpu float32
-	cpuFlag := true
-	var net float32
-	netFlag := true*/
 	s, err := c.StateDB.CopyState()
 	if err != nil {
 		return nil, err
@@ -101,22 +96,9 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 			txs[i].Show()
 			return nil, err
 		} else {
-			//cpu += c
-			//net += n
 			log.Debug("Handle Transaction Result:", ret)
 		}
 	}
-	/*if cpu < (state.BlockCpuLimit / 10) {
-		cpuFlag = true
-	} else {
-		cpuFlag = false
-	}
-	if net < (state.BlockNetLimit / 10) {
-		netFlag = true
-	} else {
-		netFlag = false
-	}
-	c.StateDB.SetBlockLimits(cpuFlag, netFlag)*/
 	log.Warn("NewBlock State", s.GetHashRoot().HexString())
 	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, timeStamp)
 }
@@ -499,6 +481,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	case types.TxTransfer:
 		payload, ok := tx.Payload.GetObject().(types.TransferInfo)
 		if !ok {
+			log.Error("transaction type error[transfer]")
 			return nil, 0, 0, errors.New("transaction type error[transfer]")
 		}
 		if err := s.AccountSubBalance(tx.From, state.AbaToken, payload.Value); err != nil {
