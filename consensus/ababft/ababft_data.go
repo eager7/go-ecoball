@@ -57,7 +57,7 @@ func (sign *Signature_Preblock) Deserialize(data []byte) error {
 }
 
 type REQSyn struct {
-	Reqsyn *pb.RequestSyn
+	Reqsyn pb.RequestSyn
 }
 
 func (reqsyn *REQSyn) Serialize() ([]byte, error) {
@@ -80,7 +80,7 @@ func (reqsyn *REQSyn) Deserialize(data []byte) error {
 }
 
 type TimeoutMsg struct {
-	Toutmsg *pb.ToutMsg
+	Toutmsg pb.ToutMsg
 }
 
 func (toutmsg *TimeoutMsg) Serialize() ([]byte, error) {

@@ -20,7 +20,6 @@ import (
 	"github.com/ecoball/go-ecoball/txpool"
 )
 
-
 var root = common.NameToIndex("root")
 var token = common.NameToIndex("token")
 var worker1 = common.NameToIndex("worker1")
@@ -79,6 +78,7 @@ func TestABABFTPros(t *testing.T) {
 			account.PrivateKey = config.Worker3.PrivateKey
 		}
 		accounts = append(accounts,account)
+		Accounts_test = append(Accounts_test,account)
 	}
 
 	// 2. create the consensus data
@@ -119,6 +119,9 @@ func TestABABFTPros(t *testing.T) {
 		event.Send(event.ActorNil, event.ActorConsensus, signaturepre_send)
 	}
 
+	time.Sleep(time.Second * 6)
+	// test the time out message
+	event.Send(event.ActorNil, event.ActorConsensus, TxTimeout{})
 
 
 	// AddTokenAccount(l, con, t)
