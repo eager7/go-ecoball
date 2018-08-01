@@ -12,13 +12,4 @@ func TestLogger_P(t *testing.T) {
 	l.Info("Test")
 	l.Warn("Test")
 	l.Error("Test")
-
-	l2 := elog.NewFileLogger("Module", elog.DebugLog)
-	l2.Notice("example")
-	l2.Debug("example")
-	l2.Info("example")
-	l2.Warn("example")
-	l2.Error("example")
-	ll := l2.GetLogger()
-	ll.Println("Test")
 }

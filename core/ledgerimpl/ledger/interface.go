@@ -39,5 +39,7 @@ type Ledger interface {
 	TokenIsExisted(token string) bool
 	Start()
 
+	GetGenesesTime()int64
+
 	GetChainTx() ChainInterface
 }

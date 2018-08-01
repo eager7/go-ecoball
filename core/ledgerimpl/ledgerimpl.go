@@ -116,6 +116,7 @@ func (l *LedgerImpl) AccountGet(index common.AccountName) (*state.Account, error
 func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error) {
 	return l.ChainTx.StateDB.AddAccount(index, addr, timeStamp)
 }
+
 //func (l *LedgerImpl) SetResourceLimits(from, to common.AccountName, cpu, net float32) error {
 //	return l.ChainTx.StateDB.SetResourceLimits(from, to, cpu, net)
 //}
@@ -167,4 +168,8 @@ func (l *LedgerImpl) StateDB() *state.State {
 }
 func (l *LedgerImpl) ResetStateDB(hash common.Hash) error {
 	return l.ChainTx.StateDB.Reset(hash)
+}
+
+func (l *LedgerImpl) GetGenesesTime() int64 {
+	return l.ChainTx.Geneses.TimeStamp
 }

@@ -62,6 +62,7 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 	}
 	tokenContract, err := types.NewDeployContract(index, index, state.Active, types.VmWasm, "system control", code, 0, time.Now().Unix())
 	if err != nil {
+		log.Error(err)
 		t.Fatal(err)
 	}
 	if err := tokenContract.SetSignature(&config.Root); err != nil {

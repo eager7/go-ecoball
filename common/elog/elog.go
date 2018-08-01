@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"github.com/ecoball/go-ecoball/common/config"
+	"runtime/debug"
 )
 
 const (
@@ -58,6 +59,7 @@ type Logger interface {
 	Warn(a ...interface{})
 	Error(a ...interface{})
 	Fatal(a ...interface{})
+	Panic(a ...interface{})
 	GetLogger() *log.Logger
 	SetLogLevel(level int) error
 	GetLogLevel() int
@@ -215,6 +217,7 @@ func (l *loggerModule) Error(a ...interface{}) {
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ ERRO " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
 	l.logger.Output(2, fmt.Sprintln(a...))
+	debug.PrintStack()
 }
 
 func (l *loggerModule) Fatal(a ...interface{}) {
@@ -224,4 +227,13 @@ func (l *loggerModule) Fatal(a ...interface{}) {
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ FATAL " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
 	l.logger.Fatal(a...)
+}
+
+func (l *loggerModule) Panic(a ...interface{}) {
+	if l.level > FatalLog || !checkPrint(FatalLog) {
+		return
+	}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ PANIC " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
+	a = append(prefix, a...)
+	l.logger.Panic(a...)
 }

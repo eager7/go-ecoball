@@ -52,6 +52,13 @@ type BlockLimit struct {
 	BlockNetLimit        uint64
 }
 
+/**
+ *  @brief set the cpu and net resource to account
+ *  @param from - the account which spend aba token
+ *  @param to - the account which receive delegated resource
+ *  @param cpuStaked - stake delegated cpu
+ *  @param netStaked - stake delegated net
+ */
 func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netStaked uint64) error {
 	cpuStakedSum, err := s.GetParam(cpuAmount)
 	if err != nil {
@@ -98,6 +105,13 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 
 	return s.CommitAccount(acc)
 }
+
+/**
+ *  @brief sub resource from a account
+ *  @param index - the account which sub delegated resource
+ *  @param cpu - the amount of cpu spend
+ *  @param net - the amount of net spend
+ */
 func (s *State) SubResourceLimits(index common.AccountName, cpu, net float32) error {
 	cpuStakedSum, err := s.GetParam(cpuAmount)
 	if err != nil {
@@ -117,6 +131,14 @@ func (s *State) SubResourceLimits(index common.AccountName, cpu, net float32) er
 	}
 	return s.CommitAccount(acc)
 }
+
+/**
+ *  @brief recycle token, this action was initiated voluntarily
+ *  @param from - the account which recycle aba token
+ *  @param to - the account which hold aba token
+ *  @param cpuStaked - stake delegated cpu
+ *  @param netStaked - stake delegated net
+ */
 func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked uint64) error {
 	cpuStakedSum, err := s.GetParam(cpuAmount)
 	if err != nil {
@@ -167,6 +189,12 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 
 	return s.CommitAccount(acc)
 }
+
+/**
+ *  @brief recover a account's resource by time
+ *  @param index - account's index
+ *  @param timeStamp - current time
+ */
 func (s *State) RecoverResources(index common.AccountName, timeStamp int64) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
@@ -183,6 +211,12 @@ func (s *State) RecoverResources(index common.AccountName, timeStamp int64) erro
 	acc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp)
 	return s.CommitAccount(acc)
 }
+
+/**
+ *  @brief require a account's resource info
+ *  @param index - account's index
+ *  @param timeStamp - current time
+ */
 func (s *State) RequireResources(index common.AccountName, timeStamp int64) (float32, float32, error) {
 	cpuStakedSum, err := s.GetParam(cpuAmount)
 	if err != nil {
@@ -201,6 +235,12 @@ func (s *State) RequireResources(index common.AccountName, timeStamp int64) (flo
 	log.Debug("net:", acc.Net.Used, acc.Net.Available, acc.Net.Limit)
 	return acc.Cpu.Available, acc.Net.Available, nil
 }
+
+/**
+ *  @brief set the cpu and net limits
+ *  @param cpu - if true then increase cpu, otherwise, reduce cpu
+ *  @param net - if true then increase net, otherwise, reduce net
+ */
 func (s *State) SetBlockLimits(cpu, net bool) {
 	if cpu {
 		BlockCpu += BlockCpu * 0.01
@@ -227,6 +267,14 @@ func (s *State) SetBlockLimits(cpu, net bool) {
 	log.Debug("SetBlockLimits:", BlockCpu, BlockNet)
 }
 
+/**
+ *  @brief set the cpu and net resource to account
+ *  @param self - if self, set resource to staked, otherwise, set resource to delegated
+ *  @param cpuStaked - stake delegated cpu
+ *  @param netStaked - stake delegated net
+ *  @param cpuStakedSum - total stake cpu
+ *  @param netStakedSum - total stake net
+ */
 func (a *Account) SetResourceLimits(self bool, cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64) error {
 	if self {
 		a.Cpu.Staked += cpuStaked
