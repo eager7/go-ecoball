@@ -156,7 +156,6 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 *  @param  block - the block need to save
  */
 func (c *ChainTx) SaveBlock(block *types.Block) error {
-	log.Debug("----------------------------------------------------------SaveBlock TimeStamp", block.TimeStamp)
 	if block == nil {
 		return errors.New("block is nil")
 	}
@@ -199,7 +198,9 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return err
 	}
 	if c.StateDB.GetHashRoot().HexString() != block.StateHash.HexString() {
-		return errors.New(fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.GetHashRoot().HexString(), block.Hash.HexString()))
+		err := fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.GetHashRoot().HexString(), block.Hash.HexString())
+		log.Error(err)
+		return errors.New(err)
 	}
 
 	payload, err := block.Header.Serialize()
