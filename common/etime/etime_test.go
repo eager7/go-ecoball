@@ -9,7 +9,7 @@ import (
 
 func TestNow(t *testing.T) {
 	for ; ;  {
-		fmt.Println(etime.Now(), "ms")
+		fmt.Println(etime.Microsecond(), "ms")
 		time.Sleep(time.Millisecond * 100)
 	}
 }
