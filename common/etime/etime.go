@@ -5,8 +5,13 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 )
 
-func Now() int64 {
-	t := time.Now().UnixNano()
-	n := t / 1000000 / int64(config.TimeSlot)
+func Microsecond() int64 {
+	return time.Now().UnixNano() / 1000
+}
+
+func Millisecond() int64 {
+	t := Microsecond()
+	n := t / 1000 / int64(config.TimeSlot)
 	return int64(uint64(n) * uint64(config.TimeSlot))
 }
+
