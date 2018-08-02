@@ -33,6 +33,7 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/account"
+	"encoding/binary"
 )
 type Actor_ababft struct {
 	status uint // 1: actor generated,
@@ -55,7 +56,7 @@ const(
 var log = elog.NewLogger("ABABFT", elog.NoticeLog)
 
 // to run the go test, please set TestTag to True
-const TestTag = false
+const TestTag = true
 
 var Num_peers int
 var Peers_list []Peer_info // Peer information for consensus
@@ -143,6 +144,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			received_signpre_num = 0
 			// increase the round index
 			current_round_num ++
+			fmt.Println("ABABFTStart:current_round_num:",current_round_num,Self_index)
 			// log.Debug("primary")
 			// set up a timer to wait for the signature_preblock from other peera
 			t0 := time.NewTimer(time.Second * WAIT_RESPONSE_TIME * 2)
@@ -170,6 +172,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			event.Send(event.ActorConsensus, event.ActorP2P, signaturepre_send)
 			// increase the round index
 			current_round_num ++
+			fmt.Println("ABABFTStart:current_round_num(non primary):",current_round_num,Self_index)
 			// log.Debug("non primary")
 			// log.Debug("signaturepre_send:",current_round_num,currentheader.Height,signaturepre_send)
 			// set up a timer for receiving the data
@@ -193,6 +196,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		if round_in >= current_round_num {
 			// cache the Signature_Preblock
 			cache_signature_preblk = append(cache_signature_preblk,msg.Signature_preblock)
+			// in case that the signature for the previous block arrived bofore the corresponding block generator was born
 		}
 		if primary_tag == 1 && (actor_c.status == 2 || actor_c.status == 3){
 			// verify the signature
@@ -206,7 +210,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// send synchronization message
 					var requestsyn REQSyn
 					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
-					requestsyn.Reqsyn.SigData = []byte("none")
+					hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num)))
+					requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 					// todo
@@ -379,7 +384,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				var timeoutmsg TimeoutMsg
 				timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
 				timeoutmsg.Toutmsg.PubKey = actor_c.service_ababft.account.PublicKey
-				timeoutmsg.Toutmsg.SigData = []byte("none")
+				hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_round_num)))
+				timeoutmsg.Toutmsg.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 				event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
 				// start/enter the next turn
 				event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
@@ -415,7 +421,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						// send synchronization message
 						var requestsyn REQSyn
 						requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
-						requestsyn.Reqsyn.SigData = []byte("none")
+						hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num)))
+						requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 						requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 						event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 						// todo
@@ -515,7 +522,6 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 							// fmt.Println("Accounts_test:",i,Accounts_test[i].PublicKey)
 							event.Send(event.ActorNil, event.ActorConsensus, sign_blkf_send1)
 						}
-						return
 					}
 					// test end
 
@@ -552,15 +558,22 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			var timeoutmsg TimeoutMsg
 			timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
 			timeoutmsg.Toutmsg.PubKey = actor_c.service_ababft.account.PublicKey
-			timeoutmsg.Toutmsg.SigData = []byte("none")
+			hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_round_num)))
+			timeoutmsg.Toutmsg.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 			event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
 
 			// for test 2018.08.01
 			if TestTag == true {
 				primary_tag = 0
 				actor_c.status = 5
-				fmt.Println("send toutmsg:",timeoutmsg.Toutmsg)
-				event.Send(event.ActorNil,event.ActorConsensus,timeoutmsg)
+				for i:=0;i<Num_peers;i++ {
+					var timeoutmsg1 TimeoutMsg
+					timeoutmsg1.Toutmsg.RoundNumber = uint64(current_round_num+1)
+					timeoutmsg1.Toutmsg.PubKey = Accounts_test[i].PublicKey
+					hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_round_num+1)))
+					timeoutmsg1.Toutmsg.SigData,_ = Accounts_test[i].Sign(hash_t.Bytes())
+					event.Send(event.ActorNil, event.ActorConsensus, timeoutmsg1)
+				}
 				return
 			}
 			// end test
@@ -659,6 +672,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						actor_c.status = 6
 						event.Send(event.ActorNil, event.ActorConsensus, block_secondround)
 					}
+					time.Sleep(time.Second * 10)
 				}
 				//
 
@@ -672,7 +686,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				actor_c.status = 7
 				primary_tag = 0
 
-				fmt.Println("save the generated block")
+				fmt.Println("save the generated block", block_second.Height)
 				// start/enter the next turn
 				event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
 				return
@@ -688,10 +702,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				//}
 				// send out the timeout message
 				var timeoutmsg TimeoutMsg
-				// timeoutmsg.Toutmsg = pb.ToutMsg{}
 				timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
 				timeoutmsg.Toutmsg.PubKey = actor_c.service_ababft.account.PublicKey
-				timeoutmsg.Toutmsg.SigData = []byte("none")
+				hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_round_num)))
+				timeoutmsg.Toutmsg.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 				event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
 				// 3. start/enter the next turn
 				event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
@@ -713,7 +727,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// send synchronization message
 					var requestsyn REQSyn
 					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
-					requestsyn.Reqsyn.SigData = []byte("none")
+					hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num)))
+					requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 
@@ -759,7 +774,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						fmt.Println("received and verified second round:", blocksecond_received.Height, blocksecond_received.Header)
 						return
 					}
-					//
+					// test end
 
 					// 3.save the second-round block into the ledger
 					if err = actor_c.service_ababft.ledger.SaveTxBlock(blocksecond_received); err != nil {
@@ -772,6 +787,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					primary_tag = 0
 					// update the current_round_num
 					current_round_num = int(data_blks_received.NumberRound)
+					fmt.Println("Block_SecondRound,current_round_num:",current_round_num)
 					// start/enter the next turn
 					event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
 					// 5. broadcast the received second-round block, which has been checked valid
@@ -796,7 +812,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			var timeoutmsg TimeoutMsg
 			timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
 			timeoutmsg.Toutmsg.PubKey = actor_c.service_ababft.account.PublicKey
-			timeoutmsg.Toutmsg.SigData = []byte("none")
+			hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_round_num)))
+			timeoutmsg.Toutmsg.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 			event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
 			// start/enter the next turn
 			event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
@@ -806,18 +823,34 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 	case REQSyn:
 		// receive the shronization request
 		height_req := msg.Reqsyn.RequestHeight
+		pubkey_in := msg.Reqsyn.PubKey
+		signdata_in := msg.Reqsyn.SigData
 		// modify the synchronization code
 		// only the verified block will be send back
 		// 1. check the height of the verified chain
+
 		if height_req > uint64(current_height_num - 1) {
+			// This peer will reply only when the required height is less or equal to the height of verified block in this peer ledger.
 			return
 		}
+		// check the signature of the request message
+		hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(height_req)))
+		var sign_verify bool
+		sign_verify, err = secp256k1.Verify(hash_t.Bytes(), signdata_in, pubkey_in)
+		if sign_verify != true {
+			println("Syn request message signature is wrong")
+			return
+		}
+
+		fmt.Println("reqsyn:",current_height_num,height_req)
 		// 2. get the response blocks from the ledger
 		blk_syn_v,err1 := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req)
 		if err1 != nil || blk_syn_v == nil {
 			log.Debug("not find the block of the corresponding height in the ledger")
 			return
 		}
+
+		fmt.Println("blk_syn_v:",blk_syn_v.Header)
 		blk_syn_f,err2 := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req+1)
 		if err2 != nil || blk_syn_f == nil {
 			log.Debug("not find the block of the corresponding height in the ledger")
@@ -835,6 +868,13 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			log.Debug("block_f to blockTx transformation fails")
 		}
 		event.Send(event.ActorConsensus,event.ActorP2P,blksyn_send)
+
+		// for test 2018.08.02
+		if TestTag == true {
+			fmt.Println("blksyn_send:",blksyn_send.Blksyn.BlksynV.Header,blksyn_send.Blksyn.BlksynF.Header)
+		}
+		// test end
+
 
 	case Block_Syn:
 		var blks_v types.Block
@@ -908,7 +948,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// send synchronization message
 			var requestsyn REQSyn
 			requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
-			requestsyn.Reqsyn.SigData = []byte("none")
+			hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num)))
+			requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 			requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 			event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 		}
@@ -920,20 +961,35 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 	case TimeoutMsg:
 		pubkey_in := msg.Toutmsg.PubKey
 		round_in := int(msg.Toutmsg.RoundNumber)
-		fmt.Println("receive the TimeoutMsg:",pubkey_in,round_in)
+		signdata_in := msg.Toutmsg.SigData
+		fmt.Println("receive the TimeoutMsg:",pubkey_in,round_in,current_round_num)
 		// check the peer in the peers list
 		if round_in < current_round_num {
 			return
 		}
+		// check the signature
+		hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(round_in)))
+		var sign_verify bool
+		sign_verify, err = secp256k1.Verify(hash_t.Bytes(), signdata_in, pubkey_in)
+		if sign_verify != true {
+			println("time out message signature is wrong")
+			return
+		}
+
 		for _, peer := range Peers_list {
 			if ok := bytes.Equal(peer.PublicKey, pubkey_in); ok == true {
 				// legal peer
-				if TimeoutMsgs[string(pubkey_in)] <= round_in {
+				// fmt.Println("TimeoutMsgs:",TimeoutMsgs)
+				if _, ok1 := TimeoutMsgs[string(pubkey_in)]; ok1 != true {
+					TimeoutMsgs[string(pubkey_in)] = round_in
+					//fmt.Println("TimeoutMsgs, add:",TimeoutMsgs[string(pubkey_in)])
+				} else if TimeoutMsgs[string(pubkey_in)] >= round_in {
 					return
 				}
+
 				TimeoutMsgs[string(pubkey_in)] = round_in
 				// to count the number is enough
-				var count_r []int
+				var count_r [1000]int
 				var max_r int
 				max_r = 0
 				for _,v := range TimeoutMsgs {
@@ -944,17 +1000,28 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						max_r = v
 					}
 				}
+				/*
+				// for test 2018.08.02
+				if TestTag == true {
+					for i:=0;i<Num_peers;i++ {
+						fmt.Println("TimeoutMsgs:",i,TimeoutMsgs[string(Accounts_test[i].PublicKey)])
+					}
+				}
+				// test end
+				*/
+
 				var total_count int
 				total_count = 0
 				for i := max_r-current_round_num; i > 0; i-- {
 					total_count = total_count + count_r[i]
-					if total_count > int(2*len(Peers_list)/3+1) {
+					if total_count >= int(2*len(Peers_list)/3+1) {
 						// reset the round number
 						current_round_num += i
 						// start/enter the next turn
 						actor_c.status = 8
 						primary_tag = 0
 						event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+						// fmt.Println("reset according to the timeout msg:",i,max_r,current_round_num,count_r[i])
 						break
 					}
 				}
@@ -1229,4 +1296,10 @@ func (actor_c *Actor_ababft) Blk_syn_verify(block_in types.Block,cur_height int,
 	}
 
 	return true,nil
+}
+
+func Uint64ToBytes(i uint64) []byte {
+	var buf = make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, i)
+	return buf
 }

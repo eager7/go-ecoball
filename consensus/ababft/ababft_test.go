@@ -120,8 +120,7 @@ func TestABABFTPros(t *testing.T) {
 	}
 
 	time.Sleep(time.Second * 6)
-	// test the time out message
-	event.Send(event.ActorNil, event.ActorConsensus, TxTimeout{})
+
 
 
 	// AddTokenAccount(l, con, t)
@@ -133,10 +132,28 @@ func TestABABFTPros(t *testing.T) {
 
 
 
-	ShowAccountInfo(l, t)
+
 
 
 	time.Sleep(time.Second * 100)
+	// test the time out message
+	event.Send(event.ActorNil, event.ActorConsensus, TxTimeout{})
+
+	ShowAccountInfo(l, t)
+
+	fmt.Println("current header height:", currentheader.Height)
+	time.Sleep(time.Second * 10)
+
+	// synchronization test
+	var requestsyn_t REQSyn
+	requestsyn_t.Reqsyn.PubKey = accounts[0].PublicKey
+	hash_t1,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num-2)))
+	requestsyn_t.Reqsyn.SigData,_ = accounts[0].Sign(hash_t1.Bytes())
+	requestsyn_t.Reqsyn.RequestHeight = uint64(current_height_num-2)
+	event.Send(event.ActorNil,event.ActorConsensus,requestsyn_t)
+	// fmt.Println("requestsyn_t:",requestsyn_t.Reqsyn)
+
+	time.Sleep(time.Second * 10)
 	/*
 
 
