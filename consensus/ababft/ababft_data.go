@@ -126,7 +126,7 @@ func (sign *Signature_BlkF) Deserialize(data []byte) error {
 }
 
 type Block_Syn struct {
-	Blksyn *pb.BlockSyn
+	Blksyn pb.BlockSyn
 }
 
 func (bls *Block_Syn) Serialize() ([]byte, error) {

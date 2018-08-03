@@ -850,7 +850,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			return
 		}
 
-		fmt.Println("blk_syn_v:",blk_syn_v.Header)
+		// fmt.Println("blk_syn_v:",blk_syn_v.Header)
 		blk_syn_f,err2 := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req+1)
 		if err2 != nil || blk_syn_f == nil {
 			log.Debug("not find the block of the corresponding height in the ledger")
@@ -871,7 +871,14 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 		// for test 2018.08.02
 		if TestTag == true {
-			fmt.Println("blksyn_send:",blksyn_send.Blksyn.BlksynV.Header,blksyn_send.Blksyn.BlksynF.Header)
+			fmt.Println("blk_syn_v:",blk_syn_v.Header)
+			fmt.Println("blk_syn_f:",blk_syn_f.Header)
+			// fmt.Println("blksyn_send v:",blksyn_send.Blksyn.BlksynV.Header)
+			// fmt.Println("blksyn_send f:",blksyn_send.Blksyn.BlksynF.Header)
+			actor_c.service_ababft.ledger.ResetStateDB(currentheader.PrevHash)
+			currentheader = current_ledger.GetCurrentHeader()
+			current_height_num = current_height_num - 1
+			event.Send(event.ActorNil,event.ActorConsensus,blksyn_send)
 		}
 		// test end
 
@@ -887,6 +894,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		if err != nil {
 			log.Debug("blockTx to block_f transformation fails")
 		}
+		fmt.Println("blks_v:",blks_v.Header)
+		fmt.Println("blks_f:",blks_f.Header)
 		height_syn_v := blks_v.Header.Height
 		if height_syn_v == uint64(current_height_num) {
 			// the current_height_num has been verified

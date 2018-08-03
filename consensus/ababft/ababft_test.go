@@ -147,9 +147,9 @@ func TestABABFTPros(t *testing.T) {
 	// synchronization test
 	var requestsyn_t REQSyn
 	requestsyn_t.Reqsyn.PubKey = accounts[0].PublicKey
-	hash_t1,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num-2)))
+	hash_t1,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num-1)))
 	requestsyn_t.Reqsyn.SigData,_ = accounts[0].Sign(hash_t1.Bytes())
-	requestsyn_t.Reqsyn.RequestHeight = uint64(current_height_num-2)
+	requestsyn_t.Reqsyn.RequestHeight = uint64(current_height_num-1)
 	event.Send(event.ActorNil,event.ActorConsensus,requestsyn_t)
 	// fmt.Println("requestsyn_t:",requestsyn_t.Reqsyn)
 
