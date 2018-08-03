@@ -36,8 +36,8 @@ type State struct {
 	db     Database
 	diskDb *store.LevelDBStore
 
-	Accounts map[string]Account
-	Params   map[string]uint64
+	Accounts  map[string]Account
+	Params    map[string]uint64
 	Producers map[common.AccountName]uint64
 }
 
@@ -67,11 +67,19 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 func (s *State) CopyState() (*State, error) {
 	params := make(map[string]uint64, 1)
 	accounts := make(map[string]Account, 1)
+	prods := make(map[common.AccountName]uint64, 1)
 
 	if str, err := json.Marshal(s.Params); err != nil {
 		return nil, err
 	} else {
 		if err := json.Unmarshal(str, &params); err != nil {
+			return nil, err
+		}
+	}
+	if str, err := json.Marshal(s.Producers); err != nil {
+		return nil, err
+	} else {
+		if err := json.Unmarshal(str, &prods); err != nil {
 			return nil, err
 		}
 	}
@@ -83,10 +91,11 @@ func (s *State) CopyState() (*State, error) {
 		}
 	}
 	return &State{
-		path:     s.path,
-		trie:     s.db.CopyTrie(s.trie),
-		Accounts: accounts,
-		Params:   params,
+		path:      s.path,
+		trie:      s.db.CopyTrie(s.trie),
+		Accounts:  accounts,
+		Params:    params,
+		Producers: prods,
 	}, nil
 }
 

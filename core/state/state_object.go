@@ -17,10 +17,10 @@
 package state
 
 import (
-	"github.com/ecoball/go-ecoball/common/errors"
 	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -54,13 +54,17 @@ type Account struct {
  */
 func NewAccount(path string, index common.AccountName, addr common.Address, timeStamp int64) (acc *Account, err error) {
 	//log.Info("add a new account:", index)
-	//fmt.Printf("index:%d\n", index)
+	//fmt.Printf("index:%d\n", index),
+	res := Resource{Votes: struct {
+		Staked    uint64
+		Producers map[common.AccountName]uint64
+	}{Staked: 0, Producers: make(map[common.AccountName]uint64, 1)}}
 	acc = &Account{
 		Index:       index,
 		TimeStamp:   timeStamp,
 		Tokens:      make(map[string]Token, 1),
 		Permissions: make(map[string]Permission, 1),
-		Resource: Resource{},
+		Resource:    res,
 	}
 	perm := NewPermission(Owner, "", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)

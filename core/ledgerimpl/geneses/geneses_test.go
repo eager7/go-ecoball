@@ -347,7 +347,21 @@ func CancelPledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *tes
 func VotingContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
 	log.Info("VotingContract------------------------------------------------------\n\n")
 	var txs []*types.Transaction
-	invoke, err := types.NewInvokeContract(worker1, root, "active", "reg_prod", []string{}, 0, time.Now().UnixNano())
+	invoke, err := types.NewInvokeContract(worker1, root, "active", "reg_prod", []string{"worker1"}, 0, time.Now().UnixNano())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Worker1)
+	txs = append(txs, invoke)
+
+	invoke, err = types.NewInvokeContract(worker2, root, "active", "reg_prod", []string{"worker2"}, 0, time.Now().UnixNano())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Worker2)
+	txs = append(txs, invoke)
+
+	invoke, err = types.NewInvokeContract(worker1, root, "active", "vote", []string{"worker1", "worker1", "worker2"}, 0, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}

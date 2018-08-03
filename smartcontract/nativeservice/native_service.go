@@ -56,6 +56,15 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := ns.state.AddPermission(index, perm); err != nil {
 			return nil, err
 		}
+	case "reg_prod":
+		index := common.NameToIndex(ns.params[0])
+		ns.state.RegisterProducer(index)
+	case "vote":
+		from := common.NameToIndex(ns.params[0])
+		to1 := common.NameToIndex(ns.params[1])
+		to2 := common.NameToIndex(ns.params[2])
+		accounts := []common.AccountName{to1, to2}
+		ns.state.PutProducerToVote(from, accounts)
 	default:
 		return nil, errors.New(fmt.Sprintf("unknown method:%s", ns.method))
 	}
