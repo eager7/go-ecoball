@@ -58,6 +58,7 @@ type Logger interface {
 	Info(a ...interface{})
 	Warn(a ...interface{})
 	Error(a ...interface{})
+	ErrStack(a ...interface{})
 	Fatal(a ...interface{})
 	Panic(a ...interface{})
 	GetLogger() *log.Logger
@@ -217,8 +218,18 @@ func (l *loggerModule) Error(a ...interface{}) {
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ ERRO " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
 	l.logger.Output(2, fmt.Sprintln(a...))
+}
+
+func (l *loggerModule) ErrStack(a ...interface{}) {
+	if l.level > ErrorLog || !checkPrint(ErrorLog) {
+		return
+	}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ ERRO " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
+	a = append(prefix, a...)
+	l.logger.Output(3, fmt.Sprintln(a...))
 	debug.PrintStack()
 }
+
 
 func (l *loggerModule) Fatal(a ...interface{}) {
 	if l.level > FatalLog || !checkPrint(FatalLog) {

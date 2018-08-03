@@ -38,6 +38,7 @@ type State struct {
 
 	Accounts map[string]Account
 	Params   map[string]uint64
+	Producers map[common.AccountName]uint64
 }
 
 /**
@@ -60,6 +61,7 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	}
 	st.Accounts = make(map[string]Account, 1)
 	st.Params = make(map[string]uint64, 1)
+	st.Producers = make(map[common.AccountName]uint64, 1)
 	return st, nil
 }
 func (s *State) CopyState() (*State, error) {

@@ -7,6 +7,8 @@ import (
 	"math/big"
 )
 
+const abaTotal = 10000
+
 type Token struct {
 	Name    string   `json:"index"`
 	Balance *big.Int `json:"balance, omitempty"`

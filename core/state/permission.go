@@ -1,10 +1,10 @@
 package state
 
 import (
-	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"encoding/json"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 var Owner = "owner"
@@ -100,7 +100,7 @@ func (p *Permission) CheckPermission(state *State, signatures []common.Signature
 		}
 	}
 
-	return errors.New(fmt.Sprintf("weight is not enough, keys weight:%d, accounts weight:%d", weightKey, weightAcc))
+	return errors.New(log, fmt.Sprintf("weight is not enough, keys weight:%d, accounts weight:%d", weightKey, weightAcc))
 }
 
 /**
@@ -164,7 +164,7 @@ func (a *Account) AddPermission(perm Permission) {
  */
 func (a *Account) CheckPermission(state *State, name string, signatures []common.Signature) error {
 	if perm, ok := a.Permissions[name]; !ok {
-		return errors.New(fmt.Sprintf("can't find this permission in account:%s", name))
+		return errors.New(log, fmt.Sprintf("can't find this permission in account:%s", name))
 	} else {
 		if "" != perm.Parent {
 			if err := a.CheckPermission(state, perm.Parent, signatures); err == nil {
@@ -172,7 +172,8 @@ func (a *Account) CheckPermission(state *State, name string, signatures []common
 			}
 		}
 		if err := perm.CheckPermission(state, signatures); err != nil {
-			return errors.New(fmt.Sprintf("account:%s %s", common.IndexToName(a.Index), err.Error()))
+			log.Error(fmt.Sprintf("account:%s", common.IndexToName(a.Index)))
+			return err
 		}
 	}
 	return nil
@@ -185,7 +186,7 @@ func (a *Account) CheckPermission(state *State, name string, signatures []common
 func (a *Account) FindPermission(name string) (str string, err error) {
 	perm, ok := a.Permissions[name]
 	if !ok {
-		return "", errors.New(fmt.Sprintf("can't find this permission:%s", name))
+		return "", errors.New(log, fmt.Sprintf("can't find this permission:%s", name))
 	}
 	b, err := json.Marshal(perm)
 	if err != nil {

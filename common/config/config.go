@@ -44,6 +44,7 @@ const (
 	ListPeers       = "peer_list"
 	IndexPeers      = "peer_index"
 )
+
 var configDefault = `#toml configuration for EcoBall system
 http_port = "20678"          # client http port
 version = "1.0"              # system version
@@ -68,8 +69,8 @@ worker3_pubkey = "0x0481bce0ad10bd3d8cdfd089ac5534379149ca5c3cdab28b5063f707d20f
 delegate_privkey = "0x29f56d8c1b2af3dc1bb711bc9d94bfd60964ffa9162caa6ec919fdd6774fd79e"
 delegate_pubkey  = "0x04945b2581d8f912688a9a9aad151660211ac1828b611631f14a837aeac85f6727b2459b93e49c9bf02e5b9b785e404909e730a4007fb3bdc6fc6965ba4c98dd87"
 
-#"0x68f2dcd39856206fa610546cc4f4611e5d4c3eb5e3f6bae3982348f949810745"
-#"0x04b15d8efb9dcf3a086a69a0f6c334ebcb47d21293e36e1f22440185f1b7411a2cb3bcda2a91bf8ddeb71224ebd9233896766b355334b2c98b07f9ce9154c9dec9"
+voting_privkey = "0x68f2dcd39856206fa610546cc4f4611e5d4c3eb5e3f6bae3982348f949810745"
+voting_pubkey = "0x04b15d8efb9dcf3a086a69a0f6c334ebcb47d21293e36e1f22440185f1b7411a2cb3bcda2a91bf8ddeb71224ebd9233896766b355334b2c98b07f9ce9154c9dec9"
 #"0x1eec266c518c0c5adfd3bbf0e4a40b22cad482a0eedfa836e90b5dcc4a643878"
 #"0x045a8d217b04abc5fc44a724041eb5adeb8aff6f8559f759b6797026a638b2136e2e8ddb8eee52ef4f431a5af02b44732475648da1f9ddc7265e70a64f8ec24c17"
 #"0x40b866f2e0186ed3551ba59d17eda326a4f69b27f73e3a02666df39e8236d300"
@@ -83,7 +84,7 @@ peer_index = [ "1", "2" ]
 `
 
 var (
-	TimeSlot 		   int
+	TimeSlot           int
 	HttpLocalPort      string
 	EcoVersion         string
 	LogDir             string
@@ -92,6 +93,7 @@ var (
 	ConsensusAlgorithm string
 	Root               account.Account
 	Delegate           account.Account
+	Voting             account.Account
 	Worker1            account.Account
 	Worker2            account.Account
 	Worker3            account.Account
@@ -176,6 +178,7 @@ func initVariable() {
 	Worker2 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker2_privkey")), PublicKey: common.FromHex(viper.GetString("worker2_pubkey")), Alg: 0}
 	Worker3 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker3_privkey")), PublicKey: common.FromHex(viper.GetString("worker3_pubkey")), Alg: 0}
 	Delegate = account.Account{PrivateKey: common.FromHex(viper.GetString("delegate_privkey")), PublicKey: common.FromHex(viper.GetString("delegate_pubkey")), Alg: 0}
+	Voting = account.Account{PrivateKey: common.FromHex(viper.GetString("voting_privkey")), PublicKey: common.FromHex(viper.GetString("voting_pubkey")), Alg: 0}
 	PeerList = viper.GetStringSlice(ListPeers)
 	PeerIndex = viper.GetStringSlice(IndexPeers)
 }

@@ -18,7 +18,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 )
 
-var log = elog.NewLogger("worker2", elog.InfoLog)
+var log = elog.NewLogger("geneses_test", elog.DebugLog)
 
 var root = common.NameToIndex("root")
 var token = common.NameToIndex("token")
@@ -26,6 +26,7 @@ var worker1 = common.NameToIndex("worker1")
 var worker2 = common.NameToIndex("worker2")
 var worker3 = common.NameToIndex("worker3")
 var delegate = common.NameToIndex("delegate")
+var voting = common.NameToIndex("voting")
 func TestGenesesBlockInit(t *testing.T) {
 	os.RemoveAll("/tmp/geneses/")
 	l, err := ledgerimpl.NewLedger("/tmp/geneses")
@@ -34,13 +35,16 @@ func TestGenesesBlockInit(t *testing.T) {
 	}
 	con, err := types.InitConsensusData(time.Now().Unix())
 	CreateAccountBlock(l, con, t)
+	TokenTransferBlock(l, con, t)
 	ShowAccountInfo(l, t)
-	//AddTokenAccount(l, con, t)
-	ContractStore(l, con, t)
+
 	PledgeContract(l, con, t)
 	ShowAccountInfo(l, t)
-	CancelPledgeContract(l, con, t)
+
+	VotingContract(l, con, t)
 	ShowAccountInfo(l, t)
+	l.StateDB().RequireVotingInfo()
+
 	for i := 0; i < 0; i++ {
 		time.Sleep(10 * time.Second)
 		fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
@@ -50,17 +54,9 @@ func TestGenesesBlockInit(t *testing.T) {
 }
 
 func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
-	//TODO
+	log.Info("CreateAccountBlock------------------------------------------------------")
 	var txs []*types.Transaction
-	index := common.NameToIndex("root")
-	//if err := ledger.AccountAddBalance(index, state.AbaToken, 10000); err != nil {
-	//	t.Fatal(err)
-	//}
-	code, err := wasmservice.ReadWasm("../../../test/root/root.wasm")
-	if err != nil {
-		t.Fatal(err)
-	}
-	tokenContract, err := types.NewDeployContract(index, index, state.Active, types.VmWasm, "system control", code, 0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(root, root, state.Active, types.VmNative, "system control", nil, 0, time.Now().Unix())
 	if err != nil {
 		log.Error(err)
 		t.Fatal(err)
@@ -70,17 +66,17 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 	}
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(index, index, state.Owner, "new_account",
+	invoke, err := types.NewInvokeContract(root, root, state.Owner, "new_account",
 		[]string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(index, index, state.Owner, "new_account",
+	invoke, err = types.NewInvokeContract(root, root, state.Owner, "new_account",
 		[]string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(index, index, state.Owner, "new_account",
+	invoke, err = types.NewInvokeContract(root, root, state.Owner, "new_account",
 		[]string{"worker3", common.AddressFromPubKey(config.Worker3.PublicKey).HexString()}, 2, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
@@ -90,7 +86,7 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 	if err != nil {
 		t.Fatal(err)
 	}
-	invoke, err = types.NewInvokeContract(index, index, state.Active, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(root, root, state.Active, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
@@ -131,19 +127,29 @@ func SetTokenAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *tes
 		t.Fatal(err)
 	}
 }
-
-func TokenAccountTransferBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
-	transfer, err := types.NewTransfer(worker3, worker1, "active", new(big.Int).SetUint64(100), 101, time.Now().Unix())
+//transfer worker1-500, worker2-500, worker3-500
+func TokenTransferBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
+	log.Info("TokenTransferBlock------------------------------------------------------")
+	var txs []*types.Transaction
+	transfer, err := types.NewTransfer(root, worker1, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := transfer.SetSignature(&config.Worker2); err != nil {
+	transfer.SetSignature(&config.Root)
+	txs = append(txs, transfer)
+	transfer, err = types.NewTransfer(root, worker2, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := transfer.SetSignature(&config.Worker3); err != nil {
+	transfer.SetSignature(&config.Root)
+	txs = append(txs, transfer)
+	transfer, err = types.NewTransfer(root, worker3, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	if err != nil {
 		t.Fatal(err)
 	}
-	txs := []*types.Transaction{transfer}
+	transfer.SetSignature(&config.Root)
+	txs = append(txs, transfer)
+
 	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
@@ -272,8 +278,9 @@ func ContractStore(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T)
 		t.Fatal(err)
 	}
 }
-
+//root delegate 100 to worker1, worker1 delegate 100 to self, worker2 delegate 100 to self
 func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
+	log.Info("PledgeContract------------------------------------------------------")
 	var txs []*types.Transaction
 	tokenContract, err := types.NewDeployContract(delegate, delegate, "active", types.VmNative, "system control", nil, 0, time.Now().Unix())
 	if err != nil {
@@ -282,11 +289,25 @@ func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T
 	tokenContract.SetSignature(&config.Delegate)
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(root, delegate, "owner", "pledge", []string{"root", "worker2", "10", "10"}, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(root, delegate, "owner", "pledge", []string{"root", "worker1", "100", "100"}, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}
 	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+	invoke, err = types.NewInvokeContract(worker1, delegate, "owner", "pledge", []string{"worker1", "worker1", "100", "100"}, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Worker1)
+	txs = append(txs, invoke)
+
+	invoke, err = types.NewInvokeContract(worker2, delegate, "owner", "pledge", []string{"worker2", "worker2", "100", "100"}, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Worker2)
 	txs = append(txs, invoke)
 
 	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
@@ -310,6 +331,29 @@ func CancelPledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *tes
 	}
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
+	if err != nil {
+		t.Fatal(err)
+	}
+	block.SetSignature(&config.Root)
+	if err := ledger.VerifyTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+	if err := ledger.SaveTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func VotingContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
+	log.Info("VotingContract------------------------------------------------------\n\n")
+	var txs []*types.Transaction
+	invoke, err := types.NewInvokeContract(worker1, root, "active", "reg_prod", []string{}, 0, time.Now().UnixNano())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Worker1)
+	txs = append(txs, invoke)
+
 	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)

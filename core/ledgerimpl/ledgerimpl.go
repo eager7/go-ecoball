@@ -117,8 +117,8 @@ func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address, t
 	return l.ChainTx.StateDB.AddAccount(index, addr, timeStamp)
 }
 
-//func (l *LedgerImpl) SetResourceLimits(from, to common.AccountName, cpu, net float32) error {
-//	return l.ChainTx.StateDB.SetResourceLimits(from, to, cpu, net)
+//func (l *LedgerImpl) AddResourceLimits(from, to common.AccountName, cpu, net float32) error {
+//	return l.ChainTx.StateDB.AddResourceLimits(from, to, cpu, net)
 //}
 func (l *LedgerImpl) StoreSet(index common.AccountName, key, value []byte) (err error) {
 	return l.ChainTx.StateDB.StoreSet(index, key, value)

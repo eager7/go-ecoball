@@ -32,6 +32,10 @@ var base32Alphabet = []byte(".12345abcdefghijklmnopqrstuvwxyz")
 func (a AccountName) String() string {
 	return IndexToName(a)
 }
+
+func (a AccountName) Bytes() []byte {
+	return IndexToBytes(a)
+}
 /**
  *  @brief convert a string name to uint64 type
  *  @param name - the account name string

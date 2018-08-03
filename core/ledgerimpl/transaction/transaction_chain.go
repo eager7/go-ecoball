@@ -17,12 +17,11 @@
 package transaction
 
 import (
-	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
-	errs "github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/geneses"
@@ -35,7 +34,7 @@ import (
 	"time"
 )
 
-var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
+var log = elog.NewLogger("Chain Tx", elog.DebugLog)
 
 type ChainTx struct {
 	BlockStore     store.Storage
@@ -96,7 +95,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 			txs[i].Show()
 			return nil, err
 		} else {
-			log.Debug("Handle Transaction Result:", ret)
+			log.Notice("Handle Transaction Result:", ret)
 		}
 	}
 	log.Warn("NewBlock State", s.GetHashRoot().HexString())
@@ -122,11 +121,10 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 		return err
 	}
 	if result == false {
-		return errors.New("block verify signature failed")
+		return errors.New(log, "block verify signature failed")
 	}
 	for _, v := range block.Transactions {
 		if err := c.CheckTransaction(v); err != nil {
-			log.Error("Transactions VerifySignature Failed")
 			return err
 		}
 	}
@@ -139,7 +137,7 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
  */
 func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if block == nil {
-		return errors.New("block is nil")
+		return errors.New(log, "block is nil")
 	}
 	var cpu float32
 	cpuFlag := true
@@ -180,9 +178,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return err
 	}
 	if c.StateDB.GetHashRoot().HexString() != block.StateHash.HexString() {
-		err := fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.GetHashRoot().HexString(), block.Hash.HexString())
-		log.Error(err)
-		return errors.New(err)
+		return errors.New(log, fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.GetHashRoot().HexString(), block.Hash.HexString()))
 	}
 
 	payload, err := block.Header.Serialize()
@@ -254,7 +250,7 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
 		}
 	}
 	if hash.Equals(&common.Hash{}) {
-		return nil, errors.New(fmt.Sprintf("can't find the block by height:%d", height))
+		return nil, errors.New(log, fmt.Sprintf("can't find the block by height:%d", height))
 	}
 	return c.GetBlock(hash)
 }
@@ -284,7 +280,6 @@ func (c *ChainTx) GenesesBlockInit() error {
 
 	hash := common.NewHash([]byte("EcoBall Geneses Block"))
 	conData := types.GenesesBlockInitConsensusData(timeStamp)
-
 
 	if err := geneses.PresetContract(c.StateDB, timeStamp); err != nil {
 		return err
@@ -370,7 +365,7 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 	if err != nil {
 		return err
 	} else if result == false {
-		return errors.New("tx verify signature failed")
+		return errors.New(log, "tx verify signature failed")
 	}
 	if err := c.StateDB.CheckPermission(tx.From, tx.Permission, tx.Signatures); err != nil {
 		return err
@@ -379,26 +374,26 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 	switch tx.Type {
 	case types.TxTransfer:
 		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
-			return errs.ErrDuplicatedTx
+			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
 		}
 		if value, err := c.AccountGetBalance(tx.From, state.AbaToken); err != nil {
 			return err
 		} else if value.Sign() <= 0 {
 			log.Error(err)
-			return errs.ErrDoubleSpend
+			return errors.New(log, errors.ErrDoubleSpend.ErrorInfo())
 		}
 	case types.TxDeploy:
 		if data, _ := c.TxsStore.Get(common.IndexToBytes(tx.Addr)); data != nil {
-			return errs.ErrDuplicatedTx
+			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
 		}
 		//hash := c.StateDB.GetHashRoot()
 		//c.HandleTransaction(c, tx)
 	case types.TxInvoke:
 		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
-			return errs.ErrDuplicatedTx
+			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
 		}
 	default:
-		return errors.New("check transaction unknown tx type")
+		return errors.New(log, "check transaction unknown tx type")
 	}
 
 	return nil
@@ -422,8 +417,8 @@ func (c *ChainTx) StoreGet(index common.AccountName, key []byte) (value []byte, 
 	return c.StateDB.StoreGet(index, key)
 }
 
-//func (c *ChainTx) SetResourceLimits(from, to common.AccountName, cpu, net float32) error {
-//	return c.StateDB.SetResourceLimits(from, to, cpu, net)
+//func (c *ChainTx) AddResourceLimits(from, to common.AccountName, cpu, net float32) error {
+//	return c.StateDB.AddResourceLimits(from, to, cpu, net)
 //}
 func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
 	return c.StateDB.SetContract(index, t, des, code)
@@ -481,8 +476,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	case types.TxTransfer:
 		payload, ok := tx.Payload.GetObject().(types.TransferInfo)
 		if !ok {
-			log.Error("transaction type error[transfer]")
-			return nil, 0, 0, errors.New("transaction type error[transfer]")
+			return nil, 0, 0, errors.New(log, "transaction type error[transfer]")
 		}
 		if err := s.AccountSubBalance(tx.From, state.AbaToken, payload.Value); err != nil {
 			return nil, 0, 0, err
@@ -496,7 +490,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		}
 		payload, ok := tx.Payload.GetObject().(types.DeployInfo)
 		if !ok {
-			return nil, 0, 0, errors.New("transaction type error[deploy]")
+			return nil, 0, 0, errors.New(log, "transaction type error[deploy]")
 		}
 		if err := s.SetContract(tx.Addr, payload.TypeVm, payload.Describe, payload.Code); err != nil {
 			return nil, 0, 0, err
@@ -511,10 +505,10 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 			return nil, 0, 0, err
 		}
 	default:
-		return nil, 0, 0, errors.New("the transaction's type error")
+		return nil, 0, 0, errors.New(log, "the transaction's type error")
 	}
 	end := time.Now().UnixNano()
-	if tx.Receipt.Cpu == 0{
+	if tx.Receipt.Cpu == 0 {
 		cpu = float32(end-start) / 1000000.0
 		tx.Receipt.Cpu = cpu
 	} else {
@@ -541,7 +535,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		return nil, 0, 0, err
 	}
 	//log.Warn("CPU, NET", cpu, net)
-	if err := s.SubResourceLimits(tx.From, cpu, net); err != nil {
+	if err := s.SubResources(tx.From, cpu, net); err != nil {
 		return nil, 0, 0, err
 	}
 	//log.Warn("Handle Type", tx.Type.String(), s.GetHashRoot().HexString())

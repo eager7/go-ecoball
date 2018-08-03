@@ -5,7 +5,11 @@ SPDX-License-Identifier: Apache-2.0
 */
 package errors
 
-import "fmt"
+import (
+	"fmt"
+	"gx/ipfs/QmVmDhyTTUcQXFD1rRQ64fGLMSAoaQvNH3hwuaCFAPq2hy/errors"
+	"github.com/ecoball/go-ecoball/common/elog"
+)
 
 type ErrCode int
 
@@ -77,4 +81,9 @@ func (err ErrCode) Error() string {
 
 func (err ErrCode) Value() int {
 	return int(err)
+}
+
+func New(log elog.Logger, err string) error {
+	log.ErrStack(err)
+	return errors.New(err)
 }
