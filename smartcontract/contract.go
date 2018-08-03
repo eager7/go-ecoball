@@ -17,12 +17,15 @@
 package smartcontract
 
 import (
-	"errors"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract/nativeservice"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
+
+var log = elog.NewLogger("contract", elog.DebugLog)
 
 type ContractService interface {
 	Execute() ([]byte, error)
@@ -30,7 +33,7 @@ type ContractService interface {
 
 func NewContractService(s *state.State, tx *types.Transaction, timeStamp int64) (ContractService, error) {
 	if s == nil || tx == nil {
-		return nil, errors.New("the contract service's ledger interface or tx is nil")
+		return nil, errors.New(log, "the contract service's ledger interface or tx is nil")
 	}
 	contract, err := s.GetContract(tx.Addr)
 	if err != nil {
@@ -38,7 +41,7 @@ func NewContractService(s *state.State, tx *types.Transaction, timeStamp int64) 
 	}
 	invoke, ok := tx.Payload.GetObject().(types.InvokeInfo)
 	if !ok {
-		return nil, errors.New("transaction type error[invoke]")
+		return nil, errors.New(log, "transaction type error[invoke]")
 	}
 	//fmt.Println("method:", string(invoke.Method))
 	//fmt.Println("param:", invoke.Param)
@@ -56,6 +59,6 @@ func NewContractService(s *state.State, tx *types.Transaction, timeStamp int64) 
 		}
 		return service, nil
 	default:
-		return nil, errors.New("unknown virtual machine")
+		return nil, errors.New(log, "unknown virtual machine")
 	}
 }

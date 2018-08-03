@@ -45,6 +45,10 @@ func TestGenesesBlockInit(t *testing.T) {
 	ShowAccountInfo(l, t)
 	l.StateDB().RequireVotingInfo()
 
+	CancelPledgeContract(l, con, t)
+	ShowAccountInfo(l, t)
+	l.StateDB().RequireVotingInfo()
+
 	for i := 0; i < 0; i++ {
 		time.Sleep(10 * time.Second)
 		fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
@@ -323,13 +327,14 @@ func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T
 	}
 }
 func CancelPledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
+	log.Info("CancelPledgeContract------------------------------------------------------\n\n")
 	var txs []*types.Transaction
-	invoke, err := types.NewInvokeContract(root, delegate, "owner", "cancel_pledge",
-		[]string{"root", "worker2", "10", "10"}, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(worker1, delegate, "owner", "cancel_pledge",
+		[]string{"worker1", "worker1", "50", "50"}, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}
-	invoke.SetSignature(&config.Root)
+	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)
 	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	if err != nil {

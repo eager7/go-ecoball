@@ -2,13 +2,13 @@ package nativeservice
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/state"
 	"strconv"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 var log = elog.NewLogger("native", config.LogLevel)
@@ -33,7 +33,7 @@ func (ns *NativeService) Execute() ([]byte, error) {
 	case common.NameToIndex("delegate"):
 		return ns.SystemExecute(ns.owner)
 	default:
-		return nil, errors.New("unknown native contract's owner")
+		return nil, errors.New(log, "unknown native contract's owner")
 	}
 	return nil, nil
 }
@@ -66,7 +66,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		accounts := []common.AccountName{to1, to2}
 		ns.state.PutProducerToVote(from, accounts)
 	default:
-		return nil, errors.New(fmt.Sprintf("unknown method:%s", ns.method))
+		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", ns.method))
 	}
 	return nil, nil
 }
@@ -106,7 +106,7 @@ func (ns *NativeService) SystemExecute(index common.AccountName) ([]byte, error)
 			return nil, err
 		}
 	default:
-		return nil, errors.New(fmt.Sprintf("unknown method:%s", ns.method))
+		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", ns.method))
 	}
 	return nil, nil
 }

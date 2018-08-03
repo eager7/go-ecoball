@@ -5,11 +5,14 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"math/big"
+	"encoding/json"
 )
 
 var cpuAmount = "cpu_amount"
 var netAmount = "net_amount"
 var votingAmount = "voting_amount"
+var prodsList = "prods_list"
+var ProdsList  = make(map[common.AccountName]uint64, 1)
 
 const VirtualBlockCpuLimit float32 = 200000000.0
 const VirtualBlockNetLimit float32 = 1048576000.0
@@ -146,6 +149,10 @@ func (s *State) SubResources(index common.AccountName, cpu, net float32) error {
  *  @param netStaked - stake delegated net
  */
 func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked uint64) error {
+	votingSum, err := s.GetParam(votingAmount)
+	if err != nil {
+		return err
+	}
 	cpuStakedSum, err := s.GetParam(cpuAmount)
 	if err != nil {
 		return err
@@ -158,7 +165,15 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 	if err != nil {
 		return err
 	}
+	if err := s.CommitParam(votingAmount, votingSum - cpuStaked - netStaked); err != nil {
+		return err
+	}
+	valueOld := acc.Resource.Votes.Staked
 	acc.subVotes(cpuStaked + netStaked)
+	if err := s.updateProducers(acc, valueOld, []common.AccountName{}); err != nil {
+		return err
+	}
+
 	if from != to {
 		accTo, err := s.GetAccountByName(to)
 		if err != nil {
@@ -297,8 +312,7 @@ func (s *State) PutProducerToVote(index common.AccountName, accounts []common.Ac
 			return errors.New(log, fmt.Sprintf("the account:%s is not register", v.String()))
 		}
 	}
-	acc.UpdateElectedProducers(accounts)
-	if err := s.updateProducers(accounts, acc.Resource.Votes.Staked); err != nil {
+	if err := s.updateProducers(acc, acc.Resource.Votes.Staked, accounts); err != nil {
 		return err
 	}
 	if err := s.CommitParam(votingAmount, votingSum + acc.Resource.Votes.Staked); err != nil {
@@ -309,14 +323,41 @@ func (s *State) PutProducerToVote(index common.AccountName, accounts []common.Ac
 	}
 	return s.CommitAccount(acc)
 }
-func (s *State) updateProducers(accounts []common.AccountName, value uint64) error {
-	for _, index := range accounts {
-		s.Producers[index] = value
-		if err := s.trie.TryUpdate(index.Bytes(), common.Uint64ToBytes(value)); err != nil {
-			return err
+func (s *State) updateProducers(acc *Account, votesOld uint64, accounts []common.AccountName) error {
+	if len(ProdsList) == 0 {
+		data, err := s.trie.TryGet([]byte(prodsList))
+		if err != nil {
+			return errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
+		}
+		if len(data) != 0 {
+			if err := json.Unmarshal(data, &ProdsList); err != nil {
+				return errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
+			}
 		}
 	}
-	return nil
+	if len(accounts) == 0 {
+		for k := range acc.Resource.Votes.Producers {
+			accounts = append(accounts, k)
+		}
+	}
+	for _, index := range accounts {
+		if _, ok := acc.Resource.Votes.Producers[index]; ok {
+			s.Producers[index] -= votesOld
+			s.Producers[index] += acc.Resource.Votes.Staked
+		} else {
+			s.Producers[index] += acc.Resource.Votes.Staked
+		}
+	}
+	data, err := json.Marshal(ProdsList)
+	if err != nil {
+		return errors.New(log, fmt.Sprintf("error convert to json string:%s", err.Error()))
+	}
+	if err := s.trie.TryUpdate([]byte(prodsList), data); err != nil {
+		return errors.New(log, fmt.Sprintf("error update trie:%s", err.Error()))
+	}
+
+
+	return acc.updateElectedProducers(accounts)
 }
 func (s *State) RequireVotingInfo() {
 	log.Debug(s.Producers)
@@ -425,7 +466,7 @@ func (a *Account) subVotes(token uint64) {
 	a.Resource.Votes.Staked -= token
 }
 
-func (a *Account) UpdateElectedProducers(accounts []common.AccountName) error {
+func (a *Account) updateElectedProducers(accounts []common.AccountName) error {
 	for k := range a.Resource.Votes.Producers {
 		delete(a.Votes.Producers, k)
 	}
