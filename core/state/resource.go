@@ -105,7 +105,9 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 		return err
 	}
 	acc.addVotes(cpuStaked + netStaked)
-
+	if err := s.updateProducers(acc, acc.Votes.Staked-cpuStaked-netStaked, []common.AccountName{}); err != nil {
+		return err
+	}
 	return s.CommitAccount(acc)
 }
 
@@ -328,9 +330,9 @@ func (s *State) updateProducers(acc *Account, votesOld uint64, accounts []common
 		for k := range acc.Resource.Votes.Producers {
 			accounts = append(accounts, k)
 		}
-	}
-	if len(accounts) == 0 {
-		return nil
+		if len(accounts) == 0 {
+			return nil
+		}
 	}
 	for _, index := range accounts {
 		if _, ok := acc.Votes.Producers[index]; ok {
@@ -433,7 +435,7 @@ func (a *Account) SubResourceLimits(cpu, net float32, cpuStakedSum, netStakedSum
 	a.updateResource(cpuStakedSum, netStakedSum)
 	return nil
 }
-func (a *Account) SetDelegateInfo(index common.AccountName, cpuStaked, netStaked uint64)  {
+func (a *Account) SetDelegateInfo(index common.AccountName, cpuStaked, netStaked uint64) {
 	d := Delegate{Index: index, CpuStaked: cpuStaked, NetStaked: netStaked}
 	a.Delegates = append(a.Delegates, d)
 }

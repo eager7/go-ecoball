@@ -16,6 +16,7 @@ import (
 	"os"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 var log = elog.NewLogger("geneses_test", elog.DebugLog)
@@ -28,6 +29,7 @@ var worker3 = common.NameToIndex("worker3")
 var delegate = common.NameToIndex("delegate")
 var voting = common.NameToIndex("voting")
 func TestGenesesBlockInit(t *testing.T) {
+	errors.CheckErrorTesting(t, errors.New(elog.Log, "test"))
 	os.RemoveAll("/tmp/geneses/")
 	l, err := ledgerimpl.NewLedger("/tmp/geneses")
 	if err != nil {

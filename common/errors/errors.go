@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"gx/ipfs/QmVmDhyTTUcQXFD1rRQ64fGLMSAoaQvNH3hwuaCFAPq2hy/errors"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"testing"
 )
 
 type ErrCode int
@@ -89,6 +90,12 @@ func New(log elog.Logger, err string) error {
 }
 
 func CheckErrorPanic(err error) {
+	if err != nil {
+		elog.Log.Panic(err)
+	}
+}
+
+func CheckErrorTesting(t *testing.T, err error) {
 	if err != nil {
 		elog.Log.Panic(err)
 	}
