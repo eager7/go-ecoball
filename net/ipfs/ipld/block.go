@@ -22,7 +22,6 @@ import (
 	"errors"
 	"io/ioutil"
 
-	"github.com/ecoball/go-ecoball/common"
 	types "github.com/ecoball/go-ecoball/core/types"
 	"gx/ipfs/QmVzK524a2VWLqyvtBeiHKsUAWYgeAk4DBeZoY7vpNPNRx/go-block-format"
 	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
@@ -101,7 +100,7 @@ func (this *EcoballBlock) Resolve(path []string) (interface{}, []string, error) 
 	case "parent":
 		return &node.Link{Cid: commonHashToCid(cid.EcoballBlock, this.PrevHash)}, path[1:], nil
 	case "tx":
-		return &node.Link{Cid: commonHashToCid(cid.EcoballTx, this.MerkleHash)}, path[1:], nil
+		return &node.Link{Cid: commonHashToCid(cid.EcoballTxTree, this.MerkleHash)}, path[1:], nil
 	default:
 		return nil, nil, fmt.Errorf("no such link")
 	}
@@ -129,7 +128,7 @@ func (this *EcoballBlock) Links() []*node.Link {
 	return []*node.Link{
 		{
 			Name: "tx",
-			Cid:  commonHashToCid(cid.EcoballTx, this.MerkleHash),
+			Cid:  commonHashToCid(cid.EcoballTxTree, this.MerkleHash),
 		},
 		{
 			Name: "parent",
@@ -168,17 +167,20 @@ func ParseObjectFromBuffer(c *cid.Cid, b []byte) (*EcoballBlock, error) {
 	return &EcoballBlock{block.Header, b,c}, nil
 }
 
-func parseTransactions(txs []*types.Transaction, expectedTxRoot common.Hash) ([]*EcoballTx, []*EcoballTxTree, error) {
-	var txNodes []*EcoballTx
+func parseTransactions(txs []*types.Transaction) ([]node.Node, []*EcoballTxTree, error) {
+	var txNodes []node.Node
 
 	for _, tx := range txs {
 		txNode := NewEcoballTx(tx)
 		txNodes = append(txNodes, txNode)
 	}
 
-	//TxTree: TOD
+	txTrees, err := mkTxMerkleTree(txNodes)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to mk tx merkle tree: %s", err)
+	}
 
-	return txNodes, nil, nil
+	return txNodes, txTrees, nil
 }
 
 func EcoballBlockRawInputParser(r io.Reader, mhType uint64, mhLen int) ([]node.Node, error) {
@@ -191,14 +193,17 @@ func EcoballBlockRawInputParser(r io.Reader, mhType uint64, mhLen int) ([]node.N
 		return nil, err
 	}
 
-	var out []node.Node
-
 	ecoBlock := &EcoballBlock{block.Header, rawdata, rawdataToCid(cid.EcoballBlock, rawdata)}
-	out = append(out, ecoBlock)
+	ecoTxs, txTrees, err := parseTransactions(block.Transactions)
+	if err != nil {
+		return nil, err
+	}
 
-	ecoTxs, _, _ := parseTransactions(block.Transactions, block.MerkleHash)
-	for _, txNode := range ecoTxs {
-		out = append(out, txNode)
+	out := []node.Node{ecoBlock}
+	out = append(out, ecoTxs...)
+
+	for _, txTree := range txTrees {
+		out = append(out, txTree)
 	}
 
 	return out, nil
