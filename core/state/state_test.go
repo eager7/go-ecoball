@@ -23,6 +23,8 @@ import (
 	"github.com/ecoball/go-ecoball/core/store"
 	"math/big"
 	"testing"
+	"time"
+	"os"
 )
 
 func TestStateNew(t *testing.T) {
@@ -30,6 +32,7 @@ func TestStateNew(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
 	indexToken := state.AbaToken
+	os.RemoveAll("/tmp/state/")
 	s, err := state.NewState("/tmp/state", root)
 	if err != nil {
 		t.Fatal(err)
@@ -39,7 +42,7 @@ func TestStateNew(t *testing.T) {
 	balance, err := s.AccountGetBalance(indexAcc, indexToken)
 	if err != nil {
 		fmt.Println("get balance error:", err)
-		if _, err := s.AddAccount(indexAcc, addr); err != nil {
+		if _, err := s.AddAccount(indexAcc, addr, time.Now().UnixNano()); err != nil {
 			t.Fatal(err)
 		}
 	} else {
@@ -63,11 +66,12 @@ func TestStateRoot(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
 	indexToken := state.AbaToken
+	os.RemoveAll("/tmp/state_root/")
 	s, err := state.NewState("/tmp/state_root", common.HexToHash("cf4bfc19264aa4bbd6898c0ef43ce5465c794fd587e622fccc19980e634cd9f2"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.AddAccount(indexAcc, addr); err != nil {
+	if _, err := s.AddAccount(indexAcc, addr, time.Now().UnixNano()); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.AccountAddBalance(indexAcc, indexToken, new(big.Int).SetInt64(100)); err != nil {
@@ -93,6 +97,7 @@ func TestStateRoot(t *testing.T) {
 }
 
 func TestHashRoot(t *testing.T) {
+	os.RemoveAll("/tmp/state_hash/")
 	diskDb, _ := store.NewLevelDBStore("/tmp/state_hash", 0, 0)
 	Db := state.NewDatabase(diskDb)
 
@@ -170,13 +175,14 @@ func TestStateDB(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
 	indexToken := state.AbaToken
+	os.RemoveAll("/tmp/state_root/")
 	s, err := state.NewState("/tmp/state_root", common.HexToHash(""))
 	if err != nil {
 		t.Fatal(err)
 	}
 	//fmt.Println(s.GetHashRoot().HexString())
 	s.CommitToMemory()
-	if _, err := s.AddAccount(indexAcc, addr); err != nil {
+	if _, err := s.AddAccount(indexAcc, addr, time.Now().UnixNano()); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.AccountAddBalance(indexAcc, indexToken, new(big.Int).SetInt64(100)); err != nil {
@@ -217,20 +223,4 @@ func TestStateDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println("value3[100]:", value)
-}
-
-func TestRootHash(t *testing.T) {
-	s, err := state.NewState("/tmp/state_hash", common.HexToHash(""))
-	if err != nil {
-		t.Fatal(err)
-	}
-	//fmt.Println(s.GetHashRoot().HexString())
-	s.CommitToMemory()
-	if err := s.Trie().TryUpdate([]byte("pct"), []byte("panchangtao")); err != nil {
-		t.Fatal(err)
-	}
-	//if err := s.AccountAddBalance(indexAcc, indexToken, new(big.Int).SetInt64(100)); err != nil {
-	//	t.Fatal(err)
-	//}
-	s.CommitToDB()
 }

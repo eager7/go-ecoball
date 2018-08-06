@@ -230,7 +230,16 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 		d := pb.Delegate{Index: uint64(v.Index), Cpu: v.CpuStaked, Net: v.NetStaked}
 		delegates = append(delegates, &d)
 	}
-	//var produces pb.Votes
+	var producers []*pb.Producer
+	var keysVotes []float64
+	for name := range a.Resource.Votes.Producers {
+		keysVotes = append(keysVotes, float64(name))
+	}
+	sort.Float64s(keysVotes)
+	for _, v := range keysVotes {
+		producer := pb.Producer{AccountName: uint64(v), Amount: a.Votes.Producers[common.AccountName(v)]}
+		producers = append(producers, &producer)
+	}
 	pbAcc := pb.Account{
 		Index:       uint64(a.Index),
 		TimeStamp:   a.TimeStamp,
@@ -259,6 +268,10 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 			Used:      a.Net.Used,
 			Available: a.Net.Available,
 			Limit:     a.Net.Limit,
+		},
+		Votes: &pb.Votes{
+			Staked:    a.Votes.Staked,
+			Producers: producers,
 		},
 		Hash: a.Hash.Bytes(),
 	}
@@ -293,6 +306,11 @@ func (a *Account) Deserialize(data []byte) error {
 	a.Net.Used = pbAcc.Net.Used
 	a.Net.Available = pbAcc.Net.Available
 	a.Net.Limit = pbAcc.Net.Limit
+	a.Votes.Staked = pbAcc.Votes.Staked
+	a.Votes.Producers = make(map[common.AccountName]uint64, 1)
+	for _, v := range pbAcc.Votes.Producers {
+		a.Votes.Producers[common.AccountName(v.AccountName)] = v.Amount
+	}
 
 	a.Hash = common.NewHash(pbAcc.Hash)
 	a.Tokens = make(map[string]Token)

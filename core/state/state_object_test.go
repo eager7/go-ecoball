@@ -6,12 +6,15 @@ import (
 	"github.com/ecoball/go-ecoball/core/state"
 	"math/big"
 	"testing"
+	"time"
+	"os"
 )
 
 func TestStateObject(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
-	acc1, _ := state.NewAccount("/tmp/state_object", indexAcc, addr)
+	os.RemoveAll("/tmp/state_object/")
+	acc1, _ := state.NewAccount("/tmp/state_object", indexAcc, addr, time.Now().UnixNano())
 
 	acc1.AddBalance(state.AbaToken, new(big.Int).SetUint64(100))
 	value, err := acc1.Balance(state.AbaToken)
@@ -49,7 +52,8 @@ func TestStateObject(t *testing.T) {
 func TestNewAccount(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
-	acc, err := state.NewAccount("/tmp/acc", indexAcc, addr)
+	os.RemoveAll("/tmp/acc/")
+	acc, err := state.NewAccount("/tmp/acc", indexAcc, addr, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
