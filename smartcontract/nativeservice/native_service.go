@@ -64,7 +64,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		to1 := common.NameToIndex(ns.params[1])
 		to2 := common.NameToIndex(ns.params[2])
 		accounts := []common.AccountName{to1, to2}
-		ns.state.PutProducerToVote(from, accounts)
+		ns.state.ElectionToVote(from, accounts)
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", ns.method))
 	}
