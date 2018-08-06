@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/consensus/solo"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"

@@ -18,7 +18,7 @@ package ipfs
 
 import (
 	"errors"
-	cmds "gx/ipfs/QmSKYWC84fqkKB54Te5JMcov2MBVzucXaRGxFqByzzCbHe/go-ipfs-cmds"
+	cmds "gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
 	"fmt"
 	cmd "github.com/ipfs/go-ipfs/commands"
 	"github.com/ipfs/go-ipfs/core"

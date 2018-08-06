@@ -13,7 +13,7 @@ import (
 	mount "github.com/ipfs/go-ipfs/fuse/mount"
 	rofs "github.com/ipfs/go-ipfs/fuse/readonly"
 
-	logging "gx/ipfs/QmTG23dvpBCBjqQwyDxV8CQT6jmS4PSftNr1VqHhE3MLy7/go-log"
+	logging "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log"
 )
 
 var log = logging.Logger("node")

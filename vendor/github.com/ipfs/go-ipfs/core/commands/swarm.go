@@ -15,12 +15,14 @@ import (
 	config "github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 
-	swarm "gx/ipfs/QmPzT3rJnSP8VFP1kw7Ly7HP8AprKNZtwLHXHnxfVSbWT3/go-libp2p-swarm"
+	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	mafilter "gx/ipfs/QmSMZwvs3n4GBikZ7hKzT17c3bk65FmyZo2JqtJ16swqCv/multiaddr-filter"
-	ma "gx/ipfs/QmWWQ2Txc2c6tqjsBpzg5Ar652cHPGNsQQp2SejkNmkUMb/go-multiaddr"
-	pstore "gx/ipfs/QmZb7hAgQEhW9dBbzBudU39gCeD4zbe6xafD52LUuF4cUN/go-libp2p-peerstore"
-	cmdkit "gx/ipfs/QmceUdzxkimdYsgtX733uNgzf1DLHyBKN6ehGSp85ayppM/go-ipfs-cmdkit"
-	iaddr "gx/ipfs/Qmey6omaMEzs9DiSQWwnPwTCJRn3RE8rWLjfidRrTzUq6t/go-ipfs-addr"
+	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	cmdkit "gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
+	peer "gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+	iaddr "gx/ipfs/Qme4QgoVPyQqxVc4G1c2L2wc9TDa6o294rtspGMnBNRujm/go-ipfs-addr"
+	swarm "gx/ipfs/QmemVjhp1UuWPQqrWSvPcaqH3QJRMjMqNm4T2RULMkDDQe/go-libp2p-swarm"
 )
 
 type stringList struct {
@@ -457,26 +459,38 @@ it will reconnect.
 		output := make([]string, len(iaddrs))
 		for i, addr := range iaddrs {
 			taddr := addr.Transport()
-			output[i] = "disconnect " + addr.ID().Pretty()
+			id := addr.ID()
+			output[i] = "disconnect " + id.Pretty()
 
-			found := false
-			conns := n.PeerHost.Network().ConnsToPeer(addr.ID())
-			for _, conn := range conns {
-				if !conn.RemoteMultiaddr().Equal(taddr) {
-					continue
-				}
+			net := n.PeerHost.Network()
 
-				if err := conn.Close(); err != nil {
+			if taddr == nil {
+				if net.Connectedness(id) != inet.Connected {
+					output[i] += " failure: not connected"
+				} else if err := net.ClosePeer(id); err != nil {
 					output[i] += " failure: " + err.Error()
 				} else {
 					output[i] += " success"
 				}
-				found = true
-				break
-			}
+			} else {
+				found := false
+				for _, conn := range net.ConnsToPeer(id) {
+					if !conn.RemoteMultiaddr().Equal(taddr) {
+						continue
+					}
 
-			if !found {
-				output[i] += " failure: conn not found"
+					if err := conn.Close(); err != nil {
+						output[i] += " failure: " + err.Error()
+					} else {
+						output[i] += " success"
+					}
+					found = true
+					break
+				}
+
+				if !found {
+					output[i] += " failure: conn not found"
+				}
 			}
 		}
 		res.SetOutput(&stringList{output})
@@ -522,16 +536,27 @@ func parseAddresses(addrs []string) (iaddrs []iaddr.IPFSAddr, err error) {
 
 // peersWithAddresses is a function that takes in a slice of string peer addresses
 // (multiaddr + peerid) and returns a slice of properly constructed peers
-func peersWithAddresses(addrs []string) (pis []pstore.PeerInfo, err error) {
+func peersWithAddresses(addrs []string) ([]pstore.PeerInfo, error) {
 	iaddrs, err := parseAddresses(addrs)
 	if err != nil {
 		return nil, err
 	}
 
+	peers := make(map[peer.ID][]ma.Multiaddr, len(iaddrs))
 	for _, iaddr := range iaddrs {
+		id := iaddr.ID()
+		current, ok := peers[id]
+		if tpt := iaddr.Transport(); tpt != nil {
+			peers[id] = append(current, tpt)
+		} else if !ok {
+			peers[id] = nil
+		}
+	}
+	pis := make([]pstore.PeerInfo, 0, len(peers))
+	for id, maddrs := range peers {
 		pis = append(pis, pstore.PeerInfo{
-			ID:    iaddr.ID(),
-			Addrs: []ma.Multiaddr{iaddr.Transport()},
+			ID:    id,
+			Addrs: maddrs,
 		})
 	}
 	return pis, nil

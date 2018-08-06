@@ -10,14 +10,14 @@ import (
 
 	help "github.com/ipfs/go-ipfs/importer/helpers"
 	trickle "github.com/ipfs/go-ipfs/importer/trickle"
-	mdag "github.com/ipfs/go-ipfs/merkledag"
 	ft "github.com/ipfs/go-ipfs/unixfs"
 	uio "github.com/ipfs/go-ipfs/unixfs/io"
+	mdag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
 
+	chunker "gx/ipfs/QmVDjhUMtkRskBFAVNwyXuLSKbeAya7JKPnzAxMKDaK4x4/go-ipfs-chunker"
+	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	proto "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/proto"
-	chunker "gx/ipfs/QmbGDSVKnYJZrtUnyxwsUpCeuigshNuVFxXCpv13jXecq1/go-ipfs-chunker"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	ipld "gx/ipfs/QmZtNq8dArGfnpCZfx2pUNY7UcjGhVp5qqwQ4hH6mpTMRQ/go-ipld-format"
 )
 
 // Common errors
@@ -481,6 +481,9 @@ func (dm *DagModifier) Truncate(size int64) error {
 	if err != nil {
 		return err
 	}
+	if size == int64(realSize) {
+		return nil
+	}
 
 	// Truncate can also be used to expand the file
 	if size > int64(realSize) {
@@ -526,7 +529,13 @@ func dagTruncate(ctx context.Context, n ipld.Node, size uint64, ds ipld.DAGServi
 	var cur uint64
 	end := 0
 	var modified ipld.Node
-	ndata := new(ft.FSNode)
+	ndata, err := ft.FSNodeFromBytes(nd.Data())
+	if err != nil {
+		return nil, err
+	}
+	// Reset the block sizes of the node to adjust them
+	// with the new values of the truncated children.
+	ndata.RemoveAllBlockSizes()
 	for i, lnk := range nd.Links() {
 		child, err := lnk.GetNode(ctx, ds)
 		if err != nil {
@@ -555,7 +564,7 @@ func dagTruncate(ctx context.Context, n ipld.Node, size uint64, ds ipld.DAGServi
 		ndata.AddBlockSize(childsize)
 	}
 
-	err := ds.Add(ctx, modified)
+	err = ds.Add(ctx, modified)
 	if err != nil {
 		return nil, err
 	}
@@ -570,7 +579,7 @@ func dagTruncate(ctx context.Context, n ipld.Node, size uint64, ds ipld.DAGServi
 	if err != nil {
 		return nil, err
 	}
-
+	// Save the new block sizes to the original node.
 	nd.SetData(d)
 
 	// invalidate cache and recompute serialized data

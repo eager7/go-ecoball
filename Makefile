@@ -2,10 +2,10 @@
 
 BASE_VERSION = 1.1.1
 
-all: ecoball ecoclient proto
+all: ecoball ecoclient proto plugins
 
-.PHONY: proto ecoball ecoclient
-ecoball: proto
+.PHONY: proto plugins ecoball ecoclient
+ecoball: proto plugins
 	@echo "\033[;32mbuild ecoball \033[0m"
 	mkdir -p build/
 	go build -v -o ecoball node/*.go
@@ -22,6 +22,13 @@ proto:
 	make -C core/pb
 	make -C client/protos
 	make -C net/message/pb
+
+plugins:
+	@echo "\033[;32mbuild ipld plugin file \033[0m"
+	mkdir -p build/plugins
+	make -C net/ipfs/ipld/plugin
+	chmod +x net/ipfs/ipld/plugin/ecoball.so
+	mv net/ipfs/ipld/plugin/ecoball.so build/plugins
 
 .PHONY: clean
 clean:
