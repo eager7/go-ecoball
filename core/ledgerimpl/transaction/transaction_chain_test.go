@@ -66,8 +66,8 @@ func TestLedgerTxAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println("Start LedgerImpl Module, hash:", l.GetCurrentHeader().Hash.HexString())
-	example.ExampleAddAccount(l.StateDB())
-	tx := example.ExampleTestTx()
+	example.AddAccount(l.StateDB())
+	tx := example.TestTransfer()
 	l.AccountAddBalance(tx.From, state.AbaToken, 150)
 	var txs []*types.Transaction
 	txs = append(txs, tx)
@@ -98,7 +98,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 	}
 	fmt.Println("Start LedgerImpl Module, hash:", l.GetCurrentHeader().Hash.HexString())
 	code, err := wasmservice.ReadWasm("../../../test/token.wasm")
-	tx := example.ExampleTestDeploy(code)
+	tx := example.TestDeploy(code)
 	var txs []*types.Transaction
 	txs = append(txs, tx)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
@@ -110,7 +110,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 	//Invoke Contract
-	invoke := example.ExampleTestInvoke("create")
+	invoke := example.TestInvoke("create")
 	var txs2 []*types.Transaction
 	txs2 = append(txs, invoke)
 	block, err = l.NewTxBlock(txs2, conData)

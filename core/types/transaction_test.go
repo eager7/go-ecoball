@@ -26,7 +26,7 @@ import (
 
 func TestTransfer(t *testing.T) {
 	fmt.Println("test create transaction")
-	tx := example.ExampleTestTx()
+	tx := example.TestTransfer()
 	fmt.Println("Hash1:", tx.Hash.HexString())
 	tx.Show()
 	result, err := tx.VerifySignature()
@@ -53,7 +53,7 @@ func TestTransfer(t *testing.T) {
 }
 
 func TestDeploy(t *testing.T) {
-	deploy := example.ExampleTestDeploy([]byte("test"))
+	deploy := example.TestDeploy([]byte("test"))
 	deploy.Show()
 	fmt.Println("--------------")
 	data, err := deploy.Serialize()
@@ -71,7 +71,7 @@ func TestDeploy(t *testing.T) {
 }
 
 func TestInvoke(t *testing.T) {
-	i := example.ExampleTestInvoke("main")
+	i := example.TestInvoke("main")
 	i.Show()
 	data, err := i.Serialize()
 	if err != nil {

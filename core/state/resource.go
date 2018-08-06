@@ -105,7 +105,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 		return err
 	}
 	acc.addVotes(cpuStaked + netStaked)
-	if err := s.updateProducers(acc, acc.Votes.Staked-cpuStaked-netStaked, []common.AccountName{}); err != nil {
+	if err := s.updateElectedProducers(acc, acc.Votes.Staked-cpuStaked-netStaked); err != nil {
 		return err
 	}
 	return s.CommitAccount(acc)
@@ -191,12 +191,13 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 	}
 	valueOld := acc.Resource.Votes.Staked
 	acc.subVotes(cpuStaked + netStaked)
-	if err := s.updateProducers(acc, valueOld, []common.AccountName{}); err != nil {
+	if err := s.updateElectedProducers(acc, valueOld); err != nil {
 		return err
 	}
 	if acc.Votes.Staked < VotesLimit {
 		delete(s.Producers, acc.Index)
 	}
+	s.CommitProducersList()
 	return s.CommitAccount(acc)
 }
 
@@ -303,7 +304,7 @@ func (s *State) PutProducerToVote(index common.AccountName, accounts []common.Ac
 			return errors.New(log, fmt.Sprintf("the account:%s is not register", v.String()))
 		}
 	}
-	if err := s.updateProducers(acc, acc.Resource.Votes.Staked, accounts); err != nil {
+	if err := s.changeElectedProducers(acc, accounts); err != nil {
 		return err
 	}
 	if err := s.CommitParam(votingAmount, votingSum+acc.Resource.Votes.Staked); err != nil {
@@ -314,7 +315,49 @@ func (s *State) PutProducerToVote(index common.AccountName, accounts []common.Ac
 	}
 	return s.CommitAccount(acc)
 }
-func (s *State) updateProducers(acc *Account, votesOld uint64, accounts []common.AccountName) error {
+func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountName) error {
+	for k := range acc.Votes.Producers {
+		if _, ok := s.Producers[k]; ok {
+			s.Producers[k] = s.Producers[k] - acc.Votes.Producers[k]
+		}
+		delete(acc.Votes.Producers, k)
+	}
+	for _, v := range accounts {
+		if err := s.CheckAccountCertification(v); err != nil {
+			return err
+		}
+		acc.Votes.Producers[v] = acc.Votes.Staked
+		if _, ok := s.Producers[v]; !ok {
+			return errors.New(log, fmt.Sprintf("the account:%s is not a candidata node", v.String()))
+		}
+		s.Producers[v] += acc.Votes.Staked
+	}
+
+	return s.CommitProducersList()
+}
+func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
+	for k := range acc.Votes.Producers {
+		acc.Votes.Producers[k] = acc.Votes.Staked
+		if _, ok := s.Producers[k]; ok {
+			s.Producers[k] = s.Producers[k] - votesOld + acc.Votes.Staked
+		} else {
+			return errors.New(log, fmt.Sprintf("the account:%s is exit candidata nodes list", k.String()))
+		}
+	}
+
+	return s.CommitProducersList()
+}
+func (s *State) CheckAccountCertification(index common.AccountName) error {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	if acc.Votes.Staked < VotesLimit {
+		return errors.New(log, fmt.Sprintf("the account:%s has no enough staked", index.String()))
+	}
+	return nil
+}
+func (s *State) CommitProducersList() error {
 	if len(s.Producers) == 0 {
 		data, err := s.trie.TryGet([]byte(prodsList))
 		if err != nil {
@@ -326,43 +369,12 @@ func (s *State) updateProducers(acc *Account, votesOld uint64, accounts []common
 			}
 		}
 	}
-	if len(accounts) == 0 {
-		for k := range acc.Resource.Votes.Producers {
-			accounts = append(accounts, k)
-		}
-		if len(accounts) == 0 {
-			return nil
-		}
-	}
-	for _, index := range accounts {
-		if _, ok := acc.Votes.Producers[index]; ok {
-			s.Producers[index] -= votesOld
-			s.Producers[index] += acc.Resource.Votes.Staked
-		} else {
-			if err := s.CheckAccountCertification(index); err != nil {
-				log.Warn(err)
-				continue
-			}
-			s.Producers[index] += acc.Resource.Votes.Staked
-		}
-	}
 	data, err := json.Marshal(s.Producers)
 	if err != nil {
 		return errors.New(log, fmt.Sprintf("error convert to json string:%s", err.Error()))
 	}
 	if err := s.trie.TryUpdate([]byte(prodsList), data); err != nil {
 		return errors.New(log, fmt.Sprintf("error update trie:%s", err.Error()))
-	}
-
-	return acc.updateElectedProducers(accounts)
-}
-func (s *State) CheckAccountCertification(index common.AccountName) error {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return err
-	}
-	if acc.Votes.Staked < VotesLimit {
-		return errors.New(log, fmt.Sprintf("the account:%s has no enough staked", index.String()))
 	}
 	return nil
 }
@@ -469,12 +481,11 @@ func (a *Account) subVotes(staked uint64) {
 	a.Resource.Votes.Staked -= staked
 }
 
-func (a *Account) updateElectedProducers(accounts []common.AccountName) error {
-	for k := range a.Resource.Votes.Producers {
+func (a *Account) updateElectedProducers(accounts []common.AccountName) {
+	for k := range a.Votes.Producers {
 		delete(a.Votes.Producers, k)
 	}
 	for _, v := range accounts {
-		a.Resource.Votes.Producers[v] = a.Resource.Votes.Staked
+		a.Votes.Producers[v] = a.Votes.Staked
 	}
-	return nil
 }
