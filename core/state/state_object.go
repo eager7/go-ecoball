@@ -230,6 +230,7 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 		d := pb.Delegate{Index: uint64(v.Index), Cpu: v.CpuStaked, Net: v.NetStaked}
 		delegates = append(delegates, &d)
 	}
+	//var produces pb.Votes
 	pbAcc := pb.Account{
 		Index:       uint64(a.Index),
 		TimeStamp:   a.TimeStamp,

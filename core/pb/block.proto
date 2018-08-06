@@ -166,22 +166,31 @@ message Delegate {
     uint64 cpu      = 2;
     uint64 net      = 3;
 }
+message Producer {
+    uint64 AccountName = 1;
+    uint64 Amount = 2;
+}
+message Votes {
+    uint64 staked = 1;
+    repeated Producer Producers = 2;
+}
 /**
 ** Account Object
 */
 message Account {
-    uint64      Index               = 4;
+    uint64      Index                   = 4;
     int64       TimeStamp               = 5;
-    repeated    Token      Tokens   = 3;
-    repeated    Permission Permissions = 1;
-    DeployInfo  Contract            = 2;
-    repeated    Delegate   Delegates   = 10;
+    repeated    Token      Tokens       = 3;
+    repeated    Permission Permissions  = 1;
+    DeployInfo  Contract                = 2;
+    repeated    Delegate   Delegates    = 10;
 
-    Ram         Ram                 = 7;
-    Res         Cpu                 = 8;
-    Res         Net                 = 9;
+    Ram         Ram                     = 7;
+    Res         Cpu                     = 8;
+    Res         Net                     = 9;
+    Votes       Votes                   = 11;
 
-    bytes       Hash                = 6;
+    bytes       Hash                    = 6;
 }
 /**
 ** Account Info
