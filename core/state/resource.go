@@ -105,7 +105,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 		return err
 	}
 	acc.addVotes(cpuStaked + netStaked)
-	if err := s.updateElectedProducers(acc, acc.Votes.Staked-cpuStaked-netStaked); err != nil {
+	if err := s.UpdateElectedProducers(acc, acc.Votes.Staked-cpuStaked-netStaked); err != nil {
 		return err
 	}
 	return s.CommitAccount(acc)
@@ -191,7 +191,7 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 	}
 	valueOld := acc.Resource.Votes.Staked
 	acc.subVotes(cpuStaked + netStaked)
-	if err := s.updateElectedProducers(acc, valueOld); err != nil {
+	if err := s.UpdateElectedProducers(acc, valueOld); err != nil {
 		return err
 	}
 	if acc.Votes.Staked < VotesLimit {
@@ -304,7 +304,7 @@ func (s *State) PutProducerToVote(index common.AccountName, accounts []common.Ac
 			return errors.New(log, fmt.Sprintf("the account:%s is not register", v.String()))
 		}
 	}
-	if err := s.changeElectedProducers(acc, accounts); err != nil {
+	if err := s.ChangeElectedProducers(acc, accounts); err != nil {
 		return err
 	}
 	if err := s.CommitParam(votingAmount, votingSum+acc.Resource.Votes.Staked); err != nil {
@@ -315,7 +315,7 @@ func (s *State) PutProducerToVote(index common.AccountName, accounts []common.Ac
 	}
 	return s.CommitAccount(acc)
 }
-func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountName) error {
+func (s *State) ChangeElectedProducers(acc *Account, accounts []common.AccountName) error {
 	for k := range acc.Votes.Producers {
 		if _, ok := s.Producers[k]; ok {
 			s.Producers[k] = s.Producers[k] - acc.Votes.Producers[k]
@@ -335,7 +335,7 @@ func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountNa
 
 	return s.CommitProducersList()
 }
-func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
+func (s *State) UpdateElectedProducers(acc *Account, votesOld uint64) error {
 	for k := range acc.Votes.Producers {
 		acc.Votes.Producers[k] = acc.Votes.Staked
 		if _, ok := s.Producers[k]; ok {
@@ -481,11 +481,3 @@ func (a *Account) subVotes(staked uint64) {
 	a.Resource.Votes.Staked -= staked
 }
 
-func (a *Account) updateElectedProducers(accounts []common.AccountName) {
-	for k := range a.Votes.Producers {
-		delete(a.Votes.Producers, k)
-	}
-	for _, v := range accounts {
-		a.Votes.Producers[v] = a.Votes.Staked
-	}
-}
