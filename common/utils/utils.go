@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"io/ioutil"
 )
 
 // DisableCache will disable caching of the home directory. Caching is enabled
@@ -161,4 +162,12 @@ func PathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+func FileRead(path string) ([]byte, error){
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }

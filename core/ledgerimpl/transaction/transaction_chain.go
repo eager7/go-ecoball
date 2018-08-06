@@ -32,12 +32,12 @@ import (
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"math/big"
 	"time"
+	"github.com/ecoball/go-ecoball/common/utils"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.DebugLog)
 
 type ChainTx struct {
-	Id             common.Hash
 	BlockStore     store.Storage
 	HeaderStore    store.Storage
 	TxsStore       store.Storage
@@ -287,7 +287,13 @@ func (c *ChainTx) GenesesBlockInit() error {
 	}
 
 	hashState := c.StateDB.GetHashRoot()
-	header, err := types.NewHeader(types.VersionHeader, 1, hash, hash, hashState, *conData, bloom.Bloom{}, timeStamp)
+	d, err := utils.FileRead(config.FilePath)
+	if err != nil {
+		return err
+	}
+	prevHash := common.SingleHash(d)
+	fmt.Println(hash.HexString())
+	header, err := types.NewHeader(types.VersionHeader, 1, prevHash, hash, hashState, *conData, bloom.Bloom{}, timeStamp)
 	if err != nil {
 		return err
 	}

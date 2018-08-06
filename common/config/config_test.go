@@ -22,10 +22,18 @@ import (
 
 	"github.com/ecoball/go-ecoball/common/config"
 	_ "github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/utils"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 func TestConfig(t *testing.T) {
 	fmt.Println(config.HttpLocalPort)
 	fmt.Println(config.ConsensusAlgorithm)
 	fmt.Println(config.PeerList)
+	fmt.Println(config.FilePath)
+	d, err := utils.FileRead(config.FilePath)
+	errors.CheckErrorPanic(err)
+	hash := common.SingleHash(d)
+	fmt.Println(hash.HexString())
 }

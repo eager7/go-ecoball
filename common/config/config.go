@@ -84,6 +84,7 @@ peer_index = [ "1", "2" ]
 `
 
 var (
+	FilePath           string
 	TimeSlot           int
 	HttpLocalPort      string
 	EcoVersion         string
@@ -137,6 +138,7 @@ func (c *Config) CreateConfigFile() error {
 			return err
 		}
 	}
+	FilePath = filePath
 	return nil
 }
 
