@@ -42,6 +42,8 @@ const (
 	colorMagenta
 )
 
+var Log = NewLogger("default", NoticeLog)
+
 const (
 	NoticeLog = iota
 	DebugLog

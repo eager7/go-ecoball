@@ -37,6 +37,7 @@ import (
 var log = elog.NewLogger("Chain Tx", elog.DebugLog)
 
 type ChainTx struct {
+	Id             common.Hash
 	BlockStore     store.Storage
 	HeaderStore    store.Storage
 	TxsStore       store.Storage

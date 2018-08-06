@@ -56,8 +56,8 @@ func NewAccount(path string, index common.AccountName, addr common.Address, time
 	//log.Info("add a new account:", index)
 	//fmt.Printf("index:%d\n", index),
 	res := Resource{Votes: struct {
-		Staked    uint64
-		Producers map[common.AccountName]uint64
+		Staked    uint64                        `json:"staked_aba, omitempty"`
+		Producers map[common.AccountName]uint64 `json:"producers, omitempty"`
 	}{Staked: 0, Producers: make(map[common.AccountName]uint64, 1)}}
 	acc = &Account{
 		Index:       index,

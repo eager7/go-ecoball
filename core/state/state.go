@@ -256,8 +256,8 @@ func (s *State) GetParam(key string) (uint64, error) {
 		return value, nil
 	}
 	data, err := s.trie.TryGet([]byte(key))
-	log.Warn(data, err)
 	if err != nil {
+		s.Params[key] = 0
 		return 0, err
 	}
 	if len(data) == 0 {

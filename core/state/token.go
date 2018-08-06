@@ -1,10 +1,10 @@
 package state
 
 import (
-	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"math/big"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 const abaTotal = 10000
@@ -32,7 +32,7 @@ func (s *State) AccountSubBalance(index common.AccountName, token string, value 
 		return err
 	}
 	if balance.Cmp(value) == -1 {
-		return errors.New("no enough balance")
+		return errors.New(log, "no enough balance")
 	}
 	if err := acc.SubBalance(AbaToken, value); err != nil {
 		return err
@@ -97,7 +97,7 @@ func (a *Account) TokenExisted(token string) bool {
 func (a *Account) AddBalance(name string, amount *big.Int) error {
 	log.Info("add token", name, "balance:", amount, a.Index)
 	if amount.Sign() == 0 {
-		return errors.New("amount is zero")
+		return errors.New(log, "amount is zero")
 	}
 	ac, ok := a.Tokens[name]
 	if !ok {
@@ -118,16 +118,16 @@ func (a *Account) AddBalance(name string, amount *big.Int) error {
  */
 func (a *Account) SubBalance(token string, amount *big.Int) error {
 	if amount.Sign() == 0 {
-		return errors.New("amount is zero")
+		return errors.New(log, "amount is zero")
 	}
 	t, ok := a.Tokens[token]
 	if !ok {
-		return errors.New("not sufficient funds")
+		return errors.New(log, fmt.Sprintf("no this token:%s", token))
 	}
 	balance := t.GetBalance()
 	value := new(big.Int).Sub(balance, amount)
 	if value.Sign() < 0 {
-		return errors.New("the balance is not enough")
+		return errors.New(log, "the balance is not enough")
 	}
 	t.SetBalance(value)
 	a.Tokens[token] = t
@@ -142,7 +142,7 @@ func (a *Account) SubBalance(token string, amount *big.Int) error {
 func (a *Account) Balance(token string) (*big.Int, error) {
 	t, ok := a.Tokens[token]
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("can't find token account:%s, in account:%s", token, common.IndexToName(a.Index)))
+		return nil, errors.New(log, fmt.Sprintf("can't find token account:%s, in account:%s", token, a.Index.String()))
 	}
 	return t.GetBalance(), nil
 }

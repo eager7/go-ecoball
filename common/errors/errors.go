@@ -87,3 +87,9 @@ func New(log elog.Logger, err string) error {
 	log.ErrStack(err)
 	return errors.New(err)
 }
+
+func CheckErrorPanic(err error) {
+	if err != nil {
+		elog.Log.Panic(err)
+	}
+}

@@ -1,19 +1,19 @@
 package state
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"math/big"
-	"encoding/json"
 )
 
 var cpuAmount = "cpu_amount"
 var netAmount = "net_amount"
 var votingAmount = "voting_amount"
 var prodsList = "prods_list"
-var ProdsList  = make(map[common.AccountName]uint64, 1)
 
+const VotesLimit = 200
 const VirtualBlockCpuLimit float32 = 200000000.0
 const VirtualBlockNetLimit float32 = 1048576000.0
 const BlockCpuLimit float32 = 200000.0
@@ -42,8 +42,8 @@ type Resource struct {
 		Limit     float32 `json:"limit_ms, omitempty"`      //uint ms
 	}
 	Votes struct {
-		Staked    uint64
-		Producers map[common.AccountName]uint64
+		Staked    uint64                        `json:"staked_aba, omitempty"` //total stake delegated, uint ABA
+		Producers map[common.AccountName]uint64 `json:"producers, omitempty"`  //support nodes' list
 	}
 }
 
@@ -80,22 +80,15 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 	if err != nil {
 		return err
 	}
-	acc.addVotes(cpuStaked + netStaked)
 	if from == to {
-		if err := acc.AddResourceLimits(true, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum); err != nil {
-			return err
-		}
+		acc.AddResourceLimits(true, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum)
 	} else {
-		if err := acc.SetDelegateInfo(to, cpuStaked, netStaked); err != nil {
-			return err
-		}
+		acc.SetDelegateInfo(to, cpuStaked, netStaked)
 		accTo, err := s.GetAccountByName(to)
 		if err != nil {
 			return err
 		}
-		if err := accTo.AddResourceLimits(false, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum); err != nil {
-			return err
-		}
+		accTo.AddResourceLimits(false, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum)
 		if err := s.CommitAccount(accTo); err != nil {
 			return err
 		}
@@ -111,6 +104,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 	if err := s.CommitParam(netAmount, netStaked+netStakedSum); err != nil {
 		return err
 	}
+	acc.addVotes(cpuStaked + netStaked)
 
 	return s.CommitAccount(acc)
 }
@@ -165,14 +159,6 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 	if err != nil {
 		return err
 	}
-	if err := s.CommitParam(votingAmount, votingSum - cpuStaked - netStaked); err != nil {
-		return err
-	}
-	valueOld := acc.Resource.Votes.Staked
-	acc.subVotes(cpuStaked + netStaked)
-	if err := s.updateProducers(acc, valueOld, []common.AccountName{}); err != nil {
-		return err
-	}
 
 	if from != to {
 		accTo, err := s.GetAccountByName(to)
@@ -186,29 +172,29 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 			return err
 		}
 	} else {
-		if err := acc.CancelDelegateSelf(cpuStaked, netStaked, cpuStakedSum, netStakedSum); err != nil {
-			return err
-		}
+		acc.CancelDelegateSelf(cpuStaked, netStaked, cpuStakedSum, netStakedSum)
 	}
 	value := new(big.Int).Add(new(big.Int).SetUint64(uint64(cpuStaked)), new(big.Int).SetUint64(uint64(netStaked)))
 	if err := acc.AddBalance(AbaToken, value); err != nil {
 		return err
 	}
-	amount, err := s.GetParam(cpuAmount)
-	if err != nil {
+	if err := s.CommitParam(cpuAmount, cpuStakedSum-cpuStaked); err != nil {
 		return err
 	}
-	if err := s.CommitParam(cpuAmount, amount-cpuStaked); err != nil {
+	if err := s.CommitParam(netAmount, netStakedSum-cpuStaked); err != nil {
 		return err
 	}
-	amount, err = s.GetParam(netAmount)
-	if err != nil {
+	if err := s.CommitParam(votingAmount, votingSum-cpuStaked-netStaked); err != nil {
 		return err
 	}
-	if err := s.CommitParam(netAmount, amount-cpuStaked); err != nil {
+	valueOld := acc.Resource.Votes.Staked
+	acc.subVotes(cpuStaked + netStaked)
+	if err := s.updateProducers(acc, valueOld, []common.AccountName{}); err != nil {
 		return err
 	}
-
+	if acc.Votes.Staked < VotesLimit {
+		delete(s.Producers, acc.Index)
+	}
 	return s.CommitAccount(acc)
 }
 
@@ -292,6 +278,9 @@ func (s *State) RegisterProducer(index common.AccountName) error {
 	if _, ok := s.Producers[index]; ok {
 		return errors.New(log, fmt.Sprintf("the account:%s was already registed", common.IndexToName(index)))
 	}
+	if err := s.CheckAccountCertification(index); err != nil {
+		return nil
+	}
 	s.Producers[index] = 0
 	return nil
 }
@@ -315,22 +304,22 @@ func (s *State) PutProducerToVote(index common.AccountName, accounts []common.Ac
 	if err := s.updateProducers(acc, acc.Resource.Votes.Staked, accounts); err != nil {
 		return err
 	}
-	if err := s.CommitParam(votingAmount, votingSum + acc.Resource.Votes.Staked); err != nil {
+	if err := s.CommitParam(votingAmount, votingSum+acc.Resource.Votes.Staked); err != nil {
 		return err
 	}
-	if votingSum + acc.Resource.Votes.Staked > abaTotal * 0.15 {
+	if votingSum+acc.Resource.Votes.Staked > abaTotal*0.15 {
 		log.Warn("Start Process ##################################################################################")
 	}
 	return s.CommitAccount(acc)
 }
 func (s *State) updateProducers(acc *Account, votesOld uint64, accounts []common.AccountName) error {
-	if len(ProdsList) == 0 {
+	if len(s.Producers) == 0 {
 		data, err := s.trie.TryGet([]byte(prodsList))
 		if err != nil {
 			return errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
 		}
 		if len(data) != 0 {
-			if err := json.Unmarshal(data, &ProdsList); err != nil {
+			if err := json.Unmarshal(data, &s.Producers); err != nil {
 				return errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
 			}
 		}
@@ -340,15 +329,22 @@ func (s *State) updateProducers(acc *Account, votesOld uint64, accounts []common
 			accounts = append(accounts, k)
 		}
 	}
+	if len(accounts) == 0 {
+		return nil
+	}
 	for _, index := range accounts {
-		if _, ok := acc.Resource.Votes.Producers[index]; ok {
+		if _, ok := acc.Votes.Producers[index]; ok {
 			s.Producers[index] -= votesOld
 			s.Producers[index] += acc.Resource.Votes.Staked
 		} else {
+			if err := s.CheckAccountCertification(index); err != nil {
+				log.Warn(err)
+				continue
+			}
 			s.Producers[index] += acc.Resource.Votes.Staked
 		}
 	}
-	data, err := json.Marshal(ProdsList)
+	data, err := json.Marshal(s.Producers)
 	if err != nil {
 		return errors.New(log, fmt.Sprintf("error convert to json string:%s", err.Error()))
 	}
@@ -356,8 +352,17 @@ func (s *State) updateProducers(acc *Account, votesOld uint64, accounts []common
 		return errors.New(log, fmt.Sprintf("error update trie:%s", err.Error()))
 	}
 
-
 	return acc.updateElectedProducers(accounts)
+}
+func (s *State) CheckAccountCertification(index common.AccountName) error {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	if acc.Votes.Staked < VotesLimit {
+		return errors.New(log, fmt.Sprintf("the account:%s has no enough staked", index.String()))
+	}
+	return nil
 }
 func (s *State) RequireVotingInfo() {
 	log.Debug(s.Producers)
@@ -365,7 +370,7 @@ func (s *State) RequireVotingInfo() {
 	if err != nil {
 		log.Error(err)
 	}
-	log.Debug("votingSum", votingSum, votingSum / abaTotal)
+	log.Debug("votingSum", votingSum, "Percentage", float32(votingSum)/float32(abaTotal), "%")
 }
 
 /**
@@ -376,7 +381,7 @@ func (s *State) RequireVotingInfo() {
  *  @param cpuStakedSum - total stake cpu
  *  @param netStakedSum - total stake net
  */
-func (a *Account) AddResourceLimits(self bool, cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64) error {
+func (a *Account) AddResourceLimits(self bool, cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64) {
 	if self {
 		a.Cpu.Staked += cpuStaked
 		a.Net.Staked += netStaked
@@ -384,12 +389,12 @@ func (a *Account) AddResourceLimits(self bool, cpuStaked, netStaked, cpuStakedSu
 		a.Cpu.Delegated += cpuStaked
 		a.Net.Delegated += netStaked
 	}
-	return a.UpdateResource(cpuStakedSum, netStakedSum)
+	a.updateResource(cpuStakedSum, netStakedSum)
 }
-func (a *Account) CancelDelegateSelf(cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64) error {
+func (a *Account) CancelDelegateSelf(cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64) {
 	a.Cpu.Staked -= cpuStaked
 	a.Net.Staked -= netStaked
-	return a.UpdateResource(cpuStakedSum, netStakedSum)
+	a.updateResource(cpuStakedSum, netStakedSum)
 }
 func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64) error {
 	done := false
@@ -412,7 +417,7 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 		}
 	}
 	if done == false {
-		return errors.New(log, fmt.Sprintf("account:%s is not delegated for %s", common.IndexToName(a.Index), common.IndexToName(acc.Index)))
+		return errors.New(log, fmt.Sprintf("account:%s is not delegated for %s", a.Index.String(), acc.Index.String()))
 	}
 	return nil
 }
@@ -425,22 +430,18 @@ func (a *Account) SubResourceLimits(cpu, net float32, cpuStakedSum, netStakedSum
 	}
 	a.Cpu.Used += cpu
 	a.Net.Used += net
-	return a.UpdateResource(cpuStakedSum, netStakedSum)
-}
-func (a *Account) SetDelegateInfo(index common.AccountName, cpuStaked, netStaked uint64) error {
-	d := Delegate{Index: index, CpuStaked: cpuStaked, NetStaked: netStaked}
-	a.Delegates = append(a.Delegates, d)
+	a.updateResource(cpuStakedSum, netStakedSum)
 	return nil
 }
-func (a *Account) UpdateResource(cpuStakedSum, netStakedSum uint64) error {
-	if cpuStakedSum == 0 || netStakedSum == 0 {
-		return errors.New(log, "cpuStakedSum and netStakedSum can't be zero")
-	}
+func (a *Account) SetDelegateInfo(index common.AccountName, cpuStaked, netStaked uint64)  {
+	d := Delegate{Index: index, CpuStaked: cpuStaked, NetStaked: netStaked}
+	a.Delegates = append(a.Delegates, d)
+}
+func (a *Account) updateResource(cpuStakedSum, netStakedSum uint64) {
 	a.Cpu.Limit = float32(a.Cpu.Staked+a.Cpu.Delegated) / float32(cpuStakedSum) * BlockCpu
 	a.Cpu.Available = a.Cpu.Limit - a.Cpu.Used
 	a.Net.Limit = float32(a.Cpu.Staked+a.Net.Delegated) / float32(netStakedSum) * BlockNet
 	a.Net.Available = a.Net.Limit - a.Net.Used
-	return nil
 }
 func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64, timeStamp int64) error {
 	t := timeStamp / (1000 * 1000)
@@ -455,15 +456,15 @@ func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64, timeStamp 
 	if a.Net.Used != 0 {
 		a.Net.Used -= a.Net.Used * interval
 	}
-	a.UpdateResource(cpuStakedSum, netStakedSum)
+	a.updateResource(cpuStakedSum, netStakedSum)
 	a.TimeStamp = t
 	return nil
 }
-func (a *Account) addVotes(token uint64) {
-	a.Resource.Votes.Staked += token
+func (a *Account) addVotes(staked uint64) {
+	a.Resource.Votes.Staked += staked
 }
-func (a *Account) subVotes(token uint64) {
-	a.Resource.Votes.Staked -= token
+func (a *Account) subVotes(staked uint64) {
+	a.Resource.Votes.Staked -= staked
 }
 
 func (a *Account) updateElectedProducers(accounts []common.AccountName) error {
