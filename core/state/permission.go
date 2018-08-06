@@ -172,7 +172,7 @@ func (a *Account) CheckPermission(state *State, name string, signatures []common
 			}
 		}
 		if err := perm.CheckPermission(state, signatures); err != nil {
-			log.Error(fmt.Sprintf("account:%s", common.IndexToName(a.Index)))
+			log.Error(fmt.Sprintf("account:%s", a.Index.String()))
 			return err
 		}
 	}

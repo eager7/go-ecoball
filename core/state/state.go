@@ -124,7 +124,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
 	if err := s.trie.TryUpdate(addr.Bytes(), common.IndexToBytes(acc.Index)); err != nil {
 		return nil, err
 	}
-	s.Accounts[common.IndexToName(index)] = *acc
+	s.Accounts[index.String()] = *acc
 	s.Params[addr.HexString()] = uint64(index)
 	return acc, nil
 }
@@ -181,7 +181,7 @@ func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, er
  *  @param index - the account index
  */
 func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
-	acc, ok := s.Accounts[common.IndexToName(index)]
+	acc, ok := s.Accounts[index.String()]
 	if ok {
 		return &acc, nil
 	}
@@ -191,7 +191,7 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 		return nil, err
 	}
 	if fData == nil {
-		return nil, errors.New(fmt.Sprintf("no this account named:%s", common.IndexToName(index)))
+		return nil, errors.New(fmt.Sprintf("no this account named:%s", index.String()))
 	}
 	acc = Account{}
 	if err := acc.Deserialize(fData); err != nil {
@@ -240,7 +240,7 @@ func (s *State) CommitAccount(acc *Account) error {
 		return err
 	}
 	//s.RecoverResources(acc)
-	s.Accounts[common.IndexToName(acc.Index)] = *acc
+	s.Accounts[acc.Index.String()] = *acc
 	return nil
 }
 func (s *State) CommitParam(key string, value uint64) error {

@@ -79,7 +79,7 @@ func NewAccount(path string, index common.AccountName, addr common.Address, time
 }
 
 func (a *Account) NewStoreTrie(path string) error {
-	diskDb, err := store.NewLevelDBStore(path+"/"+common.IndexToName(a.Index), 0, 0)
+	diskDb, err := store.NewLevelDBStore(path+"/"+a.Index.String(), 0, 0)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (a *Account) SetContract(t types.VmType, des, code []byte) error {
  */
 func (a *Account) GetContract() (*types.DeployInfo, error) {
 	if a.Contract.TypeVm == 0 {
-		return nil, errors.New(log, fmt.Sprintf("this account[%s] is not set contract", common.IndexToName(a.Index)))
+		return nil, errors.New(log, fmt.Sprintf("this account[%s] is not set contract", a.Index.String()))
 	}
 	return &a.Contract, nil
 }
@@ -363,6 +363,6 @@ func (a *Account) JsonString() string {
 	return string(data)
 }
 func (a *Account) Show() {
-	fmt.Println("----------------" + common.IndexToName(a.Index) + ":")
+	fmt.Println("----------------" + a.Index.String() + ":")
 	fmt.Println(a.JsonString())
 }

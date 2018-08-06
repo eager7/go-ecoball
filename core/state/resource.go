@@ -277,9 +277,13 @@ func (s *State) SetBlockLimits(cpu, net bool) {
 	}
 	log.Debug("SetBlockLimits:", BlockCpu, BlockNet)
 }
+/**
+ *  @brief register as a candidate node
+ *  @param index - account's index
+ */
 func (s *State) RegisterProducer(index common.AccountName) error {
 	if _, ok := s.Producers[index]; ok {
-		return errors.New(log, fmt.Sprintf("the account:%s was already registed", common.IndexToName(index)))
+		return errors.New(log, fmt.Sprintf("the account:%s was already registed", index.String()))
 	}
 	if err := s.CheckAccountCertification(index); err != nil {
 		return nil
@@ -416,10 +420,10 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 		if a.Delegates[i].Index == acc.Index {
 			done = true
 			if acc.Cpu.Delegated < cpuStaked {
-				return errors.New(log, fmt.Sprintf("the account:%s cpu amount is not enough", common.IndexToName(acc.Index)))
+				return errors.New(log, fmt.Sprintf("the account:%s cpu amount is not enough", acc.Index.String()))
 			}
 			if acc.Net.Delegated < netStaked {
-				return errors.New(log, fmt.Sprintf("the account:%s net amount is not enough", common.IndexToName(acc.Index)))
+				return errors.New(log, fmt.Sprintf("the account:%s net amount is not enough", acc.Index.String()))
 			}
 			acc.CancelDelegateSelf(cpuStaked, netStaked, cpuStakedSum, netStakedSum)
 
@@ -437,10 +441,10 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 }
 func (a *Account) SubResourceLimits(cpu, net float32, cpuStakedSum, netStakedSum uint64) error {
 	if a.Cpu.Available < cpu {
-		return errors.New(log, fmt.Sprintf("the account:%s cpu amount is not enough", common.IndexToName(a.Index)))
+		return errors.New(log, fmt.Sprintf("the account:%s cpu amount is not enough", a.Index.String()))
 	}
 	if a.Net.Available < net {
-		return errors.New(log, fmt.Sprintf("the account:%s net amount is not enough", common.IndexToName(a.Index)))
+		return errors.New(log, fmt.Sprintf("the account:%s net amount is not enough", a.Index.String()))
 	}
 	a.Cpu.Used += cpu
 	a.Net.Used += net

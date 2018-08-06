@@ -236,8 +236,8 @@ func (t *Transaction) Show() {
 func (t *Transaction) show() {
 	fmt.Println("\t---------------Transaction-------------")
 	fmt.Println("\tVersion        :", t.Version)
-	fmt.Println("\tFrom           :", common.IndexToName(t.From))
-	fmt.Println("\tAddr           :", common.IndexToName(t.Addr))
+	fmt.Println("\tFrom           :", t.From.String())
+	fmt.Println("\tAddr           :", t.Addr.String())
 	fmt.Println("\tTime           :", t.TimeStamp)
 	fmt.Println("\tHash           :", t.Hash.HexString())
 	fmt.Println("\tSig Len        :", len(t.Signatures))
