@@ -17,8 +17,8 @@
 package ipfs
 
 import (
-	"github.com/ipfs/go-ipfs/path"
-	"gx/ipfs/QmSKYWC84fqkKB54Te5JMcov2MBVzucXaRGxFqByzzCbHe/go-ipfs-cmds"
+	"gx/ipfs/QmYKNMEUK7nCVAefgXF1LVtZEZg3uRmBqiae4FJRXDNAyJ/go-path"
+	"gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
 	"bytes"
 	"github.com/ipfs/go-ipfs/core"
 	"encoding/json"

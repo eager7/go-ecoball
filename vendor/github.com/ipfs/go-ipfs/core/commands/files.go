@@ -8,28 +8,29 @@ import (
 	"io"
 	"os"
 	gopath "path"
+	"sort"
 	"strings"
 
-	bservice "github.com/ipfs/go-ipfs/blockservice"
 	oldcmds "github.com/ipfs/go-ipfs/commands"
 	lgc "github.com/ipfs/go-ipfs/commands/legacy"
 	core "github.com/ipfs/go-ipfs/core"
 	e "github.com/ipfs/go-ipfs/core/commands/e"
-	dag "github.com/ipfs/go-ipfs/merkledag"
 	mfs "github.com/ipfs/go-ipfs/mfs"
-	path "github.com/ipfs/go-ipfs/path"
-	resolver "github.com/ipfs/go-ipfs/path/resolver"
 	ft "github.com/ipfs/go-ipfs/unixfs"
 	uio "github.com/ipfs/go-ipfs/unixfs/io"
+	bservice "gx/ipfs/QmNqRBAhovtf4jVd5cF7YvHaFSsQHHZBaUFwGQWPM2CV7R/go-blockservice"
+	dag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
+	path "gx/ipfs/QmYKNMEUK7nCVAefgXF1LVtZEZg3uRmBqiae4FJRXDNAyJ/go-path"
+	resolver "gx/ipfs/QmYKNMEUK7nCVAefgXF1LVtZEZg3uRmBqiae4FJRXDNAyJ/go-path/resolver"
 
+	cmds "gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
 	humanize "gx/ipfs/QmPSBJL4momYnE7DcUyk2DVhD6rH488ZmHBGLbxNdhU44K/go-humanize"
-	cmds "gx/ipfs/QmSKYWC84fqkKB54Te5JMcov2MBVzucXaRGxFqByzzCbHe/go-ipfs-cmds"
-	logging "gx/ipfs/QmTG23dvpBCBjqQwyDxV8CQT6jmS4PSftNr1VqHhE3MLy7/go-log"
-	offline "gx/ipfs/QmYk9mQ4iByLLFzZPGWMnjJof3DQ3QneFFR6ZtNAXd8UvS/go-ipfs-exchange-offline"
-	mh "gx/ipfs/QmZyZDi491cCNTLfAhwcaDii2Kg4pwKRkhqQzURGDvY6ua/go-multihash"
-	cid "gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	cmdkit "gx/ipfs/QmceUdzxkimdYsgtX733uNgzf1DLHyBKN6ehGSp85ayppM/go-ipfs-cmdkit"
-	ipld "gx/ipfs/Qme5bWv7wtjUNGsK2BNGVUFPKiuxWrsqrtvYwCLRw8YFES/go-ipld-format"
+	mh "gx/ipfs/QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8/go-multihash"
+	offline "gx/ipfs/QmS6mo1dPpHdYsVkm27BRZDLxpKBCiJKUH8fHX15XFfMez/go-ipfs-exchange-offline"
+	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	ipld "gx/ipfs/QmZtNq8dArGfnpCZfx2pUNY7UcjGhVp5qqwQ4hH6mpTMRQ/go-ipld-format"
+	logging "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log"
+	cmdkit "gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
 )
 
 var flog = logging.Logger("cmds/files")
@@ -329,13 +330,13 @@ var filesCpCmd = &oldcmds.Command{
 
 		nd, err := getNodeFromPath(req.Context(), node, node.DAG, src)
 		if err != nil {
-			res.SetError(err, cmdkit.ErrNormal)
+			res.SetError(fmt.Errorf("cp: cannot get node from path %s: %s", src, err), cmdkit.ErrNormal)
 			return
 		}
 
 		err = mfs.PutNode(node.FilesRoot, dst, nd)
 		if err != nil {
-			res.SetError(err, cmdkit.ErrNormal)
+			res.SetError(fmt.Errorf("cp: cannot put node in path %s: %s", dst, err), cmdkit.ErrNormal)
 			return
 		}
 
@@ -405,6 +406,7 @@ Examples:
 	},
 	Options: []cmdkit.Option{
 		cmdkit.BoolOption("l", "Use long listing format."),
+		cmdkit.BoolOption("U", "Do not sort; list entries in directory order."),
 	},
 	Run: func(req oldcmds.Request, res oldcmds.Response) {
 		var arg string
@@ -462,7 +464,24 @@ Examples:
 			return
 		case *mfs.File:
 			_, name := gopath.Split(path)
-			out := &filesLsOutput{[]mfs.NodeListing{mfs.NodeListing{Name: name, Type: 1}}}
+			out := &filesLsOutput{[]mfs.NodeListing{mfs.NodeListing{Name: name}}}
+			if long {
+				out.Entries[0].Type = int(fsn.Type())
+
+				size, err := fsn.Size()
+				if err != nil {
+					res.SetError(err, cmdkit.ErrNormal)
+					return
+				}
+				out.Entries[0].Size = size
+
+				nd, err := fsn.GetNode()
+				if err != nil {
+					res.SetError(err, cmdkit.ErrNormal)
+					return
+				}
+				out.Entries[0].Hash = nd.Cid().String()
+			}
 			res.SetOutput(out)
 			return
 		default:
@@ -482,8 +501,15 @@ Examples:
 			}
 
 			buf := new(bytes.Buffer)
-			long, _, _ := res.Request().Option("l").Bool()
 
+			noSort, _, _ := res.Request().Option("U").Bool()
+			if !noSort {
+				sort.Slice(out.Entries, func(i, j int) bool {
+					return strings.Compare(out.Entries[i].Name, out.Entries[j].Name) < 0
+				})
+			}
+
+			long, _, _ := res.Request().Option("l").Bool()
 			for _, o := range out.Entries {
 				if long {
 					fmt.Fprintf(buf, "%s\t%s\t%d\n", o.Name, o.Hash, o.Size)

@@ -11,8 +11,8 @@ import (
 	namesys "github.com/ipfs/go-ipfs/namesys"
 	nsopts "github.com/ipfs/go-ipfs/namesys/opts"
 
-	offline "gx/ipfs/QmPFAxh9UwfqwseVcWkj1Lz1gCHyQ6QuCk5m5XUp6vifkL/go-ipfs-routing/offline"
-	"gx/ipfs/QmceUdzxkimdYsgtX733uNgzf1DLHyBKN6ehGSp85ayppM/go-ipfs-cmdkit"
+	offline "gx/ipfs/QmbFRJeEmEU16y3BmKKaD4a9fm5oHsEAMHe2vSB1UnfLMi/go-ipfs-routing/offline"
+	"gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
 )
 
 var IpnsCmd = &cmds.Command{
@@ -89,7 +89,7 @@ Resolve the value of a dnslink:
 		}
 
 		if local {
-			offroute := offline.NewOfflineRouter(n.Repo.Datastore(), n.PrivateKey)
+			offroute := offline.NewOfflineRouter(n.Repo.Datastore(), n.RecordValidator)
 			resolver = namesys.NewIpnsResolver(offroute)
 		}
 

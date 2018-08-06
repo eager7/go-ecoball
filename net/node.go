@@ -17,20 +17,21 @@
 package net
 
 import (
-	"github.com/ecoball/go-ecoball/net/p2p"
-	"github.com/ecoball/go-ecoball/net/ipfs"
-	"fmt"
-	"context"
-	"github.com/ipfs/go-ipfs/core"
-	"gx/ipfs/QmcJukH2sAFjY3HdBKq35WDzWoL3UUu2gt9wdfqZTUyM74/go-libp2p-peer"
-	"gx/ipfs/QmaWsab8a1KQgoxWP3RjK7mBhSi5PB9pR6NwZUrSXvVd1i/go-libp2p-floodsub"
-	"github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/net/util"
-	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"bytes"
 	"os"
+	"fmt"
+	"context"
+
+	"github.com/ipfs/go-ipfs/core"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+	"gx/ipfs/QmXScvRbYh9X9okLuX9YMnz1HR4WgRTU2hocjBs15nmCNG/go-libp2p-floodsub"
+	"github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/util"
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/net/p2p"
+	"github.com/ecoball/go-ecoball/net/ipfs"
 )
 
 var log = elog.NewLogger("net", elog.DebugLog)
@@ -239,6 +240,7 @@ func StartNetWork(ledg ledger.Ledger)  {
 	//TODO move to config file
 	//InitIpfsConfig(path)
 	var path = "./store"
+
 	ipfsNode, err := ipfs.StartIpfsNode(path)
 	if err != nil {
 		panic(err)

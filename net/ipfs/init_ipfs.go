@@ -25,13 +25,15 @@ import (
 	"path"
 	"strings"
 	"context"
-
-	assets "github.com/ipfs/go-ipfs/assets"
-	core "github.com/ipfs/go-ipfs/core"
-	namesys "github.com/ipfs/go-ipfs/namesys"
-	config "github.com/ipfs/go-ipfs/repo/config"
-	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
 	"sort"
+	"path/filepath"
+
+	"github.com/ipfs/go-ipfs/assets"
+	"github.com/ipfs/go-ipfs/core"
+	"github.com/ipfs/go-ipfs/namesys"
+	"github.com/ipfs/go-ipfs/repo/config"
+	"github.com/ipfs/go-ipfs/repo/fsrepo"
+	"github.com/ipfs/go-ipfs/plugin/loader"
 )
 
 const (
@@ -178,6 +180,20 @@ func initializeIpnsKeyspace(repoRoot string) error {
 	return namesys.InitializeKeyspace(ctx, nd.Namesys, nd.Pinning, nd.PrivateKey)
 }
 
+// load ecoball ipfs ipld format plugin
+func loadIpldPlugin() {
+	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+	dir = filepath.Join(dir, "/plugins")
+
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		fmt.Errorf("Missing Ecoball ipld plugin file!")
+	}
+
+	if _, err := loader.LoadPlugins(dir); err != nil {
+		fmt.Println("error loading plugins: ", err)
+	}
+}
+
 func StartIpfsNode(path string) (*core.IpfsNode, error) {
 	//open debug
 	//u.Debug = true
@@ -222,6 +238,8 @@ func StartIpfsNode(path string) (*core.IpfsNode, error) {
 		},
 		//TODO(Kubuxu): refactor Online vs Offline by adding Permanent vs Ephemeral
 	}
+
+	loadIpldPlugin()
 
 	//rcfg, err := repo.Config()
 	//if err != nil {
