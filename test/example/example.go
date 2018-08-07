@@ -76,7 +76,6 @@ func TestTransfer() *types.Transaction {
 		fmt.Println(err)
 		return nil
 	}
-	tx.Show()
 	return tx
 }
 

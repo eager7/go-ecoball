@@ -17,71 +17,47 @@
 package types_test
 
 import (
-	"fmt"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/types"
 	"testing"
 	"time"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 func TestHeader(t *testing.T) {
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
 	h, err := types.NewHeader(types.VersionHeader, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, time.Now().Unix())
-	if err != nil {
-		t.Fatal(err)
-	}
+	errors.CheckErrorPanic(err)
 	acc, err := account.NewAccount(0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := h.SetSignature(&acc); err != nil {
-		t.Fatal(err)
-	}
-	data, err := h.Serialize()
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("Header1:", h.Hash.HexString())
+	errors.CheckErrorPanic(err)
 
-	h.Show()
+	errors.CheckErrorPanic(h.SetSignature(&acc))
+
+	data, err := h.Serialize()
+	errors.CheckErrorPanic(err)
+
 	h2 := new(types.Header)
-	if err := h2.Deserialize(data); err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("Header2:", h.Hash.HexString())
-	if !h2.Hash.Equals(&h.Hash) {
-		t.Fatal("header error")
-	}
-	h2.Show()
+	errors.CheckErrorPanic(h2.Deserialize(data))
+
+	errors.CheckEqualPanic(h.JsonString() == h2.JsonString())
 }
 
 func TestBlockCreate(t *testing.T) {
 	g, err := types.GenesesBlockInit()
-	if err != nil {
-		t.Fatal(err)
-	}
-	//Sig
+	errors.CheckErrorPanic(err)
+
 	acc, err := account.NewAccount(0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := g.SetSignature(&acc); err != nil {
-		t.Fatal(err)
-	}
-	g.Show()
+	errors.CheckErrorPanic(err)
+
+	errors.CheckErrorPanic(g.SetSignature(&acc))
+
 	data, err := g.Serialize()
-	if err != nil {
-		t.Fatal(err)
-	}
+	errors.CheckErrorPanic(err)
 
 	block := new(types.Block)
-	if err := block.Deserialize(data); err != nil {
-		t.Fatal(err)
-	}
-	if !block.Hash.Equals(&g.Hash) {
-		t.Fatal("error")
-	}
-	block.Show()
+	errors.CheckErrorPanic(block.Deserialize(data))
+
+	errors.CheckEqualPanic(g.JsonString() == block.JsonString())
 }

@@ -17,73 +17,45 @@
 package types_test
 
 import (
-	"errors"
-	"fmt"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/test/example"
 	"testing"
 )
 
 func TestTransfer(t *testing.T) {
-	fmt.Println("test create transaction")
 	tx := example.TestTransfer()
-	fmt.Println("Hash1:", tx.Hash.HexString())
-	tx.Show()
 	result, err := tx.VerifySignature()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result == false {
-		t.Fatal(errors.New("verify error"))
-	}
+	errors.CheckErrorPanic(err)
+	errors.CheckEqualPanic(result)
 
 	transferData, err := tx.Serialize()
-	if err != nil {
-		t.Fatal(err)
-	}
+	errors.CheckErrorPanic(err)
+
 	tx2 := &types.Transaction{}
-	if err := tx2.Deserialize(transferData); err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("Hash2:", tx2.Hash.HexString())
-	if tx.JsonString() != tx2.JsonString() {
-		t.Fatal("hash wrong")
-	}
-	tx2.Show()
+	errors.CheckErrorPanic(tx2.Deserialize(transferData))
+
+	errors.CheckEqualPanic(tx.JsonString() == tx2.JsonString())
 }
 
 func TestDeploy(t *testing.T) {
 	deploy := example.TestDeploy([]byte("test"))
-	deploy.Show()
-	fmt.Println("--------------")
 	data, err := deploy.Serialize()
-	if err != nil {
-		t.Fatal(err)
-	}
+	errors.CheckErrorPanic(err)
+
 	dep := &types.Transaction{Payload: new(types.DeployInfo)}
-	if err := dep.Deserialize(data); err != nil {
-		t.Fatal(err)
-	}
-	if dep.JsonString() != deploy.JsonString() {
-		t.Fatal("hash mismatch")
-	}
-	dep.Show()
+	errors.CheckErrorPanic(dep.Deserialize(data))
+
+	errors.CheckEqualPanic(dep.JsonString() == deploy.JsonString())
 }
 
 func TestInvoke(t *testing.T) {
 	i := example.TestInvoke("main")
-	i.Show()
 	data, err := i.Serialize()
-	if err != nil {
-		t.Fatal(err)
-	}
+	errors.CheckErrorPanic(err)
 
 	i2 := new(types.Transaction)
-	if err := i2.Deserialize(data); err != nil {
-		t.Fatal(err)
-	}
-	if i.JsonString() != i2.JsonString() {
-		t.Fatal("hash mismatch")
-	}
-	i2.Show()
+	errors.CheckErrorPanic(i2.Deserialize(data))
+
+	errors.CheckEqualPanic(i.JsonString() == i2.JsonString())
 }

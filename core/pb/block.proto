@@ -21,6 +21,7 @@ package pb;
 ** Header info for compute hash
 */
 message Header {
+    bytes       ChainID             = 11;
     uint32      version             = 1;
     int64       timestamp           = 2;
     uint64      height              = 3;
@@ -34,14 +35,7 @@ message Header {
 ** Header info for sync with nodes
 */
 message HeaderTx {
-    uint32      version             = 1;
-    int64       timestamp           = 2;
-    uint64      height              = 3;
-    ConsensusData ConsensusData     = 8;
-    bytes       prev_hash           = 4;
-    bytes       merkle_hash         = 5;
-    bytes       state_hash          = 9;
-    bytes       Bloom               = 10;
+    Header      Header              = 1;
 
     repeated    Signature   sign    = 6;
     bytes       block_hash          = 7;

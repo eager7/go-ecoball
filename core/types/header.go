@@ -84,7 +84,6 @@ func NewHeader(version uint32, height uint64, prevHash, merkleHash, stateHash co
 		return nil, err
 	}
 	header.Hash, err = common.DoubleHash(b)
-	fmt.Println("New Header Hash:", header.Hash.HexString())
 	if err != nil {
 		return nil, err
 	}
@@ -170,16 +169,18 @@ func (h *Header) protoBuf() (*pb.HeaderTx, error) {
 		return nil, err
 	}
 	return &pb.HeaderTx{
-		Version:       h.Version,
-		Timestamp:     h.TimeStamp,
-		Height:        h.Height,
-		ConsensusData: pbCon,
-		PrevHash:      h.PrevHash.Bytes(),
-		MerkleHash:    h.MerkleHash.Bytes(),
-		Sign:          sig,
-		StateHash:     h.StateHash.Bytes(),
-		Bloom:         h.Bloom.Bytes(),
-		BlockHash:     h.Hash.Bytes(),
+		Header: &pb.Header{
+			Version:       h.Version,
+			Timestamp:     h.TimeStamp,
+			Height:        h.Height,
+			ConsensusData: pbCon,
+			PrevHash:      h.PrevHash.Bytes(),
+			MerkleHash:    h.MerkleHash.Bytes(),
+			StateHash:     h.StateHash.Bytes(),
+			Bloom:         h.Bloom.Bytes(),
+		},
+		Sign:      sig,
+		BlockHash: h.Hash.Bytes(),
 	}, nil
 }
 
@@ -212,11 +213,11 @@ func (h *Header) Deserialize(data []byte) error {
 		return err
 	}
 
-	h.Version = pbHeader.Version
-	h.TimeStamp = pbHeader.Timestamp
-	h.Height = pbHeader.Height
-	h.PrevHash = common.NewHash(pbHeader.PrevHash)
-	h.MerkleHash = common.NewHash(pbHeader.MerkleHash)
+	h.Version = pbHeader.Header.Version
+	h.TimeStamp = pbHeader.Header.Timestamp
+	h.Height = pbHeader.Header.Height
+	h.PrevHash = common.NewHash(pbHeader.Header.PrevHash)
+	h.MerkleHash = common.NewHash(pbHeader.Header.MerkleHash)
 	for i := 0; i < len(pbHeader.Sign); i++ {
 		sig := common.Signature{
 			PubKey:  common.CopyBytes(pbHeader.Sign[i].PubKey),
@@ -224,11 +225,11 @@ func (h *Header) Deserialize(data []byte) error {
 		}
 		h.Signatures = append(h.Signatures, sig)
 	}
-	h.StateHash = common.NewHash(pbHeader.StateHash)
+	h.StateHash = common.NewHash(pbHeader.Header.StateHash)
 	h.Hash = common.NewHash(pbHeader.BlockHash)
-	h.Bloom = bloom.NewBloom(pbHeader.Bloom)
+	h.Bloom = bloom.NewBloom(pbHeader.Header.Bloom)
 
-	dataCon, err := pbHeader.ConsensusData.Marshal()
+	dataCon, err := pbHeader.Header.ConsensusData.Marshal()
 	if err != nil {
 		return err
 	}
@@ -243,6 +244,7 @@ func (h *Header) JsonString() string {
 	data, err := json.Marshal(h)
 	if err != nil {
 		log.Error(err)
+		return ""
 	}
 	return string(data)
 }

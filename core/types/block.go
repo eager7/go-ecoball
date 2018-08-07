@@ -174,9 +174,7 @@ func (b *Block) Deserialize(data []byte) error {
 }
 
 func (b *Block) Show() {
-	fmt.Println("\t-----------Block-------------")
-	b.Header.Show()
-	fmt.Println("\tTxs Number     :", b.CountTxs)
+	fmt.Println(b.JsonString())
 }
 
 func (b *Block) JsonString() string {
