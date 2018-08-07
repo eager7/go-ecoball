@@ -135,7 +135,7 @@ func TestABABFTPros(t *testing.T) {
 
 
 
-	time.Sleep(time.Second * 100)
+	time.Sleep(time.Second * 10)
 	// test the time out message
 	event.Send(event.ActorNil, event.ActorConsensus, TxTimeout{})
 
