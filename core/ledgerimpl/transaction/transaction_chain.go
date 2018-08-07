@@ -35,7 +35,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/utils"
 )
 
-var log = elog.NewLogger("Chain Tx", elog.DebugLog)
+var log = elog.NewLogger("Chain Tx", elog.InfoLog)
 
 type ChainTx struct {
 	BlockStore     store.Storage
@@ -99,7 +99,6 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 			log.Notice("Handle Transaction Result:", ret)
 		}
 	}
-	log.Warn("NewBlock State", s.GetHashRoot().HexString())
 	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, timeStamp)
 }
 
@@ -238,7 +237,7 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
 	if len(headers) == 0 {
 		return nil, nil
 	}
-	log.Info("The geneses block is existed:", len(headers))
+	log.Debug("The geneses block is existed:", len(headers))
 	var hash common.Hash
 	for _, v := range headers {
 		header := new(types.Header)

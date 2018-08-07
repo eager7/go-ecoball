@@ -71,7 +71,7 @@ func (s *State) TokenExisted(name string) bool {
  *  @param index - the unique id of token name created by common.NameToIndex()
  */
 func (a *Account) AddToken(name string) error {
-	log.Info("add token:", name)
+	log.Debug("add token:", name)
 	ac := Token{Name: name, Balance: new(big.Int).SetUint64(0)}
 	a.Tokens[name] = ac
 	return nil
@@ -95,7 +95,7 @@ func (a *Account) TokenExisted(token string) bool {
  *  @param amount - value of token
  */
 func (a *Account) AddBalance(name string, amount *big.Int) error {
-	log.Info("add token", name, "balance:", amount, a.Index)
+	log.Debug("add token", name, "balance:", amount, a.Index)
 	if amount.Sign() == 0 {
 		return errors.New(log, "amount is zero")
 	}

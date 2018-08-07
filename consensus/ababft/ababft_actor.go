@@ -885,7 +885,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			block_first_cal,err = actor_c.service_ababft.ledger.NewTxBlock(current_blk.Transactions,current_blk.Header.ConsensusData, current_blk.Header.TimeStamp)
 			fmt.Println("current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
 			fmt.Println("compare merkle hash:", current_blk.Header.MerkleHash, block_first_cal.MerkleHash)
-			fmt.Println("compare state hash:", current_blk.Header.StateHash, block_first_cal.StateHash)
+			elog.Log.Info("compare state hash:", current_blk.Header.StateHash.HexString(), block_first_cal.StateHash.HexString())
 
 			// currentheader = current_ledger.GetCurrentHeader()
 			old_block,_ := current_ledger.GetTxBlock(currentheader.PrevHash)
