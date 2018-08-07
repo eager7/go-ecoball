@@ -296,27 +296,31 @@ func (s *State) CommitToDB() error {
  *  @param hash - the hash of mpt witch state will be reset
  */
 func (s *State) Reset(hash common.Hash) error {
-	s.Close()
+	if err := s.diskDb.Close(); err != nil {
+		return err
+	}
 	diskDb, err := store.NewLevelDBStore(s.path, 0, 0)
 	if err != nil {
 		return err
 	}
 	s.db = NewDatabase(diskDb)
-	log.Notice("Open Trie Hash:", hash.HexString())
 	s.trie, err = s.db.OpenTrie(hash)
 	if err != nil {
-		s.trie, err = s.db.OpenTrie(common.Hash{})
-		if err != nil {
-			return err
-		}
+		return err
 	}
+	for k := range s.Accounts {
+		delete(s.Accounts, k)
+	}
+	for k := range s.Producers {
+		delete(s.Producers, k)
+	}
+	for k := range s.Params {
+		delete(s.Params, k)
+	}
+	log.Info("Open Trie Hash:", hash.HexString())
 	return nil
 }
-func (s *State) Close() {
-	if err := s.diskDb.Close(); err != nil {
-		log.Error(err)
-	}
-}
+
 func (s *State) Trie() Trie {
 	return s.trie
 }

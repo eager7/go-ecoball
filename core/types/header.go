@@ -31,6 +31,7 @@ import (
 const VersionHeader = 1
 
 type Header struct {
+	ChainID       common.Hash
 	Version       uint32
 	TimeStamp     int64
 	Height        uint64
@@ -238,26 +239,10 @@ func (h *Header) Deserialize(data []byte) error {
 	return nil
 }
 
-func (h *Header) show() {
-	fmt.Println("\t-----------Header------------")
-	fmt.Println("\tHeight         :", h.Height)
-	fmt.Println("\tTime           :", h.TimeStamp)
-	fmt.Println("\tVersion        :", h.Version)
-	fmt.Println("\tPrevHash       :", h.PrevHash.HexString())
-	fmt.Println("\tMerkleHash     :", h.MerkleHash.HexString())
-	fmt.Println("\tStateHash      :", h.StateHash.HexString())
-	fmt.Println("\tHash           :", h.Hash.HexString())
-	fmt.Println("\tSig Len        :", len(h.Signatures))
-	for i := 0; i < len(h.Signatures); i++ {
-		fmt.Println("\tPublicKey      :", common.ToHex(h.Signatures[i].PubKey))
-		fmt.Println("\tSigData        :", common.ToHex(h.Signatures[i].SigData))
-	}
-}
-
 func (h *Header) JsonString() string {
 	data, err := json.Marshal(h)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 	}
 	return string(data)
 }

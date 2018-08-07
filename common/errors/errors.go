@@ -93,3 +93,9 @@ func CheckErrorPanic(err error) {
 		elog.Log.Panic(err)
 	}
 }
+
+func CheckEqualPanic(b bool) {
+	if !b {
+		elog.Log.Panic("not equal")
+	}
+}
