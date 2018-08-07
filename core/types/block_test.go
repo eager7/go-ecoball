@@ -42,6 +42,7 @@ func TestHeader(t *testing.T) {
 	errors.CheckErrorPanic(h2.Deserialize(data))
 
 	errors.CheckEqualPanic(h.JsonString() == h2.JsonString())
+	h2.Show()
 }
 
 func TestBlockCreate(t *testing.T) {

@@ -241,7 +241,29 @@ func (h *Header) Deserialize(data []byte) error {
 }
 
 func (h *Header) JsonString() string {
-	data, err := json.Marshal(h)
+	data, err := json.Marshal(
+		struct {
+			ChainID       common.Hash
+			Version       uint32
+			TimeStamp     int64
+			Height        uint64
+			ConsensusData ConsensusData
+			PrevHash      common.Hash
+			MerkleHash    common.Hash
+			StateHash     common.Hash
+			bloom         bloom.Bloom
+			Signatures    []common.Signature
+
+			Hash common.Hash
+		}{
+			Version:       h.Version,
+			TimeStamp:     h.TimeStamp,
+			Height:        h.Height,
+			ConsensusData: h.ConsensusData,
+			PrevHash:      h.PrevHash,
+			MerkleHash:    h.MerkleHash,
+			StateHash:     h.StateHash,
+		})
 	if err != nil {
 		log.Error(err)
 		return ""
