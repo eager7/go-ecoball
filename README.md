@@ -28,13 +28,29 @@ create wallet file
 ```
 $./ecoclient wallet create --name $WALLETFILE --password $PASSWORD
 ```
-create account
+open wallet file
 ```
-$./ecoclient wallet createaccount --account $ACCOUNTNAME --password $PASSWORD
+$./ecoclient wallet open --name $WALLETFILE --password $PASSWORD
+```
+createkey in wallet
+```
+$./ecoclient wallet createkey --name $WALLETFILE --password $PASSWORD
+```
+import key to wallet
+```
+$./ecoclient wallet import --name $WALLETFILE --password $PASSWORD --private $PRIVATEKEY
+```
+lock wallet
+```
+$./ecoclient wallet lock --name $WALLETFILE --password $PASSWORD
+```
+unlock wallet
+```
+$./ecoclient wallet unlock --name $WALLETFILE --password $PASSWORD
 ```
 list account
 ```
-$./ecoclient wallet list --password $PASSWORD
+$./ecoclient wallet list --name $WALLETFILE --password $PASSWORD
 ```
 transfer aba  to another person
 ```

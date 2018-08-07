@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/spectator/connect"
 	"github.com/ecoball/go-ecoball/spectator/info"
 )
 
@@ -88,7 +89,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			break
 		}
 		//notify explorer
-		info.Notify(info.InfoBlock, msg)
+		connect.Notify(info.InfoBlock, msg)
 	case *dpos.DposBlock:
 		//TODO
 		/*if err := l.ledger.bc.SaveBlock(msg); err != nil {

@@ -144,6 +144,18 @@ func StartRPCServer() {
 	httpServer.AddHandleFunc("netlistmyid", nrpc.CliServerListMyId)
 	httpServer.AddHandleFunc("netlistmypeer", nrpc.CliServerListMyPeers)
 
+	//wallermgr
+	httpServer.AddHandleFunc("createWallet", commands.CreateWallet)
+	httpServer.AddHandleFunc("createKey", commands.CreateKey)
+	httpServer.AddHandleFunc("openWallet", commands.OpenWallet)
+	httpServer.AddHandleFunc("lockWallet", commands.LockWallet)
+	httpServer.AddHandleFunc("unlockWallet", commands.UnlockWallet)
+	//httpServer.AddHandleFunc("wallet_createAccount", commands.Wallet_CreateAccount)
+	httpServer.AddHandleFunc("importKey", commands.ImportKey)
+	httpServer.AddHandleFunc("removeKey", commands.RemoveKey)
+	httpServer.AddHandleFunc("listAccount", commands.ListAccount)
+	httpServer.AddHandleFunc("sign_transaction", commands.Sign_transaction)
+
 	//listen port
 	err := http.ListenAndServe(":"+config.HttpLocalPort, nil)
 	if err != nil {
