@@ -18,16 +18,10 @@ package info
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
-	"sync"
-
-	"github.com/ecoball/go-ecoball/common/elog"
-)
-
-var (
-	Onlookers = onlooker{connects: make([]net.Conn, 0, 10)}
-	log       = elog.NewLogger("info", elog.DebugLog)
+	"strconv"
 )
 
 type NotifyInfo interface {
@@ -64,50 +58,46 @@ func (this *OneNotify) Deserialize(data []byte) error {
 	return json.Unmarshal(data, this)
 }
 
-type onlooker struct {
-	connects []net.Conn
-	sync.Mutex
+const (
+	MESSAGE_SIZE int = 10
+)
+
+func MessageDecorate(dataBody []byte) []byte {
+	data := []byte(fmt.Sprintf("%d", len(dataBody)))
+	if length := len(data); length < MESSAGE_SIZE {
+		for i := length + 1; i <= MESSAGE_SIZE; i++ {
+			data = append(data, '#')
+		}
+	}
+	data = append(data, dataBody...)
+	return data
 }
 
-func (this *onlooker) Add(conn net.Conn) {
-	this.Lock()
-	defer this.Unlock()
+func ReadData(conn net.Conn) ([]byte, int, error) {
+	bufSize := make([]byte, MESSAGE_SIZE)
+	if n, err := conn.Read(bufSize); err != nil || MESSAGE_SIZE != n {
+		return nil, 0, errors.New("server conn.Read read message head error")
+	}
 
-	for _, v := range this.connects {
-		if conn == v {
-			return
+	var i int
+	for i = 0; i < MESSAGE_SIZE; i++ {
+		if bufSize[i] == '#' {
+			break
 		}
 	}
 
-	this.connects = append(this.connects, conn)
-}
+	fmt.Println(i, string(bufSize))
 
-func (this *onlooker) notify(info []byte) {
-	this.Lock()
-	defer this.Unlock()
-
-	for k, v := range this.connects {
-		if _, err := v.Write(info); nil != err {
-			addr := v.RemoteAddr().String()
-			log.Warn(addr, " disconnect")
-			this.connects = append(this.connects[:k], this.connects[k+1:]...)
-		}
-
-		fmt.Println(string(info))
-	}
-}
-
-func Notify(infoType NotifyType, message NotifyInfo) error {
-	info, err := NewOneNotify(infoType, message)
+	length, err := strconv.Atoi(string(bufSize[:i]))
 	if nil != err {
-		return err
+		return nil, 0, err
 	}
 
-	data, err := info.Serialize()
-	if nil != err {
-		return nil
+	buf := make([]byte, length)
+	n, err := conn.Read(buf)
+	if err != nil || length != n {
+		return nil, 0, errors.New("server conn.Read read message body error")
 	}
 
-	Onlookers.notify(data)
-	return nil
+	return buf, n, nil
 }
