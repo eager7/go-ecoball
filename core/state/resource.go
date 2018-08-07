@@ -277,6 +277,7 @@ func (s *State) SetBlockLimits(cpu, net bool) {
 	}
 	log.Debug("SetBlockLimits:", BlockCpu, BlockNet)
 }
+
 /**
  *  @brief register as a candidate node
  *  @param index - account's index
@@ -289,9 +290,30 @@ func (s *State) RegisterProducer(index common.AccountName) error {
 		return nil
 	}
 	s.Producers[index] = 0
-	return nil
+
+	return s.CommitProducersList()
 }
-func (s *State) PutProducerToVote(index common.AccountName, accounts []common.AccountName) error {
+
+/**
+ *  @brief cancel register as a candidate node
+ *  @param index - account's index
+ */
+func (s *State) UnRegisterProducer(index common.AccountName) error {
+	if _, ok := s.Producers[index]; !ok {
+		return errors.New(log, fmt.Sprintf("the account:%s is not registed", index.String()))
+	} else {
+		delete(s.Producers, index)
+	}
+
+	return s.CommitProducersList()
+}
+
+/**
+ *  @brief vote to candidate nodes
+ *  @param index - account index
+ *  @param accounts - candidate node list
+ */
+func (s *State) ElectionToVote(index common.AccountName, accounts []common.AccountName) error {
 	votingSum, err := s.GetParam(votingAmount)
 	if err != nil {
 		return err
@@ -319,6 +341,12 @@ func (s *State) PutProducerToVote(index common.AccountName, accounts []common.Ac
 	}
 	return s.CommitAccount(acc)
 }
+
+/**
+ *  @brief revote to another nodes
+ *  @param acc - account struct
+ *  @param accounts - candidate node list
+ */
 func (s *State) ChangeElectedProducers(acc *Account, accounts []common.AccountName) error {
 	for k := range acc.Votes.Producers {
 		if _, ok := s.Producers[k]; ok {
@@ -339,6 +367,12 @@ func (s *State) ChangeElectedProducers(acc *Account, accounts []common.AccountNa
 
 	return s.CommitProducersList()
 }
+
+/**
+ *  @brief update producers when the account change cpu or net resource
+ *  @param acc - account struct
+ *  @param votesOld - account's votes before changed
+ */
 func (s *State) UpdateElectedProducers(acc *Account, votesOld uint64) error {
 	for k := range acc.Votes.Producers {
 		acc.Votes.Producers[k] = acc.Votes.Staked
@@ -351,6 +385,11 @@ func (s *State) UpdateElectedProducers(acc *Account, votesOld uint64) error {
 
 	return s.CommitProducersList()
 }
+
+/**
+ *  @brief check whether the account is qualified
+ *  @param index - account's index
+ */
 func (s *State) CheckAccountCertification(index common.AccountName) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
@@ -361,6 +400,10 @@ func (s *State) CheckAccountCertification(index common.AccountName) error {
 	}
 	return nil
 }
+
+/**
+ *  @brief store the producers' list into mpt trie
+ */
 func (s *State) CommitProducersList() error {
 	if len(s.Producers) == 0 {
 		data, err := s.trie.TryGet([]byte(prodsList))
@@ -382,6 +425,10 @@ func (s *State) CommitProducersList() error {
 	}
 	return nil
 }
+
+/**
+ *  @brief require the voting information
+ */
 func (s *State) RequireVotingInfo() {
 	log.Debug(s.Producers)
 	votingSum, err := s.GetParam(votingAmount)
@@ -484,4 +531,3 @@ func (a *Account) addVotes(staked uint64) {
 func (a *Account) subVotes(staked uint64) {
 	a.Resource.Votes.Staked -= staked
 }
-

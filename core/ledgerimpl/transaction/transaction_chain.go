@@ -32,12 +32,12 @@ import (
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"math/big"
 	"time"
+	"github.com/ecoball/go-ecoball/common/utils"
 )
 
-var log = elog.NewLogger("Chain Tx", elog.DebugLog)
+var log = elog.NewLogger("Chain Tx", elog.InfoLog)
 
 type ChainTx struct {
-	Id             common.Hash
 	BlockStore     store.Storage
 	HeaderStore    store.Storage
 	TxsStore       store.Storage
@@ -99,7 +99,6 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 			log.Notice("Handle Transaction Result:", ret)
 		}
 	}
-	log.Warn("NewBlock State", s.GetHashRoot().HexString())
 	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, timeStamp)
 }
 
@@ -238,7 +237,7 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
 	if len(headers) == 0 {
 		return nil, nil
 	}
-	log.Info("The geneses block is existed:", len(headers))
+	log.Debug("The geneses block is existed:", len(headers))
 	var hash common.Hash
 	for _, v := range headers {
 		header := new(types.Header)
@@ -287,7 +286,13 @@ func (c *ChainTx) GenesesBlockInit() error {
 	}
 
 	hashState := c.StateDB.GetHashRoot()
-	header, err := types.NewHeader(types.VersionHeader, 1, hash, hash, hashState, *conData, bloom.Bloom{}, timeStamp)
+	d, err := utils.FileRead(config.FilePath)
+	if err != nil {
+		return err
+	}
+	prevHash := common.SingleHash(d)
+	fmt.Println(hash.HexString())
+	header, err := types.NewHeader(types.VersionHeader, 1, prevHash, hash, hashState, *conData, bloom.Bloom{}, timeStamp)
 	if err != nil {
 		return err
 	}

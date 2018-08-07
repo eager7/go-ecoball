@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 	"os"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
 
 func TestStateNew(t *testing.T) {
@@ -171,56 +173,70 @@ func TestHashRoot(t *testing.T) {
 
 }
 
-func TestStateDB(t *testing.T) {
+func TestStateDBCopy(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
-	indexToken := state.AbaToken
-	os.RemoveAll("/tmp/state_root/")
-	s, err := state.NewState("/tmp/state_root", common.HexToHash(""))
-	if err != nil {
-		t.Fatal(err)
-	}
-	//fmt.Println(s.GetHashRoot().HexString())
+	os.RemoveAll("/tmp/state_copy/")
+	s, err := state.NewState("/tmp/state_copy", common.HexToHash(""))
+	errors.CheckErrorPanic(err)
 	s.CommitToMemory()
 	if _, err := s.AddAccount(indexAcc, addr, time.Now().UnixNano()); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.AccountAddBalance(indexAcc, indexToken, new(big.Int).SetInt64(100)); err != nil {
-		t.Fatal(err)
-	}
+	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc,  state.AbaToken, new(big.Int).SetInt64(100)))
 	s.CommitToDB()
-	value, err := s.AccountGetBalance(indexAcc, indexToken)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("value1[100]:", value)
+	value, err := s.AccountGetBalance(indexAcc,  state.AbaToken)
+	errors.CheckErrorPanic(err)
+	elog.Log.Info("value1[100]:", value)
 
-	acc, err := s.GetAccountByName(indexAcc)
-	if err != nil {
-		t.Fatal(err)
-	}
-	acc.AddBalance(indexToken, new(big.Int).SetUint64(300))
-	//s.CommitAccount(acc)
+	copy, err := s.CopyState()
+	errors.CheckErrorPanic(err)
+	copy.AccountAddBalance(indexAcc,  state.AbaToken, new(big.Int).SetUint64(300))
+	balance, err := copy.AccountGetBalance(indexAcc, state.AbaToken)
+	errors.CheckErrorPanic(err)
+	errors.CheckEqualPanic(balance.Uint64() == 400)
+	elog.Log.Info(balance)
 
-	d, err := acc.Serialize()
-	trie := s.DataBase().CopyTrie(s.Trie())
-	trie.TryUpdate(common.IndexToBytes(acc.Index), d)
-	trie.Commit(nil)
-	fmt.Println(trie.Hash().HexString())
+	balance, err = s.AccountGetBalance(indexAcc, state.AbaToken)
+	errors.CheckErrorPanic(err)
+	errors.CheckEqualPanic(balance.Uint64() == 100)
+	elog.Log.Info(balance)
 
+}
+
+func TestStateDBReset(t *testing.T) {
+	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
+	indexAcc := common.NameToIndex("pct")
+	os.RemoveAll("/tmp/state_copy/")
+	s, err := state.NewState("/tmp/state_copy", common.HexToHash(""))
+	errors.CheckErrorPanic(err)
+	tm, err := time.Parse("02/01/2006 15:04:05 PM", "21/02/1990 00:00:00 AM")
+	errors.CheckErrorPanic(err)
+	timeStamp := tm.UnixNano()
+	_, err = s.AddAccount(indexAcc, addr, timeStamp)
+	errors.CheckErrorPanic(err)
+
+	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc,  state.AbaToken, new(big.Int).SetInt64(100)))
 	s.CommitToDB()
-	value, err = s.AccountGetBalance(indexAcc, indexToken)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("value2[400]:", value)
 
-	//if err := s.Reset(common.HexToHash("0x7aacdf43f49a61ca524a80f81546f9a059ce9c877530dccd624e8895495a5015")); err != nil {
-	//	t.Fatal(err)
-	//}
-	value, err = s.AccountGetBalance(indexAcc, indexToken)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("value3[100]:", value)
+	checkBalance(100, indexAcc, s)
+
+	prevHash := s.GetHashRoot()
+	elog.Log.Info(prevHash.HexString())
+
+	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc,  state.AbaToken, new(big.Int).SetInt64(100)))
+	s.CommitToDB()
+
+	checkBalance(200, indexAcc, s)
+
+	errors.CheckErrorPanic(s.Reset(prevHash))
+
+	checkBalance(100, indexAcc, s)
+}
+
+func checkBalance(value uint64, index common.AccountName, s *state.State) {
+	balance, err := s.AccountGetBalance(index, state.AbaToken)
+	errors.CheckErrorPanic(err)
+	elog.Log.Info(balance)
+	errors.CheckEqualPanic(balance.Uint64() == value)
 }

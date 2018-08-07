@@ -871,12 +871,26 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 		// for test 2018.08.02
 		if TestTag == true {
-			fmt.Println("blk_syn_v:",blk_syn_v.Header)
-			fmt.Println("blk_syn_f:",blk_syn_f.Header)
+			// fmt.Println("blk_syn_v:",blk_syn_v.Header)
+			// fmt.Println("blk_syn_f:",blk_syn_f.Header)
 			// fmt.Println("blksyn_send v:",blksyn_send.Blksyn.BlksynV.Header)
 			// fmt.Println("blksyn_send f:",blksyn_send.Blksyn.BlksynF.Header)
+			// fmt.Println("currentheader.PrevHash:",currentheader.PrevHash)
+			// fmt.Println("before reset: currentheader.Hash:",currentheader.Hash)
+			current_blk,_ := current_ledger.GetTxBlock(currentheader.Hash)
+
 			actor_c.service_ababft.ledger.ResetStateDB(currentheader.PrevHash)
-			currentheader = current_ledger.GetCurrentHeader()
+
+
+			block_first_cal,err = actor_c.service_ababft.ledger.NewTxBlock(current_blk.Transactions,current_blk.Header.ConsensusData, current_blk.Header.TimeStamp)
+			fmt.Println("current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
+			fmt.Println("compare merkle hash:", current_blk.Header.MerkleHash, block_first_cal.MerkleHash)
+			elog.Log.Info("compare state hash:", current_blk.Header.StateHash.HexString(), block_first_cal.StateHash.HexString())
+
+			// currentheader = current_ledger.GetCurrentHeader()
+			old_block,_ := current_ledger.GetTxBlock(currentheader.PrevHash)
+			currentheader = old_block.Header
+			// fmt.Println("after reset: currentheader.Hash:",currentheader.Hash)
 			current_height_num = current_height_num - 1
 			event.Send(event.ActorNil,event.ActorConsensus,blksyn_send)
 		}
@@ -894,8 +908,16 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		if err != nil {
 			log.Debug("blockTx to block_f transformation fails")
 		}
-		fmt.Println("blks_v:",blks_v.Header)
-		fmt.Println("blks_f:",blks_f.Header)
+		// fmt.Println("blks_v:",blks_v.Header)
+		// fmt.Println("blks_f:",blks_f.Header)
+
+		// for test 2018.08.06
+		if TestTag == true {
+			fmt.Println("height_syn_v:",blks_v.Header.Height,current_height_num)
+		}
+		// test end
+
+
 		height_syn_v := blks_v.Header.Height
 		if height_syn_v == uint64(current_height_num) {
 			// the current_height_num has been verified
@@ -912,6 +934,17 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				return
 			}
 			result_v,err = actor_c.Blk_syn_verify(blks_v,current_height_num,currentheader.PrevHash, *blk_pre)
+
+			// for test 2018.08.06
+			if TestTag == true {
+				// fmt.Println("blks_v.Hash:",blks_v.Hash)
+				// fmt.Println("currentheader.Hash:",currentheader.Hash)
+				if ok := bytes.Equal(blks_v.Hash.Bytes(),currentheader.Hash.Bytes()); ok == true {
+					result_v = true
+				}
+			}
+			// test end
+
 			if result_v == false {
 				log.Debug("verification of blks_v fails")
 				return
@@ -1292,6 +1325,17 @@ func (actor_c *Actor_ababft) Blk_syn_verify(block_in types.Block,cur_height int,
 	}
 	// 3. check the block header, except the consensus data
 	var valid_blk bool
+
+
+	// for test 2018.08.06
+	if TestTag == true {
+		fmt.Println("block_in:",block_in.Height,block_in.Header)
+		fmt.Println("round_num_in, *blk_pre.Header:",round_num_in, blk_pre.Height, blk_pre.Header)
+	}
+	// test end
+
+
+
 	valid_blk,err = actor_c.verify_header(&block_in, round_num_in, *blk_pre.Header)
 	if valid_blk==false {
 		println("header check fail")
