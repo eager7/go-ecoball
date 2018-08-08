@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/utils"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/geneses"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
@@ -32,7 +33,6 @@ import (
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"math/big"
 	"time"
-	"github.com/ecoball/go-ecoball/common/utils"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.WarnLog)
@@ -141,10 +141,10 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if block == nil {
 		return errors.New(log, "block is nil")
 	}
-	var cpu float32
-	//cpuFlag := true
-	var net float32
-	//netFlag := true
+	var cpu float64
+	cpuFlag := true
+	var net float64
+	netFlag := true
 	for i := 0; i < len(block.Transactions); i++ {
 		if _, c, n, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp); err != nil {
 			log.Error("Handle Transaction Error:", err)
@@ -155,16 +155,16 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		}
 	}
 	if cpu < (state.BlockCpuLimit / 10) {
-		//cpuFlag = true
+		cpuFlag = true
 	} else {
-		//cpuFlag = false
+		cpuFlag = false
 	}
 	if net < (state.BlockNetLimit / 10) {
-		//netFlag = true
+		netFlag = true
 	} else {
-		//netFlag = false
+		netFlag = false
 	}
-	//c.StateDB.SetBlockLimits(cpuFlag, netFlag)
+	c.StateDB.SetBlockLimits(cpuFlag, netFlag)
 	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 		log.Warn(err)
 	}
@@ -473,7 +473,7 @@ func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, valu
 *  @param  ledger - the interface of ledger impl
 *  @param  tx - a transaction
  */
-func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float32, err error) {
+func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error) {
 	start := time.Now().UnixNano()
 	switch tx.Type {
 	case types.TxTransfer:
@@ -512,7 +512,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	}
 	end := time.Now().UnixNano()
 	if tx.Receipt.Cpu == 0 {
-		cpu = float32(end-start) / 1000000.0
+		cpu = float64(end-start) / 1000000.0
 		tx.Receipt.Cpu = cpu
 	} else {
 		cpu = tx.Receipt.Cpu
@@ -522,7 +522,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		return nil, 0, 0, err
 	}
 	if tx.Receipt.Net == 0 {
-		net = float32(len(data))
+		net = float64(len(data))
 		tx.Receipt.Net = net
 	} else {
 		net = tx.Receipt.Net

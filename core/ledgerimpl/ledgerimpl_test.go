@@ -16,4 +16,98 @@
 
 package ledgerimpl_test
 
-import ()
+import (
+	"encoding/json"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/test/example"
+	"math/big"
+	"testing"
+	"time"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+)
+
+var root = common.NameToIndex("root")
+var worker1 = common.NameToIndex("worker1")
+var worker2 = common.NameToIndex("worker2")
+var worker3 = common.NameToIndex("worker3")
+
+func TestLedgerImpl_ResetStateDB(t *testing.T) {
+	elog.Log.Info("genesis block")
+	l := example.Ledger("/tmp/genesis")
+	elog.Log.Info("new account block")
+	createBlock := CreateAccountBlock(l)
+
+	elog.Log.Info("transfer block:", createBlock.StateHash.HexString())
+	transferBlock := TokenTransferBlock(l)
+
+	elog.Log.Info("current block:", transferBlock.StateHash.HexString())
+	currentBlock, err := l.GetTxBlock(l.GetCurrentHeader().Hash)
+	errors.CheckErrorPanic(err)
+	errors.CheckEqualPanic(transferBlock.JsonString(false) == currentBlock.JsonString(false))
+	elog.Log.Info("prev block")
+	prevBlock, err := l.GetTxBlock(currentBlock.PrevHash)
+	errors.CheckErrorPanic(err)
+	errors.CheckEqualPanic(createBlock.JsonString(false) == prevBlock.JsonString(false))
+	elog.Log.Info("reset block to create block")
+	errors.CheckErrorPanic(l.ResetStateDB(prevBlock.Header))
+	elog.Log.Info("reset block:")
+	newBlock, err := l.NewTxBlock(currentBlock.Transactions, currentBlock.ConsensusData, currentBlock.TimeStamp)
+	errors.CheckErrorPanic(err)
+	newBlock.SetSignature(&config.Root)
+	errors.CheckEqualPanic(currentBlock.JsonString(false) == newBlock.JsonString(false))
+}
+
+func CreateAccountBlock(ledger ledger.Ledger) *types.Block {
+	elog.Log.Info("CreateAccountBlock------------------------------------------------------\n\n")
+	var txs []*types.Transaction
+	tokenContract, err := types.NewDeployContract(root, root, state.Active, types.VmNative, "system control", nil, 0, time.Now().Unix())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
+	txs = append(txs, tokenContract)
+
+	invoke, err := types.NewInvokeContract(root, root, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().Unix())
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+	invoke, err = types.NewInvokeContract(root, root, state.Owner, "new_account", []string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, time.Now().Unix())
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+	invoke, err = types.NewInvokeContract(root, root, state.Owner, "new_account", []string{"worker3", common.AddressFromPubKey(config.Worker3.PublicKey).HexString()}, 2, time.Now().Unix())
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+	perm := state.NewPermission(state.Active, state.Owner, 2, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker2"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker3"), Weight: 1, Permission: "active"}})
+	param, err := json.Marshal(perm)
+	errors.CheckErrorPanic(err)
+	invoke, err = types.NewInvokeContract(root, root, state.Active, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+	return example.SaveBlock(ledger, txs)
+}
+func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
+	elog.Log.Info("TokenTransferBlock------------------------------------------------------\n\n")
+	var txs []*types.Transaction
+	transfer, err := types.NewTransfer(root, worker1, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	txs = append(txs, transfer)
+
+	transfer, err = types.NewTransfer(root, worker2, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	txs = append(txs, transfer)
+
+	transfer, err = types.NewTransfer(root, worker3, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	txs = append(txs, transfer)
+
+	return example.SaveBlock(ledger, txs)
+}
