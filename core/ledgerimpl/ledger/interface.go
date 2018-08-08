@@ -9,7 +9,7 @@ import (
 
 type Ledger interface {
 	GetTxBlock(hash common.Hash) (*types.Block, error)
-	NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
+	NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, *state.State, error)
 	VerifyTxBlock(block *types.Block) error
 	SaveTxBlock(block *types.Block) error
 	GetTxBlockByHeight(height uint64) (*types.Block, error)
@@ -17,7 +17,7 @@ type Ledger interface {
 	GetCurrentHeader() *types.Header
 	GetCurrentHeight() uint64
 	StateDB() *state.State
-	ResetStateDB(hash common.Hash) error
+	ResetStateDB(block *types.Block) error
 
 	AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error)
 	SetContract(index common.AccountName, t types.VmType, des, code []byte) error

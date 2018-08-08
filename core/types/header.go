@@ -45,7 +45,7 @@ type Header struct {
 	Hash common.Hash
 }
 
-var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
+var log = elog.NewLogger("LedgerImpl", elog.WarnLog)
 
 /**
  *  @brief create a new block header, the compute this header's hash
@@ -243,26 +243,28 @@ func (h *Header) Deserialize(data []byte) error {
 func (h *Header) JsonString() string {
 	data, err := json.Marshal(
 		struct {
-			ChainID       common.Hash
+			ChainID       string
 			Version       uint32
 			TimeStamp     int64
 			Height        uint64
 			ConsensusData ConsensusData
-			PrevHash      common.Hash
-			MerkleHash    common.Hash
-			StateHash     common.Hash
+			PrevHash      string
+			MerkleHash    string
+			StateHash     string
 			bloom         bloom.Bloom
 			Signatures    []common.Signature
-
-			Hash common.Hash
+			Hash          string
 		}{
+			ChainID:       h.ChainID.HexString(),
 			Version:       h.Version,
 			TimeStamp:     h.TimeStamp,
 			Height:        h.Height,
 			ConsensusData: h.ConsensusData,
-			PrevHash:      h.PrevHash,
-			MerkleHash:    h.MerkleHash,
-			StateHash:     h.StateHash,
+			PrevHash:      h.PrevHash.HexString(),
+			MerkleHash:    h.MerkleHash.HexString(),
+			StateHash:     h.StateHash.HexString(),
+			Signatures:    h.Signatures,
+			Hash:          h.Hash.HexString(),
 		})
 	if err != nil {
 		log.Error(err)
@@ -272,5 +274,6 @@ func (h *Header) JsonString() string {
 }
 
 func (h *Header) Show() {
+	log.Debug("\t\tshow header:")
 	log.Debug(h.JsonString())
 }

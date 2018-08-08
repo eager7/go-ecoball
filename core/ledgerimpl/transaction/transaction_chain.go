@@ -35,7 +35,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/utils"
 )
 
-var log = elog.NewLogger("Chain Tx", elog.InfoLog)
+var log = elog.NewLogger("Chain Tx", elog.WarnLog)
 
 type ChainTx struct {
 	BlockStore     store.Storage
@@ -85,29 +85,39 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @brief  create a new block, this function will execute the transaction to rebuild mpt trie
 *  @param  consensusData - the data of consensus module set
  */
-func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, *state.State, error) {
+	log.Warn("````````````````````````````````````````````````````````````````New", time.Now().UnixNano())
+	c.StateDB.GetHashRoot().Show()
 	s, err := c.StateDB.CopyState()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for i := 0; i < len(txs); i++ {
+		//txs[i].Show()
 		if ret, _, _, err := c.HandleTransaction(s, txs[i], timeStamp); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			txs[i].Show()
-			return nil, err
+			return nil, nil, err
 		} else {
+			//txs[i].Show()
 			log.Notice("Handle Transaction Result:", ret)
 		}
 	}
-	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, timeStamp)
+	s.GetHashRoot().Show()
+	//acc, err := s.GetAccountByName(common.NameToIndex("root"))
+	//errors.CheckErrorPanic(err)
+	//acc.Show()
+	block, err := types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, timeStamp)
+	return block, s, err
 }
 
 /**
 *  @brief  if create a new block failed, then need to reset state DB
 *  @param  hash - the root hash of mpt trie which need to reset
  */
-func (c *ChainTx) ResetStateDB(hash common.Hash) error {
-	return c.StateDB.Reset(hash)
+func (c *ChainTx) ResetStateDB(block *types.Block) error {
+	c.CurrentHeader = block.Header
+	return c.StateDB.Reset(block.StateHash)
 }
 
 /**
@@ -136,13 +146,14 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 *  @param  block - the block need to save
  */
 func (c *ChainTx) SaveBlock(block *types.Block) error {
+	log.Warn("````````````````````````````````````````````````````````````````Save")
 	if block == nil {
 		return errors.New(log, "block is nil")
 	}
 	var cpu float32
-	cpuFlag := true
+	//cpuFlag := true
 	var net float32
-	netFlag := true
+	//netFlag := true
 	for i := 0; i < len(block.Transactions); i++ {
 		if _, c, n, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp); err != nil {
 			log.Error("Handle Transaction Error:", err)
@@ -153,16 +164,16 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		}
 	}
 	if cpu < (state.BlockCpuLimit / 10) {
-		cpuFlag = true
+		//cpuFlag = true
 	} else {
-		cpuFlag = false
+		//cpuFlag = false
 	}
 	if net < (state.BlockNetLimit / 10) {
-		netFlag = true
+		//netFlag = true
 	} else {
-		netFlag = false
+		//netFlag = false
 	}
-	c.StateDB.SetBlockLimits(cpuFlag, netFlag)
+	//c.StateDB.SetBlockLimits(cpuFlag, netFlag)
 	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 		log.Warn(err)
 	}
@@ -196,7 +207,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	c.StateDB.CommitToDB()
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
 	log.Debug("state hash:", c.StateDB.GetHashRoot().HexString())
-	block.Show()
+	log.Debug(block.Header.JsonString())
 	c.CurrentHeader = block.Header
 	return nil
 }
@@ -536,15 +547,16 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	if tx.Receipt.Result == nil {
 		tx.Receipt.Result = common.CopyBytes(ret)
 	}
-	//log.Warn("tx, Time", tx.From, timeStamp)
 	if err := s.RecoverResources(tx.From, timeStamp); err != nil {
 		return nil, 0, 0, err
 	}
-	//log.Warn("CPU, NET", cpu, net)
 	if err := s.SubResources(tx.From, cpu, net); err != nil {
 		return nil, 0, 0, err
 	}
-	//log.Warn("Handle Type", tx.Type.String(), s.GetHashRoot().HexString())
+	//acc, err := s.GetAccountByName(tx.From)
+	//acc.Show()
+	//acc, err = s.GetAccountByName(tx.Addr)
+	//acc.Show()
 	return ret, cpu, net, nil
 }
 

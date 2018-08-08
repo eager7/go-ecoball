@@ -86,10 +86,30 @@ func Ledger(path string) ledger.Ledger {
 	return l
 }
 
-func SaveBlock(ledger ledger.Ledger, con types.ConsensusData, txs []*types.Transaction) {
-	block, err := ledger.NewTxBlock(txs, con, time.Now().UnixNano())
+func SaveBlock(ledger ledger.Ledger, txs []*types.Transaction) *types.Block {
+	con, err := types.InitConsensusData(TimeStamp())
+	errors.CheckErrorPanic(err)
+	block, _, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	block.SetSignature(&config.Root)
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(block))
 	errors.CheckErrorPanic(ledger.SaveTxBlock(block))
+	return block
+}
+
+func TimeStamp() int64 {
+	tm, err := time.Parse("02/01/2006 15:04:05 PM", "21/02/1990 00:00:00 AM")
+	errors.CheckErrorPanic(err)
+	return tm.UnixNano()
+}
+
+func ConsensusData() types.ConsensusData {
+	con, _ := types.InitConsensusData(TimeStamp())
+	return *con
+}
+
+func ShowAccountInfo(s *state.State, index common.AccountName) {
+	acc, err := s.GetAccountByName(index)
+	errors.CheckErrorPanic(err)
+	acc.Show(false)
 }

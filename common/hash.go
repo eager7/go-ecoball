@@ -21,6 +21,7 @@ import (
 	"errors"
 	"github.com/ecoball/go-ecoball/crypto/sha3"
 	"math/big"
+	"fmt"
 )
 
 const HashLen = 32
@@ -99,4 +100,8 @@ func (h *Hash) Equals(b *Hash) bool {
 
 func (h *Hash) IsNil() bool {
 	return h.Equals(&Hash{})
+}
+
+func (h Hash) Show() {
+	fmt.Println("\t\thash:", h.HexString())
 }

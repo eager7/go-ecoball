@@ -73,7 +73,7 @@ func (l *LedgerImpl) Start() {
 
 }
 
-func (l *LedgerImpl) NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+func (l *LedgerImpl) NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, *state.State, error) {
 	return l.ChainTx.NewBlock(l, txs, consensusData, timeStamp)
 }
 func (l *LedgerImpl) GetTxBlock(hash common.Hash) (*types.Block, error) {
@@ -166,8 +166,8 @@ func (l *LedgerImpl) TokenIsExisted(token string) bool {
 func (l *LedgerImpl) StateDB() *state.State {
 	return l.ChainTx.StateDB
 }
-func (l *LedgerImpl) ResetStateDB(hash common.Hash) error {
-	return l.ChainTx.StateDB.Reset(hash)
+func (l *LedgerImpl) ResetStateDB(block *types.Block) error {
+	return l.ChainTx.ResetStateDB(block)
 }
 
 func (l *LedgerImpl) GetGenesesTime() int64 {

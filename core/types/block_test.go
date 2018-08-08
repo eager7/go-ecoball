@@ -24,6 +24,12 @@ import (
 	"testing"
 	"time"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/common/config"
+	"encoding/json"
+	"github.com/ecoball/go-ecoball/test/example"
+	"math/big"
+	"github.com/ecoball/go-ecoball/common/utils"
 )
 
 func TestHeader(t *testing.T) {
@@ -46,19 +52,80 @@ func TestHeader(t *testing.T) {
 }
 
 func TestBlockCreate(t *testing.T) {
-	g, err := types.GenesesBlockInit()
+	ledger := example.Ledger("/tmp/block_create")
+	root := common.NameToIndex("root")
+	var txs []*types.Transaction
+	tokenContract, err := types.NewDeployContract(root, root, state.Active, types.VmNative, "system control", nil, 0, time.Now().Unix())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
+	txs = append(txs, tokenContract)
+
+	invoke, err := types.NewInvokeContract(root, root, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().Unix())
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+	invoke, err = types.NewInvokeContract(root, root, state.Owner, "new_account", []string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, time.Now().Unix())
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+	invoke, err = types.NewInvokeContract(root, root, state.Owner, "new_account", []string{"worker3", common.AddressFromPubKey(config.Worker3.PublicKey).HexString()}, 2, time.Now().Unix())
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+	perm := state.NewPermission(state.Active, state.Owner, 2, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker2"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker3"), Weight: 1, Permission: "active"}})
+	param, err := json.Marshal(perm)
+	errors.CheckErrorPanic(err)
+	invoke, err = types.NewInvokeContract(root, root, state.Active, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+
+	block, err := ledger.NewTxBlock(txs, example.ConsensusData(), time.Now().UnixNano())
+	block.SetSignature(&config.Root)
+	data, err := block.Serialize()
 	errors.CheckErrorPanic(err)
 
-	acc, err := account.NewAccount(0)
+	blockNew := new(types.Block)
+	errors.CheckErrorPanic(blockNew.Deserialize(data))
+	errors.CheckEqualPanic(block.JsonString(false) == blockNew.JsonString(false))
+
+	errors.CheckErrorPanic(ledger.VerifyTxBlock(block))
+	errors.CheckErrorPanic(ledger.SaveTxBlock(block))
+
+
+	reBlock, err := ledger.GetTxBlock(blockNew.Hash)
 	errors.CheckErrorPanic(err)
+	errors.CheckEqualPanic(blockNew.JsonString(false) == reBlock.JsonString(false))
+}
 
-	errors.CheckErrorPanic(g.SetSignature(&acc))
-
-	data, err := g.Serialize()
+func TestBlockNew(t *testing.T) {
+	ledger := example.Ledger("/tmp/block_new")
+	root := common.NameToIndex("root")
+	var txs []*types.Transaction
+	tokenContract, err := types.NewDeployContract(root, root, state.Active, types.VmNative, "system control", nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
+	txs = append(txs, tokenContract)
 
-	block := new(types.Block)
-	errors.CheckErrorPanic(block.Deserialize(data))
+	invoke, err := types.NewInvokeContract(root, root, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().Unix())
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
 
-	errors.CheckEqualPanic(g.JsonString() == block.JsonString())
+	for i := 0; i < 3000; i++ {
+		transfer, err := types.NewTransfer(root, common.NameToIndex("worker1"), "active", new(big.Int).SetUint64(1), 101, time.Now().UnixNano())
+		errors.CheckErrorPanic(err)
+		transfer.SetSignature(&config.Root)
+		txs = append(txs, transfer)
+	}
+
+	con, err := types.InitConsensusData(example.TimeStamp())
+	errors.CheckErrorPanic(err)
+	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	block.SetSignature(&config.Root)
+	errors.CheckErrorPanic(ledger.VerifyTxBlock(block))
+	errors.CheckErrorPanic(ledger.SaveTxBlock(block))
+	data, err := block.Serialize()
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(utils.FileWrite("/tmp/block.data", data))
 }

@@ -33,8 +33,8 @@ import (
 type Account struct {
 	Index       common.AccountName    `json:"index"`
 	TimeStamp   int64                 `json:"timestamp"`
-	Tokens      map[string]Token      `json:"token"`
-	Permissions map[string]Permission `json:"permissions"`
+	Tokens      map[string]Token      `json:"token"`       //map[token name]Token
+	Permissions map[string]Permission `json:"permissions"` //map[perm name]Permission
 	Contract    types.DeployInfo      `json:"contract"`
 	Delegates   []Delegate            `json:"delegate"`
 	Resource    `json:"resource"`
@@ -167,8 +167,8 @@ func (a *Account) Serialize() ([]byte, error) {
 func (a *Account) ProtoBuf() (*pb.Account, error) {
 	var tokens []*pb.Token
 	var keysToken []string
-	for _, v := range a.Tokens {
-		keysToken = append(keysToken, v.Name)
+	for k := range a.Tokens {
+		keysToken = append(keysToken, k)
 	}
 	sort.Strings(keysToken)
 	for _, k := range keysToken {
@@ -177,11 +177,11 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 		if err != nil {
 			return nil, err
 		}
-		ac := pb.Token{
+		t := pb.Token{
 			Name:    v.Name,
 			Balance: balance,
 		}
-		tokens = append(tokens, &ac)
+		tokens = append(tokens, &t)
 	}
 
 	var perms []*pb.Permission
@@ -196,8 +196,8 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 		var pbAccounts []*pb.AccountWeight
 		var keysKeys []string
 		var keysAccount []string
-		for _, key := range perm.Keys {
-			keysKeys = append(keysKeys, key.Actor.HexString())
+		for k := range perm.Keys {
+			keysKeys = append(keysKeys, k)
 		}
 		sort.Strings(keysKeys)
 		for _, k := range keysKeys {
@@ -206,8 +206,8 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 			pbKeys = append(pbKeys, pbKey)
 		}
 
-		for _, acc := range perm.Accounts {
-			keysAccount = append(keysAccount, acc.Permission)
+		for k := range perm.Accounts {
+			keysAccount = append(keysAccount, k)
 		}
 		sort.Strings(keysAccount)
 		for _, k := range keysAccount {
@@ -275,7 +275,6 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 		},
 		Hash: a.Hash.Bytes(),
 	}
-
 	return &pbAcc, nil
 }
 
@@ -355,14 +354,22 @@ func (a *Account) Deserialize(data []byte) error {
 
 	return nil
 }
-func (a *Account) JsonString() string {
-	data, err := json.Marshal(a)
-	if err != nil {
-		fmt.Println(err)
+func (a *Account) JsonString(format bool) string {
+	if format {
+		data, err := json.MarshalIndent(a, "", "    ")
+		if err != nil {
+			fmt.Println(err)
+		}
+		return string(data)
+	} else {
+		data, err := json.Marshal(a)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return string(data)
 	}
-	return string(data)
 }
-func (a *Account) Show() {
+func (a *Account) Show(format bool) {
 	fmt.Println("----------------" + a.Index.String() + ":")
-	fmt.Println(a.JsonString())
+	fmt.Println(a.JsonString(format))
 }

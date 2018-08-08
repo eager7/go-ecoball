@@ -21,6 +21,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/types"
 
+	"github.com/ecoball/go-ecoball/core/state"
 )
 
 type ChainInterface interface {
@@ -29,6 +30,6 @@ type ChainInterface interface {
 	SaveBlock(block *types.Block) error
 	//SaveConsensusState(block *DposBlock) error
 	//NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error)
-	NewBlock(ledger Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
+	NewBlock(ledger Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, *state.State, error)
 	GetTailBlockHash() (common.Hash)
 }

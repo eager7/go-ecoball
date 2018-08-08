@@ -26,7 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
-var log = elog.NewLogger("state", elog.DebugLog)
+var log = elog.NewLogger("state", elog.WarnLog)
 var IndexAbaRoot = common.NameToIndex("root")
 var AbaToken = "ABA"
 
@@ -194,7 +194,7 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 		return nil, errors.New(fmt.Sprintf("no this account named:%s", index.String()))
 	}
 	acc = Account{}
-	if err := acc.Deserialize(fData); err != nil {
+	if err = acc.Deserialize(fData); err != nil {
 		return nil, err
 	}
 	return &acc, nil
@@ -241,6 +241,7 @@ func (s *State) CommitAccount(acc *Account) error {
 	}
 	//s.RecoverResources(acc)
 	s.Accounts[acc.Index.String()] = *acc
+	//acc.Show()
 	return nil
 }
 func (s *State) CommitParam(key string, value uint64) error {
@@ -319,6 +320,10 @@ func (s *State) Reset(hash common.Hash) error {
 	}
 	log.Info("Open Trie Hash:", hash.HexString())
 	return nil
+}
+
+func (s *State) Close() error {
+	return s.diskDb.Close()
 }
 
 func (s *State) Trie() Trie {

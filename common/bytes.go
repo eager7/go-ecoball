@@ -17,11 +17,12 @@
 package common
 
 import (
+	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"unsafe"
-	"encoding/binary"
 )
 
 func ToHex(b []byte) string {
@@ -144,4 +145,20 @@ func Uint64ToBytes(value uint64) []byte {
 func Uint64SetBytes(data []byte) uint64 {
 	index := binary.BigEndian.Uint64(data)
 	return index
+}
+
+func JsonString(v interface{}, format bool) string {
+	if format {
+		data, err := json.MarshalIndent(v, "", "    ")
+		if err != nil {
+			fmt.Println(err)
+		}
+		return string(data)
+	} else {
+		data, err := json.Marshal(v)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return string(data)
+	}
 }
