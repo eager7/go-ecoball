@@ -22,6 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"reflect"
 	"testing"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 func TestDBft(t *testing.T) {
@@ -29,15 +30,10 @@ func TestDBft(t *testing.T) {
 	consensusData := types.ConsensusData{Type: types.CondPos, Payload: dposData}
 
 	data, err := consensusData.Serialize()
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(data)
+	errors.CheckErrorPanic(err)
 
 	conData := new(types.ConsensusData)
-	if err := conData.Deserialize(data); err != nil {
-		t.Fatal(err)
-	}
+	errors.CheckErrorPanic(conData.Deserialize(data))
 
 	con := types.ConsensusData{}
 	fmt.Println(reflect.ValueOf(con))
@@ -52,18 +48,13 @@ func TestAbaBft(t *testing.T) {
 	abaData := types.AbaBftData{NumberRound: 5, PerBlockSignatures: sigPer}
 
 	conData := types.NewConsensusPayload(types.ConABFT, &abaData)
-	conData.Payload.Show()
 
 	data, err := conData.Serialize()
-	if err != nil {
-		t.Fatal(err)
-	}
+	errors.CheckErrorPanic(err)
 
 	conDataDeserialize := new(types.ConsensusData)
-	if err := conDataDeserialize.Deserialize(data); err != nil {
-		t.Fatal(err)
-	}
-	conDataDeserialize.Payload.Show()
+	errors.CheckErrorPanic(conDataDeserialize.Deserialize(data))
+
 	conDataObj, ok := conDataDeserialize.Payload.GetObject().(types.AbaBftData)
 	if !ok {
 		t.Fatal("type error")

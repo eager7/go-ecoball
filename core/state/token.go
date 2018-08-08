@@ -122,7 +122,7 @@ func (a *Account) SubBalance(token string, amount *big.Int) error {
 	}
 	t, ok := a.Tokens[token]
 	if !ok {
-		return errors.New(log, fmt.Sprintf("no this token:%s", token))
+		return errors.New(log, fmt.Sprintf("account:%s no this token:%s", a.Index.String(), token))
 	}
 	balance := t.GetBalance()
 	value := new(big.Int).Sub(balance, amount)
