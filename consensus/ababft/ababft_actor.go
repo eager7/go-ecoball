@@ -1021,7 +1021,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			if ok := bytes.Equal(blks_v.Hash.Bytes(), currentheader.Hash.Bytes()); ok != true {
 				// the blks_v is not in the ledger,then save blks_v
 				// here need one reset DB
-				err = actor_c.service_ababft.ledger.ResetStateDB(blk_pre.Header.Hash)
+				//err = actor_c.service_ababft.ledger.ResetStateDB(blk_pre.Header.Hash)
+				err = actor_c.service_ababft.ledger.ResetStateDB(blk_pre.Header)
 				if err = actor_c.service_ababft.ledger.SaveTxBlock(&blks_v); err != nil {
 					log.Debug("save block error:", err)
 					return
