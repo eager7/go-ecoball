@@ -162,6 +162,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// as there is a long time since last block, maybe the chain is blocked somewhere
 			// to generate the block after the previous block (i.e. the latest verified block)
 			signature_preblock.SigData, err = actor_c.service_ababft.account.Sign(currentheader.PrevHash.Bytes())
+			// todo
+			// ledger need to back step
+
+
 		} else {
 			signature_preblock.PubKey = actor_c.service_ababft.account.PublicKey
 			signature_preblock.SigData, err = actor_c.service_ababft.account.Sign(currentheader.Hash.Bytes())
@@ -169,12 +173,6 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		if err != nil {
 			return
 		}
-
-
-
-
-
-
 
 		// check whether self is the prime or peer
 		if current_round_num % Num_peers == (Self_index-1) {
@@ -686,7 +684,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				var sign_tag common.Signature
 				sign_tag.PubKey = pubkey_tag_b
 				sign_tag.SigData = signdata_tag_b
-current_round_num
+
 				ababftdata := block_firstround.Blockfirst.ConsensusData.Payload.(*types.AbaBftData)
 				// prepare the ConsensusData
 				// add the tag to distinguish preblock signature and second round signature
@@ -835,7 +833,10 @@ current_round_num
 					actor_c.status = 8
 					primary_tag = 0
 					// update the current_round_num
-					current_round_num = int(data_blks_received.NumberRound)
+					if int(data_blks_received.NumberRound) > current_round_num {
+						current_round_num = int(data_blks_received.NumberRound)
+					}
+
 					fmt.Println("Block_SecondRound,current_round_num:",current_round_num)
 					// start/enter the next turn
 					event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
