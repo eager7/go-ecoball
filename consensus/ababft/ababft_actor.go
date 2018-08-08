@@ -58,7 +58,7 @@ var log = elog.NewLogger("ABABFT", elog.NoticeLog)
 // to run the go test, please set TestTag to True
 const TestTag = true
 
-const threshold_round = 6
+const threshold_round = 60
 
 var Num_peers int
 var Peers_list []Peer_info // Peer information for consensus
@@ -128,7 +128,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		// add threshold_round to solve the liveness problem
 		lastest_roundnum := int(currentheader.ConsensusData.Payload.(*types.AbaBftData).NumberRound)
 		delta_roundnum = current_round_num - lastest_roundnum
-		if delta_roundnum > threshold_round {
+		if delta_roundnum > threshold_round && current_height_num > int(verified_height) {
 			// as there is a long time since last block, maybe the chain is blocked somewhere
 			// to generate the block after the previous block (i.e. the latest verified block)
 			var currentblock *types.Block
@@ -461,7 +461,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				} else if data_preblk_received.NumberRound > uint32(current_round_num) {
 					// require synchronization, the longest chain is ok
 					// in case that somebody may skip the current generator, only the different height can call the synchronization
-					if (current_height_num+1) < int(blockfirst_received.Header.Height) {
+					if (verified_height+2) < blockfirst_received.Header.Height {
 						// send synchronization message
 						var requestsyn REQSyn
 						requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
@@ -492,7 +492,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					}
 					// 1c. check the block header, except the consensus data
 					var valid_blk bool
-					valid_blk,err = actor_c.verify_header(&blockfirst_received, current_round_num,*currentheader)
+					valid_blk,err = actor_c.verify_header(&blockfirst_received, current_round_num, *currentheader)
 					if valid_blk==false {
 						println("header check fail")
 						return
@@ -529,6 +529,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// 2c. check the valid signature number
 					if num_verified < int(len(Peers_list)/3+1){
 						// not enough signature
+						fmt.Println("not enough signature for second round block")
 						return
 					}
 					// 3. check the txs
@@ -768,7 +769,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				// 1a. current round number
 				if data_blks_received.NumberRound < uint32(current_round_num) || blocksecond_received.Header.Height <= uint64(current_height_num) {
 					return
-				} else if (blocksecond_received.Header.Height-1) > uint64(current_height_num) {
+				} else if (blocksecond_received.Header.Height-2) > verified_height {
 					// send synchronization message
 					var requestsyn REQSyn
 					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
@@ -1076,6 +1077,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		return
 
 	case TimeoutMsg:
+		// todo
+		// the waiting time maybe need to be longer after every time out
 		pubkey_in := msg.Toutmsg.PubKey
 		round_in := int(msg.Toutmsg.RoundNumber)
 		signdata_in := msg.Toutmsg.SigData
