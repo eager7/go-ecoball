@@ -58,6 +58,8 @@ var log = elog.NewLogger("ABABFT", elog.NoticeLog)
 // to run the go test, please set TestTag to True
 const TestTag = true
 
+const threshold_round = 6
+
 var Num_peers int
 var Peers_list []Peer_info // Peer information for consensus
 var Self_index int // the index of this peer in the peers list
@@ -77,7 +79,9 @@ var cache_signature_preblk []pb.SignaturePreblock // cache the received signatur
 var block_first_cal *types.Block // cache the first-round block
 var received_signblkf_num int // temporary parameters for received signatures for first round block
 var TimeoutMsgs = make(map[string]int, 1000) // cache the timeout message
+var verified_height uint64
 
+var syn_status int
 // for test 2018.07.31
 var Accounts_test []account.Account
 // test end
@@ -93,6 +97,7 @@ func Actor_ababft_gen(actor_ababft *Actor_ababft) (*actor.PID, error) {
 		return nil, err
 	}
 	event.RegisterActor(event.ActorConsensus, pid)
+	syn_status = 0
 	return pid, err
 }
 
@@ -106,6 +111,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		actor_c.status = 2
 		// initialization
 		// clear and initialize the signature preblock array
+
 		signature_preblock_list = make([][]byte, len(Peers_list))
 		signature_BlkF_list = make([][]byte, len(Peers_list))
 		block_firstround = Block_FirstRound{}
@@ -113,6 +119,26 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		// log.Debug("current_round_num:",current_round_num,Num_peers,Self_index)
 		// get the current round number of the block
 		currentheader = current_ledger.GetCurrentHeader()
+		current_height_num = int(currentheader.Height)
+
+		// todo
+		// check following patch:
+		// add threshold_round to solve the liveness problem
+		lastest_roundnum := int(currentheader.ConsensusData.Payload.(*types.AbaBftData).NumberRound)
+		delta_roundnum := current_round_num - lastest_roundnum
+
+		if delta_roundnum > threshold_round {
+			// as there is a long time since last block, maybe the chain is blocked somewhere
+			// to generate the block after the previous block (i.e. the latest verified block)
+			var currentblock *types.Block
+			currentblock,err = current_ledger.GetTxBlock(currentheader.PrevHash)
+			if err != nil {
+				fmt.Println("get previous block error.")
+			}
+			currentheader = currentblock.Header
+			current_height_num = current_height_num - 1
+		}
+
 		if currentheader.ConsensusData.Type != types.ConABFT {
 			//log.Warn("wrong ConsensusData Type")
 			return
@@ -127,11 +153,23 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		// the timeout/changeview message
 		// need to check whether the update of current_round_num is necessary
 
-		current_height_num = int(currentheader.Height)
+
 		// signature the current highest block and broadcast
 		var signature_preblock common.Signature
-		signature_preblock.PubKey = actor_c.service_ababft.account.PublicKey
-		signature_preblock.SigData, err = actor_c.service_ababft.account.Sign(currentheader.Hash.Bytes())
+
+		if delta_roundnum >= threshold_round {
+			signature_preblock.PubKey = actor_c.service_ababft.account.PublicKey
+			// as there is a long time since last block, maybe the chain is blocked somewhere
+			// to generate the block after the previous block (i.e. the latest verified block)
+			signature_preblock.SigData, err = actor_c.service_ababft.account.Sign(currentheader.PrevHash.Bytes())
+			// todo
+			// ledger need to back step
+
+
+		} else {
+			signature_preblock.PubKey = actor_c.service_ababft.account.PublicKey
+			signature_preblock.SigData, err = actor_c.service_ababft.account.Sign(currentheader.Hash.Bytes())
+		}
 		if err != nil {
 			return
 		}
@@ -206,6 +244,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// maybe round number is not needed for preblock signature
 			if round_in >= (current_round_num-1) && height_in >= current_height_num {
 				if round_in > (current_round_num - 1) && height_in > current_height_num {
+					// todo
+					// need to check
+					// only require when height difference between the peers is >= 2
+
 					// require synchronization, the longest chain is ok
 					// send synchronization message
 					var requestsyn REQSyn
@@ -214,6 +256,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
+					syn_status = 1
 					// todo
 					// attention
 					// to against the height cheat, do not change the actor_c.status
@@ -425,6 +468,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 						requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 						event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
+						syn_status = 1
 						// todo
 						// attention:
 						// to against the height cheat, do not change the actor_c.status
@@ -731,6 +775,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
+					syn_status = 1
 
 					// todo
 					// attention:
@@ -782,11 +827,16 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						println("save block error:", err)
 						return
 					}
+
 					// 4. change status
+					verified_height = blocksecond_received.Height - 1
 					actor_c.status = 8
 					primary_tag = 0
 					// update the current_round_num
-					current_round_num = int(data_blks_received.NumberRound)
+					if int(data_blks_received.NumberRound) > current_round_num {
+						current_round_num = int(data_blks_received.NumberRound)
+					}
+
 					fmt.Println("Block_SecondRound,current_round_num:",current_round_num)
 					// start/enter the next turn
 					event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
@@ -877,12 +927,18 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// fmt.Println("blksyn_send f:",blksyn_send.Blksyn.BlksynF.Header)
 			// fmt.Println("currentheader.PrevHash:",currentheader.PrevHash)
 			// fmt.Println("before reset: currentheader.Hash:",currentheader.Hash)
-			current_blk,_ := current_ledger.GetTxBlock(currentheader.Hash)
 
-			actor_c.service_ababft.ledger.ResetStateDB(currentheader.PrevHash)
+			current_pre_blk,_ := current_ledger.GetTxBlock(currentheader.PrevHash)
+			current_blk := blk_syn_f
 
-
+			fmt.Println("1. current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
+			err1 := actor_c.service_ababft.ledger.ResetStateDB(current_pre_blk.Header.StateHash)
+			if err1 != nil {
+				fmt.Println("reset status error:", err1)
+			}
+			fmt.Println("2. current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
 			block_first_cal,err = actor_c.service_ababft.ledger.NewTxBlock(current_blk.Transactions,current_blk.Header.ConsensusData, current_blk.Header.TimeStamp)
+			// block_first_cal := current_blk
 			fmt.Println("current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
 			fmt.Println("compare merkle hash:", current_blk.Header.MerkleHash, block_first_cal.MerkleHash)
 			elog.Log.Info("compare state hash:", current_blk.Header.StateHash.HexString(), block_first_cal.StateHash.HexString())
@@ -898,6 +954,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 
 	case Block_Syn:
+		if syn_status != 1 {
+			return
+		}
 		var blks_v types.Block
 		var blks_f types.Block
 		err = blks_v.BlkTx2Blk(*msg.Blksyn.BlksynV)
@@ -975,12 +1034,24 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				return
 			}
 			// 4. only the block is sucessfully saved, then change the status
+			verified_height = blks_v.Height
 			actor_c.status = 8
 			primary_tag = 0
+
 			// update the current_round_num
-			current_round_num = int(blks_v.ConsensusData.Payload.(*types.AbaBftData).NumberRound)
+			blk_roundnum := int(blks_v.ConsensusData.Payload.(*types.AbaBftData).NumberRound)
+			if current_round_num < blk_roundnum {
+				current_round_num = blk_roundnum
+			}
+
 			// start/enter the next turn
 			event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+
+			// for test 2018.08.07
+			if TestTag == true {
+				fmt.Println("save block:",blks_f.Header)
+			}
+			// test end
 
 			// todo
 			// take care of save and reset
@@ -994,6 +1065,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 			requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 			event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
+			syn_status = 1
 		}
 		// todo
 		// only need to check the hash and signature is enough?

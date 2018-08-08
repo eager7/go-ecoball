@@ -18,10 +18,13 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"os"
 
-	"github.com/ecoball/go-ecoball/account"
-	"github.com/ecoball/go-ecoball/common"
+	//"github.com/ecoball/go-ecoball/account"
+	//"github.com/ecoball/go-ecoball/common"
 	"github.com/urfave/cli"
+	"github.com/ecoball/go-ecoball/client/rpc"
+	innerCommon "github.com/ecoball/go-ecoball/http/common"
 )
 
 var (
@@ -68,6 +71,10 @@ var (
 				Action: createKey,
 				Flags: []cli.Flag{
 					cli.StringFlag{
+						Name:  "name, n",
+						Usage: "wallet name",
+					},
+					cli.StringFlag{
 						Name:  "password, p",
 						Usage: "wallet password",
 					},
@@ -78,6 +85,10 @@ var (
 				Usage:  "lock wallet",
 				Action: lockWallet,
 				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "name, n",
+						Usage: "wallet name",
+					},
 					cli.StringFlag{
 						Name:  "password, p",
 						Usage: "wallet password",
@@ -90,6 +101,10 @@ var (
 				Action: importKey,
 				Flags: []cli.Flag{
 					cli.StringFlag{
+						Name:  "name, n",
+						Usage: "wallet name",
+					},
+					cli.StringFlag{
 						Name:  "password, p",
 						Usage: "wallet password",
 					},
@@ -99,40 +114,37 @@ var (
 					},
 				},
 			},
+			/*{
+				Name:   "remove",
+				Usage:  "remove private key",
+				Action: removeKey,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "name, n",
+						Usage: "wallet name",
+					},
+					cli.StringFlag{
+						Name:  "password, p",
+						Usage: "wallet password",
+					},
+					cli.StringFlag{
+						Name:  "public, k",
+						Usage: "public key",
+					},
+				},
+			},*/
 			{
 				Name:   "unlock",
 				Usage:  "unlock wallet",
 				Action: unlockWallet,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "password, p",
-						Usage: "wallet password",
+						Name:  "name, n",
+						Usage: "wallet name",
 					},
-				},
-			},
-			{
-				Name:   "close",
-				Usage:  "close wallet",
-				Action: closeWallet,
-				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "password, p",
 						Usage: "wallet password",
-					},
-				},
-			},
-			{
-				Name:   "createaccount",
-				Usage:  "create account",
-				Action: createAccount,
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "password, p",
-						Usage: "wallet password",
-					},
-					cli.StringFlag{
-						Name:  "account, a",
-						Usage: "account name",
 					},
 				},
 			},
@@ -141,6 +153,10 @@ var (
 				Usage:  "list account",
 				Action: listAccount,
 				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "name, n",
+						Usage: "wallet name",
+					},
 					cli.StringFlag{
 						Name:  "password, p",
 						Usage: "wallet password",
@@ -170,13 +186,17 @@ func createWallet(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	//create wallet file
-	if err := account.Create(name, []byte(passwd)); nil != err {
-		fmt.Println(err)
+	resp, err := rpc.Call("createWallet", []interface{}{name, passwd})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
 
-	fmt.Println("create wallet success, wallet file path:", name)
+	//result
+	rpc.EchoResult(resp)
+	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
+		fmt.Println("wallet file path:", name)
+	}
 	return nil
 }
 
@@ -187,6 +207,12 @@ func createKey(c *cli.Context) error {
 		return nil
 	}
 
+	name := c.String("name")
+	if "" == name {
+		fmt.Println("Invalid password")
+		return errors.New("Invalid password")
+	}
+
 	//Check the number of flags
 	passwd := c.String("password")
 	if "" == passwd {
@@ -194,28 +220,13 @@ func createKey(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	//whether the wallet open
-	if nil == account.Wallet {
-		fmt.Println("The wallet has not been opened!")
-		return errors.New("The wallet has not been opened!")
-	}
-
-	//whether the wallet locked
-	if account.Wallet.CheckLocked() {
-		fmt.Println("The wallet has been locked!")
-		return errors.New("The wallet has been locked!")
-	}
-
-	//create account
-	ac, err := account.Wallet.CreateKey([]byte(passwd))
+	resp, err := rpc.Call("createKey", []interface{}{name, passwd})
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
 
-	fmt.Println("create key success")
-	fmt.Println("PrivateKey: ", common.ToHex(ac.PrivateKey[:]))
-	fmt.Println("PublicKey: ", common.ToHex(ac.PublicKey[:]))
+	rpc.EchoResult(resp)
 	return nil
 }
 
@@ -238,20 +249,16 @@ func openWallet(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	//whether the wallet open
-	if nil != account.Wallet {
-		fmt.Println("The wallet has been opened!")
-	}
-
-	//open wallet
-	wallet, err := account.Open(name, []byte(passwd))
-	if nil != err {
-		fmt.Println(err)
+	resp, err := rpc.Call("openWallet", []interface{}{name, passwd})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
 
-	fmt.Println("open wallet success, wallet file path:", name)
-	account.Wallet = wallet
+	rpc.EchoResult(resp)
+	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
+		fmt.Println("open wallet success, wallet file path:", name)
+	}
 	return nil
 }
 
@@ -262,38 +269,25 @@ func lockWallet(c *cli.Context) error {
 		return nil
 	}
 
+	name := c.String("name")
+	if "" == name {
+		fmt.Println("Invalid wallet name")
+		return errors.New("Invalid wallet name")
+	}
+
 	passwd := c.String("password")
 	if "" == passwd {
 		fmt.Println("Invalid password")
 		return errors.New("Invalid password")
 	}
 
-	//whether the wallet open
-	if nil == account.Wallet {
-		fmt.Println("The wallet has not been opened!")
-		return errors.New("The wallet has not been opened!")
-	}
-
-	if nil != account.Cipherkeys {
-		fmt.Println("the data is wrong!")
-		return errors.New("the data is wrong!")
-	}
-
-	//lock wallet
-	cipherkeysTemp, err := account.Wallet.Lock([]byte(passwd))
-	if nil != err {
-		fmt.Println(err)
+	resp, err := rpc.Call("lockWallet", []interface{}{name, passwd})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
 
-	//write data
-	if err := account.Wallet.StoreWallet(cipherkeysTemp); nil != err {
-		fmt.Println(err)
-		return err
-	}
-
-	fmt.Println("lock wallet success")
-	account.Cipherkeys = cipherkeysTemp
+	rpc.EchoResult(resp)
 	return nil
 }
 
@@ -304,45 +298,10 @@ func unlockWallet(c *cli.Context) error {
 		return nil
 	}
 
-	passwd := c.String("password")
-	if "" == passwd {
-		fmt.Println("Invalid password")
-		return errors.New("Invalid password")
-	}
-
-	//whether the wallet open
-	if nil == account.Wallet {
-		fmt.Println("The wallet has not been opened!")
-		return errors.New("The wallet has not been opened!")
-	}
-
-	//whether the wallet locked
-	if !account.Wallet.CheckLocked() {
-		fmt.Println("The wallet has not been locked!")
-		return errors.New("The wallet has not been locked!")
-	}
-
-	if nil == account.Cipherkeys {
-		fmt.Println("the data is wrong!")
-		return errors.New("the data is wrong!")
-	}
-
-	//unlock wallet
-	if err := account.Wallet.Unlock([]byte(passwd), account.Cipherkeys); nil != err {
-		fmt.Println(err)
-		return err
-	}
-
-	fmt.Println("unlock wallet success")
-	account.Cipherkeys = nil
-	return nil
-}
-
-func closeWallet(c *cli.Context) error {
-	//Check the number of flags
-	if c.NumFlags() == 0 {
-		cli.ShowSubcommandHelp(c)
-		return nil
+	name := c.String("name")
+	if "" == name {
+		fmt.Println("Invalid wallet name")
+		return errors.New("Invalid wallet name")
 	}
 
 	passwd := c.String("password")
@@ -351,66 +310,13 @@ func closeWallet(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	//whether the wallet open
-	if nil == account.Wallet {
-		fmt.Println("The wallet has not been opened!")
-		return errors.New("The wallet has not been opened!")
-	}
-
-	//close wallet
-	if err := account.Wallet.Close([]byte(passwd)); nil != err {
-		fmt.Println(err)
-		return err
-	}
-
-	fmt.Println("close wallet success")
-	account.Cipherkeys = nil
-	account.Wallet = nil
-	return nil
-}
-
-func createAccount(c *cli.Context) error {
-	//Check the number of flags
-	if c.NumFlags() == 0 {
-		cli.ShowSubcommandHelp(c)
-		return nil
-	}
-
-	passwd := c.String("password")
-	if "" == passwd {
-		fmt.Println("Invalid password")
-		return errors.New("Invalid password")
-	}
-
-	//check account name
-	accountName := c.String("account")
-	if err := common.AccountNameCheck(accountName); nil != err {
-		fmt.Println(err)
-		return err
-	}
-
-	//whether the wallet open
-	if nil == account.Wallet {
-		fmt.Println("The wallet has not been opened!")
-		return errors.New("The wallet has not been opened!")
-	}
-
-	//whether the wallet locked
-	if account.Wallet.CheckLocked() {
-		fmt.Println("The wallet has been locked!")
-		return errors.New("The wallet has been locked!")
-	}
-
-	//create account
-	ac, err := account.Wallet.CreateAccount([]byte(passwd), accountName)
+	resp, err := rpc.Call("unlockWallet", []interface{}{name, passwd})
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
 
-	fmt.Println("create account suuccess, account name: ", accountName)
-	fmt.Println("PrivateKey: ", common.ToHex(ac.PrivateKey[:]))
-	fmt.Println("PublicKey: ", common.ToHex(ac.PublicKey[:]))
+	rpc.EchoResult(resp)
 	return nil
 }
 
@@ -421,39 +327,66 @@ func importKey(c *cli.Context) error {
 		return nil
 	}
 
-	passwd := c.String("password")
-	if "" == passwd {
-		fmt.Println("Invalid password")
+	name := c.String("name")
+	if "" == name {
+		fmt.Println("Invalid wallet name")
+		return errors.New("Invalid wallet name")
+	}
+
+	password := c.String("password")
+	if "" == password {
+		fmt.Println("Invalid wallet password")
 		return errors.New("Invalid password")
 	}
 
 	privateKey := c.String("private")
-	if "" == passwd {
+	if "" == privateKey {
 		fmt.Println("Invalid private key")
 		return errors.New("Invalid private key")
 	}
 
-	//whether the wallet open
-	if nil == account.Wallet {
-		fmt.Println("The wallet has not been opened!")
-		return errors.New("The wallet has not been opened!")
-	}
-
-	//whether the wallet locked
-	if account.Wallet.CheckLocked() {
-		fmt.Println("The wallet has been locked!")
-		return errors.New("The wallet has been locked!")
-	}
-
-	//create account
-	publickey, err := account.Wallet.ImportKey([]byte(passwd), common.FromHex(privateKey))
+	resp, err := rpc.Call("importKey", []interface{}{name, password, privateKey})
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
 
-	fmt.Println("import private key success!")
-	fmt.Println("PublicKey: ", common.ToHex(publickey[:]))
+	rpc.EchoResult(resp)
+	return nil
+}
+
+func removeKey(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	name := c.String("name")
+	if "" == name {
+		fmt.Println("Invalid wallet name")
+		return errors.New("Invalid wallet name")
+	}
+
+	password := c.String("password")
+	if "" == password {
+		fmt.Println("Invalid wallet password")
+		return errors.New("Invalid password")
+	}
+
+	publicKey := c.String("public")
+	if "" == publicKey {
+		fmt.Println("Invalid private key")
+		return errors.New("Invalid private key")
+	}
+
+	resp, err := rpc.Call("removeKey", []interface{}{name, password, publicKey})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return err
+	}
+
+	rpc.EchoResult(resp)
 	return nil
 }
 
@@ -464,26 +397,24 @@ func listAccount(c *cli.Context) error {
 		return nil
 	}
 
+	name := c.String("name")
+	if "" == name {
+		fmt.Println("Invalid wallet name")
+		return errors.New("Invalid wallet name")
+	}
+
 	passwd := c.String("password")
 	if "" == passwd {
 		fmt.Println("Invalid password")
 		return errors.New("Invalid password")
 	}
 
-	//whether the wallet open
-	if nil == account.Wallet {
-		fmt.Println("The wallet has not been opened!")
-		return errors.New("The wallet has not been opened!")
+	resp, err := rpc.Call("listAccount", []interface{}{name, passwd})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return err
 	}
 
-	//whether the wallet locked
-	if account.Wallet.CheckLocked() {
-		fmt.Println("The wallet has been locked!")
-		return errors.New("The wallet has been locked!")
-	}
-
-	//list account
-	account.Wallet.ListAccount()
-
+	rpc.EchoResult(resp)
 	return nil
 }

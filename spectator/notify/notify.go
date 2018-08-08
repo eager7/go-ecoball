@@ -14,39 +14,41 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package spectator
+package notify
 
 import (
 	"net"
 
-	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/spectator/connect"
-	"github.com/ecoball/go-ecoball/spectator/notify"
+	"github.com/ecoball/go-ecoball/spectator/info"
 )
 
-var (
-	log = elog.NewLogger("spectator", elog.DebugLog)
-)
-
-func Bystander(l ledger.Ledger) {
-	notify.CoreLedger = l
-	listener, err := net.Listen("tcp", "127.0.0.1:9000")
-	if nil != err {
-		log.Error("explorer server net.Listen error: ", err)
-		return
-	}
-	defer listener.Close()
-
+func ReceiveNotify(conn net.Conn) {
 	for {
-		conn, err := listener.Accept()
+		buf, n, err := info.ReadData(conn)
 		if nil != err {
-			log.Error("explorer server net.Accept error: ", err)
-			return
+			log.Error("explorer server read data error: ", err)
+			break
 		}
 
-		connect.Onlookers.Add(conn)
+		one := info.OneNotify{info.InfoNil, []byte{}}
+		if err := one.Deserialize(buf[:n]); nil != err {
+			log.Error("explorer server notify.Deserialize error: ", err)
+			continue
+		}
+		go dispatch(conn, one)
+	}
 
-		go notify.ReceiveNotify(conn)
+	connect.Onlookers.Delete(conn)
+}
+
+func dispatch(conn net.Conn, one info.OneNotify) {
+	switch one.InfoType {
+	case info.SynBlock:
+		if err := HandleSynBlock(conn, one.Info); nil != err {
+			log.Error("handleBlock error: ", err)
+		}
+	default:
+
 	}
 }

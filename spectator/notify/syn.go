@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package syn
+package notify
 
 import (
 	"net"
@@ -27,21 +27,10 @@ import (
 
 var (
 	CoreLedger ledger.Ledger
-	log        = elog.NewLogger("syn", elog.DebugLog)
+	log        = elog.NewLogger("notify", elog.DebugLog)
 )
 
-func Dispatch(conn net.Conn, notify info.OneNotify) {
-	switch notify.InfoType {
-	case info.SynBlock:
-		if err := handleSynBlock(conn, notify.Info); nil != err {
-			log.Error("handleBlock error: ", err)
-		}
-	default:
-
-	}
-}
-
-func handleSynBlock(conn net.Conn, msg []byte) error {
+func HandleSynBlock(conn net.Conn, msg []byte) error {
 	var blockHight scanSyn.BlockHight
 	if err := blockHight.Deserialize(msg); nil != err {
 		return err
@@ -71,6 +60,7 @@ func handleSynBlock(conn net.Conn, msg []byte) error {
 			continue
 		}
 
+		data = info.MessageDecorate(data)
 		if _, err := conn.Write(data); nil != err {
 			addr := conn.RemoteAddr().String()
 			log.Warn(addr, " disconnect")
