@@ -36,7 +36,7 @@ message Header {
 */
 message HeaderTx {
     Header      Header              = 1;
-
+    BlockReceipt Receipt            = 2;
     repeated    Signature   sign    = 6;
     bytes       block_hash          = 7;
 }
@@ -89,11 +89,16 @@ message InvokeInfo {
     bytes       Method      = 1;
     repeated ParamData Param= 2;
 }
-message Receipt {
+
+message TransactionReceipt {
     bytes       Hash        = 1;
     double      Cpu         = 2;
     double      Net         = 3;
     bytes       Result      = 4;
+}
+message BlockReceipt {
+    double BlockCpu = 1;
+    double BlockNet = 2;
 }
 /**
 ** Transaction Info for Sync with nodes
@@ -102,7 +107,7 @@ message Transaction {
     TxPayload               payload     = 1;
     repeated    Signature   sign        = 2;
     bytes                   hash        = 3;
-    Receipt                 Receipt     = 4;
+    TransactionReceipt                 Receipt     = 4;
 }
 /**
 **

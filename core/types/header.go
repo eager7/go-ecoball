@@ -40,9 +40,10 @@ type Header struct {
 	MerkleHash    common.Hash
 	StateHash     common.Hash
 	Bloom         bloom.Bloom
-	Signatures    []common.Signature
 
-	Hash common.Hash
+	Receipt    BlockReceipt
+	Signatures []common.Signature
+	Hash       common.Hash
 }
 
 var log = elog.NewLogger("LedgerImpl", elog.WarnLog)
@@ -179,6 +180,7 @@ func (h *Header) protoBuf() (*pb.HeaderTx, error) {
 			StateHash:     h.StateHash.Bytes(),
 			Bloom:         h.Bloom.Bytes(),
 		},
+		Receipt:   &pb.BlockReceipt{BlockCpu: h.Receipt.BlockCpu, BlockNet: h.Receipt.BlockNet},
 		Sign:      sig,
 		BlockHash: h.Hash.Bytes(),
 	}, nil
@@ -228,6 +230,7 @@ func (h *Header) Deserialize(data []byte) error {
 	h.StateHash = common.NewHash(pbHeader.Header.StateHash)
 	h.Hash = common.NewHash(pbHeader.BlockHash)
 	h.Bloom = bloom.NewBloom(pbHeader.Header.Bloom)
+	h.Receipt = BlockReceipt{BlockNet: pbHeader.Receipt.BlockNet, BlockCpu: pbHeader.Receipt.BlockCpu}
 
 	dataCon, err := pbHeader.Header.ConsensusData.Marshal()
 	if err != nil {
