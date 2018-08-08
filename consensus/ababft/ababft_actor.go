@@ -58,7 +58,7 @@ var log = elog.NewLogger("ABABFT", elog.NoticeLog)
 // to run the go test, please set TestTag to True
 const TestTag = true
 
-const threshold_round = 6
+const threshold_round = 60
 
 var Num_peers int
 var Peers_list []Peer_info // Peer information for consensus
@@ -80,6 +80,8 @@ var block_first_cal *types.Block // cache the first-round block
 var received_signblkf_num int // temporary parameters for received signatures for first round block
 var TimeoutMsgs = make(map[string]int, 1000) // cache the timeout message
 var verified_height uint64
+
+var delta_roundnum int
 
 var syn_status int
 // for test 2018.07.31
@@ -125,9 +127,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		// check following patch:
 		// add threshold_round to solve the liveness problem
 		lastest_roundnum := int(currentheader.ConsensusData.Payload.(*types.AbaBftData).NumberRound)
-		delta_roundnum := current_round_num - lastest_roundnum
-
-		if delta_roundnum > threshold_round {
+		delta_roundnum = current_round_num - lastest_roundnum
+		if delta_roundnum > threshold_round && current_height_num > int(verified_height) {
 			// as there is a long time since last block, maybe the chain is blocked somewhere
 			// to generate the block after the previous block (i.e. the latest verified block)
 			var currentblock *types.Block
@@ -137,6 +138,12 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			}
 			currentheader = currentblock.Header
 			current_height_num = current_height_num - 1
+
+			// todo
+			// 1. the ledger needs one backward step
+			// 2. the peer list also needs one backward step
+			// 3. the txpool also needs one backward step or maybe not
+			// 4. the blockchain in database needs one backward step
 		}
 
 		if currentheader.ConsensusData.Type != types.ConABFT {
@@ -156,20 +163,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 		// signature the current highest block and broadcast
 		var signature_preblock common.Signature
-
-		if delta_roundnum >= threshold_round {
-			signature_preblock.PubKey = actor_c.service_ababft.account.PublicKey
-			// as there is a long time since last block, maybe the chain is blocked somewhere
-			// to generate the block after the previous block (i.e. the latest verified block)
-			signature_preblock.SigData, err = actor_c.service_ababft.account.Sign(currentheader.PrevHash.Bytes())
-			// todo
-			// ledger need to back step
-
-
-		} else {
-			signature_preblock.PubKey = actor_c.service_ababft.account.PublicKey
-			signature_preblock.SigData, err = actor_c.service_ababft.account.Sign(currentheader.Hash.Bytes())
-		}
+		signature_preblock.PubKey = actor_c.service_ababft.account.PublicKey
+		signature_preblock.SigData, err = actor_c.service_ababft.account.Sign(currentheader.Hash.Bytes())
 		if err != nil {
 			return
 		}
@@ -247,6 +242,12 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// todo
 					// need to check
 					// only require when height difference between the peers is >= 2
+
+					if delta_roundnum > threshold_round {
+						if verified_height == uint64(current_height_num) && height_in == (current_height_num+1) {
+							return
+						}
+					}
 
 					// require synchronization, the longest chain is ok
 					// send synchronization message
@@ -390,7 +391,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				// generate the first-round block
 				var block_first *types.Block
 				t_time := time.Now().UnixNano()
-				block_first,err = actor_c.service_ababft.ledger.NewTxBlock(txs,conData, t_time)
+				block_first,err = actor_c.service_ababft.ledger.NewTxBlock(txs, conData, t_time)
 				block_first.SetSignature(actor_c.service_ababft.account)
 				// broadcast the first-round block to peers for them to verify the transactions and wait for the corresponding signatures back
 				block_firstround.Blockfirst = *block_first
@@ -460,7 +461,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				} else if data_preblk_received.NumberRound > uint32(current_round_num) {
 					// require synchronization, the longest chain is ok
 					// in case that somebody may skip the current generator, only the different height can call the synchronization
-					if (current_height_num+1) < int(blockfirst_received.Header.Height) {
+					if (verified_height+2) < blockfirst_received.Header.Height {
 						// send synchronization message
 						var requestsyn REQSyn
 						requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
@@ -491,7 +492,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					}
 					// 1c. check the block header, except the consensus data
 					var valid_blk bool
-					valid_blk,err = actor_c.verify_header(&blockfirst_received, current_round_num,*currentheader)
+					valid_blk,err = actor_c.verify_header(&blockfirst_received, current_round_num, *currentheader)
 					if valid_blk==false {
 						println("header check fail")
 						return
@@ -528,6 +529,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// 2c. check the valid signature number
 					if num_verified < int(len(Peers_list)/3+1){
 						// not enough signature
+						fmt.Println("not enough signature for second round block")
 						return
 					}
 					// 3. check the txs
@@ -767,7 +769,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				// 1a. current round number
 				if data_blks_received.NumberRound < uint32(current_round_num) || blocksecond_received.Header.Height <= uint64(current_height_num) {
 					return
-				} else if (blocksecond_received.Header.Height-1) > uint64(current_height_num) {
+				} else if (blocksecond_received.Header.Height-2) > verified_height {
 					// send synchronization message
 					var requestsyn REQSyn
 					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
@@ -1075,6 +1077,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		return
 
 	case TimeoutMsg:
+		// todo
+		// the waiting time maybe need to be longer after every time out
 		pubkey_in := msg.Toutmsg.PubKey
 		round_in := int(msg.Toutmsg.RoundNumber)
 		signdata_in := msg.Toutmsg.SigData
