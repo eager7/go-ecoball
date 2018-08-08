@@ -85,30 +85,22 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @brief  create a new block, this function will execute the transaction to rebuild mpt trie
 *  @param  consensusData - the data of consensus module set
  */
-func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, *state.State, error) {
-	log.Warn("````````````````````````````````````````````````````````````````New", time.Now().UnixNano())
+func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
 	c.StateDB.GetHashRoot().Show()
 	s, err := c.StateDB.CopyState()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	for i := 0; i < len(txs); i++ {
-		//txs[i].Show()
 		if ret, _, _, err := c.HandleTransaction(s, txs[i], timeStamp); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			txs[i].Show()
-			return nil, nil, err
+			return nil, err
 		} else {
-			//txs[i].Show()
 			log.Notice("Handle Transaction Result:", ret)
 		}
 	}
-	s.GetHashRoot().Show()
-	//acc, err := s.GetAccountByName(common.NameToIndex("root"))
-	//errors.CheckErrorPanic(err)
-	//acc.Show()
-	block, err := types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, timeStamp)
-	return block, s, err
+	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, timeStamp)
 }
 
 /**
@@ -146,7 +138,6 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 *  @param  block - the block need to save
  */
 func (c *ChainTx) SaveBlock(block *types.Block) error {
-	log.Warn("````````````````````````````````````````````````````````````````Save")
 	if block == nil {
 		return errors.New(log, "block is nil")
 	}
@@ -484,11 +475,6 @@ func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, valu
  */
 func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float32, err error) {
 	start := time.Now().UnixNano()
-	//log.Debug(start, c.Geneses.TimeStamp)
-	//n := (start - c.Geneses.TimeStamp) / 1000000 / int64(config.TimeSlot)
-	//m := (c.CurrentHeader.TimeStamp - c.Geneses.TimeStamp) / 1000000  / int64(config.TimeSlot)
-	//log.Debug(n, m, n - m)
-	//timeRecover := (timeStamp - c.CurrentHeader.TimeStamp - 2 * c.Geneses.TimeStamp) / 1000000 / int64(config.TimeSlot)
 	switch tx.Type {
 	case types.TxTransfer:
 		payload, ok := tx.Payload.GetObject().(types.TransferInfo)
@@ -553,10 +539,6 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	if err := s.SubResources(tx.From, cpu, net); err != nil {
 		return nil, 0, 0, err
 	}
-	//acc, err := s.GetAccountByName(tx.From)
-	//acc.Show()
-	//acc, err = s.GetAccountByName(tx.Addr)
-	//acc.Show()
 	return ret, cpu, net, nil
 }
 

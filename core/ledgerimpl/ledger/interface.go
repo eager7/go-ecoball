@@ -4,12 +4,11 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-
 )
 
 type Ledger interface {
 	GetTxBlock(hash common.Hash) (*types.Block, error)
-	NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, *state.State, error)
+	NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
 	VerifyTxBlock(block *types.Block) error
 	SaveTxBlock(block *types.Block) error
 	GetTxBlockByHeight(height uint64) (*types.Block, error)
@@ -39,7 +38,7 @@ type Ledger interface {
 	TokenIsExisted(token string) bool
 	Start()
 
-	GetGenesesTime()int64
+	GetGenesesTime() int64
 
 	GetChainTx() ChainInterface
 }

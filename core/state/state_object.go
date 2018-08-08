@@ -369,7 +369,7 @@ func (a *Account) JsonString(format bool) string {
 		return string(data)
 	}
 }
-func (a *Account) Show(format bool) {
+func (a *Account) Show() {
 	fmt.Println("----------------" + a.Index.String() + ":")
-	fmt.Println(a.JsonString(format))
+	fmt.Println(a.JsonString(false))
 }

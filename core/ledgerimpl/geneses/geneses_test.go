@@ -1,6 +1,7 @@
 package geneses_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
@@ -13,7 +14,6 @@ import (
 	"math/big"
 	"testing"
 	"time"
-	"encoding/json"
 )
 
 var root = common.NameToIndex("root")
@@ -57,13 +57,12 @@ func TestGenesesBlockInit(t *testing.T) {
 	errors.CheckErrorPanic(l.ResetStateDB(prevBlock))
 	//elog.Log.Debug("reset hash:", l.StateDB().GetHashRoot().HexString())
 
-	elog.Log.Info("reset block:", )
-	newBlock, s, err := l.NewTxBlock(currentBlock.Transactions, currentBlock.ConsensusData, currentBlock.TimeStamp)
+	elog.Log.Info("reset block:")
+	newBlock, err := l.NewTxBlock(currentBlock.Transactions, currentBlock.ConsensusData, currentBlock.TimeStamp)
 	errors.CheckErrorPanic(err)
 	newBlock.SetSignature(&config.Root)
 	//currentBlock.Show(false)
 	//newBlock.Show(false)
-	example.ShowAccountInfo(s, root)
 	errors.CheckEqualPanic(currentBlock.JsonString(false) == newBlock.JsonString(false))
 
 	//elog.Log.Info("new transfer block")
@@ -72,7 +71,6 @@ func TestGenesesBlockInit(t *testing.T) {
 	//l.GetCurrentHeader().Show()
 	//curBlock.Header.Show()
 	//newBlock.Header.Show()
-
 
 	for i := 0; i < 0; i++ {
 		time.Sleep(10 * time.Second)
@@ -130,7 +128,7 @@ func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
 
 	return example.SaveBlock(ledger, txs)
 }
-func PledgeContract(ledger ledger.Ledger) *types.Block{
+func PledgeContract(ledger ledger.Ledger) *types.Block {
 	elog.Log.Info("PledgeContract------------------------------------------------------")
 	var txs []*types.Transaction
 	tokenContract, err := types.NewDeployContract(delegate, delegate, "active", types.VmNative, "system control", nil, 0, time.Now().Unix())
@@ -190,22 +188,21 @@ func CancelPledgeContract(ledger ledger.Ledger, con types.ConsensusData) *types.
 func showAccountInfo(l ledger.Ledger) {
 	acc, err := l.AccountGet(root)
 	errors.CheckErrorPanic(err)
-	acc.Show(false)
-/*
-	acc, err = l.AccountGet(worker1)
-	errors.CheckErrorPanic(err)
 	acc.Show()
+	/*
+		acc, err = l.AccountGet(worker1)
+		errors.CheckErrorPanic(err)
+		acc.Show()
 
-	acc, err = l.AccountGet(worker2)
-	errors.CheckErrorPanic(err)
-	acc.Show()
+		acc, err = l.AccountGet(worker2)
+		errors.CheckErrorPanic(err)
+		acc.Show()
 
-	acc, err = l.AccountGet(worker3)
-	errors.CheckErrorPanic(err)
-	acc.Show()
+		acc, err = l.AccountGet(worker3)
+		errors.CheckErrorPanic(err)
+		acc.Show()
 
-	acc, err = l.AccountGet(delegate)
-	errors.CheckErrorPanic(err)
-	acc.Show()*/
+		acc, err = l.AccountGet(delegate)
+		errors.CheckErrorPanic(err)
+		acc.Show()*/
 }
-
