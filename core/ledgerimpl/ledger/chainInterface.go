@@ -14,13 +14,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-
 package ledger
 
 import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/types"
-
 )
 
 type ChainInterface interface {
@@ -30,5 +28,5 @@ type ChainInterface interface {
 	//SaveConsensusState(block *DposBlock) error
 	//NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error)
 	NewBlock(ledger Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
-	GetTailBlockHash() (common.Hash)
+	GetTailBlockHash() common.Hash
 }

@@ -23,33 +23,53 @@ var worker3 = common.NameToIndex("worker3")
 var delegate = common.NameToIndex("delegate")
 
 func TestGenesesBlockInit(t *testing.T) {
+	elog.Log.Info("genesis block")
 	l := example.Ledger("/tmp/genesis")
-	con, err := types.InitConsensusData(time.Now().Unix())
-	errors.CheckErrorPanic(err)
-	CreateAccountBlock(l, *con)
-	TokenTransferBlock(l, *con)
-	showAccountInfo(l)
+	elog.Log.Info("new account block")
+	createBlock := CreateAccountBlock(l)
 
-	PledgeContract(l, *con)
-	showAccountInfo(l)
+	elog.Log.Info("transfer block:", createBlock.StateHash.HexString())
+	blockTransfer := TokenTransferBlock(l)
 
-	VotingContract(l, *con)
-	showAccountInfo(l)
+	elog.Log.Info("pledge block:", blockTransfer.StateHash.HexString())
+	pledgeBlock := PledgeContract(l)
+
+	elog.Log.Info("voting block:", pledgeBlock.StateHash.HexString())
+	votingBlock := VotingContract(l)
 	l.StateDB().RequireVotingInfo()
 
-	CancelPledgeContract(l, *con)
-	showAccountInfo(l)
+	elog.Log.Info("cancel pledge block:", votingBlock.StateHash.HexString())
+	CancelPledgeContract(l)
+	//showAccountInfo(l)
 	l.StateDB().RequireVotingInfo()
+
+/*
+elog.Log.Info("current block:", blockTransfer.StateHash.HexString())
+currentBlock, err := l.GetTxBlock(l.GetCurrentHeader().Hash)
+errors.CheckErrorPanic(err)
+errors.CheckEqualPanic(votingBlock.JsonString(false) == currentBlock.JsonString(false))
+elog.Log.Info("prev block")
+prevBlock, err := l.GetTxBlock(currentBlock.PrevHash)
+errors.CheckErrorPanic(err)
+errors.CheckEqualPanic(pledgeBlock.JsonString(false) == prevBlock.JsonString(false))
+elog.Log.Info("reset block to create block")
+errors.CheckErrorPanic(l.ResetStateDB(prevBlock.Header))
+elog.Log.Info("reset block:")
+newBlock, err := l.NewTxBlock(currentBlock.Transactions, currentBlock.ConsensusData, currentBlock.TimeStamp)
+errors.CheckErrorPanic(err)
+newBlock.SetSignature(&config.Root)
+errors.CheckEqualPanic(currentBlock.JsonString(false) == newBlock.JsonString(false))
+*/
 
 	for i := 0; i < 0; i++ {
 		time.Sleep(10 * time.Second)
 		fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
 	}
 
-	l.StateDB().Close()
+	//errors.CheckErrorPanic(l.StateDB().Close())
 }
-func CreateAccountBlock(ledger ledger.Ledger, con types.ConsensusData) {
-	elog.Log.Info("CreateAccountBlock------------------------------------------------------")
+func CreateAccountBlock(ledger ledger.Ledger) *types.Block {
+	elog.Log.Info("CreateAccountBlock------------------------------------------------------\n\n")
 	var txs []*types.Transaction
 	tokenContract, err := types.NewDeployContract(root, root, state.Active, types.VmNative, "system control", nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
@@ -75,10 +95,10 @@ func CreateAccountBlock(ledger ledger.Ledger, con types.ConsensusData) {
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	example.SaveBlock(ledger, con, txs)
+	return example.SaveBlock(ledger, txs)
 }
-func TokenTransferBlock(ledger ledger.Ledger, con types.ConsensusData) {
-	elog.Log.Info("TokenTransferBlock------------------------------------------------------")
+func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
+	elog.Log.Info("TokenTransferBlock------------------------------------------------------\n\n")
 	var txs []*types.Transaction
 	transfer, err := types.NewTransfer(root, worker1, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
@@ -95,9 +115,9 @@ func TokenTransferBlock(ledger ledger.Ledger, con types.ConsensusData) {
 	transfer.SetSignature(&config.Root)
 	txs = append(txs, transfer)
 
-	example.SaveBlock(ledger, con, txs)
+	return example.SaveBlock(ledger, txs)
 }
-func PledgeContract(ledger ledger.Ledger, con types.ConsensusData) {
+func PledgeContract(ledger ledger.Ledger) *types.Block {
 	elog.Log.Info("PledgeContract------------------------------------------------------")
 	var txs []*types.Transaction
 	tokenContract, err := types.NewDeployContract(delegate, delegate, "active", types.VmNative, "system control", nil, 0, time.Now().Unix())
@@ -120,9 +140,9 @@ func PledgeContract(ledger ledger.Ledger, con types.ConsensusData) {
 	invoke.SetSignature(&config.Worker2)
 	txs = append(txs, invoke)
 
-	example.SaveBlock(ledger, con, txs)
+	return example.SaveBlock(ledger, txs)
 }
-func VotingContract(ledger ledger.Ledger, con types.ConsensusData) {
+func VotingContract(ledger ledger.Ledger) *types.Block {
 	elog.Log.Info("VotingContract------------------------------------------------------\n\n")
 	var txs []*types.Transaction
 	invoke, err := types.NewInvokeContract(worker1, root, "active", "reg_prod", []string{"worker1"}, 0, time.Now().UnixNano())
@@ -139,10 +159,11 @@ func VotingContract(ledger ledger.Ledger, con types.ConsensusData) {
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)
-
-	example.SaveBlock(ledger, con, txs)
+	elog.Log.Debug("33333333333333333333333333333")
+	ledger.GetCurrentHeader().Show()
+	return example.SaveBlock(ledger, txs)
 }
-func CancelPledgeContract(ledger ledger.Ledger, con types.ConsensusData) {
+func CancelPledgeContract(ledger ledger.Ledger) *types.Block {
 	elog.Log.Info("CancelPledgeContract------------------------------------------------------\n\n")
 	var txs []*types.Transaction
 	invoke, err := types.NewInvokeContract(worker1, delegate, "owner", "cancel_pledge", []string{"worker1", "worker1", "50", "50"}, 0, time.Now().Unix())
@@ -150,27 +171,27 @@ func CancelPledgeContract(ledger ledger.Ledger, con types.ConsensusData) {
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)
 
-	example.SaveBlock(ledger, con, txs)
+	return example.SaveBlock(ledger, txs)
 }
 
 func showAccountInfo(l ledger.Ledger) {
 	acc, err := l.AccountGet(root)
 	errors.CheckErrorPanic(err)
 	acc.Show()
+	/*
+		acc, err = l.AccountGet(worker1)
+		errors.CheckErrorPanic(err)
+		acc.Show()
 
-	acc, err = l.AccountGet(worker1)
-	errors.CheckErrorPanic(err)
-	acc.Show()
+		acc, err = l.AccountGet(worker2)
+		errors.CheckErrorPanic(err)
+		acc.Show()
 
-	acc, err = l.AccountGet(worker2)
-	errors.CheckErrorPanic(err)
-	acc.Show()
+		acc, err = l.AccountGet(worker3)
+		errors.CheckErrorPanic(err)
+		acc.Show()
 
-	acc, err = l.AccountGet(worker3)
-	errors.CheckErrorPanic(err)
-	acc.Show()
-
-	acc, err = l.AccountGet(delegate)
-	errors.CheckErrorPanic(err)
-	acc.Show()
+		acc, err = l.AccountGet(delegate)
+		errors.CheckErrorPanic(err)
+		acc.Show()*/
 }

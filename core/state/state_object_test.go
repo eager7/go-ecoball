@@ -8,65 +8,49 @@ import (
 	"testing"
 	"time"
 	"os"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 func TestStateObject(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
 	os.RemoveAll("/tmp/state_object/")
-	acc1, _ := state.NewAccount("/tmp/state_object", indexAcc, addr, time.Now().UnixNano())
+	acc, _ := state.NewAccount("/tmp/state_object", indexAcc, addr, time.Now().UnixNano())
+	//add balance
+	errors.CheckErrorPanic(acc.AddBalance(state.AbaToken, new(big.Int).SetUint64(1000)))
+	//add perm
+	perm := state.NewPermission(state.Active, state.Owner, 2, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker2"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker3"), Weight: 1, Permission: "active"}})
+	acc.AddPermission(perm)
+	//set cpu net
+	acc.AddResourceLimits(true, 100, 100, 200, 200)
 
-	acc1.AddBalance(state.AbaToken, new(big.Int).SetUint64(100))
-	value, err := acc1.Balance(state.AbaToken)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("Value:", value)
-	data, err := acc1.Serialize()
-	if err != nil {
-		t.Fatal(err)
-	}
-	acc1.Show()
+	data, err := acc.Serialize()
+	errors.CheckErrorPanic(err)
 
 	acc2 := new(state.Account)
-	if err := acc2.Deserialize(data); err != nil {
-		t.Fatal(err)
-	}
-
-	value, err = acc1.Balance(state.AbaToken)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if value.Uint64() != 100 {
-		t.Fatal("balance error")
-	}
-
-	fmt.Println("Value:", value)
-	acc2.Show()
-
-	if acc1.JsonString() != acc2.JsonString() {
-		t.Fatal("mismatch")
-	}
+	errors.CheckErrorPanic(acc2.Deserialize(data))
+	acc2.Show(false)
+	errors.CheckEqualPanic(acc.JsonString(false) == acc2.JsonString(false))
 }
 
-func TestNewAccount(t *testing.T) {
+
+func xTestResourceRecover(t *testing.T) {
+	os.RemoveAll("/tmp/state_object_recover/")
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
-	os.RemoveAll("/tmp/acc/")
 	acc, err := state.NewAccount("/tmp/acc", indexAcc, addr, time.Now().UnixNano())
-	if err != nil {
-		t.Fatal(err)
-	}
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(acc.AddBalance(state.AbaToken, new(big.Int).SetUint64(1000)))
+	acc.AddResourceLimits(true, 100, 100, 100, 100)
 
-	//for ; ;  {
-		d, err := acc.Serialize()
-		if err != nil {
-			t.Fatal(err)
-		}
-		fmt.Println(d)
-		if d[1] != 43 {
-			t.Fatal("error")
-		}
-	//	time.Sleep(1 *time.Second)
-	//}
+	time.Sleep(time.Microsecond*100)
+	ti := time.Now().UnixNano()
+	fmt.Println(ti)
+	errors.CheckErrorPanic(acc.RecoverResources(100, 100, ti))
+
+	data, err := acc.Serialize()
+	errors.CheckErrorPanic(err)
+	accNew := new(state.Account)
+	errors.CheckErrorPanic(accNew.Deserialize(data))
+	errors.CheckEqualPanic(acc.JsonString(false) == accNew.JsonString(false))
 }

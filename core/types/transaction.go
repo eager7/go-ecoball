@@ -200,7 +200,7 @@ func (t *Transaction) Deserialize(data []byte) error {
 	t.Addr = common.AccountName(txPb.Payload.Addr)
 	t.Nonce = txPb.Payload.Nonce
 	t.TimeStamp = txPb.Payload.Timestamp
-	t.Receipt = Receipt{Hash: t.Hash, Cpu: txPb.Receipt.Cpu, Net: txPb.Receipt.Net, Result: common.CopyBytes(txPb.Receipt.Result)}
+	t.Receipt = Receipt{Hash: common.NewHash(txPb.Receipt.Hash), Cpu: txPb.Receipt.Cpu, Net: txPb.Receipt.Net, Result: common.CopyBytes(txPb.Receipt.Result)}
 	if t.Payload == nil {
 		switch t.Type {
 		case TxTransfer:
@@ -249,7 +249,23 @@ func (t *Transaction) show() {
 }
 
 func (t *Transaction) JsonString() string {
-	data, _ := json.Marshal(t)
+	data, _ := json.Marshal(struct {
+		Version    uint32             `json:"version"`
+		Type       string             `json:"type"`
+		From       string             `json:"from"`
+		Permission string             `json:"permission"`
+		Addr       string             `json:"addr"`
+		Nonce      uint64             `json:"nonce"`
+		TimeStamp  int64              `json:"timeStamp"`
+		Payload    Payload            `json:"payload"`
+		Signatures []common.Signature `json:"signatures"`
+		Hash       string             `json:"hash"`
+		Receipt    Receipt            `json:"receipt"`
+	}{Version: t.Version, Type: t.Type.String(), From: t.From.String(),
+		Permission: t.Permission, Addr: t.Addr.String(), Nonce: t.Nonce,
+		TimeStamp: t.TimeStamp, Payload: t.Payload, Signatures: t.Signatures,
+		Hash: t.Hash.HexString(), Receipt: t.Receipt})
+	//data, _ = json.Marshal(t)
 	return string(data)
 }
 

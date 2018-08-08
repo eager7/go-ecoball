@@ -932,7 +932,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			current_blk := blk_syn_f
 
 			fmt.Println("1. current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
-			err1 := actor_c.service_ababft.ledger.ResetStateDB(current_pre_blk.Header.StateHash)
+			//err1 := actor_c.service_ababft.ledger.ResetStateDB(current_pre_blk.Header.StateHash)
+			err1 := actor_c.service_ababft.ledger.ResetStateDB(current_pre_blk.Header)
 			if err1 != nil {
 				fmt.Println("reset status error:", err1)
 			}
@@ -1020,7 +1021,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			if ok := bytes.Equal(blks_v.Hash.Bytes(), currentheader.Hash.Bytes()); ok != true {
 				// the blks_v is not in the ledger,then save blks_v
 				// here need one reset DB
-				err = actor_c.service_ababft.ledger.ResetStateDB(blk_pre.Header.Hash)
+				//err = actor_c.service_ababft.ledger.ResetStateDB(blk_pre.Header.Hash)
+				err = actor_c.service_ababft.ledger.ResetStateDB(blk_pre.Header)
 				if err = actor_c.service_ababft.ledger.SaveTxBlock(&blks_v); err != nil {
 					log.Debug("save block error:", err)
 					return

@@ -4,7 +4,6 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-
 )
 
 type Ledger interface {
@@ -17,7 +16,7 @@ type Ledger interface {
 	GetCurrentHeader() *types.Header
 	GetCurrentHeight() uint64
 	StateDB() *state.State
-	ResetStateDB(hash common.Hash) error
+	ResetStateDB(header *types.Header) error
 
 	AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error)
 	SetContract(index common.AccountName, t types.VmType, des, code []byte) error
@@ -39,7 +38,7 @@ type Ledger interface {
 	TokenIsExisted(token string) bool
 	Start()
 
-	GetGenesesTime()int64
+	GetGenesesTime() int64
 
 	GetChainTx() ChainInterface
 }
