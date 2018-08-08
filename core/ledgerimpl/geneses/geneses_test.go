@@ -38,39 +38,28 @@ func TestGenesesBlockInit(t *testing.T) {
 	votingBlock := VotingContract(l)
 	l.StateDB().RequireVotingInfo()
 
-	//CancelPledgeContract(l, *con)
+	elog.Log.Info("cancel pledge block:", votingBlock.StateHash.HexString())
+	CancelPledgeContract(l)
 	//showAccountInfo(l)
-	//l.StateDB().RequireVotingInfo()
+	l.StateDB().RequireVotingInfo()
 
-	elog.Log.Info("current block:", blockTransfer.StateHash.HexString())
-	currentBlock, err := l.GetTxBlock(l.GetCurrentHeader().Hash)
-	errors.CheckErrorPanic(err)
-	errors.CheckEqualPanic(votingBlock.JsonString(false) == currentBlock.JsonString(false))
-	//showAccountInfo(l)
-
-	elog.Log.Info("prev block")
-	prevBlock, err := l.GetTxBlock(currentBlock.PrevHash)
-	errors.CheckErrorPanic(err)
-	errors.CheckEqualPanic(pledgeBlock.JsonString(false) == prevBlock.JsonString(false))
-
-	elog.Log.Info("reset block to create block")
-	errors.CheckErrorPanic(l.ResetStateDB(prevBlock.Header))
-	//elog.Log.Debug("reset hash:", l.StateDB().GetHashRoot().HexString())
-
-	elog.Log.Info("reset block:")
-	newBlock, err := l.NewTxBlock(currentBlock.Transactions, currentBlock.ConsensusData, currentBlock.TimeStamp)
-	errors.CheckErrorPanic(err)
-	newBlock.SetSignature(&config.Root)
-	//currentBlock.Show(false)
-	//newBlock.Show(false)
-	errors.CheckEqualPanic(currentBlock.JsonString(false) == newBlock.JsonString(false))
-
-	//elog.Log.Info("new transfer block")
-	//elog.Log.Debug(newBlock.JsonString())
-	//elog.Log.Warn("22222222222222222222222222222")
-	//l.GetCurrentHeader().Show()
-	//curBlock.Header.Show()
-	//newBlock.Header.Show()
+/*
+elog.Log.Info("current block:", blockTransfer.StateHash.HexString())
+currentBlock, err := l.GetTxBlock(l.GetCurrentHeader().Hash)
+errors.CheckErrorPanic(err)
+errors.CheckEqualPanic(votingBlock.JsonString(false) == currentBlock.JsonString(false))
+elog.Log.Info("prev block")
+prevBlock, err := l.GetTxBlock(currentBlock.PrevHash)
+errors.CheckErrorPanic(err)
+errors.CheckEqualPanic(pledgeBlock.JsonString(false) == prevBlock.JsonString(false))
+elog.Log.Info("reset block to create block")
+errors.CheckErrorPanic(l.ResetStateDB(prevBlock.Header))
+elog.Log.Info("reset block:")
+newBlock, err := l.NewTxBlock(currentBlock.Transactions, currentBlock.ConsensusData, currentBlock.TimeStamp)
+errors.CheckErrorPanic(err)
+newBlock.SetSignature(&config.Root)
+errors.CheckEqualPanic(currentBlock.JsonString(false) == newBlock.JsonString(false))
+*/
 
 	for i := 0; i < 0; i++ {
 		time.Sleep(10 * time.Second)
@@ -174,7 +163,7 @@ func VotingContract(ledger ledger.Ledger) *types.Block {
 	ledger.GetCurrentHeader().Show()
 	return example.SaveBlock(ledger, txs)
 }
-func CancelPledgeContract(ledger ledger.Ledger, con types.ConsensusData) *types.Block {
+func CancelPledgeContract(ledger ledger.Ledger) *types.Block {
 	elog.Log.Info("CancelPledgeContract------------------------------------------------------\n\n")
 	var txs []*types.Transaction
 	invoke, err := types.NewInvokeContract(worker1, delegate, "owner", "cancel_pledge", []string{"worker1", "worker1", "50", "50"}, 0, time.Now().Unix())
