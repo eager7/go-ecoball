@@ -164,7 +164,8 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	} else {
 		netFlag = false
 	}
-	c.StateDB.SetBlockLimits(cpuFlag, netFlag)
+	log.Debug(cpuFlag, netFlag)
+	//c.StateDB.SetBlockLimits(cpuFlag, netFlag)
 	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 		log.Warn(err)
 	}
