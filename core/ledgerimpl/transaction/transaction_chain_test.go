@@ -26,20 +26,8 @@ import (
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"github.com/ecoball/go-ecoball/test/example"
 	"testing"
+	"time"
 )
-
-func TestNewTransactionChain(t *testing.T) {
-	txChain, err := transaction.NewTransactionChain("/tmp/Tx", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(txChain.CurrentHeader.Hash.HexString())
-	block, err := txChain.GetBlock(txChain.CurrentHeader.Hash)
-	if err != nil {
-		t.Fatal(err)
-	}
-	block.Show()
-}
 
 func TestBlockAdd(t *testing.T) {
 	c, err := transaction.NewTransactionChain("/tmp/quaker/Tx", nil)
@@ -72,7 +60,7 @@ func TestLedgerTxAdd(t *testing.T) {
 	var txs []*types.Transaction
 	txs = append(txs, tx)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-	block, err := l.NewTxBlock(txs, conData)
+	block, err := l.NewTxBlock(txs, conData, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +90,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 	var txs []*types.Transaction
 	txs = append(txs, tx)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-	block, err := l.NewTxBlock(txs, conData)
+	block, err := l.NewTxBlock(txs, conData, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +101,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 	invoke := example.TestInvoke("create")
 	var txs2 []*types.Transaction
 	txs2 = append(txs, invoke)
-	block, err = l.NewTxBlock(txs2, conData)
+	block, err = l.NewTxBlock(txs2, conData, time.Now().UnixNano())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,36 +109,3 @@ func TestLedgerDeployAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
-/*
-func TestLedgerInterface(t *testing.T) {
-	l, err := ledgerimpl.NewLedger("/tmp/quaker")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
-	if err := l.AccountAddBalance(addr, "Test", 100001); err != nil {
-		t.Fatal(err)
-	}
-
-	value, err := l.AccountGetBalance(addr, "Test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("Token Abc Value:", value)
-
-}
-
-func TestLedgerInterfaceTokenCreate(t *testing.T) {
-	l, err := ledgerimpl.NewLedger("/tmp/quaker")
-	if err != nil {
-		t.Fatal(err)
-	}
-	addr := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
-	if err := l.TokenCreate(addr, "Test", 100001); err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("Token Test Value:", l.TokenIsExisted("Test"))
-
-}
-*/

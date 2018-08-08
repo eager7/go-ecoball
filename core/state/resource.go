@@ -8,38 +8,40 @@ import (
 	"math/big"
 )
 
+var blockCpu = "block_cpu"
+var blockNet = "block_net"
 var cpuAmount = "cpu_amount"
 var netAmount = "net_amount"
-var votingAmount = "voting_amount"
 var prodsList = "prods_list"
+var votingAmount = "voting_amount"
 
 const VotesLimit = 200
-const VirtualBlockCpuLimit float32 = 200000000.0
-const VirtualBlockNetLimit float32 = 1048576000.0
-const BlockCpuLimit float32 = 200000.0
-const BlockNetLimit float32 = 1048576.0
+const VirtualBlockCpuLimit float64 = 200000000.0
+const VirtualBlockNetLimit float64 = 1048576000.0
+const BlockCpuLimit float64 = 200000.0
+const BlockNetLimit float64 = 1048576.0
 
-var BlockCpu = BlockCpuLimit
-var BlockNet = BlockNetLimit
+//var BlockCpu = BlockCpuLimit
+//var BlockNet = BlockNetLimit
 
 type Resource struct {
 	Ram struct {
-		Quota float32 `json:"quota"`
-		Used  float32 `json:"used"`
+		Quota float64 `json:"quota"`
+		Used  float64 `json:"used"`
 	}
 	Net struct {
 		Staked    uint64  `json:"staked_aba, omitempty"`     //total stake delegated from account to self, uint ABA
 		Delegated uint64  `json:"delegated_aba, omitempty"`  //total stake delegated to account from others, uint ABA
-		Used      float32 `json:"used_byte, omitempty"`      //uint Byte
-		Available float32 `json:"available_byte, omitempty"` //uint Byte
-		Limit     float32 `json:"limit_byte, omitempty"`     //uint Byte
+		Used      float64 `json:"used_byte, omitempty"`      //uint Byte
+		Available float64 `json:"available_byte, omitempty"` //uint Byte
+		Limit     float64 `json:"limit_byte, omitempty"`     //uint Byte
 	}
 	Cpu struct {
 		Staked    uint64  `json:"staked_aba, omitempty"`    //total stake delegated from account to self, uint ABA
 		Delegated uint64  `json:"delegated_aba, omitempty"` //total stake delegated to account from others, uint ABA
-		Used      float32 `json:"used_ms, omitempty"`       //uint ms
-		Available float32 `json:"available_ms, omitempty"`  //uint ms
-		Limit     float32 `json:"limit_ms, omitempty"`      //uint ms
+		Used      float64 `json:"used_ms, omitempty"`       //uint ms
+		Available float64 `json:"available_ms, omitempty"`  //uint ms
+		Limit     float64 `json:"limit_ms, omitempty"`      //uint ms
 	}
 	Votes struct {
 		Staked    uint64                        `json:"staked_aba, omitempty"` //total stake delegated, uint ABA
@@ -117,7 +119,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
  *  @param cpu - the amount of cpu spend
  *  @param net - the amount of net spend
  */
-func (s *State) SubResources(index common.AccountName, cpu, net float32) error {
+func (s *State) SubResources(index common.AccountName, cpu, net float64) error {
 	cpuStakedSum, err := s.GetParam(cpuAmount)
 	if err != nil {
 		return err
@@ -228,7 +230,7 @@ func (s *State) RecoverResources(index common.AccountName, timeStamp int64) erro
  *  @param index - account's index
  *  @param timeStamp - current time
  */
-func (s *State) RequireResources(index common.AccountName, timeStamp int64) (float32, float32, error) {
+func (s *State) RequireResources(index common.AccountName, timeStamp int64) (float64, float64, error) {
 	cpuStakedSum, err := s.GetParam(cpuAmount)
 	if err != nil {
 		return 0, 0, err
@@ -252,30 +254,53 @@ func (s *State) RequireResources(index common.AccountName, timeStamp int64) (flo
  *  @param cpu - if true then increase cpu, otherwise, reduce cpu
  *  @param net - if true then increase net, otherwise, reduce net
  */
-func (s *State) SetBlockLimits(cpu, net bool) {
+func (s *State) SetBlockLimits(cpu, net bool) error {
+	BlockCpu, err := s.GetParam(blockCpu)
+	if err != nil {
+		return err
+	}
+	Cpu := float64(BlockCpu)
+	if Cpu == 0 {
+		Cpu = BlockCpuLimit
+	}
+	BlockNet, err := s.GetParam(blockNet)
+	if err != nil {
+		return err
+	}
+	Net := float64(BlockNet)
+	if Net == 0 {
+		Net = BlockNetLimit
+	}
+
 	if cpu {
-		BlockCpu += BlockCpu * 0.01
-		if BlockCpu > VirtualBlockCpuLimit {
-			BlockCpu = VirtualBlockCpuLimit
+		Cpu += Cpu * 0.01
+		if Cpu > VirtualBlockCpuLimit {
+			Cpu = VirtualBlockCpuLimit
 		}
 	} else {
-		BlockCpu -= BlockCpu * 0.01
-		if BlockCpu > BlockCpuLimit {
-			BlockCpu = BlockCpuLimit
+		Cpu -= Cpu * 0.01
+		if Cpu < BlockCpuLimit {
+			Cpu = BlockCpuLimit
 		}
 	}
 	if net {
-		BlockNet += BlockNet * 0.01
-		if BlockNet > VirtualBlockNetLimit {
-			BlockNet = VirtualBlockNetLimit
+		Net += Net * 0.01
+		if Net > VirtualBlockNetLimit {
+			Net = VirtualBlockNetLimit
 		}
 	} else {
-		BlockNet -= BlockNet * 0.01
-		if BlockNet < BlockNetLimit {
-			BlockNet = BlockNetLimit
+		Net -= Net * 0.01
+		if Net < BlockNetLimit {
+			Net = BlockNetLimit
 		}
 	}
-	log.Debug("SetBlockLimits:", BlockCpu, BlockNet)
+	log.Debug("SetBlockLimits:", Cpu, Net)
+	BlockCpu = uint64(Cpu)
+	BlockNet = uint64(Net)
+	s.CommitParam(blockCpu, BlockCpu)
+	s.CommitParam(blockNet, BlockNet)
+
+	return nil
 }
 
 /**
@@ -486,7 +511,7 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 	}
 	return nil
 }
-func (a *Account) SubResourceLimits(cpu, net float32, cpuStakedSum, netStakedSum uint64) error {
+func (a *Account) SubResourceLimits(cpu, net float64, cpuStakedSum, netStakedSum uint64) error {
 	if a.Cpu.Available < cpu {
 		return errors.New(log, fmt.Sprintf("the account:%s cpu amount is not enough", a.Index.String()))
 	}
@@ -503,14 +528,14 @@ func (a *Account) SetDelegateInfo(index common.AccountName, cpuStaked, netStaked
 	a.Delegates = append(a.Delegates, d)
 }
 func (a *Account) updateResource(cpuStakedSum, netStakedSum uint64) {
-	a.Cpu.Limit = float32(a.Cpu.Staked+a.Cpu.Delegated) / float32(cpuStakedSum) * BlockCpu
+	a.Cpu.Limit = float64(a.Cpu.Staked+a.Cpu.Delegated) / float64(cpuStakedSum) * BlockCpuLimit
 	a.Cpu.Available = a.Cpu.Limit - a.Cpu.Used
-	a.Net.Limit = float32(a.Cpu.Staked+a.Net.Delegated) / float32(netStakedSum) * BlockNet
+	a.Net.Limit = float64(a.Cpu.Staked+a.Net.Delegated) / float64(netStakedSum) * BlockNetLimit
 	a.Net.Available = a.Net.Limit - a.Net.Used
 }
 func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64, timeStamp int64) error {
 	t := (timeStamp-a.TimeStamp) / (1000 * 1000)
-	interval := 100.0 * float32(t) / (24.0 * 60.0 * 60.0 * 1000)
+	interval := 100.0 * float64(t) / (24.0 * 60.0 * 60.0 * 1000)
 	if interval >= 100 {
 		a.Cpu.Used = 0
 		a.Net.Used = 0

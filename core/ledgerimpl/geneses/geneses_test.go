@@ -43,23 +43,7 @@ func TestGenesesBlockInit(t *testing.T) {
 	//showAccountInfo(l)
 	l.StateDB().RequireVotingInfo()
 
-/*
-elog.Log.Info("current block:", blockTransfer.StateHash.HexString())
-currentBlock, err := l.GetTxBlock(l.GetCurrentHeader().Hash)
-errors.CheckErrorPanic(err)
-errors.CheckEqualPanic(votingBlock.JsonString(false) == currentBlock.JsonString(false))
-elog.Log.Info("prev block")
-prevBlock, err := l.GetTxBlock(currentBlock.PrevHash)
-errors.CheckErrorPanic(err)
-errors.CheckEqualPanic(pledgeBlock.JsonString(false) == prevBlock.JsonString(false))
-elog.Log.Info("reset block to create block")
-errors.CheckErrorPanic(l.ResetStateDB(prevBlock.Header))
-elog.Log.Info("reset block:")
-newBlock, err := l.NewTxBlock(currentBlock.Transactions, currentBlock.ConsensusData, currentBlock.TimeStamp)
-errors.CheckErrorPanic(err)
-newBlock.SetSignature(&config.Root)
-errors.CheckEqualPanic(currentBlock.JsonString(false) == newBlock.JsonString(false))
-*/
+
 
 	for i := 0; i < 0; i++ {
 		time.Sleep(10 * time.Second)

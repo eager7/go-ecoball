@@ -91,8 +91,8 @@ message InvokeInfo {
 }
 message Receipt {
     bytes       Hash        = 1;
-    float       Cpu         = 2;
-    float       Net         = 3;
+    double      Cpu         = 2;
+    double      Net         = 3;
     bytes       Result      = 4;
 }
 /**
@@ -145,15 +145,15 @@ message Permission {
     repeated    account_weight accounts = 3;
 }
 message Ram {
-    float Quota     = 1;
-    float Used      = 2;
+    double Quota     = 1;
+    double Used      = 2;
 }
 message Res {
     uint64 Staked    = 1;
     uint64 Delegated = 5;
-    float  Used      = 2;
-    float  Available = 3;
-    float  Limit     = 4;
+    double  Used      = 2;
+    double  Available = 3;
+    double  Limit     = 4;
 }
 message Delegate {
     uint64 index    = 1;
