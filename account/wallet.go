@@ -16,7 +16,7 @@
 package account
 
 import (
-	"bytes"
+	//"bytes"
 	"crypto/sha512"
 	"encoding/json"
 	"errors"
@@ -38,8 +38,8 @@ const (
 
 type KeyData struct {
 	Checksum [64]byte  `json:"Checksum"`
-	Accounts []Account `json:"Accounts"`
-	//AccountsMap map[string]string
+	//Accounts []Account `json:"Accounts"`
+	AccountsMap map[string]string
 }
 
 type WalletImpl struct {
@@ -68,8 +68,8 @@ func Create(path string, password []byte) error {
 		lockflag: unlock,
 		KeyData: KeyData{
 			Checksum: sha512.Sum512(password),
-			Accounts: []Account{},
-			//AccountsMap: make(map[string]string),
+			//Accounts: []Account{},
+			AccountsMap: make(map[string]string),
 		},
 	}
 
@@ -104,8 +104,8 @@ func Open(path string, password []byte) error {
 		path:     path,
 		lockflag: unlock,
 		KeyData: KeyData{
-			Accounts: []Account{},
-			//AccountsMap: make(map[string]string),
+			//Accounts: []Account{},
+			AccountsMap: make(map[string]string),
 		},
 	}
 
@@ -133,7 +133,7 @@ func Open(path string, password []byte) error {
 	return nil
 }
 
-func ImportKey2Wallet(name string, password, privateKey []byte)([]byte, error) {
+func ImportKey2Wallet(name string, password []byte, privateKey string)([]byte, error) {
 	wallet, ok := Wallets [ name ]
 	
 	if !ok {
@@ -143,6 +143,11 @@ func ImportKey2Wallet(name string, password, privateKey []byte)([]byte, error) {
 	if wallet.CheckLocked(){
 		return nil, errors.New("wallet is locked")
 	}
+
+	if (sha512.Sum512(password)) != wallet.Checksum {
+		return nil, errors.New("wrong passwords!!")
+	}
+
 	return wallet.ImportKey(password, privateKey)
 }
 
@@ -181,6 +186,11 @@ func CreateKey2Wallet(name string, password []byte)(Account, error) {
 	if wallet.CheckLocked(){
 		return Account{}, errors.New("wallet is locked")
 	}
+
+	if (sha512.Sum512(password)) != wallet.Checksum {
+		return  Account{},errors.New("wrong passwords!!")
+	}
+
 	return wallet.CreateKey(password)
 }
 
@@ -195,7 +205,12 @@ func LockWallet(name string, password []byte) (error) {
 		return errors.New("wallet is locked")
 	}
 
-	return wallet.Lock(password)
+	wallet.lockflag = locked
+	if err := wallet.Lock(password) ; err != nil{
+		wallet.lockflag = unlock
+		return err
+	}
+	return nil
 }
 
 func UnlockWallet(name string, password []byte) error {
@@ -209,7 +224,12 @@ func UnlockWallet(name string, password []byte) error {
 		return errors.New("wallet is unlocked")
 	}
 
-	return wallet.Unlock(password)
+	wallet.lockflag = unlock
+	if err := wallet.Unlock(password); err != nil{
+		wallet.lockflag = locked
+		return err
+	}
+	return nil
 }
 
 func ListAccountFromWallet(name string, password []byte) ([]Account, error) {
@@ -223,8 +243,8 @@ func ListAccountFromWallet(name string, password []byte) ([]Account, error) {
 		return nil, errors.New("wallet is unlocked")
 	}
 
-	return wallet.Accounts, nil
-	//return nil, nil
+	//return wallet.Accounts, nil
+	return nil, nil
 }
 
 /**
@@ -302,7 +322,7 @@ func (wi *WalletImpl) Lock(password []byte) error {
 	for i := 0; i < len(wi.Checksum); i++ {
 		wi.Checksum[i] = 0
 	}
-	wi.Accounts = []Account{}
+	//wi.Accounts = []Account{}
 
 	//wi.lockflag = locked
 
@@ -326,7 +346,14 @@ func (wi *WalletImpl) Unlock(password []byte) error {
 
 	//unmarshal data
 	wallet := *wi
-	if err := json.Unmarshal(aeskeys[0:], &wi.KeyData); nil != err {
+	str := string(aeskeys)
+	result := strings.Index(str,"}}")
+	if len(str) > (result+2) {//代表有脏数据，需要截取
+		content := str[0 : result+2]
+		fmt.Println(content)
+		aeskeys = []byte(content)
+	}
+	if err := json.Unmarshal(aeskeys, &wi.KeyData); nil != err {
 		*wi = wallet
 		return err
 	}
@@ -353,15 +380,15 @@ func (wi *WalletImpl) CreateKey(password []byte) (Account, error) {
 	}
 
 	wi.lockflag = locked
-	for _, v := range wi.Accounts {
+	/*for _, v := range wi.Accounts {
 		if v.Equal(ac) {
 			wi.lockflag = unlock
 			return Account{}, errors.New("key has exist")
 		}
 	}
 
-	wi.Accounts = append(wi.Accounts, ac)
-	//wi.KeyData.AccountsMap[inner.ToHex(ac.PublicKey)] = inner.ToHex(ac.PrivateKey)
+	wi.Accounts = append(wi.Accounts, ac)*/
+	wi.KeyData.AccountsMap[inner.ToHex(ac.PublicKey)] = inner.ToHex(ac.PrivateKey)
 	
 	//lock wallet
 	errcode := wi.Lock(password)
@@ -386,22 +413,92 @@ func (wi *WalletImpl) CreateKey(password []byte) (Account, error) {
 	return ac, nil
 }
 
+func (wi *WalletImpl) RemoveKey(password []byte, publickey string) error {
+	/*var index int
+	bFound := false*/
+	wi.lockflag = locked
+	/*for i,v := range wi.Accounts {
+		if strings.EqualFold(inner.	ToHex(v.PublicKey), publickey) {
+			index = i
+			bFound = true
+			break
+		}
+	}
+	
+	if !bFound {
+		wi.lockflag = unlock
+		return errors.New("publickey no found")
+	}
+	accs := wi.Accounts
+	wi.Accounts = []Account{}
+	wi.Accounts = RemoveSpringSlice(accs, index, index+1)*/
+	//wi.Accounts = []Account{}
+
+	_, ok := wi.AccountsMap [ publickey ]
+	
+	if !ok {
+		wi.lockflag = unlock
+		return errors.New("publickey is not exist")
+	}
+	
+	for v := range wi.AccountsMap {
+		fmt.Println(v)
+		fmt.Println(wi.AccountsMap[v])
+	}
+
+	delete(wi.KeyData.AccountsMap, publickey)
+
+	for v := range wi.AccountsMap {
+		fmt.Println(v)
+		fmt.Println(wi.AccountsMap[v])
+	}
+
+	errcode := wi.Lock(password)
+	if nil != errcode {
+		wi.lockflag = unlock
+		return errcode
+	}
+
+	//write data
+	if err := wi.StoreWallet(); nil != err {
+		wi.lockflag = unlock
+		return err
+	}
+	
+	//unlock wallet
+	if err := wi.Unlock(password); nil != err {
+		wi.lockflag = unlock
+		return err
+	}
+
+	wi.lockflag = unlock
+	return nil
+}
+
+
 /**
 导入私钥
 **/
-func (wi *WalletImpl) ImportKey(password, privateKey []byte) ([]byte, error) {
+func (wi *WalletImpl) ImportKey(password []byte, privateKey string) ([]byte, error) {
 	wi.lockflag = locked
-	ac := Account{}
-	for _,v := range wi.Accounts {
+	//ac := Account{}
+	/*for _,v := range wi.Accounts {
 		if bytes.Equal(v.PrivateKey[:], privateKey[:]) {
 			ac = v
 			wi.lockflag = unlock
 			return ac.PublicKey, errors.New("privatekey has exist")
 		}
+	}*/
+
+	for publickey := range wi.AccountsMap {
+		if strings.EqualFold(wi.AccountsMap[publickey], privateKey) {
+			wi.lockflag = unlock
+			return nil, errors.New("private has exist")
+		}
 	}
 
 	//export publickey by privatekey 
-	pri, err := secp256k1.ToECDSA(privateKey)
+	pri, err := secp256k1.ToECDSA([]byte(privateKey))
 	if err != nil {
 		wi.lockflag = unlock
 		return nil, errors.New("NewECDSAPrivateKey error: " + err.Error())
@@ -413,11 +510,12 @@ func (wi *WalletImpl) ImportKey(password, privateKey []byte) ([]byte, error) {
 	}
 
 	account := Account{
-		PrivateKey: privateKey,
+		PrivateKey: []byte(privateKey),
 		PublicKey:  pub,
 		Alg:        0,
 	}
-	wi.KeyData.Accounts = append(wi.KeyData.Accounts, account)
+	//wi.KeyData.Accounts = append(wi.KeyData.Accounts, account)
+	wi.KeyData.AccountsMap[inner.ToHex(account.PublicKey)] = privateKey
 
 	//lock wallet
 	errcode := wi.Lock(password)
@@ -444,58 +542,6 @@ func (wi *WalletImpl) ImportKey(password, privateKey []byte) ([]byte, error) {
 func RemoveSpringSlice(slice []Account, start,end int) []Account {
 	return append(slice[:start], slice[end:]...)
 }
-
-func (wi *WalletImpl) RemoveKey(password []byte, publickey string) error {
-	var index int
-	bFound := false
-	wi.lockflag = locked
-	for i,v := range wi.Accounts {
-		if strings.EqualFold(inner.	ToHex(v.PublicKey), publickey) {
-			index = i
-			bFound = true
-			break
-		}
-	}
-	
-	if !bFound {
-		wi.lockflag = unlock
-		return errors.New("publickey no found")
-	}
-	accs := wi.Accounts
-	wi.Accounts = []Account{}
-	wi.Accounts = RemoveSpringSlice(accs, index, index+1)
-	//wi.Accounts = []Account{}
-
-	/*_, ok := wi.AccountsMap [ publickey ]
-	
-	if !ok {
-		wi.lockflag = unlock
-		return errors.New("publickey is not exist")
-	}
-	delete(wi.KeyData.AccountsMap, publickey)*/
-
-	errcode := wi.Lock(password)
-	if nil != errcode {
-		wi.lockflag = unlock
-		return errcode
-	}
-
-	//write data
-	if err := wi.StoreWallet(); nil != err {
-		wi.lockflag = unlock
-		return err
-	}
-	
-	//unlock wallet
-	if err := wi.Unlock(password); nil != err {
-		wi.lockflag = unlock
-		return err
-	}
-
-	wi.lockflag = unlock
-	return nil
-}
-
 /**
 列出所有账号
 */
