@@ -350,7 +350,6 @@ func (wi *WalletImpl) Unlock(password []byte) error {
 	result := strings.Index(str,"}}")
 	if len(str) > (result+2) {//代表有脏数据，需要截取
 		content := str[0 : result+2]
-		fmt.Println(content)
 		aeskeys = []byte(content)
 	}
 	if err := json.Unmarshal(aeskeys, &wi.KeyData); nil != err {
