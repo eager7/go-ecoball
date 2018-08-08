@@ -54,7 +54,7 @@ func TestGenesesBlockInit(t *testing.T) {
 	errors.CheckEqualPanic(pledgeBlock.JsonString(false) == prevBlock.JsonString(false))
 
 	elog.Log.Info("reset block to create block")
-	errors.CheckErrorPanic(l.ResetStateDB(prevBlock))
+	errors.CheckErrorPanic(l.ResetStateDB(prevBlock.Header))
 	//elog.Log.Debug("reset hash:", l.StateDB().GetHashRoot().HexString())
 
 	elog.Log.Info("reset block:")

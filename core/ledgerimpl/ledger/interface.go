@@ -16,7 +16,7 @@ type Ledger interface {
 	GetCurrentHeader() *types.Header
 	GetCurrentHeight() uint64
 	StateDB() *state.State
-	ResetStateDB(block *types.Block) error
+	ResetStateDB(header *types.Header) error
 
 	AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error)
 	SetContract(index common.AccountName, t types.VmType, des, code []byte) error

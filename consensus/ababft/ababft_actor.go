@@ -932,7 +932,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			current_blk := blk_syn_f
 
 			fmt.Println("1. current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
-			err1 := actor_c.service_ababft.ledger.ResetStateDB(current_pre_blk.Header.StateHash)
+			//err1 := actor_c.service_ababft.ledger.ResetStateDB(current_pre_blk.Header.StateHash)
+			err1 := actor_c.service_ababft.ledger.ResetStateDB(current_pre_blk.Header)
 			if err1 != nil {
 				fmt.Println("reset status error:", err1)
 			}

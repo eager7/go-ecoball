@@ -107,9 +107,9 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 *  @brief  if create a new block failed, then need to reset state DB
 *  @param  hash - the root hash of mpt trie which need to reset
  */
-func (c *ChainTx) ResetStateDB(block *types.Block) error {
-	c.CurrentHeader = block.Header
-	return c.StateDB.Reset(block.StateHash)
+func (c *ChainTx) ResetStateDB(header *types.Header) error {
+	c.CurrentHeader = header
+	return c.StateDB.Reset(header.StateHash)
 }
 
 /**

@@ -166,8 +166,8 @@ func (l *LedgerImpl) TokenIsExisted(token string) bool {
 func (l *LedgerImpl) StateDB() *state.State {
 	return l.ChainTx.StateDB
 }
-func (l *LedgerImpl) ResetStateDB(block *types.Block) error {
-	return l.ChainTx.ResetStateDB(block)
+func (l *LedgerImpl) ResetStateDB(header *types.Header) error {
+	return l.ChainTx.ResetStateDB(header)
 }
 
 func (l *LedgerImpl) GetGenesesTime() int64 {
