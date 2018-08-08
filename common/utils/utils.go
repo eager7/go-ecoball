@@ -171,3 +171,7 @@ func FileRead(path string) ([]byte, error){
 	}
 	return data, nil
 }
+
+func FileWrite(path string, data []byte) error {
+	return ioutil.WriteFile(path, data, 0666)
+}

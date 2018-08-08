@@ -35,7 +35,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/utils"
 )
 
-var log = elog.NewLogger("Chain Tx", elog.InfoLog)
+var log = elog.NewLogger("Chain Tx", elog.WarnLog)
 
 type ChainTx struct {
 	BlockStore     store.Storage
@@ -86,6 +86,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+	c.StateDB.GetHashRoot().Show()
 	s, err := c.StateDB.CopyState()
 	if err != nil {
 		return nil, err
@@ -106,8 +107,9 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 *  @brief  if create a new block failed, then need to reset state DB
 *  @param  hash - the root hash of mpt trie which need to reset
  */
-func (c *ChainTx) ResetStateDB(hash common.Hash) error {
-	return c.StateDB.Reset(hash)
+func (c *ChainTx) ResetStateDB(header *types.Header) error {
+	c.CurrentHeader = header
+	return c.StateDB.Reset(header.StateHash)
 }
 
 /**
@@ -140,9 +142,9 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return errors.New(log, "block is nil")
 	}
 	var cpu float32
-	cpuFlag := true
+	//cpuFlag := true
 	var net float32
-	netFlag := true
+	//netFlag := true
 	for i := 0; i < len(block.Transactions); i++ {
 		if _, c, n, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp); err != nil {
 			log.Error("Handle Transaction Error:", err)
@@ -153,16 +155,16 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		}
 	}
 	if cpu < (state.BlockCpuLimit / 10) {
-		cpuFlag = true
+		//cpuFlag = true
 	} else {
-		cpuFlag = false
+		//cpuFlag = false
 	}
 	if net < (state.BlockNetLimit / 10) {
-		netFlag = true
+		//netFlag = true
 	} else {
-		netFlag = false
+		//netFlag = false
 	}
-	c.StateDB.SetBlockLimits(cpuFlag, netFlag)
+	//c.StateDB.SetBlockLimits(cpuFlag, netFlag)
 	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 		log.Warn(err)
 	}
@@ -196,7 +198,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	c.StateDB.CommitToDB()
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
 	log.Debug("state hash:", c.StateDB.GetHashRoot().HexString())
-
+	log.Debug(block.Header.JsonString())
 	c.CurrentHeader = block.Header
 	return nil
 }
@@ -473,11 +475,6 @@ func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, valu
  */
 func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float32, err error) {
 	start := time.Now().UnixNano()
-	//log.Debug(start, c.Geneses.TimeStamp)
-	//n := (start - c.Geneses.TimeStamp) / 1000000 / int64(config.TimeSlot)
-	//m := (c.CurrentHeader.TimeStamp - c.Geneses.TimeStamp) / 1000000  / int64(config.TimeSlot)
-	//log.Debug(n, m, n - m)
-	//timeRecover := (timeStamp - c.CurrentHeader.TimeStamp - 2 * c.Geneses.TimeStamp) / 1000000 / int64(config.TimeSlot)
 	switch tx.Type {
 	case types.TxTransfer:
 		payload, ok := tx.Payload.GetObject().(types.TransferInfo)
@@ -536,15 +533,12 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	if tx.Receipt.Result == nil {
 		tx.Receipt.Result = common.CopyBytes(ret)
 	}
-	//log.Warn("tx, Time", tx.From, timeStamp)
 	if err := s.RecoverResources(tx.From, timeStamp); err != nil {
 		return nil, 0, 0, err
 	}
-	//log.Warn("CPU, NET", cpu, net)
 	if err := s.SubResources(tx.From, cpu, net); err != nil {
 		return nil, 0, 0, err
 	}
-	//log.Warn("Handle Type", tx.Type.String(), s.GetHashRoot().HexString())
 	return ret, cpu, net, nil
 }
 

@@ -509,8 +509,8 @@ func (a *Account) updateResource(cpuStakedSum, netStakedSum uint64) {
 	a.Net.Available = a.Net.Limit - a.Net.Used
 }
 func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64, timeStamp int64) error {
-	t := timeStamp / (1000 * 1000)
-	interval := 100.0 * float32(t-a.TimeStamp) / (24.0 * 60.0 * 60.0 * 1000)
+	t := (timeStamp-a.TimeStamp) / (1000 * 1000)
+	interval := 100.0 * float32(t) / (24.0 * 60.0 * 60.0 * 1000)
 	if interval >= 100 {
 		a.Cpu.Used = 0
 		a.Net.Used = 0
@@ -522,7 +522,7 @@ func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64, timeStamp 
 		a.Net.Used -= a.Net.Used * interval
 	}
 	a.updateResource(cpuStakedSum, netStakedSum)
-	a.TimeStamp = t
+	a.TimeStamp = timeStamp
 	return nil
 }
 func (a *Account) addVotes(staked uint64) {

@@ -173,15 +173,18 @@ func (b *Block) Deserialize(data []byte) error {
 	return nil
 }
 
-func (b *Block) Show() {
-	fmt.Println("\t-----------Block-------------")
-	b.Header.Show()
-	fmt.Println("\tTxs Number     :", b.CountTxs)
+func (b *Block) Show(format bool) {
+	fmt.Println(b.JsonString(format))
 }
 
-func (b *Block) JsonString() string {
-	data, _ := json.Marshal(b)
-	return string(data)
+func (b *Block) JsonString(format bool) string {
+	if format {
+		data, _ := json.MarshalIndent(b, "", "    ")
+		return string(data)
+	}else {
+		data, _ := json.Marshal(b)
+		return string(data)
+	}
 }
 
 func (b *Block) Blk2BlkTx() (*pb.BlockTx, error) {
