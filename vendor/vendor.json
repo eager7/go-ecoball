@@ -75,6 +75,12 @@
 			"revisionTime": "2018-08-07T10:14:15Z"
 		},
 		{
+			"checksumSHA1": "Dhehv9il6gGm5u0FjsY4yGU0BB8=",
+			"path": "github.com/ecoball/eballscan/notify",
+			"revision": "d30a945047b3c27e90dede88f9177386b41a4b7d",
+			"revisionTime": "2018-08-07T10:14:15Z"
+		},
+		{
 			"checksumSHA1": "EhjYR6BNHoaUl/7eoNZi4jSsRcY=",
 			"path": "github.com/ecoball/eballscan/onlooker",
 			"revision": "d30a945047b3c27e90dede88f9177386b41a4b7d",
@@ -699,10 +705,22 @@
 			"revisionTime": "2017-12-18T00:50:42Z"
 		},
 		{
+			"checksumSHA1": "RLMP+uQ/we1FYHAFybDLip7MzQU=",
+			"path": "github.com/muesli/cache2go",
+			"revision": "5cf6e5f43b169f03641db3f7dc6410375e7b2890",
+			"revisionTime": "2018-04-17T22:28:18Z"
+		},
+		{
 			"checksumSHA1": "4bqIfu2x/JV7DsCHtZa4irFt22w=",
 			"path": "github.com/multiformats/go-multihash",
 			"revision": "265e72146e710ff649c6982e3699d01d4e9a18bb",
 			"revisionTime": "2018-03-09T20:50:45Z"
+		},
+		{
+			"checksumSHA1": "vC61w3+boKz3/zb4EeWVO+3UM3g=",
+			"path": "github.com/ontio/ontology/common/log",
+			"revision": "fda72cecd6684addb448d36b0d4f49bc8675a547",
+			"revisionTime": "2018-06-28T06:59:39Z"
 		},
 		{
 			"checksumSHA1": "K8QsnZLV9n7jHaNr9jySy1P96LY=",
