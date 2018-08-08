@@ -153,7 +153,7 @@ func ImportKey(params []interface{}) *common.Response {
 		password := params[1].(string)
 		privateKey := params[2].(string)
 		//publickey, err := account.Wallet.ImportKey([]byte(password), inner.FromHex(privateKey))
-		publickey, err := account.ImportKey2Wallet(name, []byte(password), inner.FromHex(privateKey))
+		publickey, err := account.ImportKey2Wallet(name, []byte(password), privateKey)
 		var key_str string
 		key_str += "publickey:" + inner.ToHex(publickey)
 		if err != nil {
@@ -271,7 +271,7 @@ func handleTransaction(params []interface{}) error {
 		return err
 	}
 
-	for name := range account.Wallets {
+	/*for name := range account.Wallets {
 		for _,v := range account.Wallets[name].Accounts{
 			//err = transaction.SetSignature(&account)
 			//if err != nil {
@@ -285,8 +285,8 @@ func handleTransaction(params []interface{}) error {
 				return errors.New("check transaction signatures fail:" + transaction.Hash.HexString())
 			}
 		}
-	}
-	/*for name := range account.Wallets {
+	}*/
+	for name := range account.Wallets {
 		for publickey := range account.Wallets[name].AccountsMap{
 			//err = transaction.SetSignature(&account)
 			//if err != nil {
@@ -300,7 +300,7 @@ func handleTransaction(params []interface{}) error {
 				return errors.New("check transaction signatures fail:" + transaction.Hash.HexString())
 			}
 		}
-	}*/
+	}
 
 	return nil
 }

@@ -114,7 +114,7 @@ var (
 					},
 				},
 			},
-			/*{
+			{
 				Name:   "remove",
 				Usage:  "remove private key",
 				Action: removeKey,
@@ -132,7 +132,7 @@ var (
 						Usage: "public key",
 					},
 				},
-			},*/
+			},
 			{
 				Name:   "unlock",
 				Usage:  "unlock wallet",
