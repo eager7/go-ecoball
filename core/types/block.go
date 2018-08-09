@@ -25,7 +25,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/trie"
-	"time"
 )
 
 type Block struct {
@@ -34,7 +33,7 @@ type Block struct {
 	Transactions []*Transaction
 }
 
-func NewBlock(prevHeader *Header, stateHash common.Hash, consensusData ConsensusData, txs []*Transaction, timeStamp int64) (*Block, error) {
+func NewBlock(prevHeader *Header, stateHash common.Hash, consensusData ConsensusData, txs []*Transaction, cpu, net float64, timeStamp int64) (*Block, error) {
 	if nil == prevHeader {
 		return nil, errors.New("invalid parameter preHeader")
 	}
@@ -51,7 +50,31 @@ func NewBlock(prevHeader *Header, stateHash common.Hash, consensusData Consensus
 		return nil, err
 	}
 
-	header, err := NewHeader(VersionHeader, prevHeader.Height+1, prevHeader.Hash, merkleHash, stateHash, consensusData, Bloom, timeStamp)
+	var cpuLimit, netLimit float64
+	if cpu < (BlockCpuLimit / 10) {
+		cpuLimit = prevHeader.Receipt.BlockCpu * 1.01
+		if cpuLimit > VirtualBlockCpuLimit {
+			cpuLimit = VirtualBlockCpuLimit
+		}
+	} else {
+		cpuLimit = prevHeader.Receipt.BlockCpu * 0.99
+		if cpuLimit < BlockCpuLimit {
+			cpuLimit = BlockCpuLimit
+		}
+	}
+	if net < (BlockNetLimit / 10) {
+		netLimit = prevHeader.Receipt.BlockNet * 1.01
+		if netLimit > VirtualBlockNetLimit {
+			netLimit = VirtualBlockNetLimit
+		}
+	} else {
+		netLimit = prevHeader.Receipt.BlockNet * 0.99
+		if netLimit < BlockNetLimit {
+			netLimit = BlockNetLimit
+		}
+	}
+
+	header, err := NewHeader(VersionHeader, prevHeader.Height+1, prevHeader.Hash, merkleHash, stateHash, consensusData, Bloom, cpuLimit, netLimit, timeStamp)
 	if err != nil {
 		return nil, err
 	}
@@ -70,30 +93,6 @@ func GenesesBlockInitConsensusData(timestamp int64) *ConsensusData {
 		return nil
 	}
 	return conData
-}
-
-func GenesesBlockInit() (*Block, error) {
-	tm, err := time.Parse("02/01/2006 15:04:05 PM", "21/02/1990 00:00:00 AM")
-	if err != nil {
-		return nil, err
-	}
-	timeStamp := tm.Unix()
-
-	//TODO start
-	SecondInMs := int64(1000)
-	BlockIntervalInMs := int64(15000)
-	timeStamp = int64((timeStamp*SecondInMs-SecondInMs)/BlockIntervalInMs) * BlockIntervalInMs
-	timeStamp = timeStamp / SecondInMs
-	//TODO end
-
-	hash := common.NewHash([]byte("EcoBall Geneses Block"))
-	conData := GenesesBlockInitConsensusData(timeStamp)
-	header, err := NewHeader(VersionHeader, 1, hash, hash, hash, *conData, bloom.Bloom{}, timeStamp)
-	if err != nil {
-		return nil, err
-	}
-	block := Block{header, 0, nil}
-	return &block, nil
 }
 
 func (b *Block) protoBuf() (*pb.BlockTx, error) {

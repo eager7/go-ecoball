@@ -6,9 +6,9 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/state"
 	"strconv"
-	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 var log = elog.NewLogger("native", config.LogLevel)
@@ -18,11 +18,21 @@ type NativeService struct {
 	owner     common.AccountName
 	method    string
 	params    []string
+	cpuLimit  float64
+	netLimit  float64
 	timeStamp int64
 }
 
-func NewNativeService(s *state.State, owner common.AccountName, method string, params []string, timeStamp int64) (*NativeService, error) {
-	ns := &NativeService{state: s, owner: owner, method: method, params: params, timeStamp: timeStamp}
+func NewNativeService(s *state.State, owner common.AccountName, method string, params []string, cpuLimit, netLimit float64, timeStamp int64) (*NativeService, error) {
+	ns := &NativeService{
+		state:     s,
+		owner:     owner,
+		method:    method,
+		params:    params,
+		cpuLimit:  cpuLimit,
+		netLimit:  netLimit,
+		timeStamp: timeStamp,
+	}
 	return ns, nil
 }
 
@@ -86,7 +96,7 @@ func (ns *NativeService) SystemExecute(index common.AccountName) ([]byte, error)
 		}
 
 		//log.Debug(from, to, cpu, net)
-		if err := ns.state.SetResourceLimits(from, to, cpu, net); err != nil {
+		if err := ns.state.SetResourceLimits(from, to, cpu, net, ns.cpuLimit, ns.netLimit); err != nil {
 			return nil, err
 		}
 		return nil, nil
@@ -102,7 +112,7 @@ func (ns *NativeService) SystemExecute(index common.AccountName) ([]byte, error)
 			return nil, err
 		}
 		log.Debug(from, to, cpu, net)
-		if err := ns.state.CancelDelegate(from, to, cpu, net); err != nil {
+		if err := ns.state.CancelDelegate(from, to, cpu, net, ns.cpuLimit, ns.netLimit); err != nil {
 			return nil, err
 		}
 	default:

@@ -59,7 +59,7 @@ var log = elog.NewLogger("LedgerImpl", elog.WarnLog)
  *  @param bloom - the bloom filter of transactions
  *  @param timeStamp - the timeStamp of block, unit is ns
  */
-func NewHeader(version uint32, height uint64, prevHash, merkleHash, stateHash common.Hash, conData ConsensusData, bloom bloom.Bloom, timeStamp int64) (*Header, error) {
+func NewHeader(version uint32, height uint64, prevHash, merkleHash, stateHash common.Hash, conData ConsensusData, bloom bloom.Bloom, cpuLimit, netLimit float64, timeStamp int64) (*Header, error) {
 	if version != VersionHeader {
 		return nil, errors.New("version mismatch")
 	}
@@ -67,6 +67,7 @@ func NewHeader(version uint32, height uint64, prevHash, merkleHash, stateHash co
 		return nil, errors.New("consensus' payload is nil")
 	}
 	header := Header{
+		ChainID:       common.Hash{},
 		Version:       version,
 		TimeStamp:     timeStamp,
 		Height:        height,
@@ -75,6 +76,9 @@ func NewHeader(version uint32, height uint64, prevHash, merkleHash, stateHash co
 		MerkleHash:    merkleHash,
 		StateHash:     stateHash,
 		Bloom:         bloom,
+		Receipt:       BlockReceipt{BlockCpu: cpuLimit, BlockNet: netLimit},
+		Signatures:    nil,
+		Hash:          common.Hash{},
 	}
 	payload, err := header.unSignatureData()
 	if err != nil {

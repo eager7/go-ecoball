@@ -24,6 +24,7 @@ import (
 	//"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/state"
 	"math/big"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 /*
@@ -75,7 +76,7 @@ func PresetContract(s *state.State, timeStamp int64) error {
 		return err
 	}
 	fmt.Println("set root account's resource to [cpu:100, net:100]")
-	if err := s.SetResourceLimits(root, root, 10000, 10000); err != nil {
+	if err := s.SetResourceLimits(root, root, 10000, 10000, types.BlockCpuLimit, types.BlockNetLimit); err != nil {
 		fmt.Println(err)
 		return err
 	}
@@ -87,7 +88,7 @@ func PresetContract(s *state.State, timeStamp int64) error {
 		return err
 	}
 	fmt.Println("set root account's resource to [cpu:100, net:100]")
-	if err := s.SetResourceLimits(delegate, delegate, 100, 100); err != nil {
+	if err := s.SetResourceLimits(delegate, delegate, 100, 100, types.BlockCpuLimit, types.BlockNetLimit); err != nil {
 		fmt.Println(err)
 		return err
 	}
