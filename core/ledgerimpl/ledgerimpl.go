@@ -142,7 +142,7 @@ func (l *LedgerImpl) CheckPermission(index common.AccountName, name string, sig 
 	return l.ChainTx.StateDB.CheckPermission(index, name, sig)
 }
 func (l *LedgerImpl) RequireResources(index common.AccountName, timeStamp int64) (float64, float64, error) {
-	return l.ChainTx.StateDB.RequireResources(index, timeStamp)
+	return l.ChainTx.StateDB.RequireResources(index, l.ChainTx.CurrentHeader.Receipt.BlockCpu, l.ChainTx.CurrentHeader.Receipt.BlockNet, timeStamp)
 }
 func (l *LedgerImpl) AccountGetBalance(index common.AccountName, token string) (uint64, error) {
 	value, err := l.ChainTx.StateDB.AccountGetBalance(index, token)

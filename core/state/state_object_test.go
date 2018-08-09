@@ -1,7 +1,6 @@
 package state_test
 
 import (
-	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/state"
 	"math/big"
@@ -9,6 +8,7 @@ import (
 	"time"
 	"os"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
 
 func TestStateObject(t *testing.T) {
@@ -22,31 +22,40 @@ func TestStateObject(t *testing.T) {
 	perm := state.NewPermission(state.Active, state.Owner, 2, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker2"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker3"), Weight: 1, Permission: "active"}})
 	acc.AddPermission(perm)
 	//set cpu net
-	acc.AddResourceLimits(true, 100, 100, 200, 200)
+	acc.AddResourceLimits(true, 100, 100, 200, 200, state.BlockCpuLimit, state.BlockNetLimit)
 
 	data, err := acc.Serialize()
 	errors.CheckErrorPanic(err)
 
 	acc2 := new(state.Account)
 	errors.CheckErrorPanic(acc2.Deserialize(data))
-	acc2.Show(false)
+	acc2.Show()
 	errors.CheckEqualPanic(acc.JsonString(false) == acc2.JsonString(false))
 }
 
 
-func xTestResourceRecover(t *testing.T) {
+func TestResourceRecover(t *testing.T) {
 	os.RemoveAll("/tmp/state_object_recover/")
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
 	acc, err := state.NewAccount("/tmp/acc", indexAcc, addr, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(acc.AddBalance(state.AbaToken, new(big.Int).SetUint64(1000)))
-	acc.AddResourceLimits(true, 100, 100, 100, 100)
+	acc.AddResourceLimits(true, 100, 100, 100, 100, state.BlockCpuLimit, state.BlockNetLimit)
+	elog.Log.Debug(common.JsonString(acc.Resource, false))
+
+	acc.SubResourceLimits(1.0, 1.0, 100, 100, state.BlockCpuLimit, state.BlockNetLimit)
+	available := acc.Net.Available
+	elog.Log.Debug(common.JsonString(acc.Resource, false))
 
 	time.Sleep(time.Microsecond*100)
 	ti := time.Now().UnixNano()
-	fmt.Println(ti)
-	errors.CheckErrorPanic(acc.RecoverResources(100, 100, ti))
+	errors.CheckErrorPanic(acc.RecoverResources(100, 100, ti, state.BlockCpuLimit, state.BlockNetLimit))
+	elog.Log.Debug(common.JsonString(acc.Resource, false))
+	if acc.Net.Available < available {
+		elog.Log.Error(acc.Net.Available, available)
+		t.Fatal("recover failed")
+	}
 
 	data, err := acc.Serialize()
 	errors.CheckErrorPanic(err)

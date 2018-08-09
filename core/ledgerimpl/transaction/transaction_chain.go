@@ -91,16 +91,16 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 	if err != nil {
 		return nil, err
 	}
+	var cpu, net float64
 	for i := 0; i < len(txs); i++ {
-		if ret, _, _, err := c.HandleTransaction(s, txs[i], timeStamp); err != nil {
-			log.Error("Handle Transaction Error:", err)
-			txs[i].Show()
+		if _, c, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			return nil, err
 		} else {
-			log.Notice("Handle Transaction Result:", ret)
+			cpu += c
+			net += n
 		}
 	}
-	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, timeStamp)
+	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
 }
 
 /**
@@ -141,31 +141,13 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if block == nil {
 		return errors.New(log, "block is nil")
 	}
-	var cpu float64
-	cpuFlag := true
-	var net float64
-	netFlag := true
+
 	for i := 0; i < len(block.Transactions); i++ {
-		if _, c, n, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp); err != nil {
+		if _, _, _, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			return err
-		} else {
-			cpu += c
-			net += n
 		}
 	}
-	if cpu < (state.BlockCpuLimit / 10) {
-		cpuFlag = true
-	} else {
-		cpuFlag = false
-	}
-	if net < (state.BlockNetLimit / 10) {
-		netFlag = true
-	} else {
-		netFlag = false
-	}
-	log.Debug(cpuFlag, netFlag)
-	//c.StateDB.SetBlockLimits(cpuFlag, netFlag)
 	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 		log.Warn(err)
 	}
@@ -295,7 +277,7 @@ func (c *ChainTx) GenesesBlockInit() error {
 	}
 	prevHash := common.SingleHash(d)
 	fmt.Println(hash.HexString())
-	header, err := types.NewHeader(types.VersionHeader, 1, prevHash, hash, hashState, *conData, bloom.Bloom{}, timeStamp)
+	header, err := types.NewHeader(types.VersionHeader, 1, prevHash, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
 	if err != nil {
 		return err
 	}
@@ -474,7 +456,7 @@ func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, valu
 *  @param  ledger - the interface of ledger impl
 *  @param  tx - a transaction
  */
-func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error) {
+func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeStamp int64, cpuLimit, netLimit float64) (ret []byte, cpu, net float64, err error) {
 	start := time.Now().UnixNano()
 	switch tx.Type {
 	case types.TxTransfer:
@@ -500,7 +482,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 			return nil, 0, 0, err
 		}
 	case types.TxInvoke:
-		service, err := smartcontract.NewContractService(s, tx, timeStamp)
+		service, err := smartcontract.NewContractService(s, tx, cpuLimit, netLimit, timeStamp)
 		if err != nil {
 			return nil, 0, 0, err
 		}
@@ -534,10 +516,10 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	if tx.Receipt.Result == nil {
 		tx.Receipt.Result = common.CopyBytes(ret)
 	}
-	if err := s.RecoverResources(tx.From, timeStamp); err != nil {
+	if err := s.RecoverResources(tx.From, timeStamp, cpuLimit, netLimit); err != nil {
 		return nil, 0, 0, err
 	}
-	if err := s.SubResources(tx.From, cpu, net); err != nil {
+	if err := s.SubResources(tx.From, cpu, net, cpuLimit, netLimit); err != nil {
 		return nil, 0, 0, err
 	}
 	return ret, cpu, net, nil

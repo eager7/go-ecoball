@@ -61,7 +61,7 @@ type Transaction struct {
 	Payload    Payload            `json:"payload"`
 	Signatures []common.Signature `json:"signatures"`
 	Hash       common.Hash        `json:"hash"`
-	Receipt    Receipt
+	Receipt    TransactionReceipt
 }
 
 func NewTransaction(t TxType, from, addr common.AccountName, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
@@ -158,7 +158,7 @@ func (t *Transaction) protoBuf() (*pb.Transaction, error) {
 		},
 		Sign:    sig,
 		Hash:    t.Hash.Bytes(),
-		Receipt: &pb.Receipt{Hash: t.Hash.Bytes(), Cpu: t.Receipt.Cpu, Net: t.Receipt.Net, Result: common.CopyBytes(t.Receipt.Result)},
+		Receipt: &pb.TransactionReceipt{Hash: t.Hash.Bytes(), Cpu: t.Receipt.Cpu, Net: t.Receipt.Net, Result: common.CopyBytes(t.Receipt.Result)},
 	}
 	return p, nil
 }
@@ -200,7 +200,7 @@ func (t *Transaction) Deserialize(data []byte) error {
 	t.Addr = common.AccountName(txPb.Payload.Addr)
 	t.Nonce = txPb.Payload.Nonce
 	t.TimeStamp = txPb.Payload.Timestamp
-	t.Receipt = Receipt{Hash: common.NewHash(txPb.Receipt.Hash), Cpu: txPb.Receipt.Cpu, Net: txPb.Receipt.Net, Result: common.CopyBytes(txPb.Receipt.Result)}
+	t.Receipt = TransactionReceipt{Hash: common.NewHash(txPb.Receipt.Hash), Cpu: txPb.Receipt.Cpu, Net: txPb.Receipt.Net, Result: common.CopyBytes(txPb.Receipt.Result)}
 	if t.Payload == nil {
 		switch t.Type {
 		case TxTransfer:
@@ -260,7 +260,7 @@ func (t *Transaction) JsonString() string {
 		Payload    Payload            `json:"payload"`
 		Signatures []common.Signature `json:"signatures"`
 		Hash       string             `json:"hash"`
-		Receipt    Receipt            `json:"receipt"`
+		Receipt    TransactionReceipt `json:"receipt"`
 	}{Version: t.Version, Type: t.Type.String(), From: t.From.String(),
 		Permission: t.Permission, Addr: t.Addr.String(), Nonce: t.Nonce,
 		TimeStamp: t.TimeStamp, Payload: t.Payload, Signatures: t.Signatures,

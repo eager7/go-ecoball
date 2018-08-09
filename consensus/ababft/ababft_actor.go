@@ -1224,7 +1224,7 @@ func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_
 	}
 	// check Hash common.Hash
 	header_cal,err1 := types.NewHeader(header_in.Version, header_in.Height, header_in.PrevHash,
-		header_in.MerkleHash, header_in.StateHash, header_in.ConsensusData, header_in.Bloom, header_in.TimeStamp)
+		header_in.MerkleHash, header_in.StateHash, header_in.ConsensusData, header_in.Bloom, header_in.Receipt.BlockCpu, header_in.Receipt.BlockNet,header_in.TimeStamp)
 	if ok := bytes.Equal(header_cal.Hash.Bytes(),header_in.Hash.Bytes()); ok != true {
 		println("Hash is wrong")
 		return false,err1
@@ -1247,7 +1247,7 @@ func (actor_c *Actor_ababft) update_block(block_first types.Block, condata types
 	var err error
 	header_in := block_first.Header
 	header, _ := types.NewHeader(header_in.Version, header_in.Height, header_in.PrevHash, header_in.MerkleHash,
-		header_in.StateHash, condata, header_in.Bloom, header_in.TimeStamp)
+		header_in.StateHash, condata, header_in.Bloom, header_in.Receipt.BlockCpu, header_in.Receipt.BlockNet, header_in.TimeStamp)
 	block_second = types.Block{header, uint32(len(block_first.Transactions)), block_first.Transactions}
 	return block_second,err
 }
@@ -1315,7 +1315,7 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 	// calculate firstround block header hash for the check of the first-round block signatures
 	conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(current_round_num),sign_blks_preblk}}
 	header_recal, _ := types.NewHeader(curheader.Version, curheader.Height, curheader.PrevHash, curheader.MerkleHash,
-		curheader.StateHash, conData, curheader.Bloom, curheader.TimeStamp)
+		curheader.StateHash, conData, curheader.Bloom, curheader.Receipt.BlockCpu, curheader.Receipt.BlockNet,curheader.TimeStamp)
 	blkFhash := header_recal.Hash
 	for index,sign_curblk := range sign_blks_curblk {
 		// 3a. check the peers in the peer list
