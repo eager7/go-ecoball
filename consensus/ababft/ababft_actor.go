@@ -253,9 +253,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// send synchronization message
 					var requestsyn REQSyn
 					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
-					hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num)))
+					hash_t,_ := common.DoubleHash(Uint64ToBytes(verified_height+1))
 					requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
-					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
+					requestsyn.Reqsyn.RequestHeight = verified_height+1
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 					syn_status = 1
 					// todo
@@ -465,9 +465,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						// send synchronization message
 						var requestsyn REQSyn
 						requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
-						hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num)))
+						hash_t,_ := common.DoubleHash(Uint64ToBytes(verified_height+1))
 						requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
-						requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
+						requestsyn.Reqsyn.RequestHeight = verified_height+1
 						event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 						syn_status = 1
 						// todo
@@ -773,9 +773,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// send synchronization message
 					var requestsyn REQSyn
 					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
-					hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num)))
+					hash_t,_ := common.DoubleHash(Uint64ToBytes(verified_height+1))
 					requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
-					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
+					requestsyn.Reqsyn.RequestHeight = verified_height+1
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 					syn_status = 1
 
@@ -873,8 +873,12 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		}
 
 	case REQSyn:
+		// todo
+		// modifying
+
+
 		// receive the shronization request
-		height_req := msg.Reqsyn.RequestHeight
+		height_req := msg.Reqsyn.RequestHeight // verified_height+1
 		pubkey_in := msg.Reqsyn.PubKey
 		signdata_in := msg.Reqsyn.SigData
 		// modify the synchronization code
@@ -929,22 +933,17 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// fmt.Println("blksyn_send f:",blksyn_send.Blksyn.BlksynF.Header)
 			// fmt.Println("currentheader.PrevHash:",currentheader.PrevHash)
 			// fmt.Println("before reset: currentheader.Hash:",currentheader.Hash)
-
 			current_pre_blk,_ := current_ledger.GetTxBlock(currentheader.PrevHash)
-			current_blk := blk_syn_f
-
-			fmt.Println("1. current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
+			// current_blk := blk_syn_f
 			//err1 := actor_c.service_ababft.ledger.ResetStateDB(current_pre_blk.Header.StateHash)
 			err1 := actor_c.service_ababft.ledger.ResetStateDB(current_pre_blk.Header)
 			if err1 != nil {
 				fmt.Println("reset status error:", err1)
 			}
-			fmt.Println("2. current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
-			block_first_cal,err = actor_c.service_ababft.ledger.NewTxBlock(current_blk.Transactions,current_blk.Header.ConsensusData, current_blk.Header.TimeStamp)
-			// block_first_cal := current_blk
-			fmt.Println("current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
-			fmt.Println("compare merkle hash:", current_blk.Header.MerkleHash, block_first_cal.MerkleHash)
-			elog.Log.Info("compare state hash:", current_blk.Header.StateHash.HexString(), block_first_cal.StateHash.HexString())
+			// block_first_cal,err = actor_c.service_ababft.ledger.NewTxBlock(current_blk.Transactions,current_blk.Header.ConsensusData, current_blk.Header.TimeStamp)
+			// fmt.Println("current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
+			// fmt.Println("compare merkle hash:", current_blk.Header.MerkleHash, block_first_cal.MerkleHash)
+			// fmt.Println("compare state hash:", current_blk.Header.StateHash, block_first_cal.StateHash)
 
 			// currentheader = current_ledger.GetCurrentHeader()
 			old_block,_ := current_ledger.GetTxBlock(currentheader.PrevHash)
@@ -957,6 +956,12 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 
 	case Block_Syn:
+		// for test 2018.08.08
+		if TestTag == true {
+			syn_status = 1
+		}
+		// test end
+
 		if syn_status != 1 {
 			return
 		}
@@ -1065,9 +1070,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// send synchronization message
 			var requestsyn REQSyn
 			requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
-			hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num)))
+			hash_t,_ := common.DoubleHash(Uint64ToBytes(verified_height+1))
 			requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
-			requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
+			requestsyn.Reqsyn.RequestHeight = verified_height+1
 			event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 			syn_status = 1
 		}
@@ -1079,6 +1084,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 	case TimeoutMsg:
 		// todo
 		// the waiting time maybe need to be longer after every time out
+
 		pubkey_in := msg.Toutmsg.PubKey
 		round_in := int(msg.Toutmsg.RoundNumber)
 		signdata_in := msg.Toutmsg.SigData

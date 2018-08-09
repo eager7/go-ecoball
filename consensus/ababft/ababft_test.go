@@ -35,6 +35,7 @@ func TestABABFTPros(t *testing.T) {
 	l, err := ledgerimpl.NewLedger("/tmp/ABFT")
 	if err != nil {
 		t.Fatal(err)
+		fmt.Println("ledger fails")
 	}
 	log.Debug("ledger build ok")
 	fmt.Println("config:",config.ConsensusAlgorithm)
