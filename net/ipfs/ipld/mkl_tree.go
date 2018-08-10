@@ -17,12 +17,14 @@
 package ipldecoball
 
 import (
+	"fmt"
+
+	mh "github.com/multiformats/go-multihash"
 	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	node "gx/ipfs/QmZtNq8dArGfnpCZfx2pUNY7UcjGhVp5qqwQ4hH6mpTMRQ/go-ipld-format"
-	"fmt"
 )
 
-type EcoballTxTree struct {
+type EcoballTree struct {
 	left  *node.Link
 	right *node.Link
 
@@ -31,28 +33,23 @@ type EcoballTxTree struct {
 }
 
 // assert that Block matches the Node interface for ipld
-var _ node.Node = (*EcoballTxTree)(nil)
+var _ node.Node = (*EcoballTree)(nil)
 
 func cidToHash(c *cid.Cid) []byte {
 	h := []byte(c.Hash())
 	return h[len(h)-32:]
 }
 
-func buildTxTreeRawdata(leftCid *cid.Cid, rightCid *cid.Cid) []byte {
-	out := make([]byte, 64)
-	lbytes := cidToHash(leftCid)
-	copy(out[:32], lbytes)
-
-	rbytes := cidToHash(rightCid)
-	copy(out[32:], rbytes)
-
-	return out
+func hashToLink(b []byte) *node.Link {
+	mhb, _ := mh.Encode(b, mh.KECCAK_256)
+	c := cid.NewCidV1(cid.EcoballTree, mhb)
+	return &node.Link{Cid: c}
 }
 
-func mkTxMerkleTree(txs []node.Node) ([]*EcoballTxTree, error) {
-	var out []*EcoballTxTree
+func mkMerkleTree(n []node.Node) ([]*EcoballTree, error) {
+	var out []*EcoballTree
 	var next []node.Node
-	layer := txs
+	layer := n
 	for len(layer) > 1 {
 		if len(layer)%2 != 0 {
 			layer = append(layer, layer[len(layer)-1])
@@ -61,13 +58,9 @@ func mkTxMerkleTree(txs []node.Node) ([]*EcoballTxTree, error) {
 			var left, right node.Node
 			left = layer[i*2]
 			right = layer[(i*2)+1]
-
-			rawdata := buildTxTreeRawdata(left.Cid(), right.Cid())
-			t := &EcoballTxTree{
+			t := &EcoballTree{
 				left:    &node.Link{Cid: left.Cid()},
 				right:   &node.Link{Cid: right.Cid()},
-				rawdata: rawdata,
-				cid:     rawdataToCid(cid.EcoballTxTree, rawdata),
 			}
 
 			out = append(out, t)
@@ -81,35 +74,62 @@ func mkTxMerkleTree(txs []node.Node) ([]*EcoballTxTree, error) {
 	return out, nil
 }
 
+func DecodeHardTree(data []byte) (*EcoballTree, error) {
+	if len(data) != 64 {
+		return nil, fmt.Errorf("invalid shardtree data")
+	}
+
+	linkL := hashToLink(data[:32])
+	linkR := hashToLink(data[32:])
+
+	return &EcoballTree{
+		left:  linkL,
+		right: linkR,
+	}, nil
+}
+
 /*
   Block INTERFACE
 */
-func (this *EcoballTxTree) RawData() []byte {
+func (this *EcoballTree) RawData() []byte {
+	if this.rawdata == nil {
+		data := make([]byte, 64)
+		lbytes := cidToHash(this.left.Cid)
+		copy(data[:32], lbytes)
+
+		rbytes := cidToHash(this.right.Cid)
+		copy(data[32:], rbytes)
+
+		this.rawdata = data
+	}
 	return this.rawdata
 }
 
-func (this *EcoballTxTree) Cid() *cid.Cid {
+func (this *EcoballTree) Cid() *cid.Cid {
+	if this.cid == nil {
+		this.cid = rawdataToCid(cid.EcoballTree, this.RawData())
+	}
 	return this.cid
 }
 
-func (this *EcoballTxTree) String() string {
-	return fmt.Sprintf("<EcoballTxTree %s>", this.cid)
+func (this *EcoballTree) String() string {
+	return fmt.Sprintf("<EcoballTree %s>", this.Cid())
 }
 
-func (this *EcoballTxTree) Loggable() map[string]interface{} {
+func (this *EcoballTree) Loggable() map[string]interface{} {
 	return map[string]interface{}{
-		"type": "ecoball-txtree",
+		"type": "ecoball-tree",
 	}
 }
 
 /*
   Node INTERFACE
 */
-func (this *EcoballTxTree) Tree(p string, depth int) []string {
+func (this *EcoballTree) Tree(p string, depth int) []string {
 	return []string{"0", "1"}
 }
 
-func (this *EcoballTxTree) Resolve(path []string) (interface{}, []string, error) {
+func (this *EcoballTree) Resolve(path []string) (interface{}, []string, error) {
 	if len(path) == 0 {
 		return nil, nil, fmt.Errorf("zero length path")
 	}
@@ -124,7 +144,7 @@ func (this *EcoballTxTree) Resolve(path []string) (interface{}, []string, error)
 	}
 }
 
-func (this *EcoballTxTree) ResolveLink(path []string) (*node.Link, []string, error) {
+func (this *EcoballTree) ResolveLink(path []string) (*node.Link, []string, error) {
 	out, rest, err := this.Resolve(path)
 	if err != nil {
 		return nil, nil, err
@@ -138,18 +158,18 @@ func (this *EcoballTxTree) ResolveLink(path []string) (*node.Link, []string, err
 	return link, rest, nil
 }
 
-func (this *EcoballTxTree) Copy() node.Node {
+func (this *EcoballTree) Copy() node.Node {
 	panic("dont use this yet")
 }
 
-func (this *EcoballTxTree) Links() []*node.Link {
+func (this *EcoballTree) Links() []*node.Link {
 	return []*node.Link{this.left, this.right}
 }
 
-func (this *EcoballTxTree) Stat() (*node.NodeStat, error) {
+func (this *EcoballTree) Stat() (*node.NodeStat, error) {
 	return &node.NodeStat{}, nil
 }
 
-func (this *EcoballTxTree) Size() (uint64, error) {
+func (this *EcoballTree) Size() (uint64, error) {
 	return uint64(len(this.rawdata)), nil
 }

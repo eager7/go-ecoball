@@ -20,6 +20,9 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	mh "github.com/multiformats/go-multihash"
 	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	"bufio"
+	"io"
+	"fmt"
 )
 
 func rawdataToCid(codec uint64, rawdata []byte) *cid.Cid {
@@ -42,4 +45,14 @@ func commonHashToCid(codec uint64, h common.Hash) *cid.Cid {
 	}
 
 	return cid.NewCidV1(codec, mhash)
+}
+
+func readFixedSlice(r *bufio.Reader, length int) ([]byte, error) {
+	out := make([]byte, length)
+	_, err := io.ReadFull(r, out)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read all bytes(%d): %s", length, err)
+	}
+
+	return out, nil
 }

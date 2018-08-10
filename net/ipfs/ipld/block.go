@@ -22,7 +22,7 @@ import (
 	"errors"
 	"io/ioutil"
 
-	types "github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/core/types"
 	"gx/ipfs/QmVzK524a2VWLqyvtBeiHKsUAWYgeAk4DBeZoY7vpNPNRx/go-block-format"
 	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	node "gx/ipfs/QmZtNq8dArGfnpCZfx2pUNY7UcjGhVp5qqwQ4hH6mpTMRQ/go-ipld-format"
@@ -41,10 +41,22 @@ var _ node.Node = (*EcoballBlock)(nil)
   Block INTERFACE
 */
 func (this *EcoballBlock) RawData() []byte {
+	if this.rawdata == nil {
+		data, err := this.Header.Serialize()
+		if err != nil {
+			return nil
+		}
+
+		this.rawdata = data
+	}
+
 	return this.rawdata
 }
 
 func (this *EcoballBlock) Cid() *cid.Cid {
+	if this.cid == nil {
+		this.cid = rawdataToCid(cid.EcoballBlock, this.RawData())
+	}
 	return this.cid
 }
 
@@ -100,7 +112,7 @@ func (this *EcoballBlock) Resolve(path []string) (interface{}, []string, error) 
 	case "parent":
 		return &node.Link{Cid: commonHashToCid(cid.EcoballBlock, this.PrevHash)}, path[1:], nil
 	case "tx":
-		return &node.Link{Cid: commonHashToCid(cid.EcoballTxTree, this.MerkleHash)}, path[1:], nil
+		return &node.Link{Cid: commonHashToCid(cid.EcoballTree, this.MerkleHash)}, path[1:], nil
 	default:
 		return nil, nil, fmt.Errorf("no such link")
 	}
@@ -128,7 +140,7 @@ func (this *EcoballBlock) Links() []*node.Link {
 	return []*node.Link{
 		{
 			Name: "tx",
-			Cid:  commonHashToCid(cid.EcoballTxTree, this.MerkleHash),
+			Cid:  commonHashToCid(cid.EcoballTree, this.MerkleHash),
 		},
 		{
 			Name: "parent",
@@ -167,7 +179,7 @@ func ParseObjectFromBuffer(c *cid.Cid, b []byte) (*EcoballBlock, error) {
 	return &EcoballBlock{block.Header, b,c}, nil
 }
 
-func parseTransactions(txs []*types.Transaction) ([]node.Node, []*EcoballTxTree, error) {
+func parseTransactions(txs []*types.Transaction) ([]node.Node, []*EcoballTree, error) {
 	var txNodes []node.Node
 
 	for _, tx := range txs {
@@ -175,7 +187,7 @@ func parseTransactions(txs []*types.Transaction) ([]node.Node, []*EcoballTxTree,
 		txNodes = append(txNodes, txNode)
 	}
 
-	txTrees, err := mkTxMerkleTree(txNodes)
+	txTrees, err := mkMerkleTree(txNodes)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to mk tx merkle tree: %s", err)
 	}
@@ -207,8 +219,4 @@ func EcoballBlockRawInputParser(r io.Reader, mhType uint64, mhLen int) ([]node.N
 	}
 
 	return out, nil
-}
-
-func EcoballBlockJsonInputParser(r io.Reader, mhType uint64, mhLen int) ([]node.Node, error) {
-	return nil,nil
 }

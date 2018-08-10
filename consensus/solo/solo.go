@@ -32,7 +32,10 @@ type Solo struct {
 }
 
 func NewSoloConsensusServer(l ledger.Ledger) (*Solo, error) {
-	return &Solo{ledger: l}, nil
+	solo := &Solo{ledger: l}
+	actor := &soloActor{solo: solo}
+	NewSoloActor(actor)
+	return solo, nil
 }
 
 func (s *Solo) Start() error {
@@ -64,10 +67,13 @@ func (s *Solo) Start() error {
 					log.Error("new block error:", err)
 					continue
 				}
-				if err := s.ledger.SaveTxBlock(block); err != nil {
-					log.Error("save block error:", err)
-					continue
+				if err := event.Send(event.ActorConsensus, event.ActorLedger, block); err != nil {
+					log.Fatal(err)
 				}
+				//if err := s.ledger.SaveTxBlock(block); err != nil {
+				//	log.Error("save block error:", err)
+				//	continue
+				//}
 			}
 		}
 	}()
