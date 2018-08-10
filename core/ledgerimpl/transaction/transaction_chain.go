@@ -46,6 +46,7 @@ type ChainTx struct {
 	CurrentHeader *types.Header
 	Geneses       *types.Header
 	StateDB       *state.State
+	TempStateDB   *state.State	//txPool used
 	ledger        ledger.Ledger
 }
 
@@ -86,7 +87,6 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
-	c.StateDB.GetHashRoot().Show()
 	s, err := c.StateDB.CopyState()
 	if err != nil {
 		return nil, err
@@ -296,6 +296,10 @@ func (c *ChainTx) GenesesBlockInit() error {
 		log.Error("Save geneses block error:", err)
 		return err
 	}
+	c.TempStateDB, err = c.StateDB.CopyState()
+	if err != nil {
+		return err
+	}
 	c.CurrentHeader = block.Header
 	return nil
 }
@@ -374,11 +378,9 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 			return errors.New(log, errors.ErrDoubleSpend.ErrorInfo())
 		}
 	case types.TxDeploy:
-		if data, _ := c.TxsStore.Get(common.IndexToBytes(tx.Addr)); data != nil {
+		if data, _ := c.TxsStore.Get(tx.Addr.Bytes()); data != nil {
 			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
 		}
-		//hash := c.StateDB.GetHashRoot()
-		//c.HandleTransaction(c, tx)
 	case types.TxInvoke:
 		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
 			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())

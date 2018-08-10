@@ -31,12 +31,9 @@ import (
 type LedActor struct {
 	ledger *LedgerImpl
 
-	pid *actor.PID //保存自身的pid，用于和其他Actor交互
+	pid *actor.PID
 }
 
-/**
-** 创建一个账本的Actor对象
- */
 func NewLedgerActor(l *LedActor) (*actor.PID, error) {
 	props := actor.FromProducer(func() actor.Actor {
 		return l
@@ -54,24 +51,27 @@ func (l *LedActor) SetLedger(ledger *LedgerImpl) {
 	l.ledger = ledger
 }
 
-/**
-** Actor的接收方法，实现了此方法就会实现Actor机制，有消息会调用此函数处理
- */
 func (l *LedActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 	case *actor.Stop:
 		l.pid.Stop()
 	case *actor.Restarting:
-	case *types.Transaction: //从交易池发来的确认交易信息的消息类型，需即刻返回结果
+	case *types.Transaction:
 		log.Info("Receive Transaction:", msg.Hash.HexString())
-		errCode := l.ledger.ChainTx.CheckTransaction(msg)
-		log.Info("Response Transaction Check")
-		ctx.Sender().Tell(errCode)
-	/*case *types.TxsList:
-	if err := l.AddBlock(msg); err != nil {
-		log.Error(err)
-	}*/
+		err := l.ledger.ChainTx.CheckTransaction(msg)
+		if err != nil {
+			ctx.Sender().Tell(err)
+			break
+		}
+		ret, cpu, net, err := l.ledger.ChainTx.HandleTransactionTxPool(
+			l.ledger.ChainTx.TempStateDB,
+			msg,
+			msg.TimeStamp,
+			l.ledger.ChainTx.CurrentHeader.Receipt.BlockCpu,
+			l.ledger.ChainTx.CurrentHeader.Receipt.BlockNet)
+		log.Debug(ret, cpu, net, err)
+		ctx.Sender().Tell(err)
 	case message.GetTransaction:
 		tx, err := l.ledger.ChainTx.GetTransaction(msg.Key)
 		if err != nil {
@@ -80,22 +80,14 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			ctx.Sender().Tell(tx)
 		}
 	case *types.Block:
-		if err := l.ledger.ChainTx.SaveBlock(msg); err != nil {
+		if err := l.ledger.ChainTx.SaveBlockWithoutHandle(msg); err != nil {
 			log.Error("save block error:", err)
-			break
-		}
-		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg); err != nil {
-			log.Error("send block to tx pool error:", err)
 			break
 		}
 		//notify explorer
 		connect.Notify(info.InfoBlock, msg)
 	case *dpos.DposBlock:
 		//TODO
-		/*if err := l.ledger.bc.SaveBlock(msg); err != nil {
-			log.Error("save block error", err)
-			break
-		}*/
 
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {
 			log.Error("send block to tx pool error:", err)
@@ -104,27 +96,3 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}
 }
-
-/*
-func (l *LedActor) AddBlock(txList *types.TxsList) error {
-
-	var txs []*types.Transaction
-	for _, v := range txList.Txs {
-		log.Debug(v.Hash.HexString())
-		txs = append(txs, v)
-	}
-	log.Debug("Receive Txs, then Create a new Block")
-	if len(txs) == 0 {
-		log.Warn("no transactions now")
-		//return nil
-	}
-	block, err := l.ledger.ChainTx.NewBlock(txs)
-	if err != nil {
-		return err
-	}
-	if err := l.ledger.SaveTxBlock(block); err != nil {
-		log.Error(err)
-	}
-	return nil
-}
-*/
