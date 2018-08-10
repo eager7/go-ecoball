@@ -35,6 +35,7 @@ func TestABABFTPros(t *testing.T) {
 	l, err := ledgerimpl.NewLedger("/tmp/ABFT")
 	if err != nil {
 		t.Fatal(err)
+		fmt.Println("ledger fails")
 	}
 	log.Debug("ledger build ok")
 	fmt.Println("config:",config.ConsensusAlgorithm)
@@ -45,6 +46,7 @@ func TestABABFTPros(t *testing.T) {
 		os.Exit(1)
 	}
 	fmt.Println("start txpool ok")
+	fmt.Println("root puk:", config.Root.PublicKey)
 
 	// 1. set up parameters
 	// 1.1 set the consensus algorithm
@@ -106,7 +108,7 @@ func TestABABFTPros(t *testing.T) {
 	// 6. test Signature_Preblock
 	// generate the signature for previous block
 	curheader := l.GetCurrentHeader()
-	log.Debug("current height:", curheader.Height)
+	log.Debug("(before generation) current height:", curheader.Height,curheader.StateHash,curheader.MerkleHash,curheader.Hash)
 	hash_t := curheader.Hash
 	for i:=0;i<Num_peers;i++{
 		var signaturepre_send Signature_Preblock
@@ -118,32 +120,24 @@ func TestABABFTPros(t *testing.T) {
 		// broadcast
 		event.Send(event.ActorNil, event.ActorConsensus, signaturepre_send)
 	}
-
+	// fmt.Println("hash_t:",hash_t)
 	time.Sleep(time.Second * 6)
-
 
 
 	// AddTokenAccount(l, con, t)
 
-
-
-
-
-
-
-
-
-
-
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 20)
 	// test the time out message
-	event.Send(event.ActorNil, event.ActorConsensus, TxTimeout{})
+	// event.Send(event.ActorNil, event.ActorConsensus, TxTimeout{})
 
 	ShowAccountInfo(l, t)
 
-	fmt.Println("current header height:", currentheader.Height)
+
 	time.Sleep(time.Second * 10)
 
+
+	curheader1 := l.GetCurrentHeader()
+	fmt.Println("(after the block is generated) current header height:", curheader1.Height, curheader1.StateHash,curheader1.MerkleHash,curheader1.Hash)
 	// synchronization test
 	var requestsyn_t REQSyn
 	requestsyn_t.Reqsyn.PubKey = accounts[0].PublicKey
