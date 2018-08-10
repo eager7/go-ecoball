@@ -73,12 +73,12 @@ func (db *Database) insert(hash common.Hash, blob []byte) {
 	db.nodesSize += common.StorageSize(common.HashLen + len(blob))
 }
 
-func (db *Database) insertPreImage(hash common.Hash, preimage []byte) {
+func (db *Database) insertPreImage(hash common.Hash, preImage []byte) {
 	if _, ok := db.preImages[hash]; ok {
 		return
 	}
-	db.preImages[hash] = common.CopyBytes(preimage)
-	db.preImagesSize += common.StorageSize(common.HashLen + len(preimage))
+	db.preImages[hash] = common.CopyBytes(preImage)
+	db.preImagesSize += common.StorageSize(common.HashLen + len(preImage))
 }
 
 func (db *Database) Node(hash common.Hash) ([]byte, error) {
