@@ -44,7 +44,7 @@ func (s *Solo) Start() error {
 
 	go func() {
 		for {
-			t.Reset(time.Second * 5)
+			t.Reset(time.Second * 3)
 			select {
 			case <-t.C:
 				log.Debug("Request transactions from tx pool")

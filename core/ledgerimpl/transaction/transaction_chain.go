@@ -35,7 +35,7 @@ import (
 	"time"
 )
 
-var log = elog.NewLogger("Chain Tx", elog.WarnLog)
+var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
 
 type ChainTx struct {
 	BlockStore     store.Storage
@@ -181,7 +181,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	c.StateDB.CommitToDB()
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
 	log.Debug("state hash:", c.StateDB.GetHashRoot().HexString())
-	log.Debug(block.Header.JsonString())
+	log.Notice(block.Header.JsonString())
 	c.CurrentHeader = block.Header
 	return nil
 }

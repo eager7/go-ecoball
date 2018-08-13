@@ -177,7 +177,7 @@ func getFunctionName() string {
 }
 
 func (l *loggerModule) Notice(a ...interface{}) {
-	if l.level > NoticeLog || !checkPrint(NoticeLog) {
+	if l.level > NoticeLog {
 		return
 	}
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorGreen) + "m" + "▶ NOTI " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
@@ -187,7 +187,7 @@ func (l *loggerModule) Notice(a ...interface{}) {
 }
 
 func (l *loggerModule) Debug(a ...interface{}) {
-	if l.level > DebugLog || !checkPrint(DebugLog) {
+	if l.level > DebugLog {
 		return
 	}
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorBlue) + "m" + "▶ DEBU " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
@@ -196,7 +196,7 @@ func (l *loggerModule) Debug(a ...interface{}) {
 }
 
 func (l *loggerModule) Info(a ...interface{}) {
-	if l.level > InfoLog || !checkPrint(InfoLog) {
+	if l.level > InfoLog {
 		return
 	}
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorYellow) + "m" + "▶ INFO " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
@@ -205,7 +205,7 @@ func (l *loggerModule) Info(a ...interface{}) {
 }
 
 func (l *loggerModule) Warn(a ...interface{}) {
-	if l.level > WarnLog || !checkPrint(WarnLog) {
+	if l.level > WarnLog {
 		return
 	}
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorMagenta) + "m" + "▶ WARN " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
@@ -214,7 +214,7 @@ func (l *loggerModule) Warn(a ...interface{}) {
 }
 
 func (l *loggerModule) Error(a ...interface{}) {
-	if l.level > ErrorLog || !checkPrint(ErrorLog) {
+	if l.level > ErrorLog {
 		return
 	}
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ ERRO " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
@@ -223,7 +223,7 @@ func (l *loggerModule) Error(a ...interface{}) {
 }
 
 func (l *loggerModule) ErrStack(a ...interface{}) {
-	if l.level > ErrorLog || !checkPrint(ErrorLog) {
+	if l.level > ErrorLog {
 		return
 	}
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ ERRO " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
@@ -234,7 +234,7 @@ func (l *loggerModule) ErrStack(a ...interface{}) {
 
 
 func (l *loggerModule) Fatal(a ...interface{}) {
-	if l.level > FatalLog || !checkPrint(FatalLog) {
+	if l.level > FatalLog {
 		return
 	}
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ FATAL " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
@@ -243,7 +243,7 @@ func (l *loggerModule) Fatal(a ...interface{}) {
 }
 
 func (l *loggerModule) Panic(a ...interface{}) {
-	if l.level > FatalLog || !checkPrint(FatalLog) {
+	if l.level > FatalLog {
 		return
 	}
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ PANIC " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
