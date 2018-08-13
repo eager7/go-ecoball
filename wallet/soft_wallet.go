@@ -22,206 +22,306 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/ecoball/go-ecoball/crypto/aes"
+	inner "github.com/ecoball/go-ecoball/common"
 )
 
-type SoftWallet struct {
-	FileName   string
-	Cipherkeys []byte
-	Keys       map[string][]byte
-	CheckSum   [64]byte
+const (
+	unlock byte = 0 //钱包未锁
+	locked byte = 1 //钱包已锁
+)
+
+type KeyData struct {
+	Checksum [64]byte  `json:"Checksum"`
+	AccountsMap map[string]string
 }
 
-func (wallet *SoftWallet) SetPassword(password []byte) error {
-	wallet.CheckSum = sha512.Sum512(password)
-	return wallet.Lock()
+type WalletImpl struct {
+	path string
+	KeyData
+	lockflag byte
+	Cipherkeys []byte  //存储加密后的数据
 }
 
-func (wallet *SoftWallet) SetWalletFileName(fileName string) {
-	wallet.FileName = fileName
-}
-
-func (wallet *SoftWallet) IsLocked() bool {
-	return wallet.CheckSum == [64]byte{}
-}
-
-func (wallet *SoftWallet) Lock() error {
-	if wallet.IsLocked() {
-		return errors.New("wallet has been locked")
-	}
-
-	if err := wallet.encryptKeys(); nil != err {
-		return err
-	}
-
-	wallet.CheckSum = [64]byte{}
-	wallet.Keys = make(map[string][]byte)
-	return nil
-}
-
-func (wallet *SoftWallet) encryptKeys() error {
-	if !wallet.IsLocked() {
-		plain := plainKeys{wallet.Keys, wallet.CheckSum}
-		data, err := plain.Serialize()
-		if nil != err {
-			return err
-		}
-
-		//encrypt data
-		aesKey := wallet.CheckSum[0:32]
-		iv := wallet.CheckSum[32:48]
-		cipherkeyTemp, err := aes.AesEncrypt(data, aesKey, iv)
-		if err != nil {
-			return err
-		}
-		wallet.Cipherkeys = cipherkeyTemp
-	}
-
-	return nil
-}
-
-func (wallet *SoftWallet) Unlock(password []byte) error {
-	checkSum := sha512.Sum512(password)
-	aesKey := checkSum[0:32]
-	iv := checkSum[32:48]
-	aeskeys, err := aes.AesDecrypt(wallet.Cipherkeys, aesKey, iv)
-	if nil != err {
-		return err
-	}
-	var plain plainKeys
-	if err := plain.Deserialize(aeskeys); nil != err {
-		return err
-	}
-
-	wallet.CheckSum = plain.CheckSum
-	wallet.Keys = plain.Keys
-	return nil
-}
-
-func (wallet *SoftWallet) SaveWalletFile() error {
-	if err := wallet.encryptKeys(); nil != err {
-		return err
-	}
-
-	file, err := os.OpenFile(wallet.FileName, os.O_CREATE|os.O_WRONLY, 0666)
+/**
+方法：内存数据存储到钱包文件中
+*/
+func (wi *WalletImpl) StoreWallet() error {
+	//open file
+	file, err := os.OpenFile(wi.path, os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	if n, err := file.Write(wallet.Cipherkeys); n != len(wallet.Cipherkeys) || err != nil {
-		return errors.New("write wallet file error")
+	//write data
+	data := wi.Cipherkeys
+	n, err := file.Write(data)
+	if n != len(data) || err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (wallet *SoftWallet) LoadWalletFile() error {
+/**
+方法：将钱包文件的数据导入到内存中
+*/
+func (wi *WalletImpl) loadWallet() error {
 	//open file
-	file, err := os.OpenFile(wallet.FileName, os.O_RDONLY, 0666)
+	file, err := os.OpenFile(wi.path, os.O_RDONLY, 0666)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
 	//read data
-	wallet.Cipherkeys, err = ioutil.ReadAll(file)
-	return err
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	wi.Cipherkeys = data
+
+	return nil
 }
 
-func (wallet *SoftWallet) CheckPassword(password []byte) bool {
-	checkSum := sha512.Sum512(password)
-	aesKey := checkSum[0:32]
-	iv := checkSum[32:48]
-	aeskeys, err := aes.AesDecrypt(wallet.Cipherkeys, aesKey, iv)
+/**
+方法：将密钥数据加密
+*/
+func (wi *WalletImpl) Lock(password []byte) error {
+	//whether the wallet is locked
+	/*if wi.lockflag != unlock {
+		return errors.New("the wallet has been locked!!")
+	}*/
+
+	//whether the password is correct
+	if (sha512.Sum512(password)) != wi.Checksum {
+		return errors.New("wrong password!!")
+	}
+
+	//marshal keyData
+	data, err := json.Marshal(wi.KeyData)
 	if nil != err {
-		return false
+		return err
 	}
 
-	var plain plainKeys
-	if err := plain.Deserialize(aeskeys); nil != err {
-		return false
+	//encrypt data
+	aesKey := wi.Checksum[0:32]
+	iv := wi.Checksum[32:48]
+	cipherkeyTemp, err := aes.AesEncrypt(data, aesKey, iv)
+	if err != nil {
+		return err
 	}
 
-	return checkSum == plain.CheckSum
+	//erase data
+	for i := 0; i < len(wi.Checksum); i++ {
+		wi.Checksum[i] = 0
+	}
+	//wi.Accounts = []Account{}
+
+	//wi.lockflag = locked
+
+	wi.Cipherkeys = cipherkeyTemp
+
+	return nil
 }
 
-func (wallet *SoftWallet) ListKeys() (map[string][]byte, error) {
-	if wallet.IsLocked() {
-		return nil, errors.New("Unable to list keys of a locked wallet")
-	}
-
-	return wallet.Keys, nil
+func (wi *WalletImpl) CheckPassword(password []byte) bool {
+ 	return (sha512.Sum512(password)) == wi.Checksum 
 }
 
-func (wallet *SoftWallet) ListPublicKey() ([][]byte, error) {
-	if wallet.IsLocked() {
+func (wi *WalletImpl) SetLockedState(){
+	wi.lockflag = locked
+}
+
+func (wi *WalletImpl) SetUnLockedState(){
+	wi.lockflag = unlock
+}
+
+
+/**
+方法：将密钥数据解密
+*/
+func (wi *WalletImpl) Unlock(password []byte) error {
+	//Decrypt data
+	checksum := sha512.Sum512(password)
+	aesKey := checksum[0:32]
+	iv := checksum[32:48]
+	aeskeys, err := aes.AesDecrypt(wi.Cipherkeys, aesKey, iv)
+	if nil != err {
+		return err
+	}
+
+	//unmarshal data
+	wallet := *wi
+	str := string(aeskeys)
+	result := strings.Index(str,"}}")
+	if len(str) > (result+2) {//代表有脏数据，需要截取
+		content := str[0 : result+2]
+		aeskeys = []byte(content)
+	}
+	if err := json.Unmarshal(aeskeys, &wi.KeyData); nil != err {
+		*wi = wallet
+		return err
+	}
+
+	//check password
+	if wi.Checksum != checksum {
+		*wi = wallet
+		return errors.New("password error")
+	}
+	//wi.lockflag = unlock
+	wi.Cipherkeys = nil
+
+	return nil
+}
+
+func (wi *WalletImpl) ListKeys() map[string]string{
+	return wi.AccountsMap;
+}
+
+/**
+创建公私钥对
+*/
+func (wi *WalletImpl) CreateKey(password []byte) ([]byte, []byte, error) {
+	//create keys
+	pub, pri, err := createKey()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	wi.lockflag = locked
+	wi.KeyData.AccountsMap[inner.ToHex(pub)] = inner.ToHex(pri)
+	
+	//lock wallet
+	errcode := wi.Lock(password)
+	if nil != errcode {
+		wi.lockflag = unlock
+		return nil, nil, errcode
+	}
+
+	//write data
+	if err := wi.StoreWallet(); nil != err {
+		wi.lockflag = unlock
+		return nil, nil, err
+	}
+
+	//unlock wallet
+	if err := wi.Unlock(password); nil != err {
+		wi.lockflag = unlock
+		return nil, nil, err
+	}
+
+	wi.lockflag = unlock
+	return pub, pri, nil
+}
+
+func (wi *WalletImpl) RemoveKey(password []byte, publickey string) error {
+	wi.lockflag = locked
+	_, ok := wi.AccountsMap [ publickey ]
+	
+	if !ok {
+		wi.lockflag = unlock
+		return errors.New("publickey is not exist")
+	}
+
+	delete(wi.KeyData.AccountsMap, publickey)
+
+	errcode := wi.Lock(password)
+	if nil != errcode {
+		wi.lockflag = unlock
+		return errcode
+	}
+
+	//write data
+	if err := wi.StoreWallet(); nil != err {
+		wi.lockflag = unlock
+		return err
+	}
+	
+	//unlock wallet
+	if err := wi.Unlock(password); nil != err {
+		wi.lockflag = unlock
+		return err
+	}
+
+	wi.lockflag = unlock
+	return nil
+}
+
+/**
+导入私钥
+**/
+func (wi *WalletImpl) ImportKey(password []byte, privateKey string) ([]byte, error) {
+	wi.lockflag = locked
+
+	for publickey := range wi.AccountsMap {
+		if strings.EqualFold(wi.AccountsMap[publickey], privateKey) {
+			wi.lockflag = unlock
+			return nil, errors.New("private has exist")
+		}
+	}
+
+	//export publickey by privatekey 
+	pub, err := getPublicKey(privateKey)
+	if err != nil {
+		wi.lockflag = unlock
+		return nil, errors.New("new account error: " + err.Error())
+	}
+
+	//wi.KeyData.Accounts = append(wi.KeyData.Accounts, account)
+	wi.KeyData.AccountsMap[inner.ToHex(pub)] = privateKey
+
+	//lock wallet
+	errcode := wi.Lock(password)
+	if nil != errcode {
+		wi.lockflag = unlock
+		return nil, errcode
+	}
+	
+	//write data
+	if err := wi.StoreWallet(); nil != err {
+		wi.lockflag = unlock
+		return nil, err
+	}
+	
+	//unlock wallet
+	if err := wi.Unlock(password); nil != err {
+		wi.lockflag = unlock
+		return nil, err
+	}
+	wi.lockflag = unlock
+	return pub, nil
+}
+
+func (wallet *WalletImpl) ListPublicKey() ([]string, error) {
+	if wallet.CheckLocked() {
 		return nil, errors.New("Unable to list public keys of a locked wallet")
 	}
 
-	keys := [][]byte{}
-	for _, publicKey := range wallet.Keys {
+	keys := []string{}
+	for _, publicKey := range wallet.AccountsMap {
 		keys = append(keys, publicKey)
 	}
 
 	return keys, nil
 }
 
-func (wallet *SoftWallet) ImportKey(privateKey []byte) error {
-	if wallet.IsLocked() {
-		return errors.New("Unable to import key on a locked wallet")
-	}
-
-	publickey, err := GetPublicFromPrivate(privateKey)
-	if nil != err {
-		return err
-	}
-
-	_, ok := wallet.Keys[string(privateKey)]
-	if ok {
-		return errors.New("Key already in wallet")
-	}
-
-	wallet.Keys[string(privateKey)] = publickey
-	return wallet.SaveWalletFile()
+/**
+判断是否为锁定状态
+**/
+func (wi *WalletImpl) CheckLocked() bool {
+	return wi.lockflag == locked
 }
 
-func (wallet *SoftWallet) RemoveKey(privateKey []byte) error {
-	if wallet.IsLocked() {
-		return errors.New("Unable to remove key from a locked wallet")
-	}
-
-	_, ok := wallet.Keys[string(privateKey)]
-	if !ok {
-		return errors.New("Key not in wallet")
-	}
-
-	delete(wallet.Keys, string(privateKey))
-	return wallet.SaveWalletFile()
-}
-
-func (wallet *SoftWallet) CreateKey() (publicKey []byte, privateKey []byte, err error) {
-	if wallet.IsLocked() {
-		return nil, nil, errors.New("Unable to create key on a locked wallet")
-	}
-
-	if privateKey, publicKey, err = createKey(); nil != err {
-		return nil, nil, err
-	}
-
-	err = wallet.ImportKey(privateKey)
-	if nil != err {
-		wallet.SaveWalletFile()
-	}
-	return
-}
-
-func (wallet *SoftWallet) TrySignDigest(digest []byte, publicKey []byte) (signData []byte, bFind bool) {
+func (wallet *WalletImpl) TrySignDigest(digest []byte, publicKey []byte) (signData []byte, bFind bool) {
 	privateKey := []byte{}
 	bFound := false
-	for private, public := range wallet.Keys {
-		if bytes.Equal(public, publicKey) {
+	for public, private := range wallet.AccountsMap {
+		if bytes.Equal([]byte(public), publicKey) {
 			privateKey = []byte(private)
 			bFound = true
 		}
@@ -236,17 +336,4 @@ func (wallet *SoftWallet) TrySignDigest(digest []byte, publicKey []byte) (signDa
 		return nil, false
 	}
 	return data, true
-}
-
-type plainKeys struct {
-	Keys     map[string][]byte
-	CheckSum [64]byte
-}
-
-func (plain *plainKeys) Serialize() ([]byte, error) {
-	return json.Marshal(*plain)
-}
-
-func (plain *plainKeys) Deserialize(data []byte) error {
-	return json.Unmarshal(data, plain)
 }

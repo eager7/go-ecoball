@@ -17,11 +17,11 @@
 package types
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"encoding/json"
 )
 
 type DeployInfo struct {
@@ -66,7 +66,7 @@ func (d *DeployInfo) Serialize() ([]byte, error) {
  */
 func (d *DeployInfo) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New("input data's length is zero")
+		return errors.New(log, "input data's length is zero")
 	}
 	var deploy pb.DeployInfo
 	if err := deploy.Unmarshal(data); err != nil {
