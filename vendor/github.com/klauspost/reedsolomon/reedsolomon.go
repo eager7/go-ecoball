@@ -100,6 +100,9 @@ type Encoder interface {
 	// If there are to few shards given, ErrTooFewShards will be returned.
 	// If the total data size is less than outSize, ErrShortData will be returned.
 	Join(dst io.Writer, shards [][]byte, outSize int) error
+
+
+	Parity() [][]byte
 }
 
 // reedSolomon contains a matrix for a specific
@@ -881,4 +884,8 @@ func (r reedSolomon) Join(dst io.Writer, shards [][]byte, outSize int) error {
 		write -= n
 	}
 	return nil
+}
+
+func (r reedSolomon) Parity() [][]byte {
+	return r.parity
 }
