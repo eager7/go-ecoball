@@ -18,13 +18,13 @@ package types
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/trie"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 type Block struct {
@@ -35,7 +35,7 @@ type Block struct {
 
 func NewBlock(prevHeader *Header, stateHash common.Hash, consensusData ConsensusData, txs []*Transaction, cpu, net float64, timeStamp int64) (*Block, error) {
 	if nil == prevHeader {
-		return nil, errors.New("invalid parameter preHeader")
+		return nil, errors.New(log, "invalid parameter preHeader")
 	}
 	var Bloom bloom.Bloom
 	var hashes []common.Hash
@@ -136,7 +136,7 @@ func (b *Block) Serialize() (data []byte, err error) {
  */
 func (b *Block) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New("input data's length is zero")
+		return errors.New(log, "input data's length is zero")
 	}
 	var pbBlock pb.BlockTx
 	if err := pbBlock.Unmarshal(data); err != nil {

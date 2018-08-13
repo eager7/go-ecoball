@@ -18,10 +18,10 @@ package types
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 )
@@ -66,7 +66,7 @@ type Transaction struct {
 
 func NewTransaction(t TxType, from, addr common.AccountName, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
 	if payload == nil {
-		return nil, errors.New("the transaction's payload is nil")
+		return nil, errors.New(log, "the transaction's payload is nil")
 	}
 	tx := Transaction{
 		Version:    VersionTx,
@@ -185,7 +185,7 @@ func (t *Transaction) Serialize() ([]byte, error) {
  */
 func (t *Transaction) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New("input data's length is zero")
+		return errors.New(log, "input data's length is zero")
 	}
 
 	var txPb pb.Transaction
@@ -210,7 +210,7 @@ func (t *Transaction) Deserialize(data []byte) error {
 		case TxInvoke:
 			t.Payload = new(InvokeInfo)
 		default:
-			return errors.New("the transaction's payload must not be nil")
+			return errors.New(log, "the transaction's payload must not be nil")
 		}
 	}
 	if err := t.Payload.Deserialize(txPb.Payload.Payload); err != nil {

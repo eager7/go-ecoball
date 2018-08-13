@@ -30,6 +30,7 @@ func (c *ChainTx) SaveBlockWithoutHandle(block *types.Block) error {
 			return err
 		}
 	}
+	block.Header.StateHash = c.StateDB.GetHashRoot()
 
 	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 		log.Warn(err)

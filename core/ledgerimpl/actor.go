@@ -58,13 +58,13 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		l.pid.Stop()
 	case *actor.Restarting:
 	case *types.Transaction:
-		log.Info("Receive Transaction:", msg.Hash.HexString())
+		//log.Info("Receive Transaction:", msg.Hash.HexString())
 		err := l.ledger.ChainTx.CheckTransaction(msg)
 		if err != nil {
 			ctx.Sender().Tell(err)
 			break
 		}
-		ret, cpu, net, err := l.ledger.ChainTx.HandleTransactionTxPool(
+		ret, cpu, net, err := l.ledger.ChainTx.HandleTransaction(
 			l.ledger.ChainTx.TempStateDB,
 			msg,
 			msg.TimeStamp,
@@ -80,7 +80,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			ctx.Sender().Tell(tx)
 		}
 	case *types.Block:
-		if err := l.ledger.ChainTx.SaveBlockWithoutHandle(msg); err != nil {
+		if err := l.ledger.ChainTx.SaveBlock(msg); err != nil {
 			log.Error("save block error:", err)
 			break
 		}
