@@ -77,12 +77,6 @@ const (
 	BitcoinTx          = 0xb1
 	ZcashBlock         = 0xc0
 	ZcashTx            = 0xc1
-
-	EcoballBlock       = 0xf0
-	EcoballTx          = 0xf1
-	EcoballRawData     = 0xf2
-	EcoballShardData   = 0xf3
-	EcoballTree        = 0xf4
 )
 
 // Codecs maps the name of a codec to its type
@@ -105,11 +99,6 @@ var Codecs = map[string]uint64{
 	"bitcoin-tx":           BitcoinTx,
 	"zcash-block":          ZcashBlock,
 	"zcash-tx":             ZcashTx,
-	"ecoball-block":        EcoballBlock,
-	"ecoball-tx":           EcoballTx,
-	"ecoball-rawdata":      EcoballRawData,
-	"ecoball-sharddata":    EcoballShardData,
-	"ecoball-tree":         EcoballTree,
 }
 
 // CodecToStr maps the numeric codec to its name
@@ -131,10 +120,6 @@ var CodecToStr = map[uint64]string{
 	BitcoinTx:          "bitcoin-tx",
 	ZcashBlock:         "zcash-block",
 	ZcashTx:            "zcash-tx",
-	EcoballBlock:       "ecoball-block",
-	EcoballTx:          "ecoball-tx",
-	EcoballRawData:     "ecoball-rawdata",
-	EcoballShardData:   "ecoball-sharddata",
 }
 
 // NewCidV0 returns a Cid-wrapped multihash.
