@@ -17,11 +17,11 @@
 package types
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"math/big"
-	"encoding/json"
 )
 
 type TransferInfo struct {
@@ -57,7 +57,7 @@ func (t *TransferInfo) Serialize() ([]byte, error) {
  */
 func (t *TransferInfo) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New("data len is 0")
+		return errors.New(log, "data len is 0")
 	}
 	t.Value = new(big.Int)
 	return t.Value.GobDecode(data)
