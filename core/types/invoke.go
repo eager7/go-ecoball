@@ -18,9 +18,9 @@ package types
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 )
 
@@ -70,7 +70,7 @@ func (i *InvokeInfo) Serialize() ([]byte, error) {
  */
 func (i *InvokeInfo) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New("input data's length is zero")
+		return errors.New(log, "input data's length is zero")
 	}
 	var invoke pb.InvokeInfo
 	if err := invoke.Unmarshal(data); err != nil {

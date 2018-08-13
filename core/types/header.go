@@ -158,7 +158,7 @@ func (h *Header) unSignatureData() (*pb.Header, error) {
 		ConsensusData: pbCon,
 		PrevHash:      h.PrevHash.Bytes(),
 		MerkleHash:    h.MerkleHash.Bytes(),
-		//StateHash:     h.StateHash.Bytes(),
+		StateHash:     h.StateHash.Bytes(),
 		Bloom:         h.Bloom.Bytes(),
 	}, nil
 }
