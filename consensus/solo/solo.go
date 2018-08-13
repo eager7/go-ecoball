@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
@@ -64,16 +65,14 @@ func (s *Solo) Start() error {
 				}
 				block, err := s.ledger.NewTxBlock(txs, conData, time.Now().UnixNano())
 				if err != nil {
-					log.Error("new block error:", err)
-					continue
+					log.Fatal(err)
+				}
+				if err := block.SetSignature(&config.Root); err != nil {
+					log.Fatal(err)
 				}
 				if err := event.Send(event.ActorConsensus, event.ActorLedger, block); err != nil {
 					log.Fatal(err)
 				}
-				//if err := s.ledger.SaveTxBlock(block); err != nil {
-				//	log.Error("save block error:", err)
-				//	continue
-				//}
 			}
 		}
 	}()

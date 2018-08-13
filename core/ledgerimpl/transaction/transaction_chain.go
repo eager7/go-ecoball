@@ -296,10 +296,7 @@ func (c *ChainTx) GenesesBlockInit() error {
 		log.Error("Save geneses block error:", err)
 		return err
 	}
-	c.TempStateDB, err = c.StateDB.CopyState()
-	if err != nil {
-		return err
-	}
+
 	c.CurrentHeader = block.Header
 	return nil
 }

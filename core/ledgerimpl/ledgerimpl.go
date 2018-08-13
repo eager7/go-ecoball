@@ -46,6 +46,10 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 	if err := ll.ChainTx.GenesesBlockInit(); err != nil {
 		return nil, err
 	}
+	ll.ChainTx.TempStateDB, err = ll.ChainTx.StateDB.CopyState()
+	if err != nil {
+		return nil, err
+	}
 
 	actor := &LedActor{ledger: ll}
 	actor.pid, err = NewLedgerActor(actor)
