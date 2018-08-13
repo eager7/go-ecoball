@@ -150,7 +150,7 @@ func ImportKey(name string, password []byte, privateKey string)([]byte, error) {
 		return nil, errors.New("wallet is locked")
 	}
 
-	if wallet.CheckPassword(password) {
+	if !wallet.CheckPassword(password) {
 		return nil, errors.New("wrong passwords!!")
 	}
 
@@ -168,7 +168,7 @@ func RemoveKey(name string, password []byte, publickey string) error {
 		return errors.New("wallet is locked")
 	}
 
-	if wallet.CheckPassword(password) {
+	if !wallet.CheckPassword(password) {
 		return errors.New("wrong passwords!!")
 	}
 
@@ -186,7 +186,7 @@ func CreateKey(name string, password []byte)([]byte, []byte, error) {
 		return nil, nil, errors.New("wallet is locked")
 	}
 
-	if wallet.CheckPassword(password) {
+	if !wallet.CheckPassword(password) {
 		return  nil, nil, errors.New("wrong passwords!!")
 	}
 
@@ -242,7 +242,7 @@ func ListKeys(name string, password []byte) (map[string]string, error) {
 		return nil, errors.New("wallet is unlocked")
 	}
 
-	if wallet.CheckPassword(password) {
+	if !wallet.CheckPassword(password) {
 		return nil, errors.New("wrong passwords!!")
 	}
 

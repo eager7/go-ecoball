@@ -154,7 +154,6 @@ func StartRPCServer() {
 	httpServer.AddHandleFunc("importKey", commands.ImportKey)
 	httpServer.AddHandleFunc("removeKey", commands.RemoveKey)
 	httpServer.AddHandleFunc("listAccount", commands.ListKeys)
-	httpServer.AddHandleFunc("sign_transaction", commands.Sign_transaction)
 
 	//listen port
 	err := http.ListenAndServe(":"+config.HttpLocalPort, nil)

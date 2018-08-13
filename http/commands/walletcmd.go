@@ -17,15 +17,15 @@
 package commands
 
 import(
-	"math/big"
+	//"math/big"
 	"strings"
-	"time"
-	"errors"
+	//"time"
+	//"errors"
 
 	"github.com/ecoball/go-ecoball/http/common"
 	inner "github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/crypto/secp256k1"
-	"github.com/ecoball/go-ecoball/core/types"
+	//"github.com/ecoball/go-ecoball/crypto/secp256k1"
+	//"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/wallet"
 )
 
@@ -204,76 +204,4 @@ func ListKeys(params []interface{}) *common.Response {
 	default:
 		return common.NewResponse(common.INVALID_PARAMS, nil)
 	}
-}
-
-func Sign_transaction(params []interface{}) *common.Response {
-	if len(params) < 1 {
-		log.Error("invalid arguments")
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	switch {
-	case len(params) == 3:
-		if err := handleTransaction(params); err != nil {
-			return common.NewResponse(common.INTERNAL_ERROR, err)
-		}
-
-	default:
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	return common.NewResponse(common.SUCCESS, "")
-}
-
-func handleTransaction(params []interface{}) error {
-	var (
-		from    string
-		to      string
-		value   *big.Int
-		invalid bool = false
-	)
-
-	if v, ok := params[0].(string); ok {
-		from = v
-	} else {
-		invalid = true
-	}
-
-	if v, ok := params[1].(string); ok {
-		to = v
-	} else {
-		invalid = true
-	}
-
-	if v, ok := params[2].(float64); ok {
-		value = big.NewInt(int64(v))
-	} else {
-		invalid = true
-	}
-
-	if invalid {
-		return errors.New("params is invalid")
-	}
-
-	//time
-	time := time.Now().Unix()
-
-	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), "owner", value, 0, time)
-	if nil != err {
-		return err
-	}
-
-	for name := range wallet.Wallets {
-		for publickey := range wallet.Wallets[name].AccountsMap{
-
-			data := transaction.Hash.Bytes()
-			signed,_ := secp256k1.Sign(data, inner.FromHex(publickey))
-			if hasSign, err := secp256k1.Verify(data, signed, inner.FromHex(publickey)); nil != err || !hasSign {
-				log.Warn("check transaction signatures failed:" + transaction.Hash.HexString())
-				return errors.New("check transaction signatures fail:" + transaction.Hash.HexString())
-			}
-		}
-	}
-
-	return nil
 }
