@@ -22,11 +22,11 @@ import(
 	"time"
 	"errors"
 
-	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/http/common"
 	inner "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/wallet"
 )
 
 func CreateWallet(params []interface{}) *common.Response {
@@ -38,7 +38,7 @@ func CreateWallet(params []interface{}) *common.Response {
 	case string:
 		name := params[0].(string)
 		password := params[1].(string)
-		if err := account.Create(name, []byte(password)); nil != err {
+		if err := wallet.Create(name, []byte(password)); nil != err {
 			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 		}
 	default:
@@ -56,9 +56,9 @@ func CreateKey(params []interface{}) *common.Response {
 	case string:
 		name := params[0].(string)
 		password := params[1].(string)
-		ac, err := account.CreateKey2Wallet(name, []byte(password))
+		pub, pri, err := wallet.CreateKey(name, []byte(password))
 		var key_str string
-		key_str += "publickey:" + inner.ToHex(ac.PublicKey) + "\n"+ "privatekey:" + inner.ToHex(ac.PrivateKey)
+		key_str += "publickey:" + inner.ToHex(pub) + "\n"+ "privatekey:" + inner.ToHex(pri)
 		if err != nil {
 			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 		}
@@ -78,7 +78,7 @@ func OpenWallet(params []interface{}) *common.Response {
 	case string:
 		name := params[0].(string)
 		password := params[1].(string)
-		err := account.Open(name, []byte(password))
+		err := wallet.Open(name, []byte(password))
 		if err != nil {
 			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 		}
@@ -94,21 +94,13 @@ func LockWallet(params []interface{}) *common.Response {
 		log.Error("invalid arguments")
 		return common.NewResponse(common.INVALID_PARAMS, nil)
 	}
-	//whether the wallet open
-	/*if nil == account.Wallet {
-		return common.NewResponse(common.INVALID_PARAMS, "The wallet has not been opened!")
-	}*/
-
-	/*if nil != account.Cipherkeys {
-		return common.NewResponse(common.INVALID_PARAMS, "the data is wrong!")
-	}*/
 
 	switch params[0].(type){
 	case string:
 		name := params[0].(string)
 		password := params[1].(string)
 		//lock wallet
-		err := account.LockWallet(name, []byte(password))
+		err := wallet.Lock(name, []byte(password))
 		if nil != err {
 			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 		}
@@ -130,7 +122,7 @@ func UnlockWallet(params []interface{}) *common.Response {
 	case string:
 		name := params[0].(string)
 		password := params[1].(string)
-		if err := account.UnlockWallet(name, []byte(password)); nil != err {
+		if err := wallet.Unlock(name, []byte(password)); nil != err {
 			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 		}
 
@@ -153,7 +145,7 @@ func ImportKey(params []interface{}) *common.Response {
 		password := params[1].(string)
 		privateKey := params[2].(string)
 		//publickey, err := account.Wallet.ImportKey([]byte(password), inner.FromHex(privateKey))
-		publickey, err := account.ImportKey2Wallet(name, []byte(password), privateKey)
+		publickey, err := wallet.ImportKey(name, []byte(password), privateKey)
 		var key_str string
 		key_str += "publickey:" + inner.ToHex(publickey)
 		if err != nil {
@@ -177,7 +169,7 @@ func RemoveKey(params []interface{}) *common.Response {
 		password := params[1].(string)
 		publickey := params[2].(string)
 		//publickey, err := account.Wallet.ImportKey([]byte(password), inner.FromHex(privateKey))
-		err := account.RemoveKeyFromWallet(name, []byte(password), publickey)
+		err := wallet.RemoveKey(name, []byte(password), publickey)
 		if err != nil {
 			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 		}
@@ -187,7 +179,7 @@ func RemoveKey(params []interface{}) *common.Response {
 	}
 }
 
-func ListAccount(params []interface{}) *common.Response {
+func ListKeys(params []interface{}) *common.Response {
 	if len(params) < 1 {
 		log.Error("invalid arguments")
 		return common.NewResponse(common.INVALID_PARAMS, nil)
@@ -198,10 +190,10 @@ func ListAccount(params []interface{}) *common.Response {
 		//list account
 		name := params[0].(string)
 		password := params[1].(string)
-		accounts, err := account.ListAccountFromWallet(name, []byte(password))
+		accounts, err := wallet.ListKeys(name, []byte(password))
 		var key_str string
-		for _, v := range accounts {
-			key_str += "publickey:" + inner.ToHex(v.PublicKey) + "\n"+ "privatekey:" + inner.ToHex(v.PrivateKey)
+		for k, v := range accounts {
+			key_str += "publickey:" + k + "\n"+ "privatekey:" + v
 			key_str += "\n"
 		}
 		key_str = strings.TrimSuffix(key_str, "\n")
@@ -271,28 +263,9 @@ func handleTransaction(params []interface{}) error {
 		return err
 	}
 
-	/*for name := range account.Wallets {
-		for _,v := range account.Wallets[name].Accounts{
-			//err = transaction.SetSignature(&account)
-			//if err != nil {
-				//return errors.New("invalid account")
-			//}
-		
-			data := transaction.Hash.Bytes()
-			signed,_ := secp256k1.Sign(data, v.PublicKey)
-			if hasSign, err := secp256k1.Verify(data, signed, v.PublicKey); nil != err || !hasSign {
-				log.Warn("check transaction signatures failed:" + transaction.Hash.HexString())
-				return errors.New("check transaction signatures fail:" + transaction.Hash.HexString())
-			}
-		}
-	}*/
-	for name := range account.Wallets {
-		for publickey := range account.Wallets[name].AccountsMap{
-			//err = transaction.SetSignature(&account)
-			//if err != nil {
-				//return errors.New("invalid account")
-			//}
-		
+	for name := range wallet.Wallets {
+		for publickey := range wallet.Wallets[name].AccountsMap{
+
 			data := transaction.Hash.Bytes()
 			signed,_ := secp256k1.Sign(data, inner.FromHex(publickey))
 			if hasSign, err := secp256k1.Verify(data, signed, inner.FromHex(publickey)); nil != err || !hasSign {

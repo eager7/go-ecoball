@@ -16,32 +16,36 @@
 package wallet
 
 import (
+	"errors"
+
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 )
 
-func createKey() (privateKey []byte, publicKey []byte, err error) {
-	pri, errCreate := secp256k1.NewECDSAPrivateKey()
-	if nil != errCreate {
-		return nil, nil, errCreate
+//type Algorithm uint8 //算法类型
+
+/*type Keys struct {
+	PublicKey  []byte    `json:"Publickey"`
+	PrivateKey []byte    `json:"Privatekey"`
+}*/
+
+/**
+创建账号
+*/
+func createKey() ([]byte, []byte, error) {
+	pri, err := secp256k1.NewECDSAPrivateKey()
+	if err != nil {
+		return nil, nil, errors.New("NewECDSAPrivateKey error: " + err.Error())
+	}
+	pridata, err := secp256k1.FromECDSA(pri)
+	if err != nil {
+		return nil, nil, errors.New("FromECDSAPrivateKey error: " + err.Error())
+	}
+	pub, err := secp256k1.FromECDSAPub(&pri.PublicKey)
+	if err != nil {
+		return nil, nil, errors.New("new account error: " + err.Error())
 	}
 
-	privateKey, err = secp256k1.FromECDSA(pri)
-	if nil != err {
-		return nil, nil, err
-	}
-
-	publicKey, err = secp256k1.FromECDSAPub(&pri.PublicKey)
-	return
-}
-
-func GetPublicFromPrivate(privateKey []byte) (publicKey []byte, err error) {
-	pri, errCreate := secp256k1.ToECDSA(privateKey)
-	if nil != errCreate {
-		return nil, errCreate
-	}
-
-	publicKey, err = secp256k1.FromECDSAPub(&pri.PublicKey)
-	return
+	return pub, pridata, nil
 }
 
 func signDigest(digest []byte, privateKey []byte) (signData []byte, err error) {
@@ -50,4 +54,16 @@ func signDigest(digest []byte, privateKey []byte) (signData []byte, err error) {
 
 func Verify(data []byte, publicKey []byte, signature []byte) (bool, error) {
 	return secp256k1.Verify(data, signature, publicKey)
+}
+
+func getPublicKey(privateKey string) ([]byte, error){
+	pri, err := secp256k1.ToECDSA([]byte(privateKey))
+	if err != nil {
+		return nil, errors.New("NewECDSAPrivateKey error: " + err.Error())
+	}
+	pub, err := secp256k1.FromECDSAPub(&pri.PublicKey)
+	if err != nil {
+		return nil, errors.New("new account error: " + err.Error())
+	}
+	return pub, nil
 }

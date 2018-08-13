@@ -18,15 +18,15 @@ package wallet
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
+	"crypto/sha512"
+	//"os"
+	//"path/filepath"
 
 	"github.com/ecoball/go-ecoball/client/common"
 )
 
-var (
-	Wallet = WalletManeger{Wallets: make(map[string]WalletApi)}
+/*var (
+	Wallet = WalletManeger{Wallets: make(map[string]*SoftWallet)}
 )
 
 func init() {
@@ -34,122 +34,230 @@ func init() {
 	Wallet.Dir = strings.Replace(dir, "\\", "/", -1) + "/wallet"
 	Wallet.FileExten = ".data"
 
-}
+}*/
 
 type WalletApi interface {
-	SetPassword(password []byte) error
-	CheckPassword(password []byte) bool
-	SetWalletFileName(fileName string)
-	IsLocked() bool
-	Lock() error
+	StoreWallet() error
+	loadWallet() error
+	Lock(password []byte) error
 	Unlock(password []byte) error
-	SaveWalletFile() error
-	LoadWalletFile() error
-	ListKeys() (map[string][]byte, error)
-	ListPublicKey() ([][]byte, error)
-	ImportKey(privateKey []byte) error
-	RemoveKey(privateKey []byte) error
-	CreateKey() (publicKey []byte, privateKey []byte, err error)
-	TrySignDigest(digest []byte, publicKey []byte) (signDigest []byte, bFind bool)
-	//GetPrivateKey(publicKey []byte) (privateKey []byte, err error)
+	CreateKey(password []byte) ([]byte, []byte, error)
+	RemoveKey(password []byte, publickey string) error
+	ImportKey(password []byte, privateKey string) ([]byte, error)
+	ListPublicKey() ([]string, error)
+	CheckLocked() bool
+	CheckPassword(password []byte) bool
+	SetLockedState()
+	SetUnLockedState()
+	ListKeys() map[string]string
+	TrySignDigest(digest []byte, publicKey []byte) (signData []byte, bFind bool)
 }
 
-type WalletManeger struct {
-	Wallets   map[string]WalletApi
+/*type WalletManeger struct {
+	Wallets   map[string]*SoftWallet
 	Dir       string
 	FileExten string
-}
+}*/
+var (
+	Wallets = make(map[string]WalletApi) // 后台存储所有钱包
+)
 
-func (manager *WalletManeger) Create(name string, password []byte) error {
+
+func Create(path string, password []byte) error {
 	//whether the wallet file exists
-	fileName := manager.Dir + "/" + name + manager.FileExten
-	if _, err := os.Stat(manager.Dir + "/"); os.IsNotExist(err) {
-		if err := os.MkdirAll(manager.Dir+"/", 0700); err != nil {
-			fmt.Println("could not create directory: ", manager.Dir+"/", " error: ", err)
-			return err
-		}
-	}
-	if common.FileExisted(fileName) {
-		return errors.New("The wallet file already exists")
+	if common.FileExisted(path) {
+		return errors.New("The file already exists")
 	}
 
-	wallet := SoftWallet{Cipherkeys: make([]byte, 10), Keys: make(map[string][]byte)}
-	if err := wallet.SetPassword(password); nil != err {
-		return err
+	newWallet := &WalletImpl{
+		path:     path,
+		lockflag: unlock,
+		KeyData: KeyData{
+			Checksum: sha512.Sum512(password),
+			//Accounts: []Account{},
+			AccountsMap: make(map[string]string),
+		},
 	}
 
-	wallet.SetWalletFileName(fileName)
-	if err := wallet.Unlock(password); nil != err {
-		return err
-	}
-	if err := wallet.Lock(); nil != err {
-		return err
-	}
-	if err := wallet.Unlock(password); nil != err {
+	//lock wallet
+	err := newWallet.Lock(password)
+	newWallet.lockflag = locked
+	if nil != err {
 		return err
 	}
 
-	if err := wallet.SaveWalletFile(); nil != err {
+	//write data
+	if err := newWallet.StoreWallet(); nil != err {
 		return err
 	}
 
-	manager.Wallets[name] = &wallet
+	//unlock wallet
+	if err := newWallet.Unlock(password); nil != err {
+		return err
+	}
+
+	Wallets[path] = newWallet
+	newWallet.lockflag = unlock
 
 	return nil
 }
 
-func (manager *WalletManeger) Open(name string) error {
-	fileName := manager.Dir + "/" + name + manager.FileExten
-	wallet := SoftWallet{Cipherkeys: make([]byte, 10), Keys: make(map[string][]byte)}
-	wallet.SetWalletFileName(fileName)
-	if err := wallet.LoadWalletFile(); nil != err {
+/**
+打开钱包
+*/
+func Open(path string, password []byte) error {
+	newWallet := &WalletImpl{
+		path:     path,
+		lockflag: unlock,
+		KeyData: KeyData{
+			//Accounts: []Account{},
+			AccountsMap: make(map[string]string),
+		},
+	}
+
+	//load data
+	err := newWallet.loadWallet()
+	if nil != err {
 		return err
 	}
 
-	manager.Wallets[name] = &wallet
+	//unlock wallet
+	if err := newWallet.Unlock(password); nil != err {
+		return err
+	}
+	newWallet.lockflag = unlock
+
+	_, ok := Wallets [ path ]
+	
+	if ok {
+		fmt.Println("exist:", path)
+        delete(Wallets, path)
+	}
+	
+	Wallets[path] = newWallet
 
 	return nil
 }
 
-func (manager *WalletManeger) ListWallets() []string {
-	result := []string{}
-	for name, wallet := range manager.Wallets {
-		if wallet.IsLocked() {
-			result = append(result, name+"*")
-		} else {
-			result = append(result, name)
-		}
-	}
-
-	return result
-}
-
-func (manager *WalletManeger) ListKeys(name string, password []byte) (map[string][]byte, error) {
-	wallet, ok := manager.Wallets[name]
+func ImportKey(name string, password []byte, privateKey string)([]byte, error) {
+	wallet, ok := Wallets [ name ]
+	
 	if !ok {
-		return nil, errors.New("Wallet not found: " + name)
+		return nil, errors.New("wallet is not exist")
 	}
 
-	if wallet.IsLocked() {
-		return nil, errors.New("Wallet is locked: " + name)
+	if wallet.CheckLocked(){
+		return nil, errors.New("wallet is locked")
 	}
 
-	if !wallet.CheckPassword(password) {
-		return nil, errors.New("Wallet password is wrong: " + name)
+	if wallet.CheckPassword(password) {
+		return nil, errors.New("wrong passwords!!")
 	}
 
-	return wallet.ListKeys()
+	return wallet.ImportKey(password, privateKey)
 }
 
-func (manager *WalletManeger) GetPublicKeys() ([][]byte, error) {
-	if len(manager.Wallets) == 0 {
+func RemoveKey(name string, password []byte, publickey string) error {
+	wallet, ok := Wallets [ name ]
+	
+	if !ok {
+		return errors.New("wallet is not exist")
+	}
+
+	if wallet.CheckLocked(){
+		return errors.New("wallet is locked")
+	}
+
+	if wallet.CheckPassword(password) {
+		return errors.New("wrong passwords!!")
+	}
+
+	return wallet.RemoveKey(password, publickey)
+}
+
+func CreateKey(name string, password []byte)([]byte, []byte, error) {
+	wallet, ok := Wallets [ name ]
+	
+	if !ok {
+		return nil, nil, errors.New("wallet is not exist")
+	}
+
+	if wallet.CheckLocked(){
+		return nil, nil, errors.New("wallet is locked")
+	}
+
+	if wallet.CheckPassword(password) {
+		return  nil, nil, errors.New("wrong passwords!!")
+	}
+
+	return wallet.CreateKey(password)
+}
+
+func Lock(name string, password []byte) (error) {
+	wallet, ok := Wallets [ name ]
+	
+	if !ok {
+		return errors.New("wallet is not exist")
+	}
+
+	if wallet.CheckLocked(){
+		return errors.New("wallet is locked")
+	}
+
+	wallet.SetLockedState()
+	if err := wallet.Lock(password) ; err != nil{
+		wallet.SetUnLockedState()
+		return err
+	}
+	return nil
+}
+
+func Unlock(name string, password []byte) error {
+	wallet, ok := Wallets [ name ]
+	
+	if !ok {
+		return errors.New("wallet is not exist")
+	}
+
+	if !wallet.CheckLocked(){
+		return errors.New("wallet is unlocked")
+	}
+
+	wallet.SetUnLockedState()
+	if err := wallet.Unlock(password); err != nil{
+		wallet.SetLockedState()
+		return err
+	}
+	return nil
+}
+
+func ListKeys(name string, password []byte) (map[string]string, error) {
+	wallet, ok := Wallets [ name ]
+	
+	if !ok {
+		return nil, errors.New("wallet is not exist")
+	}
+
+	if wallet.CheckLocked(){
+		return nil, errors.New("wallet is unlocked")
+	}
+
+	if wallet.CheckPassword(password) {
+		return nil, errors.New("wrong passwords!!")
+	}
+
+	return wallet.ListKeys(), nil
+}
+
+func GetPublicKeys() ([]string, error) {
+	if len(Wallets) == 0 {
 		return nil, errors.New("You don't have any wallet!")
 	}
 
-	keys := [][]byte{}
+	keys := []string{}
 	allLocked := true
-	for _, wallet := range manager.Wallets {
-		if wallet.IsLocked() {
+	for _, wallet := range Wallets {
+		if wallet.CheckLocked() {
 			continue
 		}
 		if publicKeys, err := wallet.ListPublicKey(); nil != err {
@@ -167,100 +275,25 @@ func (manager *WalletManeger) GetPublicKeys() ([][]byte, error) {
 	return keys, nil
 }
 
-func (manager *WalletManeger) LockAll() error {
-	for _, wallet := range manager.Wallets {
-		if !wallet.IsLocked() {
-			if err := wallet.Lock(); err != nil {
-				return err
-			}
-		}
+func List_wallets()([]string, error) {
+	if len(Wallets) == 0 {
+		return nil, errors.New("You don't have any wallet!")
 	}
 
-	return nil
+	keys := []string{}
+	for name := range Wallets {
+		keys = append(keys, name)
+	}
+
+	return keys, nil
 }
 
-func (manager *WalletManeger) Lock(name string) error {
-	if len(manager.Wallets) == 0 {
-		return errors.New("You don't have any wallet!")
-	}
 
-	for oneName, wallet := range manager.Wallets {
-		if name == oneName {
-			if wallet.IsLocked() {
-				return nil
-			} else {
-				return wallet.Lock()
-			}
-		}
-	}
-
-	return errors.New("You don't have wallet: " + name)
-}
-
-func (manager *WalletManeger) Unlock(name string, password []byte) error {
-	_, ok := manager.Wallets[name]
-	if !ok {
-		if err := manager.Open(name); nil != err {
-			return err
-		}
-	}
-
-	wallet, _ := manager.Wallets[name]
-	if wallet.IsLocked() {
-		return errors.New("Wallet is already unlocked: " + name)
-	}
-
-	return wallet.Unlock(password)
-}
-
-func (manager *WalletManeger) ImportKey(name string, privateKey []byte) error {
-	wallet, ok := manager.Wallets[name]
-	if !ok {
-		return errors.New("Wallet not found: " + name)
-	}
-
-	if wallet.IsLocked() {
-		return errors.New("Wallet is locked: " + name)
-	}
-
-	return wallet.ImportKey(privateKey)
-}
-
-func (manager *WalletManeger) RemoveKey(name string, password []byte, privateKey []byte) error {
-	wallet, ok := manager.Wallets[name]
-	if !ok {
-		return errors.New("Wallet not found: " + name)
-	}
-
-	if wallet.IsLocked() {
-		return errors.New("Wallet is locked: " + name)
-	}
-
-	if !wallet.CheckPassword(password) {
-		return errors.New("Wallet password is wrong: " + name)
-	}
-
-	return wallet.RemoveKey(privateKey)
-}
-
-func (manager *WalletManeger) CreateKey(name string) (publicKey []byte, privateKey []byte, err error) {
-	wallet, ok := manager.Wallets[name]
-	if !ok {
-		return nil, nil, errors.New("Wallet not found: " + name)
-	}
-
-	if wallet.IsLocked() {
-		return nil, nil, errors.New("Wallet is locked: " + name)
-	}
-
-	return wallet.CreateKey()
-}
-
-func (manager *WalletManeger) SignTransaction(transaction []byte, publicKeys [][]byte) (signTransaction []byte, err error) {
+func SignTransaction(transaction []byte, publicKeys [][]byte) (signTransaction []byte, err error) {
 	for _, publicKey := range publicKeys {
 		bFound := false
-		for _, wallet := range manager.Wallets {
-			if !wallet.IsLocked() {
+		for _, wallet := range Wallets {
+			if !wallet.CheckLocked() {
 				if signData, bHave := wallet.TrySignDigest(transaction, publicKey); bHave {
 					transaction = append(transaction, signData...)
 					if !bFound {
@@ -279,11 +312,11 @@ func (manager *WalletManeger) SignTransaction(transaction []byte, publicKeys [][
 
 }
 
-func (manager *WalletManeger) SignDigest(data []byte, publicKey []byte) ([]byte, error) {
+func SignDigest(data []byte, publicKey []byte) ([]byte, error) {
 	bFound := false
 	result := []byte{}
-	for _, wallet := range manager.Wallets {
-		if !wallet.IsLocked() {
+	for _, wallet := range Wallets {
+		if !wallet.CheckLocked() {
 			if signData, bHave := wallet.TrySignDigest(data, publicKey); bHave {
 				if !bFound {
 					bFound = true
