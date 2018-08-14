@@ -36,7 +36,7 @@ func NewSoloActor(l *soloActor) (*actor.PID, error) {
 	if err != nil {
 		return nil, err
 	}
-	event.RegisterActor(event.ActorConsensus, pid)
+	event.RegisterActor(event.ActorConsensusSolo, pid)
 
 	return pid, nil
 }

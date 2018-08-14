@@ -8,6 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"math/big"
+	"github.com/AsynkronIT/protoactor-go/actor"
 )
 
 var cpuAmount = "cpu_amount"
@@ -306,7 +307,8 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	if votingSum+acc.Resource.Votes.Staked > abaTotal*0.15 {
 		log.Warn("Start Process ##################################################################################")
 		if config.ConsensusAlgorithm != "SOLO" {
-			event.Send(event.ActorConsensus, event.ActorConsensus, nil)
+			event.Send(event.ActorNil, event.ActorConsensusSolo, &actor.Stop{})
+			event.Send(event.ActorNil, event.ActorConsensus, nil)
 		}
 	}
 	return s.CommitAccount(acc)
