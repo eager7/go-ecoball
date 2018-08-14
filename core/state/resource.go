@@ -366,6 +366,7 @@ func (s *State) CheckAccountCertification(index common.AccountName) error {
 		return err
 	}
 	if acc.Votes.Staked < VotesLimit {
+		acc.Show()
 		return errors.New(log, fmt.Sprintf("the account:%s has no enough staked", index.String()))
 	}
 	return nil

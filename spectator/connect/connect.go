@@ -17,7 +17,6 @@
 package connect
 
 import (
-	"fmt"
 	"net"
 	"sync"
 
@@ -88,7 +87,7 @@ func Notify(infoType info.NotifyType, message info.NotifyInfo) error {
 	}
 	data = info.MessageDecorate(data)
 
-	fmt.Println("new block: ", string(data))
+	//fmt.Println("new block: ", string(data))
 	Onlookers.notify(data)
 	return nil
 }

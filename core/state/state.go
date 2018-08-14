@@ -18,12 +18,12 @@ package state
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
@@ -111,7 +111,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
 		return nil, err
 	}
 	if data != nil {
-		return nil, errors.New("reduplicate name")
+		return nil, errors.New(log, "reduplicate name")
 	}
 	acc, err := NewAccount(s.path, index, addr, timeStamp)
 	if err != nil {
@@ -191,7 +191,7 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 		return nil, err
 	}
 	if fData == nil {
-		return nil, errors.New(fmt.Sprintf("no this account named:%s", index.String()))
+		return nil, errors.New(log, fmt.Sprintf("no this account named:%s", index.String()))
 	}
 	acc = Account{}
 	if err = acc.Deserialize(fData); err != nil {
@@ -213,7 +213,7 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
 		return nil, err
 	} else {
 		if fData == nil {
-			return nil, errors.New(fmt.Sprintf("can't find this account by address:%s", addr.HexString()))
+			return nil, errors.New(log, fmt.Sprintf("can't find this account by address:%s", addr.HexString()))
 		} else {
 			acc, err := s.GetAccountByName(common.IndexSetBytes(fData))
 			if err != nil {
@@ -230,7 +230,7 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
  */
 func (s *State) CommitAccount(acc *Account) error {
 	if acc == nil {
-		return errors.New("param acc is nil")
+		return errors.New(log, "param acc is nil")
 	}
 	d, err := acc.Serialize()
 	if err != nil {

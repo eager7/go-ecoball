@@ -59,8 +59,8 @@ func (s *Solo) Start() error {
 					continue
 				}
 				txList, ok := value.(*types.TxsList)
-				if !ok {
-					log.Error("The format of value error [solo]")
+				if !ok || len(txList.Txs) == 0{
+					log.Warn("The format of value error [solo] or no transaction in this time")
 					continue
 				}
 				var txs []*types.Transaction
