@@ -281,7 +281,10 @@ func List_wallets()([]string, error) {
 	}
 
 	keys := []string{}
-	for name := range Wallets {
+	for name, wallet := range Wallets {
+		if !wallet.CheckLocked() {
+			name += "*"
+		}
 		keys = append(keys, name)
 	}
 

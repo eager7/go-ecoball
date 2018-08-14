@@ -32,6 +32,7 @@ const (
 	ActorNil ActorIndex = iota
 	ActorTxPool
 	ActorP2P
+	ActorConsensusSolo
 	ActorConsensus
 	ActorLedger
 	maxActorNumber

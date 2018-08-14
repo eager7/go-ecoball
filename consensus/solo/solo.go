@@ -17,18 +17,19 @@
 package solo
 
 import (
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
 
 type Solo struct {
+	stop   bool
 	ledger ledger.Ledger
 }
 
@@ -45,6 +46,9 @@ func (s *Solo) Start() error {
 
 	go func() {
 		for {
+			if s.stop {
+				return
+			}
 			t.Reset(time.Second * 3)
 			select {
 			case <-t.C:
@@ -55,8 +59,8 @@ func (s *Solo) Start() error {
 					continue
 				}
 				txList, ok := value.(*types.TxsList)
-				if !ok {
-					log.Error("The format of value error [solo]")
+				if !ok || len(txList.Txs) == 0{
+					log.Warn("The format of value error [solo] or no transaction in this time")
 					continue
 				}
 				var txs []*types.Transaction
@@ -78,4 +82,3 @@ func (s *Solo) Start() error {
 	}()
 	return nil
 }
-

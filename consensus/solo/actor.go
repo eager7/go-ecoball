@@ -36,7 +36,7 @@ func NewSoloActor(l *soloActor) (*actor.PID, error) {
 	if err != nil {
 		return nil, err
 	}
-	event.RegisterActor(event.ActorConsensus, pid)
+	event.RegisterActor(event.ActorConsensusSolo, pid)
 
 	return pid, nil
 }
@@ -46,6 +46,7 @@ func (l *soloActor) Receive(ctx actor.Context) {
 	case *actor.Started:
 	case *actor.Stop:
 		l.pid.Stop()
+		l.solo.stop = true
 	case *actor.Restarting:
 
 	default:
