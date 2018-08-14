@@ -2,22 +2,33 @@ Go-Ecoball
 -------
 
 ## Depends
-You need install [protoc](https://github.com/google/protobuf/blob/master/src/README.md) 
-
-Then you need install golang proto tools:
+1. Firstly,you need install [protoc](https://github.com/google/protobuf/blob/master/src/README.md) 
+2. Golang version >= 1.9
+3. Then you need install golang proto tools:
 ```bash
 go get github.com/gogo/protobuf/protoc-gen-gofast
 ```
+4. If build in windows, you must install [mingw](http://www.mingw.org/)
 
 ## Build
-Run 'make all' in go-ecoball
+Run ***make all*** in go-ecoball
 ```bash
 $:~/go/src/github.com/ecoball/go-ecoball$ make
 ```
-Then you will get a directory named 'build':
+Then you will get a directory named **build**:
 ```bash
 ~/go/src/github.com/ecoball/go-ecoball$ ls build/
 ecoball  ecoclient
+```
+If build in windows
+Run ***build_windows*** in go-ecoball
+```bash
+%GOPATH%\src\github.com\ecoball\go-ecoball>build_windows
+```
+Then you will get a directory named **build**:
+```bash
+%GOPATH%\src\github.com\ecoball\go-ecoball\build>dir
+ecoball.exe  ecoclient.exe
 ```
 
 ## Notes
@@ -28,29 +39,13 @@ create wallet file
 ```
 $./ecoclient wallet create --name $WALLETFILE --password $PASSWORD
 ```
-open wallet file
+create account
 ```
-$./ecoclient wallet open --name $WALLETFILE --password $PASSWORD
-```
-createkey in wallet
-```
-$./ecoclient wallet createkey --name $WALLETFILE --password $PASSWORD
-```
-import key to wallet
-```
-$./ecoclient wallet import --name $WALLETFILE --password $PASSWORD --private $PRIVATEKEY
-```
-lock wallet
-```
-$./ecoclient wallet lock --name $WALLETFILE --password $PASSWORD
-```
-unlock wallet
-```
-$./ecoclient wallet unlock --name $WALLETFILE --password $PASSWORD
+$./ecoclient wallet createaccount --account $ACCOUNTNAME --password $PASSWORD
 ```
 list account
 ```
-$./ecoclient wallet list --name $WALLETFILE --password $PASSWORD
+$./ecoclient wallet list --password $PASSWORD
 ```
 transfer aba  to another person
 ```

@@ -12,6 +12,7 @@ import (
 	//"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	"io/ioutil"
 	"os"
+	"bytes"
 )
 
 type ErasureDagReader struct {
@@ -45,32 +46,50 @@ func ErasureRecoverFile(dag  ipld.DAGService, nd *mdag.ProtoNode, fpath string) 
 		err := errors.New("unErasured node")
 		return err
 	}
+	//dataStat, err := nd.Stat()
+	//if err != nil {
+	//	return err
+	//}
 
+	//dataSize := dataStat.CumulativeSize
+	fsNode, err := ft.FSNodeFromBytes(nd.Data())
+	if err != nil {
+		return err
+	}
+	fileSize := fsNode.FileSize()
+
+	//erasure node
 	eraLode, err := dag.Get(ctx, eraLink.Cid)
 	if err != nil {
 		return err
 	}
-
 	eraNd := eraLode.(*mdag.ProtoNode)
 	fsEraNode, err := ft.FSNodeFromBytes(eraNd.Data())
 	if err != nil {
 		return err
 	}
-	stat, err := eraLode.Stat()
+	//stat, err := eraLode.Stat()
+	//if err != nil {
+	//	return err
+	//}
+
+	eraFileSize := fsEraNode.FileSize()
+	shards := eraFileSize/uint64(DefaultPieceSize)
+	dataPieces := shards/2
+	parityPieces := dataPieces
+
+	ec, err := NewRSCode(int(dataPieces), int(parityPieces))
+	if err != nil {
+		return err
+	}
+	data := new(bytes.Buffer)
+	eraDagr := NewErasureFileReader(ctx, eraNd, fsEraNode, dag, ec)
+	err = eraDagr.ErasureWriteTo(data, int(fileSize))
 	if err != nil {
 		return err
 	}
 
-	dataSize := stat.DataSize
-	data := make([]byte, 0, dataSize)
-
-	eraDagr := NewErasureFileReader(ctx, eraNd, fsEraNode, dag)
-	err = eraDagr.ErasureWriteTo(data)
-	if err != nil {
-		return err
-	}
-
-	err = ioutil.WriteFile(fpath, data, os.ModePerm)
+	err = ioutil.WriteFile(fpath, data.Bytes(), os.ModePerm)
 	return  err
 }
 
