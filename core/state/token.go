@@ -7,7 +7,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 )
 
-const abaTotal = 10000
+const abaTotal = 100000
 
 type Token struct {
 	Name    string   `json:"index"`

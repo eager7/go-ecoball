@@ -46,6 +46,7 @@ func (l *soloActor) Receive(ctx actor.Context) {
 	case *actor.Started:
 	case *actor.Stop:
 		l.pid.Stop()
+		l.solo.stop = true
 	case *actor.Restarting:
 
 	default:

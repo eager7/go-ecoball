@@ -26,7 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
-var log = elog.NewLogger("state", elog.WarnLog)
+var log = elog.NewLogger("state", elog.DebugLog)
 var IndexAbaRoot = common.NameToIndex("root")
 var AbaToken = "ABA"
 

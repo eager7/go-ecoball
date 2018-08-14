@@ -4,19 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/event"
 	"math/big"
 )
 
-var blockCpu = "block_cpu"
-var blockNet = "block_net"
 var cpuAmount = "cpu_amount"
 var netAmount = "net_amount"
 var prodsList = "prods_list"
 var votingAmount = "voting_amount"
 
 const VotesLimit = 200
-
 
 //var BlockCpu = BlockCpuLimit
 //var BlockNet = BlockNetLimit
@@ -306,6 +305,9 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	}
 	if votingSum+acc.Resource.Votes.Staked > abaTotal*0.15 {
 		log.Warn("Start Process ##################################################################################")
+		if config.ConsensusAlgorithm != "SOLO" {
+			event.Send(event.ActorConsensus, event.ActorConsensus, nil)
+		}
 	}
 	return s.CommitAccount(acc)
 }
@@ -397,13 +399,40 @@ func (s *State) CommitProducersList() error {
 /**
  *  @brief require the voting information
  */
-func (s *State) RequireVotingInfo() {
+func (s *State) RequireVotingInfo() bool {
 	log.Debug(s.Producers)
 	votingSum, err := s.GetParam(votingAmount)
 	if err != nil {
 		log.Error(err)
+		return false
 	}
-	log.Debug("votingSum", votingSum, "Percentage", float32(votingSum)/float32(abaTotal), "%")
+	log.Debug("abaTotal", abaTotal, "votingSum", votingSum, "Percentage", 100*float32(votingSum)/float32(abaTotal), "%")
+	if float32(votingSum)/float32(abaTotal) >= 0.15 {
+		return true
+	}
+	return false
+}
+
+func (s *State) GetProducerList() ([]common.AccountName, error) {
+	if !s.RequireVotingInfo() {
+		return nil, errors.New(log, "the main network has not been started")
+	}
+	if len(s.Producers) == 0 {
+		data, err := s.trie.TryGet([]byte(prodsList))
+		if err != nil {
+			return nil, errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
+		}
+		if len(data) != 0 {
+			if err := json.Unmarshal(data, &s.Producers); err != nil {
+				return nil, errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
+			}
+		}
+	}
+	var list []common.AccountName
+	for k := range s.Producers {
+		list = append(list, k)
+	}
+	return list, nil
 }
 
 /**
@@ -477,7 +506,7 @@ func (a *Account) updateResource(cpuStakedSum, netStakedSum uint64, cpuLimit, ne
 	a.Net.Available = a.Net.Limit - a.Net.Used
 }
 func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64, timeStamp int64, cpuLimit, netLimit float64) error {
-	t := (timeStamp-a.TimeStamp) / (1000 * 1000)
+	t := (timeStamp - a.TimeStamp) / (1000 * 1000)
 	interval := 100.0 * float64(t) / (24.0 * 60.0 * 60.0 * 1000)
 	if interval >= 100 {
 		a.Cpu.Used = 0
