@@ -38,6 +38,7 @@ import (
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
 
 type ChainTx struct {
+	BlockMap       map[common.Hash]uint64
 	BlockStore     store.Storage
 	HeaderStore    store.Storage
 	TxsStore       store.Storage
@@ -46,12 +47,12 @@ type ChainTx struct {
 	CurrentHeader *types.Header
 	Geneses       *types.Header
 	StateDB       *state.State
-	TempStateDB   *state.State	//txPool used
+	TempStateDB   *state.State //txPool used
 	ledger        ledger.Ledger
 }
 
 func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {
-	c = &ChainTx{ledger: ledger}
+	c = &ChainTx{ledger: ledger, BlockMap: make(map[common.Hash]uint64, 1)}
 	c.BlockStore, err = store.NewLevelDBStore(path+config.StringBlock, 0, 0)
 	if err != nil {
 		return nil, err
@@ -141,6 +142,11 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if block == nil {
 		return errors.New(log, "block is nil")
 	}
+	//check block is existed
+	if _, ok := c.BlockMap[block.Hash]; ok {
+		log.Warn("the block:", block.Height, "is existed")
+		return nil
+	}
 
 	for i := 0; i < len(block.Transactions); i++ {
 		if _, _, _, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
@@ -163,6 +169,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return err
 	}
 	if c.StateDB.GetHashRoot().HexString() != block.StateHash.HexString() {
+		log.Warn(block.JsonString(true))
 		return errors.New(log, fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.GetHashRoot().HexString(), block.Hash.HexString()))
 	}
 
@@ -183,6 +190,8 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	log.Debug("state hash:", c.StateDB.GetHashRoot().HexString())
 	log.Notice(block.JsonString(true))
 	c.CurrentHeader = block.Header
+	c.BlockMap[block.Hash] = block.Height
+
 	return nil
 }
 
@@ -320,6 +329,7 @@ func (c *ChainTx) RestoreCurrentHeader() (bool, error) {
 		if err := header.Deserialize([]byte(v)); err != nil {
 			return false, err
 		}
+		c.BlockMap[header.Hash] = header.Height
 		if header.Height == 1 {
 			c.Geneses = header //Store Geneses for timeStamp
 		}
