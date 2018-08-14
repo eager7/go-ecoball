@@ -56,7 +56,7 @@ const(
 var log = elog.NewLogger("ABABFT", elog.NoticeLog)
 
 // to run the go test, please set TestTag to True
-const TestTag = true
+const TestTag = false
 
 const threshold_round = 60
 
@@ -109,7 +109,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 	// deal with the message
 	switch msg := ctx.Message().(type) {
-	case ABABFTStart:
+	case message.ABABFTStart:
 		actor_c.status = 2
 		// initialization
 		// clear and initialize the signature preblock array
@@ -433,7 +433,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				timeoutmsg.Toutmsg.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 				event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
 				// start/enter the next turn
-				event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
 			}
 		} else {
 			return
@@ -628,7 +628,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// end test
 
 			// start/enter the next turn
-			event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
 			// todo
 			// the above needed to be checked
 			// here, enter the next term and broadcast the preblock signature with the increased round number has the same effect as the changeview/ nextround message
@@ -738,7 +738,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 				fmt.Println("save the generated block", block_second.Height)
 				// start/enter the next turn
-				event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
 				return
 			} else {
 				// 1. did not receive enough signatures of first-round block from peers in the assigned time interval
@@ -758,7 +758,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				timeoutmsg.Toutmsg.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 				event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
 				// 3. start/enter the next turn
-				event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
 			}
 		}
 
@@ -862,7 +862,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 					fmt.Println("Block_SecondRound,current_round_num:",current_round_num)
 					// start/enter the next turn
-					event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+					event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
 					// 5. broadcast the received second-round block, which has been checked valid
 					// to let other peer know this block
 					block_secondround.Blocksecond = blocksecond_received
@@ -889,7 +889,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			timeoutmsg.Toutmsg.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 			event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
 			// start/enter the next turn
-			event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
 			return
 		}
 
@@ -1095,7 +1095,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			}
 
 			// start/enter the next turn
-			event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
 
 			// for test 2018.08.07
 			if TestTag == true {
@@ -1187,7 +1187,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						// start/enter the next turn
 						actor_c.status = 8
 						primary_tag = 0
-						event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+						event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
 						// fmt.Println("reset according to the timeout msg:",i,max_r,current_round_num,count_r[i])
 						break
 					}

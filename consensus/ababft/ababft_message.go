@@ -18,7 +18,6 @@
 // Author: Xu Wang, 2018.07.16
 
 package ababft
-type ABABFTStart struct{}
 type PreBlockTimeout struct{}
 type TxTimeout struct{}
 type SignTxTimeout struct{}
