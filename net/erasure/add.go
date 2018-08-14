@@ -84,10 +84,10 @@ func AddFileWithErasure(ds ipld.DAGService, node ipld.Node, file files.File) err
 
 	var dataPieces int
 	size := len(b)
-	if size%1024 == 0 {
-		dataPieces = int(size/1024)
+	if size%int(DefaultPieceSize) == 0 {
+		dataPieces = int(size/int(DefaultPieceSize))
 	} else {
-		dataPieces = int(size/1024 + 1)
+		dataPieces = int(size/int(DefaultPieceSize) + 1)
 	}
 	parityPieces := dataPieces
 	erCoder, err := NewRSCode(dataPieces, parityPieces)
@@ -101,7 +101,7 @@ func AddFileWithErasure(ds ipld.DAGService, node ipld.Node, file files.File) err
 		return err
 	}
 
-	p := make([]byte, (dataPieces + parityPieces) * 1024)
+	p := make([]byte, (dataPieces + parityPieces) * int(DefaultPieceSize))
 	//var parity [parityPieces][1024]byte
 	//parity := make([][]byte, 1024)
 	//copy(parity, shards[dataPieces:])

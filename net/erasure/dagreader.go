@@ -43,12 +43,15 @@ type EraSureDagReader struct {
 
 	// context cancel for children
 	cancel func()
+
+	ec ErasureCoder
 }
 
 //var _ DagReader = (*EraSureDagReader)(nil)
 
 // NewPBFileReader constructs a new PBFileReader.
-func NewErasureFileReader(ctx context.Context, n *mdag.ProtoNode, file *ft.FSNode, serv ipld.NodeGetter) *EraSureDagReader {
+func NewErasureFileReader(ctx context.Context, n *mdag.ProtoNode, file *ft.FSNode,
+	serv ipld.NodeGetter, ec ErasureCoder) *EraSureDagReader {
 	fctx, cancel := context.WithCancel(ctx)
 	curLinks := getLinkCidsExcludeEra(n)
 	return &EraSureDagReader{
@@ -59,6 +62,7 @@ func NewErasureFileReader(ctx context.Context, n *mdag.ProtoNode, file *ft.FSNod
 		ctx:      fctx,
 		cancel:   cancel,
 		file:     file,
+		ec: ec,
 	}
 }
 
@@ -357,7 +361,44 @@ func (dr *EraSureDagReader) Seek(offset int64, whence int) (int64, error) {
 }
 
 
-func (dr *EraSureDagReader) ErasureWriteTo([]byte)  error {
+func (dr *EraSureDagReader) ErasureWriteTo(b io.Writer, n int)  error {
+	//TODO
+	var zeroData [1024]byte
+	pieces := dr.ec.NumPieces()
+	//dataPieces := dr.ec.MinPieces()
+	//var datas [pieces][1024]byte
+	datas := make([][]byte,pieces * 1024)
+	i := 0
+	total := 0
+	for {
+		// Attempt to fill bytes from cached buffer
+		//n, err := io.ReadFull(dr.buf, b[total:])
+		n, err := io.ReadFull(dr.buf, datas[i][:])
+		total += n
+		dr.offset += int64(n)
+		switch err {
+		// io.EOF will happen is dr.buf had noting more to read (n == 0)
+		case io.EOF, io.ErrUnexpectedEOF:
+			// do nothing
+		case nil:
+			return  nil
+		default:
+			return  err
+		}
+
+		// if we are not done with the output buffer load next block
+		err = dr.precalcNextBuf(dr.ctx)
+		if err != nil {
+			//return total, err
+			dr.buf = uio.NewBufDagReader(zeroData[:])
+		}
+		i++
+	}
+	//buf := new(bytes.Buffer)
+	err := dr.ec.Recover(datas, uint64(n), b)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
