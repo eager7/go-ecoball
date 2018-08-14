@@ -39,13 +39,41 @@ create wallet file
 ```
 $./ecoclient wallet create --name $WALLETFILE --password $PASSWORD
 ```
+open wallet file
+```
+$./ecoclient wallet open --name $WALLETFILE --password $PASSWORD
+```
+create keys to wallet
+```
+$./ecoclient wallet createkey --name $WALLETFILE --password $PASSWORD
+```
+import privatekey to wallet
+```
+$./ecoclient wallet import --name $WALLETFILE --password $PASSWORD --private $PRIVATEKEY
+```
+remove keys from wallet
+```
+$./ecoclient wallet remove --name $WALLETFILE --password $PASSWORD --public $PUBLICKEY
+```
+lock wallet
+```
+$./ecoclient wallet lock --name $WALLETFILE --password $PASSWORD
+```
+unlock wallet
+```
+$./ecoclient wallet unlock --name $WALLETFILE --password $PASSWORD
+```
+list wallets
+```
+$./ecoclient wallet list
+```
+list keys
+```
+$./ecoclient wallet list_keys --name $WALLETFILE --password $PASSWORD
+```
 create account
 ```
 $./ecoclient wallet createaccount --account $ACCOUNTNAME --password $PASSWORD
-```
-list account
-```
-$./ecoclient wallet list --password $PASSWORD
 ```
 transfer aba  to another person
 ```
@@ -71,7 +99,7 @@ $ ./ecoclient contract invoke -n $CONTRACTNAME -m $METHORD -p $PARA1 $PARA2 $PAR
 
 ecoclient console
 ```
-$ ./ecoclient $COMMAND
+$ ./ecoclient --console
 ecoclient: \> $COMMAND
 ...
 ```
