@@ -5,6 +5,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 )
 
 var Owner = "owner"
@@ -123,12 +124,21 @@ func (s *State) AddPermission(index common.AccountName, perm Permission) error {
  *  @param name - the permission names
  *  @param signatures - the signatures list
  */
-func (s *State) CheckPermission(index common.AccountName, name string, signatures []common.Signature) error {
+func (s *State) CheckPermission(index common.AccountName, name string, hash common.Hash, signatures []common.Signature) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
 	}
-	return acc.CheckPermission(s, name, signatures)
+	var sigs []common.Signature
+	for _, v := range signatures {
+		result, err := secp256k1.Verify(hash.Bytes(), v.SigData, v.PubKey)
+		if err == nil && result == true {
+			sigs = append(sigs, v)
+		} else {
+			log.Warn("verify signature failed:", err, result)
+		}
+	}
+	return acc.CheckPermission(s, name, sigs)
 }
 
 /**

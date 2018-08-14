@@ -144,8 +144,8 @@ func (l *LedgerImpl) AddPermission(index common.AccountName, perm state.Permissi
 func (l *LedgerImpl) FindPermission(index common.AccountName, name string) (string, error) {
 	return l.ChainTx.StateDB.FindPermission(index, name)
 }
-func (l *LedgerImpl) CheckPermission(index common.AccountName, name string, sig []common.Signature) error {
-	return l.ChainTx.StateDB.CheckPermission(index, name, sig)
+func (l *LedgerImpl) CheckPermission(index common.AccountName, name string, hash common.Hash, sig []common.Signature) error {
+	return l.ChainTx.StateDB.CheckPermission(index, name, hash, sig)
 }
 func (l *LedgerImpl) RequireResources(index common.AccountName, timeStamp int64) (float64, float64, error) {
 	return l.ChainTx.StateDB.RequireResources(index, l.ChainTx.CurrentHeader.Receipt.BlockCpu, l.ChainTx.CurrentHeader.Receipt.BlockNet, timeStamp)

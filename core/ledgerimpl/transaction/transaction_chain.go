@@ -353,13 +353,13 @@ func (c *ChainTx) GetTransaction(key []byte) (*types.Transaction, error) {
 *  @param  tx - a transaction
  */
 func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
-	result, err := tx.VerifySignature()
-	if err != nil {
-		return err
-	} else if result == false {
-		return errors.New(log, "tx verify signature failed")
-	}
-	if err := c.StateDB.CheckPermission(tx.From, tx.Permission, tx.Signatures); err != nil {
+	//result, err := tx.VerifySignature()
+	//if err != nil {
+	//	return err
+	//} else if result == false {
+	//	return errors.New(log, "tx verify signature failed")
+	//}
+	if err := c.StateDB.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
 		return err
 	}
 
@@ -388,8 +388,8 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 
 	return nil
 }
-func (c *ChainTx) CheckPermission(index common.AccountName, name string, sig []common.Signature) error {
-	return c.StateDB.CheckPermission(index, name, sig)
+func (c *ChainTx) CheckPermission(index common.AccountName, name string, hash common.Hash, sig []common.Signature) error {
+	return c.StateDB.CheckPermission(index, name, hash, sig)
 }
 
 /**
@@ -470,7 +470,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 			return nil, 0, 0, err
 		}
 	case types.TxDeploy:
-		if err := s.CheckPermission(tx.From, state.Active, tx.Signatures); err != nil {
+		if err := s.CheckPermission(tx.From, state.Active, tx.Hash, tx.Signatures); err != nil {
 			return nil, 0, 0, err
 		}
 		payload, ok := tx.Payload.GetObject().(types.DeployInfo)

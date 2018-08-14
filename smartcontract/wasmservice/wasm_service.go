@@ -214,7 +214,7 @@ func (ws *WasmService) AddPermission(user, perm uint64) int32 {
 }
 func (ws *WasmService) RequirePermission(perm string) int32 {
 	//log.Debug("RequirePermission:", perm)
-	if err := ws.state.CheckPermission(ws.tx.Addr, perm, ws.tx.Signatures); err != nil {
+	if err := ws.state.CheckPermission(ws.tx.Addr, perm, ws.tx.Hash, ws.tx.Signatures); err != nil {
 		log.Error(err)
 		return -1
 	}

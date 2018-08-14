@@ -24,7 +24,7 @@ type Ledger interface {
 	AccountGet(index common.AccountName) (*state.Account, error)
 	AddPermission(index common.AccountName, perm state.Permission) error
 	FindPermission(index common.AccountName, name string) (string, error)
-	CheckPermission(index common.AccountName, name string, sig []common.Signature) error
+	CheckPermission(index common.AccountName, name string, hash common.Hash, sig []common.Signature) error
 	RequireResources(index common.AccountName, timeStamp int64) (float64, float64, error)
 	GetProducerList() ([]common.AccountName, error)
 	AccountGetBalance(index common.AccountName, token string) (uint64, error)
