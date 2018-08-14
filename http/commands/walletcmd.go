@@ -205,3 +205,17 @@ func ListKeys(params []interface{}) *common.Response {
 		return common.NewResponse(common.INVALID_PARAMS, nil)
 	}
 }
+
+func ListWallets(params []interface{}) *common.Response {
+	wallets, err := wallet.List_wallets()
+	if err != nil {
+			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
+	}
+	var walletsList string
+	for _, k := range wallets {
+		walletsList += k;
+		walletsList += "\n"
+	}
+	walletsList = strings.TrimSuffix(walletsList, "\n")
+	return common.NewResponse(common.SUCCESS, walletsList)
+}

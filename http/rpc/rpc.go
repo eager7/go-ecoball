@@ -153,7 +153,8 @@ func StartRPCServer() {
 	//httpServer.AddHandleFunc("wallet_createAccount", commands.Wallet_CreateAccount)
 	httpServer.AddHandleFunc("importKey", commands.ImportKey)
 	httpServer.AddHandleFunc("removeKey", commands.RemoveKey)
-	httpServer.AddHandleFunc("listAccount", commands.ListKeys)
+	httpServer.AddHandleFunc("list_keys", commands.ListKeys)
+	httpServer.AddHandleFunc("list_wallets", commands.ListWallets)
 
 	//listen port
 	err := http.ListenAndServe(":"+config.HttpLocalPort, nil)
