@@ -25,6 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"sort"
 	"bytes"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 // in this version, the peers take turns to generate the block
@@ -38,6 +39,9 @@ const (
 	Primary             State_ababft = 0x01
 	Backup              State_ababft = 0x02
 )
+
+var selfaccountname common.AccountName
+
 type Service_ababft struct {
 	Actor *Actor_ababft // save the actor object
 	pid   *actor.PID
@@ -48,6 +52,11 @@ type Service_ababft struct {
 type Peer_info struct {
 	PublicKey  []byte
 	Index      int
+}
+
+type Peer_info_account struct {
+	Accountname common.AccountName
+	Index       int
 }
 
 func Service_ababft_gen(l ledger.Ledger, account *account.Account) (service_ababft *Service_ababft, err error) {
@@ -70,6 +79,8 @@ func Service_ababft_gen(l ledger.Ledger, account *account.Account) (service_abab
 
 	current_ledger = l
 	primary_tag = 0
+
+	selfaccountname = common.NameToIndex("worker1")
 
 	return service_ababft, err
 }

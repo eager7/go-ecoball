@@ -34,6 +34,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/account"
 	"encoding/binary"
+	"sort"
 )
 type Actor_ababft struct {
 	status uint // 1: actor generated,
@@ -62,6 +63,7 @@ const threshold_round = 60
 
 var Num_peers int
 var Peers_list []Peer_info // Peer information for consensus
+var Peers_list_account []Peer_info_account // Peer information for consensus
 var Self_index int // the index of this peer in the peers list
 var current_round_num int // current round number
 var current_height_num int // current height, according to the blocks saved in the local ledger
@@ -113,6 +115,35 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		actor_c.status = 2
 		// initialization
 		// clear and initialize the signature preblock array
+
+		// update the peers list by accountname
+		newPeers,err := current_ledger.GetProducerList()
+		if err != nil {
+			log.Debug("fail to get peer list.")
+		}
+		Num_peers = len(newPeers)
+		var Peers_list_account_t []string
+
+		for i := 0; i < Num_peers; i++ {
+			Peers_list_account_t = append(Peers_list_account_t,common.IndexToName(newPeers[i]))
+		}
+		// sort newPeers
+		sort.Strings(Peers_list_account_t)
+
+		for i := 0; i < Num_peers; i++ {
+			Peers_list_account[i].Accountname = common.NameToIndex(Peers_list_account_t[i])
+			Peers_list[i].Index = i + 1
+			if uint64(selfaccountname) == uint64(Peers_list_account[i].Accountname) {
+				Self_index = i + 1
+			}
+		}
+
+		// todo
+		// change public key to account name
+
+
+
+
 
 		signature_preblock_list = make([][]byte, len(Peers_list))
 		signature_BlkF_list = make([][]byte, len(Peers_list))

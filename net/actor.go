@@ -61,6 +61,7 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		this.gossiper.AddPushMsg(netMsg)
 		//TODO pubsub
 		//this.node.pubSub.Publish("transaction", buffer)
+	/*
 	case *types.Block:
 		msgType = message.APP_MSG_BLK
 		buffer, _ = msg.(*types.Block).Serialize()
@@ -68,6 +69,7 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		log.Debug("p2p push new block")
 		//this.node.broadCastCh <- netMsg
 		this.gossiper.AddPushMsg(netMsg)
+	*/
 	case *types.BlkReqMsg:
 		msgType = message.APP_MSG_GOSSIP_PULL_BLK_REQ
 		buffer, _ = msg.(*types.BlkReqMsg).Serialize()
@@ -119,10 +121,12 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		buffer, _ = msg.(*ababft.Signature_BlkF).Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-	case ababft.Block_SecondRound:
+	//case ababft.Block_SecondRound:
+	case *types.Block:
 		// broadcast the first round block
 		msgType = message.APP_MSG_BLKS
-		buffer, _ = msg.(*ababft.Block_SecondRound).Blocksecond.Serialize()
+		// buffer, _ = msg.(*ababft.Block_SecondRound).Blocksecond.Serialize()
+		buffer, _ = msg.(*types.Block).Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
 	case ababft.Block_Syn:
