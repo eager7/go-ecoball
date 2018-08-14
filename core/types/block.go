@@ -177,11 +177,15 @@ func (b *Block) Show(format bool) {
 }
 
 func (b *Block) JsonString(format bool) string {
-	if format {
-		data, _ := json.MarshalIndent(b, "", "    ")
+	if !format {
+		data, _ := json.Marshal(b)
 		return string(data)
 	}else {
-		data, _ := json.Marshal(b)
+		data := b.Header.JsonString()
+		data += fmt.Sprintf("{CountTxs:%s}", b.CountTxs)
+		for _, v := range b.Transactions {
+			data += v.JsonString()
+		}
 		return string(data)
 	}
 }

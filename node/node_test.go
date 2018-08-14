@@ -87,7 +87,6 @@ func TestRunNode(t *testing.T) {
 	net.StartNetWork(ledger)
 	//start explorer
 	go spectator.Bystander(ledger)
-	go votingProducer()
 	wait()
 }
 

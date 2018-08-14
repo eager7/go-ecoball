@@ -181,7 +181,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	c.StateDB.CommitToDB()
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
 	log.Debug("state hash:", c.StateDB.GetHashRoot().HexString())
-	log.Notice(block.JsonString(false))
+	log.Notice(block.JsonString(true))
 	c.CurrentHeader = block.Header
 	return nil
 }

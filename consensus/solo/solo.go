@@ -74,7 +74,7 @@ func (s *Solo) Start() error {
 				if err := block.SetSignature(&config.Root); err != nil {
 					log.Fatal(err)
 				}
-				if err := event.Send(event.ActorConsensus, event.ActorLedger, block); err != nil {
+				if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
 					log.Fatal(err)
 				}
 			}
