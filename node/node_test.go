@@ -65,8 +65,8 @@ func TestRunNode(t *testing.T) {
 	//start consensus
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
-		c, _ := solo.NewSoloConsensusServer(ledger)
-		c.Start()
+		//c, _ := solo.NewSoloConsensusServer(ledger)
+		//c.Start()
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":
