@@ -21,7 +21,43 @@ import (
 	"time"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/common/message"
 )
+
+func TestRunMain(t *testing.T) {
+	ledger := example.Ledger("/tmp/run_test")
+	elog.Log.Info("consensus", config.ConsensusAlgorithm)
+	//start consensus
+	switch config.ConsensusAlgorithm {
+	case "SOLO":
+		c, _ := solo.NewSoloConsensusServer(ledger)
+		c.Start()
+	case "DPOS":
+		elog.Log.Info("Start DPOS consensus")
+	case "ABABFT":
+		s, _ := ababft.Service_ababft_gen(ledger, &config.Root)
+		s.Start()
+		if ledger.StateDB().RequireVotingInfo() {
+			event.Send(event.ActorNil, event.ActorConsensus, &message.ABABFTStart{})
+		} else {
+			c, _ := solo.NewSoloConsensusServer(ledger)
+			c.Start()
+		}
+	default:
+		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
+	}
+	//start transaction pool
+	_, err := txpool.Start()
+	errors.CheckErrorPanic(err)
+	net.StartNetWork(ledger)
+
+	//start explorer
+	go spectator.Bystander(ledger)
+
+	go autoGenerateTransaction(ledger)
+	go votingProducer()
+	wait()
+}
 
 func TestRunNode(t *testing.T) {
 	ledger := example.Ledger("/tmp/run_test")
@@ -36,6 +72,12 @@ func TestRunNode(t *testing.T) {
 	case "ABABFT":
 		s, _ := ababft.Service_ababft_gen(ledger, &config.Root)
 		s.Start()
+		if ledger.StateDB().RequireVotingInfo() {
+			event.Send(event.ActorNil, event.ActorConsensus, &message.ABABFTStart{})
+		} else {
+			c, _ := solo.NewSoloConsensusServer(ledger)
+			c.Start()
+		}
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
@@ -43,11 +85,8 @@ func TestRunNode(t *testing.T) {
 	_, err := txpool.Start()
 	errors.CheckErrorPanic(err)
 	net.StartNetWork(ledger)
-
 	//start explorer
 	go spectator.Bystander(ledger)
-
-	go autoGenerateTransaction(ledger)
 	go votingProducer()
 	wait()
 }

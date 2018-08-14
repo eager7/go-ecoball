@@ -51,7 +51,7 @@ version = "1.0"              # system version
 log_dir = "/tmp/Log/"        # log file location
 output_to_terminal = "true"	 	
 log_level = 1                # debug level	
-consensus_algorithm = "SOLO" # can set as SOLO, DPOS, ababft
+consensus_algorithm = "SOLO" # can set as SOLO, DPOS, ABABFT
 time_slot = 500              # block interval time, uint ms
 
 root_privkey = "0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6"
