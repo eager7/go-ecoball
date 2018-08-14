@@ -72,7 +72,7 @@ func PresetContract(s *state.State, timeStamp int64) error {
 	if _, err := s.AddAccount(root, addr, timeStamp); err != nil {
 		return err
 	}
-	if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
+	if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(90000)); err != nil {
 		return err
 	}
 	fmt.Println("set root account's resource to [cpu:100, net:100]")
@@ -88,7 +88,7 @@ func PresetContract(s *state.State, timeStamp int64) error {
 		return err
 	}
 	fmt.Println("set root account's resource to [cpu:100, net:100]")
-	if err := s.SetResourceLimits(delegate, delegate, 100, 100, types.BlockCpuLimit, types.BlockNetLimit); err != nil {
+	if err := s.SetResourceLimits(delegate, delegate, 1000, 1000, types.BlockCpuLimit, types.BlockNetLimit); err != nil {
 		fmt.Println(err)
 		return err
 	}
