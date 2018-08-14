@@ -188,34 +188,15 @@ func (wi *WalletImpl) ListKeys() map[string]string{
 */
 func (wi *WalletImpl) CreateKey(password []byte) ([]byte, []byte, error) {
 	//create keys
-	pub, pri, err := createKey()
+	_, pri, err := createKey()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	wi.lockflag = locked
-	wi.KeyData.AccountsMap[inner.ToHex(pub)] = inner.ToHex(pri)
-	
-	//lock wallet
-	errcode := wi.Lock(password)
-	if nil != errcode {
-		wi.lockflag = unlock
+	pub, errcode := wi.ImportKey(password, inner.ToHex(pri)) 
+	if errcode != nil {
 		return nil, nil, errcode
 	}
-
-	//write data
-	if err := wi.StoreWallet(); nil != err {
-		wi.lockflag = unlock
-		return nil, nil, err
-	}
-
-	//unlock wallet
-	if err := wi.Unlock(password); nil != err {
-		wi.lockflag = unlock
-		return nil, nil, err
-	}
-
-	wi.lockflag = unlock
 	return pub, pri, nil
 }
 
@@ -269,7 +250,7 @@ func (wi *WalletImpl) ImportKey(password []byte, privateKey string) ([]byte, err
 	pub, err := getPublicKey(privateKey)
 	if err != nil {
 		wi.lockflag = unlock
-		return nil, errors.New("new account error: " + err.Error())
+		return nil, errors.New("get publickey error: " + err.Error())
 	}
 
 	//wi.KeyData.Accounts = append(wi.KeyData.Accounts, account)

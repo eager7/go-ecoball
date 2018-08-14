@@ -149,8 +149,8 @@ var (
 				},
 			},
 			{
-				Name:   "list",
-				Usage:  "list account",
+				Name:   "list_keys",
+				Usage:  "list keys",
 				Action: listAccount,
 				Flags: []cli.Flag{
 					cli.StringFlag{
@@ -161,6 +161,13 @@ var (
 						Name:  "password, p",
 						Usage: "wallet password",
 					},
+				},
+			},
+			{
+				Name:   "list",
+				Usage:  "list wallets",
+				Action: listWallets,
+				Flags: []cli.Flag{
 				},
 			},
 		},
@@ -409,7 +416,18 @@ func listAccount(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	resp, err := rpc.Call("listAccount", []interface{}{name, passwd})
+	resp, err := rpc.Call("list_keys", []interface{}{name, passwd})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return err
+	}
+
+	rpc.EchoResult(resp)
+	return nil
+}
+
+func listWallets(c *cli.Context) error {
+	resp, err := rpc.Call("list_wallets", []interface{}{})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
