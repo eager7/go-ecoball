@@ -27,8 +27,9 @@ import (
 
 var (
 	AttachCommands = cli.Command{
-		Name:  "attach",
-		Usage: "Hang different nodes",
+		Name:     "attach",
+		Usage:    "hang different nodes",
+		Category: "Attach",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "ip",
@@ -73,5 +74,4 @@ func attach(c *cli.Context) error {
 
 	//result
 	return rpc.EchoResult(resp)
-
 }

@@ -71,12 +71,8 @@ func newClientApp() *cli.App {
 		ncli.P2pCommand,
 	}
 
-	//set ExitErrHandlerFunc
-	app.ExitErrHandler = func(context *cli.Context, err error) {
-		if nil != err {
-			fmt.Println(err)
-		}
-	}
+	//set default action
+	app.Action = common.DefaultAction
 
 	sort.Sort(cli.CommandsByName(app.Commands))
 
