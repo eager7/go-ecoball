@@ -60,7 +60,6 @@ func newClientApp() *cli.App {
 		},
 	}
 
-
 	//commands
 	app.Commands = []cli.Command{
 		commands.ContractCommands,
@@ -70,6 +69,13 @@ func newClientApp() *cli.App {
 		commands.AttachCommands,
 		commands.CreateCommands,
 		ncli.P2pCommand,
+	}
+
+	//set ExitErrHandlerFunc
+	app.ExitErrHandler = func(context *cli.Context, err error) {
+		if nil != err {
+			fmt.Println(err)
+		}
 	}
 
 	sort.Sort(cli.CommandsByName(app.Commands))

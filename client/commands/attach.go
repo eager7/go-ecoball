@@ -17,8 +17,12 @@
 package commands
 
 import (
-	"github.com/urfave/cli"
+	"fmt"
+	"os"
+
 	"github.com/ecoball/go-ecoball/client/common"
+	"github.com/ecoball/go-ecoball/client/rpc"
+	"github.com/urfave/cli"
 )
 
 var (
@@ -60,5 +64,14 @@ func attach(c *cli.Context) error {
 		common.Port = port
 	}
 
-	return nil
+	//rpc call
+	resp, err := rpc.Call("attach", []interface{}{common.RpcAddress()})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return err
+	}
+
+	//result
+	return rpc.EchoResult(resp)
+
 }

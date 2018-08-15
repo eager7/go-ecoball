@@ -129,6 +129,9 @@ func StartRPCServer() {
 	//add handle
 	httpServer.AddHandleFunc("transfer", commands.Transfer)
 
+	//add attach
+	httpServer.AddHandleFunc("attach", commands.Attach)
+
 	//query
 	httpServer.AddHandleFunc("query", commands.Query)
 
