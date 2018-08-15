@@ -49,37 +49,39 @@ func NewTxPoolActor(pool *TxPool) (pid *actor.PID, err error) {
 	return
 }
 
-func (l *PoolActor) Receive(ctx actor.Context) {
+func (p *PoolActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 	case *actor.Restarting:
 	case *types.Transaction:
 		log.Info("receive tx:", msg.Hash.HexString())
-		l.handleTransaction(msg)
+		p.handleTransaction(msg)
 	case message.GetTxs:
 		log.Debug("Ledger request txs")
 		txs := types.NewTxsList()
-		txs.Copy(l.txPool.PengdingTx)
+		txs.Copy(p.txPool.PendingTx)
 		ctx.Sender().Tell(txs)
 	case *types.Block:
 		log.Debug("new block delete transactions")
-		l.handleNewBlock(msg)
+		p.handleNewBlock(msg)
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}
 }
 
 //Determine whether a transaction already exists
-func (this *PoolActor) isSameTransaction(hash common.Hash) bool {
-	if tr := this.txPool.PengdingTx.Same(hash); tr {
+func (p *PoolActor) isSameTransaction(hash common.Hash) bool {
+	if tr := p.txPool.PendingTx.Same(hash); tr {
 		return true
 	}
-
+	if p.txPool.txsCache.Contains(hash) {
+		return true
+	}
 	return false
 }
 
-func (this *PoolActor) handleTransaction(tx *types.Transaction) error {
-	if exist := this.isSameTransaction(tx.Hash); exist {
+func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
+	if exist := p.isSameTransaction(tx.Hash); exist {
 		log.Warn("transaction already in the txn pool")
 		return errors.New("transaction already in the txn pool: " + tx.Hash.HexString())
 	}
@@ -108,7 +110,7 @@ func (this *PoolActor) handleTransaction(tx *types.Transaction) error {
 	}
 
 	//Verify by adding to the transaction pool
-	this.txPool.PengdingTx.Push(tx)
+	p.txPool.PendingTx.Push(tx)
 
 	//Broadcast transactions on p2p
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
@@ -119,8 +121,8 @@ func (this *PoolActor) handleTransaction(tx *types.Transaction) error {
 	return nil
 }
 
-func (this *PoolActor) handleNewBlock(block *types.Block) {
+func (p *PoolActor) handleNewBlock(block *types.Block) {
 	for _, v := range block.Transactions {
-		this.txPool.PengdingTx.Delete(v.Hash)
+		p.txPool.PendingTx.Delete(v.Hash)
 	}
 }

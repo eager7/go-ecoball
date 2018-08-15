@@ -37,7 +37,7 @@ func TestTxPool(t *testing.T) {
 	}
 
 	txPool.Put(newTx(t))
-	txPool.PengdingTx.Show()
+	txPool.PendingTx.Show()
 
 	var pid *actor.PID
 	pid, err = event.GetActor(event.ActorTxPool)
