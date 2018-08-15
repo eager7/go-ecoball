@@ -26,6 +26,7 @@ import (
 	"sort"
 	"bytes"
 	"github.com/ecoball/go-ecoball/common"
+	"fmt"
 )
 
 // in this version, the peers take turns to generate the block
@@ -51,6 +52,11 @@ type Service_ababft struct {
 
 type Peer_info struct {
 	PublicKey  []byte
+	Index      int
+}
+
+type Peer_addr_info struct {
+	AccAdress  common.Address
 	Index      int
 }
 
@@ -81,7 +87,7 @@ func Service_ababft_gen(l ledger.Ledger, account *account.Account) (service_abab
 	primary_tag = 0
 
 	selfaccountname = common.NameToIndex("worker1")
-
+	fmt.Println("selfaccountname:",selfaccountname)
 	return service_ababft, err
 }
 

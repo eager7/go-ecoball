@@ -18,6 +18,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"os"
 	"github.com/ecoball/go-ecoball/txpool"
+	"github.com/ecoball/go-ecoball/common/message"
 )
 
 var root = common.NameToIndex("root")
@@ -97,7 +98,9 @@ func TestABABFTPros(t *testing.T) {
 	abas.Start()
 
 	// 5. test ABABFTStart in actor
-	event.Send(event.ActorConsensus,event.ActorConsensus,ABABFTStart{})
+	event.Send(event.ActorConsensus,event.ActorConsensus,message.ABABFTStart{})
+	time.Sleep(time.Second * 6)
+
 	// 5a. create a tx for the block generation later
 	// add 1000ABA to worker1 from worker2
 	transfer_t, err := types.NewTransfer(worker2, worker1, "owner", new(big.Int).SetUint64(800), 400, time.Now().Unix())
