@@ -37,7 +37,7 @@ import (
 var log = elog.NewLogger("wasm", config.LogLevel)
 
 type WasmService struct {
-	state     *state.State
+	state     state.InterfaceState
 	tx        *types.Transaction
 	Code      []byte
 	Args      []uint64
@@ -45,7 +45,7 @@ type WasmService struct {
 	timeStamp int64
 }
 
-func NewWasmService(s *state.State, tx *types.Transaction, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
+func NewWasmService(s state.InterfaceState, tx *types.Transaction, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
 	if contract == nil {
 		return nil, errors.New("contract is nil")
 	}

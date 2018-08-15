@@ -14,7 +14,7 @@ import (
 var log = elog.NewLogger("native", config.LogLevel)
 
 type NativeService struct {
-	state     *state.State
+	state     state.InterfaceState
 	owner     common.AccountName
 	method    string
 	params    []string
@@ -23,7 +23,7 @@ type NativeService struct {
 	timeStamp int64
 }
 
-func NewNativeService(s *state.State, owner common.AccountName, method string, params []string, cpuLimit, netLimit float64, timeStamp int64) (*NativeService, error) {
+func NewNativeService(s state.InterfaceState, owner common.AccountName, method string, params []string, cpuLimit, netLimit float64, timeStamp int64) (*NativeService, error) {
 	ns := &NativeService{
 		state:     s,
 		owner:     owner,
