@@ -35,6 +35,7 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/spectator"
+	"github.com/ecoball/go-ecoball/test/example"
 )
 
 var (
@@ -61,6 +62,8 @@ func runNode(c *cli.Context) error {
 	case "SOLO":
 		c, _ := solo.NewSoloConsensusServer(l)
 		c.Start()
+		go example.AutoGenerateTransaction(l)
+		go example.VotingProducer()
 	case "DPOS":
 		log.Info("Start DPOS consensus")
 
