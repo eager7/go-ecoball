@@ -1,9 +1,9 @@
 package state
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
-	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 )
@@ -26,7 +26,7 @@ type Permission struct {
 	PermName  string               `json:"perm_name"`
 	Parent    string               `json:"parent"`
 	Threshold uint32               `json:"threshold"`
-	Keys      map[string]KeyFactor `json:"keys, omitempty"`	//map[key's hex string]KeyFactor
+	Keys      map[string]KeyFactor `json:"keys, omitempty"`     //map[key's hex string]KeyFactor
 	Accounts  map[string]AccFactor `json:"accounts, omitempty"` //map[actor's string]AccFactor
 }
 
