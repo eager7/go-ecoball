@@ -842,7 +842,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 				// 3. broadcast the second-round(final) block
 				block_secondround.Blocksecond = block_second
-				event.Send(event.ActorConsensus, event.ActorP2P, block_secondround)
+				// the ledger will multicast the block_secondround after the block is saved in the DB
+				// event.Send(event.ActorConsensus, event.ActorP2P, block_secondround)
 
 				// for test 2018.07.31
 				if TestTag == true {
@@ -1006,7 +1007,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// 5. broadcast the received second-round block, which has been checked valid
 					// to let other peer know this block
 					block_secondround.Blocksecond = blocksecond_received
-					event.Send(event.ActorConsensus, event.ActorP2P, block_secondround)
+					// as the ledger will multicast the block after the block is saved in DB, so following code is not need any more
+					// event.Send(event.ActorConsensus, event.ActorP2P, block_secondround)
 					return
 				}
 			}
