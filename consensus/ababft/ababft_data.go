@@ -30,7 +30,7 @@ type Block_FirstRound struct {
 }
 
 type Block_SecondRound struct {
-	Blocksecond *types.Block
+	Blocksecond types.Block
 }
 
 type Signature_Preblock struct {

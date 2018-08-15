@@ -742,7 +742,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				// fmt.Println("block_second:",block_second.Header)
 
 				// 3. broadcast the second-round(final) block
-				block_secondround.Blocksecond = &block_second
+				block_secondround.Blocksecond = block_second
 				event.Send(event.ActorConsensus, event.ActorP2P, block_secondround)
 
 				// for test 2018.07.31
@@ -853,7 +853,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					}
 					// 1c. check the block header, except the consensus data
 					var valid_blk bool
-					valid_blk,err = actor_c.verify_header(blocksecond_received, int(data_blks_received.NumberRound), *currentheader)
+					valid_blk,err = actor_c.verify_header(&blocksecond_received, int(data_blks_received.NumberRound), *currentheader)
 					// todo
 					// can check the hash and statdb and merker root instead of the total head to speed up
 					if valid_blk==false {
@@ -876,7 +876,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// test end
 
 					// 3.save the second-round block into the ledger
-					if err = actor_c.service_ababft.ledger.SaveTxBlock(blocksecond_received); err != nil {
+					if err = actor_c.service_ababft.ledger.SaveTxBlock(&blocksecond_received); err != nil {
 						// log.Error("save block error:", err)
 						println("save block error:", err)
 						return
