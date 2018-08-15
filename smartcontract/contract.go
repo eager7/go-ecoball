@@ -31,7 +31,7 @@ type ContractService interface {
 	Execute() ([]byte, error)
 }
 
-func NewContractService(s *state.State, tx *types.Transaction, cpuLimit, netLimit float64, timeStamp int64) (ContractService, error) {
+func NewContractService(s state.InterfaceState, tx *types.Transaction, cpuLimit, netLimit float64, timeStamp int64) (ContractService, error) {
 	if s == nil || tx == nil {
 		return nil, errors.New(log, "the contract service's ledger interface or tx is nil")
 	}

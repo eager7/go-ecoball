@@ -19,18 +19,22 @@ package txpool
 import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/hashicorp/golang-lru"
 )
 
 var log = elog.NewLogger("TxPool", elog.DebugLog)
 
 type TxPool struct {
-	PengdingTx *types.TxsList //Unpackaged list of legitimate transactions
+	PendingTx *types.TxsList //UnPackaged list of legitimate transactions
+	txsCache  *lru.Cache
 }
 
 //start transaction pool
 func Start() (pool *TxPool, err error) {
+	csc, _ := lru.New(10000)
+
 	//transaction pool
-	pool = &TxPool{PengdingTx: types.NewTxsList()}
+	pool = &TxPool{PendingTx: types.NewTxsList(), txsCache: csc}
 
 	//transaction pool actor
 	if _, err = NewTxPoolActor(pool); nil != err {
@@ -41,5 +45,6 @@ func Start() (pool *TxPool, err error) {
 }
 
 func (p *TxPool) Put(tx *types.Transaction) {
-	p.PengdingTx.Push(tx)
+	p.PendingTx.Push(tx)
+	p.txsCache.Add(tx.Hash, tx.Hash)
 }
