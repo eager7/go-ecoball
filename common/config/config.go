@@ -54,9 +54,9 @@ output_to_terminal = "true"  # debug output type
 log_level = 1                # debug level	
 consensus_algorithm = "SOLO" # can set as SOLO, DPOS, ABABFT
 time_slot = 500              # block interval time, uint ms
+start_node = "true"
 root_privkey = "0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6"
 root_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c" # used to chain ID
-
 
 worker1_privkey = "0xc3e2cbed03aacc62d8f32045013364ea493f6d24e84f26bcef4edc2e9d260c0e"
 worker1_pubkey = "0x04e0c1852b110d1586bf6202abf6e519cc4161d00c3780c04cfde80fd66748cc189b6b0e2771baeb28189ec42a363461357422bf76b1e0724fc63fc97daf52769f"
@@ -93,6 +93,7 @@ var (
 	OutputToTerminal   bool
 	LogLevel           int
 	ConsensusAlgorithm string
+	StartNode			bool
 	Root               account.Account
 	Delegate           account.Account
 	Worker             account.Account
@@ -173,6 +174,7 @@ func initVariable() {
 	EcoVersion = viper.GetString("version")
 	LogDir = viper.GetString("log_dir")
 	OutputToTerminal = viper.GetBool("output_to_terminal")
+	StartNode = viper.GetBool("start_node")
 	LogLevel = viper.GetInt("log_level")
 	ConsensusAlgorithm = viper.GetString("consensus_algorithm")
 	Root = account.Account{PrivateKey: common.FromHex(viper.GetString("root_privkey")), PublicKey: common.FromHex(viper.GetString("root_pubkey")), Alg: 0}

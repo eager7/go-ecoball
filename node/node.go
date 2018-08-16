@@ -36,6 +36,8 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/spectator"
 	"github.com/ecoball/go-ecoball/test/example"
+	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message"
 )
 
 var (
@@ -73,12 +75,17 @@ func runNode(c *cli.Context) error {
 
 	case "ABABFT":
 		var acc account.Account
-		acc = config.Root
+		acc = config.Worker
 		service_consensus, _ := ababft.Service_ababft_gen(l, &acc)
 		println("build the ababft service")
 		service_consensus.Start()
 		println("start the ababft service")
-
+		if l.StateDB().RequireVotingInfo() {
+			event.Send(event.ActorNil, event.ActorConsensus, &message.ABABFTStart{})
+		} else {
+			c, _ := solo.NewSoloConsensusServer(l)
+			c.Start()
+		}
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
