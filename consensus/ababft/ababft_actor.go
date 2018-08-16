@@ -128,6 +128,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			current_round_num = 0
 			verified_height = uint64(current_height_num) - 1
 
+			log.Debug("ababft is in solo mode!")
 			if soloaccount.PrivateKey != nil {
 				// is the solo prime
 				actor_c.status = 101
