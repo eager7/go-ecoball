@@ -323,8 +323,8 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 		}
 		root.AddPermission(perm)
 		if config.ConsensusAlgorithm != "SOLO" {
-			event.Send(event.ActorNil, event.ActorConsensusSolo, &message.SoloStop{})
-			event.Send(event.ActorNil, event.ActorConsensus, &message.ABABFTStart{})
+			log.Info(event.Send(event.ActorNil, event.ActorConsensusSolo, &message.SoloStop{}))
+			log.Info(event.Send(event.ActorNil, event.ActorConsensus, &message.ABABFTStart{}))
 		}
 	}
 	return s.CommitAccount(acc)

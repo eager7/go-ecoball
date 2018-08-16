@@ -49,7 +49,7 @@ func TestRunMain(t *testing.T) {
 	go spectator.Bystander(ledger)
 
 	go example.AutoGenerateTransaction(ledger)
-	go example.VotingProducer()
+	go example.VotingProducer(ledger)
 	wait()
 }
 
