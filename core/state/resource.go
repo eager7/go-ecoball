@@ -16,7 +16,7 @@ var cpuAmount = "cpu_amount"
 var netAmount = "net_amount"
 var prodsList = "prods_list"
 var votingAmount = "voting_amount"
-
+var flag = false
 const VotesLimit = 200
 
 //var BlockCpu = BlockCpuLimit
@@ -305,7 +305,8 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	if err := s.CommitParam(votingAmount, votingSum+acc.Resource.Votes.Staked); err != nil {
 		return err
 	}
-	if votingSum+acc.Resource.Votes.Staked > abaTotal*0.15 {
+	if votingSum+acc.Resource.Votes.Staked > abaTotal*0.15 && flag == false {
+		flag = true
 		log.Warn("Start Process ##################################################################################")
 		producers, err := s.GetProducerList()
 		if err != nil {

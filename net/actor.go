@@ -57,8 +57,8 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		buffer, _ = msg.(*types.Transaction).Serialize()
 		netMsg := message.New(msgType, buffer)
 		log.Debug("new transactions")
-		//this.node.broadCastCh <- netMsg
-		this.gossiper.AddPushMsg(netMsg)
+		this.node.broadCastCh <- netMsg
+		//this.gossiper.AddPushMsg(netMsg)
 		//TODO pubsub
 		//this.node.pubSub.Publish("transaction", buffer)
 	/*

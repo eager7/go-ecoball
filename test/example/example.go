@@ -14,6 +14,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"os"
+	"github.com/ecoball/go-ecoball/common/event"
 )
 
 var log = elog.NewLogger("example", elog.InfoLog)
@@ -124,7 +125,7 @@ func AutoGenerateTransaction(ledger ledger.Ledger) {
 		}
 	}
 	for {
-		time.Sleep(time.Second * 1)
+		time.Sleep(time.Second * 5)
 		nonce := uint64(1)
 		nonce++
 		transfer, err := types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("delegate"), "active", new(big.Int).SetUint64(1), nonce, time.Now().UnixNano())
@@ -137,7 +138,7 @@ func AutoGenerateTransaction(ledger ledger.Ledger) {
 
 func VotingProducer() {
 	//set smart contract for root delegate
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 15)
 	contract, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex("root"), state.Owner, types.VmNative, "system control", nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Root))

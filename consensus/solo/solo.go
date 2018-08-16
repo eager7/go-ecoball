@@ -29,12 +29,12 @@ import (
 var log = elog.NewLogger("Solo", elog.NoticeLog)
 
 type Solo struct {
-	stop   bool
+	stop   chan struct{}
 	ledger ledger.Ledger
 }
 
 func NewSoloConsensusServer(l ledger.Ledger) (*Solo, error) {
-	solo := &Solo{ledger: l}
+	solo := &Solo{ledger: l, stop:make(chan struct{}, 1)}
 	actor := &soloActor{solo: solo}
 	NewSoloActor(actor)
 	return solo, nil
@@ -46,9 +46,6 @@ func (s *Solo) Start() error {
 
 	go func() {
 		for {
-			if s.stop {
-				return
-			}
 			t.Reset(time.Second * 3)
 			select {
 			case <-t.C:
@@ -77,6 +74,11 @@ func (s *Solo) Start() error {
 				if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
 					log.Fatal(err)
 				}
+			case <- s.stop: {
+				log.Info("Stop Solo Mode")
+				return
+			}
+
 			}
 		}
 	}()
