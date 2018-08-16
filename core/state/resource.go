@@ -450,6 +450,9 @@ func (s *State) GetProducerList() ([]common.AccountName, error) {
 	var list []common.AccountName
 	for k := range s.Producers {
 		list = append(list, k)
+		if len(list) == 21 {
+			break
+		}
 	}
 	return list, nil
 }
