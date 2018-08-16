@@ -17,7 +17,10 @@
 package common
 
 import (
+	"fmt"
 	"os"
+
+	"github.com/urfave/cli"
 )
 
 var (
@@ -34,4 +37,20 @@ func RpcAddress() string {
 func FileExisted(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil || os.IsExist(err)
+}
+
+//default action function
+func DefaultAction(c *cli.Context) error {
+	args := c.Args()
+	if args.Present() {
+		if err := cli.ShowCommandHelp(c, args.First()); nil != err {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		return nil
+	}
+
+	if err := cli.ShowSubcommandHelp(c); nil != err {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	return nil
 }

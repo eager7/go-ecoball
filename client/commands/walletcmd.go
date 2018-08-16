@@ -22,9 +22,10 @@ import (
 
 	//"github.com/ecoball/go-ecoball/account"
 	//"github.com/ecoball/go-ecoball/common"
-	"github.com/urfave/cli"
+	"github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	innerCommon "github.com/ecoball/go-ecoball/http/common"
+	"github.com/urfave/cli"
 )
 
 var (
@@ -34,6 +35,7 @@ var (
 		Category:    "Wallet",
 		Description: "wallet operate",
 		ArgsUsage:   "[args]",
+		Action:      common.DefaultAction,
 		Subcommands: []cli.Command{
 			{
 				Name:   "create",
@@ -167,8 +169,7 @@ var (
 				Name:   "list",
 				Usage:  "list wallets",
 				Action: listWallets,
-				Flags: []cli.Flag{
-				},
+				Flags:  []cli.Flag{},
 			},
 		},
 	}
