@@ -8,7 +8,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"math/big"
-	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/message"
 )
 
@@ -324,7 +323,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 		}
 		root.AddPermission(perm)
 		if config.ConsensusAlgorithm != "SOLO" {
-			event.Send(event.ActorNil, event.ActorConsensusSolo, &actor.Stop{})
+			event.Send(event.ActorNil, event.ActorConsensusSolo, &message.SoloStop{})
 			event.Send(event.ActorNil, event.ActorConsensus, &message.ABABFTStart{})
 		}
 	}
