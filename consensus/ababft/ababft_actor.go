@@ -116,6 +116,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case message.ABABFTStart:
 		actor_c.status = 2
+		log.Debug("start ababft: receive the ababftstart message")
+
 		// initialization
 		// clear and initialize the signature preblock array
 
@@ -901,6 +903,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			actor_c.status = 6
 		}
 		//
+
+
+
+
 
 
 		if primary_tag == 0 && (actor_c.status == 6 || actor_c.status == 2 || actor_c.status == 5) {
