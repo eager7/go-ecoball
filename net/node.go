@@ -239,7 +239,7 @@ func StartNetWork(ledg ledger.Ledger)  {
 	//}
 	//TODO move to config file
 	//InitIpfsConfig(path)
-	var path = "./store"
+	var path = "/tmp/store"
 
 	ipfsNode, err := ipfs.StartIpfsNode(path)
 	if err != nil {

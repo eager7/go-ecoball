@@ -74,17 +74,20 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		msgType = message.APP_MSG_GOSSIP_PULL_BLK_REQ
 		buffer, _ = msg.(*types.BlkReqMsg).Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.gossiper.AddPushPullMsg(netMsg)
+		//this.gossiper.AddPushPullMsg(netMsg)
+		this.node.broadCastCh <- netMsg
 	case *types.BlkAckMsg:
 		msgType = message.APP_MSG_GOSSIP_PULL_BLK_ACK
 		buffer, _ = msg.(*types.BlkAckMsg).Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.gossiper.AddPushPullMsg(netMsg)
+		//this.gossiper.AddPushPullMsg(netMsg)
+		this.node.broadCastCh <- netMsg
 	case *types.BlkAck2Msg:
 		msgType = message.APP_MSG_GOSSIP_PUSH_BLKS
 		buffer, _ = msg.(*types.BlkAck2Msg).Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.gossiper.AddPushPullMsg(netMsg)
+		//this.gossiper.AddPushPullMsg(netMsg)
+		this.node.broadCastCh <- netMsg
 	case *rpc.ListMyIdReq:
 		id := this.node.SelfId()
 		ctx.Sender().Request(&rpc.ListMyIdRsp{Id:id}, ctx.Self())
