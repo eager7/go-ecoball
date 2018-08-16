@@ -8,7 +8,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"math/big"
-	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/message"
 )
 
@@ -16,7 +15,7 @@ var cpuAmount = "cpu_amount"
 var netAmount = "net_amount"
 var prodsList = "prods_list"
 var votingAmount = "voting_amount"
-
+var flag = false
 const VotesLimit = 200
 
 //var BlockCpu = BlockCpuLimit
@@ -305,7 +304,8 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	if err := s.CommitParam(votingAmount, votingSum+acc.Resource.Votes.Staked); err != nil {
 		return err
 	}
-	if votingSum+acc.Resource.Votes.Staked > abaTotal*0.15 {
+	if votingSum+acc.Resource.Votes.Staked > abaTotal*0.15 && flag == false {
+		flag = true
 		log.Warn("Start Process ##################################################################################")
 		producers, err := s.GetProducerList()
 		if err != nil {
@@ -323,7 +323,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 		}
 		root.AddPermission(perm)
 		if config.ConsensusAlgorithm != "SOLO" {
-			event.Send(event.ActorNil, event.ActorConsensusSolo, &actor.Stop{})
+			event.Send(event.ActorNil, event.ActorConsensusSolo, &message.SoloStop{})
 			event.Send(event.ActorNil, event.ActorConsensus, &message.ABABFTStart{})
 		}
 	}

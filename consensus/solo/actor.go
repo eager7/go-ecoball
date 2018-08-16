@@ -21,6 +21,7 @@ import (
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message"
 )
 
 type soloActor struct {
@@ -46,9 +47,9 @@ func (l *soloActor) Receive(ctx actor.Context) {
 	case *actor.Started:
 	case *actor.Stop:
 		l.pid.Stop()
-		l.solo.stop = true
 	case *actor.Restarting:
-
+	case *message.SoloStop:
+		l.solo.stop <- struct{}{}
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}
