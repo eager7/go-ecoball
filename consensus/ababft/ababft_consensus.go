@@ -23,8 +23,6 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/account"
-	"sort"
-	"bytes"
 	"github.com/ecoball/go-ecoball/common"
 	"fmt"
 )
@@ -131,6 +129,7 @@ func (this *Service_ababft) Start() error {
 		}
 	}
 	*/
+	/*
 	Num_peers = len(Peers_list)
 	var Peers_list_t []string
 	for i := 0; i < Num_peers; i++ {
@@ -145,6 +144,7 @@ func (this *Service_ababft) Start() error {
 			Self_index = i + 1
 		}
 	}
+	*/
 	log.Debug("service start")
 	return err
 }
