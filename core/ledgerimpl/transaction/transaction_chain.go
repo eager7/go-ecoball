@@ -23,7 +23,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/common/utils"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/geneses"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
@@ -280,13 +279,9 @@ func (c *ChainTx) GenesesBlockInit() error {
 	}
 
 	hashState := c.StateDB.GetHashRoot()
-	d, err := utils.FileRead(config.FilePath)
-	if err != nil {
-		return err
-	}
-	prevHash := common.SingleHash(d)
+
 	fmt.Println(hash.HexString())
-	header, err := types.NewHeader(types.VersionHeader, 1, prevHash, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
+	header, err := types.NewHeader(types.VersionHeader, 1, config.ChainHash, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
 	if err != nil {
 		return err
 	}

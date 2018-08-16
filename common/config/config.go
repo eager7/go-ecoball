@@ -24,6 +24,7 @@ import (
 
 	"github.com/spf13/viper"
 
+	"flag"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/utils"
@@ -49,13 +50,13 @@ var configDefault = `#toml configuration for EcoBall system
 http_port = "20678"          # client http port
 version = "1.0"              # system version
 log_dir = "/tmp/Log/"        # log file location
-output_to_terminal = "true"	 	
+output_to_terminal = "true"  # debug output type	 	
 log_level = 1                # debug level	
 consensus_algorithm = "SOLO" # can set as SOLO, DPOS, ABABFT
 time_slot = 500              # block interval time, uint ms
+#root_privkey = "0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6"
+root_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c" # used to chain ID
 
-root_privkey = "0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6"
-root_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c"
 
 worker1_privkey = "0xc3e2cbed03aacc62d8f32045013364ea493f6d24e84f26bcef4edc2e9d260c0e"
 worker1_pubkey = "0x04e0c1852b110d1586bf6202abf6e519cc4161d00c3780c04cfde80fd66748cc189b6b0e2771baeb28189ec42a363461357422bf76b1e0724fc63fc97daf52769f"
@@ -84,7 +85,7 @@ peer_index = [ "1", "2" ]
 `
 
 var (
-	FilePath           string
+	ChainHash          common.Hash
 	TimeSlot           int
 	HttpLocalPort      string
 	EcoVersion         string
@@ -100,45 +101,35 @@ var (
 	Worker3            account.Account
 )
 
-type Config struct {
-	FilePath string
-}
-
-func SetConfig() error {
-	c := new(Config)
-	if err := c.CreateConfigFile(); err != nil {
+func SetConfig(filePath string) error {
+	if err := CreateConfigFile(filePath, "ecoball.toml", configDefault); err != nil {
 		return err
 	}
-	return c.InitConfig()
+	return InitConfig(filePath, "ecoball")
 }
 
-func (c *Config) CreateConfigFile() error {
-	if "" == c.FilePath {
-		c.FilePath, _ = defaultPath()
-	}
-	var dirPath string
-	var filePath string
-	if "" == path.Ext(c.FilePath) {
-		dirPath = c.FilePath
-		filePath = path.Join(c.FilePath, "ecoball.toml")
+func CreateConfigFile(filePath, fileName, config string) error {
+	var dir string
+	var file string
+	if "" == path.Ext(filePath) {
+		dir = filePath
+		file = path.Join(filePath, fileName)
 	} else {
-		dirPath = c.FilePath
-		filePath = path.Join(c.FilePath, "ecoball.toml")
-		//filePath = path.Dir(c.FilePath)
+		dir = filePath
+		file = path.Join(filePath, fileName)
 	}
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(dirPath, 0700); err != nil {
-			fmt.Println("could not create directory:", dirPath, err)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			fmt.Println("could not create directory:", dir, err)
 			return err
 		}
 	}
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		if err := ioutil.WriteFile(filePath, []byte(configDefault), 0644); err != nil {
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		if err := ioutil.WriteFile(file, []byte(config), 0644); err != nil {
 			fmt.Println("write file err:", err)
 			return err
 		}
 	}
-	FilePath = filePath
 	return nil
 }
 
@@ -146,9 +137,9 @@ func defaultPath() (string, error) {
 	return utils.DirHome()
 }
 
-func (c *Config) InitConfig() error {
-	viper.SetConfigName("ecoball")
-	viper.AddConfigPath(c.FilePath)
+func InitConfig(filePath, config string) error {
+	viper.SetConfigName(config)
+	viper.AddConfigPath(filePath)
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	} else {
@@ -159,9 +150,18 @@ func (c *Config) InitConfig() error {
 }
 
 func init() {
-	if err := SetConfig(); err != nil {
-		fmt.Println("init config failed: ", err)
-		os.Exit(-1)
+	if flag.Lookup("test.v") == nil {
+		fmt.Println("normal run")
+		if err := SetConfig("."); err != nil {
+			fmt.Println("init config failed: ", err)
+			os.Exit(-1)
+		}
+	} else {
+		fmt.Println("run under go test")
+		if err := SetConfig("/tmp/"); err != nil {
+			fmt.Println("init config failed: ", err)
+			os.Exit(-1)
+		}
 	}
 
 	initVariable()
@@ -183,4 +183,5 @@ func initVariable() {
 	Worker = account.Account{PrivateKey: common.FromHex(viper.GetString("worker_privkey")), PublicKey: common.FromHex(viper.GetString("worker_pubkey")), Alg: 0}
 	PeerList = viper.GetStringSlice(ListPeers)
 	PeerIndex = viper.GetStringSlice(IndexPeers)
+	ChainHash = common.SingleHash(common.FromHex(viper.GetString("root_pubkey")))
 }
