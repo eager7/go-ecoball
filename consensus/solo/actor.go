@@ -49,6 +49,7 @@ func (l *soloActor) Receive(ctx actor.Context) {
 		l.pid.Stop()
 	case *actor.Restarting:
 	case *message.SoloStop:
+		log.Info("Receive Solo Stop Message")
 		l.solo.stop <- struct{}{}
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
