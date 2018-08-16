@@ -79,6 +79,29 @@ func (reqsyn *REQSyn) Deserialize(data []byte) error {
 	return nil
 }
 
+type REQSynSolo struct {
+	Reqsyn pb.RequestSyn
+}
+
+func (reqsyn *REQSynSolo) Serialize() ([]byte, error) {
+	b, err := reqsyn.Reqsyn.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+func (reqsyn *REQSynSolo) Deserialize(data []byte) error {
+	if len(data) == 0 {
+		return errors.New("input data's length is zero")
+	}
+
+	if err := reqsyn.Reqsyn.Unmarshal(data); err != nil {
+		return err
+	}
+	return nil
+}
+
 type TimeoutMsg struct {
 	Toutmsg pb.ToutMsg
 }

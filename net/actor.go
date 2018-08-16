@@ -113,6 +113,13 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		buffer, _ = msg.(*ababft.REQSyn).Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
+	case ababft.REQSynSolo:
+		// broadcast the synchronization request to update the ledger
+		msgType = message.APP_MSG_REQSYNSOLO
+		buffer, _ = msg.(*ababft.REQSynSolo).Serialize()
+		netMsg := message.New(msgType, buffer)
+		this.node.broadCastCh <- netMsg
+
 	case ababft.TimeoutMsg:
 		msgType = message.APP_MSG_TIMEOUT
 		buffer, _ = msg.(*ababft.TimeoutMsg).Serialize()

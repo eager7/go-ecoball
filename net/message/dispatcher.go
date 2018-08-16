@@ -98,6 +98,17 @@ func HdReqSynMsg(data []byte) error {
 	return nil
 }
 
+func HdReqSynSoloMsg(data []byte) error {
+	reqsyn := new(ababft.REQSynSolo)
+	err := reqsyn.Deserialize(data)
+	if err != nil {
+		return err
+	}
+	log.Debug("dispatch synchronization request msg")
+	eactor.Send(0, eactor.ActorConsensus, reqsyn)
+	return nil
+}
+
 func HdToutMsg(data []byte) error {
 	toutmsg := new(ababft.TimeoutMsg)
 	err := toutmsg.Deserialize(data)
@@ -153,6 +164,7 @@ func MakeHandlers() map[uint32]HandlerFunc {
 		APP_MSG_SIGNPRE:   HdSignPreMsg,
 		APP_MSG_BLKF:      HdBlkFMsg,
 		APP_MSG_REQSYN:    HdReqSynMsg,
+		APP_MSG_REQSYNSOLO:    HdReqSynSoloMsg,
 		APP_MSG_SIGNBLKF:  HdSignBlkFMsg,
 		APP_MSG_BLKS:      HdBlkSMsg,
 		APP_MSG_BLKSYN:    HdBlkSynMsg,

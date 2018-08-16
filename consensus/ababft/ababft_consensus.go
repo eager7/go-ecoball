@@ -25,11 +25,12 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"fmt"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 // in this version, the peers take turns to generate the block
 const (
-	WAIT_RESPONSE_TIME = 6
+	WAIT_RESPONSE_TIME = 2
 )
 
 type State_ababft byte
@@ -40,6 +41,7 @@ const (
 )
 
 var selfaccountname common.AccountName
+var soloaccount account.Account
 
 type Service_ababft struct {
 	Actor *Actor_ababft // save the actor object
@@ -86,6 +88,10 @@ func Service_ababft_gen(l ledger.Ledger, account *account.Account) (service_abab
 
 	selfaccountname = common.NameToIndex("worker1")
 	fmt.Println("selfaccountname:",selfaccountname)
+
+	// cache the root account for solo mode
+	soloaccount = config.Root
+
 	return service_ababft, err
 }
 
@@ -93,6 +99,10 @@ func (this *Service_ababft) Start() error {
 	var err error
 	// start the ababft service
 	// build the peers list
+	// initialization
+	current_height_num = int(current_ledger.GetCurrentHeight())
+	verified_height = uint64(current_height_num) - 1
+
 
 	/*
 	// todo start

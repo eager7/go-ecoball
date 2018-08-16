@@ -45,6 +45,8 @@ type Actor_ababft struct {
 	// 6: as peer, wait for the new block generation, and then update the local ledger
 	// 7: as prime, the round end and enters to the next round
 	// 8: as peer, the round end and enters to the next round
+	// 101: solo prime, before main net start
+	// 102: solo peer, before main net start
 	pid *actor.PID // actor pid
 	service_ababft *Service_ababft
 }
@@ -117,6 +119,59 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 	case message.ABABFTStart:
 		actor_c.status = 2
 		log.Debug("start ababft: receive the ababftstart message")
+
+		// check the status of the main net
+		if ok:=current_ledger.StateDB().RequireVotingInfo(); ok!=true {
+			// main net has not started yet
+			currentheader = current_ledger.GetCurrentHeader()
+			current_height_num = int(currentheader.Height)
+			current_round_num = 0
+			verified_height = uint64(current_height_num) - 1
+
+			if soloaccount.PrivateKey != nil {
+				// is the solo prime
+				actor_c.status = 101
+				// generate the solo block
+				// consensus data
+				var signpre_send []common.Signature
+				conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(current_round_num),signpre_send}}
+				// tx list
+				value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Second*1)
+				if err != nil {
+					log.Error("AbaBFT Consensus tx error:", err)
+					return
+				}
+				txList, ok := value.(*types.TxsList)
+				if !ok {
+					return
+				}
+				var txs []*types.Transaction
+				for _, v := range txList.Txs {
+					txs = append(txs, v)
+				}
+				// generate the block in the form of second round block
+				var block_solo *types.Block
+				t_time := time.Now().UnixNano()
+				block_solo,err = actor_c.service_ababft.ledger.NewTxBlock(txs, conData, t_time)
+				block_solo.SetSignature(&soloaccount)
+				block_secondround.Blocksecond = *block_solo
+				// save (the ledger will broadcast the block after writing the block into the DB)
+				if err = actor_c.service_ababft.ledger.SaveTxBlock(block_solo); err != nil {
+					// log.Error("save block error:", err)
+					println("save solo block error:", err)
+					return
+				}
+				time.Sleep(time.Second * WAIT_RESPONSE_TIME)
+				// call itself again
+				event.Send(event.ActorNil,event.ActorConsensus,message.ABABFTStart{})
+			} else {
+				// is the solo peer
+				actor_c.status = 102
+			}
+			return
+		}
+
+
 
 		// initialization
 		// clear and initialize the signature preblock array
@@ -902,12 +957,47 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			primary_tag = 0
 			actor_c.status = 6
 		}
-		//
+		// test end
 
+		// check whether it is solo mode
+		if actor_c.status == 102 || actor_c.status == 101 {
+			if actor_c.status == 102 {
+				// solo peer
+				blocksecond_received := msg.Blocksecond
+				if int(blocksecond_received.Header.Height) <= current_height_num {
+					return
+				} else if int(blocksecond_received.Header.Height) == (current_height_num+1) {
+					// check and save
+					blocksecond_received := msg.Blocksecond
+					if blocksecond_received.ConsensusData.Type == types.ConABFT {
+						data_blks_received := blocksecond_received.ConsensusData.Payload.(*types.AbaBftData)
+						// check the block header(the consensus data is null)
+						var valid_blk bool
+						valid_blk,err = actor_c.verify_header(&blocksecond_received, int(data_blks_received.NumberRound), *currentheader)
+						if valid_blk==false {
+							println("header check fail")
+							return
+						}
+						// save the solo block ( in the form of second-round block)
+						if err = actor_c.service_ababft.ledger.SaveTxBlock(&blocksecond_received); err != nil {
+							println("save solo block error:", err)
+							return
+						}
+						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
+					}
+				} else {
+					// send solo syn request
+					var requestsyn REQSynSolo
+					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
+					hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num+1)))
+					requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)+1
+					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
+				}
+			}
 
-
-
-
+			return
+		}
 
 		if primary_tag == 0 && (actor_c.status == 6 || actor_c.status == 2 || actor_c.status == 5) {
 			// to verify the first round block
@@ -1042,10 +1132,6 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		}
 
 	case REQSyn:
-		// todo
-		// modifying
-
-
 		// receive the shronization request
 		height_req := msg.Reqsyn.RequestHeight // verified_height+1
 		pubkey_in := msg.Reqsyn.PubKey
@@ -1123,8 +1209,32 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			event.Send(event.ActorNil,event.ActorConsensus,blksyn_send)
 		}
 		// test end
-
-
+	case REQSynSolo:
+		// receive the solo synchronization request
+		height_req := msg.Reqsyn.RequestHeight
+		pubkey_in := msg.Reqsyn.PubKey
+		signdata_in := msg.Reqsyn.SigData
+		// check the required height
+		if height_req > uint64(current_height_num) {
+			return
+		}
+		// check the signature of the request message
+		hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(height_req)))
+		var sign_verify bool
+		sign_verify, err = secp256k1.Verify(hash_t.Bytes(), signdata_in, pubkey_in)
+		if sign_verify != true {
+			println("Solo Syn request message signature is wrong")
+			return
+		}
+		// get the response blocks from the ledger
+		blk_syn_solo,err1 := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req)
+		if err1 != nil || blk_syn_solo == nil {
+			log.Debug("not find the solo block of the corresponding height in the ledger")
+			return
+		}
+		// send the solo block
+		event.Send(event.ActorNil,event.ActorP2P,blk_syn_solo)
+		return
 	case Block_Syn:
 		// for test 2018.08.08
 		if TestTag == true {

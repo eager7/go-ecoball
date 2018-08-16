@@ -30,7 +30,7 @@ func TestRunMain(t *testing.T) {
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":
 		elog.Log.Info("enter the branch of ababft consensus", config.ConsensusAlgorithm)
-		s, _ := ababft.Service_ababft_gen(ledger, &config.Root)
+		s, _ := ababft.Service_ababft_gen(ledger, &config.Worker1)
 		s.Start()
 		if ledger.StateDB().RequireVotingInfo() {
 			elog.Log.Info("send the start message to ababft")
