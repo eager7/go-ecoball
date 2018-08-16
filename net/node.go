@@ -239,7 +239,7 @@ func StartNetWork(ledg ledger.Ledger)  {
 	//}
 	//TODO move to config file
 	//InitIpfsConfig(path)
-	var path = "./store"
+	var path = "/tmp/store"
 
 	ipfsNode, err := ipfs.StartIpfsNode(path)
 	if err != nil {
@@ -250,7 +250,7 @@ func StartNetWork(ledg ledger.Ledger)  {
 	netNode := New(context.Background(), ipfsNode, network)
 	gossiper := NewGossiper(netNode, ledg)
 	netActor := NewNetActor(netNode, gossiper)
-	gossiper.Start()
+	//gossiper.Start()
 	actorId, _ := netActor.Start()
 	netNode.SetActorPid(actorId)
 	fmt.Printf("i am %s \n", netNode.SelfId())
