@@ -4,11 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/common/event"
 	"math/big"
-	"github.com/ecoball/go-ecoball/common/message"
 )
 
 var cpuAmount = "cpu_amount"
