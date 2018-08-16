@@ -1,5 +1,5 @@
 Go-Ecoball
--------
+========
 
 ## Depends
 1. Firstly,you need install [protoc](https://github.com/google/protobuf/blob/master/src/README.md) 
@@ -35,7 +35,7 @@ ecoball.exe  ecoclient.exe
 This project used CGO, so set the CGO_ENABLED="1"
 
 ## ecoclient
-###wallet
+### wallet
 create wallet file
 ```
 $./ecoclient wallet create --name $WALLETFILE --password $PASSWORD
@@ -72,22 +72,22 @@ list keys
 ```
 $./ecoclient wallet list_keys --name $WALLETFILE --password $PASSWORD
 ```
-###account
+### account
 create account
 ```
 $./ecoclient wallet createaccount --account $ACCOUNTNAME --password $PASSWORD
 ```
-###transfer
+### transfer
 transfer aba  to another person
 ```
 $ ./ecoclient transfer  --from $ADDRESS --to $ADDRESS --value $AMOUNT
 ```
-###query
+### query
 query account balance
 ```
 $ ./ecoclient query balance --address $ADDRESS
 ```
-###contract
+### contract
 deploy contract,you will get contract address
 ```
 $ ./ecoclient contract deploy -p $CONTRACTFILE -n $CONTRACTNAME --d $DESCRIPTION
@@ -99,7 +99,7 @@ invoke contract
 ```
 $ ./ecoclient contract invoke -n $CONTRACTNAME -m $METHORD -p $PARA1 $PARA2 $PARA3 ...
 ```
-###console
+### console
 There are currently two modes, command line mode and console mode, which by default is command line mode.
 If you want to open the console mode, you need to add option --console.
 ecoclient console
@@ -113,7 +113,7 @@ If you want to quit, please use the command exit
 ecoclient: \> exit
 ```
 
-###attach
+### attach
 By default, the command line tool connects to port 20678 and to localhost.
 The default listener on node startup is port 20678,The configuration file **ecoball.toml** can change the option **http_port** to change the listening port.
 The attach command can change the IP of the connected node and the corresponding port number.
