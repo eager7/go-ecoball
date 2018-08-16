@@ -69,7 +69,7 @@ func TestRunNode(t *testing.T) {
 		s, _ := ababft.Service_ababft_gen(ledger, &config.Root)
 		s.Start()
 		if ledger.StateDB().RequireVotingInfo() {
-			event.Send(event.ActorNil, event.ActorConsensus, &message.ABABFTStart{})
+			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 		} else {
 			c, _ := solo.NewSoloConsensusServer(ledger)
 			c.Start()

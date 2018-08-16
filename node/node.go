@@ -81,7 +81,7 @@ func runNode(c *cli.Context) error {
 		service_consensus.Start()
 		println("start the ababft service")
 		if l.StateDB().RequireVotingInfo() {
-			event.Send(event.ActorNil, event.ActorConsensus, &message.ABABFTStart{})
+			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 		} else {
 			c, _ := solo.NewSoloConsensusServer(l)
 			c.Start()

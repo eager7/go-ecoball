@@ -161,6 +161,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					println("save solo block error:", err)
 					return
 				}
+				fmt.Println("ababft solo height:",block_solo.Height,block_solo)
 				time.Sleep(time.Second * WAIT_RESPONSE_TIME)
 				// call itself again
 				event.Send(event.ActorNil,event.ActorConsensus,message.ABABFTStart{})
