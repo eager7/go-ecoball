@@ -136,7 +136,10 @@ func AutoGenerateTransaction(ledger ledger.Ledger) {
 	}
 }
 
-func VotingProducer() {
+func VotingProducer(ledger ledger.Ledger) {
+	if ledger.GetCurrentHeader().Height > 2 {
+		return
+	}
 	//set smart contract for root delegate
 	time.Sleep(time.Second * 15)
 	contract, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex("root"), state.Owner, types.VmNative, "system control", nil, 0, time.Now().Unix())
