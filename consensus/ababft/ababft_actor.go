@@ -35,6 +35,7 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"encoding/binary"
 	"sort"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 type Actor_ababft struct {
 	status uint // 1: actor generated,
@@ -129,7 +130,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			verified_height = uint64(current_height_num) - 1
 
 			log.Debug("ababft is in solo mode!")
-			if soloaccount.PrivateKey != nil {
+			// if soloaccount.PrivateKey != nil {
+			if config.StartNode == true {
 				// is the solo prime
 				actor_c.status = 101
 				// generate the solo block
@@ -973,6 +975,12 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					blocksecond_received := msg.Blocksecond
 					if blocksecond_received.ConsensusData.Type == types.ConABFT {
 						data_blks_received := blocksecond_received.ConsensusData.Payload.(*types.AbaBftData)
+						// check the signature comes from the root
+						if ok := bytes.Equal(blocksecond_received.Signatures[0].PubKey,config.Root.PublicKey); ok != true {
+							println("the solo block should be signed by the root")
+							return
+						}
+
 						// check the block header(the consensus data is null)
 						var valid_blk bool
 						valid_blk,err = actor_c.verify_header(&blocksecond_received, int(data_blks_received.NumberRound), *currentheader)
