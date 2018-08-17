@@ -55,7 +55,7 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 	case *actor.Restarting:
 	case *types.Transaction:
 		log.Info("receive tx:", msg.Hash.HexString())
-		p.handleTransaction(msg)
+		go p.handleTransaction(msg)
 	case message.GetTxs:
 		log.Debug("Ledger request txs")
 		txs := types.NewTxsList()
@@ -63,7 +63,7 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 		ctx.Sender().Tell(txs)
 	case *types.Block:
 		log.Debug("new block delete transactions")
-		p.handleNewBlock(msg)
+		go p.handleNewBlock(msg)
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}

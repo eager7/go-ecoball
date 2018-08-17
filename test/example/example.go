@@ -137,11 +137,14 @@ func AutoGenerateTransaction(ledger ledger.Ledger) {
 }
 
 func VotingProducer(ledger ledger.Ledger) {
-	if ledger.GetCurrentHeader().Height > 2 {
-		return
-	}
+	//_, err := ledger.AccountGet(common.NameToIndex("worker1"))
+	//if err == nil {
+	//	log.Panic("Please Delete Block Database First, Then Restart Program")
+	//}
+
 	//set smart contract for root delegate
 	time.Sleep(time.Second * 15)
+	log.Warn("Start Voting Producer")
 	contract, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex("root"), state.Owner, types.VmNative, "system control", nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Root))
