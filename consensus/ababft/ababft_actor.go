@@ -175,8 +175,6 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			return
 		}
 
-
-
 		// initialization
 		// clear and initialize the signature preblock array
 
@@ -185,14 +183,20 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		if err != nil {
 			log.Debug("fail to get peer list.")
 		}
+		log.Debug("ababft now enter into the ababft mode:",newPeers[0],newPeers[1])
+
 		Num_peers = len(newPeers)
-		var Peers_list_account_t []string
+		var Peers_list_account_t = make([]string, Num_peers)
 		for i := 0; i < Num_peers; i++ {
-			Peers_list_account_t = append(Peers_list_account_t,common.IndexToName(newPeers[i]))
+			// Peers_list_account_t = append(Peers_list_account_t,common.IndexToName(newPeers[i]))
+			Peers_list_account_t[i] = newPeers[i].String()
 		}
+		log.Debug("ababft now enter into the ababft mode:Peers_list_account_t",Peers_list_account_t)
 		// sort newPeers
 		sort.Strings(Peers_list_account_t)
 
+		Peers_list_account = make([]Peer_info_account, Num_peers)
+		Peers_addr_list = make([]Peer_addr_info, Num_peers)
 		for i := 0; i < Num_peers; i++ {
 			Peers_list_account[i].Accountname = common.NameToIndex(Peers_list_account_t[i])
 			Peers_list_account[i].Index = i + 1
