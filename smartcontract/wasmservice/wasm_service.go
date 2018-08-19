@@ -18,7 +18,6 @@ package wasmservice
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
@@ -148,134 +147,22 @@ func importer(name string) (*wasm.Module, error) {
 	return m, nil
 }
 
+
 func (ws *WasmService) RegisterApi() {
 	functions := wasm.InitNativeFuns()
-	functions.Register("AbaLog", ws.AbaLog)
-	functions.Register("Println", ws.Println)
-	functions.Register("RequirePermission", ws.RequirePermission)
-	functions.Register("AddPermission", ws.AddPermission)
-	functions.Register("AbaAccountAdd", ws.AbaAccountAdd)
-	functions.Register("AbaStoreSet", ws.AbaStoreSet)
-	functions.Register("AbaStoreGet", ws.AbaStoreGet)
+	//console
+	functions.Register("prints", ws.prints)
+	functions.Register("prints_l", ws.prints_l)
+	functions.Register("printi", ws.printi)
+	functions.Register("printui", ws.printui)
+	functions.Register("printsf", ws.printsf)
+	functions.Register("printdf", ws.printdf)
+	//memory
+	functions.Register("strlen", ws.strlen)
+	functions.Register("strcmp", ws.strcmp)
+	functions.Register("memcpy", ws.memcpy)
+	functions.Register("memset", ws.memset)
+	//crypto
+	functions.Register("sha256", ws.sha256)
+	functions.Register("sha2512", ws.sha512)
 }
-func (ws *WasmService) Println(str string) int32 {
-	fmt.Println(str)
-	return 0
-}
-func (ws *WasmService) AbaLog(pointer uint64) int32 {
-	fmt.Println("AbaLog:---------")
-	str := common.PointerToString(pointer)
-	fmt.Printf(str)
-	return 0
-}
-
-func (ws *WasmService) AbaAccountAdd(user, addr uint64) int32 {
-	name := common.PointerToString(user)
-	//log.Debug("AbaAccountAdd:", name)
-	address := common.FormHexString(common.PointerToString(addr))
-	_, err := ws.state.AddAccount(common.NameToIndex(name), address, ws.timeStamp)
-	if err != nil {
-		log.Error(err)
-		return -1
-	}
-	return 0
-}
-func (ws *WasmService) AbaStoreSet(key, value uint64) int32 {
-	keyStr := common.PointerToString(key)
-	valueStr := common.PointerToString(value)
-	log.Debug("AbaStoreSet:", keyStr, valueStr)
-	if err := ws.state.StoreSet(common.NameToIndex("root"), []byte(keyStr), []byte(valueStr)); err != nil {
-		log.Error("AbaStoreSet error:", err)
-		return 1
-	}
-	return 0
-}
-func (ws *WasmService) AbaStoreGet(key uint64) int32 {
-	keyStr := common.PointerToString(key)
-	value, err := ws.state.StoreGet(common.NameToIndex("root"), []byte(keyStr))
-	if err != nil {
-		return 0
-	}
-	fmt.Println("AbaStoreGet:", string(value))
-	return 0
-}
-func (ws *WasmService) AddPermission(user, perm uint64) int32 {
-	name := common.PointerToString(user)
-	permission := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
-	if err := json.Unmarshal([]byte(common.PointerToString(perm)), &permission); err != nil {
-		log.Error(err)
-		return -1
-	}
-	if err := ws.state.AddPermission(common.NameToIndex(name), permission); err != nil {
-		log.Error(err)
-		return -1
-	}
-	return 0
-}
-func (ws *WasmService) RequirePermission(perm string) int32 {
-	//log.Debug("RequirePermission:", perm)
-	if err := ws.state.CheckPermission(ws.tx.Addr, perm, ws.tx.Hash, ws.tx.Signatures); err != nil {
-		log.Error(err)
-		return -1
-	}
-	return 0
-}
-
-/*
-func (ws *WasmService) AbaAccountGetBalance(indexAcc, indexToken common.AccountName) uint64 {
-	value, err := ws.ledger.AccountGetBalance(indexAcc, common.IndexToName(indexToken))
-	if err != nil {
-		return 0
-	}
-	return value
-}
-
-func (ws *WasmService) AbaAccountAddBalance(indexAcc, indexToken common.AccountName, value uint64) int32 {
-	if err := ws.ledger.AccountAddBalance(indexAcc, common.IndexToName(indexToken), value); err != nil {
-		log.Error(err)
-		return -1
-	}
-	return 0
-}
-
-func (ws *WasmService) AbaAccountSubBalance(indexAcc, indexToken common.AccountName, value uint64) int32 {
-	if err := ws.ledger.AccountSubBalance(indexAcc, common.IndexToName(indexToken), value); err != nil {
-		log.Error(err)
-		return -1
-	}
-	return 0
-}
-
-func (ws *WasmService) TokenCreate(indexAcc, indexToken common.AccountName, maximum uint64) int32 {
-	if err := ws.ledger.TokenCreate(indexAcc, common.IndexToName(indexToken), maximum); err != nil {
-		log.Error(err)
-		return -1
-	}
-	return 0
-}
-
-func (ws *WasmService) TokenIsExisted(indexToken common.AccountName) int32 {
-	ret := ws.ledger.TokenIsExisted(common.IndexToName(indexToken))
-	if ret {
-		return 1
-	} else {
-		return 0
-	}
-}
-func (ws *WasmService) AbaAdd(a int32, b int32) int32 {
-	return a + b
-}
-func (ws *WasmService) AbaLogString(str string) int32 {
-	fmt.Println(str)
-	return 0
-}
-
-func (ws *WasmService) AbaLogInt(value uint64) int32 {
-	fmt.Println("value:", value)
-	return 0
-}
-func (ws *WasmService) AbaGetCurrentHeight() uint64 {
-	return ws.ledger.GetCurrentHeight()
-}
-
-*/
