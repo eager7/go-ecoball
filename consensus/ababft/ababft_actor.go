@@ -1253,15 +1253,18 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			println("Solo Syn request message signature is wrong")
 			return
 		}
-		// get the response blocks from the ledger
-		blk_syn_solo,err1 := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req)
-		if err1 != nil || blk_syn_solo == nil {
-			log.Debug("not find the solo block of the corresponding height in the ledger")
-			return
+
+		for i := int(height_req); i <= current_height_num; i++ {
+			// get the response blocks from the ledger
+			blk_syn_solo,err1 := actor_c.service_ababft.ledger.GetTxBlockByHeight(uint64(i))
+			if err1 != nil || blk_syn_solo == nil {
+				log.Debug("not find the solo block of the corresponding height in the ledger")
+				return
+			}
+			// send the solo block
+			event.Send(event.ActorNil,event.ActorP2P,blk_syn_solo)
+			log.Info("send the required solo block:", blk_syn_solo.Height)
 		}
-		// send the solo block
-		event.Send(event.ActorNil,event.ActorP2P,blk_syn_solo)
-		log.Info("send the required solo block:", blk_syn_solo.Height)
 		return
 	case Block_Syn:
 		// for test 2018.08.08
