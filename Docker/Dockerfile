@@ -15,7 +15,7 @@ ENV GOPATH=/root/go
 ENV PATH /usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 #下载代码打包生成执行文件
-RUN git clone https://github.com/ecoball/go-ecoball.git $GOPATH/src/github.com/ecoball/go-ecoball/
+RUN git clone http://gitlab.quachain.net/ecoball/go-ecoball $GOPATH/src/github.com/ecoball/go-ecoball/
 RUN cd $GOPATH/src/github.com/ecoball/go-ecoball/ && make
 
 EXPOSE 80

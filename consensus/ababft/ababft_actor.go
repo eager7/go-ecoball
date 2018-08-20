@@ -173,6 +173,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			} else {
 				// is the solo peer
 				actor_c.status = 102
+				// todo
+				// no need every time to send a request for solo block
+				
 				// send solo syn request
 				var requestsyn REQSynSolo
 				requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
