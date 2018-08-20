@@ -137,6 +137,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				// generate the solo block
 				// consensus data
 				var signpre_send []common.Signature
+				signpre_send = append(signpre_send, currentheader.Signatures[0])
 				conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(current_round_num),signpre_send}}
 				// tx list
 				value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Second*1)
