@@ -1725,11 +1725,11 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 	return  true,err
 
 	// todo
-	// use CheckPermission(index common.AccountName, name string, sig []common.Signature) instead
+	// use checkPermission(index common.AccountName, name string, sig []common.Signature) instead
 	/*
-	// 4. check the current block signature by using function CheckPermission
+	// 4. check the current block signature by using function checkPermission
 	// 4a. check the peers permission
-	err = actor_c.service_ababft.ledger.CheckPermission(0, "active",sign_blks_curblk)
+	err = actor_c.service_ababft.ledger.checkPermission(0, "active",sign_blks_curblk)
 	if err != nil {
 		log.Debug("signature permission check fail")
 		return false,err

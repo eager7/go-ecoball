@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"sync"
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
@@ -39,6 +40,8 @@ type State struct {
 	Accounts  map[string]Account
 	Params    map[string]uint64
 	Producers map[common.AccountName]uint64
+
+	mutex sync.RWMutex
 }
 
 /**

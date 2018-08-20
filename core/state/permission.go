@@ -138,7 +138,7 @@ func (s *State) CheckPermission(index common.AccountName, name string, hash comm
 			log.Warn("verify signature failed:", err, result)
 		}
 	}
-	return acc.CheckPermission(s, name, sigs)
+	return acc.checkPermission(s, name, sigs)
 }
 
 /**
@@ -151,7 +151,7 @@ func (s *State) FindPermission(index common.AccountName, name string) (string, e
 	if err != nil {
 		return "", err
 	}
-	if str, err := acc.FindPermission(name); err != nil {
+	if str, err := acc.findPermission(name); err != nil {
 		return "", err
 	} else {
 		return "[" + str + "]", nil
@@ -172,12 +172,12 @@ func (a *Account) AddPermission(perm Permission) {
  *  @param name - the permission name
  *  @param signatures - the transaction's signatures list
  */
-func (a *Account) CheckPermission(state *State, name string, signatures []common.Signature) error {
+func (a *Account) checkPermission(state *State, name string, signatures []common.Signature) error {
 	if perm, ok := a.Permissions[name]; !ok {
 		return errors.New(log, fmt.Sprintf("can't find this permission in account:%s", name))
 	} else {
 		if "" != perm.Parent {
-			if err := a.CheckPermission(state, perm.Parent, signatures); err == nil {
+			if err := a.checkPermission(state, perm.Parent, signatures); err == nil {
 				return nil
 			}
 		}
@@ -193,7 +193,7 @@ func (a *Account) CheckPermission(state *State, name string, signatures []common
  *  @brief get the permission information by name, return json string
  *  @param name - the permission name
  */
-func (a *Account) FindPermission(name string) (str string, err error) {
+func (a *Account) findPermission(name string) (str string, err error) {
 	perm, ok := a.Permissions[name]
 	if !ok {
 		return "", errors.New(log, fmt.Sprintf("can't find this permission:%s", name))
@@ -204,7 +204,7 @@ func (a *Account) FindPermission(name string) (str string, err error) {
 	}
 	str += string(b)
 	if "" != perm.Parent {
-		if s, err := a.FindPermission(perm.Parent); err == nil {
+		if s, err := a.findPermission(perm.Parent); err == nil {
 			str += "," + s
 		}
 	}

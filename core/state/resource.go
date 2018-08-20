@@ -101,7 +101,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 		return err
 	}
 	acc.addVotes(cpuStaked + netStaked)
-	if err := s.UpdateElectedProducers(acc, acc.Votes.Staked-cpuStaked-netStaked); err != nil {
+	if err := s.updateElectedProducers(acc, acc.Votes.Staked-cpuStaked-netStaked); err != nil {
 		return err
 	}
 	return s.CommitAccount(acc)
@@ -187,13 +187,13 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 	}
 	valueOld := acc.Resource.Votes.Staked
 	acc.subVotes(cpuStaked + netStaked)
-	if err := s.UpdateElectedProducers(acc, valueOld); err != nil {
+	if err := s.updateElectedProducers(acc, valueOld); err != nil {
 		return err
 	}
 	if acc.Votes.Staked < VotesLimit {
 		delete(s.Producers, acc.Index)
 	}
-	s.CommitProducersList()
+	s.commitProducersList()
 	return s.CommitAccount(acc)
 }
 
@@ -251,12 +251,12 @@ func (s *State) RegisterProducer(index common.AccountName) error {
 	if _, ok := s.Producers[index]; ok {
 		return errors.New(log, fmt.Sprintf("the account:%s was already registed", index.String()))
 	}
-	if err := s.CheckAccountCertification(index); err != nil {
+	if err := s.checkAccountCertification(index); err != nil {
 		return nil
 	}
 	s.Producers[index] = 0
 
-	return s.CommitProducersList()
+	return s.commitProducersList()
 }
 
 /**
@@ -270,7 +270,7 @@ func (s *State) UnRegisterProducer(index common.AccountName) error {
 		delete(s.Producers, index)
 	}
 
-	return s.CommitProducersList()
+	return s.commitProducersList()
 }
 
 /**
@@ -295,7 +295,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 			return errors.New(log, fmt.Sprintf("the account:%s is not register", v.String()))
 		}
 	}
-	if err := s.ChangeElectedProducers(acc, accounts); err != nil {
+	if err := s.changeElectedProducers(acc, accounts); err != nil {
 		return err
 	}
 	if err := s.CommitParam(votingAmount, votingSum+acc.Resource.Votes.Staked); err != nil {
@@ -332,7 +332,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
  *  @param acc - account struct
  *  @param accounts - candidate node list
  */
-func (s *State) ChangeElectedProducers(acc *Account, accounts []common.AccountName) error {
+func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountName) error {
 	for k := range acc.Votes.Producers {
 		if _, ok := s.Producers[k]; ok {
 			s.Producers[k] = s.Producers[k] - acc.Votes.Producers[k]
@@ -340,7 +340,7 @@ func (s *State) ChangeElectedProducers(acc *Account, accounts []common.AccountNa
 		delete(acc.Votes.Producers, k)
 	}
 	for _, v := range accounts {
-		if err := s.CheckAccountCertification(v); err != nil {
+		if err := s.checkAccountCertification(v); err != nil {
 			return err
 		}
 		acc.Votes.Producers[v] = acc.Votes.Staked
@@ -350,7 +350,7 @@ func (s *State) ChangeElectedProducers(acc *Account, accounts []common.AccountNa
 		s.Producers[v] += acc.Votes.Staked
 	}
 
-	return s.CommitProducersList()
+	return s.commitProducersList()
 }
 
 /**
@@ -358,7 +358,7 @@ func (s *State) ChangeElectedProducers(acc *Account, accounts []common.AccountNa
  *  @param acc - account struct
  *  @param votesOld - account's votes before changed
  */
-func (s *State) UpdateElectedProducers(acc *Account, votesOld uint64) error {
+func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
 	for k := range acc.Votes.Producers {
 		acc.Votes.Producers[k] = acc.Votes.Staked
 		if _, ok := s.Producers[k]; ok {
@@ -368,14 +368,14 @@ func (s *State) UpdateElectedProducers(acc *Account, votesOld uint64) error {
 		}
 	}
 
-	return s.CommitProducersList()
+	return s.commitProducersList()
 }
 
 /**
  *  @brief check whether the account is qualified
  *  @param index - account's index
  */
-func (s *State) CheckAccountCertification(index common.AccountName) error {
+func (s *State) checkAccountCertification(index common.AccountName) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -390,7 +390,7 @@ func (s *State) CheckAccountCertification(index common.AccountName) error {
 /**
  *  @brief store the producers' list into mpt trie
  */
-func (s *State) CommitProducersList() error {
+func (s *State) commitProducersList() error {
 	if len(s.Producers) == 0 {
 		data, err := s.trie.TryGet([]byte(prodsList))
 		if err != nil {
