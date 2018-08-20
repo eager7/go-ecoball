@@ -967,12 +967,13 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			actor_c.status = 6
 		}
 		// test end
-
+		log.Info("ababbt peer status:",actor_c.status)
 		// check whether it is solo mode
 		if actor_c.status == 102 || actor_c.status == 101 {
 			if actor_c.status == 102 {
 				// solo peer
 				blocksecond_received := msg.Blocksecond
+				log.Info("ababbt solo block height vs current_height_num:",blocksecond_received.Header.Height,current_height_num)
 				if int(blocksecond_received.Header.Height) <= current_height_num {
 					return
 				} else if int(blocksecond_received.Header.Height) == (current_height_num+1) {
@@ -1008,6 +1009,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)+1
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
+					log.Info("send requirements:", requestsyn.Reqsyn.RequestHeight, current_height_num)
 				}
 			}
 
@@ -1225,6 +1227,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		}
 		// test end
 	case REQSynSolo:
+		log.Info("receive the solo block requirement:",msg.Reqsyn.RequestHeight)
 		// receive the solo synchronization request
 		height_req := msg.Reqsyn.RequestHeight
 		pubkey_in := msg.Reqsyn.PubKey
@@ -1249,6 +1252,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		}
 		// send the solo block
 		event.Send(event.ActorNil,event.ActorP2P,blk_syn_solo)
+		log.Info("send the required solo block:", blk_syn_solo.Height)
 		return
 	case Block_Syn:
 		// for test 2018.08.08
