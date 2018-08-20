@@ -172,6 +172,14 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			} else {
 				// is the solo peer
 				actor_c.status = 102
+				// send solo syn request
+				var requestsyn REQSynSolo
+				requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
+				hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num+1)))
+				requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+				requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)+1
+				event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
+				log.Info("send requirements:", requestsyn.Reqsyn.RequestHeight, current_height_num)
 			}
 			return
 		}
