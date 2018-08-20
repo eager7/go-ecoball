@@ -180,7 +180,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 				requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)+1
 				event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
-				log.Info("send requirements:", requestsyn.Reqsyn.RequestHeight, current_height_num)
+				log.Info("send solo block requirements:", requestsyn.Reqsyn.RequestHeight, current_height_num)
 			}
 			return
 		}
