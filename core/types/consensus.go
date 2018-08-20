@@ -17,6 +17,7 @@
 package types
 
 import (
+	errIn "errors"
 	"encoding/binary"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
@@ -134,8 +135,8 @@ const (
 )
 
 var (
-	ErrNotBlockForgTime = errors.New(log, "current is not time to forge block")
-	ErrFoundNilLeader   = errors.New(log, "found a nil leader")
+	ErrNotBlockForgTime = errIn.New("current is not time to forge block")
+	ErrFoundNilLeader   = errIn.New("found a nil leader")
 )
 
 /*

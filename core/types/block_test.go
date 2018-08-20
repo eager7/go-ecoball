@@ -34,7 +34,7 @@ import (
 
 func TestHeader(t *testing.T) {
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-	h, err := types.NewHeader(types.VersionHeader, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, time.Now().Unix())
+	h, err := types.NewHeader(types.VersionHeader, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, 1000, 1000, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	acc, err := account.NewAccount(0)
 	errors.CheckErrorPanic(err)
