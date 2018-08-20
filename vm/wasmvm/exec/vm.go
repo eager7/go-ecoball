@@ -67,6 +67,8 @@ type VM struct {
 	// A panic can occur either when executing an invalid VM
 	// or encountering an invalid instruction, e.g. `unreachable`.
 	RecoverPanic bool
+
+	abort bool // Flag for host functions to terminate execution
 }
 
 // As per the WebAssembly spec: https://github.com/WebAssembly/design/blob/27ac254c854994103c24834a994be16f74f54186/Semantics.md#linear-memory
@@ -320,7 +322,7 @@ func (vm *VM) ExecCode(fnIndex int64, args ...uint64) (rtrn interface{}, err err
 
 func (vm *VM) execCode(compiled compiledFunction) uint64 {
 outer:
-	for int(vm.ctx.pc) < len(vm.ctx.code) {
+	for int(vm.ctx.pc) < len(vm.ctx.code) && !vm.abort {
 		op := vm.ctx.code[vm.ctx.pc]
 		vm.ctx.pc++
 		switch op {
@@ -396,4 +398,56 @@ outer:
 		return vm.ctx.stack[len(vm.ctx.stack)-1]
 	}
 	return 0
+}
+
+// Process is a proxy passed to host functions in order to access
+// things such as memory and control.
+type Process struct {
+	vm *VM
+}
+
+// NewProcess creates a VM interface object for host functions
+func NewProcess(vm *VM) *Process {
+	return &Process{vm: vm}
+}
+
+func (proc *Process) LoadAt(off uint32)(out []byte) {
+	mem := proc.vm.Memory()
+	data := mem[off:]
+	return data
+}
+
+// ReadAt implements the ReaderAt interface: it copies into p
+// the content of memory at offset off.
+func (proc *Process) ReadAt(p []byte, off uint32, length uint32) (error) {
+	mem := proc.vm.Memory()
+	var err error
+	if len(mem) < (int)(length +off) {
+		err = errors.New("too long")
+		return err
+	}
+	copy(p, mem[off:off+length])
+
+	return  err
+}
+
+// WriteAt implements the WriterAt interface: it writes the content of p
+// into the VM memory at offset off.
+func (proc *Process) WriteAt(p []byte, off uint32, length uint32) (error) {
+	mem := proc.vm.Memory()
+
+	var err error
+	if len(mem) < (int)(length +off) {
+		err = errors.New("too long")
+		return err
+	}
+
+	copy(mem[off:], p[:length])
+
+	return err
+}
+
+// Terminate stops the execution of the current module.
+func (proc *Process) Terminate() {
+	proc.vm.abort = true
 }
