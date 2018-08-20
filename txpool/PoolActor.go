@@ -85,7 +85,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		log.Warn("transaction already in the txn pool")
 		return errors.New("transaction already in the txn pool: " + tx.Hash.HexString())
 	}
-	p.txPool.txsCache.Add(tx.Hash.Bytes(), tx.Hash.Bytes())
+	p.txPool.txsCache.Add(tx.Hash, tx.Hash)
 
 	//check transaction signatures
 	data := tx.Hash.Bytes()
