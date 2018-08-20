@@ -132,7 +132,7 @@ func HdSignBlkFMsg(data []byte) error {
 }
 
 func HdBlkSMsg(data []byte) error {
-	block_secondround := new(ababft.Block_SecondRound)
+	block_secondround := ababft.Block_SecondRound{}
 	err := block_secondround.Blocksecond.Deserialize(data)
 	if err != nil {
 		return err

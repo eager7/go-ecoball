@@ -36,6 +36,7 @@ import (
 	"encoding/binary"
 	"sort"
 	"github.com/ecoball/go-ecoball/common/config"
+	"reflect"
 )
 type Actor_ababft struct {
 	status uint // 1: actor generated,
@@ -1524,7 +1525,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 	default :
 		log.Debug(msg)
-		log.Warn("unknown message")
+		log.Warn("unknown message", reflect.TypeOf(ctx.Message()))
 		return
 	}
 }
