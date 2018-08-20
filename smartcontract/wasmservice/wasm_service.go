@@ -115,7 +115,6 @@ func (ws *WasmService) Execute() ([]byte, error) {
 	if err != nil {
 		fmt.Printf("err=%v", err)
 	}
-	fmt.Printf("res:%[1]v (%[1]T)\n", res)
 	switch fType.ReturnTypes[0] {
 	case wasm.ValueTypeI32:
 		return util.Int32ToBytes(res.(uint32)), nil
@@ -164,5 +163,5 @@ func (ws *WasmService) RegisterApi() {
 	functions.Register("memset", ws.memset)
 	//crypto
 	functions.Register("sha256", ws.sha256)
-	functions.Register("sha2512", ws.sha512)
+	functions.Register("sha512", ws.sha512)
 }

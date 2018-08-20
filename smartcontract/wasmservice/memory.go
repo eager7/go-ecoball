@@ -15,8 +15,7 @@ func (ws *WasmService) malloc(proc *exec.Process, p uint32) uint32 {
 func (ws *WasmService) strlen(proc *exec.Process, p uint32) uint32 {
 	mem := proc.LoadAt(p)
 	index := bytes.IndexByte(mem,0)
-	len := uint32(index) - p
-	return len
+	return uint32(index)
 
 }
 
@@ -24,11 +23,11 @@ func (ws *WasmService) strlen(proc *exec.Process, p uint32) uint32 {
 func (ws *WasmService) strcmp(proc *exec.Process, p1 , p2 uint32) uint32 {
 	mem1 := proc.LoadAt(p1)
 	index1 := bytes.IndexByte(mem1,0)
-	para1 := mem1[p1:index1]
+	para1 := mem1[:index1]
 
 	mem2 := proc.LoadAt(p2)
 	index2 := bytes.IndexByte(mem2,0)
-	para2 := mem2[p2:index2]
+	para2 := mem2[:index2]
 
 	ret := bytes.Equal(para1,para2)
 	if ret {
@@ -37,12 +36,13 @@ func (ws *WasmService) strcmp(proc *exec.Process, p1 , p2 uint32) uint32 {
 	return 1
 
 }
+
 // C API:void memcpy(void *dest, const void *src, uint32 n)
 func (ws *WasmService) memcpy(proc *exec.Process, p1, p2 uint32, len uint32) uint32{
 
 	mem1 := proc.LoadAt(p1)
 	mem2 := proc.LoadAt(p2)
-    copy(mem1, mem2[p2:p2+len])
+    copy(mem1, mem2[:len])
     return 0
 }
 

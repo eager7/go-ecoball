@@ -11,7 +11,7 @@ import(
 func (ws *WasmService) prints (proc *exec.Process, p uint32) uint32{
 	msg := proc.LoadAt(p)
 	index := bytes.IndexByte(msg,0)
-	msg = msg[p:index]
+	msg = msg[:index]
 	fmt.Printf("%s\n",msg)
 	return 0
 }

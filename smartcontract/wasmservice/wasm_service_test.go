@@ -1,7 +1,6 @@
 package wasmservice_test
 
 import (
-	"fmt"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"testing"
 )
@@ -16,5 +15,5 @@ func TestApi(t *testing.T) {
 		Method: "invoke",
 	}
 	ws.RegisterApi()
-	fmt.Println(ws.Execute())
+	ws.Execute()
 }
