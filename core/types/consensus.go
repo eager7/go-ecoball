@@ -37,6 +37,21 @@ const (
 	ConABFT ConType = 0x04
 )
 
+func (c ConType) String() string {
+	switch c {
+	case ConSolo:
+		return "ConSolo"
+	case ConDBFT:
+		return "ConDBFT"
+	case CondPos:
+		return "CondPos"
+	case ConABFT:
+		return "ConABFT"
+	default:
+		return "UnKnown"
+	}
+}
+
 type ConsensusPayload interface {
 	Serialize() ([]byte, error)
 	Deserialize(data []byte) error

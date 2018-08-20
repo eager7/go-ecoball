@@ -46,7 +46,7 @@ type Header struct {
 	Hash       common.Hash
 }
 
-var log = elog.NewLogger("LedgerImpl", elog.WarnLog)
+var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
 
 /**
  *  @brief create a new block header, the compute this header's hash
