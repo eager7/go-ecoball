@@ -565,6 +565,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				event.Send(event.ActorConsensus, event.ActorP2P, block_firstround)
 				// log.Debug("first round block:",block_firstround.Blockfirst)
 				// fmt.Println("first round block status root hash:",block_first.StateHash)
+				log.Info("generate the first round block and send",block_firstround.Blockfirst.Height)
 
 				// for test 2018.07.27
 				if TestTag == true {
@@ -615,7 +616,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		}
 		// end of test
 
-		log.Info("receive the first round block:",msg.Blockfirst.Header)
+		log.Info("current height and receive the first round block:",current_height_num, msg.Blockfirst.Header)
 
 		if primary_tag == 0 && (actor_c.status == 2 || actor_c.status == 5) {
 			// to verify the first round block
@@ -744,6 +745,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// send the received first-round block to other peers in case that network is not good
 					block_firstround.Blockfirst = blockfirst_received
 					event.Send(event.ActorConsensus,event.ActorP2P,block_firstround)
+					log.Info("generate the signature for first round block",block_firstround.Blockfirst.Height)
 
 					// for test 2018.07.31
 					if TestTag == true {
@@ -784,7 +786,6 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			fmt.Println("timeout test needs to be specified")
 		}
 		// end test
-
 
 		if primary_tag == 0 && (actor_c.status == 2 || actor_c.status == 5) {
 			// not receive the first round block
@@ -880,6 +881,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 	case SignTxTimeout:
 		// fmt.Println("received_signblkf_num:",received_signblkf_num)
+		log.Info("start to generate second round block",primary_tag,actor_c.status,received_signblkf_num,int(2*len(Peers_addr_list)/3+1),signature_BlkF_list)
 		if primary_tag == 1 && actor_c.status == 4 {
 			// check the number of the signatures of first-round block from peers
 			if received_signblkf_num >= int(2*len(Peers_addr_list)/3+1) {
