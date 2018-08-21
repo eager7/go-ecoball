@@ -100,7 +100,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 			net += n
 		}
 	}
-	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	return types.NewBlock(common.NameToIndex("root").Number(), c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
 }
 
 /**

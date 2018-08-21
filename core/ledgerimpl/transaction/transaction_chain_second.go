@@ -17,7 +17,7 @@ func (c *ChainTx) NewBlockWithoutHandle(ledger ledger.Ledger, txs []*types.Trans
 		cpu += tx.Receipt.Cpu
 		net += tx.Receipt.Net
 	}
-	return types.NewBlock(c.CurrentHeader, c.TempStateDB.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	return types.NewBlock(common.NameToIndex("root").Number(), c.CurrentHeader, c.TempStateDB.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
 }
 
 func (c *ChainTx) SaveBlockWithoutHandle(block *types.Block) error {
