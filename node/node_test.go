@@ -70,7 +70,7 @@ func TestRunNode(t *testing.T) {
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":
-		s, _ := ababft.Service_ababft_gen(ledger, &config.Root)
+		s, _ := ababft.Service_ababft_gen(ledger, &config.Worker1)
 		s.Start()
 		event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 		/*
