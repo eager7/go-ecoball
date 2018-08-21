@@ -123,7 +123,7 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func StartRPCServer() {
+func StartRPCServer() (err error) {
 	http.HandleFunc("/", Handle)
 
 	//add handle
@@ -160,8 +160,10 @@ func StartRPCServer() {
 	httpServer.AddHandleFunc("list_wallets", commands.ListWallets)
 
 	//listen port
-	err := http.ListenAndServe(":"+config.HttpLocalPort, nil)
+	err = http.ListenAndServe(":"+config.HttpLocalPort, nil)
 	if err != nil {
 		rpcLog.Fatal("ListenAndServe: ", err.Error())
 	}
+
+	return
 }
