@@ -175,7 +175,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				actor_c.status = 102
 				// todo
 				// no need every time to send a request for solo block
-				
+
 				// send solo syn request
 				var requestsyn REQSynSolo
 				requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
@@ -351,6 +351,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		return
 
 	case Signature_Preblock:
+		log.Info("receive the preblock signature:",msg.Signature_preblock)
 		// the prime will verify the signature for the previous block
 		round_in := int(msg.Signature_preblock.Round)
 		height_in := int(msg.Signature_preblock.Height)
@@ -614,6 +615,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		}
 		// end of test
 
+		log.Info("receive the first round block:",msg.Blockfirst.Header)
 
 		if primary_tag == 0 && (actor_c.status == 2 || actor_c.status == 5) {
 			// to verify the first round block
