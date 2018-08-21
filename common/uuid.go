@@ -36,6 +36,9 @@ func (a AccountName) String() string {
 func (a AccountName) Bytes() []byte {
 	return IndexToBytes(a)
 }
+func (a AccountName) Number() uint64 {
+	return uint64(a)
+}
 /**
  *  @brief convert a string name to uint64 type
  *  @param name - the account name string
