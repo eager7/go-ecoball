@@ -32,7 +32,6 @@ type InterfaceState interface {
 	StoreGet(index common.AccountName, key []byte) (value []byte, err error)
 	GetAccountByName(index common.AccountName) (*Account, error)
 	GetAccountByAddr(addr common.Address) (*Account, error)
-	CommitAccount(acc *Account) error
 	GetHashRoot() common.Hash
 	CommitToDB() error
 	Reset(hash common.Hash) error

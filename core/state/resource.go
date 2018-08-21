@@ -64,11 +64,11 @@ type BlockLimit struct {
  *  @param netStaked - stake delegated net
  */
 func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netStaked uint64, cpuLimit, netLimit float64) error {
-	cpuStakedSum, err := s.GetParam(cpuAmount)
+	cpuStakedSum, err := s.getParam(cpuAmount)
 	if err != nil {
 		return err
 	}
-	netStakedSum, err := s.GetParam(netAmount)
+	netStakedSum, err := s.getParam(netAmount)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 			return err
 		}
 		accTo.AddResourceLimits(false, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum, cpuLimit, netLimit)
-		if err := s.CommitAccount(accTo); err != nil {
+		if err := s.commitAccount(accTo); err != nil {
 			return err
 		}
 	}
@@ -94,17 +94,17 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 	if err := acc.SubBalance(AbaToken, value); err != nil {
 		return err
 	}
-	if err := s.CommitParam(cpuAmount, cpuStaked+cpuStakedSum); err != nil {
+	if err := s.commitParam(cpuAmount, cpuStaked+cpuStakedSum); err != nil {
 		return err
 	}
-	if err := s.CommitParam(netAmount, netStaked+netStakedSum); err != nil {
+	if err := s.commitParam(netAmount, netStaked+netStakedSum); err != nil {
 		return err
 	}
 	acc.addVotes(cpuStaked + netStaked)
 	if err := s.updateElectedProducers(acc, acc.Votes.Staked-cpuStaked-netStaked); err != nil {
 		return err
 	}
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**
@@ -114,11 +114,11 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
  *  @param net - the amount of net spend
  */
 func (s *State) SubResources(index common.AccountName, cpu, net float64, cpuLimit, netLimit float64) error {
-	cpuStakedSum, err := s.GetParam(cpuAmount)
+	cpuStakedSum, err := s.getParam(cpuAmount)
 	if err != nil {
 		return err
 	}
-	netStakedSum, err := s.GetParam(netAmount)
+	netStakedSum, err := s.getParam(netAmount)
 	if err != nil {
 		return err
 	}
@@ -126,11 +126,10 @@ func (s *State) SubResources(index common.AccountName, cpu, net float64, cpuLimi
 	if err != nil {
 		return err
 	}
-	//acc.RecoverResources(cpuStakedSum, netStakedSum)
 	if err := acc.SubResourceLimits(cpu, net, cpuStakedSum, netStakedSum, cpuLimit, netLimit); err != nil {
 		return err
 	}
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**
@@ -141,15 +140,15 @@ func (s *State) SubResources(index common.AccountName, cpu, net float64, cpuLimi
  *  @param netStaked - stake delegated net
  */
 func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked uint64, cpuLimit, netLimit float64) error {
-	votingSum, err := s.GetParam(votingAmount)
+	votingSum, err := s.getParam(votingAmount)
 	if err != nil {
 		return err
 	}
-	cpuStakedSum, err := s.GetParam(cpuAmount)
+	cpuStakedSum, err := s.getParam(cpuAmount)
 	if err != nil {
 		return err
 	}
-	netStakedSum, err := s.GetParam(netAmount)
+	netStakedSum, err := s.getParam(netAmount)
 	if err != nil {
 		return err
 	}
@@ -166,7 +165,7 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 		if err := acc.CancelDelegateOther(accTo, cpuStaked, netStaked, cpuStakedSum, netStakedSum, cpuLimit, netLimit); err != nil {
 			return err
 		}
-		if err := s.CommitAccount(accTo); err != nil {
+		if err := s.commitAccount(accTo); err != nil {
 			return err
 		}
 	} else {
@@ -176,13 +175,13 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 	if err := acc.AddBalance(AbaToken, value); err != nil {
 		return err
 	}
-	if err := s.CommitParam(cpuAmount, cpuStakedSum-cpuStaked); err != nil {
+	if err := s.commitParam(cpuAmount, cpuStakedSum-cpuStaked); err != nil {
 		return err
 	}
-	if err := s.CommitParam(netAmount, netStakedSum-cpuStaked); err != nil {
+	if err := s.commitParam(netAmount, netStakedSum-cpuStaked); err != nil {
 		return err
 	}
-	if err := s.CommitParam(votingAmount, votingSum-cpuStaked-netStaked); err != nil {
+	if err := s.commitParam(votingAmount, votingSum-cpuStaked-netStaked); err != nil {
 		return err
 	}
 	valueOld := acc.Resource.Votes.Staked
@@ -194,7 +193,7 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 		delete(s.Producers, acc.Index)
 	}
 	s.commitProducersList()
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**
@@ -207,16 +206,16 @@ func (s *State) RecoverResources(index common.AccountName, timeStamp int64, cpuL
 	if err != nil {
 		return err
 	}
-	cpuStakedSum, err := s.GetParam(cpuAmount)
+	cpuStakedSum, err := s.getParam(cpuAmount)
 	if err != nil {
 		return err
 	}
-	netStakedSum, err := s.GetParam(netAmount)
+	netStakedSum, err := s.getParam(netAmount)
 	if err != nil {
 		return err
 	}
 	acc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit)
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**
@@ -225,11 +224,11 @@ func (s *State) RecoverResources(index common.AccountName, timeStamp int64, cpuL
  *  @param timeStamp - current time
  */
 func (s *State) RequireResources(index common.AccountName, cpuLimit, netLimit float64, timeStamp int64) (float64, float64, error) {
-	cpuStakedSum, err := s.GetParam(cpuAmount)
+	cpuStakedSum, err := s.getParam(cpuAmount)
 	if err != nil {
 		return 0, 0, err
 	}
-	netStakedSum, err := s.GetParam(netAmount)
+	netStakedSum, err := s.getParam(netAmount)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -279,7 +278,7 @@ func (s *State) UnRegisterProducer(index common.AccountName) error {
  *  @param accounts - candidate node list
  */
 func (s *State) ElectionToVote(index common.AccountName, accounts []common.AccountName) error {
-	votingSum, err := s.GetParam(votingAmount)
+	votingSum, err := s.getParam(votingAmount)
 	if err != nil {
 		return err
 	}
@@ -298,7 +297,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	if err := s.changeElectedProducers(acc, accounts); err != nil {
 		return err
 	}
-	if err := s.CommitParam(votingAmount, votingSum+acc.Resource.Votes.Staked); err != nil {
+	if err := s.commitParam(votingAmount, votingSum+acc.Resource.Votes.Staked); err != nil {
 		return err
 	}
 	if votingSum+acc.Resource.Votes.Staked > abaTotal*0.15 && flag == false {
@@ -324,7 +323,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 		//	log.Info(event.Send(event.ActorNil, event.ActorConsensus, &message.ABABFTStart{}))
 		//}
 	}
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**
@@ -416,10 +415,8 @@ func (s *State) commitProducersList() error {
  *  @brief require the voting information
  */
 func (s *State) RequireVotingInfo() bool {
-	log.Debug(s.Producers)
-	votingSum, err := s.GetParam(votingAmount)
+	votingSum, err := s.getParam(votingAmount)
 	if err != nil {
-		log.Error(err)
 		return false
 	}
 	log.Debug("abaTotal", abaTotal, "votingSum", votingSum, "Percentage", 100*float32(votingSum)/float32(abaTotal), "%")

@@ -114,7 +114,7 @@ func (s *State) AddPermission(index common.AccountName, perm Permission) error {
 		return err
 	}
 	acc.AddPermission(perm)
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**
