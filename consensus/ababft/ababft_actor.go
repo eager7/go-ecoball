@@ -120,7 +120,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case message.ABABFTStart:
 		actor_c.status = 2
-		log.Debug("start ababft: receive the ababftstart message")
+		log.Debug("start ababft: receive the ababftstart message:", current_height_num,verified_height,current_ledger.GetCurrentHeader())
 
 		// check the status of the main net
 		if ok:=current_ledger.StateDB().RequireVotingInfo(); ok!=true {
@@ -351,12 +351,12 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		return
 
 	case Signature_Preblock:
-		log.Info("receive the preblock signature:",msg.Signature_preblock)
+		log.Info("receive the preblock signature:",actor_c.status,msg.Signature_preblock)
 		// the prime will verify the signature for the previous block
 		round_in := int(msg.Signature_preblock.Round)
 		height_in := int(msg.Signature_preblock.Height)
 		// log.Debug("current_round_num:",current_round_num,round_in)
-		if round_in >= current_round_num {
+		if round_in >= current_round_num && actor_c.status!=101 && actor_c.status!= 102 {
 			// cache the Signature_Preblock
 			cache_signature_preblk = append(cache_signature_preblk,msg.Signature_preblock)
 			// in case that the signature for the previous block arrived bofore the corresponding block generator was born
