@@ -1,13 +1,15 @@
 package commands
 
 import (
-	"time"
+	//"time"
 
-	innercommon "github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
+	//innercommon "github.com/ecoball/go-ecoball/common"
+	//"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/http/common"
+	//"encoding/json"
+	//"fmt"
 )
 
 func CreateAccount(params []interface{}) *common.Response {
@@ -16,8 +18,8 @@ func CreateAccount(params []interface{}) *common.Response {
 		return common.NewResponse(common.INVALID_PARAMS, nil)
 	}
 
-	switch {
-	case len(params) == 4:
+	//switch {
+	//case len(params) == 4:
 		if errCode := handleCreateAccount(params); errCode != common.SUCCESS {
 			log.Error(errCode.Info())
 			return common.NewResponse(errCode, nil)
@@ -25,15 +27,15 @@ func CreateAccount(params []interface{}) *common.Response {
 			return common.NewResponse(common.SUCCESS, nil)
 		}
 
-	default:
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
+	//default:
+		//return common.NewResponse(common.INVALID_PARAMS, nil)
+	//}
 
 	return common.NewResponse(common.SUCCESS, "")
 }
 
 func handleCreateAccount(params []interface{}) common.Errcode {
-	var (
+	/*var (
 		creator string
 		name    string
 		owner   string
@@ -60,28 +62,30 @@ func handleCreateAccount(params []interface{}) common.Errcode {
 		owner = v
 	} else {
 		invalid = true
-	}
+	}*/
 
-	//active key
-	/*	if v, ok := params[0].(string); ok {
-			active = v
-		} else {
-			invalid = true
-		}*/
+	invoke := &types.Transaction{}
+	var invalid bool
+	var name string 
+	//account name
+	if v, ok := params[0].(string); ok {
+		name = v
+	} else {
+		invalid = true
+	}
 
 	if invalid {
 		return common.INVALID_PARAMS
 	}
 
-	creatorAccount := innercommon.NameToIndex(creator)
-	timeStamp := time.Now().Unix()
-
-	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, "owner","new_account",
-		[]string{name, innercommon.AddressFromPubKey(innercommon.FromHex(owner)).HexString()}, 0, timeStamp)
-	invoke.SetSignature(&config.Root)
+	//json.Unmarshal([]byte(name), invoke);
+	invoke.StringJson(name)
+	//str := invoke.JsonString()
+	//fmt.Println(str)
+	//fmt.Println(name)
 
 	//send to txpool
-	err = event.Send(event.ActorNil, event.ActorTxPool, invoke)
+	err := event.Send(event.ActorNil, event.ActorTxPool, invoke)
 	if nil != err {
 		return common.INTERNAL_ERROR
 	}

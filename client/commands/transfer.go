@@ -24,6 +24,11 @@ import (
 	"github.com/ecoball/go-ecoball/client/rpc"
 
 	"github.com/urfave/cli"
+
+	"time"
+	"github.com/ecoball/go-ecoball/core/types"
+	inner "github.com/ecoball/go-ecoball/common"
+	"math/big"
 )
 
 var (
@@ -79,7 +84,17 @@ func transferAction(c *cli.Context) error {
 		return errors.New("Invalid aba amount")
 	}
 
-	resp, err := rpc.Call("transfer", []interface{}{from, to, value})
+	bigValue := big.NewInt(value)
+
+	//time
+	time := time.Now().Unix()
+
+	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), "owner", bigValue, 0, time)
+	if nil != err {
+		return err
+	}
+
+	resp, err := rpc.Call("transfer", []interface{}{transaction.JsonString()})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

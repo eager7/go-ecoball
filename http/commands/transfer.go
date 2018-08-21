@@ -17,14 +17,15 @@
 package commands
 
 import (
-	"math/big"
-	"time"
+	//"math/big"
+	//"time"
 
 	"github.com/ecoball/go-ecoball/core/types"
 
-	inner "github.com/ecoball/go-ecoball/common"
+	//inner "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/http/common"
+	//"encoding/json"
 )
 
 //transfer handle
@@ -49,7 +50,7 @@ func Transfer(params []interface{}) *common.Response {
 }
 
 func handleTransfer(params []interface{}) common.Errcode {
-	var (
+	/*var (
 		from    string
 		to      string
 		value   *big.Int
@@ -76,23 +77,27 @@ func handleTransfer(params []interface{}) common.Errcode {
 
 	if invalid {
 		return common.INVALID_PARAMS
+	}*/
+
+	transaction := types.Transaction{}
+	var invalid bool
+	var name string 
+	//account name
+	if v, ok := params[0].(string); ok {
+		name = v
+	} else {
+		invalid = true
 	}
 
-	//time
-	time := time.Now().Unix()
-
-	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), "owner", value, 0, time)
-	if nil != err {
+	if invalid {
 		return common.INVALID_PARAMS
 	}
 
-	/*err = transaction.SetSignature(&common.Account)
-	if err != nil {
-		return common.INVALID_ACCOUNT
-	}*/
+	//json.Unmarshal([]byte(name), &transaction);
+	transaction.StringJson(name)
 
 	//send to txpool
-	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
+	err := event.Send(event.ActorNil, event.ActorTxPool, &transaction)
 	if nil != err {
 		return common.INTERNAL_ERROR
 	}
