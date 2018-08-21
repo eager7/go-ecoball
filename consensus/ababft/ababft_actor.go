@@ -983,7 +983,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			actor_c.status = 6
 		}
 		// test end
-		log.Info("ababbt peer status:", actor_c.status)
+		log.Info("ababbt peer status:", primary_tag,actor_c.status)
 		// check whether it is solo mode
 		if actor_c.status == 102 || actor_c.status == 101 {
 			if actor_c.status == 102 {
@@ -1015,6 +1015,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 							println("save solo block error:", err)
 							return
 						}
+						verified_height = blocksecond_received.Height - 1
 						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 					}
 				} else {
@@ -1046,6 +1047,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				}
 				//
 
+				log.Info("received secondround block:",blocksecond_received.Header.Height,verified_height,current_height_num,data_blks_received.NumberRound,blocksecond_received.Header)
 				// 1. check the round number and height
 				// 1a. current round number
 				if data_blks_received.NumberRound < uint32(current_round_num) || blocksecond_received.Header.Height <= uint64(current_height_num) {
