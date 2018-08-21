@@ -166,6 +166,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					println("save solo block error:", err)
 					return
 				}
+				verified_height = block_solo.Height - 1
 				fmt.Println("ababft solo height:",block_solo.Height,block_solo)
 				time.Sleep(time.Second * WAIT_RESPONSE_TIME)
 				// call itself again
