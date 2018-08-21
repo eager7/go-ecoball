@@ -983,7 +983,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			actor_c.status = 6
 		}
 		// test end
-		log.Info("ababbt peer status:",actor_c.status)
+		log.Info("ababbt peer status:", actor_c.status)
 		// check whether it is solo mode
 		if actor_c.status == 102 || actor_c.status == 101 {
 			if actor_c.status == 102 {
@@ -1692,7 +1692,7 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 		}
 	}
 	// 2c. check the valid signature number
-	if num_verified < int(len(Peers_addr_list)/3+1){
+	if num_verified < int(len(Peers_addr_list)/3){
 		fmt.Println(" not enough signature for the previous block:", num_verified)
 		return false,nil
 	}
