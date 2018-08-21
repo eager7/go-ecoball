@@ -39,11 +39,11 @@ func init() {
 type WalletApi interface {
 	StoreWallet() error
 	loadWallet() error
-	Lock(password []byte) error
+	Lock() error
 	Unlock(password []byte) error
-	CreateKey(password []byte) ([]byte, []byte, error)
+	CreateKey() ([]byte, []byte, error)
 	RemoveKey(password []byte, publickey string) error
-	ImportKey(password []byte, privateKey string) ([]byte, error)
+	ImportKey(privateKey string) ([]byte, error)
 	ListPublicKey() ([]string, error)
 	CheckLocked() bool
 	CheckPassword(password []byte) bool
@@ -80,7 +80,7 @@ func Create(path string, password []byte) error {
 	}
 
 	//lock wallet
-	err := newWallet.Lock(password)
+	err := newWallet.Lock()
 	newWallet.lockflag = locked
 	if nil != err {
 		return err
@@ -96,8 +96,8 @@ func Create(path string, password []byte) error {
 		return err
 	}
 
-	Wallets[path] = newWallet
 	newWallet.lockflag = unlock
+	Wallets[path] = newWallet
 
 	return nil
 }
@@ -139,7 +139,7 @@ func Open(path string, password []byte) error {
 	return nil
 }
 
-func ImportKey(name string, password []byte, privateKey string)([]byte, error) {
+func ImportKey(name string, privateKey string)([]byte, error) {
 	wallet, ok := Wallets [ name ]
 	
 	if !ok {
@@ -150,11 +150,7 @@ func ImportKey(name string, password []byte, privateKey string)([]byte, error) {
 		return nil, errors.New("wallet is locked")
 	}
 
-	if !wallet.CheckPassword(password) {
-		return nil, errors.New("wrong passwords!!")
-	}
-
-	return wallet.ImportKey(password, privateKey)
+	return wallet.ImportKey(privateKey)
 }
 
 func RemoveKey(name string, password []byte, publickey string) error {
@@ -175,7 +171,7 @@ func RemoveKey(name string, password []byte, publickey string) error {
 	return wallet.RemoveKey(password, publickey)
 }
 
-func CreateKey(name string, password []byte)([]byte, []byte, error) {
+func CreateKey(name string)([]byte, []byte, error) {
 	wallet, ok := Wallets [ name ]
 	
 	if !ok {
@@ -186,14 +182,10 @@ func CreateKey(name string, password []byte)([]byte, []byte, error) {
 		return nil, nil, errors.New("wallet is locked")
 	}
 
-	if !wallet.CheckPassword(password) {
-		return  nil, nil, errors.New("wrong passwords!!")
-	}
-
-	return wallet.CreateKey(password)
+	return wallet.CreateKey()
 }
 
-func Lock(name string, password []byte) (error) {
+func Lock(name string) (error) {
 	wallet, ok := Wallets [ name ]
 	
 	if !ok {
@@ -205,7 +197,7 @@ func Lock(name string, password []byte) (error) {
 	}
 
 	wallet.SetLockedState()
-	if err := wallet.Lock(password) ; err != nil{
+	if err := wallet.Lock() ; err != nil{
 		wallet.SetUnLockedState()
 		return err
 	}
@@ -221,6 +213,10 @@ func Unlock(name string, password []byte) error {
 
 	if !wallet.CheckLocked(){
 		return errors.New("wallet is unlocked")
+	}
+
+	if !wallet.CheckPassword(password) {
+		return errors.New("wrong passwords!!")
 	}
 
 	wallet.SetUnLockedState()

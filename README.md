@@ -46,11 +46,11 @@ $./ecoclient wallet open --name $WALLETFILE --password $PASSWORD
 ```
 create keys to wallet
 ```
-$./ecoclient wallet createkey --name $WALLETFILE --password $PASSWORD
+$./ecoclient wallet createkey --name $WALLETFILE
 ```
 import privatekey to wallet
 ```
-$./ecoclient wallet import --name $WALLETFILE --password $PASSWORD --private $PRIVATEKEY
+$./ecoclient wallet import --name $WALLETFILE --private $PRIVATEKEY
 ```
 remove keys from wallet
 ```
@@ -58,7 +58,7 @@ $./ecoclient wallet remove --name $WALLETFILE --password $PASSWORD --public $PUB
 ```
 lock wallet
 ```
-$./ecoclient wallet lock --name $WALLETFILE --password $PASSWORD
+$./ecoclient wallet lock --name $WALLETFILE
 ```
 unlock wallet
 ```
