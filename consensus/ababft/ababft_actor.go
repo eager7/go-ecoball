@@ -1692,7 +1692,7 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 		}
 	}
 	// 2c. check the valid signature number
-	if num_verified < int(len(Peers_addr_list)/3){
+	if num_verified < int(len(Peers_addr_list)/3+1){
 		fmt.Println(" not enough signature for the previous block:", num_verified)
 		return false,nil
 	}
@@ -1742,7 +1742,7 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 		}
 	}
 	// 3c. check the valid signature number
-	if num_verified < int(2*len(Peers_addr_list)/3+1){
+	if num_verified < int(2*len(Peers_addr_list)/3){
 		fmt.Println(" not enough signature for first round block:", num_verified)
 		return false,nil
 	}
