@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/consensus/solo"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
@@ -33,11 +34,13 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 
 	"github.com/ecoball/go-ecoball/account"
+	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/spectator"
 	"github.com/ecoball/go-ecoball/test/example"
-	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/common/message"
+	"golang.org/x/net/context"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -49,8 +52,9 @@ var (
 )
 
 func runNode(c *cli.Context) error {
-	//get account
-	//checkPassword()
+
+	shutdown := make(chan bool, 1)
+	ecoballGroup, ctx := errgroup.WithContext(context.Background())
 
 	fmt.Println("Run Node")
 	log.Info("Build Geneses Block")
@@ -97,22 +101,62 @@ func runNode(c *cli.Context) error {
 
 	net.StartNetWork(l)
 
-	//start explorer
-	go spectator.Bystander(l)
+	//start blockchain browser
+	ecoballGroup.Go(func() error {
+		errChan := make(chan error, 1)
+		go func() {
+			if err := spectator.Bystander(l); nil != err {
+				errChan <- err
+			}
+		}()
+
+		select {
+		case <-ctx.Done():
+		case <-shutdown:
+		case err := <-errChan:
+			log.Error("goroutine spectator error exit: ", err)
+			return err
+		}
+
+		return nil
+	})
 
 	//start http server
-	go rpc.StartRPCServer()
+	ecoballGroup.Go(func() error {
+		errChan := make(chan error, 1)
+		go func() {
+			if err := rpc.StartRPCServer(); nil != err {
+				errChan <- err
+			}
+		}()
 
-	//wait single to exit
-	wait()
+		select {
+		case <-ctx.Done():
+		case <-shutdown:
+		case err := <-errChan:
+			log.Error("goroutine start http server error exit: ", err)
+			return err
+		}
 
+		return nil
+	})
+
+	//capture single
+	go wait(shutdown)
+
+	//Wait for each sub goroutine to exit
+	if err := ecoballGroup.Wait(); err != nil {
+		log.Error(err)
+	}
 	return nil
 }
 
-func wait() {
+//capture single
+func wait(shutdown chan bool) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer signal.Stop(interrupt)
 	sig := <-interrupt
 	log.Info("ecoball received signal:", sig)
+	close(shutdown)
 }

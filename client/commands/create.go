@@ -4,10 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	innercommon "github.com/ecoball/go-ecoball/common"
 	"github.com/urfave/cli"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 var (
@@ -81,9 +84,17 @@ func newAccount(c *cli.Context) error {
 	if "" == active {
 		active = owner
 	}
+	
+	creatorAccount := innercommon.NameToIndex(creator)
+	timeStamp := time.Now().Unix()
+
+	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, "owner","new_account",
+		[]string{name, innercommon.AddressFromPubKey(innercommon.FromHex(owner)).HexString()}, 0, timeStamp)
+	invoke.SetSignature(&config.Root)
 
 	//rpc call
-	resp, err := rpc.Call("createAccount", []interface{}{creator, name, owner, active})
+	//resp, err := rpc.Call("createAccount", []interface{}{creator, name, owner, active})
+	resp, err := rpc.Call("createAccount", []interface{}{invoke.JsonString()})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

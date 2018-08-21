@@ -91,16 +91,11 @@ func (wi *WalletImpl) loadWallet() error {
 /**
 方法：将密钥数据加密
 */
-func (wi *WalletImpl) Lock(password []byte) error {
+func (wi *WalletImpl) Lock() error {
 	//whether the wallet is locked
 	/*if wi.lockflag != unlock {
 		return errors.New("the wallet has been locked!!")
 	}*/
-
-	//whether the password is correct
-	if (sha512.Sum512(password)) != wi.Checksum {
-		return errors.New("wrong password!!")
-	}
 
 	//marshal keyData
 	data, err := json.Marshal(wi.KeyData)
@@ -117,9 +112,9 @@ func (wi *WalletImpl) Lock(password []byte) error {
 	}
 
 	//erase data
-	for i := 0; i < len(wi.Checksum); i++ {
+	/*for i := 0; i < len(wi.Checksum); i++ {
 		wi.Checksum[i] = 0
-	}
+	}*/
 	//wi.Accounts = []Account{}
 
 	//wi.lockflag = locked
@@ -130,7 +125,7 @@ func (wi *WalletImpl) Lock(password []byte) error {
 }
 
 func (wi *WalletImpl) CheckPassword(password []byte) bool {
- 	return (sha512.Sum512(password)) == wi.Checksum 
+ 	return sha512.Sum512(password) == wi.Checksum 
 }
 
 func (wi *WalletImpl) SetLockedState(){
@@ -186,14 +181,14 @@ func (wi *WalletImpl) ListKeys() map[string]string{
 /**
 创建公私钥对
 */
-func (wi *WalletImpl) CreateKey(password []byte) ([]byte, []byte, error) {
+func (wi *WalletImpl) CreateKey() ([]byte, []byte, error) {
 	//create keys
 	_, pri, err := createKey()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	pub, errcode := wi.ImportKey(password, inner.ToHex(pri)) 
+	pub, errcode := wi.ImportKey(inner.ToHex(pri)) 
 	if errcode != nil {
 		return nil, nil, errcode
 	}
@@ -211,7 +206,7 @@ func (wi *WalletImpl) RemoveKey(password []byte, publickey string) error {
 
 	delete(wi.KeyData.AccountsMap, publickey)
 
-	errcode := wi.Lock(password)
+	errcode := wi.Lock()
 	if nil != errcode {
 		wi.lockflag = unlock
 		return errcode
@@ -236,7 +231,7 @@ func (wi *WalletImpl) RemoveKey(password []byte, publickey string) error {
 /**
 导入私钥
 **/
-func (wi *WalletImpl) ImportKey(password []byte, privateKey string) ([]byte, error) {
+func (wi *WalletImpl) ImportKey(privateKey string) ([]byte, error) {
 	wi.lockflag = locked
 
 	for publickey := range wi.AccountsMap {
@@ -257,7 +252,7 @@ func (wi *WalletImpl) ImportKey(password []byte, privateKey string) ([]byte, err
 	wi.KeyData.AccountsMap[inner.ToHex(pub)] = privateKey
 
 	//lock wallet
-	errcode := wi.Lock(password)
+	errcode := wi.Lock()
 	if nil != errcode {
 		wi.lockflag = unlock
 		return nil, errcode
@@ -269,11 +264,6 @@ func (wi *WalletImpl) ImportKey(password []byte, privateKey string) ([]byte, err
 		return nil, err
 	}
 	
-	//unlock wallet
-	if err := wi.Unlock(password); nil != err {
-		wi.lockflag = unlock
-		return nil, err
-	}
 	wi.lockflag = unlock
 	return pub, nil
 }

@@ -269,6 +269,10 @@ func (t *Transaction) JsonString() string {
 	return string(data)
 }
 
+func (t *Transaction) StringJson(data string)  {
+	json.Unmarshal([]byte(data), t);
+}
+
 func (t TxType) String() string {
 	switch t {
 	case TxDeploy:

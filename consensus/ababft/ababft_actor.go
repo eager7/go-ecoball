@@ -175,7 +175,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				actor_c.status = 102
 				// todo
 				// no need every time to send a request for solo block
-				
+
 				// send solo syn request
 				var requestsyn REQSynSolo
 				requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
@@ -351,6 +351,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		return
 
 	case Signature_Preblock:
+		log.Info("receive the preblock signature:",msg.Signature_preblock)
 		// the prime will verify the signature for the previous block
 		round_in := int(msg.Signature_preblock.Round)
 		height_in := int(msg.Signature_preblock.Height)
@@ -564,6 +565,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				event.Send(event.ActorConsensus, event.ActorP2P, block_firstround)
 				// log.Debug("first round block:",block_firstround.Blockfirst)
 				// fmt.Println("first round block status root hash:",block_first.StateHash)
+				log.Info("generate the first round block and send",block_firstround.Blockfirst.Height)
 
 				// for test 2018.07.27
 				if TestTag == true {
@@ -614,6 +616,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		}
 		// end of test
 
+		log.Info("current height and receive the first round block:",current_height_num, msg.Blockfirst.Header)
 
 		if primary_tag == 0 && (actor_c.status == 2 || actor_c.status == 5) {
 			// to verify the first round block
@@ -742,6 +745,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// send the received first-round block to other peers in case that network is not good
 					block_firstround.Blockfirst = blockfirst_received
 					event.Send(event.ActorConsensus,event.ActorP2P,block_firstround)
+					log.Info("generate the signature for first round block",block_firstround.Blockfirst.Height)
 
 					// for test 2018.07.31
 					if TestTag == true {
@@ -782,7 +786,6 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			fmt.Println("timeout test needs to be specified")
 		}
 		// end test
-
 
 		if primary_tag == 0 && (actor_c.status == 2 || actor_c.status == 5) {
 			// not receive the first round block
@@ -878,9 +881,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 	case SignTxTimeout:
 		// fmt.Println("received_signblkf_num:",received_signblkf_num)
+		log.Info("start to generate second round block",primary_tag,actor_c.status,received_signblkf_num,int(2*len(Peers_addr_list)/3),signature_BlkF_list)
 		if primary_tag == 1 && actor_c.status == 4 {
 			// check the number of the signatures of first-round block from peers
-			if received_signblkf_num >= int(2*len(Peers_addr_list)/3+1) {
+			if received_signblkf_num >= int(2*len(Peers_addr_list)/3) {
 				// enough first-round block signatures, so generate the second-round(final) block
 				// 1. add the first-round block signatures into ConsensusData
 				pubkey_tag_b := []byte(pubkey_tag)
@@ -941,11 +945,12 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					println("save block error:", err)
 					return
 				}
+				verified_height = block_second.Height - 1
 				// 5. change the status
 				actor_c.status = 7
 				primary_tag = 0
 
-				fmt.Println("save the generated block", block_second.Height)
+				fmt.Println("save the generated block", block_second.Height,verified_height)
 				// start/enter the next turn
 				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
 				return
@@ -979,7 +984,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			actor_c.status = 6
 		}
 		// test end
-		log.Info("ababbt peer status:",actor_c.status)
+		log.Info("ababbt peer status:", primary_tag,actor_c.status)
 		// check whether it is solo mode
 		if actor_c.status == 102 || actor_c.status == 101 {
 			if actor_c.status == 102 {
@@ -1011,6 +1016,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 							println("save solo block error:", err)
 							return
 						}
+						verified_height = blocksecond_received.Height - 1
+						log.Info("verified height of the solo mode:",verified_height)
 						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 					}
 				} else {
@@ -1042,6 +1049,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				}
 				//
 
+				log.Info("received secondround block:",blocksecond_received.Header.Height,verified_height,current_height_num,data_blks_received.NumberRound,blocksecond_received.Header)
 				// 1. check the round number and height
 				// 1a. current round number
 				if data_blks_received.NumberRound < uint32(current_round_num) || blocksecond_received.Header.Height <= uint64(current_height_num) {
@@ -1738,7 +1746,7 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 		}
 	}
 	// 3c. check the valid signature number
-	if num_verified < int(2*len(Peers_addr_list)/3+1){
+	if num_verified < int(2*len(Peers_addr_list)/3){
 		fmt.Println(" not enough signature for first round block:", num_verified)
 		return false,nil
 	}
