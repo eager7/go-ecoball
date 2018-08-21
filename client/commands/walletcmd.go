@@ -76,10 +76,6 @@ var (
 						Name:  "name, n",
 						Usage: "wallet name",
 					},
-					cli.StringFlag{
-						Name:  "password, p",
-						Usage: "wallet password",
-					},
 				},
 			},
 			{
@@ -91,10 +87,6 @@ var (
 						Name:  "name, n",
 						Usage: "wallet name",
 					},
-					cli.StringFlag{
-						Name:  "password, p",
-						Usage: "wallet password",
-					},
 				},
 			},
 			{
@@ -105,10 +97,6 @@ var (
 					cli.StringFlag{
 						Name:  "name, n",
 						Usage: "wallet name",
-					},
-					cli.StringFlag{
-						Name:  "password, p",
-						Usage: "wallet password",
 					},
 					cli.StringFlag{
 						Name:  "private, k",
@@ -221,14 +209,7 @@ func createKey(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	//Check the number of flags
-	passwd := c.String("password")
-	if "" == passwd {
-		fmt.Println("Invalid password")
-		return errors.New("Invalid password")
-	}
-
-	resp, err := rpc.Call("createKey", []interface{}{name, passwd})
+	resp, err := rpc.Call("createKey", []interface{}{name})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
@@ -283,13 +264,7 @@ func lockWallet(c *cli.Context) error {
 		return errors.New("Invalid wallet name")
 	}
 
-	passwd := c.String("password")
-	if "" == passwd {
-		fmt.Println("Invalid password")
-		return errors.New("Invalid password")
-	}
-
-	resp, err := rpc.Call("lockWallet", []interface{}{name, passwd})
+	resp, err := rpc.Call("lockWallet", []interface{}{name})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
@@ -341,19 +316,13 @@ func importKey(c *cli.Context) error {
 		return errors.New("Invalid wallet name")
 	}
 
-	password := c.String("password")
-	if "" == password {
-		fmt.Println("Invalid wallet password")
-		return errors.New("Invalid password")
-	}
-
 	privateKey := c.String("private")
 	if "" == privateKey {
 		fmt.Println("Invalid private key")
 		return errors.New("Invalid private key")
 	}
 
-	resp, err := rpc.Call("importKey", []interface{}{name, password, privateKey})
+	resp, err := rpc.Call("importKey", []interface{}{name, privateKey})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

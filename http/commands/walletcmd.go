@@ -55,8 +55,7 @@ func CreateKey(params []interface{}) *common.Response {
 	switch params[0].(type){
 	case string:
 		name := params[0].(string)
-		password := params[1].(string)
-		pub, pri, err := wallet.CreateKey(name, []byte(password))
+		pub, pri, err := wallet.CreateKey(name)
 		var key_str string
 		key_str += "publickey:" + inner.ToHex(pub) + "\n"+ "privatekey:" + inner.ToHex(pri)
 		if err != nil {
@@ -98,9 +97,8 @@ func LockWallet(params []interface{}) *common.Response {
 	switch params[0].(type){
 	case string:
 		name := params[0].(string)
-		password := params[1].(string)
 		//lock wallet
-		err := wallet.Lock(name, []byte(password))
+		err := wallet.Lock(name)
 		if nil != err {
 			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 		}
@@ -142,10 +140,9 @@ func ImportKey(params []interface{}) *common.Response {
 	switch params[0].(type){
 	case string:
 		name := params[0].(string)
-		password := params[1].(string)
-		privateKey := params[2].(string)
+		privateKey := params[1].(string)
 		//publickey, err := account.Wallet.ImportKey([]byte(password), inner.FromHex(privateKey))
-		publickey, err := wallet.ImportKey(name, []byte(password), privateKey)
+		publickey, err := wallet.ImportKey(name, privateKey)
 		var key_str string
 		key_str += "publickey:" + inner.ToHex(publickey)
 		if err != nil {
