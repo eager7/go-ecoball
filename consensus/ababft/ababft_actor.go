@@ -945,11 +945,12 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					println("save block error:", err)
 					return
 				}
+				verified_height = block_second.Height - 1
 				// 5. change the status
 				actor_c.status = 7
 				primary_tag = 0
 
-				fmt.Println("save the generated block", block_second.Height)
+				fmt.Println("save the generated block", block_second.Height,verified_height)
 				// start/enter the next turn
 				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
 				return
@@ -1016,6 +1017,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 							return
 						}
 						verified_height = blocksecond_received.Height - 1
+						log.Info("verified height of the solo mode:",verified_height)
 						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 					}
 				} else {
