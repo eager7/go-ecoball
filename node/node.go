@@ -134,7 +134,7 @@ func runNode(c *cli.Context) error {
 		case <-ctx.Done():
 		case <-shutdown:
 		case err := <-errChan:
-			log.Error("goroutine spectator error exit: ", err)
+			log.Error("goroutine start http server error exit: ", err)
 			return err
 		}
 
