@@ -352,6 +352,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 	case Signature_Preblock:
 		log.Info("receive the preblock signature:",actor_c.status,msg.Signature_preblock)
+		if actor_c.status == 102 {
+			event.Send(event.ActorNil,event.ActorConsensus,message.ABABFTStart{})
+		}
 		// the prime will verify the signature for the previous block
 		round_in := int(msg.Signature_preblock.Round)
 		height_in := int(msg.Signature_preblock.Height)
@@ -1518,7 +1521,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				total_count = 0
 				for i := max_r-current_round_num; i > 0; i-- {
 					total_count = total_count + count_r[i]
-					if total_count >= int(2*len(Peers_addr_list)/3+1) {
+					if total_count >= int(2*len(Peers_addr_list)/3) {
 						// reset the round number
 						current_round_num += i
 						// start/enter the next turn
