@@ -31,7 +31,7 @@ import (
 const VersionHeader = 1
 
 type Header struct {
-	ChainID       uint64
+	ChainID       common.Hash
 	Version       uint32
 	TimeStamp     int64
 	Height        uint64
@@ -59,7 +59,7 @@ var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
  *  @param bloom - the bloom filter of transactions
  *  @param timeStamp - the timeStamp of block, unit is ns
  */
-func NewHeader(version uint32, chainID, height uint64, prevHash, merkleHash, stateHash common.Hash, conData ConsensusData, bloom bloom.Bloom, cpuLimit, netLimit float64, timeStamp int64) (*Header, error) {
+func NewHeader(version uint32, chainID common.Hash, height uint64, prevHash, merkleHash, stateHash common.Hash, conData ConsensusData, bloom bloom.Bloom, cpuLimit, netLimit float64, timeStamp int64) (*Header, error) {
 	if version != VersionHeader {
 		return nil, errors.New("version mismatch")
 	}
@@ -262,7 +262,7 @@ func (h *Header) JsonString() string {
 			Signatures    []common.Signature
 			Hash          string
 		}{
-			ChainID:       common.AccountName(h.ChainID).String(),
+			ChainID:       h.ChainID.HexString(),
 			Version:       h.Version,
 			TimeStamp:     h.TimeStamp,
 			Height:        h.Height,

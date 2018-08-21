@@ -100,7 +100,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 			net += n
 		}
 	}
-	return types.NewBlock(common.NameToIndex("root").Number(), c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	return types.NewBlock(config.ChainHash, c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
 }
 
 /**
@@ -281,7 +281,7 @@ func (c *ChainTx) GenesesBlockInit() error {
 	hashState := c.StateDB.GetHashRoot()
 
 	fmt.Println(hash.HexString())
-	header, err := types.NewHeader(types.VersionHeader, common.NameToIndex("root").Number(), 1, config.ChainHash, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
+	header, err := types.NewHeader(types.VersionHeader, config.ChainHash, 1, config.ChainHash, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
 	if err != nil {
 		return err
 	}

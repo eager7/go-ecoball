@@ -33,7 +33,7 @@ type Block struct {
 	Transactions []*Transaction
 }
 
-func NewBlock(chainID uint64, prevHeader *Header, stateHash common.Hash, consensusData ConsensusData, txs []*Transaction, cpu, net float64, timeStamp int64) (*Block, error) {
+func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, consensusData ConsensusData, txs []*Transaction, cpu, net float64, timeStamp int64) (*Block, error) {
 	if nil == prevHeader {
 		return nil, errors.New(log, "invalid parameter preHeader")
 	}

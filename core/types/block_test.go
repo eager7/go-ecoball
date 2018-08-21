@@ -33,7 +33,7 @@ import (
 
 func TestHeader(t *testing.T) {
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-	h, err := types.NewHeader(types.VersionHeader, common.NameToIndex("root").Number(), 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
+	h, err := types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(h.SetSignature(&config.Root))
 
@@ -54,7 +54,7 @@ func TestHeader(t *testing.T) {
 	sigPer = append(sigPer, sig2)
 	abaData := types.AbaBftData{NumberRound: 5, PerBlockSignatures: sigPer}
 	conData = types.ConsensusData{Type: types.ConABFT, Payload: &abaData}
-	h, err = types.NewHeader(types.VersionHeader, common.NameToIndex("root").Number(), 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
+	h, err = types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(h.SetSignature(&config.Root))
 
