@@ -182,7 +182,7 @@ func (b *Block) JsonString(format bool) string {
 		return string(data)
 	}else {
 		data := b.Header.JsonString()
-		data += fmt.Sprintf("{CountTxs:%s}", b.CountTxs)
+		data += fmt.Sprintf("{CountTxs:%d}", b.CountTxs)
 		for _, v := range b.Transactions {
 			data += v.JsonString()
 		}

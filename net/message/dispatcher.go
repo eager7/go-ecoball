@@ -66,7 +66,7 @@ func HdGossipBlkAck2Msg(data []byte) error {
 }
 
 func HdSignPreMsg(data []byte) error {
-	signpre_receive := new(ababft.Signature_Preblock)
+	signpre_receive := ababft.Signature_Preblock{}
 	err := signpre_receive.Deserialize(data)
 	if err != nil {
 		return err
@@ -77,7 +77,7 @@ func HdSignPreMsg(data []byte) error {
 }
 
 func HdBlkFMsg(data []byte) error {
-	block_firstround := new(ababft.Block_FirstRound)
+	block_firstround := ababft.Block_FirstRound{}
 	err := block_firstround.Blockfirst.Deserialize(data)
 	if err != nil {
 		return err
@@ -88,7 +88,7 @@ func HdBlkFMsg(data []byte) error {
 }
 
 func HdReqSynMsg(data []byte) error {
-	reqsyn := new(ababft.REQSyn)
+	reqsyn := ababft.REQSyn{}
 	err := reqsyn.Deserialize(data)
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func HdReqSynMsg(data []byte) error {
 }
 
 func HdReqSynSoloMsg(data []byte) error {
-	reqsyn := new(ababft.REQSynSolo)
+	reqsyn := ababft.REQSynSolo{}
 	err := reqsyn.Deserialize(data)
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func HdReqSynSoloMsg(data []byte) error {
 }
 
 func HdToutMsg(data []byte) error {
-	toutmsg := new(ababft.TimeoutMsg)
+	toutmsg := ababft.TimeoutMsg{}
 	err := toutmsg.Deserialize(data)
 	if err != nil {
 		return err
@@ -121,7 +121,7 @@ func HdToutMsg(data []byte) error {
 }
 
 func HdSignBlkFMsg(data []byte) error {
-	signblkf_receive := new(ababft.Signature_BlkF)
+	signblkf_receive := ababft.Signature_BlkF{}
 	err := signblkf_receive.Deserialize(data)
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func HdSignBlkFMsg(data []byte) error {
 }
 
 func HdBlkSMsg(data []byte) error {
-	block_secondround := new(ababft.Block_SecondRound)
+	block_secondround := ababft.Block_SecondRound{}
 	err := block_secondround.Blocksecond.Deserialize(data)
 	if err != nil {
 		return err
@@ -143,7 +143,7 @@ func HdBlkSMsg(data []byte) error {
 }
 
 func HdBlkSynMsg(data []byte) error {
-	blksyn := new(ababft.Block_Syn)
+	blksyn := ababft.Block_Syn{}
 	err := blksyn.Deserialize(data)
 	if err != nil {
 		return err

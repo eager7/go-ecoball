@@ -18,10 +18,6 @@ type InterfaceState interface {
 	RegisterProducer(index common.AccountName) error
 	UnRegisterProducer(index common.AccountName) error
 	ElectionToVote(index common.AccountName, accounts []common.AccountName) error
-	ChangeElectedProducers(acc *Account, accounts []common.AccountName) error
-	UpdateElectedProducers(acc *Account, votesOld uint64) error
-	CheckAccountCertification(index common.AccountName) error
-	CommitProducersList() error
 	RequireVotingInfo() bool
 	GetProducerList() ([]common.AccountName, error)
 	AccountGetBalance(index common.AccountName, token string) (*big.Int, error)
@@ -36,7 +32,6 @@ type InterfaceState interface {
 	StoreGet(index common.AccountName, key []byte) (value []byte, err error)
 	GetAccountByName(index common.AccountName) (*Account, error)
 	GetAccountByAddr(addr common.Address) (*Account, error)
-	CommitAccount(acc *Account) error
 	GetHashRoot() common.Hash
 	CommitToDB() error
 	Reset(hash common.Hash) error

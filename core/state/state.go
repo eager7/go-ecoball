@@ -21,9 +21,10 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/common/errors"
+	"sync"
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
@@ -39,6 +40,8 @@ type State struct {
 	Accounts  map[string]Account
 	Params    map[string]uint64
 	Producers map[common.AccountName]uint64
+
+	mutex sync.RWMutex
 }
 
 /**
@@ -117,7 +120,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
 	if err != nil {
 		return nil, err
 	}
-	if err := s.CommitAccount(acc); err != nil {
+	if err := s.commitAccount(acc); err != nil {
 		return nil, err
 	}
 	//save the mapping of addr and index
@@ -144,7 +147,7 @@ func (s *State) SetContract(index common.AccountName, t types.VmType, des, code 
 	if err := acc.SetContract(t, des, code); err != nil {
 		return err
 	}
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**
@@ -166,7 +169,7 @@ func (s *State) StoreSet(index common.AccountName, key, value []byte) (err error
 	if err := acc.StoreSet(s.path, key, value); err != nil {
 		return err
 	}
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, err error) {
 	acc, err := s.GetAccountByName(index)
@@ -228,7 +231,7 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
  *  @brief update the account's information into trie
  *  @param acc - account object
  */
-func (s *State) CommitAccount(acc *Account) error {
+func (s *State) commitAccount(acc *Account) error {
 	if acc == nil {
 		return errors.New(log, "param acc is nil")
 	}
@@ -244,14 +247,14 @@ func (s *State) CommitAccount(acc *Account) error {
 	//acc.Show()
 	return nil
 }
-func (s *State) CommitParam(key string, value uint64) error {
+func (s *State) commitParam(key string, value uint64) error {
 	if err := s.trie.TryUpdate([]byte(key), common.Uint64ToBytes(value)); err != nil {
 		return err
 	}
 	s.Params[key] = value
 	return nil
 }
-func (s *State) GetParam(key string) (uint64, error) {
+func (s *State) getParam(key string) (uint64, error) {
 	value, ok := s.Params[key]
 	if ok {
 		return value, nil
@@ -259,7 +262,7 @@ func (s *State) GetParam(key string) (uint64, error) {
 	data, err := s.trie.TryGet([]byte(key))
 	if err != nil {
 		s.Params[key] = 0
-		return 0, err
+		return 0, errors.New(log, fmt.Sprintf("mpt tree get error:%s", err.Error()))
 	}
 	if len(data) == 0 {
 		return 0, nil

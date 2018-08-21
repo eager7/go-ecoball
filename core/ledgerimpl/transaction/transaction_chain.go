@@ -364,7 +364,7 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 	//} else if result == false {
 	//	return errors.New(log, "tx verify signature failed")
 	//}
-	if err := c.StateDB.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
+	if err := c.TempStateDB.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
 		return err
 	}
 

@@ -97,38 +97,44 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		ctx.Sender().Request(&rpc.ListPeersRsp{Peer: peers}, ctx.Self())
 	case ababft.Signature_Preblock:
 		// broadcast the signature for the previous block
+		info,_ := msg.(ababft.Signature_Preblock)
 		msgType = message.APP_MSG_SIGNPRE
-		buffer, _ = msg.(*ababft.Signature_Preblock).Serialize()
+		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
 	case ababft.Block_FirstRound:
 		// broadcast the first round block
+		info,_ := msg.(ababft.Block_FirstRound)
 		msgType = message.APP_MSG_BLKF
-		buffer, _ = msg.(*ababft.Block_FirstRound).Blockfirst.Serialize()
+		buffer, _ = info.Blockfirst.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
 	case ababft.REQSyn:
 		// broadcast the synchronization request to update the ledger
+		info,_ := msg.(ababft.REQSyn)
 		msgType = message.APP_MSG_REQSYN
-		buffer, _ = msg.(*ababft.REQSyn).Serialize()
+		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
 	case ababft.REQSynSolo:
 		// broadcast the synchronization request to update the ledger
+		info,_ := msg.(ababft.REQSynSolo)
 		msgType = message.APP_MSG_REQSYNSOLO
-		buffer, _ = msg.(*ababft.REQSynSolo).Serialize()
+		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-
 	case ababft.TimeoutMsg:
+		info,_ := msg.(ababft.TimeoutMsg)
 		msgType = message.APP_MSG_TIMEOUT
-		buffer, _ = msg.(*ababft.TimeoutMsg).Serialize()
+		// buffer, _ = msg.(*ababft.TimeoutMsg).Serialize()
+		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
 	case ababft.Signature_BlkF:
 		// broadcast the signature for the first-round block
+		info,_ := msg.(ababft.Signature_BlkF)
 		msgType = message.APP_MSG_SIGNBLKF
-		buffer, _ = msg.(*ababft.Signature_BlkF).Serialize()
+		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
 	//case ababft.Block_SecondRound:
@@ -141,8 +147,9 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		this.node.broadCastCh <- netMsg
 	case ababft.Block_Syn:
 		// broadcast the block according to the synchronization request
+		info,_ := msg.(ababft.Block_Syn)
 		msgType = message.APP_MSG_BLKSYN
-		buffer, _ = msg.(*ababft.Block_Syn).Serialize()
+		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
 	default:

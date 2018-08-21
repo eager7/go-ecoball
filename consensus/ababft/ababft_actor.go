@@ -35,6 +35,8 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"encoding/binary"
 	"sort"
+	"github.com/ecoball/go-ecoball/common/config"
+	"reflect"
 )
 type Actor_ababft struct {
 	status uint // 1: actor generated,
@@ -129,12 +131,14 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			verified_height = uint64(current_height_num) - 1
 
 			log.Debug("ababft is in solo mode!")
-			if soloaccount.PrivateKey != nil {
+			// if soloaccount.PrivateKey != nil {
+			if config.StartNode == true {
 				// is the solo prime
 				actor_c.status = 101
 				// generate the solo block
 				// consensus data
 				var signpre_send []common.Signature
+				signpre_send = append(signpre_send, currentheader.Signatures[0])
 				conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(current_round_num),signpre_send}}
 				// tx list
 				value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Second*1)
@@ -169,11 +173,20 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			} else {
 				// is the solo peer
 				actor_c.status = 102
+				// todo
+				// no need every time to send a request for solo block
+				
+				// send solo syn request
+				var requestsyn REQSynSolo
+				requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
+				hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num+1)))
+				requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+				requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)+1
+				event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
+				log.Info("send solo block requirements:", requestsyn.Reqsyn.RequestHeight, current_height_num)
 			}
 			return
 		}
-
-
 
 		// initialization
 		// clear and initialize the signature preblock array
@@ -183,14 +196,20 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		if err != nil {
 			log.Debug("fail to get peer list.")
 		}
+		log.Debug("ababft now enter into the ababft mode:",newPeers[0],newPeers[1])
+
 		Num_peers = len(newPeers)
-		var Peers_list_account_t []string
+		var Peers_list_account_t = make([]string, Num_peers)
 		for i := 0; i < Num_peers; i++ {
-			Peers_list_account_t = append(Peers_list_account_t,common.IndexToName(newPeers[i]))
+			// Peers_list_account_t = append(Peers_list_account_t,common.IndexToName(newPeers[i]))
+			Peers_list_account_t[i] = newPeers[i].String()
 		}
+		log.Debug("ababft now enter into the ababft mode:Peers_list_account_t",Peers_list_account_t)
 		// sort newPeers
 		sort.Strings(Peers_list_account_t)
 
+		Peers_list_account = make([]Peer_info_account, Num_peers)
+		Peers_addr_list = make([]Peer_addr_info, Num_peers)
 		for i := 0; i < Num_peers; i++ {
 			Peers_list_account[i].Accountname = common.NameToIndex(Peers_list_account_t[i])
 			Peers_list_account[i].Index = i + 1
@@ -960,12 +979,13 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			actor_c.status = 6
 		}
 		// test end
-
+		log.Info("ababbt peer status:",actor_c.status)
 		// check whether it is solo mode
 		if actor_c.status == 102 || actor_c.status == 101 {
 			if actor_c.status == 102 {
 				// solo peer
 				blocksecond_received := msg.Blocksecond
+				log.Info("ababbt solo block height vs current_height_num:",blocksecond_received.Header.Height,current_height_num)
 				if int(blocksecond_received.Header.Height) <= current_height_num {
 					return
 				} else if int(blocksecond_received.Header.Height) == (current_height_num+1) {
@@ -973,6 +993,12 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					blocksecond_received := msg.Blocksecond
 					if blocksecond_received.ConsensusData.Type == types.ConABFT {
 						data_blks_received := blocksecond_received.ConsensusData.Payload.(*types.AbaBftData)
+						// check the signature comes from the root
+						if ok := bytes.Equal(blocksecond_received.Signatures[0].PubKey,config.Root.PublicKey); ok != true {
+							println("the solo block should be signed by the root")
+							return
+						}
+
 						// check the block header(the consensus data is null)
 						var valid_blk bool
 						valid_blk,err = actor_c.verify_header(&blocksecond_received, int(data_blks_received.NumberRound), *currentheader)
@@ -995,6 +1021,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
 					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)+1
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
+					log.Info("send requirements:", requestsyn.Reqsyn.RequestHeight, current_height_num)
 				}
 			}
 
@@ -1212,6 +1239,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		}
 		// test end
 	case REQSynSolo:
+		log.Info("receive the solo block requirement:",msg.Reqsyn.RequestHeight)
 		// receive the solo synchronization request
 		height_req := msg.Reqsyn.RequestHeight
 		pubkey_in := msg.Reqsyn.PubKey
@@ -1228,14 +1256,18 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			println("Solo Syn request message signature is wrong")
 			return
 		}
-		// get the response blocks from the ledger
-		blk_syn_solo,err1 := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req)
-		if err1 != nil || blk_syn_solo == nil {
-			log.Debug("not find the solo block of the corresponding height in the ledger")
-			return
+
+		for i := int(height_req); i <= current_height_num; i++ {
+			// get the response blocks from the ledger
+			blk_syn_solo,err1 := actor_c.service_ababft.ledger.GetTxBlockByHeight(uint64(i))
+			if err1 != nil || blk_syn_solo == nil {
+				log.Debug("not find the solo block of the corresponding height in the ledger")
+				return
+			}
+			// send the solo block
+			event.Send(event.ActorNil,event.ActorP2P,blk_syn_solo)
+			log.Info("send the required solo block:", blk_syn_solo.Height)
 		}
-		// send the solo block
-		event.Send(event.ActorNil,event.ActorP2P,blk_syn_solo)
 		return
 	case Block_Syn:
 		// for test 2018.08.08
@@ -1499,7 +1531,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 	default :
 		log.Debug(msg)
-		log.Warn("unknown message")
+		log.Warn("unknown message", reflect.TypeOf(ctx.Message()))
 		return
 	}
 }
@@ -1713,11 +1745,11 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 	return  true,err
 
 	// todo
-	// use CheckPermission(index common.AccountName, name string, sig []common.Signature) instead
+	// use checkPermission(index common.AccountName, name string, sig []common.Signature) instead
 	/*
-	// 4. check the current block signature by using function CheckPermission
+	// 4. check the current block signature by using function checkPermission
 	// 4a. check the peers permission
-	err = actor_c.service_ababft.ledger.CheckPermission(0, "active",sign_blks_curblk)
+	err = actor_c.service_ababft.ledger.checkPermission(0, "active",sign_blks_curblk)
 	if err != nil {
 		log.Debug("signature permission check fail")
 		return false,err
