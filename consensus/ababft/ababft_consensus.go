@@ -26,6 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/txpool"
 )
 
 // in this version, the peers take turns to generate the block
@@ -48,6 +49,7 @@ type Service_ababft struct {
 	pid   *actor.PID
 	ledger ledger.Ledger
 	account *account.Account
+	txPool *txpool.TxPool
 }
 
 type Peer_info struct {
@@ -65,7 +67,7 @@ type Peer_info_account struct {
 	Index       int
 }
 
-func Service_ababft_gen(l ledger.Ledger, account *account.Account) (service_ababft *Service_ababft, err error) {
+func Service_ababft_gen(l ledger.Ledger, txPool *txpool.TxPool, account *account.Account) (service_ababft *Service_ababft, err error) {
 	var pid *actor.PID
 
 	service_ababft = new(Service_ababft)
@@ -82,6 +84,7 @@ func Service_ababft_gen(l ledger.Ledger, account *account.Account) (service_abab
 	service_ababft.pid = pid
 	service_ababft.ledger = l
 	service_ababft.account = account
+	service_ababft.txPool = txPool
 
 	current_ledger = l
 	primary_tag = 0
