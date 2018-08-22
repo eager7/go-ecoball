@@ -65,20 +65,6 @@ type Transaction struct {
 	Receipt    TransactionReceipt
 }
 
-type Transaction_invoke struct {
-	Version    uint32             `json:"version"`
-	Type       string             `json:"type"`
-	From       string			  `json:"from"`
-	Permission string             `json:"permission"`
-	Addr       string			  `json:"addr"`
-	Nonce      uint64             `json:"nonce"`
-	TimeStamp  int64              `json:"timeStamp"`
-	Payload    InvokeInfo             `json:"payload"`
-	Signatures []common.Signature `json:"signatures"`
-	Hash       string             `json:"hash"`
-	Receipt    string
-}
-
 func NewTransaction(t TxType, from, addr common.AccountName, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
 	if payload == nil {
 		return nil, errors.New(log, "the transaction's payload is nil")
@@ -190,7 +176,7 @@ func (t *Transaction) Serialize() ([]byte, error) {
 	}
 	b, err := p.Marshal()
 	if err != nil {
-		return nil, err
+		return nil, errors.New(log, fmt.Sprintf("Marshal error:%s", err.Error()))
 	}
 	return b, nil
 }
@@ -206,7 +192,7 @@ func (t *Transaction) Deserialize(data []byte) error {
 
 	var txPb pb.Transaction
 	if err := txPb.Unmarshal(data); err != nil {
-		return err
+		return errors.New(log, fmt.Sprintf("data len: %d, unMarshal error:%s", len(data), err.Error()))
 	}
 
 	t.Version = txPb.Payload.Version
