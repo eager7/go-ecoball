@@ -36,7 +36,7 @@ This project used CGO, so set the CGO_ENABLED="1"
 
 ## ecoclient
 ### wallet
-you should run ecowallet then you can use wallet command
+You must run the program ecowallet before you execute the wallet command
 create wallet file
 ```
 $./ecoclient wallet create --name $WALLETFILE --password $PASSWORD
