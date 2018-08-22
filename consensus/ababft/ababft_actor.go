@@ -170,7 +170,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				*/
 				if err := event.Send(event.ActorNil, event.ActorLedger, block_solo); err != nil {
 					log.Fatal(err)
-					return
+					// return
 				}
 
 				verified_height = block_solo.Height
@@ -960,7 +960,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				*/
 				if err := event.Send(event.ActorNil, event.ActorLedger, &block_second); err != nil {
 					log.Fatal(err)
-					return
+					// return
 				}
 				verified_height = block_second.Height - 1
 				// 5. change the status
@@ -1037,7 +1037,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						*/
 						if err := event.Send(event.ActorNil, event.ActorLedger, &blocksecond_received); err != nil {
 							log.Fatal(err)
-							return
+							// return
 						}
 						verified_height = blocksecond_received.Height
 						log.Info("verified height of the solo mode:",verified_height)
@@ -1151,7 +1151,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					*/
 					if err := event.Send(event.ActorNil, event.ActorLedger, &blocksecond_received); err != nil {
 						log.Fatal(err)
-						return
+						// return
 					}
 
 					// 4. change status
@@ -1408,7 +1408,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				*/
 				if err := event.Send(event.ActorNil, event.ActorLedger, &blks_v); err != nil {
 					log.Fatal(err)
-					return
+					// return
 				}
 			}  else {
 				// the blks_v has been in the ledger
@@ -1422,7 +1422,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			*/
 			if err := event.Send(event.ActorNil, event.ActorLedger, &blks_f); err != nil {
 				log.Fatal(err)
-				return
+				// return
 			}
 			// 4. only the block is sucessfully saved, then change the status
 			verified_height = blks_v.Height
