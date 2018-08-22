@@ -24,17 +24,14 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/hashicorp/golang-lru"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var log = elog.NewLogger("TxPool", elog.DebugLog)
 
-type TxPooler interface {
-
-}
-
 type TxPool struct {
 	ledger    ledger.Ledger
-	PendingTx *types.TxsList //UnPackaged list of legitimate transactions
+	PendingTxs map[common.Hash]*types.TxsList //UnPackaged list of legitimate transactions
 	txsCache  *lru.Cache
 }
 
@@ -45,8 +42,9 @@ func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
 		return nil, errors.New(log, fmt.Sprintf("New Lru error:%s", err.Error()))
 	}
 	//transaction pool
-	pool = &TxPool{ledger: ledger, PendingTx: types.NewTxsList(), txsCache: csc}
-
+	pool = &TxPool{ledger: ledger, txsCache: csc}
+	pool.PendingTxs = make(map[common.Hash]*types.TxsList, 1)
+	pool.AddTxsList(config.ChainHash)
 	//transaction pool actor
 	if _, err = NewTxPoolActor(pool); nil != err {
 		pool = nil
@@ -56,6 +54,35 @@ func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
 }
 
 func (t *TxPool) GetTxsList(chainID common.Hash) ([]*types.Transaction, error) {
-	txs := t.PendingTx.GetTransactions()
+	list, ok := t.PendingTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("can't find this chain:%s", chainID.HexString()))
+	}
+	txs := list.GetTransactions()
 	return txs, nil
+}
+
+func (t *TxPool) AddTxsList(hash common.Hash) {
+	if _, ok := t.PendingTxs[hash]; ok {
+		return
+	}
+	t.PendingTxs[hash] = types.NewTxsList()
+}
+
+func (t *TxPool) Push(chainID common.Hash, tx *types.Transaction) error {
+	list, ok := t.PendingTxs[chainID]
+	if !ok {
+		return errors.New(log, fmt.Sprintf("can't find this chain:%s", chainID.HexString()))
+	}
+	list.Push(tx)
+	return nil
+}
+
+func (t *TxPool) Delete(chainID, txHash common.Hash) error {
+	list, ok := t.PendingTxs[chainID]
+	if !ok {
+		return errors.New(log, fmt.Sprintf("can't find this chain:%s", chainID.HexString()))
+	}
+	list.Delete(txHash)
+	return nil
 }

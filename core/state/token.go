@@ -58,6 +58,8 @@ func (s *State) AccountAddBalance(index common.AccountName, token string, value 
 }
 
 func (s *State) TokenExisted(name string) bool {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	data, err := s.trie.TryGet([]byte(name))
 	if err != nil {
 		log.Error(err)

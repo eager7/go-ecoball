@@ -55,7 +55,7 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 	case message.GetTxs:
 		log.Debug("Ledger request txs")
 		txs := types.NewTxsList()
-		txs.Copy(p.txPool.PendingTx)
+		//txs.Copy(p.txPool.PendingTx)
 		ctx.Sender().Tell(txs)
 	case *types.Block:
 		log.Debug("new block delete transactions")
@@ -67,9 +67,9 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 
 //Determine whether a transaction already exists
 func (p *PoolActor) isSameTransaction(hash common.Hash) bool {
-	if tr := p.txPool.PendingTx.Same(hash); tr {
-		return true
-	}
+	//if tr := p.txPool.PendingTx.Same(hash); tr {
+	//	return true
+	//}
 	if p.txPool.txsCache.Contains(hash) {
 		return true
 	}
@@ -116,7 +116,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	//}
 
 	//Verify by adding to the transaction pool
-	p.txPool.PendingTx.Push(tx)
+	p.txPool.Push(tx.ChainID, tx)
 
 	//Broadcast transactions on p2p
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
@@ -129,6 +129,6 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 
 func (p *PoolActor) handleNewBlock(block *types.Block) {
 	for _, v := range block.Transactions {
-		p.txPool.PendingTx.Delete(v.Hash)
+		p.txPool.Delete(block.ChainID, v.Hash)
 	}
 }
