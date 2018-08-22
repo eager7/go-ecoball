@@ -29,6 +29,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	inner "github.com/ecoball/go-ecoball/common"
 	"math/big"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var (
@@ -89,7 +90,7 @@ func transferAction(c *cli.Context) error {
 	//time
 	time := time.Now().Unix()
 
-	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), "owner", bigValue, 0, time)
+	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), config.ChainHash, "owner", bigValue, 0, time)
 	if nil != err {
 		return err
 	}

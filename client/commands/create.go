@@ -88,22 +88,18 @@ func newAccount(c *cli.Context) error {
 	creatorAccount := innercommon.NameToIndex(creator)
 	timeStamp := time.Now().Unix()
 
-	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, "owner","new_account",
+	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, config.ChainHash, "owner","new_account",
 		[]string{name, innercommon.AddressFromPubKey(innercommon.FromHex(owner)).HexString()}, 0, timeStamp)
 	invoke.SetSignature(&config.Root)
 
 	//rpc call
 	//resp, err := rpc.Call("createAccount", []interface{}{creator, name, owner, active})
-	/*data, err := invoke.Serialize()
-	if nil != err {
-		fmt.Println(err)
-	}*/
 	data, err := invoke.Serialize()
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
-	fmt.Println(string(data))
+	fmt.Println(len(data),data)
 	resp, err := rpc.Call("createAccount", []interface{}{string(data)})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

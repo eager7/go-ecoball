@@ -52,24 +52,19 @@ func handleCreateAccount(params []interface{}) common.Errcode {
 	}
 
 	//account name
-	if v, ok := params[0].(string); ok {
+	if v, ok := params[1].(string); ok {
 		name = v
 	} else {
 		invalid = true
 	}
 
 	//owner key
-	if v, ok := params[0].(string); ok {
+	if v, ok := params[2].(string); ok {
 		owner = v
 	} else {
 		invalid = true
 	}*/
 
-	/*creatorAccount := innercommon.NameToIndex("ecoball")
-	timeStamp := time.Now().Unix()
-
-	invoke, _ := types.NewInvokeContract(creatorAccount, creatorAccount, "owner","new_account",
-		[]string{"ecoball", innercommon.AddressFromPubKey(innercommon.FromHex("0x12351")).HexString()}, 0, timeStamp)*/
 	invoke := new(types.Transaction)//{
 	//	Payload: &types.InvokeInfo{}}
 
@@ -86,15 +81,14 @@ func handleCreateAccount(params []interface{}) common.Errcode {
 	if invalid {
 		return common.INVALID_PARAMS
 	}
+	fmt.Println(len([]byte(name)),[]byte(name))
 
-	//json.Unmarshal([]byte(name), invoke);
-	//invoke.Deserialize([]byte(name))
 	if err := invoke.Deserialize([]byte(name)); err != nil {
 		fmt.Println(err)
 		return common.INVALID_PARAMS
 	}
 	invoke.Show()
-	
+
 	//send to txpool
 	err := event.Send(event.ActorNil, event.ActorTxPool, invoke)
 	if nil != err {
