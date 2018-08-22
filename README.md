@@ -18,7 +18,7 @@ $:~/go/src/github.com/ecoball/go-ecoball$ make
 Then you will get a directory named **build**:
 ```bash
 ~/go/src/github.com/ecoball/go-ecoball$ ls build/
-ecoball  ecoclient
+ecoball  ecoclient ecowallet
 ```
 If build in windows
 Run ***build_windows*** in go-ecoball
@@ -28,7 +28,7 @@ Run ***build_windows*** in go-ecoball
 Then you will get a directory named **build**:
 ```bash
 %GOPATH%\src\github.com\ecoball\go-ecoball\build>dir
-ecoball.exe  ecoclient.exe
+ecoball.exe  ecoclient.exe ecowallet.exe
 ```
 
 ## Notes
@@ -36,6 +36,7 @@ This project used CGO, so set the CGO_ENABLED="1"
 
 ## ecoclient
 ### wallet
+you should run ecowallet then you can use wallet command
 create wallet file
 ```
 $./ecoclient wallet create --name $WALLETFILE --password $PASSWORD
@@ -122,6 +123,13 @@ $ ./ecoclient attach --ip=127.0.0.1 --port=20789
 success!
 attach http://127.0.0.1:20789 success!!!
 ```
+## ecowallet
+run ecoball
+
+```
+$ ./ecowallet
+```
+
 
 ## ecoball
 run ecoball

@@ -2,9 +2,9 @@
 
 BASE_VERSION = 1.1.1
 
-all: ecoball ecoclient proto plugins
+all: ecoball ecoclient ecowallet proto plugins
 
-.PHONY: proto plugins ecoball ecoclient
+.PHONY: proto plugins ecoball ecoclient ecowallet
 ecoball: proto plugins
 	@echo "\033[;32mbuild ecoball \033[0m"
 	mkdir -p build/
@@ -16,6 +16,12 @@ ecoclient:
 	mkdir -p build/
 	go build -v -o ecoclient client/client.go
 	mv ecoclient build/
+
+ecowallet: 
+	@echo "\033[;32mbuild ecowallet \033[0m"
+	mkdir -p build/
+	go build -v -o ecowallet walletserver/main.go 
+	mv ecowallet build/
 
 proto:
 	@echo "\033[;32mbuild protobuf file \033[0m"
