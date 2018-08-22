@@ -155,10 +155,13 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 			return err
 		}
 	}
-	connect.Notify(info.InfoBlock, block)
-	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
-		log.Warn(err)
+	if block.Height != 1 {
+		connect.Notify(info.InfoBlock, block)
+		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
+			log.Warn(err)
+		}
 	}
+
 	for _, t := range block.Transactions {
 		payload, _ := t.Serialize()
 		if t.Type == types.TxDeploy {

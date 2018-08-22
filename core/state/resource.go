@@ -390,6 +390,8 @@ func (s *State) checkAccountCertification(index common.AccountName) error {
  *  @brief store the producers' list into mpt trie
  */
 func (s *State) commitProducersList() error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	if len(s.Producers) == 0 {
 		data, err := s.trie.TryGet([]byte(prodsList))
 		if err != nil {
@@ -431,6 +433,8 @@ func (s *State) GetProducerList() ([]common.AccountName, error) {
 		return nil, errors.New(log, "the main network has not been started")
 	}
 	if len(s.Producers) == 0 {
+		s.mutex.RLock()
+		defer s.mutex.RUnlock()
 		data, err := s.trie.TryGet([]byte(prodsList))
 		if err != nil {
 			return nil, errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))

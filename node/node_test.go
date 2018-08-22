@@ -25,7 +25,6 @@ func TestRunMain(t *testing.T) {
 	//start transaction pool
 	txPool, err := txpool.Start(ledger)
 	errors.CheckErrorPanic(err)
-
 	net.StartNetWork(ledger)
 
 	//start consensus
@@ -44,7 +43,7 @@ func TestRunMain(t *testing.T) {
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
-	
+
 	//start explorer
 	go spectator.Bystander(ledger)
 

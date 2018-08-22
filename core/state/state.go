@@ -37,8 +37,12 @@ type State struct {
 	db     Database
 	diskDb *store.LevelDBStore
 
+	accMutex  sync.RWMutex
 	Accounts  map[string]Account
+
+	paraMutex sync.RWMutex
 	Params    map[string]uint64
+
 	Producers map[common.AccountName]uint64
 
 	mutex sync.RWMutex
@@ -68,10 +72,14 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	return st, nil
 }
 func (s *State) CopyState() (*State, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	params := make(map[string]uint64, 1)
 	accounts := make(map[string]Account, 1)
 	prods := make(map[common.AccountName]uint64, 1)
 
+	s.paraMutex.Lock()
+	defer s.paraMutex.Unlock()
 	if str, err := json.Marshal(s.Params); err != nil {
 		return nil, err
 	} else {
@@ -86,6 +94,8 @@ func (s *State) CopyState() (*State, error) {
 			return nil, err
 		}
 	}
+	s.accMutex.RLock()
+	defer s.accMutex.RUnlock()
 	if str, err := json.Marshal(s.Accounts); err != nil {
 		return nil, err
 	} else {
@@ -109,7 +119,9 @@ func (s *State) CopyState() (*State, error) {
  */
 func (s *State) AddAccount(index common.AccountName, addr common.Address, timeStamp int64) (*Account, error) {
 	key := common.IndexToBytes(index)
+	s.mutex.Lock()
 	data, err := s.trie.TryGet(key)
+	s.mutex.Unlock()
 	if err != nil {
 		return nil, err
 	}
@@ -124,10 +136,18 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
 		return nil, err
 	}
 	//save the mapping of addr and index
-	if err := s.trie.TryUpdate(addr.Bytes(), common.IndexToBytes(acc.Index)); err != nil {
+	s.mutex.Lock()
+	err = s.trie.TryUpdate(addr.Bytes(), common.IndexToBytes(acc.Index))
+	s.mutex.Unlock()
+	if err != nil {
 		return nil, err
 	}
+	s.accMutex.Lock()
+	defer s.accMutex.Unlock()
 	s.Accounts[index.String()] = *acc
+
+	s.paraMutex.Lock()
+	defer s.paraMutex.Unlock()
 	s.Params[addr.HexString()] = uint64(index)
 	return acc, nil
 }
@@ -184,12 +204,16 @@ func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, er
  *  @param index - the account index
  */
 func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
+	s.accMutex.RLock()
+	defer s.accMutex.RUnlock()
 	acc, ok := s.Accounts[index.String()]
 	if ok {
 		return &acc, nil
 	}
 	key := common.IndexToBytes(index)
+	s.mutex.Lock()
 	fData, err := s.trie.TryGet(key)
+	s.mutex.Unlock()
 	if err != nil {
 		return nil, err
 	}
@@ -208,11 +232,16 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
  *  @param addr - the account address
  */
 func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
+	s.paraMutex.Lock()
 	index, ok := s.Params[addr.HexString()]
+	s.paraMutex.Unlock()
 	if ok {
 		return s.GetAccountByName(common.AccountName(index))
 	}
-	if fData, err := s.trie.TryGet(addr.Bytes()); err != nil {
+	s.mutex.Lock()
+	fData, err := s.trie.TryGet(addr.Bytes())
+	s.mutex.Unlock()
+	if err != nil {
 		return nil, err
 	} else {
 		if fData == nil {
@@ -239,27 +268,39 @@ func (s *State) commitAccount(acc *Account) error {
 	if err != nil {
 		return err
 	}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	if err := s.trie.TryUpdate(common.IndexToBytes(acc.Index), d); err != nil {
 		return err
 	}
 	//s.RecoverResources(acc)
+	s.accMutex.Lock()
+	defer s.accMutex.Unlock()
 	s.Accounts[acc.Index.String()] = *acc
 	//acc.Show()
 	return nil
 }
 func (s *State) commitParam(key string, value uint64) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	if err := s.trie.TryUpdate([]byte(key), common.Uint64ToBytes(value)); err != nil {
 		return err
 	}
+	s.paraMutex.Lock()
+	defer s.paraMutex.Unlock()
 	s.Params[key] = value
 	return nil
 }
 func (s *State) getParam(key string) (uint64, error) {
+	s.paraMutex.Lock()
+	defer s.paraMutex.Unlock()
 	value, ok := s.Params[key]
 	if ok {
 		return value, nil
 	}
+	s.mutex.Lock()
 	data, err := s.trie.TryGet([]byte(key))
+	s.mutex.Unlock()
 	if err != nil {
 		s.Params[key] = 0
 		return 0, errors.New(log, fmt.Sprintf("mpt tree get error:%s", err.Error()))
@@ -289,6 +330,8 @@ func (s *State) CommitToMemory() error {
  *  @brief save the information of mpt trie into levelDB
  */
 func (s *State) CommitToDB() error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	if err := s.CommitToMemory(); err != nil {
 		return err
 	}
@@ -300,6 +343,8 @@ func (s *State) CommitToDB() error {
  *  @param hash - the hash of mpt witch state will be reset
  */
 func (s *State) Reset(hash common.Hash) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	if err := s.diskDb.Close(); err != nil {
 		return err
 	}
@@ -312,12 +357,16 @@ func (s *State) Reset(hash common.Hash) error {
 	if err != nil {
 		return err
 	}
+	s.accMutex.Lock()
+	defer s.accMutex.Unlock()
 	for k := range s.Accounts {
 		delete(s.Accounts, k)
 	}
 	for k := range s.Producers {
 		delete(s.Producers, k)
 	}
+	s.paraMutex.Lock()
+	defer s.paraMutex.Unlock()
 	for k := range s.Params {
 		delete(s.Params, k)
 	}
