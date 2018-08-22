@@ -17,7 +17,10 @@
 package txpool
 
 import (
+	"fmt"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/hashicorp/golang-lru"
 )
@@ -25,16 +28,19 @@ import (
 var log = elog.NewLogger("TxPool", elog.DebugLog)
 
 type TxPool struct {
+	ledger    ledger.Ledger
 	PendingTx *types.TxsList //UnPackaged list of legitimate transactions
 	txsCache  *lru.Cache
 }
 
 //start transaction pool
-func Start() (pool *TxPool, err error) {
-	csc, _ := lru.New(10000)
-
+func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
+	csc, err := lru.New(10000)
+	if err != nil {
+		return nil, errors.New(log, fmt.Sprintf("New Lru error:%s", err.Error()))
+	}
 	//transaction pool
-	pool = &TxPool{PendingTx: types.NewTxsList(), txsCache: csc}
+	pool = &TxPool{ledger: ledger, PendingTx: types.NewTxsList(), txsCache: csc}
 
 	//transaction pool actor
 	if _, err = NewTxPoolActor(pool); nil != err {

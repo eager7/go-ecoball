@@ -129,16 +129,16 @@ func (s *State) CheckPermission(index common.AccountName, name string, hash comm
 	if err != nil {
 		return err
 	}
-	var sigs []common.Signature
+	var sig []common.Signature
 	for _, v := range signatures {
 		result, err := secp256k1.Verify(hash.Bytes(), v.SigData, v.PubKey)
 		if err == nil && result == true {
-			sigs = append(sigs, v)
+			sig = append(sig, v)
 		} else {
 			log.Warn("verify signature failed:", err, result)
 		}
 	}
-	return acc.checkPermission(s, name, sigs)
+	return acc.checkPermission(s, name, sig)
 }
 
 /**

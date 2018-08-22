@@ -13,6 +13,7 @@ type Ledger interface {
 	SaveTxBlock(block *types.Block) error
 	GetTxBlockByHeight(height uint64) (*types.Block, error)
 	CheckTransaction(tx *types.Transaction) error
+	PreHandleTransaction(tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error)
 	GetCurrentHeader() *types.Header
 	GetCurrentHeight() uint64
 	StateDB() *state.State

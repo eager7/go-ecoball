@@ -21,10 +21,13 @@ import (
 func TestRunMain(t *testing.T) {
 	ledger := example.Ledger("/tmp/run_test")
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
+	//start transaction pool
+	txPool, err := txpool.Start(ledger)
+	errors.CheckErrorPanic(err)
 	//start consensus
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
-		c, _ := solo.NewSoloConsensusServer(ledger)
+		c, _ := solo.NewSoloConsensusServer(ledger, txPool)
 		c.Start()
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
@@ -37,9 +40,7 @@ func TestRunMain(t *testing.T) {
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
-	//start transaction pool
-	_, err := txpool.Start()
-	errors.CheckErrorPanic(err)
+
 	net.StartNetWork(ledger)
 
 	//start explorer
@@ -49,7 +50,7 @@ func TestRunMain(t *testing.T) {
 	go example.VotingProducer(ledger)
 	wait()
 }
-
+/*
 func TestRunNode(t *testing.T) {
 	ledger := example.Ledger("/tmp/run_test")
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
@@ -75,7 +76,7 @@ func TestRunNode(t *testing.T) {
 	go spectator.Bystander(ledger)
 	wait()
 }
-
+*/
 func wait() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)

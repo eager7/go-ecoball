@@ -116,6 +116,10 @@ func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
 	return nil
 }
 
+func (l *LedgerImpl) PreHandleTransaction(tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error) {
+	return l.ChainTx.HandleTransaction(l.ChainTx.TempStateDB, tx, timeStamp, l.ChainTx.CurrentHeader.Receipt.BlockCpu, l.ChainTx.CurrentHeader.Receipt.BlockNet)
+}
+
 func (l *LedgerImpl) AccountGet(index common.AccountName) (*state.Account, error) {
 	return l.ChainTx.StateDB.GetAccountByName(index)
 }
