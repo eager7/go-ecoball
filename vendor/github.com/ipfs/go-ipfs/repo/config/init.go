@@ -101,9 +101,9 @@ const DefaultConnMgrGracePeriod = time.Second * 20
 func addressesConfig() Addresses {
 	return Addresses{
 		Swarm: []string{
-			"/ip4/0.0.0.0/tcp/4001",
+			"/ip4/0.0.0.0/tcp/4011",
 			// "/ip4/0.0.0.0/udp/4002/utp", // disabled for now.
-			"/ip6/::/tcp/4001",
+			"/ip6/::/tcp/4011",
 		},
 		Announce:   []string{},
 		NoAnnounce: []string{},
