@@ -24,8 +24,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/spectator/connect"
-	"github.com/ecoball/go-ecoball/spectator/info"
 )
 
 type LedActor struct {
@@ -84,8 +82,6 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			log.Error("save block error:", err)
 			break
 		}
-		//notify explorer
-		connect.Notify(info.InfoBlock, msg)
 	case *dpos.DposBlock:
 		//TODO
 

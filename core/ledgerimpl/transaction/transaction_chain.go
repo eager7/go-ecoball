@@ -32,6 +32,8 @@ import (
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"math/big"
 	"time"
+	"github.com/ecoball/go-ecoball/spectator/connect"
+	"github.com/ecoball/go-ecoball/spectator/info"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -153,6 +155,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 			return err
 		}
 	}
+	connect.Notify(info.InfoBlock, block)
 	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 		log.Warn(err)
 	}
