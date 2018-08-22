@@ -59,7 +59,7 @@ func queryBalance(c *cli.Context) error {
 	}
 
 	//rpc call
-	resp, err := rpc.Call("query", []interface{}{string("balance"), address})
+	resp, err := rpc.NodeCall("query", []interface{}{string("balance"), address})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

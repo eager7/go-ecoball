@@ -66,7 +66,7 @@ func attach(c *cli.Context) error {
 	}
 
 	//rpc call
-	resp, err := rpc.Call("attach", []interface{}{common.RpcAddress()})
+	resp, err := rpc.NodeCall("attach", []interface{}{common.RpcAddress()})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

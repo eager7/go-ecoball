@@ -38,6 +38,23 @@ var (
 		Action:      common.DefaultAction,
 		Subcommands: []cli.Command{
 			{
+				Name:   "attach",
+				Usage:  "hang different wallet nodes",
+				Action: attachWallet,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "ip",
+						Usage: "node's ip address",
+						Value: "localhost",
+					},
+					cli.StringFlag{
+						Name:  "port",
+						Usage: "node's RPC port",
+						Value: "20678",
+					},
+				},
+			},
+			{
 				Name:   "create",
 				Usage:  "create wallet",
 				Action: createWallet,
@@ -163,6 +180,36 @@ var (
 	}
 )
 
+func attachWallet(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	//ip address
+	ip := c.String("ip")
+	if "" != ip {
+		common.WalletIp = ip
+	}
+
+	//port
+	port := c.String("port")
+	if "" != port {
+		common.WalletPort = port
+	}
+
+	//rpc call
+	resp, err := rpc.WalletCall("attach", []interface{}{common.RpcAddress()})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return err
+	}
+
+	//result
+	return rpc.EchoResult(resp)
+}
+
 func createWallet(c *cli.Context) error {
 	//Check the number of flags
 	if c.NumFlags() == 0 {
@@ -182,7 +229,7 @@ func createWallet(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	resp, err := rpc.Call("createWallet", []interface{}{name, passwd})
+	resp, err := rpc.WalletCall("createWallet", []interface{}{name, passwd})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
@@ -209,7 +256,7 @@ func createKey(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	resp, err := rpc.Call("createKey", []interface{}{name})
+	resp, err := rpc.WalletCall("createKey", []interface{}{name})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
@@ -238,7 +285,7 @@ func openWallet(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	resp, err := rpc.Call("openWallet", []interface{}{name, passwd})
+	resp, err := rpc.WalletCall("openWallet", []interface{}{name, passwd})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
@@ -264,7 +311,7 @@ func lockWallet(c *cli.Context) error {
 		return errors.New("Invalid wallet name")
 	}
 
-	resp, err := rpc.Call("lockWallet", []interface{}{name})
+	resp, err := rpc.WalletCall("lockWallet", []interface{}{name})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
@@ -293,7 +340,7 @@ func unlockWallet(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	resp, err := rpc.Call("unlockWallet", []interface{}{name, passwd})
+	resp, err := rpc.WalletCall("unlockWallet", []interface{}{name, passwd})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
@@ -322,7 +369,7 @@ func importKey(c *cli.Context) error {
 		return errors.New("Invalid private key")
 	}
 
-	resp, err := rpc.Call("importKey", []interface{}{name, privateKey})
+	resp, err := rpc.WalletCall("importKey", []interface{}{name, privateKey})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
@@ -357,7 +404,7 @@ func removeKey(c *cli.Context) error {
 		return errors.New("Invalid private key")
 	}
 
-	resp, err := rpc.Call("removeKey", []interface{}{name, password, publicKey})
+	resp, err := rpc.WalletCall("removeKey", []interface{}{name, password, publicKey})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
@@ -386,7 +433,7 @@ func listAccount(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	resp, err := rpc.Call("list_keys", []interface{}{name, passwd})
+	resp, err := rpc.WalletCall("list_keys", []interface{}{name, passwd})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
@@ -397,7 +444,7 @@ func listAccount(c *cli.Context) error {
 }
 
 func listWallets(c *cli.Context) error {
-	resp, err := rpc.Call("list_wallets", []interface{}{})
+	resp, err := rpc.WalletCall("list_wallets", []interface{}{})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

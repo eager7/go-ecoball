@@ -16,17 +16,17 @@
 
 package commands
 
-import(
+import (
 	//"math/big"
 	"strings"
 	//"time"
 	//"errors"
 
-	"github.com/ecoball/go-ecoball/http/common"
 	inner "github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/http/common"
 	//"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	//"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/wallet"
+	"github.com/ecoball/go-ecoball/walletserver/wallet"
 )
 
 func CreateWallet(params []interface{}) *common.Response {
@@ -34,7 +34,7 @@ func CreateWallet(params []interface{}) *common.Response {
 		log.Error("invalid arguments")
 		return common.NewResponse(common.INVALID_PARAMS, nil)
 	}
-	switch params[0].(type){
+	switch params[0].(type) {
 	case string:
 		name := params[0].(string)
 		password := params[1].(string)
@@ -52,12 +52,12 @@ func CreateKey(params []interface{}) *common.Response {
 		log.Error("invalid arguments")
 		return common.NewResponse(common.INVALID_PARAMS, nil)
 	}
-	switch params[0].(type){
+	switch params[0].(type) {
 	case string:
 		name := params[0].(string)
 		pub, pri, err := wallet.CreateKey(name)
 		var key_str string
-		key_str += "publickey:" + inner.ToHex(pub) + "\n"+ "privatekey:" + inner.ToHex(pri)
+		key_str += "publickey:" + inner.ToHex(pub) + "\n" + "privatekey:" + inner.ToHex(pri)
 		if err != nil {
 			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 		}
@@ -210,7 +210,7 @@ func ListWallets(params []interface{}) *common.Response {
 	}
 	var walletsList string
 	for _, k := range wallets {
-		walletsList += k;
+		walletsList += k
 		walletsList += "\n"
 	}
 	walletsList = strings.TrimSuffix(walletsList, "\n")

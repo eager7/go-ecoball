@@ -71,7 +71,7 @@ var (
 
 func listMyId(ctx *cli.Context) error {
 
-	rsp, err := rpc.Call("netlistmyid", []interface{}{})
+	rsp, err := rpc.NodeCall("netlistmyid", []interface{}{})
 	if err != nil {
 		//TODO
 	}
@@ -95,7 +95,7 @@ func listMyId(ctx *cli.Context) error {
 
 func listPeers(ctx *cli.Context) error {
 
-	rsp, err := rpc.Call("netlistmypeer", []interface{}{})
+	rsp, err := rpc.NodeCall("netlistmypeer", []interface{}{})
 	if err != nil {
 		//TODO
 	}
