@@ -17,16 +17,13 @@
 package txpool
 
 import (
-	"errors"
-	"fmt"
 	"reflect"
-	"time"
 
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/types"
 )
@@ -43,7 +40,6 @@ func NewTxPoolActor(pool *TxPool) (pid *actor.PID, err error) {
 	if pid, err = actor.SpawnNamed(props, "TxPoolActor"); nil != err {
 		return nil, err
 	}
-
 	event.RegisterActor(event.ActorTxPool, pid)
 
 	return
@@ -81,34 +77,43 @@ func (p *PoolActor) isSameTransaction(hash common.Hash) bool {
 }
 
 func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
-	if exist := p.isSameTransaction(tx.Hash); exist {
+	//if exist := p.isSameTransaction(tx.Hash); exist {
+	if p.txPool.txsCache.Contains(tx.Hash) {
 		log.Warn("transaction already in the txn pool")
-		return errors.New("transaction already in the txn pool: " + tx.Hash.HexString())
+		return errors.New(log, "transaction already in the txn pool: "+tx.Hash.HexString())
 	}
 	p.txPool.txsCache.Add(tx.Hash, tx.Hash)
 
-	//check transaction signatures
-	data := tx.Hash.Bytes()
-	for _, v := range tx.Signatures {
-		if hasSign, err := secp256k1.Verify(data, v.SigData, v.PubKey); nil != err || !hasSign {
-			log.Warn("check transaction signatures failed:" + tx.Hash.HexString())
-			return errors.New("check transaction signatures fail:" + tx.Hash.HexString())
-		}
+	//check transaction
+	if err := p.txPool.ledger.CheckTransaction(tx); err != nil {
+		return err
 	}
+	ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx, tx.TimeStamp)
+	if err != nil {
+		return err
+	}
+	log.Debug(ret, cpu, net, err)
+	//data := tx.Hash.Bytes()
+	//for _, v := range tx.Signatures {
+	//	if hasSign, err := secp256k1.Verify(data, v.SigData, v.PubKey); nil != err || !hasSign {
+	//		log.Warn("check transaction signatures failed:" + tx.Hash.HexString())
+	//		return errors.New(log, "check transaction signatures fail:"+tx.Hash.HexString())
+	//	}
+	//}
 
 	//Send the transaction to ledger to Check legitimacy
-	res, err := event.SendSync(event.ActorLedger, tx, time.Second*2)
-	if nil != err {
-		log.Warn("send message to ledger actor error: ", tx.Hash.HexString())
-		return errors.New("send message to ledger actor error: " + tx.Hash.HexString())
-	} else if nil != res {
-		if err, ok := res.(error); ok {
-			log.Warn(tx.Hash.HexString(), " Check legitimacy failed: ", err)
-			return errors.New(tx.Hash.HexString() + " Check legitimacy failed: " + fmt.Sprintf("%v", err))
-		} else {
-			return errors.New("unidentified message")
-		}
-	}
+	//res, err := event.SendSync(event.ActorLedger, tx, time.Second*2)
+	//if nil != err {
+	//	log.Warn("send message to ledger actor error: ", tx.Hash.HexString())
+	//	return errors.New(log, "send message to ledger actor error: "+tx.Hash.HexString())
+	//} else if nil != res {
+	//	if err, ok := res.(error); ok {
+	//		log.Warn(tx.Hash.HexString(), " Check legitimacy failed: ", err)
+	//		return errors.New(log, tx.Hash.HexString()+" Check legitimacy failed: "+fmt.Sprintf("%v", err))
+	//	} else {
+	//		return errors.New(log, "unidentified message")
+	//	}
+	//}
 
 	//Verify by adding to the transaction pool
 	p.txPool.PendingTx.Push(tx)
@@ -116,7 +121,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	//Broadcast transactions on p2p
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
 		log.Warn("broadcast transaction failed:" + tx.Hash.HexString())
-		return errors.New("broadcast transaction failed:" + tx.Hash.HexString())
+		return errors.New(log, "broadcast transaction failed:"+tx.Hash.HexString())
 	}
 
 	return nil

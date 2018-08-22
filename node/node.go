@@ -38,7 +38,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/spectator"
-	"github.com/ecoball/go-ecoball/test/example"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
 )
@@ -62,11 +61,19 @@ func runNode(c *cli.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	//start transaction pool
+	txPool, err := txpool.Start(l)
+	if err != nil {
+		log.Fatal("start txPool error, ", err.Error())
+		os.Exit(1)
+	}
+
 	log.Info("consensus", config.ConsensusAlgorithm)
 	//start consensus
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
-		c, _ := solo.NewSoloConsensusServer(l)
+		c, _ := solo.NewSoloConsensusServer(l, txPool)
 		c.Start()
 		//go example.AutoGenerateTransaction(l)
 		//go example.VotingProducer(l)
@@ -86,17 +93,9 @@ func runNode(c *cli.Context) error {
 		println("start the ababft service")
 		if l.StateDB().RequireVotingInfo() {
 			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
-		} else {
-			c, _ := solo.NewSoloConsensusServer(l)
-			c.Start()
 		}
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
-	}
-	//start transaction pool
-	if _, err := txpool.Start(); err != nil {
-		log.Fatal("start txpool error, ", err.Error())
-		os.Exit(1)
 	}
 
 	net.StartNetWork(l)

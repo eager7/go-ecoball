@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
+	"github.com/ecoball/go-ecoball/txpool"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
@@ -31,10 +32,11 @@ var log = elog.NewLogger("Solo", elog.NoticeLog)
 type Solo struct {
 	stop   chan struct{}
 	ledger ledger.Ledger
+	txPool *txpool.TxPool
 }
 
-func NewSoloConsensusServer(l ledger.Ledger) (*Solo, error) {
-	solo := &Solo{ledger: l, stop:make(chan struct{}, 1)}
+func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (*Solo, error) {
+	solo := &Solo{ledger: l, stop:make(chan struct{}, 1), txPool:txPool}
 	actor := &soloActor{solo: solo}
 	NewSoloActor(actor)
 	return solo, nil
