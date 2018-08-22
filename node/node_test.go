@@ -21,9 +21,13 @@ import (
 func TestRunMain(t *testing.T) {
 	ledger := example.Ledger("/tmp/run_test")
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
+
 	//start transaction pool
 	txPool, err := txpool.Start(ledger)
 	errors.CheckErrorPanic(err)
+
+	net.StartNetWork(ledger)
+
 	//start consensus
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
@@ -40,9 +44,7 @@ func TestRunMain(t *testing.T) {
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
-
-	net.StartNetWork(ledger)
-
+	
 	//start explorer
 	go spectator.Bystander(ledger)
 

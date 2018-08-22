@@ -28,6 +28,10 @@ import (
 
 var log = elog.NewLogger("TxPool", elog.DebugLog)
 
+type TxPooler interface {
+
+}
+
 type TxPool struct {
 	ledger    ledger.Ledger
 	PendingTx *types.TxsList //UnPackaged list of legitimate transactions
