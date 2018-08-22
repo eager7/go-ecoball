@@ -89,7 +89,9 @@ func EchoResult(resp map[string]interface{}) error {
 		return errors.New("errorCode or desc of respone is wrong!")
 	} else if errorCode != int64(innerCommon.SUCCESS) {
 		fmt.Println("failed: ", desc)
-		fmt.Println(resp["result"].(string))
+		if nil != resp["result"] {
+			fmt.Println(resp["result"].(string))
+		}
 		return errors.New(desc)
 	} else {
 		fmt.Println("success!")
