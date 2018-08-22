@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	//"time"
 
 	//innercommon "github.com/ecoball/go-ecoball/common"
@@ -64,9 +65,17 @@ func handleCreateAccount(params []interface{}) common.Errcode {
 		invalid = true
 	}*/
 
-	invoke := &types.Transaction{}
+	/*creatorAccount := innercommon.NameToIndex("ecoball")
+	timeStamp := time.Now().Unix()
+
+	invoke, _ := types.NewInvokeContract(creatorAccount, creatorAccount, "owner","new_account",
+		[]string{"ecoball", innercommon.AddressFromPubKey(innercommon.FromHex("0x12351")).HexString()}, 0, timeStamp)*/
+	invoke := new(types.Transaction)//{
+	//	Payload: &types.InvokeInfo{}}
+
 	var invalid bool
 	var name string 
+	//invoke.Show()
 	//account name
 	if v, ok := params[0].(string); ok {
 		name = v
@@ -79,11 +88,13 @@ func handleCreateAccount(params []interface{}) common.Errcode {
 	}
 
 	//json.Unmarshal([]byte(name), invoke);
-	invoke.StringJson(name)
-	//str := invoke.JsonString()
-	//fmt.Println(str)
-	//fmt.Println(name)
-
+	//invoke.Deserialize([]byte(name))
+	if err := invoke.Deserialize([]byte(name)); err != nil {
+		fmt.Println(err)
+		return common.INVALID_PARAMS
+	}
+	invoke.Show()
+	
 	//send to txpool
 	err := event.Send(event.ActorNil, event.ActorTxPool, invoke)
 	if nil != err {

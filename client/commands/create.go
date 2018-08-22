@@ -94,7 +94,17 @@ func newAccount(c *cli.Context) error {
 
 	//rpc call
 	//resp, err := rpc.Call("createAccount", []interface{}{creator, name, owner, active})
-	resp, err := rpc.Call("createAccount", []interface{}{invoke.JsonString()})
+	/*data, err := invoke.Serialize()
+	if nil != err {
+		fmt.Println(err)
+	}*/
+	data, err := invoke.Serialize()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(string(data))
+	resp, err := rpc.Call("createAccount", []interface{}{string(data)})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
