@@ -141,6 +141,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				signpre_send = append(signpre_send, currentheader.Signatures[0])
 				conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(current_round_num),signpre_send}}
 				// tx list
+				/*
 				value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Second*1)
 				if err != nil {
 					log.Error("AbaBFT Consensus tx error:", err)
@@ -154,6 +155,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				for _, v := range txList.Txs {
 					txs = append(txs, v)
 				}
+				*/
+				txs, _ := actor_c.service_ababft.txPool.GetTxsList(config.ChainHash)
+
+
 				// generate the block in the form of second round block
 				var block_solo *types.Block
 				t_time := time.Now().UnixNano()
@@ -168,14 +173,15 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					return
 				}
 				*/
+				if err := event.Send(event.ActorNil, event.ActorP2P, block_solo); err != nil {
+					log.Fatal(err)
+					// return
+				}
 				if err := event.Send(event.ActorNil, event.ActorLedger, block_solo); err != nil {
 					log.Fatal(err)
 					// return
 				}
-				if err := event.Send(event.ActorConsensus, event.ActorP2P, block_solo); err != nil {
-					log.Fatal(err)
-					// return
-				}
+
 
 				verified_height = block_solo.Height
 				fmt.Println("ababft solo height:",block_solo.Height,block_solo)
@@ -553,6 +559,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(current_round_num),signpre_send}}
 				// fmt.Println("conData for blk firstround",conData)
 				// prepare the tx list
+				/*
 				value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Second*1)
 				// log.Debug("tx value:",value)
 				if err != nil {
@@ -568,7 +575,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				var txs []*types.Transaction
 				for _, v := range txList.Txs {
 					txs = append(txs, v)
-				}
+				}*/
+				txs, _ := actor_c.service_ababft.txPool.GetTxsList(config.ChainHash)
 				// log.Debug("obtained tx list", txs[0])
 				// generate the first-round block
 				var block_first *types.Block
