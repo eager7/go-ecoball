@@ -29,9 +29,9 @@ type InvokeInfo struct {
 	Param  []string `json:"param"`
 }
 
-func NewInvokeContract(from, addr common.AccountName, perm string, method string, param []string, nonce uint64, time int64) (*Transaction, error) {
+func NewInvokeContract(from, addr common.AccountName, chainID common.Hash, perm string, method string, param []string, nonce uint64, time int64) (*Transaction, error) {
 	invoke := &InvokeInfo{Method: []byte(method), Param: param}
-	trans, err := NewTransaction(TxInvoke, from, addr, perm, invoke, nonce, time)
+	trans, err := NewTransaction(TxInvoke, from, addr, chainID, perm, invoke, nonce, time)
 	if err != nil {
 		return nil, err
 	}

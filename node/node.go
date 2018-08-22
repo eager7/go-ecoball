@@ -38,6 +38,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/spectator"
+	"github.com/ecoball/go-ecoball/test/example"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
 )

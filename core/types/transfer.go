@@ -34,9 +34,9 @@ func NewTransferInfo(v *big.Int) *TransferInfo {
 	return t
 }
 
-func NewTransfer(from, to common.AccountName, perm string, value *big.Int, nonce uint64, time int64) (*Transaction, error) {
+func NewTransfer(from, to common.AccountName, chainID common.Hash, perm string, value *big.Int, nonce uint64, time int64) (*Transaction, error) {
 	payload := NewTransferInfo(value)
-	return NewTransaction(TxTransfer, from, to, perm, payload, nonce, time)
+	return NewTransaction(TxTransfer, from, to, chainID, perm, payload, nonce, time)
 }
 
 /**

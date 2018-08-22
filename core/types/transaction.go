@@ -22,7 +22,6 @@ import (
 
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
@@ -67,13 +66,13 @@ type Transaction struct {
 	Receipt    TransactionReceipt
 }
 
-func NewTransaction(t TxType, from, addr common.AccountName, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
+func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
 	if payload == nil {
 		return nil, errors.New(log, "the transaction's payload is nil")
 	}
 	tx := Transaction{
 		Version:    VersionTx,
-		ChainID:    config.ChainHash,
+		ChainID:    chainID,
 		Type:       t,
 		From:       from,
 		Permission: perm,
