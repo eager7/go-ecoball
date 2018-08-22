@@ -190,7 +190,7 @@ func (t *Transaction) Serialize() ([]byte, error) {
 	}
 	b, err := p.Marshal()
 	if err != nil {
-		return nil, err
+		return nil, errors.New(log, fmt.Sprintf("Marshal error:%s", err.Error()))
 	}
 	return b, nil
 }
@@ -206,7 +206,7 @@ func (t *Transaction) Deserialize(data []byte) error {
 
 	var txPb pb.Transaction
 	if err := txPb.Unmarshal(data); err != nil {
-		return err
+		return errors.New(log, fmt.Sprintf("data len: %d, unMarshal error:%s", len(data), err.Error()))
 	}
 
 	t.Version = txPb.Payload.Version
