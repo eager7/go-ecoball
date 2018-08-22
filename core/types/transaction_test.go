@@ -21,6 +21,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/test/example"
 	"testing"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
 
 func TestTransfer(t *testing.T) {
@@ -35,6 +36,8 @@ func TestTransfer(t *testing.T) {
 	tx2 := &types.Transaction{}
 	errors.CheckErrorPanic(tx2.Deserialize(transferData))
 
+	elog.Log.Debug(tx.JsonString())
+	elog.Log.Info(tx2.JsonString())
 	errors.CheckEqualPanic(tx.JsonString() == tx2.JsonString())
 }
 
