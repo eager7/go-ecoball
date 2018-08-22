@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"testing"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 func TestDBft(t *testing.T) {
@@ -39,12 +40,12 @@ func TestDBft(t *testing.T) {
 }
 
 func TestAbaBft(t *testing.T) {
-	//sig1 := common.Signature{PubKey: []byte("1234"), SigData: []byte("5678")}
-	//sig2 := common.Signature{PubKey: []byte("4321"), SigData: []byte("8765")}
-	//var sigPer []common.Signature
-	//sigPer = append(sigPer, sig1)
-	//sigPer = append(sigPer, sig2)
-	abaData := types.AbaBftData{NumberRound: 0, PerBlockSignatures: nil}
+	sig1 := common.Signature{PubKey: []byte("1234"), SigData: []byte("5678")}
+	sig2 := common.Signature{PubKey: []byte("4321"), SigData: []byte("8765")}
+	var sigPer []common.Signature
+	sigPer = append(sigPer, sig1)
+	sigPer = append(sigPer, sig2)
+	abaData := types.AbaBftData{NumberRound: 5, PerBlockSignatures: sigPer}
 
 	conData := types.NewConsensusPayload(types.ConABFT, &abaData)
 

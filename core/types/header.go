@@ -18,11 +18,11 @@ package types
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
@@ -31,8 +31,8 @@ import (
 const VersionHeader = 1
 
 type Header struct {
-	ChainID       common.Hash
 	Version       uint32
+	ChainID       common.Hash
 	TimeStamp     int64
 	Height        uint64
 	ConsensusData ConsensusData
@@ -61,10 +61,10 @@ var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
  */
 func NewHeader(version uint32, chainID common.Hash, height uint64, prevHash, merkleHash, stateHash common.Hash, conData ConsensusData, bloom bloom.Bloom, cpuLimit, netLimit float64, timeStamp int64) (*Header, error) {
 	if version != VersionHeader {
-		return nil, errors.New("version mismatch")
+		return nil, errors.New(log, "version mismatch")
 	}
 	if conData.Payload == nil {
-		return nil, errors.New("consensus' payload is nil")
+		return nil, errors.New(log, "consensus' payload is nil")
 	}
 	header := Header{
 		ChainID:       chainID,
@@ -97,10 +97,10 @@ func NewHeader(version uint32, chainID common.Hash, height uint64, prevHash, mer
 
 func (h *Header) InitializeHash() error {
 	if h.Version != VersionHeader {
-		return errors.New("version mismatch")
+		return errors.New(log, "version mismatch")
 	}
 	if h.ConsensusData.Payload == nil {
-		return errors.New("consensus' payload is nil")
+		return errors.New(log, "consensus' payload is nil")
 	}
 	payload, err := h.unSignatureData()
 	if err != nil {
@@ -145,7 +145,7 @@ func (h *Header) VerifySignature() (bool, error) {
  */
 func (h *Header) unSignatureData() (*pb.Header, error) {
 	if h.TimeStamp == 0 {
-		return nil, errors.New("this header struct is illegal")
+		return nil, errors.New(log, "this header struct is illegal")
 	}
 	pbCon, err := h.ConsensusData.ProtoBuf()
 	if err != nil {
@@ -153,6 +153,7 @@ func (h *Header) unSignatureData() (*pb.Header, error) {
 	}
 	return &pb.Header{
 		Version:       h.Version,
+		ChainID:       h.ChainID.Bytes(),
 		Timestamp:     h.TimeStamp,
 		Height:        h.Height,
 		ConsensusData: pbCon,
@@ -176,6 +177,7 @@ func (h *Header) protoBuf() (*pb.HeaderTx, error) {
 	return &pb.HeaderTx{
 		Header: &pb.Header{
 			Version:       h.Version,
+			ChainID:       h.ChainID.Bytes(),
 			Timestamp:     h.TimeStamp,
 			Height:        h.Height,
 			ConsensusData: pbCon,
@@ -201,7 +203,7 @@ func (h *Header) Serialize() ([]byte, error) {
 	}
 	data, err := p.Marshal()
 	if err != nil {
-		return nil, err
+		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
 	}
 	return data, nil
 }
@@ -212,7 +214,7 @@ func (h *Header) Serialize() ([]byte, error) {
  */
 func (h *Header) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New("input data's length is zero")
+		return errors.New(log, "input data's length is zero")
 	}
 	var pbHeader pb.HeaderTx
 	if err := pbHeader.Unmarshal(data); err != nil {
@@ -220,6 +222,7 @@ func (h *Header) Deserialize(data []byte) error {
 	}
 
 	h.Version = pbHeader.Header.Version
+	h.ChainID = common.NewHash(pbHeader.Header.ChainID)
 	h.TimeStamp = pbHeader.Header.Timestamp
 	h.Height = pbHeader.Header.Height
 	h.PrevHash = common.NewHash(pbHeader.Header.PrevHash)

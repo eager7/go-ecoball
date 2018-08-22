@@ -53,6 +53,7 @@ type Payload interface {
 
 type Transaction struct {
 	Version    uint32             `json:"version"`
+	ChainID    common.Hash        `json:"chain_id"`
 	Type       TxType             `json:"type"`
 	From       common.AccountName `json:"from"`
 	Permission string             `json:"permission"`
@@ -65,26 +66,13 @@ type Transaction struct {
 	Receipt    TransactionReceipt
 }
 
-type Transaction_invoke struct {
-	Version    uint32             `json:"version"`
-	Type       string             `json:"type"`
-	From       string			  `json:"from"`
-	Permission string             `json:"permission"`
-	Addr       string			  `json:"addr"`
-	Nonce      uint64             `json:"nonce"`
-	TimeStamp  int64              `json:"timeStamp"`
-	Payload    InvokeInfo             `json:"payload"`
-	Signatures []common.Signature `json:"signatures"`
-	Hash       string             `json:"hash"`
-	Receipt    string
-}
-
-func NewTransaction(t TxType, from, addr common.AccountName, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
+func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
 	if payload == nil {
 		return nil, errors.New(log, "the transaction's payload is nil")
 	}
 	tx := Transaction{
 		Version:    VersionTx,
+		ChainID:    chainID,
 		Type:       t,
 		From:       from,
 		Permission: perm,
@@ -137,6 +125,7 @@ func (t *Transaction) unSignatureData() ([]byte, error) {
 	}
 	p := &pb.TxPayload{
 		Version:    t.Version,
+		ChainID:    t.ChainID.Bytes(),
 		From:       uint64(t.From),
 		Permission: []byte(t.Permission),
 		Addr:       uint64(t.Addr),
@@ -164,6 +153,7 @@ func (t *Transaction) protoBuf() (*pb.Transaction, error) {
 	p := &pb.Transaction{
 		Payload: &pb.TxPayload{
 			Version:    t.Version,
+			ChainID:    t.ChainID.Bytes(),
 			Type:       uint32(t.Type),
 			From:       uint64(t.From),
 			Permission: []byte(t.Permission),
@@ -190,7 +180,7 @@ func (t *Transaction) Serialize() ([]byte, error) {
 	}
 	b, err := p.Marshal()
 	if err != nil {
-		return nil, err
+		return nil, errors.New(log, fmt.Sprintf("Marshal error:%s", err.Error()))
 	}
 	return b, nil
 }
@@ -206,10 +196,11 @@ func (t *Transaction) Deserialize(data []byte) error {
 
 	var txPb pb.Transaction
 	if err := txPb.Unmarshal(data); err != nil {
-		return err
+		return errors.New(log, fmt.Sprintf("data len: %d, unMarshal error:%s", len(data), err.Error()))
 	}
 
 	t.Version = txPb.Payload.Version
+	t.ChainID = common.NewHash(txPb.Payload.ChainID)
 	t.Type = TxType(txPb.Payload.Type)
 	t.From = common.AccountName(txPb.Payload.From)
 	t.Permission = string(txPb.Payload.Permission)
@@ -295,7 +286,6 @@ func charToSymbol(c byte) byte {
 	return 0
 }
 
-
 func stringToIndex(name string) TxType {
 	var index uint64
 	var i uint32
@@ -326,9 +316,9 @@ func stringToBytes(name string) []byte {
 	return a
 }
 
-func (t *Transaction) StringJson(data string)  {
+func (t *Transaction) StringJson(data string) {
 	//tt := Transaction_invoke{}
-	json.Unmarshal([]byte(data), t);
+	json.Unmarshal([]byte(data), t)
 
 	/*t.Addr = common.NameToIndex(tt.Addr)
 	t.From = common.NameToIndex(tt.From)
