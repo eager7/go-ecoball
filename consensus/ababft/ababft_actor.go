@@ -161,11 +161,18 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				block_solo.SetSignature(&soloaccount)
 				block_secondround.Blocksecond = *block_solo
 				// save (the ledger will broadcast the block after writing the block into the DB)
+
 				if err = actor_c.service_ababft.ledger.SaveTxBlock(block_solo); err != nil {
 					// log.Error("save block error:", err)
 					println("save solo block error:", err)
 					return
 				}
+				/*
+				if err := event.Send(event.ActorNil, event.ActorLedger, block_solo); err != nil {
+					log.Fatal(err)
+					// return
+				}
+				*/
 				verified_height = block_solo.Height
 				fmt.Println("ababft solo height:",block_solo.Height,block_solo)
 				time.Sleep(time.Second * WAIT_RESPONSE_TIME)
@@ -944,11 +951,18 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				//
 
 				// 4. save the second-round(final) block to ledger
+
 				if err = actor_c.service_ababft.ledger.SaveTxBlock(&block_second); err != nil {
 					// log.Error("save block error:", err)
 					println("save block error:", err)
 					return
 				}
+				/*
+				if err := event.Send(event.ActorNil, event.ActorLedger, &block_second); err != nil {
+					log.Fatal(err)
+					// return
+				}
+				*/
 				verified_height = block_second.Height - 1
 				// 5. change the status
 				actor_c.status = 7
@@ -1016,10 +1030,17 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 							return
 						}
 						// save the solo block ( in the form of second-round block)
+
 						if err = actor_c.service_ababft.ledger.SaveTxBlock(&blocksecond_received); err != nil {
 							println("save solo block error:", err)
 							return
 						}
+						/*
+						if err := event.Send(event.ActorNil, event.ActorLedger, &blocksecond_received); err != nil {
+							log.Fatal(err)
+							// return
+						}
+						*/
 						verified_height = blocksecond_received.Height
 						log.Info("verified height of the solo mode:",verified_height)
 						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
@@ -1123,12 +1144,18 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// test end
 
 					// 3.save the second-round block into the ledger
+
 					if err = actor_c.service_ababft.ledger.SaveTxBlock(&blocksecond_received); err != nil {
 						// log.Error("save block error:", err)
 						println("save block error:", err)
 						return
 					}
-
+					/*
+					if err := event.Send(event.ActorNil, event.ActorLedger, &blocksecond_received); err != nil {
+						log.Fatal(err)
+						// return
+					}
+					*/
 					// 4. change status
 					verified_height = blocksecond_received.Height - 1
 					actor_c.status = 8
@@ -1375,18 +1402,32 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						return
 					}
 				}
+
 				if err = actor_c.service_ababft.ledger.SaveTxBlock(&blks_v); err != nil {
 					log.Debug("save block error:", err)
 					return
 				}
+				/*
+				if err := event.Send(event.ActorNil, event.ActorLedger, &blks_v); err != nil {
+					log.Fatal(err)
+					// return
+				}
+				*/
 			}  else {
 				// the blks_v has been in the ledger
 			}
 			// 3.2 save blks_f
+
 			if err = actor_c.service_ababft.ledger.SaveTxBlock(&blks_f); err != nil {
 				log.Debug("save block error:", err)
 				return
 			}
+			/*
+			if err := event.Send(event.ActorNil, event.ActorLedger, &blks_f); err != nil {
+				log.Fatal(err)
+				// return
+			}
+			*/
 			// 4. only the block is sucessfully saved, then change the status
 			verified_height = blks_v.Height
 			actor_c.status = 8
