@@ -37,12 +37,13 @@ type State struct {
 	db     Database
 	diskDb *store.LevelDBStore
 
-	accMutex  sync.RWMutex
-	Accounts  map[string]Account
+	accMutex sync.RWMutex
+	Accounts map[string]Account
 
 	paraMutex sync.RWMutex
 	Params    map[string]uint64
 
+	prodMutex sync.Mutex
 	Producers map[common.AccountName]uint64
 
 	mutex sync.RWMutex
