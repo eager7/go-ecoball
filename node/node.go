@@ -68,8 +68,8 @@ func runNode(c *cli.Context) error {
 	case "SOLO":
 		c, _ := solo.NewSoloConsensusServer(l)
 		c.Start()
-		go example.AutoGenerateTransaction(l)
-		go example.VotingProducer(l)
+		//go example.AutoGenerateTransaction(l)
+		//go example.VotingProducer(l)
 	case "DPOS":
 		log.Info("Start DPOS consensus")
 
