@@ -9,6 +9,7 @@ import (
 	"time"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/smartcontract"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 func (c *ChainTx) NewBlockWithoutHandle(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
@@ -17,7 +18,7 @@ func (c *ChainTx) NewBlockWithoutHandle(ledger ledger.Ledger, txs []*types.Trans
 		cpu += tx.Receipt.Cpu
 		net += tx.Receipt.Net
 	}
-	return types.NewBlock(c.CurrentHeader, c.TempStateDB.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	return types.NewBlock(config.ChainHash, c.CurrentHeader, c.TempStateDB.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
 }
 
 func (c *ChainTx) SaveBlockWithoutHandle(block *types.Block) error {

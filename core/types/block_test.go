@@ -17,23 +17,23 @@
 package types_test
 
 import (
-	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/bloom"
-	"github.com/ecoball/go-ecoball/core/types"
-	"testing"
-	"time"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/core/state"
-	"github.com/ecoball/go-ecoball/common/config"
 	"encoding/json"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/utils"
+	"github.com/ecoball/go-ecoball/core/bloom"
+	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/test/example"
 	"math/big"
-	"github.com/ecoball/go-ecoball/common/utils"
+	"testing"
+	"time"
 )
 
 func TestHeader(t *testing.T) {
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-	h, err := types.NewHeader(types.VersionHeader, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
+	h, err := types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(h.SetSignature(&config.Root))
 
@@ -54,7 +54,7 @@ func TestHeader(t *testing.T) {
 	sigPer = append(sigPer, sig2)
 	abaData := types.AbaBftData{NumberRound: 5, PerBlockSignatures: sigPer}
 	conData = types.ConsensusData{Type: types.ConABFT, Payload: &abaData}
-	h, err = types.NewHeader(types.VersionHeader, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
+	h, err = types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(h.SetSignature(&config.Root))
 
@@ -95,7 +95,6 @@ func TestBlockCreate(t *testing.T) {
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-
 	block, err := ledger.NewTxBlock(txs, example.ConsensusData(), time.Now().UnixNano())
 	block.SetSignature(&config.Root)
 	data, err := block.Serialize()
@@ -107,7 +106,6 @@ func TestBlockCreate(t *testing.T) {
 
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(block))
 	errors.CheckErrorPanic(ledger.SaveTxBlock(block))
-
 
 	reBlock, err := ledger.GetTxBlock(blockNew.Hash)
 	errors.CheckErrorPanic(err)

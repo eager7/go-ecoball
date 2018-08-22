@@ -120,7 +120,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case message.ABABFTStart:
 		actor_c.status = 2
-		log.Debug("start ababft: receive the ababftstart message")
+		log.Debug("start ababft: receive the ababftstart message:", current_height_num,verified_height,current_ledger.GetCurrentHeader())
 
 		// check the status of the main net
 		if ok:=current_ledger.StateDB().RequireVotingInfo(); ok!=true {
@@ -166,6 +166,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					println("save solo block error:", err)
 					return
 				}
+				verified_height = block_solo.Height - 1
 				fmt.Println("ababft solo height:",block_solo.Height,block_solo)
 				time.Sleep(time.Second * WAIT_RESPONSE_TIME)
 				// call itself again
@@ -351,12 +352,15 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		return
 
 	case Signature_Preblock:
-		log.Info("receive the preblock signature:",msg.Signature_preblock)
+		log.Info("receive the preblock signature:",actor_c.status,msg.Signature_preblock)
+		if actor_c.status == 102 {
+			event.Send(event.ActorNil,event.ActorConsensus,message.ABABFTStart{})
+		}
 		// the prime will verify the signature for the previous block
 		round_in := int(msg.Signature_preblock.Round)
 		height_in := int(msg.Signature_preblock.Height)
 		// log.Debug("current_round_num:",current_round_num,round_in)
-		if round_in >= current_round_num {
+		if round_in >= current_round_num && actor_c.status!=101 && actor_c.status!= 102 {
 			// cache the Signature_Preblock
 			cache_signature_preblk = append(cache_signature_preblk,msg.Signature_preblock)
 			// in case that the signature for the previous block arrived bofore the corresponding block generator was born
@@ -881,10 +885,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 	case SignTxTimeout:
 		// fmt.Println("received_signblkf_num:",received_signblkf_num)
-		log.Info("start to generate second round block",primary_tag,actor_c.status,received_signblkf_num,int(2*len(Peers_addr_list)/3+1),signature_BlkF_list)
+		log.Info("start to generate second round block",primary_tag,actor_c.status,received_signblkf_num,int(2*len(Peers_addr_list)/3),signature_BlkF_list)
 		if primary_tag == 1 && actor_c.status == 4 {
 			// check the number of the signatures of first-round block from peers
-			if received_signblkf_num >= int(2*len(Peers_addr_list)/3+1) {
+			if received_signblkf_num >= int(2*len(Peers_addr_list)/3) {
 				// enough first-round block signatures, so generate the second-round(final) block
 				// 1. add the first-round block signatures into ConsensusData
 				pubkey_tag_b := []byte(pubkey_tag)
@@ -945,11 +949,12 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					println("save block error:", err)
 					return
 				}
+				verified_height = block_second.Height - 1
 				// 5. change the status
 				actor_c.status = 7
 				primary_tag = 0
 
-				fmt.Println("save the generated block", block_second.Height)
+				fmt.Println("save the generated block", block_second.Height,verified_height)
 				// start/enter the next turn
 				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
 				return
@@ -983,7 +988,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			actor_c.status = 6
 		}
 		// test end
-		log.Info("ababbt peer status:",actor_c.status)
+		log.Info("ababbt peer status:", primary_tag,actor_c.status)
 		// check whether it is solo mode
 		if actor_c.status == 102 || actor_c.status == 101 {
 			if actor_c.status == 102 {
@@ -1015,6 +1020,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 							println("save solo block error:", err)
 							return
 						}
+						verified_height = blocksecond_received.Height - 1
+						log.Info("verified height of the solo mode:",verified_height)
 						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 					}
 				} else {
@@ -1046,6 +1053,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				}
 				//
 
+				log.Info("received secondround block:",blocksecond_received.Header.Height,verified_height,current_height_num,data_blks_received.NumberRound,blocksecond_received.Header)
 				// 1. check the round number and height
 				// 1a. current round number
 				if data_blks_received.NumberRound < uint32(current_round_num) || blocksecond_received.Header.Height <= uint64(current_height_num) {
@@ -1514,7 +1522,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				total_count = 0
 				for i := max_r-current_round_num; i > 0; i-- {
 					total_count = total_count + count_r[i]
-					if total_count >= int(2*len(Peers_addr_list)/3+1) {
+					if total_count >= int(2*len(Peers_addr_list)/3) {
 						// reset the round number
 						current_round_num += i
 						// start/enter the next turn
@@ -1600,7 +1608,7 @@ func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_
 		return false,nil
 	}
 	// check Hash common.Hash
-	header_cal,err1 := types.NewHeader(header_in.Version, header_in.Height, header_in.PrevHash,
+	header_cal,err1 := types.NewHeader(header_in.Version, config.ChainHash, header_in.Height, header_in.PrevHash,
 		header_in.MerkleHash, header_in.StateHash, header_in.ConsensusData, header_in.Bloom, header_in.Receipt.BlockCpu, header_in.Receipt.BlockNet,header_in.TimeStamp)
 	if ok := bytes.Equal(header_cal.Hash.Bytes(),header_in.Hash.Bytes()); ok != true {
 		println("Hash is wrong")
@@ -1623,7 +1631,7 @@ func (actor_c *Actor_ababft) update_block(block_first types.Block, condata types
 	var block_second types.Block
 	var err error
 	header_in := block_first.Header
-	header, _ := types.NewHeader(header_in.Version, header_in.Height, header_in.PrevHash, header_in.MerkleHash,
+	header, _ := types.NewHeader(header_in.Version, config.ChainHash, header_in.Height, header_in.PrevHash, header_in.MerkleHash,
 		header_in.StateHash, condata, header_in.Bloom, header_in.Receipt.BlockCpu, header_in.Receipt.BlockNet, header_in.TimeStamp)
 	block_second = types.Block{header, uint32(len(block_first.Transactions)), block_first.Transactions}
 	return block_second,err
@@ -1702,7 +1710,7 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 	num_verified = 0
 	// calculate firstround block header hash for the check of the first-round block signatures
 	conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(data_blks_received.NumberRound),sign_blks_preblk}}
-	header_recal, _ := types.NewHeader(curheader.Version, curheader.Height, curheader.PrevHash, curheader.MerkleHash,
+	header_recal, _ := types.NewHeader(curheader.Version, config.ChainHash, curheader.Height, curheader.PrevHash, curheader.MerkleHash,
 		curheader.StateHash, conData, curheader.Bloom, curheader.Receipt.BlockCpu, curheader.Receipt.BlockNet,curheader.TimeStamp)
 	blkFhash := header_recal.Hash
 	// fmt.Println("blkFhash:",blkFhash)
@@ -1742,7 +1750,7 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 		}
 	}
 	// 3c. check the valid signature number
-	if num_verified < int(2*len(Peers_addr_list)/3+1){
+	if num_verified < int(2*len(Peers_addr_list)/3){
 		fmt.Println(" not enough signature for first round block:", num_verified)
 		return false,nil
 	}

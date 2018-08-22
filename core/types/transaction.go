@@ -104,6 +104,7 @@ func NewTransaction(t TxType, from, addr common.AccountName, perm string, payloa
 	if err != nil {
 		return nil, err
 	}
+	tx.Receipt.Hash = tx.Hash
 	return &tx, nil
 }
 
