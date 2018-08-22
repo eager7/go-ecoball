@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/hashicorp/golang-lru"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 var log = elog.NewLogger("TxPool", elog.DebugLog)
@@ -50,7 +51,7 @@ func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
 	return
 }
 
-func (p *TxPool) Put(tx *types.Transaction) {
-	p.PendingTx.Push(tx)
-	p.txsCache.Add(tx.Hash, tx.Hash)
+func (t *TxPool) GetTxsList(chainID common.Hash) ([]*types.Transaction, error) {
+	txs := t.PendingTx.GetTransactions()
+	return txs, nil
 }

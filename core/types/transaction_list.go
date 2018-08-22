@@ -93,6 +93,15 @@ func (t *TxsList) Copy(txs *TxsList) {
 	}
 }
 
+func (t *TxsList) GetTransactions() (txs []*Transaction) {
+	t.mux.RLock()
+	defer t.mux.RUnlock()
+	for _, v := range t.Txs {
+		txs = append(txs, v)
+	}
+	return txs
+}
+
 func (t *TxsList) Show() {
 	t.mux.RLock()
 	defer t.mux.RUnlock()

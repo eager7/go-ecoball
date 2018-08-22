@@ -20,7 +20,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
@@ -52,20 +51,21 @@ func (s *Solo) Start() error {
 			select {
 			case <-t.C:
 				log.Debug("Request transactions from tx pool")
-				value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Second*1)
-				if err != nil {
-					log.Error("Solo Consensus error:", err)
-					continue
-				}
-				txList, ok := value.(*types.TxsList)
-				if !ok || len(txList.Txs) == 0{
-					log.Warn("The format of value error [solo] or no transaction in this time")
-					continue
-				}
-				var txs []*types.Transaction
-				for _, v := range txList.Txs {
-					txs = append(txs, v)
-				}
+				//value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Second*1)
+				//if err != nil {
+				//	log.Error("Solo Consensus error:", err)
+				//	continue
+				//}
+				//txList, ok := value.(*types.TxsList)
+				//if !ok || len(txList.Txs) == 0{
+				//	log.Warn("The format of value error [solo] or no transaction in this time")
+				//	continue
+				//}
+				//var txs []*types.Transaction
+				//for _, v := range txList.Txs {
+				//	txs = append(txs, v)
+				//}
+				txs, _ := s.txPool.GetTxsList(config.ChainHash)
 				block, err := s.ledger.NewTxBlock(txs, conData, time.Now().UnixNano())
 				if err != nil {
 					log.Fatal(err)
