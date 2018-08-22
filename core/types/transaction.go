@@ -22,6 +22,7 @@ import (
 
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
@@ -53,6 +54,7 @@ type Payload interface {
 
 type Transaction struct {
 	Version    uint32             `json:"version"`
+	ChainID    common.Hash        `json:"chain_id"`
 	Type       TxType             `json:"type"`
 	From       common.AccountName `json:"from"`
 	Permission string             `json:"permission"`
@@ -71,6 +73,7 @@ func NewTransaction(t TxType, from, addr common.AccountName, perm string, payloa
 	}
 	tx := Transaction{
 		Version:    VersionTx,
+		ChainID:    config.ChainHash,
 		Type:       t,
 		From:       from,
 		Permission: perm,
@@ -123,6 +126,7 @@ func (t *Transaction) unSignatureData() ([]byte, error) {
 	}
 	p := &pb.TxPayload{
 		Version:    t.Version,
+		ChainID:    t.ChainID.Bytes(),
 		From:       uint64(t.From),
 		Permission: []byte(t.Permission),
 		Addr:       uint64(t.Addr),
@@ -150,6 +154,7 @@ func (t *Transaction) protoBuf() (*pb.Transaction, error) {
 	p := &pb.Transaction{
 		Payload: &pb.TxPayload{
 			Version:    t.Version,
+			ChainID:    t.ChainID.Bytes(),
 			Type:       uint32(t.Type),
 			From:       uint64(t.From),
 			Permission: []byte(t.Permission),
@@ -196,6 +201,7 @@ func (t *Transaction) Deserialize(data []byte) error {
 	}
 
 	t.Version = txPb.Payload.Version
+	t.ChainID = common.NewHash(txPb.Payload.ChainID)
 	t.Type = TxType(txPb.Payload.Type)
 	t.From = common.AccountName(txPb.Payload.From)
 	t.Permission = string(txPb.Payload.Permission)
@@ -281,7 +287,6 @@ func charToSymbol(c byte) byte {
 	return 0
 }
 
-
 func stringToIndex(name string) TxType {
 	var index uint64
 	var i uint32
@@ -312,9 +317,9 @@ func stringToBytes(name string) []byte {
 	return a
 }
 
-func (t *Transaction) StringJson(data string)  {
+func (t *Transaction) StringJson(data string) {
 	//tt := Transaction_invoke{}
-	json.Unmarshal([]byte(data), t);
+	json.Unmarshal([]byte(data), t)
 
 	/*t.Addr = common.NameToIndex(tt.Addr)
 	t.From = common.NameToIndex(tt.From)

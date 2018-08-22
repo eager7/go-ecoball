@@ -36,6 +36,7 @@ func TestHeader(t *testing.T) {
 	h, err := types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(h.SetSignature(&config.Root))
+	h.Show()
 
 	data, err := h.Serialize()
 	errors.CheckErrorPanic(err)
@@ -43,8 +44,8 @@ func TestHeader(t *testing.T) {
 	h2 := new(types.Header)
 	errors.CheckErrorPanic(h2.Deserialize(data))
 
-	errors.CheckEqualPanic(h.JsonString() == h2.JsonString())
 	h2.Show()
+	errors.CheckEqualPanic(h.JsonString() == h2.JsonString())
 
 	//ABA BFT
 	sig1 := common.Signature{PubKey: []byte("1234"), SigData: []byte("5678")}
@@ -112,7 +113,7 @@ func TestBlockCreate(t *testing.T) {
 	errors.CheckEqualPanic(blockNew.JsonString(false) == reBlock.JsonString(false))
 }
 
-func TestBlockNew(t *testing.T) {
+func xTestBlockNew(t *testing.T) {
 	ledger := example.Ledger("/tmp/block_new")
 	root := common.NameToIndex("root")
 	var txs []*types.Transaction
