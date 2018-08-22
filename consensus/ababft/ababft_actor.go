@@ -172,7 +172,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					log.Fatal(err)
 					// return
 				}
-				if err := event.Send(event.ActorNil, event.ActorP2P, block_solo); err != nil {
+				if err := event.Send(event.ActorConsensus, event.ActorP2P, block_solo); err != nil {
 					log.Fatal(err)
 					// return
 				}
@@ -966,7 +966,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					log.Fatal(err)
 					// return
 				}
-				if err := event.Send(event.ActorNil, event.ActorP2P, &block_second); err != nil {
+				if err := event.Send(event.ActorConsensus, event.ActorP2P, &block_second); err != nil {
 					log.Fatal(err)
 					// return
 				}
@@ -1320,7 +1320,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				return
 			}
 			// send the solo block
-			event.Send(event.ActorNil,event.ActorP2P,blk_syn_solo)
+			event.Send(event.ActorConsensus,event.ActorP2P,blk_syn_solo)
 			log.Info("send the required solo block:", blk_syn_solo.Height)
 		}
 		return
@@ -1428,7 +1428,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					log.Fatal(err)
 					// return
 				}
-				if err := event.Send(event.ActorNil, event.ActorP2P, &blks_v); err != nil {
+				if err := event.Send(event.ActorConsensus, event.ActorP2P, &blks_v); err != nil {
 					log.Fatal(err)
 					// return
 				}
@@ -1446,7 +1446,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				log.Fatal(err)
 				// return
 			}
-			if err := event.Send(event.ActorNil, event.ActorP2P, &blks_f); err != nil {
+			if err := event.Send(event.ActorConsensus, event.ActorP2P, &blks_f); err != nil {
 				log.Fatal(err)
 				// return
 			}
