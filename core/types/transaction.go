@@ -19,6 +19,7 @@ package types
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
@@ -62,6 +63,20 @@ type Transaction struct {
 	Signatures []common.Signature `json:"signatures"`
 	Hash       common.Hash        `json:"hash"`
 	Receipt    TransactionReceipt
+}
+
+type Transaction_invoke struct {
+	Version    uint32             `json:"version"`
+	Type       string             `json:"type"`
+	From       string			  `json:"from"`
+	Permission string             `json:"permission"`
+	Addr       string			  `json:"addr"`
+	Nonce      uint64             `json:"nonce"`
+	TimeStamp  int64              `json:"timeStamp"`
+	Payload    InvokeInfo             `json:"payload"`
+	Signatures []common.Signature `json:"signatures"`
+	Hash       string             `json:"hash"`
+	Receipt    string
 }
 
 func NewTransaction(t TxType, from, addr common.AccountName, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
@@ -269,8 +284,62 @@ func (t *Transaction) JsonString() string {
 	return string(data)
 }
 
+func charToSymbol(c byte) byte {
+	if c >= 'a' && c <= 'z' {
+		return c - 'a' + 6
+	}
+	if c >= '1' && c <= '5' {
+		return c - '1' + 1
+	}
+	return 0
+}
+
+
+func stringToIndex(name string) TxType {
+	var index uint64
+	var i uint32
+	sLen := uint32(len(name))
+	for ; i <= 12; i++ {
+		var c uint64
+		if i < sLen {
+			c = uint64(charToSymbol(name[i]))
+		}
+		if i < 12 {
+			c &= 0x1f
+			c <<= 64 - 5*(i+1)
+		} else {
+			c &= 0x0f
+		}
+		index |= c
+	}
+	return TxType(index)
+}
+
+func stringToBytes(name string) []byte {
+	slen := uint32(len(name))
+	var i uint32 = 0
+	var a []byte
+	for ; i < slen; i++ {
+		a[i] = name[i]
+	}
+	return a
+}
+
 func (t *Transaction) StringJson(data string)  {
+	//tt := Transaction_invoke{}
 	json.Unmarshal([]byte(data), t);
+
+	/*t.Addr = common.NameToIndex(tt.Addr)
+	t.From = common.NameToIndex(tt.From)
+	t.Hash = common.HexToHash(tt.Hash)
+	t.Nonce = tt.Nonce
+	t.Permission = tt.Permission
+	//t.Receipt = tt.Receipt
+	t.Signatures = tt.Signatures
+	t.TimeStamp = tt.TimeStamp
+	t.Type = stringToIndex(tt.Type)
+	t.Version = tt.Version
+	t.Payload = &tt.Payload*/
 }
 
 func (t TxType) String() string {
