@@ -28,6 +28,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"github.com/ecoball/go-ecoball/http/common"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var log = elog.NewLogger("commands", elog.DebugLog)
@@ -106,7 +107,7 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 	//from address
 	//from := account.AddressFromPubKey(common.Account.PublicKey)
 
-	transaction, err := types.NewDeployContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), "owner", types.VmWasm, description, code, 0, time)
+	transaction, err := types.NewDeployContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), config.ChainHash, "owner", types.VmWasm, description, code, 0, time)
 	if nil != err {
 		return common.INVALID_PARAMS, ""
 	}
@@ -189,7 +190,7 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	//time
 	time := time.Now().Unix()
 
-	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), "owner", contractMethod, parameters, 0, time)
+	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), config.ChainHash, "owner", contractMethod, parameters, 0, time)
 	if nil != err {
 		return common.INVALID_PARAMS
 	}
