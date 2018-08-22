@@ -128,7 +128,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			currentheader = current_ledger.GetCurrentHeader()
 			current_height_num = int(currentheader.Height)
 			current_round_num = 0
-			verified_height = uint64(current_height_num) - 1
+			verified_height = uint64(current_height_num)
 
 			log.Debug("ababft is in solo mode!")
 			// if soloaccount.PrivateKey != nil {
@@ -166,7 +166,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					println("save solo block error:", err)
 					return
 				}
-				verified_height = block_solo.Height - 1
+				verified_height = block_solo.Height
 				fmt.Println("ababft solo height:",block_solo.Height,block_solo)
 				time.Sleep(time.Second * WAIT_RESPONSE_TIME)
 				// call itself again
@@ -1020,7 +1020,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 							println("save solo block error:", err)
 							return
 						}
-						verified_height = blocksecond_received.Height - 1
+						verified_height = blocksecond_received.Height
 						log.Info("verified height of the solo mode:",verified_height)
 						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 					}
