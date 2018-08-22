@@ -65,20 +65,6 @@ type Transaction struct {
 	Receipt    TransactionReceipt
 }
 
-type Transaction_invoke struct {
-	Version    uint32             `json:"version"`
-	Type       string             `json:"type"`
-	From       string			  `json:"from"`
-	Permission string             `json:"permission"`
-	Addr       string			  `json:"addr"`
-	Nonce      uint64             `json:"nonce"`
-	TimeStamp  int64              `json:"timeStamp"`
-	Payload    InvokeInfo             `json:"payload"`
-	Signatures []common.Signature `json:"signatures"`
-	Hash       string             `json:"hash"`
-	Receipt    string
-}
-
 func NewTransaction(t TxType, from, addr common.AccountName, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
 	if payload == nil {
 		return nil, errors.New(log, "the transaction's payload is nil")
