@@ -34,15 +34,6 @@ func TestRunMain(t *testing.T) {
 		s.Start()
 		elog.Log.Info("send the start message to ababft")
 		event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
-		/*
-		if ledger.StateDB().RequireVotingInfo() {
-			elog.Log.Info("send the start message to ababft")
-			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
-		} else {
-			c, _ := solo.NewSoloConsensusServer(ledger)
-			c.Start()
-		}
-		*/
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
@@ -73,14 +64,6 @@ func TestRunNode(t *testing.T) {
 		s, _ := ababft.Service_ababft_gen(ledger, &config.Worker1)
 		s.Start()
 		event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
-		/*
-		if ledger.StateDB().RequireVotingInfo() {
-			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
-		} else {
-			c, _ := solo.NewSoloConsensusServer(ledger)
-			c.Start()
-		}
-		*/
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
