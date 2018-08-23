@@ -73,8 +73,8 @@ func (p *PoolActor) isSameTransaction(hash common.Hash) bool {
 func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	//if exist := p.isSameTransaction(tx.Hash); exist {
 	if p.txPool.txsCache.Contains(tx.Hash) {
-		log.Warn("transaction already in the txn pool")
-		return errors.New(log, "transaction already in the txn pool: "+tx.Hash.HexString())
+		log.Warn("transaction already in the txn pool"+tx.Hash.HexString())
+		return nil
 	}
 	p.txPool.txsCache.Add(tx.Hash, tx.Hash)
 
