@@ -38,6 +38,13 @@ This project used CGO, so set the CGO_ENABLED="1"
 ## ecoclient
 ### wallet
 You must run the program ecowallet before you execute the wallet command.
+#### attach wallet server
+By default, the command line tool connects to port 20679 and to localhost with the wallet service.
+The default listener on wallet node startup is port 20679,The configuration file **ecoball.toml** can change the option **wallet_http_port** to change the listening port.
+The attach command can change the IP of the connected wallet node and the corresponding port number.
+```
+$./ecoclient wallet attach --ip $WALLETSERVERIP --port $WALLETSERVERPORT
+```
 #### create wallet file
 ```
 $./ecoclient wallet create --name $WALLETFILE --password $PASSWORD
@@ -116,11 +123,11 @@ ecoclient: \> exit
 ```
 
 ### attach
-By default, the command line tool connects to port 20678 and to localhost.
+By default, the command line tool connects to port 20678 and to localhost with the node service.
 The default listener on node startup is port 20678,The configuration file **ecoball.toml** can change the option **http_port** to change the listening port.
 The attach command can change the IP of the connected node and the corresponding port number.
 ```
-$ ./ecoclient attach --ip=127.0.0.1 --port=20789
+$ ./ecoclient attach --ip=NODESERVERIP --port=NODESERVERPORT
 success!
 attach http://127.0.0.1:20789 success!!!
 ```
