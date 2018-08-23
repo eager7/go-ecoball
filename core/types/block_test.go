@@ -105,7 +105,7 @@ func TestBlockCreate(t *testing.T) {
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
 	errors.CheckEqualPanic(block.JsonString(false) == blockNew.JsonString(false))
 
-	errors.CheckErrorPanic(ledger.VerifyTxBlock(block))
+	errors.CheckErrorPanic(ledger.VerifyTxBlock(ledger.StateDB(), block))
 	errors.CheckErrorPanic(ledger.SaveTxBlock(block))
 
 	reBlock, err := ledger.GetTxBlock(blockNew.Hash)
@@ -138,7 +138,7 @@ func xTestBlockNew(t *testing.T) {
 	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	block.SetSignature(&config.Root)
-	errors.CheckErrorPanic(ledger.VerifyTxBlock(block))
+	errors.CheckErrorPanic(ledger.VerifyTxBlock(ledger.StateDB(), block))
 	errors.CheckErrorPanic(ledger.SaveTxBlock(block))
 	data, err := block.Serialize()
 	errors.CheckErrorPanic(err)
