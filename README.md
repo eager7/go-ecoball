@@ -4,7 +4,7 @@ Go-Ecoball
 ## Depends
 1. Firstly,you need install [protoc](https://github.com/google/protobuf/blob/master/src/README.md) 
 2. Golang version >= 1.9
-3. Then you need install golang proto tools:
+3. Then you need install golang proto tools
 ```bash
 go get github.com/gogo/protobuf/protoc-gen-gofast
 ```
@@ -36,74 +36,74 @@ This project used CGO, so set the CGO_ENABLED="1"
 
 ## ecoclient
 ### wallet
-You must run the program ecowallet before you execute the wallet command
-create wallet file
+You must run the program ecowallet before you execute the wallet command.
+#### create wallet file
 ```
 $./ecoclient wallet create --name $WALLETFILE --password $PASSWORD
 ```
-open wallet file
+#### open wallet file
 ```
 $./ecoclient wallet open --name $WALLETFILE --password $PASSWORD
 ```
-create keys to wallet
+#### create keys to wallet
 ```
 $./ecoclient wallet createkey --name $WALLETFILE
 ```
-import privatekey to wallet
+#### import privatekey to wallet
 ```
 $./ecoclient wallet import --name $WALLETFILE --private $PRIVATEKEY
 ```
-remove keys from wallet
+#### remove keys from wallet
 ```
 $./ecoclient wallet remove --name $WALLETFILE --password $PASSWORD --public $PUBLICKEY
 ```
-lock wallet
+#### lock wallet
 ```
 $./ecoclient wallet lock --name $WALLETFILE
 ```
-unlock wallet
+#### unlock wallet
 ```
 $./ecoclient wallet unlock --name $WALLETFILE --password $PASSWORD
 ```
-list wallets
+#### list wallets
 ```
 $./ecoclient wallet list
 ```
-list keys
+#### list keys
 ```
 $./ecoclient wallet list_keys --name $WALLETFILE --password $PASSWORD
 ```
 ### account
-create account
+#### create account
 ```
 $./ecoclient wallet createaccount --account $ACCOUNTNAME --password $PASSWORD
 ```
 ### transfer
-transfer aba  to another person
+#### transfer aba  to another person
 ```
 $ ./ecoclient transfer  --from $ADDRESS --to $ADDRESS --value $AMOUNT
 ```
 ### query
-query account balance
+#### query account balance
 ```
 $ ./ecoclient query balance --address $ADDRESS
 ```
 ### contract
-deploy contract,you will get contract address
+#### deploy contract,you will get contract address
 ```
 $ ./ecoclient contract deploy -p $CONTRACTFILE -n $CONTRACTNAME --d $DESCRIPTION
 success!
 0x0133ac14c0633a2a5e09e7109dcb560f6f5270e1
 ```
 
-invoke contract
+#### invoke contract
 ```
 $ ./ecoclient contract invoke -n $CONTRACTNAME -m $METHORD -p $PARA1 $PARA2 $PARA3 ...
 ```
 ### console
 There are currently two modes, command line mode and console mode, which by default is command line mode.
 If you want to open the console mode, you need to add option --console.
-ecoclient console
+#### ecoclient console
 ```
 $ ./ecoclient --console
 ecoclient: \> $COMMAND
