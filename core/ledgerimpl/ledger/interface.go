@@ -38,9 +38,7 @@ type Ledger interface {
 
 	TokenCreate(index common.AccountName, token string, maximum uint64) error
 	TokenIsExisted(token string) bool
-	Start()
 
 	GetGenesesTime() int64
-
 	GetChainTx() ChainInterface
 }

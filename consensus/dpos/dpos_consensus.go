@@ -24,13 +24,12 @@ import (
 	"time"
 	"errors"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/account"
-	"reflect"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 
+	"github.com/ecoball/go-ecoball/txpool"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 
@@ -65,7 +64,7 @@ type DposService struct {
 	pending bool
 
 	ledger ledger.Ledger
-
+	txPool *txpool.TxPool
 }
 
 func NewDposService() (*DposService, error)  {
@@ -92,8 +91,9 @@ func NewDposService() (*DposService, error)  {
 }
 
 //TODO
-func (dpos *DposService) Setup(ledger ledger.Ledger)  {
+func (dpos *DposService) Setup(ledger ledger.Ledger, txPool *txpool.TxPool)  {
 	dpos.ledger = ledger
+	dpos.txPool = txPool
 	blockchain, e := NewBlockChain(ledger.GetChainTx())
 	if e != nil {
 		return
@@ -287,18 +287,22 @@ func (dpos *DposService) newBlock(tail *DposBlock, consensusState *types.DPosDat
 	deadlineTimer := time.NewTimer(time.Duration(elapseInMs) * time.Millisecond)
 	<-deadlineTimer.C
 
-	value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Microsecond * 1000)
-	log.Debug("value type = ", reflect.TypeOf(value))
-	txList, ok := value.(*types.TxsList)
+	//value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Microsecond * 1000)
+	//log.Debug("value type = ", reflect.TypeOf(value))
+	//txList, ok := value.(*types.TxsList)
 
-	if !ok {
-		log.Debug("type error")
-		return nil, ErrTypeWrong
-	}
-	var txs []*types.Transaction
-	for _, v := range txList.Txs {
-		log.Debug(v.Hash.HexString())
-		txs = append(txs, v)
+	//if !ok {
+	//	log.Debug("type error")
+	//	return nil, ErrTypeWrong
+	//}
+	//var txs []*types.Transaction
+	//for _, v := range txList.Txs {
+	//	log.Debug(v.Hash.HexString())
+	//	txs = append(txs, v)
+	//}
+	txs, err := dpos.txPool.GetTxsList(config.ChainHash)
+	if err != nil {
+		return nil, err
 	}
 
 	conData := types.ConsensusData{Type:types.CondPos, Payload:consensusState}

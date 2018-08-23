@@ -81,7 +81,7 @@ func runNode(c *cli.Context) error {
 		log.Info("Start DPOS consensus")
 
 		c, _ := dpos.NewDposService()
-		c.Setup(l)
+		c.Setup(l, txPool)
 		c.Start()
 
 	case "ABABFT":

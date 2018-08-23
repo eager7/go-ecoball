@@ -20,7 +20,6 @@ import (
 	"reflect"
 
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/message"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/errors"
@@ -52,11 +51,6 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 	case *types.Transaction:
 		log.Info("receive tx:", msg.Hash.HexString())
 		go p.handleTransaction(msg)
-	case message.GetTxs:
-		log.Debug("Ledger request txs")
-		txs := types.NewTxsList()
-		//txs.Copy(p.txPool.PendingTx)
-		ctx.Sender().Tell(txs)
 	case *types.Block:
 		log.Debug("new block delete transactions")
 		go p.handleNewBlock(msg)

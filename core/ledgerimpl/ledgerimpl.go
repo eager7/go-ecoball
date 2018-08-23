@@ -19,14 +19,11 @@ package ledgerimpl
 import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
-	"time"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
@@ -58,23 +55,6 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 	}
 
 	return ll, nil
-}
-
-func (l *LedgerImpl) Start() {
-
-	t := time.NewTimer(time.Second * 10)
-
-	go func() {
-		for {
-			select {
-			case <-t.C:
-				log.Debug("Request a new block")
-				event.Send(event.ActorLedger, event.ActorTxPool, message.GetTxs{})
-				t.Reset(time.Second * 10)
-			}
-		}
-	}()
-
 }
 
 func (l *LedgerImpl) NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
