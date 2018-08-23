@@ -18,7 +18,7 @@ func (c *ChainTx) NewBlockWithoutHandle(ledger ledger.Ledger, txs []*types.Trans
 		cpu += tx.Receipt.Cpu
 		net += tx.Receipt.Net
 	}
-	return types.NewBlock(config.ChainHash, c.CurrentHeader, c.TempStateDB.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	return types.NewBlock(config.ChainHash, c.CurrentHeader, c.StateDB.TempDB.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
 }
 
 func (c *ChainTx) SaveBlockWithoutHandle(block *types.Block) error {
@@ -26,12 +26,12 @@ func (c *ChainTx) SaveBlockWithoutHandle(block *types.Block) error {
 		return errors.New(log, "block is nil")
 	}
 	for i := 0; i < len(block.Transactions); i++ {
-		if _, _, _, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+		if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			return err
 		}
 	}
-	block.Header.StateHash = c.StateDB.GetHashRoot()
+	block.Header.StateHash = c.StateDB.FinalDB.GetHashRoot()
 
 	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 		log.Warn(err)
@@ -60,7 +60,7 @@ func (c *ChainTx) SaveBlockWithoutHandle(block *types.Block) error {
 	if err := c.BlockStore.BatchCommit(); err != nil {
 		return err
 	}
-	c.StateDB.CommitToDB()
+	c.StateDB.FinalDB.CommitToDB()
 	c.CurrentHeader = block.Header
 	return nil
 }

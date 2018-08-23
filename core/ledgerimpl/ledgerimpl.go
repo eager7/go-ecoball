@@ -43,7 +43,7 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 	if err := ll.ChainTx.GenesesBlockInit(); err != nil {
 		return nil, err
 	}
-	ll.ChainTx.TempStateDB, err = ll.ChainTx.StateDB.CopyState()
+	ll.ChainTx.StateDB.TempDB, err = ll.ChainTx.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, err
 	}
@@ -94,70 +94,70 @@ func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
 }
 
 func (l *LedgerImpl) PreHandleTransaction(tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error) {
-	if err := l.ChainTx.CheckTransactionWithDB(l.ChainTx.TempStateDB, tx); err != nil {
+	if err := l.ChainTx.CheckTransactionWithDB(l.ChainTx.StateDB.TempDB, tx); err != nil {
 		return nil, 0, 0, err
 	}
-	return l.ChainTx.HandleTransaction(l.ChainTx.TempStateDB, tx, timeStamp, l.ChainTx.CurrentHeader.Receipt.BlockCpu, l.ChainTx.CurrentHeader.Receipt.BlockNet)
+	return l.ChainTx.HandleTransaction(l.ChainTx.StateDB.TempDB, tx, timeStamp, l.ChainTx.CurrentHeader.Receipt.BlockCpu, l.ChainTx.CurrentHeader.Receipt.BlockNet)
 }
 
 func (l *LedgerImpl) AccountGet(index common.AccountName) (*state.Account, error) {
-	return l.ChainTx.StateDB.GetAccountByName(index)
+	return l.ChainTx.StateDB.FinalDB.GetAccountByName(index)
 }
 func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error) {
-	return l.ChainTx.StateDB.AddAccount(index, addr, timeStamp)
+	return l.ChainTx.StateDB.FinalDB.AddAccount(index, addr, timeStamp)
 }
 
 //func (l *LedgerImpl) AddResourceLimits(from, to common.AccountName, cpu, net float32) error {
 //	return l.ChainTx.StateDB.AddResourceLimits(from, to, cpu, net)
 //}
 func (l *LedgerImpl) StoreSet(index common.AccountName, key, value []byte) (err error) {
-	return l.ChainTx.StateDB.StoreSet(index, key, value)
+	return l.ChainTx.StateDB.FinalDB.StoreSet(index, key, value)
 }
 func (l *LedgerImpl) StoreGet(index common.AccountName, key []byte) (value []byte, err error) {
-	return l.ChainTx.StateDB.StoreGet(index, key)
+	return l.ChainTx.StateDB.FinalDB.StoreGet(index, key)
 }
 func (l *LedgerImpl) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
-	return l.ChainTx.StateDB.SetContract(index, t, des, code)
+	return l.ChainTx.StateDB.FinalDB.SetContract(index, t, des, code)
 }
 func (l *LedgerImpl) GetContract(index common.AccountName) (*types.DeployInfo, error) {
-	return l.ChainTx.StateDB.GetContract(index)
+	return l.ChainTx.StateDB.FinalDB.GetContract(index)
 }
 func (l *LedgerImpl) AddPermission(index common.AccountName, perm state.Permission) error {
-	return l.ChainTx.StateDB.AddPermission(index, perm)
+	return l.ChainTx.StateDB.FinalDB.AddPermission(index, perm)
 }
 func (l *LedgerImpl) FindPermission(index common.AccountName, name string) (string, error) {
-	return l.ChainTx.StateDB.FindPermission(index, name)
+	return l.ChainTx.StateDB.FinalDB.FindPermission(index, name)
 }
 func (l *LedgerImpl) CheckPermission(index common.AccountName, name string, hash common.Hash, sig []common.Signature) error {
-	return l.ChainTx.StateDB.CheckPermission(index, name, hash, sig)
+	return l.ChainTx.StateDB.FinalDB.CheckPermission(index, name, hash, sig)
 }
 func (l *LedgerImpl) RequireResources(index common.AccountName, timeStamp int64) (float64, float64, error) {
-	return l.ChainTx.StateDB.RequireResources(index, l.ChainTx.CurrentHeader.Receipt.BlockCpu, l.ChainTx.CurrentHeader.Receipt.BlockNet, timeStamp)
+	return l.ChainTx.StateDB.FinalDB.RequireResources(index, l.ChainTx.CurrentHeader.Receipt.BlockCpu, l.ChainTx.CurrentHeader.Receipt.BlockNet, timeStamp)
 }
 func (l *LedgerImpl) GetProducerList() ([]common.AccountName, error) {
-	return l.ChainTx.StateDB.GetProducerList()
+	return l.ChainTx.StateDB.FinalDB.GetProducerList()
 }
 func (l *LedgerImpl) AccountGetBalance(index common.AccountName, token string) (uint64, error) {
-	value, err := l.ChainTx.StateDB.AccountGetBalance(index, token)
+	value, err := l.ChainTx.StateDB.FinalDB.AccountGetBalance(index, token)
 	if err != nil {
 		return 0, err
 	}
 	return value.Uint64(), nil
 }
 func (l *LedgerImpl) AccountAddBalance(index common.AccountName, token string, value uint64) error {
-	return l.ChainTx.StateDB.AccountAddBalance(index, token, new(big.Int).SetUint64(value))
+	return l.ChainTx.StateDB.FinalDB.AccountAddBalance(index, token, new(big.Int).SetUint64(value))
 }
 func (l *LedgerImpl) AccountSubBalance(index common.AccountName, token string, value uint64) error {
-	return l.ChainTx.StateDB.AccountSubBalance(index, token, new(big.Int).SetUint64(value))
+	return l.ChainTx.StateDB.FinalDB.AccountSubBalance(index, token, new(big.Int).SetUint64(value))
 }
 func (l *LedgerImpl) TokenCreate(index common.AccountName, token string, maximum uint64) error {
-	return l.ChainTx.StateDB.AccountAddBalance(index, token, new(big.Int).SetUint64(maximum))
+	return l.ChainTx.StateDB.FinalDB.AccountAddBalance(index, token, new(big.Int).SetUint64(maximum))
 }
 func (l *LedgerImpl) TokenIsExisted(token string) bool {
-	return l.ChainTx.StateDB.TokenExisted(token)
+	return l.ChainTx.StateDB.FinalDB.TokenExisted(token)
 }
 func (l *LedgerImpl) StateDB() *state.State {
-	return l.ChainTx.StateDB
+	return l.ChainTx.StateDB.FinalDB
 }
 func (l *LedgerImpl) ResetStateDB(header *types.Header) error {
 	return l.ChainTx.ResetStateDB(header)
