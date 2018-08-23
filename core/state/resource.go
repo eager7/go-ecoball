@@ -312,14 +312,14 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	if acc.Resource.Votes.Staked == 0 {
 		return errors.New(log, fmt.Sprintf("the account:%s has no enough vote", index.String()))
 	}
-	s.prodMutex.Lock()
+	s.prodMutex.RLock()
 	for _, v := range accounts {
 		if _, ok := s.Producers[v]; !ok {
 			s.prodMutex.Unlock()
 			return errors.New(log, fmt.Sprintf("the account:%s is not register", v.String()))
 		}
 	}
-	s.prodMutex.Unlock()
+	s.prodMutex.RUnlock()
 	if err := s.changeElectedProducers(acc, accounts); err != nil {
 		return err
 	}
@@ -412,8 +412,6 @@ func (s *State) checkAccountCertification(index common.AccountName) error {
 	if err != nil {
 		return err
 	}
-	acc.mutex.RLock()
-	defer acc.mutex.RUnlock()
 	if acc.Votes.Staked < VotesLimit {
 		acc.Show()
 		return errors.New(log, fmt.Sprintf("the account:%s has no enough staked", index.String()))

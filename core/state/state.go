@@ -43,7 +43,7 @@ type State struct {
 	paraMutex sync.RWMutex
 	Params    map[string]uint64
 
-	prodMutex sync.Mutex
+	prodMutex sync.RWMutex
 	Producers map[common.AccountName]uint64
 
 	mutex sync.RWMutex

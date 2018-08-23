@@ -98,6 +98,10 @@ func (i *InvokeInfo) show() {
 }
 
 func (i *InvokeInfo) JsonString() string {
-	data, _ := json.Marshal(i)
+	data, _ := json.Marshal(
+		struct {
+			Method string   `json:"method"`
+			Param  []string `json:"param"`
+		}{string(i.Method), i.Param})
 	return string(data)
 }
