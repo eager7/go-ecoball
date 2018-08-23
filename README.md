@@ -132,7 +132,7 @@ success!
 attach http://127.0.0.1:20789 success!!!
 ```
 ## ecowallet
-run ecoball
+run ecowallet
 
 ```
 $ ./ecowallet
