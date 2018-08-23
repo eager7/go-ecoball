@@ -9,10 +9,10 @@ import (
 type Ledger interface {
 	GetTxBlock(hash common.Hash) (*types.Block, error)
 	NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
-	VerifyTxBlock(s *state.State, block *types.Block) error
+	VerifyTxBlock(block *types.Block) error
 	SaveTxBlock(block *types.Block) error
 	GetTxBlockByHeight(height uint64) (*types.Block, error)
-	CheckTransaction(s *state.State, tx *types.Transaction) error
+	CheckTransaction(tx *types.Transaction) error
 	PreHandleTransaction(tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error)
 	GetCurrentHeader() *types.Header
 	GetCurrentHeight() uint64

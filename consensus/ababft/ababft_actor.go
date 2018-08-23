@@ -748,7 +748,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// 3. check the txs
 					txs_in := blockfirst_received.Transactions
 					for index1,tx_in := range txs_in {
-						err = actor_c.service_ababft.ledger.CheckTransaction(actor_c.service_ababft.ledger.StateDB(), tx_in)
+						err = actor_c.service_ababft.ledger.CheckTransaction(tx_in)
 						if err != nil {
 							println("wrong tx, index:", index1)
 							return

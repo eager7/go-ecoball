@@ -21,7 +21,6 @@ import (
 
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/types"
 )
@@ -55,28 +54,6 @@ func (l *LedActor) Receive(ctx actor.Context) {
 	case *actor.Stop:
 		l.pid.Stop()
 	case *actor.Restarting:
-	case *types.Transaction:
-		//log.Info("Receive Transaction:", msg.Hash.HexString())
-		err := l.ledger.ChainTx.CheckTransaction(l.ledger.ChainTx.TempStateDB, msg)
-		if err != nil {
-			ctx.Sender().Tell(err)
-			break
-		}
-		ret, cpu, net, err := l.ledger.ChainTx.HandleTransaction(
-			l.ledger.ChainTx.TempStateDB,
-			msg,
-			msg.TimeStamp,
-			l.ledger.ChainTx.CurrentHeader.Receipt.BlockCpu,
-			l.ledger.ChainTx.CurrentHeader.Receipt.BlockNet)
-		log.Debug(ret, cpu, net, err)
-		ctx.Sender().Tell(err)
-	case message.GetTransaction:
-		tx, err := l.ledger.ChainTx.GetTransaction(msg.Key)
-		if err != nil {
-			log.Error("Get Transaction Failed:", err)
-		} else {
-			ctx.Sender().Tell(tx)
-		}
 	case *types.Block:
 		if err := l.ledger.ChainTx.SaveBlock(msg); err != nil {
 			log.Error("save block error:", err)

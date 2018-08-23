@@ -30,13 +30,18 @@ import (
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract"
-	"math/big"
-	"time"
 	"github.com/ecoball/go-ecoball/spectator/connect"
 	"github.com/ecoball/go-ecoball/spectator/info"
+	"math/big"
+	"time"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
+
+type StateDatabase struct {
+	finalDB *state.State	//final database in levelDB
+	tempDB  *state.State	//temp database used for tx pool pre-handle transaction
+}
 
 type ChainTx struct {
 	BlockMap       map[common.Hash]uint64
@@ -121,7 +126,7 @@ func (c *ChainTx) ResetStateDB(header *types.Header) error {
 *  @brief  check block's signature and all transactions
 *  @param  block - the block need to verify
  */
-func (c *ChainTx) VerifyTxBlock(s *state.State, block *types.Block) error {
+func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 	result, err := block.VerifySignature()
 	if err != nil {
 		log.Error("Block VerifySignature Failed")
@@ -131,7 +136,7 @@ func (c *ChainTx) VerifyTxBlock(s *state.State, block *types.Block) error {
 		return errors.New(log, "block verify signature failed")
 	}
 	for _, v := range block.Transactions {
-		if err := c.CheckTransaction(s, v); err != nil {
+		if err := c.CheckTransaction(v); err != nil {
 			return err
 		}
 	}
@@ -301,7 +306,7 @@ func (c *ChainTx) GenesesBlockInit() error {
 		return err
 	}
 
-	if err := c.VerifyTxBlock(c.StateDB, block); err != nil {
+	if err := c.VerifyTxBlock(block); err != nil {
 		return err
 	}
 	c.CurrentHeader = block.Header
@@ -367,14 +372,8 @@ func (c *ChainTx) GetTransaction(key []byte) (*types.Transaction, error) {
 *  @brief  validity check of transaction, include signature verify, duplicate check and balance check
 *  @param  tx - a transaction
  */
-func (c *ChainTx) CheckTransaction(s *state.State, tx *types.Transaction) (err error) {
-	//result, err := tx.VerifySignature()
-	//if err != nil {
-	//	return err
-	//} else if result == false {
-	//	return errors.New(log, "tx verify signature failed")
-	//}
-	if err := s.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
+func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
+	if err := c.StateDB.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
 		return err
 	}
 
@@ -384,6 +383,36 @@ func (c *ChainTx) CheckTransaction(s *state.State, tx *types.Transaction) (err e
 			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
 		}
 		if value, err := c.AccountGetBalance(tx.From, state.AbaToken); err != nil {
+			return err
+		} else if value.Sign() <= 0 {
+			log.Error(err)
+			return errors.New(log, errors.ErrDoubleSpend.ErrorInfo())
+		}
+	case types.TxDeploy:
+		if data, _ := c.TxsStore.Get(tx.Addr.Bytes()); data != nil {
+			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
+		}
+	case types.TxInvoke:
+		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
+			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
+		}
+	default:
+		return errors.New(log, "check transaction unknown tx type")
+	}
+
+	return nil
+}
+func (c *ChainTx) CheckTransactionWithDB(s *state.State, tx *types.Transaction) (err error) {
+	if err := s.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
+		return err
+	}
+
+	switch tx.Type {
+	case types.TxTransfer:
+		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
+			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
+		}
+		if value, err := s.AccountGetBalance(tx.From, state.AbaToken); err != nil {
 			return err
 		} else if value.Sign() <= 0 {
 			log.Error(err)

@@ -93,7 +93,7 @@ func SaveBlock(ledger ledger.Ledger, txs []*types.Transaction) *types.Block {
 	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	block.SetSignature(&config.Root)
-	errors.CheckErrorPanic(ledger.VerifyTxBlock(ledger.StateDB(), block))
+	errors.CheckErrorPanic(ledger.VerifyTxBlock(block))
 	errors.CheckErrorPanic(ledger.SaveTxBlock(block))
 	return block
 }
