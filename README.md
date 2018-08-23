@@ -4,7 +4,8 @@ Go-Ecoball
 ## Depends
 1. Firstly,you need install [protoc](https://github.com/google/protobuf/blob/master/src/README.md) 
 2. Golang version >= 1.9
-3. Then you need install golang proto tools
+3. Then you need install golang proto tools:
+
 ```bash
 go get github.com/gogo/protobuf/protoc-gen-gofast
 ```
