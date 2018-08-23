@@ -117,7 +117,7 @@ func EchoResult(resp map[string]interface{}) error {
 			fmt.Println(strResult)
 		}
 	default:
-		
+
 	}
 
 	return nil
