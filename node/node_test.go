@@ -46,9 +46,11 @@ func TestRunMain(t *testing.T) {
 
 	//start explorer
 	go spectator.Bystander(ledger)
+	if config.StartNode {
+		go example.AutoGenerateTransaction(ledger)
+		go example.VotingProducer(ledger)
+	}
 
-	go example.AutoGenerateTransaction(ledger)
-	go example.VotingProducer(ledger)
 	wait()
 }
 /*
