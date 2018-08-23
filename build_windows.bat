@@ -46,7 +46,7 @@ if not exist %BUILD_PATH%ecoclient.exe (
 )
 
 choice /c yn /m "Whether to overwrite the existing ecoclient.exe file"
-if %errorlevel%==2 goto CHECK_ECOBALL 
+if %errorlevel%==2 goto CHECK_ECOWALLET 
 if %errorlevel%==1 goto ECOCLIENT 
 
 rem build ecoclient.exe
@@ -54,10 +54,30 @@ rem build ecoclient.exe
 go build -v -o ecoclient.exe client/client.go 
 if %ERRORLEVEL% neq 0 (
     echo build ecoclient.exe failed!!!!
-    goto CHECK_ECOBALL 
+    goto CHECK_ECOWALLET 
 )
 move ecoclient.exe %BUILD_PATH% > nul
 echo Build ecoclient.exe success!!!!
+
+rem Determine if ecowallet.exe exists
+:CHECK_ECOWALLET
+if not exist %BUILD_PATH%ecowallet.exe (
+    goto ECOWALLET
+)
+
+choice /c yn /m "Whether to overwrite the existing ecowallet.exe file"
+if %errorlevel%==2 goto CHECK_ECOBALL 
+if %errorlevel%==1 goto ECOWALLET 
+
+rem build ecowallet.exe
+:ECOWALLET
+go build -v -o ecowallet.exe walletserver/main.go 
+if %ERRORLEVEL% neq 0 (
+    echo build ecowallet.exe failed!!!!
+    goto CHECK_ECOBALL 
+)
+move ecowallet.exe %BUILD_PATH% > nul
+echo Build ecowallet.exe success!!!!
 
 rem Determine if build ecoball.exe exists
 :CHECK_ECOBALL

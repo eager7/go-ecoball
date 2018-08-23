@@ -24,12 +24,19 @@ import (
 )
 
 var (
-	Ip   = "localhost"
-	Port = "20678"
+	Ip         = "localhost"
+	Port       = "20678"
+	WalletIp   = "localhost"
+	WalletPort = "20679"
 )
 
 func RpcAddress() string {
 	address := "http://" + Ip + ":" + Port
+	return address
+}
+
+func WalletRpcAddress() string {
+	address := "http://" + WalletIp + ":" + WalletPort
 	return address
 }
 

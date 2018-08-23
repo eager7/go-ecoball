@@ -29,8 +29,18 @@ import (
 	innerCommon "github.com/ecoball/go-ecoball/http/common"
 )
 
+// Node RPC call
+func NodeCall(method string, params []interface{}) (map[string]interface{}, error) {
+	return call(common.RpcAddress(), method, params)
+}
+
+// Wallet RPC call
+func WalletCall(method string, params []interface{}) (map[string]interface{}, error) {
+	return call(common.WalletRpcAddress(), method, params)
+}
+
 // RPC call
-func Call(method string, params []interface{}) (map[string]interface{}, error) {
+func call(address, method string, params []interface{}) (map[string]interface{}, error) {
 
 	data, err := json.Marshal(map[string]interface{}{
 		"method": method,
@@ -41,7 +51,7 @@ func Call(method string, params []interface{}) (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	resp, err := http.Post(common.RpcAddress(), "application/json", strings.NewReader(string(data)))
+	resp, err := http.Post(address, "application/json", strings.NewReader(string(data)))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "POST request: %v\n", err)
 		return nil, err
@@ -107,7 +117,7 @@ func EchoResult(resp map[string]interface{}) error {
 			fmt.Println(strResult)
 		}
 	default:
-		
+
 	}
 
 	return nil

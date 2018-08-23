@@ -120,7 +120,7 @@ func setContract(c *cli.Context) error {
 	}
 
 	//rpc call
-	resp, err := rpc.Call("setContract", []interface{}{common.ToHex(data), contractName, description})
+	resp, err := rpc.NodeCall("setContract", []interface{}{common.ToHex(data), contractName, description})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
@@ -164,7 +164,7 @@ func invokeContract(c *cli.Context) error {
 	contractParam := c.String("param")
 
 	//rpc call
-	resp, err := rpc.Call("invokeContract", []interface{}{contractName, contractMethod, contractParam})
+	resp, err := rpc.NodeCall("invokeContract", []interface{}{contractName, contractMethod, contractParam})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
