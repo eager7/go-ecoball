@@ -57,7 +57,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 	case *actor.Restarting:
 	case *types.Transaction:
 		//log.Info("Receive Transaction:", msg.Hash.HexString())
-		err := l.ledger.ChainTx.CheckTransaction(msg)
+		err := l.ledger.ChainTx.CheckTransaction(l.ledger.ChainTx.TempStateDB, msg)
 		if err != nil {
 			ctx.Sender().Tell(err)
 			break

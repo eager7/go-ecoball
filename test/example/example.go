@@ -93,7 +93,7 @@ func SaveBlock(ledger ledger.Ledger, txs []*types.Transaction) *types.Block {
 	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	block.SetSignature(&config.Root)
-	errors.CheckErrorPanic(ledger.VerifyTxBlock(block))
+	errors.CheckErrorPanic(ledger.VerifyTxBlock(ledger.StateDB(), block))
 	errors.CheckErrorPanic(ledger.SaveTxBlock(block))
 	return block
 }
@@ -107,12 +107,6 @@ func TimeStamp() int64 {
 func ConsensusData() types.ConsensusData {
 	con, _ := types.InitConsensusData(TimeStamp())
 	return *con
-}
-
-func ShowAccountInfo(s *state.State, index common.AccountName) {
-	acc, err := s.GetAccountByName(index)
-	errors.CheckErrorPanic(err)
-	acc.Show()
 }
 
 func AutoGenerateTransaction(ledger ledger.Ledger) {

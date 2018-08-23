@@ -84,10 +84,6 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	}
 	p.txPool.txsCache.Add(tx.Hash, tx.Hash)
 
-	//check transaction
-	if err := p.txPool.ledger.CheckTransaction(tx); err != nil {
-		return err
-	}
 	ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx, tx.TimeStamp)
 	if err != nil {
 		return err

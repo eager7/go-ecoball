@@ -94,8 +94,10 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 		return nil, err
 	}
 	var cpu, net float64
+	log.Notice("Handle Transaction in copy DB")
 	for i := 0; i < len(txs); i++ {
 		if _, c, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+			log.Warn(txs[i].JsonString())
 			return nil, err
 		} else {
 			cpu += c
@@ -118,7 +120,7 @@ func (c *ChainTx) ResetStateDB(header *types.Header) error {
 *  @brief  check block's signature and all transactions
 *  @param  block - the block need to verify
  */
-func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
+func (c *ChainTx) VerifyTxBlock(s *state.State, block *types.Block) error {
 	result, err := block.VerifySignature()
 	if err != nil {
 		log.Error("Block VerifySignature Failed")
@@ -128,7 +130,7 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 		return errors.New(log, "block verify signature failed")
 	}
 	for _, v := range block.Transactions {
-		if err := c.CheckTransaction(v); err != nil {
+		if err := c.CheckTransaction(s, v); err != nil {
 			return err
 		}
 	}
@@ -149,6 +151,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return nil
 	}
 
+	log.Notice("Handle Transaction in final DB")
 	for i := 0; i < len(block.Transactions); i++ {
 		if _, _, _, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Error("Handle Transaction Error:", err)
@@ -297,7 +300,7 @@ func (c *ChainTx) GenesesBlockInit() error {
 		return err
 	}
 
-	if err := c.VerifyTxBlock(block); err != nil {
+	if err := c.VerifyTxBlock(c.StateDB, block); err != nil {
 		return err
 	}
 	c.CurrentHeader = block.Header
@@ -363,14 +366,14 @@ func (c *ChainTx) GetTransaction(key []byte) (*types.Transaction, error) {
 *  @brief  validity check of transaction, include signature verify, duplicate check and balance check
 *  @param  tx - a transaction
  */
-func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
+func (c *ChainTx) CheckTransaction(s *state.State, tx *types.Transaction) (err error) {
 	//result, err := tx.VerifySignature()
 	//if err != nil {
 	//	return err
 	//} else if result == false {
 	//	return errors.New(log, "tx verify signature failed")
 	//}
-	if err := c.TempStateDB.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
+	if err := s.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
 		return err
 	}
 

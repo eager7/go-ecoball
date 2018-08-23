@@ -254,7 +254,7 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 		t.Fatal(err)
 	}
 	block.SetSignature(&config.Root)
-	if err := ledger.VerifyTxBlock(block); err != nil {
+	if err := ledger.VerifyTxBlock(ledger.StateDB(), block); err != nil {
 		t.Fatal(err)
 	}
 	if err := ledger.SaveTxBlock(block); err != nil {
@@ -341,7 +341,7 @@ func AddTokenAccount(ledger ledger.Ledger, con *types.ConsensusData, t *testing.
 		t.Fatal(err)
 	}
 	block.SetSignature(&config.Root)
-	if err := ledger.VerifyTxBlock(block); err != nil {
+	if err := ledger.VerifyTxBlock(ledger.StateDB(), block); err != nil {
 		t.Fatal(err)
 	}
 	if err := ledger.SaveTxBlock(block); err != nil {
@@ -382,7 +382,7 @@ func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T
 		t.Fatal(err)
 	}
 	block.SetSignature(&config.Root)
-	if err := ledger.VerifyTxBlock(block); err != nil {
+	if err := ledger.VerifyTxBlock(ledger.StateDB(), block); err != nil {
 		t.Fatal(err)
 	}
 	if err := ledger.SaveTxBlock(block); err != nil {
@@ -403,7 +403,7 @@ func CancelPledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *tes
 		t.Fatal(err)
 	}
 	block.SetSignature(&config.Root)
-	if err := ledger.VerifyTxBlock(block); err != nil {
+	if err := ledger.VerifyTxBlock(ledger.StateDB(), block); err != nil {
 		t.Fatal(err)
 	}
 	if err := ledger.SaveTxBlock(block); err != nil {

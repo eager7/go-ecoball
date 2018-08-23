@@ -38,7 +38,7 @@ type State struct {
 	diskDb *store.LevelDBStore
 
 	accMutex sync.RWMutex
-	Accounts map[string]Account
+	Accounts map[string]*Account
 
 	paraMutex sync.RWMutex
 	Params    map[string]uint64
@@ -67,7 +67,7 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	if err != nil {
 		st.trie, _ = st.db.OpenTrie(common.Hash{})
 	}
-	st.Accounts = make(map[string]Account, 1)
+	st.Accounts = make(map[string]*Account, 1)
 	st.Params = make(map[string]uint64, 1)
 	st.Producers = make(map[common.AccountName]uint64, 1)
 	return st, nil
@@ -76,7 +76,7 @@ func (s *State) CopyState() (*State, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	params := make(map[string]uint64, 1)
-	accounts := make(map[string]Account, 1)
+	accounts := make(map[string]*Account, 1)
 	prods := make(map[common.AccountName]uint64, 1)
 
 	s.paraMutex.Lock()
@@ -97,13 +97,13 @@ func (s *State) CopyState() (*State, error) {
 	}
 	s.accMutex.RLock()
 	defer s.accMutex.RUnlock()
-	if str, err := json.Marshal(s.Accounts); err != nil {
-		return nil, err
-	} else {
-		if err := json.Unmarshal(str, &accounts); err != nil {
-			return nil, err
-		}
+	for _, v := range s.Accounts {
+		data, _ := v.Serialize()
+		acc := new(Account)
+		acc.Deserialize(data)
+		accounts[acc.Index.String()] = acc
 	}
+
 	return &State{
 		path:      s.path,
 		trie:      s.db.CopyTrie(s.trie),
@@ -120,9 +120,9 @@ func (s *State) CopyState() (*State, error) {
  */
 func (s *State) AddAccount(index common.AccountName, addr common.Address, timeStamp int64) (*Account, error) {
 	key := common.IndexToBytes(index)
-	s.mutex.Lock()
+	s.mutex.RLock()
 	data, err := s.trie.TryGet(key)
-	s.mutex.Unlock()
+	s.mutex.RUnlock()
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +143,9 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
 	if err != nil {
 		return nil, err
 	}
-	s.accMutex.Lock()
-	defer s.accMutex.Unlock()
-	s.Accounts[index.String()] = *acc
+	//s.accMutex.Lock()
+	//defer s.accMutex.Unlock()
+	//s.Accounts[index.String()] = *acc
 
 	s.paraMutex.Lock()
 	defer s.paraMutex.Unlock()
@@ -165,6 +165,8 @@ func (s *State) SetContract(index common.AccountName, t types.VmType, des, code 
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	if err := acc.SetContract(t, des, code); err != nil {
 		return err
 	}
@@ -180,6 +182,8 @@ func (s *State) GetContract(index common.AccountName) (*types.DeployInfo, error)
 	if err != nil {
 		return nil, err
 	}
+	acc.mutex.RLock()
+	defer acc.mutex.RUnlock()
 	return acc.GetContract()
 }
 func (s *State) StoreSet(index common.AccountName, key, value []byte) (err error) {
@@ -187,6 +191,8 @@ func (s *State) StoreSet(index common.AccountName, key, value []byte) (err error
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	if err := acc.StoreSet(s.path, key, value); err != nil {
 		return err
 	}
@@ -197,6 +203,8 @@ func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, er
 	if err != nil {
 		return nil, err
 	}
+	acc.mutex.RLock()
+	defer acc.mutex.RUnlock()
 	return acc.StoreGet(s.path, key)
 }
 
@@ -209,7 +217,7 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	defer s.accMutex.RUnlock()
 	acc, ok := s.Accounts[index.String()]
 	if ok {
-		return &acc, nil
+		return acc, nil
 	}
 	key := common.IndexToBytes(index)
 	s.mutex.Lock()
@@ -221,11 +229,11 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	if fData == nil {
 		return nil, errors.New(log, fmt.Sprintf("no this account named:%s", index.String()))
 	}
-	acc = Account{}
+	acc = &Account{}
 	if err = acc.Deserialize(fData); err != nil {
 		return nil, err
 	}
-	return &acc, nil
+	return acc, nil
 }
 
 /**
@@ -274,11 +282,9 @@ func (s *State) commitAccount(acc *Account) error {
 	if err := s.trie.TryUpdate(common.IndexToBytes(acc.Index), d); err != nil {
 		return err
 	}
-	//s.RecoverResources(acc)
 	s.accMutex.Lock()
 	defer s.accMutex.Unlock()
-	s.Accounts[acc.Index.String()] = *acc
-	//acc.Show()
+	s.Accounts[acc.Index.String()] = acc
 	return nil
 }
 func (s *State) commitParam(key string, value uint64) error {

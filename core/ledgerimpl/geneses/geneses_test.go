@@ -154,25 +154,3 @@ func CancelPledgeContract(ledger ledger.Ledger) *types.Block {
 
 	return example.SaveBlock(ledger, txs)
 }
-
-func showAccountInfo(l ledger.Ledger) {
-	acc, err := l.AccountGet(root)
-	errors.CheckErrorPanic(err)
-	acc.Show()
-	/*
-		acc, err = l.AccountGet(worker1)
-		errors.CheckErrorPanic(err)
-		acc.Show()
-
-		acc, err = l.AccountGet(worker2)
-		errors.CheckErrorPanic(err)
-		acc.Show()
-
-		acc, err = l.AccountGet(worker3)
-		errors.CheckErrorPanic(err)
-		acc.Show()
-
-		acc, err = l.AccountGet(delegate)
-		errors.CheckErrorPanic(err)
-		acc.Show()*/
-}

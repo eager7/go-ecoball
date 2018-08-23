@@ -76,6 +76,8 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	if from == to {
 		acc.AddResourceLimits(true, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum, cpuLimit, netLimit)
 	} else {
@@ -84,6 +86,8 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 		if err != nil {
 			return err
 		}
+		accTo.mutex.Lock()
+		defer accTo.mutex.Unlock()
 		accTo.AddResourceLimits(false, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum, cpuLimit, netLimit)
 		if err := s.commitAccount(accTo); err != nil {
 			return err
@@ -126,6 +130,8 @@ func (s *State) SubResources(index common.AccountName, cpu, net float64, cpuLimi
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	if err := acc.SubResourceLimits(cpu, net, cpuStakedSum, netStakedSum, cpuLimit, netLimit); err != nil {
 		return err
 	}
@@ -156,12 +162,16 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 
 	if from != to {
 		accTo, err := s.GetAccountByName(to)
 		if err != nil {
 			return err
 		}
+		accTo.mutex.Lock()
+		defer accTo.mutex.Unlock()
 		if err := acc.CancelDelegateOther(accTo, cpuStaked, netStaked, cpuStakedSum, netStakedSum, cpuLimit, netLimit); err != nil {
 			return err
 		}
@@ -208,6 +218,8 @@ func (s *State) RecoverResources(index common.AccountName, timeStamp int64, cpuL
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	cpuStakedSum, err := s.getParam(cpuAmount)
 	if err != nil {
 		return err
@@ -238,6 +250,8 @@ func (s *State) RequireResources(index common.AccountName, cpuLimit, netLimit fl
 	if err != nil {
 		return 0, 0, err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	acc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit)
 	log.Debug("cpu:", acc.Cpu.Used, acc.Cpu.Available, acc.Cpu.Limit)
 	log.Debug("net:", acc.Net.Used, acc.Net.Available, acc.Net.Limit)
@@ -293,6 +307,8 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	if acc.Resource.Votes.Staked == 0 {
 		return errors.New(log, fmt.Sprintf("the account:%s has no enough vote", index.String()))
 	}
@@ -327,6 +343,8 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 		if err != nil {
 			return err
 		}
+		root.mutex.Lock()
+		defer root.mutex.Unlock()
 		root.AddPermission(perm)
 		//if config.ConsensusAlgorithm != "SOLO" {
 		//	log.Info(event.Send(event.ActorNil, event.ActorConsensusSolo, &message.SoloStop{}))
@@ -394,6 +412,8 @@ func (s *State) checkAccountCertification(index common.AccountName) error {
 	if err != nil {
 		return err
 	}
+	acc.mutex.RLock()
+	defer acc.mutex.RUnlock()
 	if acc.Votes.Staked < VotesLimit {
 		acc.Show()
 		return errors.New(log, fmt.Sprintf("the account:%s has no enough staked", index.String()))

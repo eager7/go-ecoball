@@ -103,11 +103,11 @@ func (l *LedgerImpl) GetCurrentHeight() uint64 {
 func (l *LedgerImpl) GetChainTx() ledger.ChainInterface {
 	return l.ChainTx
 }
-func (l *LedgerImpl) VerifyTxBlock(block *types.Block) error {
-	return l.ChainTx.VerifyTxBlock(block)
+func (l *LedgerImpl) VerifyTxBlock(s *state.State, block *types.Block) error {
+	return l.ChainTx.VerifyTxBlock(s, block)
 }
-func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
-	if err := l.ChainTx.CheckTransaction(tx); err != nil {
+func (l *LedgerImpl) CheckTransaction(s *state.State, tx *types.Transaction) error {
+	if err := l.ChainTx.CheckTransaction(s, tx); err != nil {
 		return err
 	}
 	//if err := l.ChainAc.CheckTransaction(tx); err != nil {
@@ -117,6 +117,9 @@ func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
 }
 
 func (l *LedgerImpl) PreHandleTransaction(tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error) {
+	if err := l.ChainTx.CheckTransaction(l.ChainTx.TempStateDB, tx); err != nil {
+		return nil, 0, 0, err
+	}
 	return l.ChainTx.HandleTransaction(l.ChainTx.TempStateDB, tx, timeStamp, l.ChainTx.CurrentHeader.Receipt.BlockCpu, l.ChainTx.CurrentHeader.Receipt.BlockNet)
 }
 

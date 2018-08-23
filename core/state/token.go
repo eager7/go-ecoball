@@ -19,6 +19,8 @@ func (s *State) AccountGetBalance(index common.AccountName, token string) (*big.
 	if err != nil {
 		return nil, err
 	}
+	acc.mutex.RLock()
+	defer acc.mutex.RUnlock()
 	return acc.Balance(token)
 }
 func (s *State) AccountSubBalance(index common.AccountName, token string, value *big.Int) error {
@@ -26,7 +28,8 @@ func (s *State) AccountSubBalance(index common.AccountName, token string, value 
 	if err != nil {
 		return err
 	}
-
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	balance, err := acc.Balance(token)
 	if err != nil {
 		return err
@@ -47,6 +50,8 @@ func (s *State) AccountAddBalance(index common.AccountName, token string, value 
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	if err := acc.AddBalance(AbaToken, value); err != nil {
 		return err
 	}
