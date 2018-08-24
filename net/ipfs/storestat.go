@@ -32,7 +32,7 @@ type StoreStatMonitor struct {
 
 func NewStoreStatMonitor() (*StoreStatMonitor) {
 	return &StoreStatMonitor{
-		Interval:time.Minute*1,
+		Interval:time.Hour*24,
 	}
 }
 
