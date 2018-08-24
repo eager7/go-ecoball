@@ -125,7 +125,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		// check the status of the main net
 		if ok:=current_ledger.StateDB().RequireVotingInfo(); ok!=true {
 			// main net has not started yet
-			currentheader = current_ledger.GetCurrentHeader()
+			// currentheader = current_ledger.GetCurrentHeader()
+
 			current_height_num = int(currentheader.Height)
 			current_round_num = 0
 			verified_height = uint64(current_height_num)
@@ -182,7 +183,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// return
 				}
 
-
+				currentheader = block_solo.Header
 				verified_height = block_solo.Height
 				fmt.Println("ababft solo height:",block_solo.Height,block_solo)
 				time.Sleep(time.Second * WAIT_RESPONSE_TIME)
@@ -267,7 +268,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		block_secondround = Block_SecondRound{}
 		// log.Debug("current_round_num:",current_round_num,Num_peers,Self_index)
 		// get the current round number of the block
-		currentheader = current_ledger.GetCurrentHeader()
+		// currentheader = current_ledger.GetCurrentHeader()
+
 		current_height_num = int(currentheader.Height)
 
 		// todo
@@ -979,6 +981,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// return
 				}
 
+				currentheader = block_second.Header
 				verified_height = block_second.Height - 1
 				// 5. change the status
 				actor_c.status = 7
@@ -1060,7 +1063,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 							log.Fatal(err)
 							// return
 						}
-
+						currentheader = blocksecond_received.Header
 						verified_height = blocksecond_received.Height
 						current_height_num = int(verified_height)
 						log.Info("verified height of the solo mode:",verified_height,current_height_num)
@@ -1183,6 +1186,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						// return
 					}
 					// 4. change status
+					currentheader = blocksecond_received.Header
 					verified_height = blocksecond_received.Height - 1
 					actor_c.status = 8
 					primary_tag = 0
@@ -1462,6 +1466,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			}
 
 			// 4. only the block is sucessfully saved, then change the status
+			currentheader = blks_f.Header
 			verified_height = blks_v.Height
 			actor_c.status = 8
 			primary_tag = 0
