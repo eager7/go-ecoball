@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/types"
+	"time"
 )
 
 type LedActor struct {
@@ -55,10 +56,13 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		l.pid.Stop()
 	case *actor.Restarting:
 	case *types.Block:
+		begin := time.Now().UnixNano()
 		if err := l.ledger.ChainTx.SaveBlock(msg); err != nil {
 			log.Error("save block error:", err)
 			break
 		}
+		end := time.Now().UnixNano()
+		log.Warn("save block:", (end-begin)/1000, "us")
 	case *dpos.DposBlock:
 		//TODO
 

@@ -102,7 +102,9 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 	var cpu, net float64
 	log.Notice("Handle Transaction in copy DB")
 	for i := 0; i < len(txs); i++ {
-		log.Warn(txs[i].JsonString())
+		//log.Notice(txs[i].JsonString())
+		data, _ := txs[i].Serialize()
+		log.Notice(len(data))
 		if _, c, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].JsonString())
 			return nil, err
