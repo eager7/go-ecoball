@@ -143,11 +143,13 @@ func VotingProducer(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Root))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	time.Sleep(time.Millisecond * 500)
 
 	contract, err = types.NewDeployContract(common.NameToIndex("delegate"), common.NameToIndex("delegate"), config.ChainHash, state.Owner, types.VmNative, "system control", nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Delegate))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	time.Sleep(time.Millisecond * 500)
 
 	//create account worker1, worker2
 	time.Sleep(time.Second * 5)
@@ -155,11 +157,13 @@ func VotingProducer(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
 
 	invoke, err = types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, "new_account", []string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
 
 	//transfer worker1, worker2 aba token
 	time.Sleep(time.Second * 5)
@@ -167,11 +171,13 @@ func VotingProducer(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 	transfer.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(time.Millisecond * 500)
 
 	transfer, err = types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, new(big.Int).SetUint64(10000), 1, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	transfer.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(time.Millisecond * 500)
 
 	//delegate for worker1 and worker2 cpu,net
 	time.Sleep(time.Second * 5)
@@ -179,11 +185,13 @@ func VotingProducer(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
 
 	invoke, err = types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("delegate"), config.ChainHash, state.Active, "pledge", []string{"root", "worker2", "500", "500"}, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
 
 	//worker1 and worker2 delegate aba to get votes
 	time.Sleep(time.Second * 5)
@@ -191,11 +199,13 @@ func VotingProducer(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
 
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("delegate"), config.ChainHash, state.Active, "pledge", []string{"worker2", "worker2", "4000", "4000"}, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker2)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
 
 	//worker1, worker2 register to producer
 	time.Sleep(time.Second * 5)
@@ -203,11 +213,13 @@ func VotingProducer(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
 
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("root"), config.ChainHash, state.Active, "reg_prod", []string{"worker2"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker2)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
 
 	//worker1, worker2 voting to be producer
 	time.Sleep(time.Second * 5)
@@ -215,9 +227,11 @@ func VotingProducer(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
 
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("root"), config.ChainHash, state.Active, "vote", []string{"worker1", "worker1", "worker2"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker2)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
 }
