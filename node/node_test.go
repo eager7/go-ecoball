@@ -37,7 +37,7 @@ func TestRunMain(t *testing.T) {
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":
 		elog.Log.Info("enter the branch of ababft consensus", config.ConsensusAlgorithm)
-		s, _ := ababft.Service_ababft_gen(ledger, txPool, &config.Worker1)
+		s, _ := ababft.serviceAbabftGen(ledger, txPool, &config.Worker1)
 		s.Start()
 		elog.Log.Info("send the start message to ababft")
 		event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})

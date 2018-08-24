@@ -38,7 +38,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"reflect"
 )
-type Actor_ababft struct {
+type ActorAbabft struct {
 	status uint // 1: actor generated,
 	// 2: running,
 	// 3: as prime, start the new round, collect the tx and previous block signature, then broadcast the first round block
@@ -49,13 +49,13 @@ type Actor_ababft struct {
 	// 8: as peer, the round end and enters to the next round
 	// 101: solo prime, before main net start
 	// 102: solo peer, before main net start
-	pid *actor.PID // actor pid
-	service_ababft *Service_ababft
+	pid           *actor.PID // actor pid
+	serviceAbabft *ServiceAbabft
 }
 
 const(
-	pubkey_tag = "ababft"
-	signdata_tag = "ababft"
+	pubkeyTag   = "ababft"
+	signdataTag = "ababft"
 )
 
 var log = elog.NewLogger("ABABFT", elog.NoticeLog)
@@ -66,12 +66,12 @@ const TestTag = false
 const threshold_round = 60
 
 var Num_peers int
-var Peers_list []Peer_info // Peer information for consensus
-var Peers_addr_list []Peer_addr_info // Peer address information for consensus
-var Peers_list_account []Peer_info_account // Peer information for consensus
-var Self_index int // the index of this peer in the peers list
-var current_round_num int // current round number
-var current_height_num int // current height, according to the blocks saved in the local ledger
+var Peers_list []PeerInfo                // Peer information for consensus
+var Peers_addr_list []PeerAddrInfo       // Peer address information for consensus
+var Peers_list_account []PeerInfoAccount // Peer information for consensus
+var Self_index int                       // the index of this peer in the peers list
+var current_round_num int                // current round number
+var current_height_num int               // current height, according to the blocks saved in the local ledger
 var current_ledger ledger.Ledger
 
 var primary_tag int // 0: verification peer; 1: is the primary peer, who generate the block at current round;
@@ -100,7 +100,7 @@ var Accounts_test []account.Account
 
 
 
-func Actor_ababft_gen(actor_ababft *Actor_ababft) (*actor.PID, error) {
+func Actor_ababft_gen(actor_ababft *ActorAbabft) (*actor.PID, error) {
 	props := actor.FromProducer(func() actor.Actor {
 		return actor_ababft
 	})
@@ -113,7 +113,7 @@ func Actor_ababft_gen(actor_ababft *Actor_ababft) (*actor.PID, error) {
 	return pid, err
 }
 
-func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
+func (actor_c *ActorAbabft) Receive(ctx actor.Context) {
 	var err error
 	// log.Debug("ababft service receives the message")
 
@@ -158,18 +158,18 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					txs = append(txs, v)
 				}
 				*/
-				txs, _ := actor_c.service_ababft.txPool.GetTxsList(config.ChainHash)
+				txs, _ := actor_c.serviceAbabft.txPool.GetTxsList(config.ChainHash)
 
 
 				// generate the block in the form of second round block
 				var block_solo *types.Block
 				t_time := time.Now().UnixNano()
-				block_solo,err = actor_c.service_ababft.ledger.NewTxBlock(config.ChainHash, txs, conData, t_time)
+				block_solo,err = actor_c.serviceAbabft.ledger.NewTxBlock(config.ChainHash, txs, conData, t_time)
 				block_solo.SetSignature(&soloaccount)
 				block_secondround.Blocksecond = *block_solo
 				// save (the ledger will broadcast the block after writing the block into the DB)
 				/*
-				if err = actor_c.service_ababft.ledger.SaveTxBlock(block_solo); err != nil {
+				if err = actor_c.serviceAbabft.ledger.SaveTxBlock(block_solo); err != nil {
 					// log.Error("save block error:", err)
 					println("save solo block error:", err)
 					return
@@ -190,7 +190,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 				verified_height = block_solo.Height
 				fmt.Println("ababft solo height:",block_solo.Height,block_solo)
-				time.Sleep(time.Second * WAIT_RESPONSE_TIME)
+				time.Sleep(time.Second * waitResponseTime)
 				// call itself again
 				event.Send(event.ActorNil,event.ActorConsensus,message.ABABFTStart{})
 			} else {
@@ -201,9 +201,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 				// send solo syn request
 				var requestsyn REQSynSolo
-				requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
+				requestsyn.Reqsyn.PubKey = actor_c.serviceAbabft.account.PublicKey
 				hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num+1)))
-				requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+				requestsyn.Reqsyn.SigData,_ = actor_c.serviceAbabft.account.Sign(hash_t.Bytes())
 				requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)+1
 				event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 				log.Info("send solo block requirements:", requestsyn.Reqsyn.RequestHeight, current_height_num)
@@ -231,8 +231,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		// sort newPeers
 		sort.Strings(Peers_list_account_t)
 
-		Peers_list_account = make([]Peer_info_account, Num_peers)
-		Peers_addr_list = make([]Peer_addr_info, Num_peers)
+		Peers_list_account = make([]PeerInfoAccount, Num_peers)
+		Peers_addr_list = make([]PeerAddrInfo, Num_peers)
 		for i := 0; i < Num_peers; i++ {
 			Peers_list_account[i].Accountname = common.NameToIndex(Peers_list_account_t[i])
 			Peers_list_account[i].Index = i + 1
@@ -319,8 +319,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 		// signature the current highest block and broadcast
 		var signature_preblock common.Signature
-		signature_preblock.PubKey = actor_c.service_ababft.account.PublicKey
-		signature_preblock.SigData, err = actor_c.service_ababft.account.Sign(currentheader.Hash.Bytes())
+		signature_preblock.PubKey = actor_c.serviceAbabft.account.PublicKey
+		signature_preblock.SigData, err = actor_c.serviceAbabft.account.Sign(currentheader.Hash.Bytes())
 		if err != nil {
 			return
 		}
@@ -336,7 +336,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			fmt.Println("ABABFTStart:current_round_num:",current_round_num,Self_index)
 			// log.Debug("primary")
 			// set up a timer to wait for the signature_preblock from other peera
-			t0 := time.NewTimer(time.Second * WAIT_RESPONSE_TIME * 2)
+			t0 := time.NewTimer(time.Second * waitResponseTime * 2)
 			go func() {
 				select {
 				case <-t0.C:
@@ -365,7 +365,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// log.Debug("non primary")
 			// log.Debug("signaturepre_send:",current_round_num,currentheader.Height,signaturepre_send)
 			// set up a timer for receiving the data
-			t1 := time.NewTimer(time.Second * WAIT_RESPONSE_TIME * 2)
+			t1 := time.NewTimer(time.Second * waitResponseTime * 2)
 			go func() {
 				select {
 				case <-t1.C:
@@ -412,9 +412,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// require synchronization, the longest chain is ok
 					// send synchronization message
 					var requestsyn REQSyn
-					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
+					requestsyn.Reqsyn.PubKey = actor_c.serviceAbabft.account.PublicKey
 					hash_t,_ := common.DoubleHash(Uint64ToBytes(verified_height+1))
-					requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+					requestsyn.Reqsyn.SigData,_ = actor_c.serviceAbabft.account.Sign(hash_t.Bytes())
 					requestsyn.Reqsyn.RequestHeight = verified_height+1
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 					syn_status = 1
@@ -585,13 +585,13 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				for _, v := range txList.Txs {
 					txs = append(txs, v)
 				}*/
-				txs, _ := actor_c.service_ababft.txPool.GetTxsList(config.ChainHash)
+				txs, _ := actor_c.serviceAbabft.txPool.GetTxsList(config.ChainHash)
 				// log.Debug("obtained tx list", txs[0])
 				// generate the first-round block
 				var block_first *types.Block
 				t_time := time.Now().UnixNano()
-				block_first,err = actor_c.service_ababft.ledger.NewTxBlock(config.ChainHash, txs, conData, t_time)
-				block_first.SetSignature(actor_c.service_ababft.account)
+				block_first,err = actor_c.serviceAbabft.ledger.NewTxBlock(config.ChainHash, txs, conData, t_time)
+				block_first.SetSignature(actor_c.serviceAbabft.account)
 				// broadcast the first-round block to peers for them to verify the transactions and wait for the corresponding signatures back
 				block_firstround.Blockfirst = *block_first
 				event.Send(event.ActorConsensus, event.ActorP2P, block_firstround)
@@ -612,7 +612,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				// initial the received_signblkf_num to count the signatures for txs (i.e. the first round block)
 				received_signblkf_num = 0
 				// set the timer for collecting the signature for txs (i.e. the first round block)
-				t2 := time.NewTimer(time.Second * WAIT_RESPONSE_TIME)
+				t2 := time.NewTimer(time.Second * waitResponseTime)
 				go func() {
 					select {
 					case <-t2.C:
@@ -628,9 +628,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				// send out the timeout message
 				var timeoutmsg TimeoutMsg
 				timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
-				timeoutmsg.Toutmsg.PubKey = actor_c.service_ababft.account.PublicKey
+				timeoutmsg.Toutmsg.PubKey = actor_c.serviceAbabft.account.PublicKey
 				hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_round_num)))
-				timeoutmsg.Toutmsg.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+				timeoutmsg.Toutmsg.SigData,_ = actor_c.serviceAbabft.account.Sign(hash_t.Bytes())
 				event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
 				// start/enter the next turn
 				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
@@ -666,9 +666,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					if (verified_height+2) < blockfirst_received.Header.Height {
 						// send synchronization message
 						var requestsyn REQSyn
-						requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
+						requestsyn.Reqsyn.PubKey = actor_c.serviceAbabft.account.PublicKey
 						hash_t,_ := common.DoubleHash(Uint64ToBytes(verified_height+1))
-						requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+						requestsyn.Reqsyn.SigData,_ = actor_c.serviceAbabft.account.Sign(hash_t.Bytes())
 						requestsyn.Reqsyn.RequestHeight = verified_height+1
 						event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 						syn_status = 1
@@ -757,7 +757,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// 3. check the txs
 					txs_in := blockfirst_received.Transactions
 					for index1,tx_in := range txs_in {
-						err = actor_c.service_ababft.ledger.CheckTransaction(config.ChainHash, tx_in)
+						err = actor_c.serviceAbabft.ledger.CheckTransaction(config.ChainHash, tx_in)
 						if err != nil {
 							println("wrong tx, index:", index1)
 							return
@@ -765,8 +765,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					}
 					// 4. sign the received first-round block
 					var sign_blkf_send Signature_BlkF
-					sign_blkf_send.Signature_blkf.PubKey = actor_c.service_ababft.account.PublicKey
-					sign_blkf_send.Signature_blkf.SigData,err = actor_c.service_ababft.account.Sign(blockfirst_received.Header.Hash.Bytes())
+					sign_blkf_send.Signature_blkf.PubKey = actor_c.serviceAbabft.account.PublicKey
+					sign_blkf_send.Signature_blkf.SigData,err = actor_c.serviceAbabft.account.Sign(blockfirst_received.Header.Hash.Bytes())
 					// 5. broadcast the signature of the first round block
 					event.Send(event.ActorConsensus, event.ActorP2P, sign_blkf_send)
 					// 6. change the status
@@ -797,7 +797,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 
 					// 7. set the timer for waiting the second-round(final) block
-					t3 := time.NewTimer(time.Second * WAIT_RESPONSE_TIME)
+					t3 := time.NewTimer(time.Second * waitResponseTime)
 					go func() {
 						select {
 						case <-t3.C:
@@ -827,9 +827,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// send out the timeout message
 			var timeoutmsg TimeoutMsg
 			timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
-			timeoutmsg.Toutmsg.PubKey = actor_c.service_ababft.account.PublicKey
+			timeoutmsg.Toutmsg.PubKey = actor_c.serviceAbabft.account.PublicKey
 			hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_round_num)))
-			timeoutmsg.Toutmsg.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+			timeoutmsg.Toutmsg.SigData,_ = actor_c.serviceAbabft.account.Sign(hash_t.Bytes())
 			event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
 
 			// for test 2018.08.01
@@ -919,8 +919,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			if received_signblkf_num >= int(2*len(Peers_addr_list)/3) {
 				// enough first-round block signatures, so generate the second-round(final) block
 				// 1. add the first-round block signatures into ConsensusData
-				pubkey_tag_b := []byte(pubkey_tag)
-				signdata_tag_b := []byte(signdata_tag)
+				pubkey_tag_b := []byte(pubkeyTag)
+				signdata_tag_b := []byte(signdataTag)
 				var sign_tag common.Signature
 				sign_tag.PubKey = pubkey_tag_b
 				sign_tag.SigData = signdata_tag_b
@@ -951,7 +951,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				// 2. generate the second-round(final) block
 				var block_second types.Block
 				block_second,err =  actor_c.update_block(block_firstround.Blockfirst, conData)
-				block_second.SetSignature(actor_c.service_ababft.account)
+				block_second.SetSignature(actor_c.serviceAbabft.account)
 				// fmt.Println("block_second:",block_second.Header)
 
 				// 3. broadcast the second-round(final) block
@@ -973,7 +973,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 				// 4. save the second-round(final) block to ledger
 				/*
-				if err = actor_c.service_ababft.ledger.SaveTxBlock(&block_second); err != nil {
+				if err = actor_c.serviceAbabft.ledger.SaveTxBlock(&block_second); err != nil {
 					// log.Error("save block error:", err)
 					println("save block error:", err)
 					return
@@ -1006,7 +1006,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				actor_c.status = 7
 				primary_tag = 0 // reset to zero, and the next primary will take the turn
 				// 2. reset the stateDB
-				//err = actor_c.service_ababft.ledger.ResetStateDB(currentheader.Hash)
+				//err = actor_c.serviceAbabft.ledger.ResetStateDB(currentheader.Hash)
 				//if err != nil {
 				//	log.Debug("ResetStateDB fail")
 				//	return
@@ -1014,9 +1014,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				// send out the timeout message
 				var timeoutmsg TimeoutMsg
 				timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
-				timeoutmsg.Toutmsg.PubKey = actor_c.service_ababft.account.PublicKey
+				timeoutmsg.Toutmsg.PubKey = actor_c.serviceAbabft.account.PublicKey
 				hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_round_num)))
-				timeoutmsg.Toutmsg.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+				timeoutmsg.Toutmsg.SigData,_ = actor_c.serviceAbabft.account.Sign(hash_t.Bytes())
 				event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
 				// 3. start/enter the next turn
 				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
@@ -1060,7 +1060,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						}
 						// save the solo block ( in the form of second-round block)
 						/*
-						if err = actor_c.service_ababft.ledger.SaveTxBlock(&blocksecond_received); err != nil {
+						if err = actor_c.serviceAbabft.ledger.SaveTxBlock(&blocksecond_received); err != nil {
 							println("save solo block error:", err)
 							return
 						}
@@ -1086,9 +1086,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				} else {
 					// send solo syn request
 					var requestsyn REQSynSolo
-					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
+					requestsyn.Reqsyn.PubKey = actor_c.serviceAbabft.account.PublicKey
 					hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_height_num+1)))
-					requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+					requestsyn.Reqsyn.SigData,_ = actor_c.serviceAbabft.account.Sign(hash_t.Bytes())
 					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)+1
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 					log.Info("send requirements:", requestsyn.Reqsyn.RequestHeight, current_height_num)
@@ -1120,9 +1120,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				} else if (blocksecond_received.Header.Height-2) > verified_height {
 					// send synchronization message
 					var requestsyn REQSyn
-					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
+					requestsyn.Reqsyn.PubKey = actor_c.serviceAbabft.account.PublicKey
 					hash_t,_ := common.DoubleHash(Uint64ToBytes(verified_height+1))
-					requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+					requestsyn.Reqsyn.SigData,_ = actor_c.serviceAbabft.account.Sign(hash_t.Bytes())
 					requestsyn.Reqsyn.RequestHeight = verified_height+1
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 					syn_status = 1
@@ -1183,7 +1183,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 					// 3.save the second-round block into the ledger
 					/*
-					if err = actor_c.service_ababft.ledger.SaveTxBlock(&blocksecond_received); err != nil {
+					if err = actor_c.serviceAbabft.ledger.SaveTxBlock(&blocksecond_received); err != nil {
 						// log.Error("save block error:", err)
 						println("save block error:", err)
 						return
@@ -1228,7 +1228,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			actor_c.status = 8
 			primary_tag = 0
 			// reset the state of merkle tree, statehash and so on
-			// err = actor_c.service_ababft.ledger.ResetStateDB(currentheader.Hash)
+			// err = actor_c.serviceAbabft.ledger.ResetStateDB(currentheader.Hash)
 			//if err != nil {
 			//	log.Debug("ResetStateDB fail")
 			//	return
@@ -1236,9 +1236,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// send out the timeout message
 			var timeoutmsg TimeoutMsg
 			timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
-			timeoutmsg.Toutmsg.PubKey = actor_c.service_ababft.account.PublicKey
+			timeoutmsg.Toutmsg.PubKey = actor_c.serviceAbabft.account.PublicKey
 			hash_t,_ := common.DoubleHash(Uint64ToBytes(uint64(current_round_num)))
-			timeoutmsg.Toutmsg.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+			timeoutmsg.Toutmsg.SigData,_ = actor_c.serviceAbabft.account.Sign(hash_t.Bytes())
 			event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
 			// start/enter the next turn
 			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
@@ -1269,14 +1269,14 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 		// fmt.Println("reqsyn:",current_height_num,height_req)
 		// 2. get the response blocks from the ledger
-		blk_syn_v,err1 := actor_c.service_ababft.ledger.GetTxBlockByHeight(config.ChainHash, height_req)
+		blk_syn_v,err1 := actor_c.serviceAbabft.ledger.GetTxBlockByHeight(config.ChainHash, height_req)
 		if err1 != nil || blk_syn_v == nil {
 			log.Debug("not find the block of the corresponding height in the ledger")
 			return
 		}
 
 		// fmt.Println("blk_syn_v:",blk_syn_v.Header)
-		blk_syn_f,err2 := actor_c.service_ababft.ledger.GetTxBlockByHeight(config.ChainHash, height_req+1)
+		blk_syn_f,err2 := actor_c.serviceAbabft.ledger.GetTxBlockByHeight(config.ChainHash, height_req+1)
 		if err2 != nil || blk_syn_f == nil {
 			log.Debug("not find the block of the corresponding height in the ledger")
 			return
@@ -1304,12 +1304,12 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// fmt.Println("before reset: currentheader.Hash:",currentheader.Hash)
 			current_pre_blk,_ := current_ledger.GetTxBlock(config.ChainHash, currentheader.PrevHash)
 			// current_blk := blk_syn_f
-			//err1 := actor_c.service_ababft.ledger.ResetStateDB(current_pre_blk.Header.StateHash)
-			err1 := actor_c.service_ababft.ledger.ResetStateDB(config.ChainHash, current_pre_blk.Header)
+			//err1 := actor_c.serviceAbabft.ledger.ResetStateDB(current_pre_blk.Header.StateHash)
+			err1 := actor_c.serviceAbabft.ledger.ResetStateDB(config.ChainHash, current_pre_blk.Header)
 			if err1 != nil {
 				fmt.Println("reset status error:", err1)
 			}
-			// block_first_cal,err = actor_c.service_ababft.ledger.NewTxBlock(current_blk.Transactions,current_blk.Header.ConsensusData, current_blk.Header.TimeStamp)
+			// block_first_cal,err = actor_c.serviceAbabft.ledger.NewTxBlock(current_blk.Transactions,current_blk.Header.ConsensusData, current_blk.Header.TimeStamp)
 			// fmt.Println("current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
 			// fmt.Println("compare merkle hash:", current_blk.Header.MerkleHash, block_first_cal.MerkleHash)
 			// fmt.Println("compare state hash:", current_blk.Header.StateHash, block_first_cal.StateHash)
@@ -1347,7 +1347,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 		for i := int(height_req); i <= current_height_num; i++ {
 			// get the response blocks from the ledger
-			blk_syn_solo,err1 := actor_c.service_ababft.ledger.GetTxBlockByHeight(config.ChainHash, uint64(i))
+			blk_syn_solo,err1 := actor_c.serviceAbabft.ledger.GetTxBlockByHeight(config.ChainHash, uint64(i))
 			if err1 != nil || blk_syn_solo == nil {
 				log.Debug("not find the solo block of the corresponding height in the ledger")
 				return
@@ -1398,7 +1398,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 			var result_v bool
 			var blk_v_local *types.Block
-			blk_v_local,err = actor_c.service_ababft.ledger.GetTxBlockByHeight(config.ChainHash, verified_height)
+			blk_v_local,err = actor_c.serviceAbabft.ledger.GetTxBlockByHeight(config.ChainHash, verified_height)
 			if err != nil {
 				log.Debug("get previous block error")
 				return
@@ -1443,16 +1443,16 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			if ok := bytes.Equal(blks_v.Hash.Bytes(), currentheader.Hash.Bytes()); ok != true {
 				// the blks_v is not in the ledger,then save blks_v
 				// here need one reset DB
-				//err = actor_c.service_ababft.ledger.ResetStateDB(blk_pre.Header.Hash)
+				//err = actor_c.serviceAbabft.ledger.ResetStateDB(blk_pre.Header.Hash)
 				if verified_height < uint64(current_height_num) {
-					err = actor_c.service_ababft.ledger.ResetStateDB(config.ChainHash, blk_v_local.Header)
+					err = actor_c.serviceAbabft.ledger.ResetStateDB(config.ChainHash, blk_v_local.Header)
 					if err != nil {
 						log.Debug("reset state db error:", err)
 						return
 					}
 				}
 				/*
-				if err = actor_c.service_ababft.ledger.SaveTxBlock(&blks_v); err != nil {
+				if err = actor_c.serviceAbabft.ledger.SaveTxBlock(&blks_v); err != nil {
 					log.Debug("save block error:", err)
 					return
 				}
@@ -1470,7 +1470,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			}
 			// 3.2 save blks_f
 			/*
-			if err = actor_c.service_ababft.ledger.SaveTxBlock(&blks_f); err != nil {
+			if err = actor_c.serviceAbabft.ledger.SaveTxBlock(&blks_f); err != nil {
 				log.Debug("save block error:", err)
 				return
 			}
@@ -1515,9 +1515,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// the verified block has bigger height
 			// send synchronization message
 			var requestsyn REQSyn
-			requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
+			requestsyn.Reqsyn.PubKey = actor_c.serviceAbabft.account.PublicKey
 			hash_t,_ := common.DoubleHash(Uint64ToBytes(verified_height+1))
-			requestsyn.Reqsyn.SigData,_ = actor_c.service_ababft.account.Sign(hash_t.Bytes())
+			requestsyn.Reqsyn.SigData,_ = actor_c.serviceAbabft.account.Sign(hash_t.Bytes())
 			requestsyn.Reqsyn.RequestHeight = verified_height+1
 			event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 			syn_status = 1
@@ -1649,7 +1649,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 	}
 }
 
-func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_num_in int, cur_header types.Header) (bool,error){
+func (actor_c *ActorAbabft) verify_header(block_in *types.Block, current_round_num_in int, cur_header types.Header) (bool,error){
 	var err error
 	header_in := block_in.Header
 	txs := block_in.Transactions
@@ -1661,11 +1661,11 @@ func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_
 	// fmt.Println("before reset")
 	// reset the stateDB
 	// fmt.Println("cur_header state hash:",cur_header.Height,cur_header.StateHash)
-	// err = actor_c.service_ababft.ledger.ResetStateDB(cur_header.Hash)
+	// err = actor_c.serviceAbabft.ledger.ResetStateDB(cur_header.Hash)
 	// fmt.Println("after reset",err)
 
 	// generate the block_first_cal for comparison
-	block_first_cal,err = actor_c.service_ababft.ledger.NewTxBlock(config.ChainHash, txs,condata_c, header_in.TimeStamp)
+	block_first_cal,err = actor_c.serviceAbabft.ledger.NewTxBlock(config.ChainHash, txs,condata_c, header_in.TimeStamp)
 	// fmt.Println("height:",block_in.Height,block_first_cal.Height)
 	// fmt.Println("merkle:",block_in.Header.MerkleHash,block_first_cal.Header.MerkleHash)
 	// fmt.Println("timestamp:",block_in.Header.TimeStamp,block_first_cal.Header.TimeStamp)
@@ -1731,7 +1731,7 @@ func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_
 	return true,err
 }
 
-func (actor_c *Actor_ababft) update_block(block_first types.Block, condata types.ConsensusData) (types.Block,error){
+func (actor_c *ActorAbabft) update_block(block_first types.Block, condata types.ConsensusData) (types.Block,error){
 	var block_second types.Block
 	var err error
 	header_in := block_first.Header
@@ -1741,13 +1741,13 @@ func (actor_c *Actor_ababft) update_block(block_first types.Block, condata types
 	return block_second,err
 }
 
-func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftData, preblkhash common.Hash, curheader *types.Header) (bool,error){
+func (actor_c *ActorAbabft) verify_signatures(data_blks_received *types.AbaBftData, preblkhash common.Hash, curheader *types.Header) (bool,error){
 	var err error
 	// 1. devide the signatures into two part
 	var sign_blks_preblk []common.Signature
 	var sign_blks_curblk []common.Signature
-	pubkey_tag_byte := []byte(pubkey_tag)
-	sigdata_tag_byte := []byte(signdata_tag)
+	pubkey_tag_byte := []byte(pubkeyTag)
+	sigdata_tag_byte := []byte(signdataTag)
 	var tag_sign int
 	tag_sign = 0
 	for _,sign := range data_blks_received.PerBlockSignatures {
@@ -1865,7 +1865,7 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 	/*
 	// 4. check the current block signature by using function checkPermission
 	// 4a. check the peers permission
-	err = actor_c.service_ababft.ledger.checkPermission(0, "active",sign_blks_curblk)
+	err = actor_c.serviceAbabft.ledger.checkPermission(0, "active",sign_blks_curblk)
 	if err != nil {
 		log.Debug("signature permission check fail")
 		return false,err
@@ -1895,7 +1895,7 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 	*/
 }
 
-func (actor_c *Actor_ababft) Blk_syn_verify(block_in types.Block, blk_pre types.Block) (bool,error) {
+func (actor_c *ActorAbabft) Blk_syn_verify(block_in types.Block, blk_pre types.Block) (bool,error) {
 	var err error
 	// 1. check the protocal type is ababft
 	if block_in.ConsensusData.Type != types.ConABFT {
