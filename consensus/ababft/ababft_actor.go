@@ -82,6 +82,7 @@ var signature_BlkF_list []common.Signature // list for saving the signatures for
 var block_firstround Block_FirstRound // temporary parameters for the first round block
 var block_secondround Block_SecondRound // temporary parameters for the second round block
 var currentheader *types.Header // temporary parameters for the current block header, according to the blocks saved in the local ledger
+var currentheader_data types.Header
 var current_payload types.AbaBftData // temporary parameters for current payload
 var received_signpre_num int // the number of received signatures for the previous block
 var cache_signature_preblk []pb.SignaturePreblock // cache the received signatures for the previous block
@@ -183,7 +184,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// return
 				}
 
-				currentheader = block_solo.Header
+				// currentheader = block_solo.Header
+				currentheader_data = *(block_solo.Header)
+				currentheader = &currentheader_data
+
 				verified_height = block_solo.Height
 				fmt.Println("ababft solo height:",block_solo.Height,block_solo)
 				time.Sleep(time.Second * WAIT_RESPONSE_TIME)
@@ -285,7 +289,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			if err != nil {
 				fmt.Println("get previous block error.")
 			}
-			currentheader = currentblock.Header
+			// currentheader = currentblock.Header
+			currentheader_data = *(currentblock.Header)
+			currentheader = &currentheader_data
+
 			current_height_num = current_height_num - 1
 
 			// todo
@@ -981,7 +988,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// return
 				}
 
-				currentheader = block_second.Header
+				// currentheader = block_second.Header
+				currentheader_data = *(block_second.Header)
+				currentheader = &currentheader_data
+
 				verified_height = block_second.Height - 1
 				// 5. change the status
 				actor_c.status = 7
@@ -1063,11 +1073,14 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 							log.Fatal(err)
 							// return
 						}
-						currentheader = blocksecond_received.Header
+						// currentheader = blocksecond_received.Header
+						currentheader_data = *(blocksecond_received.Header)
+						currentheader = &currentheader_data
+
 						verified_height = blocksecond_received.Height
 						current_height_num = int(verified_height)
 						log.Info("verified height of the solo mode:",verified_height,current_height_num)
-						time.Sleep( time.Second * 2 )
+						// time.Sleep( time.Second * 2 )
 						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 					}
 				} else {
@@ -1186,7 +1199,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						// return
 					}
 					// 4. change status
-					currentheader = blocksecond_received.Header
+					// currentheader = blocksecond_received.Header
+					currentheader_data = *(blocksecond_received.Header)
+					currentheader = &currentheader_data
+
 					verified_height = blocksecond_received.Height - 1
 					actor_c.status = 8
 					primary_tag = 0
@@ -1300,7 +1316,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 			// currentheader = current_ledger.GetCurrentHeader()
 			old_block,_ := current_ledger.GetTxBlock(currentheader.PrevHash)
-			currentheader = old_block.Header
+			// currentheader = old_block.Header
+			currentheader_data = *(old_block.Header)
+			currentheader = &currentheader_data
+
 			// fmt.Println("after reset: currentheader.Hash:",currentheader.Hash)
 			current_height_num = current_height_num - 1
 			verified_height = uint64(current_height_num) - 1
@@ -1466,7 +1485,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			}
 
 			// 4. only the block is sucessfully saved, then change the status
-			currentheader = blks_f.Header
+			// currentheader = blks_f.Header
+			currentheader_data = *(blks_f.Header)
+			currentheader = &currentheader_data
+
 			verified_height = blks_v.Height
 			actor_c.status = 8
 			primary_tag = 0

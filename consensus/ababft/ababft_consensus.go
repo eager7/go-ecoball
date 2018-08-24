@@ -105,8 +105,8 @@ func (this *Service_ababft) Start() error {
 	// initialization
 	current_height_num = int(current_ledger.GetCurrentHeight())
 	verified_height = uint64(current_height_num) - 1
-
-	currentheader = current_ledger.GetCurrentHeader()
+	currentheader = &currentheader_data
+	currentheader_data = *(current_ledger.GetCurrentHeader())
 
 	/*
 	// todo start
