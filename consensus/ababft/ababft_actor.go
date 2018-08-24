@@ -1064,7 +1064,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						verified_height = blocksecond_received.Height
 						current_height_num = int(verified_height)
 						log.Info("verified height of the solo mode:",verified_height,current_height_num)
-						time.Sleep( time.Second * 1 )
+						time.Sleep( time.Second * 2 )
 						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 					}
 				} else {
@@ -1644,6 +1644,9 @@ func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_
 	// fmt.Println("timestamp:",block_in.Header.TimeStamp,block_first_cal.Header.TimeStamp)
 	// fmt.Println("block_first_cal:",block_first_cal.Header, block_first_cal.Header.StateHash)
 	// fmt.Println("block_in:",block_in.Header, block_in.Header.StateHash)
+	log.Info("block_first_cal:",block_first_cal.Height,block_first_cal.Header)
+	log.Info("block_in:",block_in.Height,block_in.Header)
+
 	var num_txs int
 	num_txs = int(block_in.CountTxs)
 	if num_txs != len(txs) {
