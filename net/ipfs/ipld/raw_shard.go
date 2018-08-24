@@ -31,7 +31,6 @@ type ShardInfo struct {
 }
 type EcoballShard struct {
 	*ShardInfo
-	rawdata      []byte
 	cid          *cid.Cid
 }
 
@@ -136,5 +135,5 @@ func (this *EcoballShard) Stat() (*node.NodeStat, error) {
 }
 
 func (this *EcoballShard) Size() (uint64, error) {
-	return uint64(len(this.rawdata)), nil
+	return uint64(len(this.RawData())), nil
 }

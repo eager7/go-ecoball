@@ -158,9 +158,6 @@ func MakeHandlers() map[uint32]HandlerFunc {
 	return map[uint32]HandlerFunc{
 		APP_MSG_TRN:     HdTransactionMsg,
 		APP_MSG_BLK:     HdBlkMsg,
-		APP_MSG_GOSSIP_PULL_BLK_REQ: HdGossipBlkReqMsg,
-		APP_MSG_GOSSIP_PULL_BLK_ACK: HdGossipBlkAckMsg,
-		APP_MSG_GOSSIP_PUSH_BLKS:    HdGossipBlkAck2Msg,
 		APP_MSG_SIGNPRE:   HdSignPreMsg,
 		APP_MSG_BLKF:      HdBlkFMsg,
 		APP_MSG_REQSYN:    HdReqSynMsg,

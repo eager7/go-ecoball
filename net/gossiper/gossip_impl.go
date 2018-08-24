@@ -14,18 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package net
+package gossiper
 
 import (
 	"time"
 	"sync/atomic"
 	//"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/net/message"
-	eactor "github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/net/dispatcher"
 )
 
 type msgSendCallback func(int, message.EcoBallNetMsg) []peer.ID
@@ -49,23 +48,22 @@ type Gossip interface {
 
 // Gossiper is the implementer of Gossip interface
 type Gossiper struct{
-	netNode            *NetNode
 	nodeLedger         ledger.Ledger
 	pushPeerCount      int
 	interval           time.Duration
 	blkSyncFsm         *BlkSyncFsm
 	msgPushChan        chan message.EcoBallNetMsg
 	msgPushpullChan    chan message.EcoBallNetMsg
+	msgbuf             <-chan interface{}
 	stopFlag           int32
 }
 
-func NewGossiper(node *NetNode, ledg ledger.Ledger) *Gossiper {
+func NewGossiper(ledg ledger.Ledger) *Gossiper {
 	gossiper := &Gossiper{
-		netNode:          node,
 		nodeLedger:       ledg,
 		pushPeerCount:    3,
 		interval:         time.Second * 5,
-		blkSyncFsm:       NewBlkSyncFsm(node, ledg),
+		blkSyncFsm:       NewBlkSyncFsm(ledg),
 		msgPushChan:      make(chan message.EcoBallNetMsg),
 		msgPushpullChan:  make(chan message.EcoBallNetMsg),
 		stopFlag:         int32(0),
@@ -75,6 +73,20 @@ func NewGossiper(node *NetNode, ledg ledger.Ledger) *Gossiper {
 
 func (this *Gossiper) Start() {
 	atomic.StoreInt32(&(this.stopFlag), int32(0))
+
+	messages := []uint32{
+		message.APP_MSG_GOSSIP_PULL_BLK_REQ,
+		message.APP_MSG_GOSSIP_PULL_BLK_ACK,
+		message.APP_MSG_GOSSIP_PUSH_BLKS,
+	}
+
+	chn, err := dispatcher.Subscribe(messages...)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	this.msgbuf = chn
 	go this.run()
 }
 
@@ -109,10 +121,17 @@ func (this *Gossiper) run() {
 			timer.Reset(this.interval)
 		case gossipMsg :=  <- this.msgPushpullChan:
 			this.handlePushPullMsg(gossipMsg)
+		case msg := <- this.msgbuf:
+			ecomsg, ok := msg.(message.EcoBallNetMsg)
+			if ok {
+				this.handlePushPullMsg(ecomsg)
+			} else {
+				log.Error("receive an invalid message")
+			}
 
 		// Rumor-Mongering
 		case msgs2bePush := <- this.msgPushChan:
-			go this.netNode.SendMsg2Peers(this.pushPeerCount, msgs2bePush)
+			go dispatcher.SendMsgToRandomPeers(this.pushPeerCount, msgs2bePush)
 		}
 	}
 }
@@ -135,7 +154,7 @@ func (this *Gossiper) handlePullReqMsg(msg message.EcoBallNetMsg) {
 	blkReqMsg := new(types.BlkReqMsg)
 	blkReqMsg.Deserialize(msg.Data())
 	log.Debug("handle gossip pull blocks request from", blkReqMsg.Peer)
-	header := this.nodeLedger.GetCurrentHeader(config.ChainHash)
+	header := this.nodeLedger.GetCurrentHeader()
 	height := header.Height
 	peerMaxHeight := blkReqMsg.BlkHeight
 	var blkCount uint64
@@ -145,8 +164,9 @@ func (this *Gossiper) handlePullReqMsg(msg message.EcoBallNetMsg) {
 		blkCount = 0
 	}
 	hash := header.Hash
+	peer, _ := dispatcher.GetPeerID()
 	blkAck := &types.BlkAckMsg{
-		Peer:this.netNode.SelfRawId(),
+		Peer:peer,
 		ChainID:1,
 		BlkHeight:height,
 		BlkCount: blkCount,
@@ -155,7 +175,7 @@ func (this *Gossiper) handlePullReqMsg(msg message.EcoBallNetMsg) {
 	log.Debug("height ", height, "peer height ", peerMaxHeight, blkCount)
 	// it is better to limit the blk count threshold
 	for blkCount>0 {
-		blk,err := this.nodeLedger.GetTxBlock(config.ChainHash, hash)
+		blk,err := this.nodeLedger.GetTxBlock(hash)
 		if err != nil {
 			blkAck.BlkCount = 0
 			blkAck.Data = []*types.Block{}
@@ -168,7 +188,7 @@ func (this *Gossiper) handlePullReqMsg(msg message.EcoBallNetMsg) {
 	log.Debug("send pull blocks response to ", blkReqMsg.Peer.Pretty())
 	data, _ := blkAck.Serialize()
 	netMsg := message.New(message.APP_MSG_GOSSIP_PULL_BLK_ACK, data)
-	this.netNode.SendMsg2Peer(blkReqMsg.Peer, netMsg)
+	dispatcher.SendMessage(blkReqMsg.Peer, netMsg)
 }
 
 func (this *Gossiper) handlePushMsg(msg message.EcoBallNetMsg) {
@@ -176,12 +196,12 @@ func (this *Gossiper) handlePushMsg(msg message.EcoBallNetMsg) {
 	blkAck2Msg := new(types.BlkAck2Msg)
 	blkAck2Msg.Deserialize(msg.Data())
 
-	header := this.nodeLedger.GetCurrentHeader(config.ChainHash)
+	header := this.nodeLedger.GetCurrentHeader()
 	height := header.Height
 	//merge the remote peer's blocks to local ledger
 	for _, blk := range blkAck2Msg.Data {
 		if height < blk.Header.Height {
-			eactor.Send(0, eactor.ActorLedger, blk)
+			//eactor.Send(0, eactor.ActorLedger, blk)
 		}
 	}
 }

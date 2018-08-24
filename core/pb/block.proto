@@ -271,9 +271,30 @@ message ToutMsg {
 }
 
 /**
-** Synchronization block
+ ** Synchronization block
+ */
+ message BlockSyn {
+     BlockTx    Blksyn_v                   = 1;
+     BlockTx    Blksyn_f                   = 2;
+ }
+
+/**
+** Store Repo Stat Message
 */
-message BlockSyn {
-    BlockTx    Blksyn_v                   = 1;
-    BlockTx    Blksyn_f                   = 2;
+message StoreRepoStatMsg {
+    bytes   peer_hash           = 1;
+    uint32  chain_id            = 2;
+    uint64  repo_size           = 3;
+    uint64  storage_max         = 4;
+    uint64  num_objects         = 5;
+    repeated Cid cids           = 6;
+}
+
+/**
+** Shard cid
+*/
+message Cid {
+    uint64  version = 1;
+    uint64	codec   = 2;
+    bytes   hash    = 3;
 }

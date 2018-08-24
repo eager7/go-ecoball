@@ -19,26 +19,28 @@ package ipfs
 import (
 	"fmt"
 	"bytes"
-	"gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
-	"github.com/ipfs/go-ipfs/core"
-	"encoding/json"
-	"io/ioutil"
-	"path/filepath"
 	"os"
 	"sync"
 	"context"
+	"encoding/json"
+	"io/ioutil"
+	"path/filepath"
+	"github.com/ipfs/go-ipfs/core"
 	"github.com/ecoball/go-ecoball/net/ipfs/ipld"
 	"github.com/ipfs/go-ipfs/core/commands/dag"
+	"github.com/ipfs/go-ipfs/core/coreapi/interface"
 	cmd "github.com/ipfs/go-ipfs/commands"
+	opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	"gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
+	"github.com/ipfs/go-ipfs/core/coreapi"
+	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 )
+
 var lock sync.Mutex
+var coreApi iface.CoreAPI
 
-// Put a block dag node to ipfs
-func PutSerBlock(format string, blockData []byte) (string, error) {
-	if format != "ecoball-rawblock" {
-		return "", fmt.Errorf("invalid block format")
-	}
-
+// PutSerBlock Put a block dag node to ipfs, API for client
+func PutBlock(blockData []byte) (string, error) {
 	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 	file := filepath.Join(dir, "block.bin")
 
@@ -49,7 +51,7 @@ func PutSerBlock(format string, blockData []byte) (string, error) {
 		return "", err
 	}
 
-	args := []string{"dag", "put", "--input-enc","raw", "--format", format, file}
+	args := []string{"dag", "put", "--input-enc","raw", "--format", "ecoball-rawdata", file}
 
 	cid, err := put(args)
 	if err != nil {
@@ -60,7 +62,7 @@ func PutSerBlock(format string, blockData []byte) (string, error) {
 		return "", err
 	}
 
-	log.Debug("Put a block DAG node: %s\n", cid)
+	log.Debug("Put a block DAG node: ", cid)
 
 	return cid, nil
 }
@@ -78,7 +80,8 @@ func put(args []string) (string, error) {
 	rsp := cmds.NewWriterResponseEmitter(wc, req, cmds.Encoders[cmds.JSON])
 	var env cmd.Context
 	env.ConstructNode = func() (*core.IpfsNode, error) {
-		return IpfsNode, nil
+		return ipfsCtrl.IpfsNode, nil
+
 	}
 
 	Root.Call(req, rsp, &env)
@@ -94,12 +97,31 @@ func put(args []string) (string, error) {
 	return result.Cid.String(), nil
 }
 
-// Get a block from IPFS DAG
-func GetSerBlock(cid string) ([]byte, error) {
-	cctx := context.Background()
+// PutChainBlock Get a block from IPFS DAG, API for daemon
+func PutChainBlock(ctx context.Context, blockData []byte) (string, error) {
+	r := bytes.NewReader(blockData)
+
+	if coreApi == nil {
+		coreApi = coreapi.NewCoreAPI(ipfsCtrl.IpfsNode)
+	}
+	rp, err := coreApi.Dag().Put(ctx, r, opt.Dag.InputEnc("raw"), opt.Dag.Codec(cid.EcoballRawData))
+	if err != nil {
+		log.Error("error for putting chain block: ", err)
+		return "", err
+	}
+
+	cid := rp.Root().String()
+
+	log.Debug("Put a block DAG node: ", cid)
+
+	return cid, nil
+}
+
+// GetChainBlock Get a block from IPFS DAG, API for daemon
+func GetChainBlock(ctx context.Context, cid string) ([]byte, error) {
 	out := make(chan []byte)
 
-	go ipldecoball.ResolveShardLinks(cctx, IpfsNode, cid, out)
+	go ipldecoball.ResolveShardLinks(ctx, IpfsNode, cid, out)
 	serBlock := <- out
 	if serBlock == nil  {
 		return nil, fmt.Errorf("error for resolving block link")

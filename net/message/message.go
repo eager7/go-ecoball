@@ -38,7 +38,26 @@ const (
 	APP_MSG_REQSYNSOLO
 	APP_MSG_BLKSYN
 	APP_MSG_TIMEOUT
+	APP_MSG_STORE_STAT
+	APP_MSG_MAX
 )
+
+// Messages maps the name of a message to its type
+var Messages = map[string]uint32{
+	"gossip-pull-blk-req":    APP_MSG_GOSSIP_PULL_BLK_REQ,
+	"gossip-pull-blk-ack":    APP_MSG_GOSSIP_PULL_BLK_ACK,
+	"gossip-push-blk":        APP_MSG_GOSSIP_PUSH_BLKS,
+	"store-stat":             APP_MSG_STORE_STAT,
+}
+
+// MessageToStr maps the numeric message type to its name
+var MessageToStr = map[uint32]string{
+	APP_MSG_GOSSIP_PULL_BLK_REQ: "gossip-pull-blk-req",
+	APP_MSG_GOSSIP_PULL_BLK_ACK: "gossip-pull-blk-ack",
+	APP_MSG_GOSSIP_PUSH_BLKS:    "gossip-push-blk",
+	APP_MSG_STORE_STAT:          "store-stat",
+}
+
 var log = elog.NewLogger("message", elog.DebugLog)
 type HandlerFunc func(data []byte) (err error)
 
