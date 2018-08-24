@@ -48,7 +48,6 @@ type EcoballShardInfo struct {
 
 type EcoballRawData struct {
 	*EcoballShardInfo
-	rawdata        []byte
 	cid            *cid.Cid
 }
 
@@ -59,25 +58,21 @@ var _ node.Node = (*EcoballRawData)(nil)
   Block INTERFACE
 */
 func (this *EcoballRawData) RawData() []byte {
-	if this.rawdata == nil {
-		buf := new(bytes.Buffer)
-		data := make([]byte, 4)
-		binary.LittleEndian.PutUint32(data, this.DataShards)
-		buf.Write(data)
-		binary.LittleEndian.PutUint32(data, this.ParityShards)
-		buf.Write(data)
-		size := make([]byte, 8)
-		binary.LittleEndian.PutUint64(size, this.DataSize)
-		buf.Write(size)
+	buf := new(bytes.Buffer)
+	data := make([]byte, 4)
+	binary.LittleEndian.PutUint32(data, this.DataShards)
+	buf.Write(data)
+	binary.LittleEndian.PutUint32(data, this.ParityShards)
+	buf.Write(data)
+	size := make([]byte, 8)
+	binary.LittleEndian.PutUint64(size, this.DataSize)
+	buf.Write(size)
 
-		for _, shardCid := range this.ShardHashs {
-			buf.Write(cidToHash(shardCid))
-		}
-
-		this.rawdata = buf.Bytes()
+	for _, shardCid := range this.ShardHashs {
+		buf.Write(cidToHash(shardCid))
 	}
 
-	return this.rawdata
+	return buf.Bytes()
 }
 
 func (this *EcoballRawData) Cid() *cid.Cid {
@@ -301,7 +296,6 @@ func EcoballRawDataInputParser(r io.Reader, mhType uint64, mhLen int) ([]node.No
 
 	dataNode := &EcoballRawData{
 		shardInfo,
-		rawdata,
 		rawdataToCid(cid.EcoballRawData, rawdata),
 	}
 	out := []node.Node {dataNode}

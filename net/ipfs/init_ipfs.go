@@ -40,10 +40,16 @@ const (
 	nBitsForKeypairDefault = 2048
 )
 
+type IpfsCtrl struct {
+	IpfsNode      *core.IpfsNode
+	RepoStat      *StoreStatMonitor
+}
+
 var errRepoExists = errors.New(`ipfs configuration file already exists!
 Reinitializing would overwrite your keys.
 `)
 
+var ipfsCtrl *IpfsCtrl
 var IpfsNode *core.IpfsNode
 
 func initWithDefaults(out io.Writer, repoRoot string, profile string) error {
@@ -194,7 +200,7 @@ func loadIpldPlugin() {
 	}
 }
 
-func StartIpfsNode(path string) (*core.IpfsNode, error) {
+func initIpfsNode(path string) (*core.IpfsNode, error) {
 	//open debug
 	//u.Debug = true
 	//logging.SetDebugLogging()
@@ -243,8 +249,8 @@ func StartIpfsNode(path string) (*core.IpfsNode, error) {
 
 	//rcfg, err := repo.Config()
 	//if err != nil {
-		//re.SetError(err, cmdkit.ErrNormal)
-		//return
+	//re.SetError(err, cmdkit.ErrNormal)
+	//return
 	//}
 
 	ncfg.Routing = core.DHTOption
@@ -268,17 +274,33 @@ func StartIpfsNode(path string) (*core.IpfsNode, error) {
 		//fmt.Printf("Swarm key fingerprint: %x\n", node.PNetFingerprint)
 	}
 
-
 	//TODO serveHTTPApi(req, cctx)
 
 	//var gwErrc <-chan error
 	if len(cfg.Addresses.Gateway) > 0 {
 
 	}
-	IpfsNode = node
+
 	return node, nil
 }
 
+func InitIpfs(path string) (*IpfsCtrl, error) {
+	var err error
+	IpfsNode, err = initIpfsNode(path)
+	if (err != nil) {
+		log.Error("error for initializing ipfs node:", err)
+		return nil, err
+	}
+
+	storeStatEngine := NewStoreStatMonitor()
+
+	ipfsCtrl = &IpfsCtrl{
+		IpfsNode,
+		storeStatEngine,
+	}
+
+	return ipfsCtrl, nil
+}
 
 // printSwarmAddrs prints the addresses of the host
 func printSwarmAddrs(node *core.IpfsNode) {
@@ -308,5 +330,4 @@ func printSwarmAddrs(node *core.IpfsNode) {
 	for _, addr := range addrs {
 		fmt.Printf("Swarm announcing %s\n", addr)
 	}
-
 }

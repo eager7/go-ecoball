@@ -98,7 +98,12 @@ func runNode(c *cli.Context) error {
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
 
-	net.StartNetWork(l)
+	net.InitNetWork()
+
+	// do something before start the network
+	//TOD
+
+	net.StartNetWork()
 
 	//start blockchain browser
 	ecoballGroup.Go(func() error {

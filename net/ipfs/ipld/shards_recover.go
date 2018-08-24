@@ -59,22 +59,21 @@ func ResolveShardLinks(cctx context.Context, node *core.IpfsNode, pcid string, o
 	//fmt.Println("shards info:", shardInfo.DataShards,shardInfo.ParityShards, shardInfo.DataSize)
 	var shards [][]byte
 	var failShards uint32
-	for _, link := range links {
+	for i, link := range links {
 		c := link.Cid
 		ln, err := node.Resolver.DAG.Get(cctx, c)
-		if err != nil && failShards > shardInfo.ParityShards {
-			log.Error(err)
-			out <- nil
-			return
+		if err != nil {
+			failShards += 1
+			if failShards > shardInfo.ParityShards {
+				log.Error(err)
+				out <- nil
+				return
+			}
+			shards[i] = nil
 		} else {
-			shards = append(shards, ln.RawData())
+			shards[i] = ln.RawData()
+			//shards = append(shards, ln.RawData())
 		}
-		// maybe this is a bug in the RS, need m+n shards to recover
-/*
-		if len(shards) > int(shardInfo.DataShards) {
-			break
-		}
-*/
 	}
 	fmt.Println("data shards for recover:", len(shards))
 	buf := new(bytes.Buffer)

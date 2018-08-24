@@ -14,15 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package net
+package gossiper
 
 import (
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/message"
 	eactor "github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-
+	"github.com/ecoball/go-ecoball/common/elog"
 	"gx/ipfs/QmVmDhyTTUcQXFD1rRQ64fGLMSAoaQvNH3hwuaCFAPq2hy/errors"
+
 )
 
 const (
@@ -31,6 +33,7 @@ const (
 	BLK_WAIT_RES
 	BLK_SYNC_END
 )
+var log = elog.NewLogger("message", elog.DebugLog)
 
 type FsmAction func(msg message.EcoBallNetMsg)(uint32,bool)
 
@@ -49,18 +52,16 @@ type BlkSyncFsm struct {
 	defaultState      uint32
 	currentState      uint32
 	inputChan         chan message.EcoBallNetMsg
-	netNode           *NetNode
 	nodeLedger        ledger.Ledger
 
 }
 
-func NewBlkSyncFsm(node *NetNode, ledger ledger.Ledger) *BlkSyncFsm {
+func NewBlkSyncFsm(ledger ledger.Ledger) *BlkSyncFsm {
 	blkSyncFsm := &BlkSyncFsm{
 		states:          make(map[uint32]FsmAction, 3),
 		defaultState:    BLK_SYNC_IDLE,
 		currentState:    BLK_SYNC_IDLE,
 		inputChan:       make(chan message.EcoBallNetMsg),
-		netNode:         node,
 		nodeLedger:      ledger,
 	}
 
@@ -96,13 +97,13 @@ func (this *BlkSyncFsm)PullBlkRequest(msg message.EcoBallNetMsg) (uint32, bool) 
 	log.Debug("send gossip pull blocks request msg")
 	height := this.nodeLedger.GetCurrentHeight()
 	msgType := message.APP_MSG_GOSSIP_PULL_BLK_REQ
-	peers := this.netNode.SelectRandomPeers(1)
+	peers, _:= dispatcher.GetRandomPeers(1)
 	if len(peers) >0 {
-		id := this.netNode.SelfRawId()
+		id, _ := dispatcher.GetPeerID()
 		blkReq := types.BlkReqMsg{Peer:id, ChainID:1, BlkHeight: height}
 		data, _:= blkReq.Serialize()
 		netMsg := message.New(msgType, data)
-		if err := this.netNode.SendMsg2Peer(peers[0], netMsg); err == nil { //only select a peer to push state
+		if err := dispatcher.SendMessage(peers[0], netMsg); err == nil { //only select a peer to push state
 			return BLK_WAIT_RES, false
 		}
 	}
@@ -157,7 +158,7 @@ func (this *BlkSyncFsm) HandlePullBlkAckMsg(msg message.EcoBallNetMsg)(uint32, b
 		}
 		data, _ := blkAck2.Serialize()
 		netMsg := message.New(message.APP_MSG_GOSSIP_PUSH_BLKS, data)
-		this.netNode.SendMsg2Peer(blkAckMsg.Peer, netMsg)
+		dispatcher.SendMessage(blkAckMsg.Peer, netMsg)
 	}
 
 	return BLK_SYNC_IDLE, true

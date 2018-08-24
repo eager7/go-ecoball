@@ -50,6 +50,6 @@ func (this *ecoballRawPlugin) RegisterBlockDecoders(dec format.BlockDecoder) err
 }
 
 func (this *ecoballRawPlugin) RegisterInputEncParsers(iec coredag.InputEncParsers) error {
-	iec.AddParser("raw", "ecoball-rawblock", ipldecoball.EcoballRawDataInputParser)
+	iec.AddParser("raw", "ecoball-rawdata", ipldecoball.EcoballRawDataInputParser)
 	return nil
 }
