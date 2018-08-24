@@ -1062,7 +1062,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						}
 
 						verified_height = blocksecond_received.Height
-						log.Info("verified height of the solo mode:",verified_height)
+						current_height_num = int(verified_height)
+						log.Info("verified height of the solo mode:",verified_height,current_height_num)
 						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 					}
 				} else {
