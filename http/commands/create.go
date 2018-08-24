@@ -5,7 +5,7 @@ import (
 	//"time"
 
 	innercommon "github.com/ecoball/go-ecoball/common"
-	//"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/http/common"
@@ -48,7 +48,7 @@ func Getinfo(params []interface{}) *common.Response {
 	}*/
 	var height uint64 = 1
 
-	blockInfo, errcode := notify.CoreLedger.GetTxBlockByHeight(height)
+	blockInfo, errcode := notify.CoreLedger.GetTxBlockByHeight(config.ChainHash, height)
 	if errcode != nil {
 		return common.NewResponse(common.INVALID_PARAMS, "get block faild")
 	}
