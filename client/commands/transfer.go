@@ -95,7 +95,13 @@ func transferAction(c *cli.Context) error {
 		return err
 	}
 
-	resp, err := rpc.NodeCall("transfer", []interface{}{transaction.JsonString()})
+	data, err := transaction.Serialize()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	resp, err := rpc.NodeCall("transfer", []interface{}{inner.ToHex(data)})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

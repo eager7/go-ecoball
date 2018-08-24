@@ -46,6 +46,20 @@ var (
 	}
 )
 
+func getInfo()(*types.Block, error) {
+	resp, err := rpc.NodeCall("getInfo", []interface{}{})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return nil, err
+	}
+	blockINfo := new(types.Block)
+	if nil != resp["result"] {
+		data := resp["result"].(string)
+		blockINfo.Deserialize(innercommon.FromHex(data))
+	}
+	return blockINfo, nil
+}
+
 func newAccount(c *cli.Context) error {
 	//Check the number of flags
 	if c.NumFlags() == 0 {
@@ -71,6 +85,8 @@ func newAccount(c *cli.Context) error {
 		fmt.Println(err)
 		return err
 	}
+
+	getInfo()
 
 	//owner key
 	owner := c.String("owner")
@@ -99,8 +115,8 @@ func newAccount(c *cli.Context) error {
 		fmt.Println(err)
 		return err
 	}
-	fmt.Println(len(data), data)
-	resp, err := rpc.NodeCall("createAccount", []interface{}{string(data)})
+
+	resp, err := rpc.NodeCall("createAccount", []interface{}{innercommon.ToHex(data)})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

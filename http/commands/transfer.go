@@ -22,7 +22,7 @@ import (
 
 	"github.com/ecoball/go-ecoball/core/types"
 
-	//inner "github.com/ecoball/go-ecoball/common"
+	inner "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/http/common"
 	//"encoding/json"
@@ -93,8 +93,9 @@ func handleTransfer(params []interface{}) common.Errcode {
 		return common.INVALID_PARAMS
 	}
 
-	//json.Unmarshal([]byte(name), &transaction);
-	transaction.StringJson(name)
+	if err := transaction.Deserialize(inner.FromHex(name)); err != nil {
+		return common.INVALID_PARAMS
+	}
 
 	//send to txpool
 	err := event.Send(event.ActorNil, event.ActorTxPool, &transaction)

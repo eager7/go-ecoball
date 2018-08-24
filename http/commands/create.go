@@ -4,13 +4,17 @@ import (
 	"fmt"
 	//"time"
 
-	//innercommon "github.com/ecoball/go-ecoball/common"
+	innercommon "github.com/ecoball/go-ecoball/common"
 	//"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/http/common"
+	//"github.com/ecoball/go-ecoball/core/store"
+	//"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
+	//"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	//"encoding/json"
 	//"fmt"
+	"github.com/ecoball/go-ecoball/spectator/notify"
 )
 
 func CreateAccount(params []interface{}) *common.Response {
@@ -33,6 +37,29 @@ func CreateAccount(params []interface{}) *common.Response {
 	//}
 
 	return common.NewResponse(common.SUCCESS, "")
+}
+
+func Getinfo(params []interface{}) *common.Response {
+	//ll := new(ledgerimpl.LedgerImpl)
+	/*chain, err := transaction.NewTransactionChain(store.PathBlock+"/Transaction", ll)
+	if err != nil{
+		fmt.Println(err)
+		return common.NewResponse(common.INVALID_PARAMS, "NewTransactionChain failed")
+	}*/
+	var height uint64 = 1
+
+	blockInfo, errcode := notify.CoreLedger.GetTxBlockByHeight(height)
+	if errcode != nil {
+		return common.NewResponse(common.INVALID_PARAMS, "get block faild")
+	}
+
+	blockInfo.Show(true)
+	
+	data, errs := blockInfo.Serialize()
+	if errs != nil{
+		return common.NewResponse(common.INVALID_PARAMS, "Serialize failed")
+	}
+	return common.NewResponse(common.SUCCESS, innercommon.ToHex(data))
 }
 
 func handleCreateAccount(params []interface{}) common.Errcode {
@@ -81,13 +108,11 @@ func handleCreateAccount(params []interface{}) common.Errcode {
 	if invalid {
 		return common.INVALID_PARAMS
 	}
-	fmt.Println(len([]byte(name)),[]byte(name))
 
-	if err := invoke.Deserialize([]byte(name)); err != nil {
+	if err := invoke.Deserialize(innercommon.FromHex(name)); err != nil {
 		fmt.Println(err)
 		return common.INVALID_PARAMS
 	}
-	invoke.Show()
 
 	//send to txpool
 	err := event.Send(event.ActorNil, event.ActorTxPool, invoke)
