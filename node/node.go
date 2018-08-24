@@ -51,7 +51,7 @@ var (
 )
 
 func runNode(c *cli.Context) error {
-
+	net.InitNetWork()
 	shutdown := make(chan bool, 1)
 	ecoballGroup, ctx := errgroup.WithContext(context.Background())
 
@@ -87,9 +87,9 @@ func runNode(c *cli.Context) error {
 	case "ABABFT":
 		var acc account.Account
 		acc = config.Worker
-		service_consensus, _ := ababft.Service_ababft_gen(l, txPool, &acc)
+		serviceConsensus, _ := ababft.Service_ababft_gen(l, txPool, &acc)
 		println("build the ababft service")
-		service_consensus.Start()
+		serviceConsensus.Start()
 		println("start the ababft service")
 		if l.StateDB(config.ChainHash).RequireVotingInfo() {
 			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
@@ -97,8 +97,6 @@ func runNode(c *cli.Context) error {
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
-
-	net.InitNetWork()
 
 	// do something before start the network
 	//TOD

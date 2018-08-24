@@ -19,13 +19,14 @@ import (
 )
 
 func TestRunMain(t *testing.T) {
+	net.InitNetWork()
 	ledger := example.Ledger("/tmp/run_test")
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
 
 	//start transaction pool
 	txPool, err := txpool.Start(ledger)
 	errors.CheckErrorPanic(err)
-	net.StartNetWork(ledger)
+	net.StartNetWork()
 
 	//start consensus
 	switch config.ConsensusAlgorithm {
