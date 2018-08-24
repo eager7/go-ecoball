@@ -3,24 +3,29 @@ package wasmservice
 import(
 	"fmt"
 	"github.com/ecoball/go-ecoball/vm/wasmvm/exec"
-
-	"bytes"
 )
 
 //C API :void prints(char *p)
-func (ws *WasmService) prints (proc *exec.Process, p uint32) uint32{
-	msg := proc.LoadAt(p)
-	index := bytes.IndexByte(msg,0)
-	msg = msg[:index]
+func (ws *WasmService) prints(proc *exec.Process, p int32) int32{
+	msg,err := proc.VMGetData(int(p))
+	if err != nil{
+		return 0
+	}
 	fmt.Printf("%s\n",msg)
 	return 0
 }
 
 //C API :void prints_l(char *p, uint32 len)
-func (ws *WasmService) prints_l(proc *exec.Process, p uint32, len uint32) uint32{
-	msg := make([]byte, len)
-	proc.ReadAt(msg, p, len)
-	fmt.Printf("%s\n",msg)
+func (ws *WasmService) prints_l(proc *exec.Process, p int32, length int32) int32{
+	msg,err := proc.VMGetData(int(p))
+	if err != nil{
+		return 0
+	}
+	msglen := len(msg)
+	if length > int32(msglen){
+		length = int32(msglen)
+	}
+	fmt.Printf("%s\n",msg[:length])
 	return 0
 }
 

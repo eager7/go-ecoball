@@ -19,6 +19,7 @@ import (
 	"reflect"
 )
 
+//TODO add in VM
 var  Funs  *NativeFuns
 
 type NativeFuns struct{
