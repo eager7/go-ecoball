@@ -19,8 +19,6 @@ package wasmservice
 import (
 	"bytes"
 	"errors"
-	"fmt"
-	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/state"
@@ -29,17 +27,24 @@ import (
 	"github.com/ecoball/go-ecoball/vm/wasmvm/util"
 	"github.com/ecoball/go-ecoball/vm/wasmvm/validate"
 	"github.com/ecoball/go-ecoball/vm/wasmvm/wasm"
-	"io/ioutil"
 	"os"
 )
 
 var log = elog.NewLogger("wasm", config.LogLevel)
 
+
+//TLV格式存储
+type Param  struct{
+	Arg     []byte  //参数数据
+	Count   int     //参数个数
+	Addrs   []int   //参数地址
+}
+
 type WasmService struct {
 	state     state.InterfaceState
 	tx        *types.Transaction
 	Code      []byte
-	Args      []uint64
+	Args      Param
 	Method    string
 	timeStamp int64
 }
@@ -49,15 +54,11 @@ func NewWasmService(s state.InterfaceState, tx *types.Transaction, contract *typ
 		return nil, errors.New("contract is nil")
 	}
 
-	params, err := ParseArguments(invoke.Param)
-	if err != nil {
-		return nil, err
-	}
 	ws := &WasmService{
 		state:     s,
 		tx:        tx,
 		Code:      contract.Code,
-		Args:      params,
+		Args:      Param{},
 		Method:    string(invoke.Method),
 		timeStamp: timeStamp,
 	}
@@ -65,29 +66,51 @@ func NewWasmService(s state.InterfaceState, tx *types.Transaction, contract *typ
 	return ws, nil
 }
 
-func ParseArguments(param []string) ([]uint64, error) {
-	var args []uint64
-	for _, v := range param {
-		arg, err := common.StringToPointer(v)
-		if err != nil {
-			return nil, err
-		}
-		args = append(args, arg)
-	}
-	return args, nil
-}
+const (
+	ParaInt32      byte = 0XFF
+	ParaString     byte = 0XFE
+)
 
-func ReadWasm(file string) ([]byte, error) {
-	raw, err := ioutil.ReadFile(file)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
+//TLV
+func (ws *WasmService) ParseParam(vm *exec.VM)([]uint64, error){
+
+	addr, err := vm.Memmanage.SetBlock(ws.Method)
+	if err != nil{
+		return nil,err
 	}
-	return raw, nil
+	paras := make([]uint64,1)
+	paras[0] = uint64(addr)
+
+    var length int
+    var index  int
+	pcount := len(ws.Args.Arg)
+	ws.Args.Count = 0
+	for index = 0;index < pcount; {
+		switch ws.Args.Arg[index]{
+		case ParaInt32,ParaString:
+			length = int(ws.Args.Arg[index+1])
+			data := ws.Args.Arg[index+2:index+length+2]
+		    addr, err := vm.Memmanage.SetBlock(data)
+		    if err != nil{
+		    	return nil, errors.New("para error")
+			}
+		    ws.Args.Addrs[ws.Args.Count] = addr
+		    ws.Args.Count += 1
+		    index = index + 2 + length
+		default:
+			return nil, errors.New("unsupport type")
+
+		}
+
+	}
+
+	return paras,nil
 }
 
 func (ws *WasmService) Execute() ([]byte, error) {
 	bf := bytes.NewBuffer(ws.Code)
+	method := "apply"
+
 	m, err := wasm.ReadModule(bf, importer)
 	if err != nil {
 		log.Error("could not read module:", err)
@@ -100,20 +123,29 @@ func (ws *WasmService) Execute() ([]byte, error) {
 
 	vm, err := exec.NewVM(m)
 	if err != nil {
-		fmt.Printf("could not create VM: %v", err)
+		log.Error("could not create VM: %v", err)
+		return nil, err
 	}
-	entry, ok := m.Export.Entries[ws.Method]
 
+	entry, ok := m.Export.Entries[method]
 	if ok == false {
-		fmt.Printf("method does not exist!")
+		log.Error("method does not exist!")
+		return nil, err
+	}
+
+	args, err:= ws.ParseParam(vm)
+
+	if err != nil{
+		log.Error("parse parameter error!")
+		return nil, err
 	}
 	index := int64(entry.Index)
 	fIdx := m.Function.Types[int(index)]
 	fType := m.Types.Entries[int(fIdx)]
 
-	res, err := vm.ExecCode(index, ws.Args...)
+	res, err := vm.ExecCode(index, args...)
 	if err != nil {
-		fmt.Printf("err=%v", err)
+		log.Error("err=%v", err)
 	}
 	switch fType.ReturnTypes[0] {
 	case wasm.ValueTypeI32:
@@ -146,22 +178,22 @@ func importer(name string) (*wasm.Module, error) {
 	return m, nil
 }
 
-
 func (ws *WasmService) RegisterApi() {
 	functions := wasm.InitNativeFuns()
 	//console
-	functions.Register("prints", ws.prints)
-	functions.Register("prints_l", ws.prints_l)
-	functions.Register("printi", ws.printi)
-	functions.Register("printui", ws.printui)
-	functions.Register("printsf", ws.printsf)
-	functions.Register("printdf", ws.printdf)
+	functions.Register("ABA_prints", ws.prints)
+	functions.Register("ABA_prints_l", ws.prints_l)
+	functions.Register("ABA_printi", ws.printi)
+	functions.Register("ABA_printui", ws.printui)
+	functions.Register("ABA_printsf", ws.printsf)
+	functions.Register("ABA_printdf", ws.printdf)
 	//memory
-	functions.Register("strlen", ws.strlen)
-	functions.Register("strcmp", ws.strcmp)
-	functions.Register("memcpy", ws.memcpy)
-	functions.Register("memset", ws.memset)
+	functions.Register("ABA_malloc", ws.malloc)
+	functions.Register("ABA_strlen", ws.strlen)
+	functions.Register("ABA_strcmp", ws.strcmp)
+	functions.Register("ABA_memcpy", ws.memcpy)
+	functions.Register("ABA_memset", ws.memset)
 	//crypto
-	functions.Register("sha256", ws.sha256)
-	functions.Register("sha512", ws.sha512)
+	functions.Register("ABA_sha256", ws.sha256)
+	functions.Register("ABA_sha512", ws.sha512)
 }
