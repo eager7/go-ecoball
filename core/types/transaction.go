@@ -48,6 +48,7 @@ type Payload interface {
 	Serialize() ([]byte, error)
 	Deserialize(data []byte) error
 	GetObject() interface{}
+	JsonString() string
 	Show()
 }
 
@@ -264,13 +265,13 @@ func (t *Transaction) JsonString() string {
 		Addr       string             `json:"addr"`
 		Nonce      uint64             `json:"nonce"`
 		TimeStamp  int64              `json:"timeStamp"`
-		Payload    Payload            `json:"payload"`
+		Payload    string             `json:"payload"`
 		Signatures []common.Signature `json:"signatures"`
 		Hash       string             `json:"hash"`
 		Receipt    TransactionReceipt `json:"receipt"`
 	}{Version: t.Version, Type: t.Type.String(), From: t.From.String(),
 		Permission: t.Permission, Addr: t.Addr.String(), Nonce: t.Nonce,
-		TimeStamp: t.TimeStamp, Payload: t.Payload, Signatures: t.Signatures,
+		TimeStamp: t.TimeStamp, Payload: t.Payload.JsonString(), Signatures: t.Signatures,
 		Hash: t.Hash.HexString(), Receipt: t.Receipt})
 	//data, _ = json.Marshal(t)
 	return string(data)

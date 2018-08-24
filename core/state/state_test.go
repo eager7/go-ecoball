@@ -27,40 +27,34 @@ import (
 	"os"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 func TestStateNew(t *testing.T) {
-	root := common.HexToHash("0x797ddb4c4b8cfcb353989acf8e41b5d425003fb0ae3d89e754658fe264e8dab5")
-	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	indexAcc := common.NameToIndex("pct")
-	indexToken := state.AbaToken
+	indexAcc := common.NameToIndex("root")
 	os.RemoveAll("/tmp/state/")
-	s, err := state.NewState("/tmp/state", root)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s, err := state.NewState("/tmp/state", common.Hash{})
+	errors.CheckErrorPanic(err)
 	fmt.Println("Trie Root:", s.GetHashRoot().HexString())
 
-	balance, err := s.AccountGetBalance(indexAcc, indexToken)
-	if err != nil {
-		fmt.Println("get balance error:", err)
-		if _, err := s.AddAccount(indexAcc, addr, time.Now().UnixNano()); err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		fmt.Println("Value From:", balance)
-	}
+	addr := common.AddressFromPubKey(config.Root.PublicKey)
+	_, err = s.AddAccount(indexAcc, addr, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetUint64(90000)))
+
+	balance, err := s.AccountGetBalance(indexAcc, state.AbaToken)
+	errors.CheckErrorPanic(err)
+	fmt.Println("Value From:", balance)
+
 	value := new(big.Int).SetUint64(100)
-	if err := s.AccountAddBalance(indexAcc, indexToken, value); err != nil {
+	if err := s.AccountAddBalance(indexAcc,  state.AbaToken, value); err != nil {
 		fmt.Println("Update Error:", err)
 	}
 
 	fmt.Println("Hash Root:", s.GetHashRoot().HexString())
 	s.CommitToDB()
-	balance, err = s.AccountGetBalance(indexAcc, indexToken)
-	if err != nil {
-		t.Fatal(err)
-	}
+	balance, err = s.AccountGetBalance(indexAcc,  state.AbaToken)
+	errors.CheckErrorPanic(err)
 	fmt.Println("Value:", balance)
 }
 
@@ -191,6 +185,8 @@ func TestStateDBCopy(t *testing.T) {
 
 	copy, err := s.CopyState()
 	errors.CheckErrorPanic(err)
+	errors.CheckEqualPanic(s.Accounts["pct"].JsonString(false) == copy.Accounts["pct"].JsonString(false))
+
 	copy.AccountAddBalance(indexAcc,  state.AbaToken, new(big.Int).SetUint64(300))
 	balance, err := copy.AccountGetBalance(indexAcc, state.AbaToken)
 	errors.CheckErrorPanic(err)

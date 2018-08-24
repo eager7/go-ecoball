@@ -20,10 +20,8 @@ import (
 	"reflect"
 
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/message"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/types"
 )
@@ -52,11 +50,6 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 	case *types.Transaction:
 		log.Info("receive tx:", msg.Hash.HexString())
 		go p.handleTransaction(msg)
-	case message.GetTxs:
-		log.Debug("Ledger request txs")
-		txs := types.NewTxsList()
-		//txs.Copy(p.txPool.PendingTx)
-		ctx.Sender().Tell(txs)
 	case *types.Block:
 		log.Debug("new block delete transactions")
 		go p.handleNewBlock(msg)
@@ -79,16 +72,12 @@ func (p *PoolActor) isSameTransaction(hash common.Hash) bool {
 func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	//if exist := p.isSameTransaction(tx.Hash); exist {
 	if p.txPool.txsCache.Contains(tx.Hash) {
-		log.Warn("transaction already in the txn pool")
-		return errors.New(log, "transaction already in the txn pool: "+tx.Hash.HexString())
+		log.Warn("transaction already in the txn pool" + tx.Hash.HexString())
+		return nil
 	}
 	p.txPool.txsCache.Add(tx.Hash, tx.Hash)
 
-	//check transaction
-	if err := p.txPool.ledger.CheckTransaction(tx); err != nil {
-		return err
-	}
-	ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx, tx.TimeStamp)
+	ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
 	if err != nil {
 		return err
 	}
@@ -121,7 +110,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	//Broadcast transactions on p2p
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
 		log.Warn("broadcast transaction failed:" + tx.Hash.HexString())
-		return errors.New(log, "broadcast transaction failed:"+tx.Hash.HexString())
+		//return errors.New(log, "broadcast transaction failed:"+tx.Hash.HexString())
 	}
 
 	return nil

@@ -76,6 +76,8 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	if from == to {
 		acc.AddResourceLimits(true, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum, cpuLimit, netLimit)
 	} else {
@@ -84,6 +86,8 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 		if err != nil {
 			return err
 		}
+		accTo.mutex.Lock()
+		defer accTo.mutex.Unlock()
 		accTo.AddResourceLimits(false, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum, cpuLimit, netLimit)
 		if err := s.commitAccount(accTo); err != nil {
 			return err
@@ -126,6 +130,8 @@ func (s *State) SubResources(index common.AccountName, cpu, net float64, cpuLimi
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	if err := acc.SubResourceLimits(cpu, net, cpuStakedSum, netStakedSum, cpuLimit, netLimit); err != nil {
 		return err
 	}
@@ -156,12 +162,16 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 
 	if from != to {
 		accTo, err := s.GetAccountByName(to)
 		if err != nil {
 			return err
 		}
+		accTo.mutex.Lock()
+		defer accTo.mutex.Unlock()
 		if err := acc.CancelDelegateOther(accTo, cpuStaked, netStaked, cpuStakedSum, netStakedSum, cpuLimit, netLimit); err != nil {
 			return err
 		}
@@ -190,7 +200,9 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 		return err
 	}
 	if acc.Votes.Staked < VotesLimit {
+		s.prodMutex.Lock()
 		delete(s.Producers, acc.Index)
+		s.prodMutex.Unlock()
 	}
 	s.commitProducersList()
 	return s.commitAccount(acc)
@@ -206,6 +218,8 @@ func (s *State) RecoverResources(index common.AccountName, timeStamp int64, cpuL
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	cpuStakedSum, err := s.getParam(cpuAmount)
 	if err != nil {
 		return err
@@ -236,6 +250,8 @@ func (s *State) RequireResources(index common.AccountName, cpuLimit, netLimit fl
 	if err != nil {
 		return 0, 0, err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	acc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit)
 	log.Debug("cpu:", acc.Cpu.Used, acc.Cpu.Available, acc.Cpu.Limit)
 	log.Debug("net:", acc.Net.Used, acc.Net.Available, acc.Net.Limit)
@@ -247,14 +263,17 @@ func (s *State) RequireResources(index common.AccountName, cpuLimit, netLimit fl
  *  @param index - account's index
  */
 func (s *State) RegisterProducer(index common.AccountName) error {
+	s.prodMutex.Lock()
 	if _, ok := s.Producers[index]; ok {
+		s.prodMutex.Unlock()
 		return errors.New(log, fmt.Sprintf("the account:%s was already registed", index.String()))
 	}
 	if err := s.checkAccountCertification(index); err != nil {
+		s.prodMutex.Unlock()
 		return nil
 	}
 	s.Producers[index] = 0
-
+	s.prodMutex.Unlock()
 	return s.commitProducersList()
 }
 
@@ -263,12 +282,14 @@ func (s *State) RegisterProducer(index common.AccountName) error {
  *  @param index - account's index
  */
 func (s *State) UnRegisterProducer(index common.AccountName) error {
+	s.prodMutex.Lock()
 	if _, ok := s.Producers[index]; !ok {
+		s.prodMutex.Unlock()
 		return errors.New(log, fmt.Sprintf("the account:%s is not registed", index.String()))
 	} else {
 		delete(s.Producers, index)
 	}
-
+	s.prodMutex.Unlock()
 	return s.commitProducersList()
 }
 
@@ -286,14 +307,19 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	if acc.Resource.Votes.Staked == 0 {
 		return errors.New(log, fmt.Sprintf("the account:%s has no enough vote", index.String()))
 	}
+	s.prodMutex.RLock()
 	for _, v := range accounts {
 		if _, ok := s.Producers[v]; !ok {
+			s.prodMutex.Unlock()
 			return errors.New(log, fmt.Sprintf("the account:%s is not register", v.String()))
 		}
 	}
+	s.prodMutex.RUnlock()
 	if err := s.changeElectedProducers(acc, accounts); err != nil {
 		return err
 	}
@@ -317,6 +343,8 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 		if err != nil {
 			return err
 		}
+		root.mutex.Lock()
+		defer root.mutex.Unlock()
 		root.AddPermission(perm)
 		//if config.ConsensusAlgorithm != "SOLO" {
 		//	log.Info(event.Send(event.ActorNil, event.ActorConsensusSolo, &message.SoloStop{}))
@@ -332,6 +360,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
  *  @param accounts - candidate node list
  */
 func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountName) error {
+	s.prodMutex.Lock()
 	for k := range acc.Votes.Producers {
 		if _, ok := s.Producers[k]; ok {
 			s.Producers[k] = s.Producers[k] - acc.Votes.Producers[k]
@@ -340,15 +369,17 @@ func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountNa
 	}
 	for _, v := range accounts {
 		if err := s.checkAccountCertification(v); err != nil {
+			s.prodMutex.Unlock()
 			return err
 		}
 		acc.Votes.Producers[v] = acc.Votes.Staked
 		if _, ok := s.Producers[v]; !ok {
+			s.prodMutex.Unlock()
 			return errors.New(log, fmt.Sprintf("the account:%s is not a candidata node", v.String()))
 		}
 		s.Producers[v] += acc.Votes.Staked
 	}
-
+	s.prodMutex.Unlock()
 	return s.commitProducersList()
 }
 
@@ -358,15 +389,17 @@ func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountNa
  *  @param votesOld - account's votes before changed
  */
 func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
+	s.prodMutex.Lock()
 	for k := range acc.Votes.Producers {
 		acc.Votes.Producers[k] = acc.Votes.Staked
 		if _, ok := s.Producers[k]; ok {
 			s.Producers[k] = s.Producers[k] - votesOld + acc.Votes.Staked
 		} else {
+			s.prodMutex.Unlock()
 			return errors.New(log, fmt.Sprintf("the account:%s is exit candidata nodes list", k.String()))
 		}
 	}
-
+	s.prodMutex.Unlock()
 	return s.commitProducersList()
 }
 
@@ -392,6 +425,8 @@ func (s *State) checkAccountCertification(index common.AccountName) error {
 func (s *State) commitProducersList() error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+	s.prodMutex.Lock()
+	defer s.prodMutex.Unlock()
 	if len(s.Producers) == 0 {
 		data, err := s.trie.TryGet([]byte(prodsList))
 		if err != nil {
@@ -432,6 +467,8 @@ func (s *State) GetProducerList() ([]common.AccountName, error) {
 	if !s.RequireVotingInfo() {
 		return nil, errors.New(log, "the main network has not been started")
 	}
+	s.prodMutex.Lock()
+	defer s.prodMutex.Unlock()
 	if len(s.Producers) == 0 {
 		s.mutex.RLock()
 		defer s.mutex.RUnlock()

@@ -341,7 +341,7 @@ func AddTokenAccount(ledger ledger.Ledger, con *types.ConsensusData, t *testing.
 		t.Fatal(err)
 	}
 	block.SetSignature(&config.Root)
-	if err := ledger.VerifyTxBlock(block); err != nil {
+	if err := ledger.VerifyTxBlock(ledger.StateDB(), block); err != nil {
 		t.Fatal(err)
 	}
 	if err := ledger.SaveTxBlock(block); err != nil {

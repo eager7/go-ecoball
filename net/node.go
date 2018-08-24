@@ -17,7 +17,6 @@
 package net
 
 import (
-	"github.com/AsynkronIT/protoactor-go/actor"
 	"bytes"
 	"os"
 	"fmt"
@@ -29,15 +28,25 @@ import (
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/net/p2p"
 	"github.com/ecoball/go-ecoball/net/ipfs"
+	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/ecoball/go-ecoball/net/dispatcher"
 )
+
+type NetCtrl struct {
+	IpfsCtrl   *ipfs.IpfsCtrl
+	NetNode    *NetNode
+	network    p2p.EcoballNetwork
+	actor      *NetActor
+}
 
 var log = elog.NewLogger("net", elog.DebugLog)
 
 //TODO move to config
 var ecoballChainId uint32 = 1
+
+var netCtrl *NetCtrl
 
 type NetNode struct {
 	ctx          context.Context
@@ -48,8 +57,7 @@ type NetNode struct {
 	handlers 	 map[uint32]message.HandlerFunc
 	actorId      *actor.PID
 	pubSub       *floodsub.PubSub
-	//TODO msg channel
-	//msgChannel notifications.PubSub
+
 	//TODO cache check
 	//netMsgCache  *lru.Cache
 }
@@ -70,7 +78,7 @@ func New(parent context.Context, ipfs *core.IpfsNode, network p2p.EcoballNetwork
 	return netNode
 }
 
-func (node *NetNode) SendMsg2Peers(peerCounts int, msg message.EcoBallNetMsg){
+func (node *NetNode) SendMsg2RandomPeers(peerCounts int, msg message.EcoBallNetMsg){
 	peers := node.SelectRandomPeers(peerCounts)
 	for _, pid := range peers {
 		err := node.network.SendMessage(context.Background(), pid, msg)
@@ -86,6 +94,10 @@ func (node *NetNode) SendMsg2Peer(pid peer.ID, msg message.EcoBallNetMsg) error{
 		log.Error("send msg to ", pid.Pretty(), err.Error())
 	}
 	return err
+}
+
+func (node *NetNode) SendBroadcastMsg(msg message.EcoBallNetMsg) {
+	node.broadCastCh <- msg
 }
 
 func (node *NetNode) broadcastLoop() {
@@ -167,14 +179,19 @@ func (node *NetNode) SelectRandomPeers(k int) []peer.ID {
 
 func (bs *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
 	log.Debug("receive msg:",incoming.Type(), "from ", p.Pretty())
-	handler, ok := bs.handlers[incoming.Type()]
-	if !ok {
-		log.Error("get msg ", incoming.Type(), "handler failed")
+	if incoming.Type() > message.APP_MSG_MAX {
+		log.Error("receive a invalid message ", incoming.Type())
 		return
 	}
-	err := handler(incoming.Data())
-	if err != nil {
-		log.Error(err.Error())
+	handler, ok := bs.handlers[incoming.Type()]
+	if ok {
+		err := handler(incoming.Data())
+		if err != nil {
+			log.Error(err.Error())
+		}
+	} else {
+		dispatcher.Publish(incoming)
+		log.Error("publish msg ", incoming.Type())
 	}
 }
 
@@ -231,7 +248,7 @@ func GetChainId() uint32 {
 	return ecoballChainId
 }
 
-func StartNetWork(ledg ledger.Ledger)  {
+func InitNetWork()  {
 	//TODO load config
 	//configFile, err := ioutil.ReadFile(ConfigFile)
 	//if err != nil {
@@ -241,17 +258,34 @@ func StartNetWork(ledg ledger.Ledger)  {
 	//InitIpfsConfig(path)
 	var path = "/tmp/store"
 
-	ipfsNode, err := ipfs.StartIpfsNode(path)
+	ipfsCtrl, err := ipfs.InitIpfs(path)
 	if err != nil {
 		panic(err)
 		os.Exit(1)
 	}
+	ipfsNode := ipfsCtrl.IpfsNode
 	network := p2p.NewFromIpfsHost(ipfsNode.PeerHost, ipfsNode.Routing)
 	netNode := New(context.Background(), ipfsNode, network)
-	gossiper := NewGossiper(netNode, ledg)
-	netActor := NewNetActor(netNode, gossiper)
-	//gossiper.Start()
-	actorId, _ := netActor.Start()
-	netNode.SetActorPid(actorId)
+	dispatcher.InitMsgDispatcher(netNode)
+
+	netCtrl = & NetCtrl{
+		IpfsCtrl:ipfsCtrl,
+		NetNode:netNode,
+		network:network,
+	}
+
 	fmt.Printf("i am %s \n", netNode.SelfId())
+}
+
+func StartNetWork()  {
+
+	netActor := NewNetActor(netCtrl.NetNode)
+	// gossiper.Start()
+	actorId, _ := netActor.Start()
+	netCtrl.NetNode.SetActorPid(actorId)
+
+	//start store repo stat engine
+	netCtrl.IpfsCtrl.RepoStat.Start()
+
+	fmt.Printf("node %s is running.\n", netCtrl.NetNode.SelfId())
 }

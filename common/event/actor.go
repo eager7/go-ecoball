@@ -19,10 +19,9 @@ package event
 import (
 	"fmt"
 	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/common/errors"
 	"sync"
 	"time"
+	"errors"
 )
 
 type ActorIndex int
@@ -64,12 +63,12 @@ func (a ActorIndex) String() string {
  */
 func RegisterActor(index ActorIndex, pid *actor.PID) error {
 	if index <= ActorNil || index > maxActorNumber {
-		return errors.New(elog.Log, "invalid index since too big or too little")
+		return errors.New("invalid index since too big or too little")
 	}
 	actorList.mux.Lock()
 	defer actorList.mux.Unlock()
 	if _, ok := actorList.list[index]; ok {
-		return errors.New(elog.Log, "this actor is existed")
+		return errors.New("this actor is existed")
 	}
 	actorList.list[index] = pid
 	return nil
@@ -80,7 +79,7 @@ func GetActor(index ActorIndex) (*actor.PID, error) {
 	defer actorList.mux.Unlock()
 	a, ok := actorList.list[index]
 	if !ok {
-		return nil, errors.New(elog.Log, fmt.Sprintf("not found this actor:%s", index.String()))
+		return nil, errors.New(fmt.Sprintf("not found this actor:%s", index.String()))
 	}
 	return a, nil
 }

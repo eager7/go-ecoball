@@ -13,25 +13,19 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
-package txpool_test
+
+package dispatcher
 
 import (
-	"testing"
-	"time"
-
-	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/test/example"
-	"github.com/ecoball/go-ecoball/txpool"
+	"github.com/ecoball/go-ecoball/net/message"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 )
 
-func TestTxPool(t *testing.T) {
-	ledger := example.Ledger("/tmp/txPool")
-	_, err := txpool.Start(ledger)
-	errors.CheckErrorPanic(err)
+type MsgNode interface {
+	SelfRawId() peer.ID
+	SelectRandomPeers(k int) []peer.ID
 
-	tx := example.TestTransfer()
-
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, tx))
-	time.Sleep(time.Duration(1) * time.Second)
+	SendMsg2Peer(pid peer.ID, msg message.EcoBallNetMsg) error
+	SendMsg2RandomPeers(peerCounts int, msg message.EcoBallNetMsg)
+	SendBroadcastMsg(msg message.EcoBallNetMsg)
 }

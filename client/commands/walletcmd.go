@@ -50,7 +50,7 @@ var (
 					cli.StringFlag{
 						Name:  "port",
 						Usage: "node's RPC port",
-						Value: "20678",
+						Value: "20679",
 					},
 				},
 			},

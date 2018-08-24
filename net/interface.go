@@ -16,7 +16,6 @@
 
 package net
 
-
 type NetworkService interface {
-	//TODO
+	//TOD
 }

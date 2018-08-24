@@ -19,26 +19,18 @@ package transaction_test
 import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
-	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
-	"github.com/ecoball/go-ecoball/test/example"
 	"testing"
-	"time"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 func TestBlockAdd(t *testing.T) {
 	c, err := transaction.NewTransactionChain("/tmp/quaker/Tx", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	errors.CheckErrorPanic(err)
 
 	re, err := c.BlockStore.SearchAll()
-	if err != nil {
-		t.Fatal(err)
-	}
+	errors.CheckErrorPanic(err)
 	for k, v := range re {
 		hash := common.NewHash([]byte(k))
 		block := new(types.Block)
@@ -48,64 +40,3 @@ func TestBlockAdd(t *testing.T) {
 	}
 }
 
-func TestLedgerTxAdd(t *testing.T) {
-	l, err := ledgerimpl.NewLedger("/tmp/quaker")
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("Start LedgerImpl Module, hash:", l.GetCurrentHeader().Hash.HexString())
-	example.AddAccount(l.StateDB())
-	tx := example.TestTransfer()
-	l.AccountAddBalance(tx.From, state.AbaToken, 150)
-	var txs []*types.Transaction
-	txs = append(txs, tx)
-	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-	block, err := l.NewTxBlock(txs, conData, time.Now().UnixNano())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := l.SaveTxBlock(block); err != nil {
-		t.Fatal(err)
-	}
-	value, err := l.AccountGetBalance(tx.From, state.AbaToken)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("value:", value)
-	value, err = l.AccountGetBalance(tx.Addr, state.AbaToken)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("value:", value)
-}
-
-func TestLedgerDeployAdd(t *testing.T) {
-	l, err := ledgerimpl.NewLedger("/tmp/deploy")
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("Start LedgerImpl Module, hash:", l.GetCurrentHeader().Hash.HexString())
-	code, err := wasmservice.ReadWasm("../../../test/token.wasm")
-	tx := example.TestDeploy(code)
-	var txs []*types.Transaction
-	txs = append(txs, tx)
-	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-	block, err := l.NewTxBlock(txs, conData, time.Now().UnixNano())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := l.SaveTxBlock(block); err != nil {
-		t.Fatal(err)
-	}
-	//Invoke Contract
-	invoke := example.TestInvoke("create")
-	var txs2 []*types.Transaction
-	txs2 = append(txs, invoke)
-	block, err = l.NewTxBlock(txs2, conData, time.Now().UnixNano())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := l.SaveTxBlock(block); err != nil {
-		t.Fatal(err)
-	}
-}

@@ -103,9 +103,10 @@ func (this *Service_ababft) Start() error {
 	// start the ababft service
 	// build the peers list
 	// initialization
-	current_height_num = int(current_ledger.GetCurrentHeight())
+	current_height_num = int(current_ledger.GetCurrentHeight(config.ChainHash))
 	verified_height = uint64(current_height_num) - 1
-
+	currentheader = &currentheader_data
+	currentheader_data = *(current_ledger.GetCurrentHeader(config.ChainHash))
 
 	/*
 	// todo start

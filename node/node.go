@@ -51,7 +51,7 @@ var (
 )
 
 func runNode(c *cli.Context) error {
-
+	net.InitNetWork()
 	shutdown := make(chan bool, 1)
 	ecoballGroup, ctx := errgroup.WithContext(context.Background())
 
@@ -81,24 +81,27 @@ func runNode(c *cli.Context) error {
 		log.Info("Start DPOS consensus")
 
 		c, _ := dpos.NewDposService()
-		c.Setup(l)
+		c.Setup(l, txPool)
 		c.Start()
 
 	case "ABABFT":
 		var acc account.Account
 		acc = config.Worker
-		service_consensus, _ := ababft.Service_ababft_gen(l, txPool, &acc)
+		serviceConsensus, _ := ababft.Service_ababft_gen(l, txPool, &acc)
 		println("build the ababft service")
-		service_consensus.Start()
+		serviceConsensus.Start()
 		println("start the ababft service")
-		if l.StateDB().RequireVotingInfo() {
+		if l.StateDB(config.ChainHash).RequireVotingInfo() {
 			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 		}
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
 
-	net.StartNetWork(l)
+	// do something before start the network
+	//TOD
+
+	net.StartNetWork()
 
 	//start blockchain browser
 	ecoballGroup.Go(func() error {

@@ -120,6 +120,9 @@ func StartWalletRPCServer() (err error) {
 	httpWalletServer.AddHandleFunc("list_keys", commands.ListKeys)
 	httpWalletServer.AddHandleFunc("list_wallets", commands.ListWallets)
 
+	//add attach
+	httpWalletServer.AddHandleFunc("attach", commands.Attach)
+
 	//listen port
 	err = http.ListenAndServe(":"+config.WalletHttpPort, nil)
 	if err != nil {

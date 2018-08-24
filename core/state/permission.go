@@ -61,7 +61,7 @@ func NewPermission(name, parent string, threshold uint32, addr []KeyFactor, acc 
  *  @param state - the mpt trie, used to search account
  *  @param signatures - the transaction's signatures list
  */
-func (p *Permission) CheckPermission(state *State, signatures []common.Signature) error {
+func (p *Permission) checkPermission(state *State, signatures []common.Signature) error {
 	Keys := make(map[common.Address][]byte, 1)
 	Accounts := make(map[string][]byte, 1)
 	for _, s := range signatures {
@@ -91,7 +91,7 @@ func (p *Permission) CheckPermission(state *State, signatures []common.Signature
 				return err
 			} else {
 				perm := next.Permissions[a.Permission]
-				if err := perm.CheckPermission(state, signatures); err != nil {
+				if err := perm.checkPermission(state, signatures); err != nil {
 					return err
 				}
 			}
@@ -113,6 +113,8 @@ func (s *State) AddPermission(index common.AccountName, perm Permission) error {
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	acc.AddPermission(perm)
 	return s.commitAccount(acc)
 }
@@ -129,6 +131,8 @@ func (s *State) CheckPermission(index common.AccountName, name string, hash comm
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	var sig []common.Signature
 	for _, v := range signatures {
 		result, err := secp256k1.Verify(hash.Bytes(), v.SigData, v.PubKey)
@@ -151,6 +155,8 @@ func (s *State) FindPermission(index common.AccountName, name string) (string, e
 	if err != nil {
 		return "", err
 	}
+	acc.mutex.RLock()
+	defer acc.mutex.RUnlock()
 	if str, err := acc.findPermission(name); err != nil {
 		return "", err
 	} else {
@@ -181,7 +187,7 @@ func (a *Account) checkPermission(state *State, name string, signatures []common
 				return nil
 			}
 		}
-		if err := perm.CheckPermission(state, signatures); err != nil {
+		if err := perm.checkPermission(state, signatures); err != nil {
 			log.Error(fmt.Sprintf("account:%s", a.Index.String()))
 			return err
 		}

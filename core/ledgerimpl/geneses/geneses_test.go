@@ -27,31 +27,36 @@ func TestGenesesBlockInit(t *testing.T) {
 	l := example.Ledger("/tmp/genesis")
 	elog.Log.Info("new account block")
 	createBlock := CreateAccountBlock(l)
+	time.Sleep(time.Millisecond * 500)
 
 	elog.Log.Info("transfer block:", createBlock.StateHash.HexString())
 	blockTransfer := TokenTransferBlock(l)
+	time.Sleep(time.Millisecond * 500)
 
 	elog.Log.Info("pledge block:", blockTransfer.StateHash.HexString())
 	pledgeBlock := PledgeContract(l)
+	time.Sleep(time.Millisecond * 500)
 
 	elog.Log.Info("voting block:", pledgeBlock.StateHash.HexString())
 	votingBlock := VotingContract(l)
-	l.StateDB().RequireVotingInfo()
+	time.Sleep(time.Millisecond * 500)
+	l.StateDB(config.ChainHash).RequireVotingInfo()
 
 	elog.Log.Info("cancel pledge block:", votingBlock.StateHash.HexString())
 	CancelPledgeContract(l)
+	time.Sleep(time.Millisecond * 500)
 	//showAccountInfo(l)
-	elog.Log.Debug(l.StateDB().RequireVotingInfo())
+	elog.Log.Debug(l.StateDB(config.ChainHash).RequireVotingInfo())
 
 	for i := 0; i < 0; i++ {
 		time.Sleep(10 * time.Second)
-		fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
+		fmt.Println(l.RequireResources(config.ChainHash, root, time.Now().UnixNano()))
 	}
 
 	//errors.CheckErrorPanic(l.StateDB().Close())
 }
 func CreateAccountBlock(ledger ledger.Ledger) *types.Block {
-	elog.Log.Info("CreateAccountBlock------------------------------------------------------\n\n")
+	elog.Log.Info("CreateAccountBlock--------------------------2----------------------------\n\n")
 	var txs []*types.Transaction
 	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
@@ -80,7 +85,7 @@ func CreateAccountBlock(ledger ledger.Ledger) *types.Block {
 	return example.SaveBlock(ledger, txs)
 }
 func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
-	elog.Log.Info("TokenTransferBlock------------------------------------------------------\n\n")
+	elog.Log.Info("TokenTransferBlock---------------------------3---------------------------\n\n")
 	var txs []*types.Transaction
 	transfer, err := types.NewTransfer(root, worker1, config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
@@ -100,7 +105,7 @@ func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
 	return example.SaveBlock(ledger, txs)
 }
 func PledgeContract(ledger ledger.Ledger) *types.Block {
-	elog.Log.Info("PledgeContract------------------------------------------------------")
+	elog.Log.Info("PledgeContract-----------------------4-------------------------------")
 	var txs []*types.Transaction
 	tokenContract, err := types.NewDeployContract(delegate, delegate, config.ChainHash, "active", types.VmNative, "system control", nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
@@ -125,7 +130,7 @@ func PledgeContract(ledger ledger.Ledger) *types.Block {
 	return example.SaveBlock(ledger, txs)
 }
 func VotingContract(ledger ledger.Ledger) *types.Block {
-	elog.Log.Info("VotingContract------------------------------------------------------\n\n")
+	elog.Log.Info("VotingContract-----------------------5-------------------------------\n\n")
 	var txs []*types.Transaction
 	invoke, err := types.NewInvokeContract(worker1, root, config.ChainHash, "active", "reg_prod", []string{"worker1"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
@@ -141,11 +146,11 @@ func VotingContract(ledger ledger.Ledger) *types.Block {
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)
-	ledger.GetCurrentHeader().Show()
+	ledger.GetCurrentHeader(config.ChainHash).Show()
 	return example.SaveBlock(ledger, txs)
 }
 func CancelPledgeContract(ledger ledger.Ledger) *types.Block {
-	elog.Log.Info("CancelPledgeContract------------------------------------------------------\n\n")
+	elog.Log.Info("CancelPledgeContract---------------------6---------------------------------\n\n")
 	var txs []*types.Transaction
 	invoke, err := types.NewInvokeContract(worker1, delegate, config.ChainHash, "owner", "cancel_pledge", []string{"worker1", "worker1", "50", "50"}, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
@@ -153,26 +158,4 @@ func CancelPledgeContract(ledger ledger.Ledger) *types.Block {
 	txs = append(txs, invoke)
 
 	return example.SaveBlock(ledger, txs)
-}
-
-func showAccountInfo(l ledger.Ledger) {
-	acc, err := l.AccountGet(root)
-	errors.CheckErrorPanic(err)
-	acc.Show()
-	/*
-		acc, err = l.AccountGet(worker1)
-		errors.CheckErrorPanic(err)
-		acc.Show()
-
-		acc, err = l.AccountGet(worker2)
-		errors.CheckErrorPanic(err)
-		acc.Show()
-
-		acc, err = l.AccountGet(worker3)
-		errors.CheckErrorPanic(err)
-		acc.Show()
-
-		acc, err = l.AccountGet(delegate)
-		errors.CheckErrorPanic(err)
-		acc.Show()*/
 }

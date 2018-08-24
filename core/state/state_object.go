@@ -27,7 +27,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"math/big"
 	"sort"
-	"sync"
+	"github.com/ecoball/go-ecoball/common/mutex"
 )
 
 type Account struct {
@@ -44,7 +44,7 @@ type Account struct {
 	db     Database
 	diskDb *store.LevelDBStore
 
-	mutex sync.RWMutex
+	mutex mutex.Mutex
 }
 
 /**
@@ -53,7 +53,7 @@ type Account struct {
  *  @param address - the account's public key
  */
 func NewAccount(path string, index common.AccountName, addr common.Address, timeStamp int64) (acc *Account, err error) {
-	//log.Info("add a new account:", index)
+	log.Info("add a new account:", index)
 	//fmt.Printf("index:%d\n", index),
 	res := Resource{Votes: struct {
 		Staked    uint64                        `json:"staked_aba, omitempty"`
@@ -64,7 +64,14 @@ func NewAccount(path string, index common.AccountName, addr common.Address, time
 		TimeStamp:   timeStamp,
 		Tokens:      make(map[string]Token, 1),
 		Permissions: make(map[string]Permission, 1),
+		Contract:    types.DeployInfo{},
+		Delegates:   nil,
 		Resource:    res,
+		Hash:        common.Hash{},
+		trie:        nil,
+		db:          nil,
+		diskDb:      nil,
+		mutex:       mutex.Mutex{},
 	}
 	perm := NewPermission(Owner, "", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)

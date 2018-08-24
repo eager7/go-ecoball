@@ -49,38 +49,23 @@ func (s *Solo) Start() error {
 		for {
 			t.Reset(time.Second * 3)
 			select {
-			case <-t.C:
-				log.Debug("Request transactions from tx pool")
-				//value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Second*1)
-				//if err != nil {
-				//	log.Error("Solo Consensus error:", err)
-				//	continue
-				//}
-				//txList, ok := value.(*types.TxsList)
-				//if !ok || len(txList.Txs) == 0{
-				//	log.Warn("The format of value error [solo] or no transaction in this time")
-				//	continue
-				//}
-				//var txs []*types.Transaction
-				//for _, v := range txList.Txs {
-				//	txs = append(txs, v)
-				//}
-				txs, _ := s.txPool.GetTxsList(config.ChainHash)
-				block, err := s.ledger.NewTxBlock(txs, conData, time.Now().UnixNano())
-				if err != nil {
-					log.Fatal(err)
+				case <-t.C:
+					log.Debug("Request transactions from tx pool")
+					txs, _ := s.txPool.GetTxsList(config.ChainHash)
+					block, err := s.ledger.NewTxBlock(config.ChainHash, txs, conData, time.Now().UnixNano())
+					if err != nil {
+						log.Fatal(err)
+					}
+					if err := block.SetSignature(&config.Root); err != nil {
+						log.Fatal(err)
+					}
+					if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
+						log.Fatal(err)
+					}
+				case <- s.stop: {
+					log.Info("Stop Solo Mode")
+					return
 				}
-				if err := block.SetSignature(&config.Root); err != nil {
-					log.Fatal(err)
-				}
-				if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
-					log.Fatal(err)
-				}
-			case <- s.stop: {
-				log.Info("Stop Solo Mode")
-				return
-			}
-
 			}
 		}
 	}()

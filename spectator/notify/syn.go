@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/spectator/info"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var (
@@ -38,11 +39,11 @@ func HandleSynBlock(conn net.Conn, msg []byte) error {
 
 	hight := uint64(blockHight)
 
-	nowHight := CoreLedger.GetCurrentHeight()
+	nowHight := CoreLedger.GetCurrentHeight(config.ChainHash)
 	for hight < nowHight {
 		hight++
 
-		block, err := CoreLedger.GetTxBlockByHeight(hight)
+		block, err := CoreLedger.GetTxBlockByHeight(config.ChainHash, hight)
 		if nil != err {
 			log.Error("GetTxBlockByHeight error: ", err)
 			continue

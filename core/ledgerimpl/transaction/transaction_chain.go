@@ -30,13 +30,18 @@ import (
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract"
-	"math/big"
-	"time"
 	"github.com/ecoball/go-ecoball/spectator/connect"
 	"github.com/ecoball/go-ecoball/spectator/info"
+	"math/big"
+	"time"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
+
+type StateDatabase struct {
+	FinalDB *state.State //final database in levelDB
+	TempDB  *state.State //temp database used for tx pool pre-handle transaction
+}
 
 type ChainTx struct {
 	BlockMap       map[common.Hash]uint64
@@ -47,13 +52,14 @@ type ChainTx struct {
 
 	CurrentHeader *types.Header
 	Geneses       *types.Header
-	StateDB       *state.State
-	TempStateDB   *state.State //txPool used
-	ledger        ledger.Ledger
+	StateDB       StateDatabase
+	//StateDB       *state.State
+	//TempStateDB   *state.State //txPool used
+	//ledger        ledger.Ledger
 }
 
 func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {
-	c = &ChainTx{ledger: ledger, BlockMap: make(map[common.Hash]uint64, 1)}
+	c = &ChainTx{BlockMap: make(map[common.Hash]uint64, 1)}
 	c.BlockStore, err = store.NewLevelDBStore(path+config.StringBlock, 0, 0)
 	if err != nil {
 		return nil, err
@@ -72,11 +78,11 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 		return nil, err
 	}
 	if existed {
-		if c.StateDB, err = state.NewState(path+config.StringState, c.CurrentHeader.StateHash); err != nil {
+		if c.StateDB.FinalDB, err = state.NewState(path+config.StringState, c.CurrentHeader.StateHash); err != nil {
 			return nil, err
 		}
 	} else {
-		if c.StateDB, err = state.NewState(path+config.StringState, common.Hash{}); err != nil {
+		if c.StateDB.FinalDB, err = state.NewState(path+config.StringState, common.Hash{}); err != nil {
 			return nil, err
 		}
 	}
@@ -89,13 +95,16 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
-	s, err := c.StateDB.CopyState()
+	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, err
 	}
 	var cpu, net float64
+	log.Notice("Handle Transaction in copy DB")
 	for i := 0; i < len(txs); i++ {
+		//log.Notice(txs[i].JsonString())
 		if _, c, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+			log.Warn(txs[i].JsonString())
 			return nil, err
 		} else {
 			cpu += c
@@ -111,7 +120,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
  */
 func (c *ChainTx) ResetStateDB(header *types.Header) error {
 	c.CurrentHeader = header
-	return c.StateDB.Reset(header.StateHash)
+	return c.StateDB.FinalDB.Reset(header.StateHash)
 }
 
 /**
@@ -149,8 +158,9 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return nil
 	}
 
+	log.Notice("Handle Transaction in final DB")
 	for i := 0; i < len(block.Transactions); i++ {
-		if _, _, _, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+		if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			return err
 		}
@@ -173,9 +183,9 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if err := c.TxsStore.BatchCommit(); err != nil {
 		return err
 	}
-	if c.StateDB.GetHashRoot().HexString() != block.StateHash.HexString() {
+	if c.StateDB.FinalDB.GetHashRoot().HexString() != block.StateHash.HexString() {
 		log.Warn(block.JsonString(true))
-		return errors.New(log, fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.GetHashRoot().HexString(), block.Hash.HexString()))
+		return errors.New(log, fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.FinalDB.GetHashRoot().HexString(), block.Hash.HexString()))
 	}
 
 	payload, err := block.Header.Serialize()
@@ -190,9 +200,8 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if err := c.BlockStore.BatchCommit(); err != nil {
 		return err
 	}
-	c.StateDB.CommitToDB()
+	c.StateDB.FinalDB.CommitToDB()
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
-	log.Debug("state hash:", c.StateDB.GetHashRoot().HexString())
 	log.Notice(block.JsonString(true))
 	c.CurrentHeader = block.Header
 	c.BlockMap[block.Hash] = block.Height
@@ -214,8 +223,7 @@ func (c *ChainTx) GetTailBlockHash() common.Hash {
 func (c *ChainTx) GetBlock(hash common.Hash) (*types.Block, error) {
 	dataBlock, err := c.BlockStore.Get(hash.Bytes())
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, errors.New(log, fmt.Sprintf("GetBlock error:%s", err.Error()))
 	}
 	block := new(types.Block)
 	if err := block.Deserialize(dataBlock); err != nil {
@@ -280,11 +288,11 @@ func (c *ChainTx) GenesesBlockInit() error {
 	hash := common.NewHash([]byte("EcoBall Geneses Block"))
 	conData := types.GenesesBlockInitConsensusData(timeStamp)
 
-	if err := geneses.PresetContract(c.StateDB, timeStamp); err != nil {
+	if err := geneses.PresetContract(c.StateDB.FinalDB, timeStamp); err != nil {
 		return err
 	}
 
-	hashState := c.StateDB.GetHashRoot()
+	hashState := c.StateDB.FinalDB.GetHashRoot()
 
 	fmt.Println(hash.HexString())
 	header, err := types.NewHeader(types.VersionHeader, config.ChainHash, 1, config.ChainHash, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
@@ -364,13 +372,7 @@ func (c *ChainTx) GetTransaction(key []byte) (*types.Transaction, error) {
 *  @param  tx - a transaction
  */
 func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
-	//result, err := tx.VerifySignature()
-	//if err != nil {
-	//	return err
-	//} else if result == false {
-	//	return errors.New(log, "tx verify signature failed")
-	//}
-	if err := c.TempStateDB.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
+	if err := c.StateDB.FinalDB.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
 		return err
 	}
 
@@ -399,8 +401,38 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 
 	return nil
 }
+func (c *ChainTx) CheckTransactionWithDB(s *state.State, tx *types.Transaction) (err error) {
+	if err := s.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
+		return err
+	}
+
+	switch tx.Type {
+	case types.TxTransfer:
+		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
+			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
+		}
+		if value, err := s.AccountGetBalance(tx.From, state.AbaToken); err != nil {
+			return err
+		} else if value.Sign() <= 0 {
+			log.Error(err)
+			return errors.New(log, errors.ErrDoubleSpend.ErrorInfo())
+		}
+	case types.TxDeploy:
+		if data, _ := c.TxsStore.Get(tx.Addr.Bytes()); data != nil {
+			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
+		}
+	case types.TxInvoke:
+		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
+			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
+		}
+	default:
+		return errors.New(log, "check transaction unknown tx type")
+	}
+
+	return nil
+}
 func (c *ChainTx) CheckPermission(index common.AccountName, name string, hash common.Hash, sig []common.Signature) error {
-	return c.StateDB.CheckPermission(index, name, hash, sig)
+	return c.StateDB.FinalDB.CheckPermission(index, name, hash, sig)
 }
 
 /**
@@ -409,29 +441,29 @@ func (c *ChainTx) CheckPermission(index common.AccountName, name string, hash co
 *  @param  addr - the public key of account
  */
 func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error) {
-	return c.StateDB.AddAccount(index, addr, timeStamp)
+	return c.StateDB.FinalDB.AddAccount(index, addr, timeStamp)
 }
 func (c *ChainTx) StoreSet(index common.AccountName, key, value []byte) (err error) {
-	return c.StateDB.StoreSet(index, key, value)
+	return c.StateDB.FinalDB.StoreSet(index, key, value)
 }
 func (c *ChainTx) StoreGet(index common.AccountName, key []byte) (value []byte, err error) {
-	return c.StateDB.StoreGet(index, key)
+	return c.StateDB.FinalDB.StoreGet(index, key)
 }
 
 //func (c *ChainTx) AddResourceLimits(from, to common.AccountName, cpu, net float32) error {
 //	return c.StateDB.AddResourceLimits(from, to, cpu, net)
 //}
 func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
-	return c.StateDB.SetContract(index, t, des, code)
+	return c.StateDB.FinalDB.SetContract(index, t, des, code)
 }
 func (c *ChainTx) GetContract(index common.AccountName) (*types.DeployInfo, error) {
-	return c.StateDB.GetContract(index)
+	return c.StateDB.FinalDB.GetContract(index)
 }
 func (c *ChainTx) AddPermission(index common.AccountName, perm state.Permission) error {
-	return c.StateDB.AddPermission(index, perm)
+	return c.StateDB.FinalDB.AddPermission(index, perm)
 }
 func (c *ChainTx) FindPermission(index common.AccountName, name string) (string, error) {
-	return c.StateDB.FindPermission(index, name)
+	return c.StateDB.FinalDB.FindPermission(index, name)
 }
 
 /**
@@ -440,7 +472,7 @@ func (c *ChainTx) FindPermission(index common.AccountName, name string) (string,
 *  @param  indexToken - the uuid of token
  */
 func (c *ChainTx) AccountGetBalance(index common.AccountName, token string) (*big.Int, error) {
-	return c.StateDB.AccountGetBalance(index, token)
+	return c.StateDB.FinalDB.AccountGetBalance(index, token)
 }
 
 /**
@@ -449,7 +481,7 @@ func (c *ChainTx) AccountGetBalance(index common.AccountName, token string) (*bi
 *  @param  indexToken - the uuid of token
  */
 func (c *ChainTx) AccountAddBalance(index common.AccountName, token string, value uint64) error {
-	return c.StateDB.AccountAddBalance(index, token, new(big.Int).SetUint64(value))
+	return c.StateDB.FinalDB.AccountAddBalance(index, token, new(big.Int).SetUint64(value))
 }
 
 /**
@@ -458,7 +490,7 @@ func (c *ChainTx) AccountAddBalance(index common.AccountName, token string, valu
 *  @param  indexToken - the uuid of token
  */
 func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, value uint64) error {
-	return c.StateDB.AccountSubBalance(index, token, new(big.Int).SetUint64(value))
+	return c.StateDB.FinalDB.AccountSubBalance(index, token, new(big.Int).SetUint64(value))
 }
 
 /**
@@ -533,15 +565,4 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		return nil, 0, 0, err
 	}
 	return ret, cpu, net, nil
-}
-
-func (c *ChainTx) TokenExisted(token string) bool {
-	return c.StateDB.TokenExisted(token)
-}
-
-func (c *ChainTx) TokenAllocation() error {
-	if err := c.StateDB.AccountAddBalance(state.IndexAbaRoot, state.AbaToken, new(big.Int).SetUint64(2100000)); err != nil {
-		return err
-	}
-	return nil
 }
