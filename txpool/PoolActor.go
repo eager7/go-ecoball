@@ -22,7 +22,6 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/types"
 )
@@ -73,12 +72,12 @@ func (p *PoolActor) isSameTransaction(hash common.Hash) bool {
 func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	//if exist := p.isSameTransaction(tx.Hash); exist {
 	if p.txPool.txsCache.Contains(tx.Hash) {
-		log.Warn("transaction already in the txn pool"+tx.Hash.HexString())
+		log.Warn("transaction already in the txn pool" + tx.Hash.HexString())
 		return nil
 	}
 	p.txPool.txsCache.Add(tx.Hash, tx.Hash)
 
-	ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx, tx.TimeStamp)
+	ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
 	if err != nil {
 		return err
 	}
@@ -111,7 +110,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	//Broadcast transactions on p2p
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
 		log.Warn("broadcast transaction failed:" + tx.Hash.HexString())
-		return errors.New(log, "broadcast transaction failed:"+tx.Hash.HexString())
+		//return errors.New(log, "broadcast transaction failed:"+tx.Hash.HexString())
 	}
 
 	return nil

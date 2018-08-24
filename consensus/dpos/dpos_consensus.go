@@ -94,7 +94,7 @@ func NewDposService() (*DposService, error)  {
 func (dpos *DposService) Setup(ledger ledger.Ledger, txPool *txpool.TxPool)  {
 	dpos.ledger = ledger
 	dpos.txPool = txPool
-	blockchain, e := NewBlockChain(ledger.GetChainTx())
+	blockchain, e := NewBlockChain(ledger.GetChainTx(config.ChainHash))
 	if e != nil {
 		return
 	}

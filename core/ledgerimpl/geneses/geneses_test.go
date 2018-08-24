@@ -40,17 +40,17 @@ func TestGenesesBlockInit(t *testing.T) {
 	elog.Log.Info("voting block:", pledgeBlock.StateHash.HexString())
 	votingBlock := VotingContract(l)
 	time.Sleep(time.Millisecond * 500)
-	l.StateDB().RequireVotingInfo()
+	l.StateDB(config.ChainHash).RequireVotingInfo()
 
 	elog.Log.Info("cancel pledge block:", votingBlock.StateHash.HexString())
 	CancelPledgeContract(l)
 	time.Sleep(time.Millisecond * 500)
 	//showAccountInfo(l)
-	elog.Log.Debug(l.StateDB().RequireVotingInfo())
+	elog.Log.Debug(l.StateDB(config.ChainHash).RequireVotingInfo())
 
 	for i := 0; i < 0; i++ {
 		time.Sleep(10 * time.Second)
-		fmt.Println(l.RequireResources(root, time.Now().UnixNano()))
+		fmt.Println(l.RequireResources(config.ChainHash, root, time.Now().UnixNano()))
 	}
 
 	//errors.CheckErrorPanic(l.StateDB().Close())
@@ -146,7 +146,7 @@ func VotingContract(ledger ledger.Ledger) *types.Block {
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)
-	ledger.GetCurrentHeader().Show()
+	ledger.GetCurrentHeader(config.ChainHash).Show()
 	return example.SaveBlock(ledger, txs)
 }
 func CancelPledgeContract(ledger ledger.Ledger) *types.Block {

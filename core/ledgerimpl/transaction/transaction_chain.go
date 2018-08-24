@@ -55,11 +55,11 @@ type ChainTx struct {
 	StateDB       StateDatabase
 	//StateDB       *state.State
 	//TempStateDB   *state.State //txPool used
-	ledger        ledger.Ledger
+	//ledger        ledger.Ledger
 }
 
 func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {
-	c = &ChainTx{ledger: ledger, BlockMap: make(map[common.Hash]uint64, 1)}
+	c = &ChainTx{BlockMap: make(map[common.Hash]uint64, 1)}
 	c.BlockStore, err = store.NewLevelDBStore(path+config.StringBlock, 0, 0)
 	if err != nil {
 		return nil, err
@@ -103,8 +103,6 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 	log.Notice("Handle Transaction in copy DB")
 	for i := 0; i < len(txs); i++ {
 		//log.Notice(txs[i].JsonString())
-		data, _ := txs[i].Serialize()
-		log.Notice(len(data))
 		if _, c, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].JsonString())
 			return nil, err
@@ -225,8 +223,7 @@ func (c *ChainTx) GetTailBlockHash() common.Hash {
 func (c *ChainTx) GetBlock(hash common.Hash) (*types.Block, error) {
 	dataBlock, err := c.BlockStore.Get(hash.Bytes())
 	if err != nil {
-		log.Error(err)
-		return nil, err
+		return nil, errors.New(log, fmt.Sprintf("GetBlock error:%s", err.Error()))
 	}
 	block := new(types.Block)
 	if err := block.Deserialize(dataBlock); err != nil {

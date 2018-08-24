@@ -29,6 +29,7 @@ import (
 	"math/big"
 	"testing"
 	"time"
+	"github.com/ecoball/go-ecoball/common/event"
 )
 
 func TestHeader(t *testing.T) {
@@ -96,7 +97,7 @@ func TestBlockCreate(t *testing.T) {
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	block, err := ledger.NewTxBlock(txs, example.ConsensusData(), time.Now().UnixNano())
+	block, err := ledger.NewTxBlock(config.ChainHash, txs, example.ConsensusData(), time.Now().UnixNano())
 	block.SetSignature(&config.Root)
 	data, err := block.Serialize()
 	errors.CheckErrorPanic(err)
@@ -105,10 +106,11 @@ func TestBlockCreate(t *testing.T) {
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
 	errors.CheckEqualPanic(block.JsonString(false) == blockNew.JsonString(false))
 
-	errors.CheckErrorPanic(ledger.VerifyTxBlock(ledger.StateDB(), block))
-	errors.CheckErrorPanic(ledger.SaveTxBlock(block))
+	errors.CheckErrorPanic(ledger.VerifyTxBlock(config.ChainHash, block))
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorLedger, block))
+	time.Sleep(time.Millisecond * 500)
 
-	reBlock, err := ledger.GetTxBlock(blockNew.Hash)
+	reBlock, err := ledger.GetTxBlock(config.ChainHash, blockNew.Hash)
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(blockNew.JsonString(false) == reBlock.JsonString(false))
 }
@@ -135,11 +137,11 @@ func xTestBlockNew(t *testing.T) {
 
 	con, err := types.InitConsensusData(example.TimeStamp())
 	errors.CheckErrorPanic(err)
-	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
+	block, err := ledger.NewTxBlock(config.ChainHash, txs, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	block.SetSignature(&config.Root)
-	errors.CheckErrorPanic(ledger.VerifyTxBlock(ledger.StateDB(), block))
-	errors.CheckErrorPanic(ledger.SaveTxBlock(block))
+	errors.CheckErrorPanic(ledger.VerifyTxBlock(config.ChainHash, block))
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorLedger, block))
 	data, err := block.Serialize()
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(utils.FileWrite("/tmp/block.data", data))

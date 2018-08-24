@@ -7,29 +7,29 @@ import (
 )
 
 type Ledger interface {
-	GetTxBlock(hash common.Hash) (*types.Block, error)
-	NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
-	VerifyTxBlock(block *types.Block) error
+	GetTxBlock(chainID common.Hash, hash common.Hash) (*types.Block, error)
+	NewTxBlock(chainID common.Hash, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
+	VerifyTxBlock(chainID common.Hash, block *types.Block) error
 	//SaveTxBlock(block *types.Block) error
-	GetTxBlockByHeight(height uint64) (*types.Block, error)
-	CheckTransaction(tx *types.Transaction) error
-	PreHandleTransaction(tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error)
-	GetCurrentHeader() *types.Header
-	GetCurrentHeight() uint64
-	StateDB() *state.State
-	ResetStateDB(header *types.Header) error
+	GetTxBlockByHeight(chainID common.Hash, height uint64) (*types.Block, error)
+	CheckTransaction(chainID common.Hash, tx *types.Transaction) error
+	PreHandleTransaction(chainID common.Hash, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error)
+	GetCurrentHeader(chainID common.Hash, ) *types.Header
+	GetCurrentHeight(chainID common.Hash, ) uint64
+	StateDB(chainID common.Hash, ) *state.State
+	ResetStateDB(chainID common.Hash, header *types.Header) error
 
 	//AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error)
 	//SetContract(index common.AccountName, t types.VmType, des, code []byte) error
 	//GetContract(index common.AccountName) (*types.DeployInfo, error)
-	AccountGet(index common.AccountName) (*state.Account, error)
+	AccountGet(chainID common.Hash, index common.AccountName) (*state.Account, error)
 	//AddPermission(index common.AccountName, perm state.Permission) error
 	//FindPermission(index common.AccountName, name string) (string, error)
 	//CheckPermission(index common.AccountName, name string, hash common.Hash, sig []common.Signature) error
-	RequireResources(index common.AccountName, timeStamp int64) (float64, float64, error)
-	GetProducerList() ([]common.AccountName, error)
+	RequireResources(chainID common.Hash, index common.AccountName, timeStamp int64) (float64, float64, error)
+	GetProducerList(chainID common.Hash, ) ([]common.AccountName, error)
 	//AccountGetBalance(index common.AccountName, token string) (uint64, error)
-	AccountAddBalance(index common.AccountName, token string, value uint64) error
+	AccountAddBalance(chainID common.Hash, index common.AccountName, token string, value uint64) error
 	//AccountSubBalance(index common.AccountName, token string, value uint64) error
 
 	//AddResourceLimits(from, to common.AccountName, cpu, net float32) error
@@ -40,5 +40,5 @@ type Ledger interface {
 	//TokenIsExisted(token string) bool
 
 	//GetGenesesTime() int64
-	GetChainTx() ChainInterface
+	GetChainTx(chainID common.Hash, ) ChainInterface
 }

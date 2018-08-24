@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 type soloActor struct {
@@ -53,7 +54,7 @@ func (l *soloActor) Receive(ctx actor.Context) {
 		log.Info("Receive Solo Stop Message")
 		l.solo.stop <- struct{}{}
 	case *types.Block:
-		current := l.solo.ledger.GetCurrentHeader()
+		current := l.solo.ledger.GetCurrentHeader(config.ChainHash)
 		if msg.Height > (current.Height + 1) {
 
 		}

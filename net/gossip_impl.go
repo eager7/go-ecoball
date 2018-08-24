@@ -25,6 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 type msgSendCallback func(int, message.EcoBallNetMsg) []peer.ID
@@ -134,7 +135,7 @@ func (this *Gossiper) handlePullReqMsg(msg message.EcoBallNetMsg) {
 	blkReqMsg := new(types.BlkReqMsg)
 	blkReqMsg.Deserialize(msg.Data())
 	log.Debug("handle gossip pull blocks request from", blkReqMsg.Peer)
-	header := this.nodeLedger.GetCurrentHeader()
+	header := this.nodeLedger.GetCurrentHeader(config.ChainHash)
 	height := header.Height
 	peerMaxHeight := blkReqMsg.BlkHeight
 	var blkCount uint64
@@ -154,7 +155,7 @@ func (this *Gossiper) handlePullReqMsg(msg message.EcoBallNetMsg) {
 	log.Debug("height ", height, "peer height ", peerMaxHeight, blkCount)
 	// it is better to limit the blk count threshold
 	for blkCount>0 {
-		blk,err := this.nodeLedger.GetTxBlock(hash)
+		blk,err := this.nodeLedger.GetTxBlock(config.ChainHash, hash)
 		if err != nil {
 			blkAck.BlkCount = 0
 			blkAck.Data = []*types.Block{}
@@ -175,7 +176,7 @@ func (this *Gossiper) handlePushMsg(msg message.EcoBallNetMsg) {
 	blkAck2Msg := new(types.BlkAck2Msg)
 	blkAck2Msg.Deserialize(msg.Data())
 
-	header := this.nodeLedger.GetCurrentHeader()
+	header := this.nodeLedger.GetCurrentHeader(config.ChainHash)
 	height := header.Height
 	//merge the remote peer's blocks to local ledger
 	for _, blk := range blkAck2Msg.Data {

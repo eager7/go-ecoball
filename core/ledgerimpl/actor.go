@@ -57,7 +57,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 	case *actor.Restarting:
 	case *types.Block:
 		begin := time.Now().UnixNano()
-		if err := l.ledger.ChainTx.SaveBlock(msg); err != nil {
+		if err := l.ledger.ChainTxs[msg.ChainID].SaveBlock(msg); err != nil {
 			log.Error("save block error:", err)
 			break
 		}

@@ -64,8 +64,8 @@ func TestDeploy(code []byte) *types.Transaction {
 }
 
 func TestTransfer() *types.Transaction {
-	indexFrom := common.NameToIndex("from")
-	indexAddr := common.NameToIndex("addr")
+	indexFrom := common.NameToIndex("root")
+	indexAddr := common.NameToIndex("delegate")
 	value := big.NewInt(100)
 	tx, err := types.NewTransfer(indexFrom, indexAddr, config.ChainHash, "", value, 0, time.Now().Unix())
 	if err != nil {
@@ -90,11 +90,12 @@ func Ledger(path string) ledger.Ledger {
 func SaveBlock(ledger ledger.Ledger, txs []*types.Transaction) *types.Block {
 	con, err := types.InitConsensusData(TimeStamp())
 	errors.CheckErrorPanic(err)
-	block, err := ledger.NewTxBlock(txs, *con, time.Now().UnixNano())
+	block, err := ledger.NewTxBlock(config.ChainHash, txs, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	block.SetSignature(&config.Root)
-	errors.CheckErrorPanic(ledger.VerifyTxBlock(block))
+	errors.CheckErrorPanic(ledger.VerifyTxBlock(block.ChainID, block))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorLedger, block))
+	time.Sleep(time.Millisecond * 500)
 	return block
 }
 
@@ -112,7 +113,7 @@ func ConsensusData() types.ConsensusData {
 func AutoGenerateTransaction(ledger ledger.Ledger) {
 	for {
 		time.Sleep(time.Second * 2)
-		if ledger.StateDB().RequireVotingInfo() {
+		if ledger.StateDB(config.ChainHash).RequireVotingInfo() {
 			elog.Log.Info("Start Consensus Module")
 			break
 		}

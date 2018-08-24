@@ -91,7 +91,7 @@ func runNode(c *cli.Context) error {
 		println("build the ababft service")
 		service_consensus.Start()
 		println("start the ababft service")
-		if l.StateDB().RequireVotingInfo() {
+		if l.StateDB(config.ChainHash).RequireVotingInfo() {
 			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 		}
 	default:

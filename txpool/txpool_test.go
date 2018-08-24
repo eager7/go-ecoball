@@ -16,51 +16,22 @@
 package txpool_test
 
 import (
-	"encoding/hex"
-	"fmt"
-	"math/big"
 	"testing"
 	"time"
 
-	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/test/example"
 	"github.com/ecoball/go-ecoball/txpool"
 )
 
 func TestTxPool(t *testing.T) {
-	txPool, err := txpool.Start()
-	if err != nil {
-		t.Fatal(err)
-	}
+	ledger := example.Ledger("/tmp/txPool")
+	_, err := txpool.Start(ledger)
+	errors.CheckErrorPanic(err)
 
-	txPool.Put(newTx(t))
-	txPool.PendingTx.Show()
+	tx := example.TestTransfer()
 
-	var pid *actor.PID
-	pid, err = event.GetActor(event.ActorTxPool)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	pid.Tell(message.GetTxs{})
-	time.Sleep(time.Duration(5) * time.Second)
-}
-
-func newTx(t *testing.T) *types.Transaction {
-	fromUser, _ := hex.DecodeString("01b1a6569a557eafcccc71e0d02461fd4b601aea")
-	toUser, _ := hex.DecodeString("01ca5cdd56d99a0023166b337ffc7fd0d2c42330")
-	from := common.NewAddress(fromUser)
-	to := common.NewAddress(toUser)
-	value := big.NewInt(100)
-	timeStamp := time.Now().Unix()
-	fmt.Println(timeStamp)
-	//生成结构体，会自动计算哈希值
-	tx, err := types.NewTransfer(from, to, value, 0, timeStamp)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return tx
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, tx))
+	time.Sleep(time.Duration(1) * time.Second)
 }

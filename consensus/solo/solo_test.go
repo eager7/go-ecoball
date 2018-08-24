@@ -16,10 +16,10 @@ import (
 
 func TestSoloModule(t *testing.T) {
 	ledger := example.Ledger("/tmp/solo")
-	_, err := txpool.Start()
+	txPool, err := txpool.Start(ledger)
 	errors.CheckErrorPanic(err)
 
-	c, _ := solo.NewSoloConsensusServer(ledger)
+	c, _ := solo.NewSoloConsensusServer(ledger, txPool)
 	c.Start()
 	autoGenerateTransaction()
 	for i := 0; i < 10; i++ {
@@ -31,7 +31,7 @@ func TestSoloModule(t *testing.T) {
 func autoGenerateTransaction() {
 		nonce := uint64(1)
 		nonce ++
-		transfer, err := types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("delegate"), "active", new(big.Int).SetUint64(1), nonce, time.Now().UnixNano())
+		transfer, err := types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("delegate"), config.ChainHash, "active", new(big.Int).SetUint64(1), nonce, time.Now().UnixNano())
 		errors.CheckErrorPanic(err)
 		transfer.SetSignature(&config.Root)
 

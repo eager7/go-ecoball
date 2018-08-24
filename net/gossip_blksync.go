@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 
 	"gx/ipfs/QmVmDhyTTUcQXFD1rRQ64fGLMSAoaQvNH3hwuaCFAPq2hy/errors"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 const (
@@ -94,7 +95,7 @@ func (this *BlkSyncFsm)SetFsmInput(msg message.EcoBallNetMsg) error {
 // Gossip{key, version}
 func (this *BlkSyncFsm)PullBlkRequest(msg message.EcoBallNetMsg) (uint32, bool) {
 	log.Debug("send gossip pull blocks request msg")
-	height := this.nodeLedger.GetCurrentHeight()
+	height := this.nodeLedger.GetCurrentHeight(config.ChainHash)
 	msgType := message.APP_MSG_GOSSIP_PULL_BLK_REQ
 	peers := this.netNode.SelectRandomPeers(1)
 	if len(peers) >0 {
@@ -118,7 +119,7 @@ func (this *BlkSyncFsm) HandlePullBlkAckMsg(msg message.EcoBallNetMsg)(uint32, b
 	blkAckMsg := new(types.BlkAckMsg)
 	blkAckMsg.Deserialize(msg.Data())
 
-	header := this.nodeLedger.GetCurrentHeader()
+	header := this.nodeLedger.GetCurrentHeader(config.ChainHash)
 	height := header.Height
 
 	//merge the remote peer's blocks to local ledger
@@ -145,7 +146,7 @@ func (this *BlkSyncFsm) HandlePullBlkAckMsg(msg message.EcoBallNetMsg)(uint32, b
 
 		// it is better to limit the blk count threshold
 		for blkCount>0 {
-			blk,err := this.nodeLedger.GetTxBlock(hash)
+			blk,err := this.nodeLedger.GetTxBlock(config.ChainHash, hash)
 			if err != nil {
 				blkAck2.BlkCount = 0
 				blkAck2.Data = []*types.Block{}
