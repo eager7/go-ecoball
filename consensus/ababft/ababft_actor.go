@@ -53,6 +53,7 @@ type ActorAbabft struct {
 	serviceAbabft *ServiceAbabft
 	NumPeers int
 	PeersAddrList []PeerAddrInfo       // Peer address information for consensus
+	PeersListAccount []PeerInfoAccount // Peer information for consensus
 }
 
 const(
@@ -70,7 +71,7 @@ const ThresholdRound = 60
 // var Num_peers int
 // var Peers_list []PeerInfo                // Peer information for consensus
 // var Peers_addr_list []PeerAddrInfo       // Peer address information for consensus
-var Peers_list_account []PeerInfoAccount // Peer information for consensus
+// var Peers_list_account []PeerInfoAccount // Peer information for consensus
 var Self_index int                       // the index of this peer in the peers list
 var current_round_num int                // current round number
 var current_height_num int               // current height, according to the blocks saved in the local ledger
@@ -85,12 +86,12 @@ var block_firstround Block_FirstRound // temporary parameters for the first roun
 var block_secondround Block_SecondRound // temporary parameters for the second round block
 var currentheader *types.Header // temporary parameters for the current block header, according to the blocks saved in the local ledger
 var currentheader_data types.Header
-var current_payload types.AbaBftData // temporary parameters for current payload
-var received_signpre_num int // the number of received signatures for the previous block
+var current_payload types.AbaBftData              // temporary parameters for current payload
+var received_signpre_num int                      // the number of received signatures for the previous block
 var cache_signature_preblk []pb.SignaturePreblock // cache the received signatures for the previous block
-var block_first_cal *types.Block // cache the first-round block
-var received_signblkf_num int // temporary parameters for received signatures for first round block
-var TimeoutMsgs = make(map[string]int, 1000) // cache the timeout message
+var blockFirstCal *types.Block                    // cache the first-round block
+var received_signblkf_num int                     // temporary parameters for received signatures for first round block
+var TimeoutMsgs = make(map[string]int, 1000)      // cache the timeout message
 var verified_height uint64
 
 var delta_roundnum int
@@ -233,13 +234,13 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 		// sort newPeers
 		sort.Strings(Peers_list_account_t)
 
-		Peers_list_account = make([]PeerInfoAccount, actorC.NumPeers)
+		actorC.PeersListAccount = make([]PeerInfoAccount, actorC.NumPeers)
 		actorC.PeersAddrList = make([]PeerAddrInfo, actorC.NumPeers)
 		for i := 0; i < actorC.NumPeers; i++ {
-			Peers_list_account[i].Accountname = common.NameToIndex(Peers_list_account_t[i])
-			Peers_list_account[i].Index = i + 1
+			actorC.PeersListAccount[i].Accountname = common.NameToIndex(Peers_list_account_t[i])
+			actorC.PeersListAccount[i].Index = i + 1
 
-			account_info,err := current_ledger.AccountGet(config.ChainHash, Peers_list_account[i].Accountname)
+			account_info,err := current_ledger.AccountGet(config.ChainHash, actorC.PeersListAccount[i].Accountname)
 			if err != nil {
 				log.Debug("fail to get account info.")
 			}
@@ -260,7 +261,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			}
 			actorC.PeersAddrList[i].Index = i + 1
 
-			if uint64(selfaccountname) == uint64(Peers_list_account[i].Accountname) {
+			if uint64(selfaccountname) == uint64(actorC.PeersListAccount[i].Accountname) {
 				// update Self_index, i.e. the corresponding index in the peer address list
 				Self_index = i + 1
 			}
@@ -1304,17 +1305,17 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			// fmt.Println("blksyn_send f:",blksyn_send.Blksyn.BlksynF.Header)
 			// fmt.Println("currentheader.PrevHash:",currentheader.PrevHash)
 			// fmt.Println("before reset: currentheader.Hash:",currentheader.Hash)
-			current_pre_blk,_ := current_ledger.GetTxBlock(config.ChainHash, currentheader.PrevHash)
+			currentPreBlk,_ := current_ledger.GetTxBlock(config.ChainHash, currentheader.PrevHash)
 			// current_blk := blk_syn_f
-			//err1 := actorC.serviceAbabft.ledger.ResetStateDB(current_pre_blk.Header.StateHash)
-			err1 := actorC.serviceAbabft.ledger.ResetStateDB(config.ChainHash, current_pre_blk.Header)
+			//err1 := actorC.serviceAbabft.ledger.ResetStateDB(currentPreBlk.Header.StateHash)
+			err1 := actorC.serviceAbabft.ledger.ResetStateDB(config.ChainHash, currentPreBlk.Header)
 			if err1 != nil {
 				fmt.Println("reset status error:", err1)
 			}
-			// block_first_cal,err = actorC.serviceAbabft.ledger.NewTxBlock(current_blk.Transactions,current_blk.Header.ConsensusData, current_blk.Header.TimeStamp)
+			// blockFirstCal,err = actorC.serviceAbabft.ledger.NewTxBlock(current_blk.Transactions,current_blk.Header.ConsensusData, current_blk.Header.TimeStamp)
 			// fmt.Println("current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
-			// fmt.Println("compare merkle hash:", current_blk.Header.MerkleHash, block_first_cal.MerkleHash)
-			// fmt.Println("compare state hash:", current_blk.Header.StateHash, block_first_cal.StateHash)
+			// fmt.Println("compare merkle hash:", current_blk.Header.MerkleHash, blockFirstCal.MerkleHash)
+			// fmt.Println("compare state hash:", current_blk.Header.StateHash, blockFirstCal.StateHash)
 
 			// currentheader = current_ledger.GetCurrentHeader()
 			old_block,_ := current_ledger.GetTxBlock(config.ChainHash, currentheader.PrevHash)
@@ -1595,36 +1596,36 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 		}
 		*/
 		// change public key to account address
-		for _, peer_addr := range actorC.PeersAddrList {
-			peer_addr_in := common.AddressFromPubKey(pubkey_in)
-			if ok := bytes.Equal(peer_addr.AccAdress.Bytes(), peer_addr_in.Bytes()); ok == true {
+		for _, peerAddr := range actorC.PeersAddrList {
+			peerAddrIns := common.AddressFromPubKey(pubkey_in)
+			if ok := bytes.Equal(peerAddr.AccAdress.Bytes(), peerAddrIns.Bytes()); ok == true {
 				// legal peer
 				// fmt.Println("TimeoutMsgs:",TimeoutMsgs)
-				if _, ok1 := TimeoutMsgs[peer_addr_in.HexString()]; ok1 != true {
-					TimeoutMsgs[peer_addr_in.HexString()] = round_in
+				if _, ok1 := TimeoutMsgs[peerAddrIns.HexString()]; ok1 != true {
+					TimeoutMsgs[peerAddrIns.HexString()] = round_in
 					//fmt.Println("TimeoutMsgs, add:",TimeoutMsgs[string(pubkey_in)])
-				} else if TimeoutMsgs[peer_addr_in.HexString()] >= round_in {
+				} else if TimeoutMsgs[peerAddrIns.HexString()] >= round_in {
 					return
 				}
 
-				TimeoutMsgs[peer_addr_in.HexString()] = round_in
+				TimeoutMsgs[peerAddrIns.HexString()] = round_in
 				// to count the number is enough
-				var count_r [1000]int
-				var max_r int
-				max_r = 0
+				var countRS [1000]int
+				var maxR int
+				maxR = 0
 				for _,v := range TimeoutMsgs {
 					if v > current_round_num {
-						count_r[v-current_round_num]++
+						countRS[v-current_round_num]++
 					}
-					if v > max_r {
-						max_r = v
+					if v > maxR {
+						maxR = v
 					}
 				}
 
 				var totalCount int
 				totalCount = 0
-				for i := max_r-current_round_num; i > 0; i-- {
-					totalCount = totalCount + count_r[i]
+				for i := maxR -current_round_num; i > 0; i-- {
+					totalCount = totalCount + countRS[i]
 					if totalCount >= int(2*len(actorC.PeersAddrList)/3) {
 						// reset the round number
 						current_round_num += i
@@ -1632,7 +1633,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 						actorC.status = 8
 						primary_tag = 0
 						event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
-						// fmt.Println("reset according to the timeout msg:",i,max_r,current_round_num,count_r[i])
+						// fmt.Println("reset according to the timeout msg:",i,maxR,current_round_num,countRS[i])
 						break
 					}
 				}
@@ -1651,81 +1652,81 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 	}
 }
 
-func (actorC *ActorAbabft) verifyHeader(block_in *types.Block, current_round_num_in int, cur_header types.Header) (bool,error){
+func (actorC *ActorAbabft) verifyHeader(blockIn *types.Block, currentRoundNumIn int, curHeader types.Header) (bool,error){
 	var err error
-	header_in := block_in.Header
-	txs := block_in.Transactions
-	data_preblk_received := block_in.ConsensusData.Payload.(*types.AbaBftData)
-	signpre_send := data_preblk_received.PreBlockSignatures
-	condata_c := types.ConsensusData{Type:types.ConABFT, Payload:&types.AbaBftData{uint32(current_round_num_in),signpre_send}}
-	// fmt.Println("data_preblk_received:",data_preblk_received)
-	// fmt.Println("condata_c:",condata_c)
+	headerIn := blockIn.Header
+	txs := blockIn.Transactions
+	dataPreBlkReceived := blockIn.ConsensusData.Payload.(*types.AbaBftData)
+	signPreSend := dataPreBlkReceived.PreBlockSignatures
+	conDataC := types.ConsensusData{Type:types.ConABFT, Payload:&types.AbaBftData{ NumberRound:uint32(currentRoundNumIn), PreBlockSignatures:signPreSend},}
+	// fmt.Println("dataPreBlkReceived:",dataPreBlkReceived)
+	// fmt.Println("conDataC:",conDataC)
 	// fmt.Println("before reset")
 	// reset the stateDB
-	// fmt.Println("cur_header state hash:",cur_header.Height,cur_header.StateHash)
-	// err = actorC.serviceAbabft.ledger.ResetStateDB(cur_header.Hash)
+	// fmt.Println("curHeader state hash:",curHeader.Height,curHeader.StateHash)
+	// err = actorC.serviceAbabft.ledger.ResetStateDB(curHeader.Hash)
 	// fmt.Println("after reset",err)
 
-	// generate the block_first_cal for comparison
-	block_first_cal,err = actorC.serviceAbabft.ledger.NewTxBlock(config.ChainHash, txs,condata_c, header_in.TimeStamp)
-	// fmt.Println("height:",block_in.Height,block_first_cal.Height)
-	// fmt.Println("merkle:",block_in.Header.MerkleHash,block_first_cal.Header.MerkleHash)
-	// fmt.Println("timestamp:",block_in.Header.TimeStamp,block_first_cal.Header.TimeStamp)
-	// fmt.Println("block_first_cal:",block_first_cal.Header, block_first_cal.Header.StateHash)
-	// fmt.Println("block_in:",block_in.Header, block_in.Header.StateHash)
-	log.Info("block_first_cal:",block_first_cal.Height,block_first_cal.Header)
-	log.Info("block_in:",block_in.Height,block_in.Header)
+	// generate the blockFirstCal for comparison
+	blockFirstCal,err = actorC.serviceAbabft.ledger.NewTxBlock(config.ChainHash, txs, conDataC, headerIn.TimeStamp)
+	// fmt.Println("height:",blockIn.Height,blockFirstCal.Height)
+	// fmt.Println("merkle:",blockIn.Header.MerkleHash,blockFirstCal.Header.MerkleHash)
+	// fmt.Println("timestamp:",blockIn.Header.TimeStamp,blockFirstCal.Header.TimeStamp)
+	// fmt.Println("blockFirstCal:",blockFirstCal.Header, blockFirstCal.Header.StateHash)
+	// fmt.Println("blockIn:",blockIn.Header, blockIn.Header.StateHash)
+	log.Info("blockFirstCal:", blockFirstCal.Height, blockFirstCal.Header)
+	log.Info("blockIn:", blockIn.Height, blockIn.Header)
 
-	var num_txs int
-	num_txs = int(block_in.CountTxs)
-	if num_txs != len(txs) {
+	var numTxs int
+	numTxs = int(blockIn.CountTxs)
+	if numTxs != len(txs) {
 		println("tx number is wrong")
 		return false,nil
 	}
 	// check Height        uint64
-	if current_height_num >= int(header_in.Height) {
+	if current_height_num >= int(headerIn.Height) {
 		println("the height is not higher than current height")
 		return false,nil
 	}
 	// ConsensusData is checked in the Receive function
 
 	// check PrevHash      common.Hash
-	if ok :=bytes.Equal(block_in.PrevHash.Bytes(),cur_header.Hash.Bytes()); ok != true {
+	if ok :=bytes.Equal(blockIn.PrevHash.Bytes(), curHeader.Hash.Bytes()); ok != true {
 		println("prehash is wrong")
 		return false,nil
 	}
 	// check MerkleHash    common.Hash
-	if ok := bytes.Equal(block_first_cal.MerkleHash.Bytes(),block_in.MerkleHash.Bytes()); ok != true {
+	if ok := bytes.Equal(blockFirstCal.MerkleHash.Bytes(), blockIn.MerkleHash.Bytes()); ok != true {
 		println("MercleHash is wrong")
 		return false,nil
 	}
-	// fmt.Println("mercle:",block_first_cal.MerkleHash.Bytes(),block_in.MerkleHash.Bytes())
+	// fmt.Println("mercle:",blockFirstCal.MerkleHash.Bytes(),blockIn.MerkleHash.Bytes())
 
 	// check StateHash     common.Hash
-	if ok := bytes.Equal(block_first_cal.StateHash.Bytes(),block_in.StateHash.Bytes()); ok != true {
+	if ok := bytes.Equal(blockFirstCal.StateHash.Bytes(), blockIn.StateHash.Bytes()); ok != true {
 		println("StateHash is wrong")
 		return false,nil
 	}
-	// fmt.Println("statehash:",block_first_cal.StateHash.Bytes(),block_in.StateHash.Bytes())
+	// fmt.Println("statehash:",blockFirstCal.StateHash.Bytes(),blockIn.StateHash.Bytes())
 
 	// check Bloom         bloom.Bloom
-	if ok := bytes.Equal(block_first_cal.Bloom.Bytes(), block_in.Bloom.Bytes()); ok != true {
+	if ok := bytes.Equal(blockFirstCal.Bloom.Bytes(), blockIn.Bloom.Bytes()); ok != true {
 		println("bloom is wrong")
 		return false,nil
 	}
 	// check Hash common.Hash
-	header_cal,err1 := types.NewHeader(header_in.Version, config.ChainHash, header_in.Height, header_in.PrevHash,
-		header_in.MerkleHash, header_in.StateHash, header_in.ConsensusData, header_in.Bloom, header_in.Receipt.BlockCpu, header_in.Receipt.BlockNet,header_in.TimeStamp)
-	if ok := bytes.Equal(header_cal.Hash.Bytes(),header_in.Hash.Bytes()); ok != true {
+	header_cal,err1 := types.NewHeader(headerIn.Version, config.ChainHash, headerIn.Height, headerIn.PrevHash,
+		headerIn.MerkleHash, headerIn.StateHash, headerIn.ConsensusData, headerIn.Bloom, headerIn.Receipt.BlockCpu, headerIn.Receipt.BlockNet, headerIn.TimeStamp)
+	if ok := bytes.Equal(header_cal.Hash.Bytes(), headerIn.Hash.Bytes()); ok != true {
 		println("Hash is wrong")
 		return false,err1
 	}
 	// check Signatures    []common.Signature
-	signpre_in := block_in.Signatures[0]
+	signpre_in := blockIn.Signatures[0]
 	pubkey_g_in := signpre_in.PubKey
 	signdata_in := signpre_in.SigData
 	var sign_verify bool
-	sign_verify, err = secp256k1.Verify(header_in.Hash.Bytes(), signdata_in, pubkey_g_in)
+	sign_verify, err = secp256k1.Verify(headerIn.Hash.Bytes(), signdata_in, pubkey_g_in)
 	if sign_verify != true {
 		println("signature is wrong")
 		return false,err
@@ -1734,13 +1735,13 @@ func (actorC *ActorAbabft) verifyHeader(block_in *types.Block, current_round_num
 }
 
 func (actorC *ActorAbabft) updateBlock(blockFirst types.Block, conData types.ConsensusData) (types.Block,error){
-	var block_second types.Block
+	var blockSecond types.Block
 	var err error
-	header_in := blockFirst.Header
-	header, _ := types.NewHeader(header_in.Version, config.ChainHash, header_in.Height, header_in.PrevHash, header_in.MerkleHash,
-		header_in.StateHash, conData, header_in.Bloom, header_in.Receipt.BlockCpu, header_in.Receipt.BlockNet, header_in.TimeStamp)
-	block_second = types.Block{header, uint32(len(blockFirst.Transactions)), blockFirst.Transactions}
-	return block_second,err
+	headerIn := blockFirst.Header
+	header, _ := types.NewHeader(headerIn.Version, config.ChainHash, headerIn.Height, headerIn.PrevHash, headerIn.MerkleHash,
+		headerIn.StateHash, conData, headerIn.Bloom, headerIn.Receipt.BlockCpu, headerIn.Receipt.BlockNet, headerIn.TimeStamp)
+	blockSecond = types.Block{header, uint32(len(blockFirst.Transactions)), blockFirst.Transactions}
+	return blockSecond,err
 }
 
 func (actorC *ActorAbabft) verifySignatures(dataBlksReceived *types.AbaBftData, preBlkHash common.Hash, curHeader *types.Header) (bool,error){
@@ -1748,13 +1749,13 @@ func (actorC *ActorAbabft) verifySignatures(dataBlksReceived *types.AbaBftData, 
 	// 1. devide the signatures into two part
 	var signBlksPreBlk []common.Signature
 	var signsCurBlk []common.Signature
-	pubkeyTagBytes := []byte(pubkeyTag)
-	sigdataTagBytes := []byte(signdataTag)
+	pubKeyTagBytes := []byte(pubkeyTag)
+	sigDataTagBytes := []byte(signdataTag)
 	var tagSign int
 	tagSign = 0
 	for _,sign := range dataBlksReceived.PreBlockSignatures {
-		ok1 := bytes.Equal(sign.PubKey, pubkeyTagBytes);
-		ok2 := bytes.Equal(sign.SigData, sigdataTagBytes);
+		ok1 := bytes.Equal(sign.PubKey, pubKeyTagBytes)
+		ok2 := bytes.Equal(sign.SigData, sigDataTagBytes)
 		if ok1 == true && ok2 == true {
 			tagSign = 1
 			continue
@@ -1815,7 +1816,7 @@ func (actorC *ActorAbabft) verifySignatures(dataBlksReceived *types.AbaBftData, 
 	// 3. check the current block signature
 	numVerified = 0
 	// calculate firstround block header hash for the check of the first-round block signatures
-	conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(dataBlksReceived.NumberRound), signBlksPreBlk}}
+	conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{NumberRound:uint32(dataBlksReceived.NumberRound), PreBlockSignatures:signBlksPreBlk},}
 	headerReCal, _ := types.NewHeader(curHeader.Version, config.ChainHash, curHeader.Height, curHeader.PrevHash, curHeader.MerkleHash,
 		curHeader.StateHash, conData, curHeader.Bloom, curHeader.Receipt.BlockCpu, curHeader.Receipt.BlockNet, curHeader.TimeStamp)
 	blkFHash := headerReCal.Hash
