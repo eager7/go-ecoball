@@ -206,7 +206,7 @@ func ListKeys(params []interface{}) *common.Response {
 func ListWallets(params []interface{}) *common.Response {
 	wallets, err := wallet.List_wallets()
 	if err != nil {
-			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
+		return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 	}
 	var walletsList string
 	for _, k := range wallets {
@@ -215,4 +215,20 @@ func ListWallets(params []interface{}) *common.Response {
 	}
 	walletsList = strings.TrimSuffix(walletsList, "\n")
 	return common.NewResponse(common.SUCCESS, walletsList)
+}
+
+func GetPublicKeys(params []interface{}) *common.Response {
+	data, err := wallet.GetPublicKeys()
+	if err != nil {
+		return common.NewResponse(common.INTERNAL_ERROR, err.Error())
+	}
+
+	var publickeys string
+	for _, k := range data {
+		publickeys += k
+		publickeys += "\n"
+	}
+	publickeys = strings.TrimSuffix(publickeys, "\n")
+
+	return common.NewResponse(common.SUCCESS, publickeys)
 }

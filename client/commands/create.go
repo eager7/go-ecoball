@@ -86,6 +86,7 @@ func newAccount(c *cli.Context) error {
 		return err
 	}
 
+	GetPublicKeys()
 	getInfo()
 
 	//owner key

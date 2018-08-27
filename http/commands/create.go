@@ -40,20 +40,12 @@ func CreateAccount(params []interface{}) *common.Response {
 }
 
 func Getinfo(params []interface{}) *common.Response {
-	//ll := new(ledgerimpl.LedgerImpl)
-	/*chain, err := transaction.NewTransactionChain(store.PathBlock+"/Transaction", ll)
-	if err != nil{
-		fmt.Println(err)
-		return common.NewResponse(common.INVALID_PARAMS, "NewTransactionChain failed")
-	}*/
 	var height uint64 = 1
 
 	blockInfo, errcode := notify.CoreLedger.GetTxBlockByHeight(config.ChainHash, height)
 	if errcode != nil {
 		return common.NewResponse(common.INVALID_PARAMS, "get block faild")
 	}
-
-	blockInfo.Show(true)
 	
 	data, errs := blockInfo.Serialize()
 	if errs != nil{
