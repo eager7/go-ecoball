@@ -6,6 +6,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"math/big"
+	"sort"
 )
 
 var cpuAmount = "cpu_amount"
@@ -13,11 +14,16 @@ var netAmount = "net_amount"
 var prodsList = "prods_list"
 var votingAmount = "voting_amount"
 var flag = false
+
 const VotesLimit = 200
+const ChainLimit = 200
 
 //var BlockCpu = BlockCpuLimit
 //var BlockNet = BlockNetLimit
-
+type Producer struct {
+	Index  common.AccountName
+	Amount uint64
+}
 type Resource struct {
 	Ram struct {
 		Quota float64 `json:"quota"`
@@ -268,13 +274,31 @@ func (s *State) RegisterProducer(index common.AccountName) error {
 		s.prodMutex.Unlock()
 		return errors.New(log, fmt.Sprintf("the account:%s was already registed", index.String()))
 	}
-	if err := s.checkAccountCertification(index); err != nil {
+	if err := s.checkAccountCertification(index, VotesLimit); err != nil {
 		s.prodMutex.Unlock()
 		return nil
 	}
 	s.Producers[index] = 0
 	s.prodMutex.Unlock()
 	return s.commitProducersList()
+}
+
+/**
+ *  @brief register a new transaction chain
+ *  @param index - account's index
+ */
+func (s *State) RegisterChain(index common.AccountName, hash common.Hash) error {
+	s.chainMutex.Lock()
+	defer s.chainMutex.Unlock()
+	if _, ok := s.Chains[hash]; ok {
+		return errors.New(log, fmt.Sprintf("the chain:%s was already registed", hash.HexString()))
+	}
+	if err := s.checkAccountCertification(index, ChainLimit); err != nil {
+		return nil
+	}
+	s.Chains[hash] = index
+
+	return nil
 }
 
 /**
@@ -334,8 +358,8 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 			return err
 		}
 		var accFactors []AccFactor
-		for _, v := range producers{
-			accFactor := AccFactor{Actor:v, Weight:1, Permission:Active}
+		for _, v := range producers {
+			accFactor := AccFactor{Actor: v, Weight: 1, Permission: Active}
 			accFactors = append(accFactors, accFactor)
 		}
 		perm := NewPermission(Active, Owner, 2, []KeyFactor{}, accFactors)
@@ -368,7 +392,7 @@ func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountNa
 		delete(acc.Votes.Producers, k)
 	}
 	for _, v := range accounts {
-		if err := s.checkAccountCertification(v); err != nil {
+		if err := s.checkAccountCertification(v, VotesLimit); err != nil {
 			s.prodMutex.Unlock()
 			return err
 		}
@@ -407,12 +431,12 @@ func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
  *  @brief check whether the account is qualified
  *  @param index - account's index
  */
-func (s *State) checkAccountCertification(index common.AccountName) error {
+func (s *State) checkAccountCertification(index common.AccountName, votes uint64) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
 	}
-	if acc.Votes.Staked < VotesLimit {
+	if acc.Votes.Staked < votes {
 		acc.Show()
 		return errors.New(log, fmt.Sprintf("the account:%s has no enough staked", index.String()))
 	}
@@ -433,12 +457,30 @@ func (s *State) commitProducersList() error {
 			return errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
 		}
 		if len(data) != 0 {
-			if err := json.Unmarshal(data, &s.Producers); err != nil {
+			var Producers []Producer
+			if err := json.Unmarshal(data, &Producers); err != nil {
 				return errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
+			}
+			for _, v := range Producers {
+				s.Producers[v.Index] = v.Amount
 			}
 		}
 	}
-	data, err := json.Marshal(s.Producers)
+
+	var Keys []common.AccountName
+	for k := range s.Producers {
+		Keys = append(Keys, k)
+	}
+	sort.Slice(Keys, func(i, j int) bool {
+		return uint64(Keys[i]) > uint64(Keys[j])
+	})
+	var List []Producer
+	for _, v := range Keys {
+		list := Producer{v, s.Producers[v]}
+		List = append(List, list)
+	}
+
+	data, err := json.Marshal(List)
 	if err != nil {
 		return errors.New(log, fmt.Sprintf("error convert to json string:%s", err.Error()))
 	}
@@ -477,8 +519,12 @@ func (s *State) GetProducerList() ([]common.AccountName, error) {
 			return nil, errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
 		}
 		if len(data) != 0 {
-			if err := json.Unmarshal(data, &s.Producers); err != nil {
+			var Producers []Producer
+			if err := json.Unmarshal(data, &Producers); err != nil {
 				return nil, errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
+			}
+			for _, v := range Producers {
+				s.Producers[v.Index] = v.Amount
 			}
 		}
 	}

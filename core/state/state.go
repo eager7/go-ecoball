@@ -45,6 +45,9 @@ type State struct {
 	prodMutex sync.RWMutex
 	Producers map[common.AccountName]uint64
 
+	chainMutex sync.RWMutex
+	Chains     map[common.Hash]common.AccountName
+
 	mutex sync.RWMutex
 }
 
