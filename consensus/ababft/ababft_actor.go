@@ -72,6 +72,7 @@ type ActorAbabft struct {
 	primaryTag int // 0: verification peer; 1: is the primary peer, who generate the block at current round;
 	deltaRoundNum int
 	receivedSignPreNum int                      // the number of received signatures for the previous block
+	receivedSignBlkFNum int                     // temporary parameters for received signatures for first round block
 }
 
 const(
@@ -108,7 +109,7 @@ const ThresholdRound = 60
 // var received_signpre_num int                      // the number of received signatures for the previous block
 // var cache_signature_preblk []pb.SignaturePreblock // cache the received signatures for the previous block
 // var blockFirstCal *types.Block                    // cache the first-round block
-var received_signblkf_num int                     // temporary parameters for received signatures for first round block
+// var received_signblkf_num int                     // temporary parameters for received signatures for first round block
 var TimeoutMsgs = make(map[string]int, 1000)      // cache the timeout message
 // var verified_height uint64
 
@@ -505,54 +506,54 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 	case PreBlockTimeout:
 		if actorC.primaryTag == 1 && (actorC.status == 2 || actorC.status == 3){
 			// 1. check the cache cache_signature_preblk
-			header_hash := actorC.currentHeader.Hash.Bytes()
-			for _,signpreblk := range actorC.cacheSignaturePreBlk {
-				round_in := signpreblk.Round
-				if int(round_in) != actorC.currentRoundNum {
+			headerHashes := actorC.currentHeader.Hash.Bytes()
+			for _, signPreBlk := range actorC.cacheSignaturePreBlk {
+				roundIn := signPreBlk.Round
+				if int(roundIn) != actorC.currentRoundNum {
 					continue
 				}
 				// check the signature
-				pubkey_in := signpreblk.PubKey// signaturepre_send.signaturePreblock.PubKey = signaturePreblock.PubKey
-				// check the pubkey_in is in the peer list
-				var found_peer bool
-				found_peer = false
-				var peer_index int
+				pubKeyIn := signPreBlk.PubKey // signaturepre_send.signaturePreblock.PubKey = signaturePreblock.PubKey
+				// check the pubKeyIn is in the peer list
+				var foundPeer bool
+				foundPeer = false
+				var peerIndex int
 				/*
 				for index,peer := range Peers_list {
-					if ok := bytes.Equal(peer.PublicKey, pubkey_in); ok == true {
-						found_peer = true
-						peer_index = index
+					if ok := bytes.Equal(peer.PublicKey, pubKeyIn); ok == true {
+						foundPeer = true
+						peerIndex = index
 						break
 					}
 				}
 				*/
 				// change public key to account address
-				for index,peer_addr := range actorC.PeersAddrList {
-					peer_addr_in := common.AddressFromPubKey(pubkey_in)
-					if ok := bytes.Equal(peer_addr.AccAddress.Bytes(), peer_addr_in.Bytes()); ok == true {
-						found_peer = true
-						peer_index = index
+				for index, peerAddr := range actorC.PeersAddrList {
+					peerAddrIns := common.AddressFromPubKey(pubKeyIn)
+					if ok := bytes.Equal(peerAddr.AccAddress.Bytes(), peerAddrIns.Bytes()); ok == true {
+						foundPeer = true
+						peerIndex = index
 						break
 					}
 				}
 
-				if found_peer == false {
+				if foundPeer == false {
 					// the signature is not from the peer in the list
 					continue
 				}
 				// first check that signature in or not in list of
-				if actorC.signaturePreBlockList[peer_index].SigData != nil {
+				if actorC.signaturePreBlockList[peerIndex].SigData != nil {
 					// already receive the signature
 					continue
 				}
 				// second, verify the correctness of the signature
-				sigdata_in := signpreblk.SigData
-				var result_verify bool
-				result_verify, err = secp256k1.Verify(header_hash, sigdata_in, pubkey_in)
-				if result_verify == true {
+				signDataIn := signPreBlk.SigData
+				var resultVerify bool
+				resultVerify, err = secp256k1.Verify(headerHashes, signDataIn, pubKeyIn)
+				if resultVerify == true {
 					// add the incoming signature to signature preblock list
-					actorC.signaturePreBlockList[peer_index].SigData = sigdata_in
-					actorC.signaturePreBlockList[peer_index].PubKey = pubkey_in
+					actorC.signaturePreBlockList[peerIndex].SigData = signDataIn
+					actorC.signaturePreBlockList[peerIndex].PubKey = pubKeyIn
 					actorC.receivedSignPreNum ++
 				} else {
 					continue
@@ -569,25 +570,25 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			if actorC.receivedSignPreNum >= int(len(actorC.PeersAddrList)/3+1) {
 				// enough preblock signature, so generate the first-round block, only including the preblock signatures and
 				// prepare the ConsensusData
-				var signpre_send []common.Signature
-				for _,signpre := range actorC.signaturePreBlockList {
+				var signPreSend []common.Signature
+				for _, signPre := range actorC.signaturePreBlockList {
 					/*
-					if signpre != nil {
+					if signPre != nil {
 						var sign_tmp common.Signature
-						sign_tmp.SigData = signpre
+						sign_tmp.SigData = signPre
 						sign_tmp.PubKey = Peers_list[index].PublicKey
-						signpre_send = append(signpre_send, sign_tmp)
+						signPreSend = append(signPreSend, sign_tmp)
 					}
 					*/
 					// change public key to account address
-					if signpre.SigData != nil {
-						var sign_tmp common.Signature
-						sign_tmp.SigData = signpre.SigData
-						sign_tmp.PubKey = signpre.PubKey
-						signpre_send = append(signpre_send, sign_tmp)
+					if signPre.SigData != nil {
+						var signTmp common.Signature
+						signTmp.SigData = signPre.SigData
+						signTmp.PubKey = signPre.PubKey
+						signPreSend = append(signPreSend, signTmp)
 					}
 				}
-				conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(actorC.currentRoundNum),signpre_send}}
+				conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(actorC.currentRoundNum), signPreSend}}
 				// fmt.Println("conData for blk firstround",conData)
 				// prepare the tx list
 				/*
@@ -610,15 +611,15 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				txs, _ := actorC.serviceAbabft.txPool.GetTxsList(config.ChainHash)
 				// log.Debug("obtained tx list", txs[0])
 				// generate the first-round block
-				var block_first *types.Block
-				t_time := time.Now().UnixNano()
-				block_first,err = actorC.serviceAbabft.ledger.NewTxBlock(config.ChainHash, txs, conData, t_time)
-				block_first.SetSignature(actorC.serviceAbabft.account)
+				var blockFirst *types.Block
+				tTime := time.Now().UnixNano()
+				blockFirst,err = actorC.serviceAbabft.ledger.NewTxBlock(config.ChainHash, txs, conData, tTime)
+				blockFirst.SetSignature(actorC.serviceAbabft.account)
 				// broadcast the first-round block to peers for them to verify the transactions and wait for the corresponding signatures back
-				actorC.blockFirstRound.BlockFirst = *block_first
+				actorC.blockFirstRound.BlockFirst = *blockFirst
 				event.Send(event.ActorConsensus, event.ActorP2P, actorC.blockFirstRound)
 				// log.Debug("first round block:",block_firstround.BlockFirst)
-				// fmt.Println("first round block status root hash:",block_first.StateHash)
+				// fmt.Println("first round block status root hash:",blockFirst.StateHash)
 				log.Info("generate the first round block and send",actorC.blockFirstRound.BlockFirst.Height)
 
 				// for test 2018.07.27
@@ -632,7 +633,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				// change the statue
 				actorC.status = 4
 				// initial the received_signblkf_num to count the signatures for txs (i.e. the first round block)
-				received_signblkf_num = 0
+				actorC.receivedSignBlkFNum = 0
 				// set the timer for collecting the signature for txs (i.e. the first round block)
 				t2 := time.NewTimer(time.Second * waitResponseTime)
 				go func() {
@@ -925,7 +926,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				// add the incoming signature to signature preblock list
 				actorC.signatureBlkFList[peer_index].SigData = sigdata_in
 				actorC.signatureBlkFList[peer_index].PubKey = pubkey_in
-				received_signblkf_num ++
+				actorC.receivedSignBlkFNum ++
 				return
 			} else {
 				return
@@ -935,10 +936,10 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 
 	case SignTxTimeout:
 		// fmt.Println("received_signblkf_num:",received_signblkf_num)
-		log.Info("start to generate second round block",actorC.primaryTag, actorC.status,received_signblkf_num,int(2*len(actorC.PeersAddrList)/3),actorC.signatureBlkFList)
+		log.Info("start to generate second round block",actorC.primaryTag, actorC.status,actorC.receivedSignBlkFNum,int(2*len(actorC.PeersAddrList)/3),actorC.signatureBlkFList)
 		if actorC.primaryTag == 1 && actorC.status == 4 {
 			// check the number of the signatures of first-round block from peers
-			if received_signblkf_num >= int(2*len(actorC.PeersAddrList)/3) {
+			if actorC.receivedSignBlkFNum >= int(2*len(actorC.PeersAddrList)/3) {
 				// enough first-round block signatures, so generate the second-round(final) block
 				// 1. add the first-round block signatures into ConsensusData
 				pubkey_tag_b := []byte(pubKeyTag)
