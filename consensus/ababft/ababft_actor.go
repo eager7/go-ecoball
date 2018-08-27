@@ -54,12 +54,17 @@ type ActorAbabft struct {
 	NumPeers int
 	PeersAddrList []PeerAddrInfo       // Peer address information for consensus
 	PeersListAccount []PeerInfoAccount // Peer information for consensus
+
 	selfIndex int                       // the index of this peer in the peers list
 	currentRoundNum int                // current round number
-	currentHeightNum int               // current height, according to the blocks saved in the local ledger
-	currentLedger ledger.Ledger
-	currentHeader *types.Header // temporary parameters for the current block header, according to the blocks saved in the local ledger
-	currentHeaderData types.Header
+	currentHeightNum      int               // current height, according to the blocks saved in the local ledger
+	currentLedger         ledger.Ledger
+	currentHeader         *types.Header // temporary parameters for the current block header, according to the blocks saved in the local ledger
+	currentHeaderData     types.Header
+	signaturePreBlockList []common.Signature // list for saving the signatures for the previous block
+	signatureBlkFList     []common.Signature // list for saving the signatures for the first round block
+	blockFirstRound       BlockFirstRound    // temporary parameters for the first round block
+	blockSecondRound      BlockSecondRound   // temporary parameters for the second round block
 
 	verifiedHeight uint64
 	primaryTag int // 0: verification peer; 1: is the primary peer, who generate the block at current round;
@@ -88,14 +93,14 @@ const ThresholdRound = 60
 
 // var primary_tag int // 0: verification peer; 1: is the primary peer, who generate the block at current round;
 // var signature_preblock_list [][]byte // list for saving the signatures for the previous block
-var signature_preblock_list []common.Signature // list for saving the signatures for the previous block
+// var signature_preblock_list []common.Signature // list for saving the signatures for the previous block
 // var signature_BlkF_list [][]byte // list for saving the signatures for the first round block
-var signature_BlkF_list []common.Signature // list for saving the signatures for the first round block
-var block_firstround Block_FirstRound // temporary parameters for the first round block
-var block_secondround Block_SecondRound // temporary parameters for the second round block
+// var signature_BlkF_list []common.Signature // list for saving the signatures for the first round block
+// var block_firstround BlockFirstRound // temporary parameters for the first round block
+// var block_secondround BlockSecondRound // temporary parameters for the second round block
 // var currentheader *types.Header // temporary parameters for the current block header, according to the blocks saved in the local ledger
 // var currentheader_data types.Header
-var current_payload types.AbaBftData              // temporary parameters for current payload
+// var current_payload types.AbaBftData              // temporary parameters for current payload
 var received_signpre_num int                      // the number of received signatures for the previous block
 var cache_signature_preblk []pb.SignaturePreblock // cache the received signatures for the previous block
 var blockFirstCal *types.Block                    // cache the first-round block
@@ -178,7 +183,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				t_time := time.Now().UnixNano()
 				blockSolo,err = actorC.serviceAbabft.ledger.NewTxBlock(config.ChainHash, txs, conData, t_time)
 				blockSolo.SetSignature(&soloaccount)
-				block_secondround.Blocksecond = *blockSolo
+				actorC.blockSecondRound.BlockSecond = *blockSolo
 				// save (the ledger will broadcast the block after writing the block into the DB)
 				/*
 				if err = actorC.serviceAbabft.ledger.SaveTxBlock(blockSolo); err != nil {
@@ -278,10 +283,10 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 
 		fmt.Println("Peers_addr_list:",actorC.PeersAddrList)
 
-		signature_preblock_list = make([]common.Signature, len(actorC.PeersAddrList))
-		signature_BlkF_list = make([]common.Signature, len(actorC.PeersAddrList))
-		block_firstround = Block_FirstRound{}
-		block_secondround = Block_SecondRound{}
+		actorC.signaturePreBlockList = make([]common.Signature, len(actorC.PeersAddrList))
+		actorC.signatureBlkFList = make([]common.Signature, len(actorC.PeersAddrList))
+		actorC.blockFirstRound = BlockFirstRound{}
+		actorC.blockSecondRound = BlockSecondRound{}
 		// log.Debug("current_round_num:",current_round_num,Num_peers,Self_index)
 		// get the current round number of the block
 		// currentheader = current_ledger.GetCurrentHeader()
@@ -318,10 +323,11 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			//log.Warn("wrong ConsensusData Type")
 			return
 		}
+		/*
 		if v,ok:= actorC.currentHeader.ConsensusData.Payload.(* types.AbaBftData); ok {
 			current_payload = *v
 		}
-
+		*/
 		// todo
 		// the update of current_round_num
 		// current_round_num = int(current_payload.NumberRound)
@@ -362,13 +368,13 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			actorC.primaryTag = 0
 			actorC.status = 5
 			// broadcast the signaturePreblock and set up a timer for receiving the data
-			var signaturepre_send Signature_Preblock
-			signaturepre_send.Signature_preblock.PubKey = signaturePreblock.PubKey
-			signaturepre_send.Signature_preblock.SigData = signaturePreblock.SigData
+			var signaturepre_send SignaturePreBlock
+			signaturepre_send.SignPreBlock.PubKey = signaturePreblock.PubKey
+			signaturepre_send.SignPreBlock.SigData = signaturePreblock.SigData
 			// todo
 			// for the signature of previous block, maybe the round number is not needed
-			signaturepre_send.Signature_preblock.Round = uint32(actorC.currentRoundNum)
-			signaturepre_send.Signature_preblock.Height = uint32(actorC.currentHeader.Height)
+			signaturepre_send.SignPreBlock.Round = uint32(actorC.currentRoundNum)
+			signaturepre_send.SignPreBlock.Height = uint32(actorC.currentHeader.Height)
 			// broadcast
 			event.Send(event.ActorConsensus, event.ActorP2P, signaturepre_send)
 			// increase the round index
@@ -389,18 +395,18 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 		}
 		return
 
-	case Signature_Preblock:
-		log.Info("receive the preblock signature:", actorC.status,msg.Signature_preblock)
+	case SignaturePreBlock:
+		log.Info("receive the preblock signature:", actorC.status,msg.SignPreBlock)
 		if actorC.status == 102 {
 			event.Send(event.ActorNil,event.ActorConsensus,message.ABABFTStart{})
 		}
 		// the prime will verify the signature for the previous block
-		round_in := int(msg.Signature_preblock.Round)
-		height_in := int(msg.Signature_preblock.Height)
+		round_in := int(msg.SignPreBlock.Round)
+		height_in := int(msg.SignPreBlock.Height)
 		// log.Debug("current_round_num:",current_round_num,round_in)
 		if round_in >= actorC.currentRoundNum && actorC.status!=101 && actorC.status!= 102 {
-			// cache the Signature_Preblock
-			cache_signature_preblk = append(cache_signature_preblk,msg.Signature_preblock)
+			// cache the SignaturePreBlock
+			cache_signature_preblk = append(cache_signature_preblk,msg.SignPreBlock)
 			// in case that the signature for the previous block arrived bofore the corresponding block generator was born
 		}
 		if actorC.primaryTag == 1 && (actorC.status == 2 || actorC.status == 3){
@@ -435,49 +441,49 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					// to against the height cheat, do not change the actorC.status
 				} else {
 					// check the signature
-					pubkey_in := msg.Signature_preblock.PubKey// signaturepre_send.signaturePreblock.PubKey = signaturePreblock.PubKey
+					pubkey_in := msg.SignPreBlock.PubKey // signaturepre_send.signaturePreblock.PubKey = signaturePreblock.PubKey
 					// check the pubkey_in is in the peer list
-					var found_peer bool
-					found_peer = false
+					var foundPeer bool
+					foundPeer = false
 					var peer_index int
 
 					/*
 					for index,peer := range Peers_list {
 						if ok := bytes.Equal(peer.PublicKey, pubkey_in); ok == true {
-							found_peer = true
+							foundPeer = true
 							peer_index = index
 							break
 						}
 					}
 					*/
 					// change public key to account address
-					for index,peer_addr := range actorC.PeersAddrList {
-						peer_addr_in := common.AddressFromPubKey(pubkey_in)
-						if ok := bytes.Equal(peer_addr.AccAddress.Bytes(), peer_addr_in.Bytes()); ok == true {
-							found_peer = true
+					for index, peerAddr := range actorC.PeersAddrList {
+						peerAddrIns := common.AddressFromPubKey(pubkey_in)
+						if ok := bytes.Equal(peerAddr.AccAddress.Bytes(), peerAddrIns.Bytes()); ok == true {
+							foundPeer = true
 							peer_index = index
 							break
 						}
 					}
 
-					if found_peer == false {
+					if foundPeer == false {
 						// the signature is not from the peer in the list
 						return
 					}
 					// 1. check that signature in or not in list of
-					if signature_preblock_list[peer_index].SigData != nil {
+					if actorC.signaturePreBlockList[peer_index].SigData != nil {
 						// already receive the signature
 						return
 					}
 					// 2. verify the correctness of the signature
-					sigdata_in := msg.Signature_preblock.SigData
-					header_hash := actorC.currentHeader.Hash.Bytes()
-					var result_verify bool
-					result_verify, err = secp256k1.Verify(header_hash, sigdata_in, pubkey_in)
-					if result_verify == true {
+					sigDataIn := msg.SignPreBlock.SigData
+					headerHashes := actorC.currentHeader.Hash.Bytes()
+					var resultVerify bool
+					resultVerify, err = secp256k1.Verify(headerHashes, sigDataIn, pubkey_in)
+					if resultVerify == true {
 						// add the incoming signature to signature preblock list
-						signature_preblock_list[peer_index].SigData = sigdata_in
-						signature_preblock_list[peer_index].PubKey = pubkey_in
+						actorC.signaturePreBlockList[peer_index].SigData = sigDataIn
+						actorC.signaturePreBlockList[peer_index].PubKey = pubkey_in
 						received_signpre_num ++
 					} else {
 						return
@@ -531,7 +537,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					continue
 				}
 				// first check that signature in or not in list of
-				if signature_preblock_list[peer_index].SigData != nil {
+				if actorC.signaturePreBlockList[peer_index].SigData != nil {
 					// already receive the signature
 					continue
 				}
@@ -541,8 +547,8 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				result_verify, err = secp256k1.Verify(header_hash, sigdata_in, pubkey_in)
 				if result_verify == true {
 					// add the incoming signature to signature preblock list
-					signature_preblock_list[peer_index].SigData = sigdata_in
-					signature_preblock_list[peer_index].PubKey = pubkey_in
+					actorC.signaturePreBlockList[peer_index].SigData = sigdata_in
+					actorC.signaturePreBlockList[peer_index].PubKey = pubkey_in
 					received_signpre_num ++
 				} else {
 					continue
@@ -560,7 +566,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				// enough preblock signature, so generate the first-round block, only including the preblock signatures and
 				// prepare the ConsensusData
 				var signpre_send []common.Signature
-				for _,signpre := range signature_preblock_list {
+				for _,signpre := range actorC.signaturePreBlockList {
 					/*
 					if signpre != nil {
 						var sign_tmp common.Signature
@@ -605,16 +611,16 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				block_first,err = actorC.serviceAbabft.ledger.NewTxBlock(config.ChainHash, txs, conData, t_time)
 				block_first.SetSignature(actorC.serviceAbabft.account)
 				// broadcast the first-round block to peers for them to verify the transactions and wait for the corresponding signatures back
-				block_firstround.Blockfirst = *block_first
-				event.Send(event.ActorConsensus, event.ActorP2P, block_firstround)
-				// log.Debug("first round block:",block_firstround.Blockfirst)
+				actorC.blockFirstRound.BlockFirst = *block_first
+				event.Send(event.ActorConsensus, event.ActorP2P, actorC.blockFirstRound)
+				// log.Debug("first round block:",block_firstround.BlockFirst)
 				// fmt.Println("first round block status root hash:",block_first.StateHash)
-				log.Info("generate the first round block and send",block_firstround.Blockfirst.Height)
+				log.Info("generate the first round block and send",actorC.blockFirstRound.BlockFirst.Height)
 
 				// for test 2018.07.27
 				if TestTag == true {
-					event.Send(event.ActorNil,event.ActorConsensus,block_firstround)
-					// log.Debug("first round block:",block_firstround.Blockfirst.Header)
+					event.Send(event.ActorNil,event.ActorConsensus,actorC.blockFirstRound)
+					// log.Debug("first round block:",block_firstround.BlockFirst.Header)
 				}
 				// test end
 
@@ -651,7 +657,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			return
 		}
 
-	case Block_FirstRound:
+	case BlockFirstRound:
 		// for test 2018.07.27
 		if TestTag == true {
 			actorC.primaryTag = 0
@@ -660,11 +666,11 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 		}
 		// end of test
 
-		log.Info("current height and receive the first round block:",actorC.currentHeightNum, msg.Blockfirst.Header)
+		log.Info("current height and receive the first round block:",actorC.currentHeightNum, msg.BlockFirst.Header)
 
 		if actorC.primaryTag == 0 && (actorC.status == 2 || actorC.status == 5) {
 			// to verify the first round block
-			blockfirst_received := msg.Blockfirst
+			blockfirst_received := msg.BlockFirst
 			// the protocal type is ababft
 			if blockfirst_received.ConsensusData.Type == types.ConABFT {
 				data_preblk_received := blockfirst_received.ConsensusData.Payload.(*types.AbaBftData)
@@ -776,9 +782,9 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 						}
 					}
 					// 4. sign the received first-round block
-					var sign_blkf_send Signature_BlkF
-					sign_blkf_send.Signature_blkf.PubKey = actorC.serviceAbabft.account.PublicKey
-					sign_blkf_send.Signature_blkf.SigData,err = actorC.serviceAbabft.account.Sign(blockfirst_received.Header.Hash.Bytes())
+					var sign_blkf_send SignatureBlkF
+					sign_blkf_send.signatureBlkF.PubKey = actorC.serviceAbabft.account.PublicKey
+					sign_blkf_send.signatureBlkF.SigData,err = actorC.serviceAbabft.account.Sign(blockfirst_received.Header.Hash.Bytes())
 					// 5. broadcast the signature of the first round block
 					event.Send(event.ActorConsensus, event.ActorP2P, sign_blkf_send)
 					// 6. change the status
@@ -787,9 +793,9 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					// clean the cache_signature_preblk
 					cache_signature_preblk = make([]pb.SignaturePreblock,len(actorC.PeersAddrList)*2)
 					// send the received first-round block to other peers in case that network is not good
-					block_firstround.Blockfirst = blockfirst_received
-					event.Send(event.ActorConsensus,event.ActorP2P,block_firstround)
-					log.Info("generate the signature for first round block",block_firstround.Blockfirst.Height)
+					actorC.blockFirstRound.BlockFirst = blockfirst_received
+					event.Send(event.ActorConsensus,event.ActorP2P,actorC.blockFirstRound)
+					log.Info("generate the signature for first round block",actorC.blockFirstRound.BlockFirst.Height)
 
 					// for test 2018.07.31
 					if TestTag == true {
@@ -797,10 +803,10 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 						actorC.status = 4
 						// create the signature for first-round block for test
 						for i:=0;i<actorC.NumPeers;i++ {
-							var signBlkfSend1 Signature_BlkF
-							signBlkfSend1.Signature_blkf.PubKey = Accounts_test[i].PublicKey
-							signBlkfSend1.Signature_blkf.SigData,err = Accounts_test[i].Sign(blockfirst_received.Header.Hash.Bytes())
-							// fmt.Println("Accounts_test:",i,Accounts_test[i].PublicKey,signBlkfSend1.Signature_blkf)
+							var signBlkfSend1 SignatureBlkF
+							signBlkfSend1.signatureBlkF.PubKey = Accounts_test[i].PublicKey
+							signBlkfSend1.signatureBlkF.SigData,err = Accounts_test[i].Sign(blockfirst_received.Header.Hash.Bytes())
+							// fmt.Println("Accounts_test:",i,Accounts_test[i].PublicKey,signBlkfSend1.signatureBlkF)
 							event.Send(event.ActorNil, event.ActorConsensus, signBlkfSend1)
 						}
 						fmt.Println("blockfirst_received.Header.Hash:",data_preblk_received.NumberRound,blockfirst_received.Header.Hash, blockfirst_received.Header.MerkleHash,blockfirst_received.Header.StateHash)
@@ -869,13 +875,13 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			return
 		}
 
-	case Signature_BlkF:
-		// fmt.Println("Signature_BlkF:",received_signblkf_num,msg.Signature_blkf)
+	case SignatureBlkF:
+		// fmt.Println("SignatureBlkF:",received_signblkf_num,msg.signatureBlkF)
 		// the prime will verify the signatures of first-round block from peers
 		if actorC.primaryTag == 1 && actorC.status == 4 {
 			// verify the signature
 			// 1. check the peer in the peers list
-			pubkey_in := msg.Signature_blkf.PubKey
+			pubkey_in := msg.signatureBlkF.PubKey
 			var found_peer bool
 			found_peer = false
 			var peer_index int
@@ -903,18 +909,18 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				return
 			}
 			// 2. verify the correctness of the signature
-			if signature_BlkF_list[peer_index].SigData != nil {
+			if actorC.signatureBlkFList[peer_index].SigData != nil {
 				// already receive the signature
 				return
 			}
-			sigdata_in := msg.Signature_blkf.SigData
-			header_hash := block_firstround.Blockfirst.Header.Hash.Bytes()
+			sigdata_in := msg.signatureBlkF.SigData
+			header_hash := actorC.blockFirstRound.BlockFirst.Header.Hash.Bytes()
 			var result_verify bool
 			result_verify, err = secp256k1.Verify(header_hash, sigdata_in, pubkey_in)
 			if result_verify == true {
 				// add the incoming signature to signature preblock list
-				signature_BlkF_list[peer_index].SigData = sigdata_in
-				signature_BlkF_list[peer_index].PubKey = pubkey_in
+				actorC.signatureBlkFList[peer_index].SigData = sigdata_in
+				actorC.signatureBlkFList[peer_index].PubKey = pubkey_in
 				received_signblkf_num ++
 				return
 			} else {
@@ -925,7 +931,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 
 	case SignTxTimeout:
 		// fmt.Println("received_signblkf_num:",received_signblkf_num)
-		log.Info("start to generate second round block",actorC.primaryTag, actorC.status,received_signblkf_num,int(2*len(actorC.PeersAddrList)/3),signature_BlkF_list)
+		log.Info("start to generate second round block",actorC.primaryTag, actorC.status,received_signblkf_num,int(2*len(actorC.PeersAddrList)/3),actorC.signatureBlkFList)
 		if actorC.primaryTag == 1 && actorC.status == 4 {
 			// check the number of the signatures of first-round block from peers
 			if received_signblkf_num >= int(2*len(actorC.PeersAddrList)/3) {
@@ -937,11 +943,11 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				sign_tag.PubKey = pubkey_tag_b
 				sign_tag.SigData = signdata_tag_b
 
-				ababftdata := block_firstround.Blockfirst.ConsensusData.Payload.(*types.AbaBftData)
+				ababftdata := actorC.blockFirstRound.BlockFirst.ConsensusData.Payload.(*types.AbaBftData)
 				// prepare the ConsensusData
 				// add the tag to distinguish preblock signature and second round signature
 				ababftdata.PreBlockSignatures = append(ababftdata.PreBlockSignatures, sign_tag)
-				for _,signblkf := range signature_BlkF_list {
+				for _,signblkf := range actorC.signatureBlkFList {
 					/*
 					if signblkf != nil {
 						var sign_tmp common.Signature
@@ -962,12 +968,12 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(actorC.currentRoundNum),ababftdata.PreBlockSignatures}}
 				// 2. generate the second-round(final) block
 				var block_second types.Block
-				block_second,err =  actorC.updateBlock(block_firstround.Blockfirst, conData)
+				block_second,err =  actorC.updateBlock(actorC.blockFirstRound.BlockFirst, conData)
 				block_second.SetSignature(actorC.serviceAbabft.account)
 				// fmt.Println("block_second:",block_second.Header)
 
 				// 3. broadcast the second-round(final) block
-				block_secondround.Blocksecond = block_second
+				actorC.blockSecondRound.BlockSecond = block_second
 				// the ledger will multicast the block_secondround after the block is saved in the DB
 				// event.Send(event.ActorConsensus, event.ActorP2P, block_secondround)
 
@@ -976,7 +982,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					for i:=0;i<actorC.NumPeers;i++ {
 						actorC.primaryTag = 0
 						actorC.status = 6
-						event.Send(event.ActorNil, event.ActorConsensus, block_secondround)
+						event.Send(event.ActorNil, event.ActorConsensus, actorC.blockSecondRound)
 					}
 					time.Sleep(time.Second * 10)
 					return
@@ -1035,7 +1041,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			}
 		}
 
-	case Block_SecondRound:
+	case BlockSecondRound:
 		// for test 2018.08.09
 		if TestTag == true {
 			fmt.Println("get second round block")
@@ -1048,13 +1054,13 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 		if actorC.status == 102 || actorC.status == 101 {
 			if actorC.status == 102 {
 				// solo peer
-				blocksecond_received := msg.Blocksecond
+				blocksecond_received := msg.BlockSecond
 				log.Info("ababbt solo block height vs current_height_num:",blocksecond_received.Header.Height,actorC.currentHeightNum)
 				if int(blocksecond_received.Header.Height) <= actorC.currentHeightNum {
 					return
 				} else if int(blocksecond_received.Header.Height) == (actorC.currentHeightNum+1) {
 					// check and save
-					blocksecond_received := msg.Blocksecond
+					blocksecond_received := msg.BlockSecond
 					if blocksecond_received.ConsensusData.Type == types.ConABFT {
 						data_blks_received := blocksecond_received.ConsensusData.Payload.(*types.AbaBftData)
 						// check the signature comes from the root
@@ -1112,24 +1118,24 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 
 		if actorC.primaryTag == 0 && (actorC.status == 6 || actorC.status == 2 || actorC.status == 5) {
 			// to verify the first round block
-			blocksecond_received := msg.Blocksecond
+			blockSecondReceived := msg.BlockSecond
 			// check the protocal type is ababft
-			if blocksecond_received.ConsensusData.Type == types.ConABFT {
-				data_blks_received := blocksecond_received.ConsensusData.Payload.(*types.AbaBftData)
+			if blockSecondReceived.ConsensusData.Type == types.ConABFT {
+				data_blks_received := blockSecondReceived.ConsensusData.Payload.(*types.AbaBftData)
 
 				// for test 2018.08.09
 				if TestTag == true {
 					actorC.verifiedHeight = uint64(actorC.currentHeightNum) - 1
-					fmt.Println("blocksecond_received.Header.Height:",blocksecond_received.Header.Height,actorC.verifiedHeight,actorC.currentHeightNum)
+					fmt.Println("blockSecondReceived.Header.Height:", blockSecondReceived.Header.Height,actorC.verifiedHeight,actorC.currentHeightNum)
 				}
 				//
 
-				log.Info("received secondround block:",blocksecond_received.Header.Height,actorC.verifiedHeight,actorC.currentHeightNum,data_blks_received.NumberRound,blocksecond_received.Header)
+				log.Info("received secondround block:", blockSecondReceived.Header.Height,actorC.verifiedHeight,actorC.currentHeightNum,data_blks_received.NumberRound, blockSecondReceived.Header)
 				// 1. check the round number and height
 				// 1a. current round number
-				if data_blks_received.NumberRound < uint32(actorC.currentRoundNum) || blocksecond_received.Header.Height <= uint64(actorC.currentHeightNum) {
+				if data_blks_received.NumberRound < uint32(actorC.currentRoundNum) || blockSecondReceived.Header.Height <= uint64(actorC.currentHeightNum) {
 					return
-				} else if (blocksecond_received.Header.Height-2) > actorC.verifiedHeight {
+				} else if (blockSecondReceived.Header.Height-2) > actorC.verifiedHeight {
 					// send synchronization message
 					var requestsyn REQSyn
 					requestsyn.Reqsyn.PubKey = actorC.serviceAbabft.account.PublicKey
@@ -1146,7 +1152,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					// here, the add new block into the ledger, data_blks_received.NumberRound >= current_round_num is ok instead of data_blks_received.NumberRound == current_round_num
 					// 1b. the round number corresponding to the block generator
 					index_g := (int(data_blks_received.NumberRound)-1) % actorC.NumPeers + 1
-					pukey_g_in := blocksecond_received.Signatures[0].PubKey
+					pukey_g_in := blockSecondReceived.Signatures[0].PubKey
 					var index_g_in int
 					index_g_in = -1
 					/*
@@ -1171,7 +1177,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					}
 					// 1c. check the block header, except the consensus data
 					var valid_blk bool
-					valid_blk,err = actorC.verifyHeader(&blocksecond_received, int(data_blks_received.NumberRound), *(actorC.currentHeader))
+					valid_blk,err = actorC.verifyHeader(&blockSecondReceived, int(data_blks_received.NumberRound), *(actorC.currentHeader))
 					// todo
 					// can check the hash and statdb and merker root instead of the total head to speed up
 					if valid_blk==false {
@@ -1180,7 +1186,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					}
 					// 2. check the signatures ( for both previous and current blocks) in ConsensusData
 					preblkhash := actorC.currentHeader.Hash
-					valid_blk, err = actorC.verifySignatures(data_blks_received, preblkhash, blocksecond_received.Header)
+					valid_blk, err = actorC.verifySignatures(data_blks_received, preblkhash, blockSecondReceived.Header)
 					if valid_blk==false {
 						println("previous and first-round blocks signatures check fail")
 						return
@@ -1188,34 +1194,34 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 
 					// for test 2018.08.01
 					if TestTag == true {
-						fmt.Println("received and verified second round:", blocksecond_received.Height, blocksecond_received.Header.Hash, blocksecond_received.MerkleHash, blocksecond_received.StateHash)
+						fmt.Println("received and verified second round:", blockSecondReceived.Height, blockSecondReceived.Header.Hash, blockSecondReceived.MerkleHash, blockSecondReceived.StateHash)
 						// return
 					}
 					// test end
 
 					// 3.save the second-round block into the ledger
 					/*
-					if err = actorC.serviceAbabft.ledger.SaveTxBlock(&blocksecond_received); err != nil {
+					if err = actorC.serviceAbabft.ledger.SaveTxBlock(&blockSecondReceived); err != nil {
 						// log.Error("save block error:", err)
 						println("save block error:", err)
 						return
 					}
 					*/
 
-					if err := event.Send(event.ActorNil, event.ActorLedger, &blocksecond_received); err != nil {
+					if err := event.Send(event.ActorNil, event.ActorLedger, &blockSecondReceived); err != nil {
 						log.Fatal(err)
 						// return
 					}
-					if err := event.Send(event.ActorNil, event.ActorP2P, &blocksecond_received); err != nil {
+					if err := event.Send(event.ActorNil, event.ActorP2P, &blockSecondReceived); err != nil {
 						log.Fatal(err)
 						// return
 					}
 					// 4. change status
-					// currentheader = blocksecond_received.Header
-					actorC.currentHeaderData = *(blocksecond_received.Header)
+					// currentheader = blockSecondReceived.Header
+					actorC.currentHeaderData = *(blockSecondReceived.Header)
 					actorC.currentHeader = &actorC.currentHeaderData
 
-					actorC.verifiedHeight = blocksecond_received.Height - 1
+					actorC.verifiedHeight = blockSecondReceived.Height - 1
 					actorC.status = 8
 					actorC.primaryTag = 0
 					// update the current_round_num
@@ -1223,12 +1229,12 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 						actorC.currentRoundNum = int(data_blks_received.NumberRound)
 					}
 
-					fmt.Println("Block_SecondRound,current_round_num:",actorC.currentRoundNum)
+					fmt.Println("BlockSecondRound,current_round_num:",actorC.currentRoundNum)
 					// start/enter the next turn
 					event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
 					// 5. broadcast the received second-round block, which has been checked valid
 					// to let other peer know this block
-					block_secondround.Blocksecond = blocksecond_received
+					actorC.blockSecondRound.BlockSecond = blockSecondReceived
 					// as the ledger will multicast the block after the block is saved in DB, so following code is not need any more
 					// event.Send(event.ActorConsensus, event.ActorP2P, block_secondround)
 					return
@@ -1294,7 +1300,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			return
 		}
 		// 3. send the found /blocks
-		var blksyn_send Block_Syn
+		var blksyn_send BlockSyn
 		blksyn_send.Blksyn.BlksynV,err = blk_syn_v.Blk2BlkTx()
 		if err != nil {
 			log.Debug("block_v to blockTx transformation fails")
@@ -1369,7 +1375,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			log.Info("send the required solo block:", blkSynSolo.Height)
 		}
 		return
-	case Block_Syn:
+	case BlockSyn:
 		// for test 2018.08.08
 		if TestTag == true {
 			syn_status = 1
