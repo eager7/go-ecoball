@@ -87,7 +87,7 @@ func runNode(c *cli.Context) error {
 	case "ABABFT":
 		var acc account.Account
 		acc = config.Worker
-		serviceConsensus, _ := ababft.Service_ababft_gen(l, txPool, &acc)
+		serviceConsensus, _ := ababft.ServiceAbabftGen(l, txPool, &acc)
 		println("build the ababft service")
 		serviceConsensus.Start()
 		println("start the ababft service")

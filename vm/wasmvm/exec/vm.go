@@ -56,7 +56,7 @@ type VM struct {
 
 	module  *wasm.Module
 	globals []uint64
-	memory  []byte
+	Memmanage
 	funcs   []function
 
 	funcTable [256]func()
@@ -85,8 +85,33 @@ func NewVM(module *wasm.Module) (*VM, error) {
 		if len(module.Memory.Entries) > 1 {
 			return nil, ErrMultipleLinearMemories
 		}
+		vm.Memmanage.blocks = make(map[int]*Block)
+		vm.Memmanage.allocatedBytes = -1
 		vm.memory = make([]byte, uint(module.Memory.Entries[0].Limits.Initial)*wasmPageSize)
 		copy(vm.memory, module.LinearMemoryIndexSpace[0])
+	}
+
+	if module.Data != nil {
+		var allocated int
+		var length int
+		for _, entry := range module.Data.Entries {
+			val, err := module.ExecInitExpr(entry.Offset)
+			if err != nil{
+				return nil,err
+			}
+			offset, ok := val.(int32)
+			if !ok {
+				return nil, errors.New("invalid data index")
+			}
+			vm.Memmanage.blocks[int(offset)] = &Block{ptype: DString, size: len(entry.Data)}
+			length = int(offset) + len(entry.Data)
+			if length > allocated {
+				allocated = length
+			}
+		}
+		vm.Memmanage.allocatedBytes= allocated
+	} else {
+		vm.Memmanage.allocatedBytes = -1
 	}
 
 	vm.funcs = make([]function, len(module.FunctionIndexSpace))
@@ -162,6 +187,11 @@ func NewVM(module *wasm.Module) (*VM, error) {
 // Memory returns the linear memory space for the VM.
 func (vm *VM) Memory() []byte {
 	return vm.memory
+}
+
+// Memory returns the linear memory space for the VM.
+func (vm *VM) Mmanager() *Memmanage {
+	return &vm.Memmanage
 }
 
 func (vm *VM) pushBool(v bool) {
@@ -406,12 +436,38 @@ type Process struct {
 	vm *VM
 }
 
+func (proc *Process) VMmalloc(size int, ptype DataType)(int, error) {
+	manage := proc.vm.Mmanager()
+	return manage.Malloc(size, ptype)
+}
+
+func (proc *Process) VMSetBlock(val interface{}) (int, error) {
+	manage := proc.vm.Mmanager()
+	return manage.SetBlock(val)
+}
+
+func (proc *Process) VMGetSize(addr int) (int, error) {
+	manage := proc.vm.Mmanager()
+	return manage.GetBlockSize(addr)
+}
+
+func (proc *Process) VMGetData(addr int) ([]byte, error) {
+	manage := proc.vm.Mmanager()
+	return manage.GetBlockData(addr)
+}
+
+func (proc *Process) VMSetData(addr int, val []byte) (int, error) {
+	manage := proc.vm.Mmanager()
+	length, err := manage.SetBlockData(addr, val)
+	return length,err
+}
+
 // NewProcess creates a VM interface object for host functions
 func NewProcess(vm *VM) *Process {
 	return &Process{vm: vm}
 }
 
-func (proc *Process) LoadAt(off uint32)(out []byte) {
+func (proc *Process) LoadAt(off int)(out []byte) {
 	mem := proc.vm.Memory()
 	data := mem[off:]
 	return data
@@ -419,10 +475,10 @@ func (proc *Process) LoadAt(off uint32)(out []byte) {
 
 // ReadAt implements the ReaderAt interface: it copies into p
 // the content of memory at offset off.
-func (proc *Process) ReadAt(p []byte, off uint32, length uint32) (error) {
+func (proc *Process) ReadAt(p []byte, off int, length int) (error) {
 	mem := proc.vm.Memory()
 	var err error
-	if len(mem) < (int)(length +off) {
+	if len(mem) < length +off {
 		err = errors.New("too long")
 		return err
 	}
@@ -433,11 +489,11 @@ func (proc *Process) ReadAt(p []byte, off uint32, length uint32) (error) {
 
 // WriteAt implements the WriterAt interface: it writes the content of p
 // into the VM memory at offset off.
-func (proc *Process) WriteAt(p []byte, off uint32, length uint32) (error) {
+func (proc *Process) WriteAt(p []byte, off int, length int) (error) {
 	mem := proc.vm.Memory()
 
 	var err error
-	if len(mem) < (int)(length +off) {
+	if len(mem) < length +off {
 		err = errors.New("too long")
 		return err
 	}

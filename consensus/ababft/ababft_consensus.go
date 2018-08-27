@@ -31,60 +31,60 @@ import (
 
 // in this version, the peers take turns to generate the block
 const (
-	WAIT_RESPONSE_TIME = 2
+	waitResponseTime = 2
 )
 
-type State_ababft byte
+type stateAbabft byte
 const (
-	Initialization      State_ababft = 0x00
-	Primary             State_ababft = 0x01
-	Backup              State_ababft = 0x02
+	Initialization stateAbabft = 0x00
+	Primary        stateAbabft = 0x01
+	Backup         stateAbabft = 0x02
 )
 
 var selfaccountname common.AccountName
 var soloaccount account.Account
 
-type Service_ababft struct {
-	Actor *Actor_ababft // save the actor object
+type ServiceAbabft struct {
+	Actor *ActorAbabft // save the actor object
 	pid   *actor.PID
 	ledger ledger.Ledger
 	account *account.Account
 	txPool *txpool.TxPool
 }
 
-type Peer_info struct {
+type PeerInfo struct {
 	PublicKey  []byte
 	Index      int
 }
 
-type Peer_addr_info struct {
+type PeerAddrInfo struct {
 	AccAdress  common.Address
 	Index      int
 }
 
-type Peer_info_account struct {
+type PeerInfoAccount struct {
 	Accountname common.AccountName
 	Index       int
 }
 
-func Service_ababft_gen(l ledger.Ledger, txPool *txpool.TxPool, account *account.Account) (service_ababft *Service_ababft, err error) {
+func ServiceAbabftGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.Account) (serviceAbabft *ServiceAbabft, err error) {
 	var pid *actor.PID
 
-	service_ababft = new(Service_ababft)
+	serviceAbabft = new(ServiceAbabft)
 
-	actor_ababft := &Actor_ababft{}
-	pid, err = Actor_ababft_gen(actor_ababft)
+	actorAbabft := &ActorAbabft{}
+	pid, err = Actor_ababft_gen(actorAbabft)
 	if err != nil {
 		return nil, err
 	}
-	actor_ababft.pid = pid
-	actor_ababft.status = 1
-	actor_ababft.service_ababft = service_ababft
-	service_ababft.Actor = actor_ababft
-	service_ababft.pid = pid
-	service_ababft.ledger = l
-	service_ababft.account = account
-	service_ababft.txPool = txPool
+	actorAbabft.pid = pid
+	actorAbabft.status = 1
+	actorAbabft.serviceAbabft = serviceAbabft
+	serviceAbabft.Actor = actorAbabft
+	serviceAbabft.pid = pid
+	serviceAbabft.ledger = l
+	serviceAbabft.account = account
+	serviceAbabft.txPool = txPool
 
 	current_ledger = l
 	primary_tag = 0
@@ -95,10 +95,10 @@ func Service_ababft_gen(l ledger.Ledger, txPool *txpool.TxPool, account *account
 	// cache the root account for solo mode
 	soloaccount = config.Root
 
-	return service_ababft, err
+	return serviceAbabft, err
 }
 
-func (this *Service_ababft) Start() error {
+func (serviceAbabft *ServiceAbabft) Start() error {
 	var err error
 	// start the ababft service
 	// build the peers list
@@ -108,62 +108,11 @@ func (this *Service_ababft) Start() error {
 	currentheader = &currentheader_data
 	currentheader_data = *(current_ledger.GetCurrentHeader(config.ChainHash))
 
-	/*
-	// todo start
-	// the following code is just temporary, and will be replaced later
-	Num_peers = 3
-	Peers_list = make([]Peer_info, Num_peers)
-	var Peers_list_t []string
-	Peers_list_t[0] = string(config.Worker1.PublicKey)
-	Peers_list_t[1] = string(config.Worker2.PublicKey)
-	Peers_list_t[2] = string(config.Worker3.PublicKey)
-	// sort the peers as list
-	sort.Strings(Peers_list_t)
-
-	for i := 0; i < Num_peers; i++ {
-		Peers_list[i].PublicKey = []byte(Peers_list_t[i])
-		Peers_list[i].Index = i
-	}
-	// set this account as the first worker (temporary code)
-	Self_index = Peers_list[0].Index
-	this.account.PublicKey = Peers_list[0].PublicKey
-	this.account.PrivateKey = config.Worker1.PrivateKey
-	// todo end
-	*/
-
-	/*
-	Num_peers = len(config.PeerIndex)
-	Peers_list = make([]Peer_info, Num_peers)
-	for i := 0; i < Num_peers; i++ {
-		Peers_list[i].PublicKey =  []byte(config.PeerList[i])
-		Peers_list[i].Index, err = strconv.Atoi(config.PeerIndex[i])
-		//fmt.Println("peer information:", i, Peers_list[i].PublicKey, Peers_list[i].index)
-		if bytes.Equal(Peers_list[i].PublicKey,this.account.PublicKey) {
-			Self_index = Peers_list[i].Index
-		}
-	}
-	*/
-	/*
-	Num_peers = len(Peers_list)
-	var Peers_list_t []string
-	for i := 0; i < Num_peers; i++ {
-		Peers_list_t = append(Peers_list_t,string(Peers_list[i].PublicKey))
-	}
-	// sort the peers as list
-	sort.Strings(Peers_list_t)
-	for i := 0; i < Num_peers; i++ {
-		Peers_list[i].PublicKey = []byte(Peers_list_t[i])
-		Peers_list[i].Index = i + 1
-		if ok := bytes.Equal(Peers_list[i].PublicKey,this.account.PublicKey); ok== true {
-			Self_index = i + 1
-		}
-	}
-	*/
 	log.Debug("service start")
 	return err
 }
 
-func (this *Service_ababft) Stop() error {
+func (serviceAbabft *ServiceAbabft) Stop() error {
 	// stop the ababft
 	return nil
 }
