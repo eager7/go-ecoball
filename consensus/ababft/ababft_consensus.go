@@ -45,7 +45,7 @@ var selfaccountname common.AccountName
 var soloaccount account.Account
 
 type ServiceABABFT struct {
-	Actor *ActorAbabft // save the actor object
+	Actor *ActorABABFT // save the actor object
 	pid   *actor.PID
 	ledger ledger.Ledger
 	account *account.Account
@@ -72,14 +72,14 @@ func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 
 	serviceABABFT = new(ServiceABABFT)
 
-	actorABABFT := &ActorAbabft{}
-	pid, err = ActorAbabftGen(actorABABFT)
+	actorABABFT := &ActorABABFT{}
+	pid, err = ActorABABFTGen(actorABABFT)
 	if err != nil {
 		return nil, err
 	}
 	actorABABFT.pid = pid
 	actorABABFT.status = 1
-	actorABABFT.serviceAbabft = serviceABABFT
+	actorABABFT.serviceABABFT = serviceABABFT
 	serviceABABFT.Actor = actorABABFT
 	serviceABABFT.pid = pid
 	serviceABABFT.ledger = l
