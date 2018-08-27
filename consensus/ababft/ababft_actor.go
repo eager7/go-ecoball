@@ -52,6 +52,7 @@ type ActorAbabft struct {
 	pid           *actor.PID // actor pid
 	serviceAbabft *ServiceAbabft
 	NumPeers int
+	PeersAddrList []PeerAddrInfo       // Peer address information for consensus
 }
 
 const(
@@ -67,8 +68,8 @@ const TestTag = false
 const ThresholdRound = 60
 
 // var Num_peers int
-var Peers_list []PeerInfo                // Peer information for consensus
-var Peers_addr_list []PeerAddrInfo       // Peer address information for consensus
+// var Peers_list []PeerInfo                // Peer information for consensus
+// var Peers_addr_list []PeerAddrInfo       // Peer address information for consensus
 var Peers_list_account []PeerInfoAccount // Peer information for consensus
 var Self_index int                       // the index of this peer in the peers list
 var current_round_num int                // current round number
@@ -233,7 +234,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 		sort.Strings(Peers_list_account_t)
 
 		Peers_list_account = make([]PeerInfoAccount, actorC.NumPeers)
-		Peers_addr_list = make([]PeerAddrInfo, actorC.NumPeers)
+		actorC.PeersAddrList = make([]PeerAddrInfo, actorC.NumPeers)
 		for i := 0; i < actorC.NumPeers; i++ {
 			Peers_list_account[i].Accountname = common.NameToIndex(Peers_list_account_t[i])
 			Peers_list_account[i].Index = i + 1
@@ -253,11 +254,11 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				// the next check can be delete
 				if ok := bytes.Equal(acc_addr_info.Keys[addr_key.HexString()].Actor.Bytes(), addr_key.Bytes()); ok == true {
 					// save the address instead of pukey
-					Peers_addr_list[i].AccAdress = addr_key
+					actorC.PeersAddrList[i].AccAdress = addr_key
 					break;
 				}
 			}
-			Peers_addr_list[i].Index = i + 1
+			actorC.PeersAddrList[i].Index = i + 1
 
 			if uint64(selfaccountname) == uint64(Peers_list_account[i].Accountname) {
 				// update Self_index, i.e. the corresponding index in the peer address list
@@ -265,10 +266,10 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			}
 		}
 
-		fmt.Println("Peers_addr_list:",Peers_addr_list)
+		fmt.Println("Peers_addr_list:",actorC.PeersAddrList)
 
-		signature_preblock_list = make([]common.Signature, len(Peers_addr_list))
-		signature_BlkF_list = make([]common.Signature, len(Peers_addr_list))
+		signature_preblock_list = make([]common.Signature, len(actorC.PeersAddrList))
+		signature_BlkF_list = make([]common.Signature, len(actorC.PeersAddrList))
 		block_firstround = Block_FirstRound{}
 		block_secondround = Block_SecondRound{}
 		// log.Debug("current_round_num:",current_round_num,Num_peers,Self_index)
@@ -440,7 +441,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					}
 					*/
 					// change public key to account address
-					for index,peer_addr := range Peers_addr_list {
+					for index,peer_addr := range actorC.PeersAddrList {
 						peer_addr_in := common.AddressFromPubKey(pubkey_in)
 						if ok := bytes.Equal(peer_addr.AccAdress.Bytes(), peer_addr_in.Bytes()); ok == true {
 							found_peer = true
@@ -506,7 +507,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				}
 				*/
 				// change public key to account address
-				for index,peer_addr := range Peers_addr_list {
+				for index,peer_addr := range actorC.PeersAddrList {
 					peer_addr_in := common.AddressFromPubKey(pubkey_in)
 					if ok := bytes.Equal(peer_addr.AccAdress.Bytes(), peer_addr_in.Bytes()); ok == true {
 						found_peer = true
@@ -540,12 +541,12 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			}
 			// clean the cache_signature_preblk
 			// cache_signature_preblk = make([]pb.SignaturePreblock,len(Peers_list)*2)
-			cache_signature_preblk = make([]pb.SignaturePreblock,len(Peers_addr_list)*2)
+			cache_signature_preblk = make([]pb.SignaturePreblock,len(actorC.PeersAddrList)*2)
 			// fmt.Println("valid sign_pre:",received_signpre_num)
 			// fmt.Println("current status root hash:",currentheader.StateHash)
 
 			// 2. check the number of the preblock signature
-			if received_signpre_num >= int(len(Peers_addr_list)/3+1) {
+			if received_signpre_num >= int(len(actorC.PeersAddrList)/3+1) {
 				// enough preblock signature, so generate the first-round block, only including the preblock signatures and
 				// prepare the ConsensusData
 				var signpre_send []common.Signature
@@ -692,7 +693,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					}
 					*/
 					// change public key to account address
-					for _, peer_addr := range Peers_addr_list {
+					for _, peer_addr := range actorC.PeersAddrList {
 						peer_addr_in := common.AddressFromPubKey(pukey_g_in)
 						if ok := bytes.Equal(peer_addr.AccAdress.Bytes(), peer_addr_in.Bytes()); ok == true {
 							index_g_in = int(peer_addr.Index)
@@ -728,7 +729,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 						}
 						*/
 						// change public key to account address
-						for _, peer_addr := range Peers_addr_list {
+						for _, peer_addr := range actorC.PeersAddrList {
 							peer_addr_in := common.AddressFromPubKey(sign_preblk.PubKey)
 							if ok := bytes.Equal(peer_addr.AccAdress.Bytes(), peer_addr_in.Bytes()); ok == true {
 								peerin_tag = true
@@ -750,7 +751,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 						}
 					}
 					// 2c. check the valid signature number
-					if num_verified < int(len(Peers_addr_list)/3+1){
+					if num_verified < int(len(actorC.PeersAddrList)/3+1){
 						// not enough signature
 						fmt.Println("not enough signature for second round block")
 						return
@@ -774,7 +775,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					actorC.status = 6
 					// fmt.Println("sign_blkf_send:",sign_blkf_send)
 					// clean the cache_signature_preblk
-					cache_signature_preblk = make([]pb.SignaturePreblock,len(Peers_addr_list)*2)
+					cache_signature_preblk = make([]pb.SignaturePreblock,len(actorC.PeersAddrList)*2)
 					// send the received first-round block to other peers in case that network is not good
 					block_firstround.Blockfirst = blockfirst_received
 					event.Send(event.ActorConsensus,event.ActorP2P,block_firstround)
@@ -878,7 +879,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			}
 			*/
 			// change public key to account address
-			for index,peer_addr := range Peers_addr_list {
+			for index,peer_addr := range actorC.PeersAddrList {
 				peer_addr_in := common.AddressFromPubKey(pubkey_in)
 				if ok := bytes.Equal(peer_addr.AccAdress.Bytes(), peer_addr_in.Bytes()); ok == true {
 					found_peer = true
@@ -914,10 +915,10 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 
 	case SignTxTimeout:
 		// fmt.Println("received_signblkf_num:",received_signblkf_num)
-		log.Info("start to generate second round block",primary_tag, actorC.status,received_signblkf_num,int(2*len(Peers_addr_list)/3),signature_BlkF_list)
+		log.Info("start to generate second round block",primary_tag, actorC.status,received_signblkf_num,int(2*len(actorC.PeersAddrList)/3),signature_BlkF_list)
 		if primary_tag == 1 && actorC.status == 4 {
 			// check the number of the signatures of first-round block from peers
-			if received_signblkf_num >= int(2*len(Peers_addr_list)/3) {
+			if received_signblkf_num >= int(2*len(actorC.PeersAddrList)/3) {
 				// enough first-round block signatures, so generate the second-round(final) block
 				// 1. add the first-round block signatures into ConsensusData
 				pubkey_tag_b := []byte(pubkeyTag)
@@ -1147,7 +1148,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					}
 					*/
 					// change public key to account address
-					for _, peer_addr := range Peers_addr_list {
+					for _, peer_addr := range actorC.PeersAddrList {
 						peer_addr_in := common.AddressFromPubKey(pukey_g_in)
 						if ok := bytes.Equal(peer_addr.AccAdress.Bytes(), peer_addr_in.Bytes()); ok == true {
 							index_g_in = int(peer_addr.Index)
@@ -1594,7 +1595,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 		}
 		*/
 		// change public key to account address
-		for _, peer_addr := range Peers_addr_list {
+		for _, peer_addr := range actorC.PeersAddrList {
 			peer_addr_in := common.AddressFromPubKey(pubkey_in)
 			if ok := bytes.Equal(peer_addr.AccAdress.Bytes(), peer_addr_in.Bytes()); ok == true {
 				// legal peer
@@ -1624,7 +1625,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				total_count = 0
 				for i := max_r-current_round_num; i > 0; i-- {
 					total_count = total_count + count_r[i]
-					if total_count >= int(2*len(Peers_addr_list)/3) {
+					if total_count >= int(2*len(actorC.PeersAddrList)/3) {
 						// reset the round number
 						current_round_num += i
 						// start/enter the next turn
@@ -1742,7 +1743,7 @@ func (actor_c *ActorAbabft) update_block(block_first types.Block, condata types.
 	return block_second,err
 }
 
-func (actor_c *ActorAbabft) verify_signatures(data_blks_received *types.AbaBftData, preblkhash common.Hash, curheader *types.Header) (bool,error){
+func (actorC *ActorAbabft) verify_signatures(data_blks_received *types.AbaBftData, preblkhash common.Hash, curheader *types.Header) (bool,error){
 	var err error
 	// 1. devide the signatures into two part
 	var sign_blks_preblk []common.Signature
@@ -1783,7 +1784,7 @@ func (actor_c *ActorAbabft) verify_signatures(data_blks_received *types.AbaBftDa
 		}
 		*/
 		// change public key to account address
-		for _, peer_addr := range Peers_addr_list {
+		for _, peer_addr := range actorC.PeersAddrList {
 			peer_addr_in := common.AddressFromPubKey(sign_preblk.PubKey)
 			if ok := bytes.Equal(peer_addr.AccAdress.Bytes(), peer_addr_in.Bytes()); ok == true {
 				peerin_tag = true
@@ -1805,7 +1806,7 @@ func (actor_c *ActorAbabft) verify_signatures(data_blks_received *types.AbaBftDa
 		}
 	}
 	// 2c. check the valid signature number
-	if num_verified < int(len(Peers_addr_list)/3+1){
+	if num_verified < int(len(actorC.PeersAddrList)/3+1){
 		fmt.Println(" not enough signature for the previous block:", num_verified)
 		return false,nil
 	}
@@ -1833,7 +1834,7 @@ func (actor_c *ActorAbabft) verify_signatures(data_blks_received *types.AbaBftDa
 		}
 		*/
 		// change public key to account address
-		for _, peer_addr := range Peers_addr_list {
+		for _, peer_addr := range actorC.PeersAddrList {
 			peer_addr_in := common.AddressFromPubKey(sign_curblk.PubKey)
 			if ok := bytes.Equal(peer_addr.AccAdress.Bytes(), peer_addr_in.Bytes()); ok == true {
 				peerin_tag = true
@@ -1855,7 +1856,7 @@ func (actor_c *ActorAbabft) verify_signatures(data_blks_received *types.AbaBftDa
 		}
 	}
 	// 3c. check the valid signature number
-	if num_verified < int(2*len(Peers_addr_list)/3){
+	if num_verified < int(2*len(actorC.PeersAddrList)/3){
 		fmt.Println(" not enough signature for first round block:", num_verified)
 		return false,nil
 	}
@@ -1866,7 +1867,7 @@ func (actor_c *ActorAbabft) verify_signatures(data_blks_received *types.AbaBftDa
 	/*
 	// 4. check the current block signature by using function checkPermission
 	// 4a. check the peers permission
-	err = actor_c.serviceAbabft.ledger.checkPermission(0, "active",sign_blks_curblk)
+	err = actorC.serviceAbabft.ledger.checkPermission(0, "active",sign_blks_curblk)
 	if err != nil {
 		log.Debug("signature permission check fail")
 		return false,err
@@ -1920,7 +1921,7 @@ func (actorC *ActorAbabft) Blk_syn_verify(block_in types.Block, blk_pre types.Bl
 	}
 	*/
 	// change public key to account address
-	for _, peer_addr := range Peers_addr_list {
+	for _, peer_addr := range actorC.PeersAddrList {
 		peer_addr_in := common.AddressFromPubKey(pukey_g_in)
 		if ok := bytes.Equal(peer_addr.AccAdress.Bytes(), peer_addr_in.Bytes()); ok == true {
 			index_g_in = int(peer_addr.Index)
@@ -1930,7 +1931,7 @@ func (actorC *ActorAbabft) Blk_syn_verify(block_in types.Block, blk_pre types.Bl
 	// for test 2018.08.10
 	if TestTag == true {
 		fmt.Println("syn round_num_in:",round_num_in,index_g_in,pukey_g_in)
-		fmt.Println("peer address list:",Peers_addr_list)
+		fmt.Println("peer address list:",actorC.PeersAddrList)
 		fmt.Println("block_in.header:",block_in.Height,block_in.Hash,block_in.MerkleHash,block_in.StateHash)
 	}
 	// test end
