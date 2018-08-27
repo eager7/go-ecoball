@@ -18,13 +18,13 @@ package ledgerimpl
 
 import (
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
-	"github.com/ecoball/go-ecoball/common/config"
 	"sync"
 )
 
@@ -32,14 +32,15 @@ var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
 
 type LedgerImpl struct {
 	ChainTxs map[common.Hash]*transaction.ChainTx
-	mutex sync.RWMutex
+	mutex    sync.RWMutex
+	path     string
 	//ChainCt *ChainContract
 	//ChainAc *account.ChainAccount
 }
 
 func NewLedger(path string) (l ledger.Ledger, err error) {
-	ll := &LedgerImpl{ChainTxs:make(map[common.Hash]*transaction.ChainTx, 1)}
-	if err := ll.NewTxChain(config.ChainHash, path); err != nil {
+	ll := &LedgerImpl{path: path, ChainTxs: make(map[common.Hash]*transaction.ChainTx, 1)}
+	if err := ll.NewTxChain(config.ChainHash); err != nil {
 		return nil, err
 	}
 
@@ -52,8 +53,8 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 	return ll, nil
 }
 
-func (l *LedgerImpl) NewTxChain(chainID common.Hash, path string) (err error) {
-	ChainTx, err := transaction.NewTransactionChain(path+"/"+chainID.HexString()+"/Transaction", l)
+func (l *LedgerImpl) NewTxChain(chainID common.Hash) (err error) {
+	ChainTx, err := transaction.NewTransactionChain(l.path+"/"+chainID.HexString()+"/Transaction", l)
 	if err != nil {
 		return err
 	}
@@ -86,13 +87,13 @@ func (l *LedgerImpl) SaveTxBlock(chainID common.Hash, block *types.Block) error 
 func (l *LedgerImpl) GetTxBlockByHeight(chainID common.Hash, height uint64) (*types.Block, error) {
 	return l.ChainTxs[chainID].GetBlockByHeight(height)
 }
-func (l *LedgerImpl) GetCurrentHeader(chainID common.Hash, ) *types.Header {
+func (l *LedgerImpl) GetCurrentHeader(chainID common.Hash) *types.Header {
 	return l.ChainTxs[chainID].CurrentHeader
 }
-func (l *LedgerImpl) GetCurrentHeight(chainID common.Hash, ) uint64 {
+func (l *LedgerImpl) GetCurrentHeight(chainID common.Hash) uint64 {
 	return l.ChainTxs[chainID].CurrentHeader.Height
 }
-func (l *LedgerImpl) GetChainTx(chainID common.Hash, ) ledger.ChainInterface {
+func (l *LedgerImpl) GetChainTx(chainID common.Hash) ledger.ChainInterface {
 	return l.ChainTxs[chainID]
 }
 func (l *LedgerImpl) VerifyTxBlock(chainID common.Hash, block *types.Block) error {
@@ -146,7 +147,7 @@ func (l *LedgerImpl) CheckPermission(chainID common.Hash, index common.AccountNa
 func (l *LedgerImpl) RequireResources(chainID common.Hash, index common.AccountName, timeStamp int64) (float64, float64, error) {
 	return l.ChainTxs[chainID].StateDB.FinalDB.RequireResources(index, l.ChainTxs[chainID].CurrentHeader.Receipt.BlockCpu, l.ChainTxs[chainID].CurrentHeader.Receipt.BlockNet, timeStamp)
 }
-func (l *LedgerImpl) GetProducerList(chainID common.Hash, ) ([]common.AccountName, error) {
+func (l *LedgerImpl) GetProducerList(chainID common.Hash) ([]common.AccountName, error) {
 	return l.ChainTxs[chainID].StateDB.FinalDB.GetProducerList()
 }
 func (l *LedgerImpl) AccountGetBalance(chainID common.Hash, index common.AccountName, token string) (uint64, error) {
@@ -168,13 +169,13 @@ func (l *LedgerImpl) TokenCreate(chainID common.Hash, index common.AccountName, 
 func (l *LedgerImpl) TokenIsExisted(chainID common.Hash, token string) bool {
 	return l.ChainTxs[chainID].StateDB.FinalDB.TokenExisted(token)
 }
-func (l *LedgerImpl) StateDB(chainID common.Hash, ) *state.State {
+func (l *LedgerImpl) StateDB(chainID common.Hash) *state.State {
 	return l.ChainTxs[chainID].StateDB.FinalDB
 }
 func (l *LedgerImpl) ResetStateDB(chainID common.Hash, header *types.Header) error {
 	return l.ChainTxs[chainID].ResetStateDB(header)
 }
 
-func (l *LedgerImpl) GetGenesesTime(chainID common.Hash, ) int64 {
+func (l *LedgerImpl) GetGenesesTime(chainID common.Hash) int64 {
 	return l.ChainTxs[chainID].Geneses.TimeStamp
 }

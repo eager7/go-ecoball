@@ -7,7 +7,7 @@ import (
 )
 
 type Ledger interface {
-	NewTxChain(chainID common.Hash, path string) (err error)
+	NewTxChain(chainID common.Hash) (err error)
 
 	GetTxBlock(chainID common.Hash, hash common.Hash) (*types.Block, error)
 	NewTxBlock(chainID common.Hash, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)

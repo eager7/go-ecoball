@@ -53,6 +53,9 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 	case *types.Block:
 		log.Debug("new block delete transactions")
 		go p.handleNewBlock(msg)
+	case common.Hash:
+		log.Info("Add New TxList:", msg.HexString())
+		p.txPool.AddTxsList(msg)
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}

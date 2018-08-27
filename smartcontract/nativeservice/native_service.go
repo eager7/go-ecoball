@@ -76,6 +76,10 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		accounts := []common.AccountName{to1, to2}
 		ns.state.ElectionToVote(from, accounts)
 	case "reg_chain":
+		index := common.NameToIndex(ns.params[0])
+		if err := ns.state.RegisterChain(index, common.SingleHash(index.Bytes())); err != nil {
+			return nil, err
+		}
 
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", ns.method))

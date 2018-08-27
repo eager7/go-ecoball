@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 type LedActor struct {
@@ -69,6 +70,9 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {
 			log.Error("send block to tx pool error:", err)
 		}
+	case common.Hash:
+		log.Info("add new chain:", msg.HexString())
+		l.ledger.NewTxChain(msg)
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}
