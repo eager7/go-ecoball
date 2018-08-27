@@ -12,6 +12,7 @@ import (
 var cpuAmount = "cpu_amount"
 var netAmount = "net_amount"
 var prodsList = "prods_list"
+var chainList = "chain_list"
 var votingAmount = "voting_amount"
 var flag = false
 
@@ -23,6 +24,10 @@ const ChainLimit = 200
 type Producer struct {
 	Index  common.AccountName
 	Amount uint64
+}
+type Chain struct {
+	Hash common.Hash
+	Index common.AccountName
 }
 type Resource struct {
 	Ram struct {
@@ -288,19 +293,90 @@ func (s *State) RegisterProducer(index common.AccountName) error {
  *  @param index - account's index
  */
 func (s *State) RegisterChain(index common.AccountName, hash common.Hash) error {
+	if _, err := s.GetChainList(); err != nil {
+		return err
+	}
 	s.chainMutex.Lock()
-	defer s.chainMutex.Unlock()
 	if _, ok := s.Chains[hash]; ok {
+		s.chainMutex.Unlock()
 		return errors.New(log, fmt.Sprintf("the chain:%s was already registed", hash.HexString()))
 	}
 	if err := s.checkAccountCertification(index, ChainLimit); err != nil {
+		s.chainMutex.Unlock()
 		return nil
 	}
 	s.Chains[hash] = index
+	s.chainMutex.Unlock()
 
+	return s.commitChains()
+}
+func (s *State) commitChains() error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.chainMutex.Lock()
+	defer s.chainMutex.Unlock()
+	if len(s.Chains) == 0 {
+		data, err := s.trie.TryGet([]byte(chainList))
+		if err != nil {
+			return errors.New(log, fmt.Sprintf("can't get chainList from DB:%s", err.Error()))
+		}
+		if len(data) != 0 {
+			var Chains []Chain
+			if err := json.Unmarshal(data, &Chains); err != nil {
+				return errors.New(log, fmt.Sprintf("can't unmarshal Chains List from json string:%s", err.Error()))
+			}
+			for _, v := range Chains {
+				s.Chains[v.Hash] = v.Index
+			}
+		}
+	}
+
+	var Keys []string
+	for k := range s.Chains {
+		Keys = append(Keys, k.HexString())
+	}
+	sort.Strings(Keys)
+	var List []Chain
+	for _, v := range Keys {
+		hash := common.HexToHash(v)
+		list := Chain{hash, s.Chains[hash]}
+		List = append(List, list)
+	}
+
+	data, err := json.Marshal(List)
+	if err != nil {
+		return errors.New(log, fmt.Sprintf("error convert to json string:%s", err.Error()))
+	}
+	if err := s.trie.TryUpdate([]byte(chainList), data); err != nil {
+		return errors.New(log, fmt.Sprintf("error update trie:%s", err.Error()))
+	}
 	return nil
 }
-
+func (s *State) GetChainList() ([]Chain, error) {
+	s.chainMutex.Lock()
+	defer s.chainMutex.Unlock()
+	if len(s.Chains) == 0 {
+		data, err := s.trie.TryGet([]byte(chainList))
+		if err != nil {
+			return nil, errors.New(log, fmt.Sprintf("can't get chainList from DB:%s", err.Error()))
+		}
+		if len(data) != 0 {
+			var Chains []Chain
+			if err := json.Unmarshal(data, &Chains); err != nil {
+				return nil, errors.New(log, fmt.Sprintf("can't unmarshal Chains List from json string:%s", err.Error()))
+			}
+			for _, v := range Chains {
+				s.Chains[v.Hash] = v.Index
+			}
+		}
+	}
+	var list []Chain
+	for k := range s.Chains {
+		c := Chain{k, s.Chains[k]}
+		list = append(list, c)
+	}
+	return list, nil
+}
 /**
  *  @brief cancel register as a candidate node
  *  @param index - account's index
