@@ -54,7 +54,7 @@ func TestHeader(t *testing.T) {
 	var sigPer []common.Signature
 	sigPer = append(sigPer, sig1)
 	sigPer = append(sigPer, sig2)
-	abaData := types.AbaBftData{NumberRound: 5, PerBlockSignatures: sigPer}
+	abaData := types.AbaBftData{NumberRound: 5, PreBlockSignatures: sigPer}
 	conData = types.ConsensusData{Type: types.ConABFT, Payload: &abaData}
 	h, err = types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
 	errors.CheckErrorPanic(err)
