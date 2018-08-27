@@ -47,9 +47,10 @@ func (pe *StoreStatMonitor) Start() {
 
 	go pe.run()
 }
+
 func (pe *StoreStatMonitor) run() {
 	if pe.msgbuf == nil {
-		log.Error("subscribe message from net before running proof engine")
+		log.Error("subscribe message before running dispatcher")
 		return
 	}
 
@@ -69,8 +70,6 @@ func (pe *StoreStatMonitor) run() {
 			} else {
 				log.Error("receive an invalid message")
 			}
-		case <-ipfsCtrl.IpfsNode.Context().Done():
-			return
 		}
 	}
 }
@@ -131,12 +130,12 @@ func (pe *StoreStatMonitor) collectStoreStat() {
 func (pe *StoreStatMonitor) sendRepoStatMsg(repoStat types.StoreRepoStat) {
 	data, err:= repoStat.Serialize()
 	if err != nil {
-		log.Error("error for serializing store proof message")
+		log.Error("error for serializing store stat message")
 		return
 	}
 
 	netMsg := message.New(message.APP_MSG_STORE_STAT, data)
 	dispatcher.BroadcastMessage(netMsg)
 
-	log.Debug("broadcast a store repo stat message")
+	log.Debug("broadcast a store stat message")
 }
