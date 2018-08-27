@@ -120,6 +120,7 @@ func StartWalletRPCServer() (err error) {
 	httpWalletServer.AddHandleFunc("list_keys", commands.ListKeys)
 	httpWalletServer.AddHandleFunc("list_wallets", commands.ListWallets)
 	httpWalletServer.AddHandleFunc("GetPublicKeys", commands.GetPublicKeys)
+	httpWalletServer.AddHandleFunc("sign_transaction", commands.Sign_transaction)
 
 	//add attach
 	httpWalletServer.AddHandleFunc("attach", commands.Attach)

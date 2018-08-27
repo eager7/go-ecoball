@@ -23,6 +23,8 @@ import (
 	//"path/filepath"
 
 	"github.com/ecoball/go-ecoball/client/common"
+	"github.com/ecoball/go-ecoball/core/types"
+	inner "github.com/ecoball/go-ecoball/common"
 )
 
 /*var (
@@ -50,7 +52,7 @@ type WalletApi interface {
 	SetLockedState()
 	SetUnLockedState()
 	ListKeys() map[string]string
-	TrySignDigest(digest []byte, publicKey []byte) (signData []byte, bFind bool)
+	TrySignDigest(digest []byte, publicKey string) (signData []byte, bFind bool)
 }
 
 /*type WalletManeger struct {
@@ -288,13 +290,22 @@ func List_wallets()([]string, error) {
 }
 
 
-func SignTransaction(transaction []byte, publicKeys [][]byte) (signTransaction []byte, err error) {
+func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
+	Transaction := new(types.Transaction)
+	if err := Transaction.Deserialize(transaction); err != nil{
+		return nil, err
+	}
+
 	for _, publicKey := range publicKeys {
 		bFound := false
 		for _, wallet := range Wallets {
 			if !wallet.CheckLocked() {
 				if signData, bHave := wallet.TrySignDigest(transaction, publicKey); bHave {
-					transaction = append(transaction, signData...)
+					sig := inner.Signature{}
+					sig.PubKey = []byte(publicKey)
+					sig.SigData = signData
+
+					Transaction.Signatures = append(Transaction.Signatures, sig)
 					if !bFound {
 						bFound = true
 					}
@@ -307,11 +318,16 @@ func SignTransaction(transaction []byte, publicKeys [][]byte) (signTransaction [
 		}
 	}
 
-	return signTransaction, nil
+	Transaction.Show()
+	data, err := Transaction.Serialize()
+	if nil != err {
+		return nil, err
+	}
+	return data, nil
 
 }
 
-func SignDigest(data []byte, publicKey []byte) ([]byte, error) {
+func SignDigest(data []byte, publicKey string) ([]byte, error) {
 	bFound := false
 	result := []byte{}
 	for _, wallet := range Wallets {

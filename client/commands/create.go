@@ -86,8 +86,12 @@ func newAccount(c *cli.Context) error {
 		return err
 	}
 
-	GetPublicKeys()
-	getInfo()
+	required_keys, err := GetPublicKeys(); if err != nil {
+		fmt.Println(err)
+	}
+	info, err := getInfo(); if err != nil {
+		fmt.Println(err)
+	}
 
 	//owner key
 	owner := c.String("owner")
@@ -107,7 +111,12 @@ func newAccount(c *cli.Context) error {
 
 	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, config.ChainHash, "owner", "new_account",
 		[]string{name, innercommon.AddressFromPubKey(innercommon.FromHex(owner)).HexString()}, 0, timeStamp)
-	invoke.SetSignature(&config.Root)
+	//invoke.SetSignature(&config.Root)
+	errcode := sign_transaction(info.ChainID, required_keys, invoke)
+	invoke.Show()
+	if nil != errcode {
+		fmt.Println(errcode)
+	}
 
 	//rpc call
 	//resp, err := rpc.Call("createAccount", []interface{}{creator, name, owner, active})
