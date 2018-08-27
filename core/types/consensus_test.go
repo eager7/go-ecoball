@@ -45,7 +45,7 @@ func TestAbaBft(t *testing.T) {
 	var sigPer []common.Signature
 	sigPer = append(sigPer, sig1)
 	sigPer = append(sigPer, sig2)
-	abaData := types.AbaBftData{NumberRound: 5, PerBlockSignatures: sigPer}
+	abaData := types.AbaBftData{NumberRound: 5, PreBlockSignatures: sigPer}
 
 	conData := types.NewConsensusPayload(types.ConABFT, &abaData)
 
@@ -62,7 +62,7 @@ func TestAbaBft(t *testing.T) {
 	if conDataObj.NumberRound != 5 {
 		t.Fatal("NumberRound mismatch")
 	}
-	if len(conDataObj.PerBlockSignatures) != 2 {
-		t.Fatal("PerBlockSignatures mismatch")
+	if len(conDataObj.PreBlockSignatures) != 2 {
+		t.Fatal("PreBlockSignatures mismatch")
 	}
 }
