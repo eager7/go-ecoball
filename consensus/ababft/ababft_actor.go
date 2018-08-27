@@ -787,11 +787,11 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 						actorC.status = 4
 						// create the signature for first-round block for test
 						for i:=0;i<actorC.NumPeers;i++ {
-							var sign_blkf_send1 Signature_BlkF
-							sign_blkf_send1.Signature_blkf.PubKey = Accounts_test[i].PublicKey
-							sign_blkf_send1.Signature_blkf.SigData,err = Accounts_test[i].Sign(blockfirst_received.Header.Hash.Bytes())
-							// fmt.Println("Accounts_test:",i,Accounts_test[i].PublicKey,sign_blkf_send1.Signature_blkf)
-							event.Send(event.ActorNil, event.ActorConsensus, sign_blkf_send1)
+							var signBlkfSend1 Signature_BlkF
+							signBlkfSend1.Signature_blkf.PubKey = Accounts_test[i].PublicKey
+							signBlkfSend1.Signature_blkf.SigData,err = Accounts_test[i].Sign(blockfirst_received.Header.Hash.Bytes())
+							// fmt.Println("Accounts_test:",i,Accounts_test[i].PublicKey,signBlkfSend1.Signature_blkf)
+							event.Send(event.ActorNil, event.ActorConsensus, signBlkfSend1)
 						}
 						fmt.Println("blockfirst_received.Header.Hash:",data_preblk_received.NumberRound,blockfirst_received.Header.Hash, blockfirst_received.Header.MerkleHash,blockfirst_received.Header.StateHash)
 					}
@@ -1398,7 +1398,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			// todo
 			// maybe only check the hash is enough
 
-			var result_v bool
+			var resultV bool
 			var blk_v_local *types.Block
 			blk_v_local,err = actorC.serviceAbabft.ledger.GetTxBlockByHeight(config.ChainHash, verified_height)
 			if err != nil {
@@ -1408,13 +1408,13 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 
 			if ok := bytes.Equal(blks_v.Hash.Bytes(),currentheader.Hash.Bytes()); ok == true {
 				// the blks_v is the same as current block, just to verify and save blks_f
-				result_v = true
+				resultV = true
 				blks_v.Header = currentheader
 				fmt.Println("already have")
 
 			} else {
 				// verify blks_v
-				result_v,err = actorC.Blk_syn_verify(blks_v, *blk_v_local)
+				resultV,err = actorC.Blk_syn_verify(blks_v, *blk_v_local)
 				fmt.Println("have not yet")
 			}
 
@@ -1424,12 +1424,12 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 				// fmt.Println("blks_v.Hash:",blks_v.Hash)
 				// fmt.Println("currentheader.Hash:",currentheader.Hash)
 				if ok := bytes.Equal(blks_v.Hash.Bytes(),currentheader.Hash.Bytes()); ok == true {
-					result_v = true
+					resultV = true
 				}
 			}
 			// test end
 
-			if result_v == false {
+			if resultV == false {
 				log.Debug("verification of blks_v fails")
 				return
 			}
