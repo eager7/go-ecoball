@@ -63,18 +63,18 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		peers := this.node.Nbrs()
 		log.Info(peers)
 		ctx.Sender().Request(&rpc.ListPeersRsp{Peer: peers}, ctx.Self())
-	case ababft.Signature_Preblock:
+	case ababft.SignaturePreBlock:
 		// broadcast the signature for the previous block
-		info,_ := msg.(ababft.Signature_Preblock)
+		info,_ := msg.(ababft.SignaturePreBlock)
 		msgType = message.APP_MSG_SIGNPRE
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-	case ababft.Block_FirstRound:
+	case ababft.BlockFirstRound:
 		// broadcast the first round block
-		info,_ := msg.(ababft.Block_FirstRound)
+		info,_ := msg.(ababft.BlockFirstRound)
 		msgType = message.APP_MSG_BLKF
-		buffer, _ = info.Blockfirst.Serialize()
+		buffer, _ = info.BlockFirst.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
 	case ababft.REQSyn:
@@ -98,24 +98,24 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-	case ababft.Signature_BlkF:
+	case ababft.SignatureBlkF:
 		// broadcast the signature for the first-round block
-		info,_ := msg.(ababft.Signature_BlkF)
+		info,_ := msg.(ababft.SignatureBlkF)
 		msgType = message.APP_MSG_SIGNBLKF
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-	//case ababft.Block_SecondRound:
+	//case ababft.BlockSecondRound:
 	case *types.Block:
 		// broadcast the first round block
 		msgType = message.APP_MSG_BLKS
-		// buffer, _ = msg.(*ababft.Block_SecondRound).Blocksecond.Serialize()
+		// buffer, _ = msg.(*ababft.BlockSecondRound).blockSecond.Serialize()
 		buffer, _ = msg.(*types.Block).Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-	case ababft.Block_Syn:
+	case ababft.BlockSyn:
 		// broadcast the block according to the synchronization request
-		info,_ := msg.(ababft.Block_Syn)
+		info,_ := msg.(ababft.BlockSyn)
 		msgType = message.APP_MSG_BLKSYN
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
