@@ -28,7 +28,6 @@ import (
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
-var IndexAbaRoot = common.NameToIndex("root")
 var AbaToken = "ABA"
 
 type State struct {
@@ -72,6 +71,10 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	st.Producers = make(map[common.AccountName]uint64, 1)
 	return st, nil
 }
+
+/**
+ *  @brief copy a new trie into memory
+ */
 func (s *State) CopyState() (*State, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -287,6 +290,12 @@ func (s *State) commitAccount(acc *Account) error {
 	s.Accounts[acc.Index.String()] = acc
 	return nil
 }
+
+/**
+ *  @brief update the param's information into trie
+ *  @param key - param name
+ *  @param value - param value
+ */
 func (s *State) commitParam(key string, value uint64) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -298,6 +307,11 @@ func (s *State) commitParam(key string, value uint64) error {
 	s.Params[key] = value
 	return nil
 }
+
+/**
+ *  @brief get the param's information from trie
+ *  @param key - param name
+ */
 func (s *State) getParam(key string) (uint64, error) {
 	s.paraMutex.Lock()
 	defer s.paraMutex.Unlock()
@@ -320,10 +334,16 @@ func (s *State) getParam(key string) (uint64, error) {
 	return value, nil
 }
 
+/**
+ *  @brief get the trie root hash
+ */
 func (s *State) GetHashRoot() common.Hash {
 	return common.NewHash(s.trie.Hash().Bytes())
 }
 
+/**
+ *  @brief commit the trie into past trie list
+ */
 func (s *State) CommitToMemory() error {
 	root, err := s.trie.Commit(nil)
 	if err != nil {
@@ -381,13 +401,16 @@ func (s *State) Reset(hash common.Hash) error {
 	return nil
 }
 
+/**
+ *  @brief close level db
+ */
 func (s *State) Close() error {
 	return s.diskDb.Close()
 }
 
+/**
+ *  @brief get the trie
+ */
 func (s *State) Trie() Trie {
 	return s.trie
-}
-func (s *State) DataBase() Database {
-	return s.db
 }

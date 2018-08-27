@@ -55,11 +55,11 @@ type ChainTx struct {
 	StateDB       StateDatabase
 	//StateDB       *state.State
 	//TempStateDB   *state.State //txPool used
-	//ledger        ledger.Ledger
+	ledger ledger.Ledger
 }
 
 func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {
-	c = &ChainTx{BlockMap: make(map[common.Hash]uint64, 1)}
+	c = &ChainTx{BlockMap: make(map[common.Hash]uint64, 1), ledger: ledger}
 	c.BlockStore, err = store.NewLevelDBStore(path+config.StringBlock, 0, 0)
 	if err != nil {
 		return nil, err
