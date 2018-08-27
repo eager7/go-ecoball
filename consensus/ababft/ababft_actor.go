@@ -65,14 +65,18 @@ type ActorAbabft struct {
 	signatureBlkFList     []common.Signature // list for saving the signatures for the first round block
 	blockFirstRound       BlockFirstRound    // temporary parameters for the first round block
 	blockSecondRound      BlockSecondRound   // temporary parameters for the second round block
+	cacheSignaturePreBlk []pb.SignaturePreblock // cache the received signatures for the previous block
+	blockFirstCal *types.Block                    // cache the first-round block
 
 	verifiedHeight uint64
 	primaryTag int // 0: verification peer; 1: is the primary peer, who generate the block at current round;
+	deltaRoundNum int
+	receivedSignPreNum int                      // the number of received signatures for the previous block
 }
 
 const(
-	pubkeyTag   = "ababft"
-	signdataTag = "ababft"
+	pubKeyTag   = "ababft"
+	signDataTag = "ababft"
 )
 
 var log = elog.NewLogger("ABABFT", elog.NoticeLog)
@@ -101,14 +105,14 @@ const ThresholdRound = 60
 // var currentheader *types.Header // temporary parameters for the current block header, according to the blocks saved in the local ledger
 // var currentheader_data types.Header
 // var current_payload types.AbaBftData              // temporary parameters for current payload
-var received_signpre_num int                      // the number of received signatures for the previous block
-var cache_signature_preblk []pb.SignaturePreblock // cache the received signatures for the previous block
-var blockFirstCal *types.Block                    // cache the first-round block
+// var received_signpre_num int                      // the number of received signatures for the previous block
+// var cache_signature_preblk []pb.SignaturePreblock // cache the received signatures for the previous block
+// var blockFirstCal *types.Block                    // cache the first-round block
 var received_signblkf_num int                     // temporary parameters for received signatures for first round block
 var TimeoutMsgs = make(map[string]int, 1000)      // cache the timeout message
 // var verified_height uint64
 
-var delta_roundnum int
+// var delta_roundnum int
 
 var syn_status int
 // for test 2018.07.31
@@ -296,9 +300,9 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 		// todo
 		// check following patch:
 		// add ThresholdRound to solve the liveness problem
-		lastest_roundnum := int(actorC.currentHeader.ConsensusData.Payload.(*types.AbaBftData).NumberRound)
-		delta_roundnum = actorC.currentRoundNum - lastest_roundnum
-		if delta_roundnum > ThresholdRound && actorC.currentHeightNum > int(actorC.verifiedHeight) {
+		lastestRoundNum := int(actorC.currentHeader.ConsensusData.Payload.(*types.AbaBftData).NumberRound)
+		actorC.deltaRoundNum = actorC.currentRoundNum - lastestRoundNum
+		if actorC.deltaRoundNum > ThresholdRound && actorC.currentHeightNum > int(actorC.verifiedHeight) {
 			// as there is a long time since last block, maybe the chain is blocked somewhere
 			// to generate the block after the previous block (i.e. the latest verified block)
 			var currentblock *types.Block
@@ -348,7 +352,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			// if is prime
 			actorC.primaryTag = 1
 			actorC.status = 3
-			received_signpre_num = 0
+			actorC.receivedSignPreNum = 0
 			// increase the round index
 			actorC.currentRoundNum ++
 			fmt.Println("ABABFTStart:current_round_num:",actorC.currentRoundNum,actorC.selfIndex)
@@ -406,7 +410,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 		// log.Debug("current_round_num:",current_round_num,round_in)
 		if round_in >= actorC.currentRoundNum && actorC.status!=101 && actorC.status!= 102 {
 			// cache the SignaturePreBlock
-			cache_signature_preblk = append(cache_signature_preblk,msg.SignPreBlock)
+			actorC.cacheSignaturePreBlk = append(actorC.cacheSignaturePreBlk,msg.SignPreBlock)
 			// in case that the signature for the previous block arrived bofore the corresponding block generator was born
 		}
 		if actorC.primaryTag == 1 && (actorC.status == 2 || actorC.status == 3){
@@ -421,7 +425,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					// need to check
 					// only require when height difference between the peers is >= 2
 
-					if delta_roundnum > ThresholdRound {
+					if actorC.deltaRoundNum > ThresholdRound {
 						if actorC.verifiedHeight == uint64(actorC.currentHeightNum) && height_in == (actorC.currentHeightNum+1) {
 							return
 						}
@@ -484,7 +488,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 						// add the incoming signature to signature preblock list
 						actorC.signaturePreBlockList[peer_index].SigData = sigDataIn
 						actorC.signaturePreBlockList[peer_index].PubKey = pubkey_in
-						received_signpre_num ++
+						actorC.receivedSignPreNum ++
 					} else {
 						return
 					}
@@ -502,7 +506,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 		if actorC.primaryTag == 1 && (actorC.status == 2 || actorC.status == 3){
 			// 1. check the cache cache_signature_preblk
 			header_hash := actorC.currentHeader.Hash.Bytes()
-			for _,signpreblk := range cache_signature_preblk {
+			for _,signpreblk := range actorC.cacheSignaturePreBlk {
 				round_in := signpreblk.Round
 				if int(round_in) != actorC.currentRoundNum {
 					continue
@@ -549,7 +553,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					// add the incoming signature to signature preblock list
 					actorC.signaturePreBlockList[peer_index].SigData = sigdata_in
 					actorC.signaturePreBlockList[peer_index].PubKey = pubkey_in
-					received_signpre_num ++
+					actorC.receivedSignPreNum ++
 				} else {
 					continue
 				}
@@ -557,12 +561,12 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			}
 			// clean the cache_signature_preblk
 			// cache_signature_preblk = make([]pb.SignaturePreblock,len(Peers_list)*2)
-			cache_signature_preblk = make([]pb.SignaturePreblock,len(actorC.PeersAddrList)*2)
+			actorC.cacheSignaturePreBlk = make([]pb.SignaturePreblock,len(actorC.PeersAddrList)*2)
 			// fmt.Println("valid sign_pre:",received_signpre_num)
 			// fmt.Println("current status root hash:",currentheader.StateHash)
 
 			// 2. check the number of the preblock signature
-			if received_signpre_num >= int(len(actorC.PeersAddrList)/3+1) {
+			if actorC.receivedSignPreNum >= int(len(actorC.PeersAddrList)/3+1) {
 				// enough preblock signature, so generate the first-round block, only including the preblock signatures and
 				// prepare the ConsensusData
 				var signpre_send []common.Signature
@@ -791,7 +795,7 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 					actorC.status = 6
 					// fmt.Println("sign_blkf_send:",sign_blkf_send)
 					// clean the cache_signature_preblk
-					cache_signature_preblk = make([]pb.SignaturePreblock,len(actorC.PeersAddrList)*2)
+					actorC.cacheSignaturePreBlk = make([]pb.SignaturePreblock,len(actorC.PeersAddrList)*2)
 					// send the received first-round block to other peers in case that network is not good
 					actorC.blockFirstRound.BlockFirst = blockfirst_received
 					event.Send(event.ActorConsensus,event.ActorP2P,actorC.blockFirstRound)
@@ -937,8 +941,8 @@ func (actorC *ActorAbabft) Receive(ctx actor.Context) {
 			if received_signblkf_num >= int(2*len(actorC.PeersAddrList)/3) {
 				// enough first-round block signatures, so generate the second-round(final) block
 				// 1. add the first-round block signatures into ConsensusData
-				pubkey_tag_b := []byte(pubkeyTag)
-				signdata_tag_b := []byte(signdataTag)
+				pubkey_tag_b := []byte(pubKeyTag)
+				signdata_tag_b := []byte(signDataTag)
 				var sign_tag common.Signature
 				sign_tag.PubKey = pubkey_tag_b
 				sign_tag.SigData = signdata_tag_b
@@ -1683,13 +1687,13 @@ func (actorC *ActorAbabft) verifyHeader(blockIn *types.Block, currentRoundNumIn 
 	// fmt.Println("after reset",err)
 
 	// generate the blockFirstCal for comparison
-	blockFirstCal,err = actorC.serviceAbabft.ledger.NewTxBlock(config.ChainHash, txs, conDataC, headerIn.TimeStamp)
+	actorC.blockFirstCal,err = actorC.serviceAbabft.ledger.NewTxBlock(config.ChainHash, txs, conDataC, headerIn.TimeStamp)
 	// fmt.Println("height:",blockIn.Height,blockFirstCal.Height)
 	// fmt.Println("merkle:",blockIn.Header.MerkleHash,blockFirstCal.Header.MerkleHash)
 	// fmt.Println("timestamp:",blockIn.Header.TimeStamp,blockFirstCal.Header.TimeStamp)
 	// fmt.Println("blockFirstCal:",blockFirstCal.Header, blockFirstCal.Header.StateHash)
 	// fmt.Println("blockIn:",blockIn.Header, blockIn.Header.StateHash)
-	log.Info("blockFirstCal:", blockFirstCal.Height, blockFirstCal.Header)
+	log.Info("blockFirstCal:", actorC.blockFirstCal.Height, actorC.blockFirstCal.Header)
 	log.Info("blockIn:", blockIn.Height, blockIn.Header)
 
 	var numTxs int
@@ -1711,21 +1715,21 @@ func (actorC *ActorAbabft) verifyHeader(blockIn *types.Block, currentRoundNumIn 
 		return false,nil
 	}
 	// check MerkleHash    common.Hash
-	if ok := bytes.Equal(blockFirstCal.MerkleHash.Bytes(), blockIn.MerkleHash.Bytes()); ok != true {
+	if ok := bytes.Equal(actorC.blockFirstCal.MerkleHash.Bytes(), blockIn.MerkleHash.Bytes()); ok != true {
 		println("MercleHash is wrong")
 		return false,nil
 	}
 	// fmt.Println("mercle:",blockFirstCal.MerkleHash.Bytes(),blockIn.MerkleHash.Bytes())
 
 	// check StateHash     common.Hash
-	if ok := bytes.Equal(blockFirstCal.StateHash.Bytes(), blockIn.StateHash.Bytes()); ok != true {
+	if ok := bytes.Equal(actorC.blockFirstCal.StateHash.Bytes(), blockIn.StateHash.Bytes()); ok != true {
 		println("StateHash is wrong")
 		return false,nil
 	}
 	// fmt.Println("statehash:",blockFirstCal.StateHash.Bytes(),blockIn.StateHash.Bytes())
 
 	// check Bloom         bloom.Bloom
-	if ok := bytes.Equal(blockFirstCal.Bloom.Bytes(), blockIn.Bloom.Bytes()); ok != true {
+	if ok := bytes.Equal(actorC.blockFirstCal.Bloom.Bytes(), blockIn.Bloom.Bytes()); ok != true {
 		println("bloom is wrong")
 		return false,nil
 	}
@@ -1764,8 +1768,8 @@ func (actorC *ActorAbabft) verifySignatures(dataBlksReceived *types.AbaBftData, 
 	// 1. devide the signatures into two part
 	var signBlksPreBlk []common.Signature
 	var signsCurBlk []common.Signature
-	pubKeyTagBytes := []byte(pubkeyTag)
-	sigDataTagBytes := []byte(signdataTag)
+	pubKeyTagBytes := []byte(pubKeyTag)
+	sigDataTagBytes := []byte(signDataTag)
 	var tagSign int
 	tagSign = 0
 	for _,sign := range dataBlksReceived.PreBlockSignatures {
