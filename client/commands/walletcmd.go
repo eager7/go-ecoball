@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	//"github.com/ecoball/go-ecoball/account"
 	//"github.com/ecoball/go-ecoball/common"
@@ -241,6 +242,20 @@ func createWallet(c *cli.Context) error {
 		fmt.Println("wallet file path:", name)
 	}
 	return nil
+}
+
+func GetPublicKeys() ([]string, error) {
+	resp, err := rpc.WalletCall("GetPublicKeys", []interface{}{})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return nil, err
+	}
+	if nil != resp["result"] {
+		data := resp["result"].(string)
+		datas := strings.Split(data, "\n")
+		return datas, nil
+	}
+	return nil, nil
 }
 
 func createKey(c *cli.Context) error {

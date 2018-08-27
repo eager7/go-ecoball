@@ -256,12 +256,12 @@ func GetPublicKeys() ([]string, error) {
 		if wallet.CheckLocked() {
 			continue
 		}
-		if publicKeys, err := wallet.ListPublicKey(); nil != err {
-			if allLocked {
-				allLocked = false
-			}
-			keys = append(keys, publicKeys...)
+		allLocked = false
+		publicKeys, err := wallet.ListPublicKey()
+		if nil != err {
+			continue
 		}
+		keys = append(keys, publicKeys...)
 	}
 
 	if allLocked {
