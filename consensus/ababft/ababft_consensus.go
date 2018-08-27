@@ -73,7 +73,7 @@ func ServiceAbabftGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 	serviceAbabft = new(ServiceAbabft)
 
 	actorAbabft := &ActorAbabft{}
-	pid, err = Actor_ababft_gen(actorAbabft)
+	pid, err = ActorAbabftGen(actorAbabft)
 	if err != nil {
 		return nil, err
 	}
