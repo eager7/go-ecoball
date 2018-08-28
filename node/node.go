@@ -73,10 +73,8 @@ func runNode(c *cli.Context) error {
 	//start consensus
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
-		c, _ := solo.NewSoloConsensusServer(l, txPool)
-		c.Start(config.ChainHash)
-		//go example.AutoGenerateTransaction(l)
-		//go example.VotingProducer(l)
+		solo.NewSoloConsensusServer(l, txPool)
+		event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
 	case "DPOS":
 		log.Info("Start DPOS consensus")
 
