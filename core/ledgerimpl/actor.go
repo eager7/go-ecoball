@@ -69,7 +69,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			break
 		}
 		end := time.Now().UnixNano()
-		log.Warn("save block["+msg.ChainID.HexString()+"]:", (end-begin)/1000, "us")
+		log.Info("save block["+msg.ChainID.HexString()+"]:", (end-begin)/1000, "us")
 	case *dpos.DposBlock:
 		//TODO
 

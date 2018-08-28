@@ -22,8 +22,8 @@ func TestSoloModule(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	net.StartNetWork()
 
-	c, _ := solo.NewSoloConsensusServer(ledger, txPool)
-	c.Start(config.ChainHash)
+	solo.NewSoloConsensusServer(ledger, txPool)
+	event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
 	autoGenerateTransaction()
 	for i := 0; i < 10; i++ {
 		autoGenerateTransaction()

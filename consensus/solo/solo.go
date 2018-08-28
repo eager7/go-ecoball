@@ -90,3 +90,33 @@ func (s *Solo) Start(chainID common.Hash) error {
 	}()
 	return nil
 }
+
+func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
+	t := time.NewTimer(time.Second * 1)
+	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
+	for {
+		t.Reset(time.Second * 3)
+		select {
+		case <-t.C:
+			log.Debug("Request transactions from tx pool")
+			txs, _ := solo.txPool.GetTxsList(chainID)
+			block, err := solo.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
+			if err != nil {
+				log.Fatal(err)
+			}
+			if err := block.SetSignature(&config.Root); err != nil {
+				log.Fatal(err)
+			}
+			if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
+				log.Fatal(err)
+			}
+		case <-solo.stop:
+			{
+				log.Info("Stop Solo Mode")
+				return
+			}
+		case msg := <-solo.msg:
+			fmt.Println("receive msg:", msg)
+		}
+	}
+}
