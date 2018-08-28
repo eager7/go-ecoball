@@ -295,6 +295,7 @@ func (wallet *WalletImpl) TrySignDigest(digest []byte, publicKey string) (signDa
 		if strings.EqualFold(public, publicKey) {
 			privateKey = []byte(private)
 			bFound = true
+			break;
 		}
 	}
 

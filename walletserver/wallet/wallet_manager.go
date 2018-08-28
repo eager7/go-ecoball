@@ -309,6 +309,7 @@ func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
 					if !bFound {
 						bFound = true
 					}
+					break;
 				}
 			}
 		}
