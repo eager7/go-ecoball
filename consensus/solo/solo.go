@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
 	"github.com/ecoball/go-ecoball/txpool"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
@@ -41,7 +42,7 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (*Solo, erro
 	return solo, nil
 }
 
-func (s *Solo) Start() error {
+func (s *Solo) Start(chainID common.Hash) error {
 	t := time.NewTimer(time.Second * 1)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
 
@@ -51,8 +52,8 @@ func (s *Solo) Start() error {
 			select {
 				case <-t.C:
 					log.Debug("Request transactions from tx pool")
-					txs, _ := s.txPool.GetTxsList(config.ChainHash)
-					block, err := s.ledger.NewTxBlock(config.ChainHash, txs, conData, time.Now().UnixNano())
+					txs, _ := s.txPool.GetTxsList(chainID)
+					block, err := s.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
 					if err != nil {
 						log.Fatal(err)
 					}

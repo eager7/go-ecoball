@@ -22,8 +22,6 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 type soloActor struct {
@@ -53,11 +51,6 @@ func (l *soloActor) Receive(ctx actor.Context) {
 	case *message.SoloStop:
 		log.Info("Receive Solo Stop Message")
 		l.solo.stop <- struct{}{}
-	case *types.Block:
-		current := l.solo.ledger.GetCurrentHeader(config.ChainHash)
-		if msg.Height > (current.Height + 1) {
-
-		}
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}

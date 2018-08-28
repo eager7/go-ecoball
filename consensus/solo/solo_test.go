@@ -20,7 +20,7 @@ func TestSoloModule(t *testing.T) {
 	errors.CheckErrorPanic(err)
 
 	c, _ := solo.NewSoloConsensusServer(ledger, txPool)
-	c.Start()
+	c.Start(config.ChainHash)
 	autoGenerateTransaction()
 	for i := 0; i < 10; i++ {
 		autoGenerateTransaction()

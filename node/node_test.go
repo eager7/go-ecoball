@@ -32,7 +32,7 @@ func TestRunMain(t *testing.T) {
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
 		c, _ := solo.NewSoloConsensusServer(ledger, txPool)
-		c.Start()
+		c.Start(config.ChainHash)
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":
