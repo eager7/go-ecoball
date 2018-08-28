@@ -84,7 +84,7 @@ func (s *Solo) Start(chainID common.Hash) error {
 					return
 				}
 			case msg := <-s.msg:
-				fmt.Println(msg)
+				fmt.Println("receive msg:", msg)
 			}
 		}
 	}()

@@ -12,12 +12,15 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/net"
 )
 
 func TestSoloModule(t *testing.T) {
+	net.InitNetWork()
 	ledger := example.Ledger("/tmp/solo")
 	txPool, err := txpool.Start(ledger)
 	errors.CheckErrorPanic(err)
+	net.StartNetWork()
 
 	c, _ := solo.NewSoloConsensusServer(ledger, txPool)
 	c.Start(config.ChainHash)
