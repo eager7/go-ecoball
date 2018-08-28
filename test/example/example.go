@@ -87,10 +87,10 @@ func Ledger(path string) ledger.Ledger {
 	return l
 }
 
-func SaveBlock(ledger ledger.Ledger, txs []*types.Transaction) *types.Block {
+func SaveBlock(ledger ledger.Ledger, txs []*types.Transaction, chainID common.Hash) *types.Block {
 	con, err := types.InitConsensusData(TimeStamp())
 	errors.CheckErrorPanic(err)
-	block, err := ledger.NewTxBlock(config.ChainHash, txs, *con, time.Now().UnixNano())
+	block, err := ledger.NewTxBlock(chainID, txs, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	block.SetSignature(&config.Root)
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(block.ChainID, block))

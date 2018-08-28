@@ -9,6 +9,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/state"
 	"strconv"
+	"github.com/ecoball/go-ecoball/common/event"
 )
 
 var log = elog.NewLogger("native", config.LogLevel)
@@ -80,7 +81,9 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := ns.state.RegisterChain(index, common.SingleHash(index.Bytes())); err != nil {
 			return nil, err
 		}
-
+		hash := common.SingleHash(index.Bytes())
+		event.Send(event.ActorNil, event.ActorTxPool, hash)
+		event.Send(event.ActorNil, event.ActorLedger, hash)
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", ns.method))
 	}

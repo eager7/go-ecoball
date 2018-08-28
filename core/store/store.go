@@ -18,13 +18,16 @@ package store
 
 import (
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/errors"
+	errLevel "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
+	"fmt"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
-
+var log = elog.NewLogger("store", elog.DebugLog)
 const PathBlock = "DataBase/block"
 
 type LevelDBStore struct {
@@ -64,11 +67,11 @@ func NewLevelDBStore(dirPath string, cache int, handles int) (*LevelDBStore, err
 	}
 
 	db, err := leveldb.OpenFile(dirPath, &o)
-	if _, corrupted := err.(*errors.ErrCorrupted); corrupted {
+	if _, corrupted := err.(*errLevel.ErrCorrupted); corrupted {
 		db, err = leveldb.RecoverFile(dirPath, nil)
 	}
 	if err != nil {
-		return nil, err
+		return nil, errors.New(log, fmt.Sprintf("OpenFile[%s] Failed:%s", dirPath, err.Error()))
 	}
 
 	return &LevelDBStore{

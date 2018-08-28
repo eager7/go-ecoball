@@ -111,7 +111,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 			net += n
 		}
 	}
-	return types.NewBlock(config.ChainHash, c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	return types.NewBlock(c.CurrentHeader.ChainID, c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
 }
 
 /**
@@ -138,6 +138,7 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 	}
 	for _, v := range block.Transactions {
 		if err := c.CheckTransaction(v); err != nil {
+			log.Warn(v.JsonString())
 			return err
 		}
 	}
@@ -161,7 +162,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	log.Notice("Handle Transaction in final DB")
 	for i := 0; i < len(block.Transactions); i++ {
 		if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
-			log.Error("Handle Transaction Error:", err)
+			log.Warn(block.Transactions[i].JsonString())
 			return err
 		}
 	}
@@ -174,11 +175,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 
 	for _, t := range block.Transactions {
 		payload, _ := t.Serialize()
-		if t.Type == types.TxDeploy {
-			c.TxsStore.BatchPut(common.IndexToBytes(t.Addr), payload)
-		} else {
-			c.TxsStore.BatchPut(t.Hash.Bytes(), payload)
-		}
+		c.TxsStore.BatchPut(t.Hash.Bytes(), payload)
 	}
 	if err := c.TxsStore.BatchCommit(); err != nil {
 		return err
@@ -265,7 +262,7 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
 /**
 *  @brief  create a genesis block with built-in account and contract, then save this block into block chain
  */
-func (c *ChainTx) GenesesBlockInit() error {
+func (c *ChainTx) GenesesBlockInit(chainID common.Hash) error {
 	if c.CurrentHeader != nil {
 		log.Debug("geneses block is existed")
 		c.CurrentHeader.Show()
@@ -295,7 +292,7 @@ func (c *ChainTx) GenesesBlockInit() error {
 	hashState := c.StateDB.FinalDB.GetHashRoot()
 
 	fmt.Println(hash.HexString())
-	header, err := types.NewHeader(types.VersionHeader, config.ChainHash, 1, config.ChainHash, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
+	header, err := types.NewHeader(types.VersionHeader, chainID, 1, chainID, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
 	if err != nil {
 		return err
 	}
@@ -384,13 +381,9 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 		if value, err := c.AccountGetBalance(tx.From, state.AbaToken); err != nil {
 			return err
 		} else if value.Sign() <= 0 {
-			log.Error(err)
 			return errors.New(log, errors.ErrDoubleSpend.ErrorInfo())
 		}
 	case types.TxDeploy:
-		if data, _ := c.TxsStore.Get(tx.Addr.Bytes()); data != nil {
-			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
-		}
 	case types.TxInvoke:
 		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
 			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())

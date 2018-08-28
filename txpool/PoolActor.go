@@ -78,7 +78,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		log.Warn("transaction already in the txn pool" + tx.Hash.HexString())
 		return nil
 	}
-	p.txPool.txsCache.Add(tx.Hash, tx.Hash)
+	p.txPool.txsCache.Add(tx.Hash, nil)
 
 	ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
 	if err != nil {

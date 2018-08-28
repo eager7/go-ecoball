@@ -274,6 +274,9 @@ func (s *State) RequireResources(index common.AccountName, cpuLimit, netLimit fl
  *  @param index - account's index
  */
 func (s *State) RegisterProducer(index common.AccountName) error {
+	if err := s.initProducersList(); err != nil {
+		return err
+	}
 	s.prodMutex.Lock()
 	if _, ok := s.Producers[index]; ok {
 		s.prodMutex.Unlock()
@@ -311,26 +314,12 @@ func (s *State) RegisterChain(index common.AccountName, hash common.Hash) error 
 	return s.commitChains()
 }
 func (s *State) commitChains() error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	s.chainMutex.Lock()
-	defer s.chainMutex.Unlock()
 	if len(s.Chains) == 0 {
-		data, err := s.trie.TryGet([]byte(chainList))
-		if err != nil {
-			return errors.New(log, fmt.Sprintf("can't get chainList from DB:%s", err.Error()))
-		}
-		if len(data) != 0 {
-			var Chains []Chain
-			if err := json.Unmarshal(data, &Chains); err != nil {
-				return errors.New(log, fmt.Sprintf("can't unmarshal Chains List from json string:%s", err.Error()))
-			}
-			for _, v := range Chains {
-				s.Chains[v.Hash] = v.Index
-			}
-		}
+		return nil
 	}
 
+	s.chainMutex.Lock()
+	defer s.chainMutex.Unlock()
 	var Keys []string
 	for k := range s.Chains {
 		Keys = append(Keys, k.HexString())
@@ -347,6 +336,8 @@ func (s *State) commitChains() error {
 	if err != nil {
 		return errors.New(log, fmt.Sprintf("error convert to json string:%s", err.Error()))
 	}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	if err := s.trie.TryUpdate([]byte(chainList), data); err != nil {
 		return errors.New(log, fmt.Sprintf("error update trie:%s", err.Error()))
 	}
@@ -382,6 +373,9 @@ func (s *State) GetChainList() ([]Chain, error) {
  *  @param index - account's index
  */
 func (s *State) UnRegisterProducer(index common.AccountName) error {
+	if err := s.initProducersList(); err != nil {
+		return err
+	}
 	s.prodMutex.Lock()
 	if _, ok := s.Producers[index]; !ok {
 		s.prodMutex.Unlock()
@@ -411,6 +405,9 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	defer acc.mutex.Unlock()
 	if acc.Resource.Votes.Staked == 0 {
 		return errors.New(log, fmt.Sprintf("the account:%s has no enough vote", index.String()))
+	}
+	if err := s.initProducersList(); err != nil {
+		return err
 	}
 	s.prodMutex.RLock()
 	for _, v := range accounts {
@@ -460,6 +457,9 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
  *  @param accounts - candidate node list
  */
 func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountName) error {
+	if err := s.initProducersList(); err != nil {
+		return err
+	}
 	s.prodMutex.Lock()
 	for k := range acc.Votes.Producers {
 		if _, ok := s.Producers[k]; ok {
@@ -489,6 +489,9 @@ func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountNa
  *  @param votesOld - account's votes before changed
  */
 func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
+	if err := s.initProducersList(); err != nil {
+		return err
+	}
 	s.prodMutex.Lock()
 	for k := range acc.Votes.Producers {
 		acc.Votes.Producers[k] = acc.Votes.Staked
@@ -514,7 +517,7 @@ func (s *State) checkAccountCertification(index common.AccountName, votes uint64
 	}
 	if acc.Votes.Staked < votes {
 		acc.Show()
-		return errors.New(log, fmt.Sprintf("the account:%s has no enough staked", index.String()))
+		return errors.New(log, fmt.Sprintf("the account:%s has no enough staked:%d", index.String(), acc.Votes.Staked))
 	}
 	return nil
 }
@@ -523,26 +526,11 @@ func (s *State) checkAccountCertification(index common.AccountName, votes uint64
  *  @brief store the producers' list into mpt trie
  */
 func (s *State) commitProducersList() error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	//if err := s.initProducersList(); err != nil {
+	//	return err
+	//}
 	s.prodMutex.Lock()
 	defer s.prodMutex.Unlock()
-	if len(s.Producers) == 0 {
-		data, err := s.trie.TryGet([]byte(prodsList))
-		if err != nil {
-			return errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
-		}
-		if len(data) != 0 {
-			var Producers []Producer
-			if err := json.Unmarshal(data, &Producers); err != nil {
-				return errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
-			}
-			for _, v := range Producers {
-				s.Producers[v.Index] = v.Amount
-			}
-		}
-	}
-
 	var Keys []common.AccountName
 	for k := range s.Producers {
 		Keys = append(Keys, k)
@@ -585,26 +573,12 @@ func (s *State) GetProducerList() ([]common.AccountName, error) {
 	if !s.RequireVotingInfo() {
 		return nil, errors.New(log, "the main network has not been started")
 	}
-	s.prodMutex.Lock()
-	defer s.prodMutex.Unlock()
-	if len(s.Producers) == 0 {
-		s.mutex.RLock()
-		defer s.mutex.RUnlock()
-		data, err := s.trie.TryGet([]byte(prodsList))
-		if err != nil {
-			return nil, errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
-		}
-		if len(data) != 0 {
-			var Producers []Producer
-			if err := json.Unmarshal(data, &Producers); err != nil {
-				return nil, errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
-			}
-			for _, v := range Producers {
-				s.Producers[v.Index] = v.Amount
-			}
-		}
+	if err := s.initProducersList(); err != nil {
+		return nil, err
 	}
 	var list []common.AccountName
+	s.prodMutex.RLock()
+	defer s.prodMutex.RUnlock()
 	for k := range s.Producers {
 		list = append(list, k)
 		if len(list) == 21 {
@@ -612,6 +586,29 @@ func (s *State) GetProducerList() ([]common.AccountName, error) {
 		}
 	}
 	return list, nil
+}
+
+func (s *State) initProducersList() error {
+	if len(s.Producers) == 0 {
+		s.prodMutex.Lock()
+		defer s.prodMutex.Unlock()
+		s.mutex.RLock()
+		defer s.mutex.RUnlock()
+		data, err := s.trie.TryGet([]byte(prodsList))
+		if err != nil {
+			return errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
+		}
+		if len(data) != 0 {
+			var Producers []Producer
+			if err := json.Unmarshal(data, &Producers); err != nil {
+				return errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
+			}
+			for _, v := range Producers {
+				s.Producers[v.Index] = v.Amount
+			}
+		}
+	}
+	return nil
 }
 
 /**

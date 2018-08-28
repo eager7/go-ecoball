@@ -258,7 +258,8 @@ func (t *Transaction) show() {
 
 func (t *Transaction) JsonString() string {
 	data, _ := json.Marshal(struct {
-		Version    uint32             `json:"version"`
+		Version    uint32 `json:"version"`
+		ChainID    string
 		Type       string             `json:"type"`
 		From       string             `json:"from"`
 		Permission string             `json:"permission"`
@@ -269,7 +270,7 @@ func (t *Transaction) JsonString() string {
 		Signatures []common.Signature `json:"signatures"`
 		Hash       string             `json:"hash"`
 		Receipt    TransactionReceipt `json:"receipt"`
-	}{Version: t.Version, Type: t.Type.String(), From: t.From.String(),
+	}{Version: t.Version, ChainID: t.ChainID.HexString(), Type: t.Type.String(), From: t.From.String(),
 		Permission: t.Permission, Addr: t.Addr.String(), Nonce: t.Nonce,
 		TimeStamp: t.TimeStamp, Payload: t.Payload.JsonString(), Signatures: t.Signatures,
 		Hash: t.Hash.HexString(), Receipt: t.Receipt})
