@@ -23,13 +23,19 @@ import (
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 )
 
+type ShardInfo struct {
+	Cid     *cid.Cid
+	RawSize uint64
+}
+
 type StoreRepoStat struct {
-	Peer       peer.ID
-	ChainID    uint32
-	RepoSize   uint64
-	StorageMax uint64
-	NumObjects uint64
-	BadBlocks  []*cid.Cid
+	Peer         peer.ID
+	ChainID      uint32
+	RepoSize     uint64
+	StorageMax   uint64
+	NumObjects   uint64
+	RandBlkInfo  []*ShardInfo
+	BadBlocks    []*cid.Cid
 }
 
 func (srs *StoreRepoStat) Serialize() ([]byte, error) {
@@ -41,8 +47,7 @@ func (srs *StoreRepoStat) Serialize() ([]byte, error) {
 		NumObjects: srs.NumObjects,
 	}
 
-	var pb_cids []*pb.Cid
-
+	var pb_badcids []*pb.Cid
 	for _, cid := range srs.BadBlocks {
 		prefix := cid.Prefix()
 		pb_cid := &pb.Cid{
@@ -50,9 +55,22 @@ func (srs *StoreRepoStat) Serialize() ([]byte, error) {
 			Codec:    prefix.Codec,
 			Hash:     cid.Hash(),
 		}
-		pb_cids = append(pb_cids, pb_cid)
+		pb_badcids = append(pb_badcids, pb_cid)
 	}
-	p.Cids = pb_cids
+	p.BadBlocks = pb_badcids
+
+	var sis []*pb.ShardInfo
+	for _, shard := range srs.RandBlkInfo {
+		prefix :=shard.Cid.Prefix()
+		pb_cid := &pb.Cid{
+			Version:  prefix.Version,
+			Codec:    prefix.Codec,
+			Hash:     shard.Cid.Hash(),
+		}
+		si := &pb.ShardInfo{pb_cid, shard.RawSize}
+		sis = append(sis, si)
+	}
+	p.RandBlkInfo = sis
 
 	b, err := p.Marshal()
 	if err != nil {
@@ -75,8 +93,8 @@ func (srs *StoreRepoStat) Deserialize(data []byte) error {
 	srs.StorageMax = pb_srs.StorageMax
 	srs.NumObjects = pb_srs.NumObjects
 
-	var cids []*cid.Cid
-	for _, pb_cid := range pb_srs.Cids {
+	var badcids []*cid.Cid
+	for _, pb_cid := range pb_srs.BadBlocks {
 		var newCid *cid.Cid
 		switch pb_cid.Version {
 		case 0:
@@ -86,9 +104,25 @@ func (srs *StoreRepoStat) Deserialize(data []byte) error {
 		default:
 			return errors.New("error for decoding proof message")
 		}
-		cids = append(cids, newCid)
+		badcids = append(badcids, newCid)
 	}
-	srs.BadBlocks = cids
+	srs.BadBlocks = badcids
+
+	var randBlksInfo []*ShardInfo
+	for _, shard := range pb_srs.RandBlkInfo {
+		var newCid *cid.Cid
+		switch shard.ShardCid.Version {
+		case 0:
+			newCid = cid.NewCidV0(shard.ShardCid.Hash)
+		case 1:
+			newCid = cid.NewCidV1(shard.ShardCid.Codec, shard.ShardCid.Hash)
+		default:
+			return errors.New("error for decoding proof message")
+		}
+		randBlk := &ShardInfo{newCid, shard.ShardSize}
+		randBlksInfo = append(randBlksInfo, randBlk)
+	}
+	srs.RandBlkInfo = randBlksInfo
 
 	return nil
 }
