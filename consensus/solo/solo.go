@@ -17,28 +17,43 @@
 package solo
 
 import (
+	"fmt"
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
-	"time"
+	"github.com/ecoball/go-ecoball/net/dispatcher"
+	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/txpool"
-	"github.com/ecoball/go-ecoball/common"
+	"time"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
 
 type Solo struct {
 	stop   chan struct{}
+	msg    <-chan interface{}
 	ledger ledger.Ledger
 	txPool *txpool.TxPool
 }
 
-func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (*Solo, error) {
-	solo := &Solo{ledger: l, stop:make(chan struct{}, 1), txPool:txPool}
+func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (solo *Solo, err error) {
+	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool}
 	actor := &soloActor{solo: solo}
 	NewSoloActor(actor)
+
+	messages := []uint32{
+		message.APP_MSG_BLK,
+	}
+
+	solo.msg, err = dispatcher.Subscribe(messages...)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
 	return solo, nil
 }
 
@@ -50,23 +65,26 @@ func (s *Solo) Start(chainID common.Hash) error {
 		for {
 			t.Reset(time.Second * 3)
 			select {
-				case <-t.C:
-					log.Debug("Request transactions from tx pool")
-					txs, _ := s.txPool.GetTxsList(chainID)
-					block, err := s.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
-					if err != nil {
-						log.Fatal(err)
-					}
-					if err := block.SetSignature(&config.Root); err != nil {
-						log.Fatal(err)
-					}
-					if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
-						log.Fatal(err)
-					}
-				case <- s.stop: {
+			case <-t.C:
+				log.Debug("Request transactions from tx pool")
+				txs, _ := s.txPool.GetTxsList(chainID)
+				block, err := s.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
+				if err != nil {
+					log.Fatal(err)
+				}
+				if err := block.SetSignature(&config.Root); err != nil {
+					log.Fatal(err)
+				}
+				if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
+					log.Fatal(err)
+				}
+			case <-s.stop:
+				{
 					log.Info("Stop Solo Mode")
 					return
 				}
+			case msg := <-s.msg:
+				fmt.Println(msg)
 			}
 		}
 	}()

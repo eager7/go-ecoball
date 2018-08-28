@@ -17,15 +17,15 @@
 package message
 
 import (
-	"io"
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
-	"github.com/ecoball/go-ecoball/common/elog"
+	"io"
 )
 
 const (
-	APP_MSG_TRN  uint32 = iota
+	APP_MSG_TRN uint32 = iota
 	APP_MSG_BLK
 	APP_MSG_GOSSIP_PULL_BLK_REQ
 	APP_MSG_GOSSIP_PULL_BLK_ACK
@@ -44,10 +44,12 @@ const (
 
 // Messages maps the name of a message to its type
 var Messages = map[string]uint32{
-	"gossip-pull-blk-req":    APP_MSG_GOSSIP_PULL_BLK_REQ,
-	"gossip-pull-blk-ack":    APP_MSG_GOSSIP_PULL_BLK_ACK,
-	"gossip-push-blk":        APP_MSG_GOSSIP_PUSH_BLKS,
-	"store-stat":             APP_MSG_STORE_STAT,
+	"gossip-pull-blk-req": APP_MSG_GOSSIP_PULL_BLK_REQ,
+	"gossip-pull-blk-ack": APP_MSG_GOSSIP_PULL_BLK_ACK,
+	"gossip-push-blk":     APP_MSG_GOSSIP_PUSH_BLKS,
+	"store-stat":          APP_MSG_STORE_STAT,
+	"block":               APP_MSG_BLK,
+	"transaction":         APP_MSG_TRN,
 }
 
 // MessageToStr maps the numeric message type to its name
@@ -56,9 +58,12 @@ var MessageToStr = map[uint32]string{
 	APP_MSG_GOSSIP_PULL_BLK_ACK: "gossip-pull-blk-ack",
 	APP_MSG_GOSSIP_PUSH_BLKS:    "gossip-push-blk",
 	APP_MSG_STORE_STAT:          "store-stat",
+	APP_MSG_BLK:                 "block",
+	APP_MSG_TRN:                 "transaction",
 }
 
 var log = elog.NewLogger("message", elog.DebugLog)
+
 type HandlerFunc func(data []byte) (err error)
 
 type EcoBallNetMsg interface {
@@ -68,18 +73,16 @@ type EcoBallNetMsg interface {
 	Exportable
 }
 
-
 type Exportable interface {
 	ToProtoV1() *pb.Message
 	ToNetV1(w io.Writer) error
 }
 
 type impl struct {
-	chainId     uint32
-	msgType     uint32
-	data        []byte
+	chainId uint32
+	msgType uint32
+	data    []byte
 }
-
 
 func New(msgType uint32, data []byte) EcoBallNetMsg {
 	return newMsg(msgType, data)
@@ -87,9 +90,9 @@ func New(msgType uint32, data []byte) EcoBallNetMsg {
 
 func newMsg(msgType uint32, data []byte) *impl {
 	return &impl{
-		chainId: 1,//TODO
+		chainId: 1, //TODO
 		msgType: msgType,
-		data: data,
+		data:    data,
 	}
 }
 
