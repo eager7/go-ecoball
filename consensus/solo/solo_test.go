@@ -24,7 +24,6 @@ func TestSoloModule(t *testing.T) {
 
 	solo.NewSoloConsensusServer(ledger, txPool)
 	event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
-	autoGenerateTransaction()
 	if config.StartNode {
 		go autoGenerateTransaction()
 	}
