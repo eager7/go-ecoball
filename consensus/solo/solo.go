@@ -90,7 +90,20 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
 				return
 			}
 		case msg := <-solo.msg:
-			fmt.Println("receive msg:", msg)
+			in, ok := msg.(message.EcoBallNetMsg)
+			if !ok {
+				log.Error("can't parse msg")
+				continue
+			}
+			log.Info("receive msg:", message.MessageToStr[in.Type()])
+			block := new(types.Block)
+			if err := block.Deserialize(in.Data()); err != nil {
+				log.Error(err)
+				continue
+			}
+			if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }
