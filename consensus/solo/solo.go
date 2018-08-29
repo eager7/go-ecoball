@@ -37,6 +37,7 @@ type Solo struct {
 	msg    <-chan interface{}
 	ledger ledger.Ledger
 	txPool *txpool.TxPool
+	Chains map[common.Hash]common.Hash
 }
 
 func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (solo *Solo, err error) {

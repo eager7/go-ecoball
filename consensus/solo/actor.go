@@ -53,7 +53,13 @@ func (l *soloActor) Receive(ctx actor.Context) {
 		log.Info("Receive Solo Stop Message")
 		l.solo.stop <- struct{}{}
 	case common.Hash :
-		go ConsensusWorkerThread(msg, l.solo)
+		if chain, ok := l.solo.Chains[msg]; ok {
+			log.Info("the chain is existed:", chain.HexString())
+			return
+		} else {
+			l.solo.Chains[msg] = msg
+			go ConsensusWorkerThread(msg, l.solo)
+		}
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}
