@@ -11,10 +11,11 @@ import (
 	"github.com/ecoball/go-ecoball/http/common"
 	//"github.com/ecoball/go-ecoball/core/store"
 	//"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
-	//"github.com/ecoball/go-ecoball/core/ledgerimpl"
+	//"github.com/ecoball/go-ecoball/core/ledgerimpl/Ledger"
 	//"encoding/json"
 	//"fmt"
-	"github.com/ecoball/go-ecoball/spectator/notify"
+	//"github.com/ecoball/go-ecoball/spectator/notify"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
 func CreateAccount(params []interface{}) *common.Response {
@@ -42,7 +43,7 @@ func CreateAccount(params []interface{}) *common.Response {
 func Getinfo(params []interface{}) *common.Response {
 	var height uint64 = 1
 
-	blockInfo, errcode := notify.CoreLedger.GetTxBlockByHeight(config.ChainHash, height)
+	blockInfo, errcode := ledger.L.GetTxBlockByHeight(config.ChainHash, height)
 	if errcode != nil {
 		return common.NewResponse(common.INVALID_PARAMS, "get block faild")
 	}
