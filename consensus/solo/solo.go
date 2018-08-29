@@ -46,7 +46,7 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (solo *Solo,
 	NewSoloActor(actor)
 
 	messages := []uint32{
-		message.APP_MSG_BLK,
+		message.APP_MSG_BLKS,
 	}
 
 	solo.msg, err = dispatcher.Subscribe(messages...)
