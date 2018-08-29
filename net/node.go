@@ -105,6 +105,7 @@ func (node *NetNode) broadcastLoop() {
 		for {
 			select {
 			case msg := <-node.broadCastCh:
+				log.Debug("broadCastCh receive msg:", message.MessageToStr[msg.Type()])
 				//TODO cache check
 				//node.netMsgCache.Add(msg.DataSum, msg.Size)
 				node.broadcastMessage(msg)
