@@ -58,40 +58,6 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (solo *Solo,
 	return solo, nil
 }
 
-func (s *Solo) Start(chainID common.Hash) error {
-	t := time.NewTimer(time.Second * 1)
-	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-
-	go func() {
-		for {
-			t.Reset(time.Second * 300)
-			select {
-			case <-t.C:
-				log.Debug("Request transactions from tx pool")
-				txs, _ := s.txPool.GetTxsList(chainID)
-				block, err := s.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
-				if err != nil {
-					log.Fatal(err)
-				}
-				if err := block.SetSignature(&config.Root); err != nil {
-					log.Fatal(err)
-				}
-				if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
-					log.Fatal(err)
-				}
-			case <-s.stop:
-				{
-					log.Info("Stop Solo Mode")
-					return
-				}
-			case msg := <-s.msg:
-				fmt.Println("receive msg:", msg)
-			}
-		}
-	}()
-	return nil
-}
-
 func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
 	t := time.NewTimer(time.Second * 1)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
