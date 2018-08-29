@@ -28,6 +28,7 @@ type DeployInfo struct {
 	TypeVm   VmType `json:"typeVm"`
 	Describe []byte `json:"describe"`
 	Code     []byte `json:"code"`
+	Abi      []byte `json:"abi"`
 }
 
 func NewDeployContract(from, addr common.AccountName, chainID common.Hash, perm string, vm VmType, des string, code []byte, nonce uint64, time int64) (*Transaction, error) {

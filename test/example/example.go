@@ -15,6 +15,9 @@ import (
 	"math/big"
 	"os"
 	"time"
+	"io/ioutil"
+	"encoding/json"
+	"github.com/ecoball/go-ecoball/http/commands"
 )
 
 var log = elog.NewLogger("example", elog.InfoLog)
@@ -232,6 +235,62 @@ func VotingProducer(ledger ledger.Ledger) {
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("root"), config.ChainHash, state.Active, "vote", []string{"worker1", "worker1", "worker2"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker2)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
+}
+
+func InvokeContract(ledger ledger.Ledger) {
+	time.Sleep(time.Second * 15)
+	log.Warn("Start Invoke contract")
+
+	//file data
+	file, err := os.OpenFile("/home/ubuntu/go/src/github.com/ecoball/go-ecoball/test/token/token.wasm", os.O_RDONLY, 0666)
+	if err != nil {
+		fmt.Println("open file failed")
+		return
+	}
+
+	defer file.Close()
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		fmt.Println("read contract filr err: ", err.Error())
+		return
+	}
+
+	contract, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, types.VmWasm, "test", data, 0, time.Now().Unix())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(contract.SetSignature(&config.Root))
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	time.Sleep(time.Millisecond * 500)
+
+	//test param
+	time.Sleep(time.Second * 5)
+	params, err := commands.ParseParams("string:foo")
+	if err != nil {
+		return
+	}
+
+	data, err = json.Marshal(params)
+	if err != nil {
+		return
+	}
+	log.Debug("ParseParams: ", string(data))
+
+	argbyte, err := commands.BuildWasmContractParam(params)
+	if err != nil {
+		//t.Errorf("build wasm contract param failed:%s", err)
+		//return
+		return
+	}
+	log.Debug("BuildWasmContractParam: ", string(argbyte))
+
+	var parameters []string
+
+	parameters = append(parameters, string(argbyte[:]))
+
+	invoke, err := types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, "test", parameters, 0, time.Now().Unix())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 500)
 }

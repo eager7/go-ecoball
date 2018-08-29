@@ -217,6 +217,18 @@ func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, er
 }
 
 /**
+*  @brief get the abi of contract
+*  @param index - account's index
+*/
+func (s *State) GetContractAbi(index common.AccountName) ([]byte, error) {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return nil, err
+	}
+	return acc.Contract.Abi, err
+}
+
+/**
  *  @brief search the account by name index
  *  @param index - the account index
  */

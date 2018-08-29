@@ -50,6 +50,7 @@ func TestRunMain(t *testing.T) {
 	if config.StartNode {
 		go example.AutoGenerateTransaction(ledger)
 		go example.VotingProducer(ledger)
+		go example.InvokeContract(ledger)
 	}
 
 	wait()
