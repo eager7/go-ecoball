@@ -1,5 +1,5 @@
 package wasmservice
-
+/*
 import(
 	"github.com/ecoball/go-ecoball/vm/wasmvm/exec"
 )
@@ -47,4 +47,4 @@ func(ws *WasmService)db_remove(proc *exec.Process)int32{
 //for c api:
 func(ws *WasmService)db_find(proc *exec.Process)int32{
 	return 0
-}
+}*/
