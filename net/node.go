@@ -191,7 +191,9 @@ func (bs *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming messa
 			log.Error(err.Error())
 			return
 		}
-		dispatcher.Publish(incoming)
+		if err := dispatcher.Publish(incoming); err != nil {
+			log.Error(err)
+		}
 	} else {
 		dispatcher.Publish(incoming)
 		log.Error("publish msg ", incoming.Type())
