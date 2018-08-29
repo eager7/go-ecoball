@@ -40,6 +40,7 @@ import (
 	"github.com/ecoball/go-ecoball/spectator"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
 var (
@@ -57,13 +58,14 @@ func runNode(c *cli.Context) error {
 
 	fmt.Println("Run Node")
 	log.Info("Build Geneses Block")
-	l, err := ledgerimpl.NewLedger(store.PathBlock)
+	var err error
+	ledger.L, err = ledgerimpl.NewLedger(store.PathBlock)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	//start transaction pool
-	txPool, err := txpool.Start(l)
+	txPool, err := txpool.Start(ledger.L)
 	if err != nil {
 		log.Fatal("start txPool error, ", err.Error())
 		os.Exit(1)
@@ -73,23 +75,23 @@ func runNode(c *cli.Context) error {
 	//start consensus
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
-		solo.NewSoloConsensusServer(l, txPool)
+		solo.NewSoloConsensusServer(ledger.L, txPool)
 		event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
 	case "DPOS":
 		log.Info("Start DPOS consensus")
 
 		c, _ := dpos.NewDposService()
-		c.Setup(l, txPool)
+		c.Setup(ledger.L, txPool)
 		c.Start()
 
 	case "ABABFT":
 		var acc account.Account
 		acc = config.Worker
-		serviceConsensus, _ := ababft.ServiceABABFTGen(l, txPool, &acc)
+		serviceConsensus, _ := ababft.ServiceABABFTGen(ledger.L, txPool, &acc)
 		println("build the ababft service")
 		serviceConsensus.Start()
 		println("start the ababft service")
-		if l.StateDB(config.ChainHash).RequireVotingInfo() {
+		if ledger.L.StateDB(config.ChainHash).RequireVotingInfo() {
 			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
 		}
 	default:
@@ -105,7 +107,7 @@ func runNode(c *cli.Context) error {
 	ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
-			if err := spectator.Bystander(l); nil != err {
+			if err := spectator.Bystander(ledger.L); nil != err {
 				errChan <- err
 			}
 		}()

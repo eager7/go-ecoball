@@ -25,38 +25,38 @@ var delegate = common.NameToIndex("delegate")
 
 func TestGenesesBlockInit(t *testing.T) {
 	elog.Log.Info("genesis block")
-	l := example.Ledger("/tmp/genesis")
-	_, err := txpool.Start(l)
+	ledger.L = example.Ledger("/tmp/genesis")
+	_, err := txpool.Start(ledger.L)
 	errors.CheckErrorPanic(err)
 
 	elog.Log.Info("new account block")
-	createBlock := CreateAccountBlock(l, config.ChainHash)
+	createBlock := CreateAccountBlock(ledger.L, config.ChainHash)
 
 	elog.Log.Info("transfer block:", createBlock.StateHash.HexString())
-	blockTransfer := TokenTransferBlock(l, config.ChainHash)
+	blockTransfer := TokenTransferBlock(ledger.L, config.ChainHash)
 
 	elog.Log.Info("pledge block:", blockTransfer.StateHash.HexString())
-	pledgeBlock := PledgeContract(l, config.ChainHash)
+	pledgeBlock := PledgeContract(ledger.L, config.ChainHash)
 
 	elog.Log.Info("voting block:", pledgeBlock.StateHash.HexString())
-	votingBlock := VotingContract(l, config.ChainHash)
-	l.StateDB(config.ChainHash).RequireVotingInfo()
+	votingBlock := VotingContract(ledger.L, config.ChainHash)
+	ledger.L.StateDB(config.ChainHash).RequireVotingInfo()
 
 	elog.Log.Info("cancel pledge block:", votingBlock.StateHash.HexString())
-	CancelPledgeContract(l, config.ChainHash)
+	CancelPledgeContract(ledger.L, config.ChainHash)
 	//showAccountInfo(l)
-	elog.Log.Debug(l.StateDB(config.ChainHash).RequireVotingInfo())
+	elog.Log.Debug(ledger.L.StateDB(config.ChainHash).RequireVotingInfo())
 
 	for i := 0; i < 0; i++ {
 		time.Sleep(10 * time.Second)
-		fmt.Println(l.RequireResources(config.ChainHash, root, time.Now().UnixNano()))
+		fmt.Println(ledger.L.RequireResources(config.ChainHash, root, time.Now().UnixNano()))
 	}
 
-	CreateNewChain(l, config.ChainHash)
+	CreateNewChain(ledger.L, config.ChainHash)
 	//errors.CheckErrorPanic(l.StateDB().Close())
 
 	chainID := common.HexToHash("0xf687530adf0f1eaf8b9bf683fdf0c8d134a81b696c48225d0ec0b690a2a6f31f")
-	createBlock = CreateAccountBlock(l, chainID)
+	createBlock = CreateAccountBlock(ledger.L, chainID)
 }
 func CreateAccountBlock(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 	elog.Log.Info("CreateAccountBlock--------------------------2----------------------------\n\n")

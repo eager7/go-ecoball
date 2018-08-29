@@ -41,7 +41,7 @@ type Solo struct {
 }
 
 func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (solo *Solo, err error) {
-	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool}
+	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool, Chains: make(map[common.Hash]common.Hash, 1)}
 	actor := &soloActor{solo: solo}
 	NewSoloActor(actor)
 

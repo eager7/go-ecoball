@@ -6,6 +6,8 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
+var L Ledger
+
 type Ledger interface {
 	NewTxChain(chainID common.Hash) (err error)
 
