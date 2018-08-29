@@ -84,6 +84,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		hash := common.SingleHash(index.Bytes())
 		event.Send(event.ActorNil, event.ActorTxPool, hash)
 		event.Send(event.ActorNil, event.ActorLedger, hash)
+		event.Send(event.ActorNil, event.ActorConsensusSolo, hash)
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", ns.method))
 	}
