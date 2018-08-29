@@ -56,7 +56,11 @@ func TestGenesesBlockInit(t *testing.T) {
 	//errors.CheckErrorPanic(l.StateDB().Close())
 
 	chainID := common.HexToHash("0xf687530adf0f1eaf8b9bf683fdf0c8d134a81b696c48225d0ec0b690a2a6f31f")
+	elog.Log.Info("new account block")
 	createBlock = CreateAccountBlock(ledger.L, chainID)
+
+	elog.Log.Info("transfer block:", createBlock.StateHash.HexString())
+	blockTransfer = TokenTransferBlock(ledger.L, chainID)
 }
 func CreateAccountBlock(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 	elog.Log.Info("CreateAccountBlock--------------------------2----------------------------\n\n")
