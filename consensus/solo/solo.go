@@ -64,7 +64,7 @@ func (s *Solo) Start(chainID common.Hash) error {
 
 	go func() {
 		for {
-			t.Reset(time.Second * 3)
+			t.Reset(time.Second * 300)
 			select {
 			case <-t.C:
 				log.Debug("Request transactions from tx pool")
@@ -101,6 +101,9 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
 		case <-t.C:
 			log.Debug("Request transactions from tx pool")
 			txs, _ := solo.txPool.GetTxsList(chainID)
+			if len(txs) == 0 {
+				continue
+			}
 			block, err := solo.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
 			if err != nil {
 				log.Fatal(err)

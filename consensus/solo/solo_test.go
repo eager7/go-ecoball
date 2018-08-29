@@ -25,10 +25,10 @@ func TestSoloModule(t *testing.T) {
 	solo.NewSoloConsensusServer(ledger, txPool)
 	event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
 	autoGenerateTransaction()
-	for i := 0; i < 10; i++ {
-		autoGenerateTransaction()
-		time.Sleep(time.Second * 1)
+	if config.StartNode {
+		go autoGenerateTransaction()
 	}
+	example.Wait()
 }
 
 func autoGenerateTransaction() {

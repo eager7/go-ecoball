@@ -15,6 +15,8 @@ import (
 	"math/big"
 	"os"
 	"time"
+	"os/signal"
+	"syscall"
 )
 
 var log = elog.NewLogger("example", elog.InfoLog)
@@ -234,4 +236,12 @@ func VotingProducer(ledger ledger.Ledger) {
 	invoke.SetSignature(&config.Worker2)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 500)
+}
+
+func Wait() {
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	defer signal.Stop(interrupt)
+	sig := <-interrupt
+	log.Info("ecoball received signal:", sig)
 }
