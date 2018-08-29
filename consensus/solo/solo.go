@@ -17,7 +17,6 @@
 package solo
 
 import (
-	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
@@ -37,15 +36,16 @@ type Solo struct {
 	msg    <-chan interface{}
 	ledger ledger.Ledger
 	txPool *txpool.TxPool
+	Chains map[common.Hash]common.Hash
 }
 
 func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (solo *Solo, err error) {
-	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool}
+	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool, Chains: make(map[common.Hash]common.Hash, 1)}
 	actor := &soloActor{solo: solo}
 	NewSoloActor(actor)
 
 	messages := []uint32{
-		message.APP_MSG_BLK,
+		message.APP_MSG_BLKS,
 	}
 
 	solo.msg, err = dispatcher.Subscribe(messages...)
@@ -57,40 +57,6 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (solo *Solo,
 	return solo, nil
 }
 
-func (s *Solo) Start(chainID common.Hash) error {
-	t := time.NewTimer(time.Second * 1)
-	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-
-	go func() {
-		for {
-			t.Reset(time.Second * 3)
-			select {
-			case <-t.C:
-				log.Debug("Request transactions from tx pool")
-				txs, _ := s.txPool.GetTxsList(chainID)
-				block, err := s.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
-				if err != nil {
-					log.Fatal(err)
-				}
-				if err := block.SetSignature(&config.Root); err != nil {
-					log.Fatal(err)
-				}
-				if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
-					log.Fatal(err)
-				}
-			case <-s.stop:
-				{
-					log.Info("Stop Solo Mode")
-					return
-				}
-			case msg := <-s.msg:
-				fmt.Println("receive msg:", msg)
-			}
-		}
-	}()
-	return nil
-}
-
 func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
 	t := time.NewTimer(time.Second * 1)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
@@ -98,8 +64,15 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
 		t.Reset(time.Second * 3)
 		select {
 		case <-t.C:
+			if !config.StartNode {
+				continue
+			}
 			log.Debug("Request transactions from tx pool")
 			txs, _ := solo.txPool.GetTxsList(chainID)
+			if len(txs) == 0 {
+				log.Info("no transaction in this time")
+				continue
+			}
 			block, err := solo.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
 			if err != nil {
 				log.Fatal(err)
@@ -116,7 +89,20 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
 				return
 			}
 		case msg := <-solo.msg:
-			fmt.Println("receive msg:", msg)
+			in, ok := msg.(message.EcoBallNetMsg)
+			if !ok {
+				log.Error("can't parse msg")
+				continue
+			}
+			log.Info("receive msg:", message.MessageToStr[in.Type()])
+			block := new(types.Block)
+			if err := block.Deserialize(in.Data()); err != nil {
+				log.Error(err)
+				continue
+			}
+			if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }

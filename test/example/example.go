@@ -15,9 +15,14 @@ import (
 	"math/big"
 	"os"
 	"time"
+<<<<<<< HEAD
 	"io/ioutil"
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/http/commands"
+=======
+	"os/signal"
+	"syscall"
+>>>>>>> 98949478dcc53c6b6cf7124a25b034a4be531f08
 )
 
 var log = elog.NewLogger("example", elog.InfoLog)
@@ -239,6 +244,7 @@ func VotingProducer(ledger ledger.Ledger) {
 	time.Sleep(time.Millisecond * 500)
 }
 
+<<<<<<< HEAD
 func InvokeContract(ledger ledger.Ledger) {
 	time.Sleep(time.Second * 15)
 	log.Warn("Start Invoke contract")
@@ -293,4 +299,12 @@ func InvokeContract(ledger ledger.Ledger) {
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 500)
+=======
+func Wait() {
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	defer signal.Stop(interrupt)
+	sig := <-interrupt
+	log.Info("ecoball received signal:", sig)
+>>>>>>> 98949478dcc53c6b6cf7124a25b034a4be531f08
 }

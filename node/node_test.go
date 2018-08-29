@@ -16,28 +16,29 @@ import (
 	"syscall"
 	"testing"
 	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
 func TestRunMain(t *testing.T) {
 	net.InitNetWork()
-	ledger := example.Ledger("/tmp/run_test")
+	ledger.L = example.Ledger("/tmp/run_test")
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
 
 	//start transaction pool
-	txPool, err := txpool.Start(ledger)
+	txPool, err := txpool.Start(ledger.L)
 	errors.CheckErrorPanic(err)
 	net.StartNetWork()
 
 	//start consensus
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
-		solo.NewSoloConsensusServer(ledger, txPool)
+		solo.NewSoloConsensusServer(ledger.L, txPool)
 		event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":
 		elog.Log.Info("enter the branch of ababft consensus", config.ConsensusAlgorithm)
-		s, _ := ababft.ServiceABABFTGen(ledger, txPool, &config.Worker2)
+		s, _ := ababft.ServiceABABFTGen(ledger.L, txPool, &config.Worker2)
 		s.Start()
 		elog.Log.Info("send the start message to ababft")
 		event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
@@ -46,11 +47,16 @@ func TestRunMain(t *testing.T) {
 	}
 
 	//start explorer
-	go spectator.Bystander(ledger)
+	go spectator.Bystander(ledger.L)
 	if config.StartNode {
+<<<<<<< HEAD
 		go example.AutoGenerateTransaction(ledger)
 		go example.VotingProducer(ledger)
 		go example.InvokeContract(ledger)
+=======
+		go example.AutoGenerateTransaction(ledger.L)
+		go example.VotingProducer(ledger.L)
+>>>>>>> 98949478dcc53c6b6cf7124a25b034a4be531f08
 	}
 
 	wait()

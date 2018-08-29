@@ -48,7 +48,7 @@ var Messages = map[string]uint32{
 	"gossip-pull-blk-ack": APP_MSG_GOSSIP_PULL_BLK_ACK,
 	"gossip-push-blk":     APP_MSG_GOSSIP_PUSH_BLKS,
 	"store-stat":          APP_MSG_STORE_STAT,
-	"block":               APP_MSG_BLK,
+	"block":               APP_MSG_BLKS,
 	"transaction":         APP_MSG_TRN,
 }
 
@@ -58,7 +58,7 @@ var MessageToStr = map[uint32]string{
 	APP_MSG_GOSSIP_PULL_BLK_ACK: "gossip-pull-blk-ack",
 	APP_MSG_GOSSIP_PUSH_BLKS:    "gossip-push-blk",
 	APP_MSG_STORE_STAT:          "store-stat",
-	APP_MSG_BLK:                 "block",
+	APP_MSG_BLKS:                "block",
 	APP_MSG_TRN:                 "transaction",
 }
 
