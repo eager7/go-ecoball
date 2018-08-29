@@ -65,6 +65,9 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
 		t.Reset(time.Second * 3)
 		select {
 		case <-t.C:
+			if !config.StartNode {
+				continue
+			}
 			log.Debug("Request transactions from tx pool")
 			txs, _ := solo.txPool.GetTxsList(chainID)
 			if len(txs) == 0 {
