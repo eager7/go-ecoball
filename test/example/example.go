@@ -267,7 +267,7 @@ func InvokeContract() {
 
 	//test param
 	time.Sleep(time.Second * 5)
-	params, err := commands.ParseParams("string:foo")
+	params, err := commands.ParseParams("string:foo,int32:2147483647")
 	if err != nil {
 		return
 	}

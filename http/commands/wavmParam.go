@@ -124,6 +124,26 @@ import (
 //	return args, nil
 //}
 
+func Int32ToString(n int32) string {
+	buf := [11]byte{}
+	pos := len(buf)
+	i := int64(n)
+	signed := i < 0
+	if signed {
+		i = -i
+	}
+	for {
+		pos--
+		buf[pos], i = '0'+byte(i%10), i/10
+		if i == 0 {
+			if signed {
+				pos--
+				buf[pos] = '-'
+			}
+			return string(buf[pos:])
+		}
+	}
+}
 
 func BuildWasmContractParam(params []interface{}) ([]byte, error) {
 	args := make([]wasmservice.ParamTV, len(params))
@@ -133,22 +153,22 @@ func BuildWasmContractParam(params []interface{}) ([]byte, error) {
 		case string:
 			arg := wasmservice.ParamTV{Ptype: "string", Pval: param.(string)}
 			args[i] = arg
-		case int:
-			arg := wasmservice.ParamTV{Ptype: "int", Pval: strconv.Itoa(param.(int))}
+		case int32:
+			arg := wasmservice.ParamTV{Ptype: "int32", Pval: Int32ToString(param.(int32))}
 			args[i] = arg
 		case int64:
 			arg := wasmservice.ParamTV{Ptype: "int64", Pval: strconv.FormatInt(param.(int64), 10)}
 			args[i] = arg
-		case []int:
+		case []int32:
 			bf := bytes.NewBuffer(nil)
-			array := param.([]int)
+			array := param.([]int32)
 			for i, tmp := range array {
-				bf.WriteString(strconv.Itoa(tmp))
+				bf.WriteString(Int32ToString(tmp))
 				if i != len(array)-1 {
 					bf.WriteString(",")
 				}
 			}
-			arg := wasmservice.ParamTV{Ptype: "int_array", Pval: bf.String()}
+			arg := wasmservice.ParamTV{Ptype: "int32_array", Pval: bf.String()}
 			args[i] = arg
 		case []int64:
 			bf := bytes.NewBuffer(nil)
@@ -159,7 +179,7 @@ func BuildWasmContractParam(params []interface{}) ([]byte, error) {
 					bf.WriteString(",")
 				}
 			}
-			arg := wasmservice.ParamTV{Ptype: "int_array", Pval: bf.String()}
+			arg := wasmservice.ParamTV{Ptype: "int64_array", Pval: bf.String()}
 			args[i] = arg
 		default:
 			object := reflect.ValueOf(v)

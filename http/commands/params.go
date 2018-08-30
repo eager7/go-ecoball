@@ -32,7 +32,7 @@ const (
 	PARAM_TYPE_ARRAY      = "array"
 	PARAM_TYPE_BYTE_ARRAY = "bytearray"
 	PARAM_TYPE_STRING     = "string"
-	PARAM_TYPE_INTEGER    = "int"
+	PARAM_TYPE_INTEGER    = "int32"
 	PARAM_TYPE_BOOLEAN    = "bool"
 	PARAM_LEFT_BRACKET    = "["
 	PARAM_RIGHT_BRACKET   = "]"
@@ -158,7 +158,7 @@ func parseRawParamValue(pType string, pValue string) (interface{}, error) {
 		if err != nil {
 			return nil, fmt.Errorf("parse integer param:%s error:%s", pValue, err)
 		}
-		return value, nil
+		return int32(value), nil
 	case PARAM_TYPE_BOOLEAN:
 		switch strings.ToLower(pValue) {
 		case "true":
