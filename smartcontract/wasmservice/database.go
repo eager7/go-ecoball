@@ -1,11 +1,11 @@
 package wasmservice
-/*
+
 import(
 	"github.com/ecoball/go-ecoball/vm/wasmvm/exec"
 )
 
-//for c api: int db_store(char* key, char *value)
-func(ws *WasmService)db_store(proc *exec.Process, key int32, value int32 )int32{
+//for c api: int db_put(char* key, char *value)
+func(ws *WasmService)db_put(proc *exec.Process, key int32, value int32 )int32{
 	k_msg, err := proc.VMGetData(int(key))
 	if err != nil{
 		return -1
@@ -47,4 +47,4 @@ func(ws *WasmService)db_remove(proc *exec.Process)int32{
 //for c api:
 func(ws *WasmService)db_find(proc *exec.Process)int32{
 	return 0
-}*/
+}
