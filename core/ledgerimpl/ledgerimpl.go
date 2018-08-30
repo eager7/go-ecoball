@@ -70,8 +70,6 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash) (err error) {
 	if err != nil {
 		return err
 	}
-	acc, _ := ChainTx.StateDB.TempDB.GetAccountByName(common.NameToIndex("root"))
-	acc.Show()
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	l.ChainTxs[chainID] = ChainTx
