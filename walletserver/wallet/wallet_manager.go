@@ -301,11 +301,11 @@ func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
 		for _, wallet := range Wallets {
 			if !wallet.CheckLocked() {
 				if signData, bHave := wallet.TrySignDigest(transaction, publicKey); bHave {
-					sig := inner.Signature{}
+					sig := new(inner.Signature)
 					sig.PubKey = []byte(publicKey)
 					sig.SigData = signData
 
-					Transaction.Signatures = append(Transaction.Signatures, sig)
+					Transaction.Signatures = append(Transaction.Signatures, *sig)
 					if !bFound {
 						bFound = true
 					}

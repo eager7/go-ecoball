@@ -2,18 +2,18 @@ package commands
 
 import (
 	"fmt"
-	//"time"
+	"strings"
 
 	innercommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/http/common"
 	//"github.com/ecoball/go-ecoball/core/store"
 	//"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
 	//"github.com/ecoball/go-ecoball/core/ledgerimpl/Ledger"
-	//"encoding/json"
-	//"fmt"
+	"encoding/json"
 	//"github.com/ecoball/go-ecoball/spectator/notify"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
@@ -53,6 +53,62 @@ func Getinfo(params []interface{}) *common.Response {
 		return common.NewResponse(common.INVALID_PARAMS, "Serialize failed")
 	}
 	return common.NewResponse(common.SUCCESS, innercommon.ToHex(data))
+}
+
+func Get_required_keys(params []interface{}) *common.Response {
+	if len(params) < 1 {
+		log.Error("invalid arguments")
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	switch params[0].(type){
+	case string:
+		//list account
+		chainId := params[0].(string)
+		required_keys := params[1].(string)
+		permission := params[2].(string)
+		transaction_data := params[3].(string)
+
+		key_datas := strings.Split(required_keys, "\n")
+		Transaction := new(types.Transaction)
+		if err := Transaction.Deserialize(innercommon.FromHex(transaction_data)); err != nil {
+			return common.NewResponse(common.INTERNAL_ERROR, err)
+		}
+		//signTransaction, err := wallet.SignTransaction(inner.FromHex(transaction_data), datas)
+		hash := new(innercommon.Hash)
+		chainids := hash.FormHexString(chainId)
+		data, err := ledger.L.FindPermission(chainids, Transaction.From, permission)
+		if err != nil{
+			return common.NewResponse(common.INTERNAL_ERROR, err)
+		}
+
+		permission_datas := []state.Permission{}
+		if err := json.Unmarshal([]byte(data), &permission_datas); err != nil {
+			return common.NewResponse(common.INTERNAL_ERROR, err)
+		}
+
+		public_address := []innercommon.Address{}
+		for _, v := range permission_datas {
+			for _, value:= range v.Keys{
+				public_address = append(public_address, value.Actor)
+			}
+		}
+
+		publickeys := ""
+		for _, v := range key_datas {
+			addr := innercommon.AddressFromPubKey([]byte(v))
+			for _, vv := range public_address {
+				if addr == vv {
+					publickeys += v
+					publickeys += "\n"
+				}
+			}
+		}
+		publickeys = strings.TrimSuffix(publickeys, "\n")
+		return common.NewResponse(common.SUCCESS, publickeys)
+	default:
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
 }
 
 func handleCreateAccount(params []interface{}) common.Errcode {
