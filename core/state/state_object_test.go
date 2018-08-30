@@ -63,4 +63,6 @@ func TestResourceRecover(t *testing.T) {
 	accNew := new(state.Account)
 	errors.CheckErrorPanic(accNew.Deserialize(data))
 	errors.CheckEqualPanic(acc.JsonString(false) == accNew.JsonString(false))
+
+	errors.CheckErrorPanic(acc.SubResourceLimits(1, 1, 100, 100, types.BlockCpuLimit, types.BlockNetLimit))
 }

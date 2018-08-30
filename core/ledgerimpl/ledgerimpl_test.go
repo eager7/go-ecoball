@@ -38,7 +38,7 @@ var worker3 = common.NameToIndex("worker3")
 
 func TestLedgerImpl_ResetStateDB(t *testing.T) {
 	elog.Log.Info("genesis block")
-	l := example.Ledger("/tmp/genesis")
+	l := example.Ledger("/tmp/ledger_impl")
 	elog.Log.Info("new account block")
 	createBlock := CreateAccountBlock(l)
 
@@ -89,7 +89,7 @@ func CreateAccountBlock(ledger ledger.Ledger) *types.Block {
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	return example.SaveBlock(ledger, txs)
+	return example.SaveBlock(ledger, txs, config.ChainHash)
 }
 func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
 	elog.Log.Info("TokenTransferBlock------------------------------------------------------\n\n")
@@ -109,5 +109,5 @@ func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
 	transfer.SetSignature(&config.Root)
 	txs = append(txs, transfer)
 
-	return example.SaveBlock(ledger, txs)
+	return example.SaveBlock(ledger, txs, config.ChainHash)
 }

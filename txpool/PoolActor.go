@@ -82,6 +82,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 
 	ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
 	if err != nil {
+		log.Warn(tx.JsonString())
 		return err
 	}
 	log.Debug(ret, cpu, net, err)

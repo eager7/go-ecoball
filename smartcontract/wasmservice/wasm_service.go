@@ -19,6 +19,7 @@ package wasmservice
 import (
 	"bytes"
 	"errors"
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/state"
@@ -30,16 +31,14 @@ import (
 	"os"
 	"strings"
 	"encoding/json"
+	"strconv"
 )
 
 var log = elog.NewLogger("wasm", config.LogLevel)
 
-
-//TLV格式存储
 type Param  struct{
-	Arg     []byte  //参数数据
-	Count   int     //参数个数
-	Addrs   []int   //参数地址
+	Arg     []ParamTV   //参数数据
+	Addrs   []int       //参数地址
 }
 
 type ParamTV struct {
@@ -49,14 +48,14 @@ type ParamTV struct {
 
 type WasmService struct {
 	state     state.InterfaceState
-	tx        *types.Transaction
+	addr      common.AccountName
 	Code      []byte
 	Args      Param
 	Method    string
 	timeStamp int64
 }
 
-func NewWasmService(s state.InterfaceState, tx *types.Transaction, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
+func NewWasmService(s state.InterfaceState, account common.AccountName, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
 	if contract == nil {
 		return nil, errors.New("contract is nil")
 	}
@@ -68,12 +67,17 @@ func NewWasmService(s state.InterfaceState, tx *types.Transaction, contract *typ
 	if err1 != nil {
 		return nil, errors.New("json.Unmarshal failed")
 	}
+    num := len(args)
+    var param = Param{
+    	Arg:	args,
+    	Addrs:	make([]int,num),
+	}
 
 	ws := &WasmService{
 		state:     s,
-		tx:        tx,
+		addr:      account,
 		Code:      contract.Code,
-		//Args:      Param{},
+		Args:      param,
 		Method:    string(invoke.Method),
 		timeStamp: timeStamp,
 	}
@@ -81,45 +85,45 @@ func NewWasmService(s state.InterfaceState, tx *types.Transaction, contract *typ
 	return ws, nil
 }
 
-const (
-	ParaInt32      byte = 0XFF
-	ParaString     byte = 0XFE
-)
-
-//TLV
 func (ws *WasmService) ParseParam(vm *exec.VM)([]uint64, error){
 
-	addr, err := vm.Memmanage.SetBlock(ws.Method)
+	method, err := vm.Memmanage.SetBlock(ws.Method)
 	if err != nil{
 		return nil,err
 	}
-	paras := make([]uint64,1)
-	paras[0] = uint64(addr)
-
-   var length int
-   var index  int
+	param := make([]uint64,1)
+	param[0] = uint64(method)
+	var(
+		addr     int
+		v_string string
+		v_int    int
+	//	v_int64  int64
+	)
 	pcount := len(ws.Args.Arg)
-	ws.Args.Count = 0
-	for index = 0;index < pcount; {
-		switch ws.Args.Arg[index]{
-		case ParaInt32,ParaString:
-			length = int(ws.Args.Arg[index+1])
-			data := ws.Args.Arg[index+2:index+length+2]
-		    addr, err := vm.Memmanage.SetBlock(data)
+	for index := 0;index < pcount; index++{
+		switch ws.Args.Arg[index].Ptype{
+		case "string":
+			v_string = ws.Args.Arg[index].Pval
+		    addr, err = vm.Memmanage.SetBlock(v_string)
 		    if err != nil{
 		    	return nil, errors.New("para error")
 			}
-		    ws.Args.Addrs[ws.Args.Count] = addr
-		    ws.Args.Count += 1
-		    index = index + 2 + length
-		default:
+		    ws.Args.Addrs[index] = addr
+		case "int":
+			v_string = ws.Args.Arg[index].Pval
+			v_int, _ = strconv.Atoi(v_string)
+			ws.Args.Addrs[index] = v_int
+		/*case "int64":
+			v_string = ws.Args.Arg[index].Pval
+			v_int64, _ = strconv.ParseInt(v_string, 10, 64)
+			ws.Args.Addrs[index] = v_int64
+		*/default:
 			return nil, errors.New("unsupport type")
 
 		}
 
 	}
-
-	return paras,nil
+	return param,nil
 }
 
 func (ws *WasmService) Execute() ([]byte, error) {
@@ -211,4 +215,9 @@ func (ws *WasmService) RegisterApi() {
 	//crypto
 	functions.Register("ABA_sha256", ws.sha256)
 	functions.Register("ABA_sha512", ws.sha512)
+	//runtime
+	functions.Register("ABA_read_param", ws.read_param)
+	//db
+	functions.Register("ABA_db_put",ws.db_put)
+	functions.Register("ABA_db_get",ws.db_get)
 }
