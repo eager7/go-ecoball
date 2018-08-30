@@ -53,10 +53,13 @@ func (l *soloActor) Receive(ctx actor.Context) {
 		log.Info("Receive Solo Stop Message")
 		l.solo.stop <- struct{}{}
 	case common.Hash :
+		log.Info("Receive Solo Create Message")
 		if chain, ok := l.solo.Chains[msg]; ok {
 			log.Info("the chain is existed:", chain.HexString())
 			return
 		} else {
+			event.Send(event.ActorNil, event.ActorTxPool, msg)
+			event.Send(event.ActorNil, event.ActorLedger, msg)
 			l.solo.Chains[msg] = msg
 			go ConsensusWorkerThread(msg, l.solo)
 		}

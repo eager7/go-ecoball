@@ -61,7 +61,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
 	t := time.NewTimer(time.Second * 1)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
 	for {
-		t.Reset(time.Second * 3)
+		t.Reset(time.Second * 1)
 		select {
 		case <-t.C:
 			if !config.StartNode {

@@ -661,10 +661,11 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 }
 func (a *Account) SubResourceLimits(cpu, net float64, cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) error {
 	if a.Cpu.Available < cpu {
-		return errors.New(log, fmt.Sprintf("the account:%s cpu amount is not enough", a.Index.String()))
+		log.Warn(a.JsonString(false))
+		return errors.New(log, fmt.Sprintf("the account:%s cpu avaiable[%f] is not enough", a.Index.String(), a.Cpu.Available))
 	}
 	if a.Net.Available < net {
-		return errors.New(log, fmt.Sprintf("the account:%s net amount is not enough", a.Index.String()))
+		return errors.New(log, fmt.Sprintf("the account:%s net avaiable[%f] is not enough", a.Index.String(), a.Net.Available))
 	}
 	a.Cpu.Used += cpu
 	a.Net.Used += net

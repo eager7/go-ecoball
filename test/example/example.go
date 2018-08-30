@@ -1,6 +1,7 @@
 package example
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
@@ -12,16 +13,16 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/http/commands"
+	"io/ioutil"
 	"math/big"
 	"os"
-	"time"
-	"io/ioutil"
-	"encoding/json"
-	"github.com/ecoball/go-ecoball/http/commands"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
+var interval = time.Millisecond * 100
 var log = elog.NewLogger("example", elog.InfoLog)
 
 func AddAccount(state *state.State) error {
@@ -41,7 +42,7 @@ func AddAccount(state *state.State) error {
 func TestInvoke(method string) *types.Transaction {
 	indexFrom := common.NameToIndex("from")
 	indexAddr := common.NameToIndex("addr")
-	invoke, err := types.NewInvokeContract(indexFrom, indexAddr, config.ChainHash, "", method, []string{"01b1a6569a557eafcccc71e0d02461fd4b601aea", "Token.Test", "20000"}, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(indexFrom, indexAddr, config.ChainHash, "", method, []string{"01b1a6569a557eafcccc71e0d02461fd4b601aea", "Token.Test", "20000"}, 0, time.Now().UnixNano())
 	if err != nil {
 		panic(err)
 		return nil
@@ -56,7 +57,7 @@ func TestInvoke(method string) *types.Transaction {
 func TestDeploy(code []byte) *types.Transaction {
 	indexFrom := common.NameToIndex("from")
 	indexAddr := common.NameToIndex("addr")
-	deploy, err := types.NewDeployContract(indexFrom, indexAddr, config.ChainHash, "", types.VmWasm, "test deploy", code, 0, time.Now().Unix())
+	deploy, err := types.NewDeployContract(indexFrom, indexAddr, config.ChainHash, "", types.VmWasm, "test deploy", code, 0, time.Now().UnixNano())
 	if err != nil {
 		panic(err)
 		return nil
@@ -72,7 +73,7 @@ func TestTransfer() *types.Transaction {
 	indexFrom := common.NameToIndex("root")
 	indexAddr := common.NameToIndex("delegate")
 	value := big.NewInt(100)
-	tx, err := types.NewTransfer(indexFrom, indexAddr, config.ChainHash, "", value, 0, time.Now().Unix())
+	tx, err := types.NewTransfer(indexFrom, indexAddr, config.ChainHash, "", value, 0, time.Now().UnixNano())
 	if err != nil {
 		fmt.Println(err)
 		return nil
@@ -239,6 +240,95 @@ func VotingProducer(ledger ledger.Ledger) {
 	invoke.SetSignature(&config.Worker2)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 500)
+}
+
+func CreateAccountBlock(chainID common.Hash) {
+	log.Info("-----------------------------CreateAccountBlock")
+	root := common.NameToIndex("root")
+	tokenContract, err := types.NewDeployContract(root, root, chainID, state.Active, types.VmNative, "system control", nil, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, tokenContract))
+	time.Sleep(time.Second * 2)
+
+	invoke, err := types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	invoke, err = types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	invoke, err = types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"worker3", common.AddressFromPubKey(config.Worker3.PublicKey).HexString()}, 2, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+}
+
+func TokenTransferBlock(chainID common.Hash) {
+	log.Info("-----------------------------TokenTransferBlock")
+	root := common.NameToIndex("root")
+	transfer, err := types.NewTransfer(root, common.NameToIndex("worker1"), chainID, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(interval)
+
+	transfer, err = types.NewTransfer(root, common.NameToIndex("worker2"), chainID, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(interval)
+
+	transfer, err = types.NewTransfer(root, common.NameToIndex("worker3"), chainID, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+}
+func PledgeContract(chainID common.Hash) {
+	log.Info("-----------------------------PledgeContract")
+	root := common.NameToIndex("root")
+	delegate := common.NameToIndex("delegate")
+
+	tokenContract, err := types.NewDeployContract(delegate, delegate, chainID, "active", types.VmNative, "system control", nil, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	tokenContract.SetSignature(&config.Delegate)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, tokenContract))
+	time.Sleep(interval)
+
+	invoke, err := types.NewInvokeContract(root, delegate, chainID, "owner", "pledge", []string{"root", "worker1", "100", "100"}, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), delegate, chainID, "owner", "pledge", []string{"worker1", "worker1", "200", "200"}, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), delegate, chainID, "owner", "pledge", []string{"worker2", "worker2", "100", "100"}, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker2)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+	time.Sleep(time.Second * 2)
+}
+func CreateNewChain(chainID common.Hash) {
+	invoke, err := types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("root"), chainID, "active", "reg_chain", []string{"worker1", "solo"}, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Second * 5)
 }
 
 func InvokeContract() {

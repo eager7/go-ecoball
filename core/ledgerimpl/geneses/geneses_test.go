@@ -170,7 +170,7 @@ func CancelPledgeContract(ledger ledger.Ledger, chainID common.Hash) *types.Bloc
 func CreateNewChain(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 	elog.Log.Info("CreateNewChain-----------------------7-------------------------------\n\n")
 	var txs []*types.Transaction
-	invoke, err := types.NewInvokeContract(worker1, root, chainID, "active", "reg_chain", []string{"worker1"}, 0, time.Now().UnixNano())
+	invoke, err := types.NewInvokeContract(worker1, root, chainID, "active", "reg_chain", []string{"worker1", "solo"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)

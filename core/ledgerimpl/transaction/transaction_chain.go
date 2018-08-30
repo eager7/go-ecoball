@@ -566,5 +566,6 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	if err := s.SubResources(tx.From, cpu, net, cpuLimit, netLimit); err != nil {
 		return nil, 0, 0, err
 	}
+	log.Debug("result:", ret, "cpu:", cpu, "net:", net)
 	return ret, cpu, net, nil
 }

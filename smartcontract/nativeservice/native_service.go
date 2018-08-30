@@ -78,13 +78,16 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		ns.state.ElectionToVote(from, accounts)
 	case "reg_chain":
 		index := common.NameToIndex(ns.params[0])
+		consensus := ns.params[1]
 		if err := ns.state.RegisterChain(index, common.SingleHash(index.Bytes())); err != nil {
 			return nil, err
 		}
 		hash := common.SingleHash(index.Bytes())
-		event.Send(event.ActorNil, event.ActorTxPool, hash)
-		event.Send(event.ActorNil, event.ActorLedger, hash)
-		event.Send(event.ActorNil, event.ActorConsensusSolo, hash)
+		if consensus == "solo" {
+			event.Send(event.ActorNil, event.ActorConsensusSolo, hash)
+		} else {
+			log.Warn("not support now")
+		}
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", ns.method))
 	}
