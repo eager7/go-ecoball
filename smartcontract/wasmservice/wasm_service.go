@@ -28,6 +28,8 @@ import (
 	"github.com/ecoball/go-ecoball/vm/wasmvm/validate"
 	"github.com/ecoball/go-ecoball/vm/wasmvm/wasm"
 	"os"
+	"strings"
+	"encoding/json"
 )
 
 var log = elog.NewLogger("wasm", config.LogLevel)
@@ -38,6 +40,11 @@ type Param  struct{
 	Arg     []byte  //参数数据
 	Count   int     //参数个数
 	Addrs   []int   //参数地址
+}
+
+type ParamTV struct {
+	Ptype string `json:"type"`
+	Pval  string `json:"value"`
 }
 
 type WasmService struct {
@@ -54,11 +61,19 @@ func NewWasmService(s state.InterfaceState, tx *types.Transaction, contract *typ
 		return nil, errors.New("contract is nil")
 	}
 
+	stringByte := strings.Join(invoke.Param, "\x20\x00") // x20 = space and x00 = null
+
+	var args []ParamTV
+	err1 := json.Unmarshal([]byte(stringByte), &args)
+	if err1 != nil {
+		return nil, errors.New("json.Unmarshal failed")
+	}
+
 	ws := &WasmService{
 		state:     s,
 		tx:        tx,
 		Code:      contract.Code,
-		Args:      Param{},
+		//Args:      Param{},
 		Method:    string(invoke.Method),
 		timeStamp: timeStamp,
 	}
@@ -81,8 +96,8 @@ func (ws *WasmService) ParseParam(vm *exec.VM)([]uint64, error){
 	paras := make([]uint64,1)
 	paras[0] = uint64(addr)
 
-    var length int
-    var index  int
+   var length int
+   var index  int
 	pcount := len(ws.Args.Arg)
 	ws.Args.Count = 0
 	for index = 0;index < pcount; {

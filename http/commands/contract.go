@@ -17,7 +17,6 @@
 package commands
 
 import (
-	"strings"
 	"time"
 
 	"github.com/ecoball/go-ecoball/core/types"
@@ -29,6 +28,7 @@ import (
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"github.com/ecoball/go-ecoball/http/common"
 	"github.com/ecoball/go-ecoball/common/config"
+	"encoding/json"
 )
 
 var log = elog.NewLogger("commands", elog.DebugLog)
@@ -173,9 +173,30 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 		invalid = true
 	}
 
-	if "" != contractParam {
-		parameters = strings.Split(contractParam, " ")
+	//if "" != contractParam {
+	//	parameters = strings.Split(contractParam, " ")
+	//}
+
+	params, err := ParseParams(contractParam)
+	if err != nil {
+		return common.INVALID_PARAMS
 	}
+
+	data, err := json.Marshal(params)
+	if err != nil {
+		return common.INVALID_PARAMS
+	}
+	log.Debug("ParseParams: ", string(data))
+
+	argbyte, err := BuildWasmContractParam(params)
+	if err != nil {
+		//t.Errorf("build wasm contract param failed:%s", err)
+		//return
+		return common.INVALID_PARAMS
+	}
+	log.Debug("BuildWasmContractParam: ", string(argbyte))
+
+	parameters = append(parameters, string(argbyte[:]))
 
 	if invalid {
 		return common.INVALID_PARAMS

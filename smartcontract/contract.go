@@ -43,6 +43,9 @@ func NewContractService(s state.InterfaceState, tx *types.Transaction, cpuLimit,
 	if !ok {
 		return nil, errors.New(log, "transaction type error[invoke]")
 	}
+
+	log.Debug("NewContractService type: ", contract.TypeVm)
+
 	switch contract.TypeVm {
 	case types.VmNative:
 		service, err := nativeservice.NewNativeService(s, tx.Addr, string(invoke.Method), invoke.Param, cpuLimit, netLimit, timeStamp)

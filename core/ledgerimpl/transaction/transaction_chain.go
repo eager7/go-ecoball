@@ -452,6 +452,15 @@ func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, cod
 func (c *ChainTx) GetContract(index common.AccountName) (*types.DeployInfo, error) {
 	return c.StateDB.FinalDB.GetContract(index)
 }
+
+/**
+*  @brief  get the abi of contract
+*  @param  indexAcc - the uuid of account
+*/
+func (c *ChainTx) GetContractAbi(index common.AccountName) ([]byte, error) {
+	return c.StateDB.FinalDB.GetContractAbi(index)
+}
+
 func (c *ChainTx) AddPermission(index common.AccountName, perm state.Permission) error {
 	return c.StateDB.FinalDB.AddPermission(index, perm)
 }
