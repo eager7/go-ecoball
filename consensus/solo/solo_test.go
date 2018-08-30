@@ -42,3 +42,20 @@ func autoGenerateTransaction() {
 		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
 	}
 }
+
+func TestNewSolo(t *testing.T) {
+	net.InitNetWork()
+	ledger := example.Ledger("/tmp/solo")
+	txPool, err := txpool.Start(ledger)
+	errors.CheckErrorPanic(err)
+	net.StartNetWork()
+
+	solo.NewSoloConsensusServer(ledger, txPool)
+	event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
+
+	example.CreateAccountBlock(config.ChainHash)
+	example.TokenTransferBlock(config.ChainHash)
+	example.PledgeContract(config.ChainHash)
+	//example.CreateNewChain(config.ChainHash)
+
+}
