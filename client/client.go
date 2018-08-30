@@ -28,7 +28,6 @@ import (
 	"github.com/ecoball/go-ecoball/client/commands"
 	"github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/common/config"
-	ncli "github.com/ecoball/go-ecoball/net/cli"
 	"github.com/peterh/liner"
 	"github.com/urfave/cli"
 )
@@ -68,7 +67,7 @@ func newClientApp() *cli.App {
 		commands.QueryCommands,
 		commands.AttachCommands,
 		commands.CreateCommands,
-		ncli.P2pCommand,
+		commands.NetworkCommand,
 	}
 
 	//set default action
