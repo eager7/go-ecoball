@@ -52,15 +52,6 @@ func TestGenesesBlockInit(t *testing.T) {
 		fmt.Println(ledger.L.RequireResources(config.ChainHash, root, time.Now().UnixNano()))
 	}
 
-	CreateNewChain(ledger.L, config.ChainHash)
-	//errors.CheckErrorPanic(l.StateDB().Close())
-
-	chainID := common.HexToHash("0xf687530adf0f1eaf8b9bf683fdf0c8d134a81b696c48225d0ec0b690a2a6f31f")
-	elog.Log.Info("new account block")
-	createBlock = CreateAccountBlock(ledger.L, chainID)
-
-	elog.Log.Info("transfer block:", createBlock.StateHash.HexString())
-	blockTransfer = TokenTransferBlock(ledger.L, chainID)
 }
 func CreateAccountBlock(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 	elog.Log.Info("CreateAccountBlock--------------------------2----------------------------\n\n")
@@ -160,17 +151,6 @@ func CancelPledgeContract(ledger ledger.Ledger, chainID common.Hash) *types.Bloc
 	elog.Log.Info("CancelPledgeContract---------------------6---------------------------------\n\n")
 	var txs []*types.Transaction
 	invoke, err := types.NewInvokeContract(worker1, delegate, chainID, "owner", "cancel_pledge", []string{"worker1", "worker1", "50", "50"}, 0, time.Now().Unix())
-	errors.CheckErrorPanic(err)
-	invoke.SetSignature(&config.Worker1)
-	txs = append(txs, invoke)
-
-	return example.SaveBlock(ledger, txs, chainID)
-}
-
-func CreateNewChain(ledger ledger.Ledger, chainID common.Hash) *types.Block {
-	elog.Log.Info("CreateNewChain-----------------------7-------------------------------\n\n")
-	var txs []*types.Transaction
-	invoke, err := types.NewInvokeContract(worker1, root, chainID, "active", "reg_chain", []string{"worker1", "solo"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)

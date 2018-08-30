@@ -100,9 +100,8 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 		return nil, err
 	}
 	var cpu, net float64
-	log.Notice("Handle Transaction in copy DB")
 	for i := 0; i < len(txs); i++ {
-		//log.Notice(txs[i].JsonString())
+		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in copy DB")
 		if _, c, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].JsonString())
 			return nil, err
@@ -159,8 +158,8 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return nil
 	}
 
-	log.Notice("Handle Transaction in final DB")
 	for i := 0; i < len(block.Transactions); i++ {
+		log.Notice("Handle Transaction:", block.Transactions[i].Type.String(), block.Transactions[i].Hash.HexString(), " in final DB")
 		if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(block.Transactions[i].JsonString())
 			return err

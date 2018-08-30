@@ -56,6 +56,5 @@ func TestNewSolo(t *testing.T) {
 	example.CreateAccountBlock(config.ChainHash)
 	example.TokenTransferBlock(config.ChainHash)
 	example.PledgeContract(config.ChainHash)
-	//example.CreateNewChain(config.ChainHash)
-
+	example.CreateNewChain(config.ChainHash)
 }

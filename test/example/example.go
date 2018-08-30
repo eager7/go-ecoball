@@ -301,7 +301,7 @@ func PledgeContract(chainID common.Hash) {
 	errors.CheckErrorPanic(err)
 	tokenContract.SetSignature(&config.Delegate)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, tokenContract))
-	time.Sleep(interval)
+	time.Sleep(time.Second * 2)
 
 	invoke, err := types.NewInvokeContract(root, delegate, chainID, "owner", "pledge", []string{"root", "worker1", "100", "100"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
@@ -323,6 +323,7 @@ func PledgeContract(chainID common.Hash) {
 	time.Sleep(time.Second * 2)
 }
 func CreateNewChain(chainID common.Hash) {
+	log.Info("-----------------------------CreateNewChain")
 	invoke, err := types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("root"), chainID, "active", "reg_chain", []string{"worker1", "solo"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)

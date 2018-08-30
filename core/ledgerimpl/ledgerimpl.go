@@ -161,7 +161,7 @@ func (l *LedgerImpl) PreHandleTransaction(chainID common.Hash, tx *types.Transac
 	if err := chain.CheckTransactionWithDB(chain.StateDB.TempDB, tx); err != nil {
 		return nil, 0, 0, err
 	}
-	log.Notice("Handle Transaction in temp DB")
+	log.Notice("Handle Transaction:", tx.Type.String(), tx.Hash.HexString(), " in temp DB")
 	return chain.HandleTransaction(chain.StateDB.TempDB, tx, timeStamp, chain.CurrentHeader.Receipt.BlockCpu, chain.CurrentHeader.Receipt.BlockNet)
 }
 
