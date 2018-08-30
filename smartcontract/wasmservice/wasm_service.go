@@ -220,4 +220,9 @@ func (ws *WasmService) RegisterApi() {
 	//db
 	functions.Register("ABA_db_put",ws.db_put)
 	functions.Register("ABA_db_get",ws.db_get)
+	//encode
+	functions.Register("ABA_atoi",  ws.atoi)
+	functions.Register("ABA_atoi64",ws.atoi64)
+	functions.Register("ABA_itoa",  ws.itoa)
+	functions.Register("ABA_i64toa",ws.i64toa)
 }
