@@ -5,8 +5,8 @@ import (
 	"errors"
 	"io"
 
-	"github.com/ecoball/go-ecoball/net/crypto/ecoding"
-	"github.com/ecoball/go-ecoball/net/crypto/fastrand"
+	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
+	"github.com/ecoball/go-ecoball/dsn/common/fastrand"
 
 	"golang.org/x/crypto/ed25519"
 )

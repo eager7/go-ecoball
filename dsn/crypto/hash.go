@@ -13,7 +13,7 @@ import (
 	"errors"
 	"hash"
 
-	"github.com/ecoball/go-ecoball/net/crypto/ecoding"
+	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
 
 	"golang.org/x/crypto/blake2b"
 )

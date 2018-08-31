@@ -9,7 +9,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/ecoball/go-ecoball/net/crypto/fastrand"
+	"github.com/ecoball/go-ecoball/dsn/common/fastrand"
 
 	"golang.org/x/crypto/twofish"
 )

@@ -1,9 +1,9 @@
-package crypto
+package proof
 
 import (
 	"testing"
 
-	"github.com/ecoball/go-ecoball/net/crypto/fastrand"
+	"github.com/ecoball/go-ecoball/dsn/common/fastrand"
 )
 
 // TestTreeBuilder builds a tree and gets the merkle root.
