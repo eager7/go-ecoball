@@ -112,10 +112,10 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 		return common.INVALID_PARAMS, ""
 	}
 
-	/*err = transaction.SetSignature(&common.Account)
+	err = transaction.SetSignature(&config.Root)
 	if err != nil {
 		return common.INVALID_ACCOUNT, ""
-	}*/
+	}
 
 	//send to txpool
 	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
@@ -148,18 +148,18 @@ func InvokeContract(params []interface{}) *common.Response {
 
 func handleInvokeContract(params []interface{}) common.Errcode {
 	var (
-		contractName   string
+		//contractName   string
 		contractMethod string
 		contractParam  string
 		parameters     []string
 		invalid        bool = false
 	)
 
-	if v, ok := params[0].(string); ok {
-		contractName = v
-	} else {
-		invalid = true
-	}
+	//if v, ok := params[0].(string); ok {
+	//	contractName = v
+	//} else {
+	//	invalid = true
+	//}
 
 	if v, ok := params[1].(string); ok {
 		contractMethod = v
@@ -177,18 +177,18 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	//	parameters = strings.Split(contractParam, " ")
 	//}
 
-	params, err := ParseParams(contractParam)
+	args, err := ParseParams(contractParam)
 	if err != nil {
 		return common.INVALID_PARAMS
 	}
 
-	data, err := json.Marshal(params)
+	data, err := json.Marshal(args)
 	if err != nil {
 		return common.INVALID_PARAMS
 	}
 	log.Debug("ParseParams: ", string(data))
 
-	argbyte, err := BuildWasmContractParam(params)
+	argbyte, err := BuildWasmContractParam(args)
 	if err != nil {
 		//t.Errorf("build wasm contract param failed:%s", err)
 		//return
@@ -211,15 +211,16 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	//time
 	time := time.Now().Unix()
 
-	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), config.ChainHash, "owner", contractMethod, parameters, 0, time)
+	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex("root"), config.ChainHash, "owner", contractMethod, parameters, 0, time)
 	if nil != err {
 		return common.INVALID_PARAMS
 	}
 
-	/*err = transaction.SetSignature(&common.Account)
+	// Just for test, must delete later
+	err = transaction.SetSignature(&config.Root)
 	if err != nil {
 		return common.INVALID_ACCOUNT
-	}*/
+	}
 
 	//send to txpool
 	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
