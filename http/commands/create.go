@@ -101,6 +101,7 @@ func Get_required_keys(params []interface{}) *common.Response {
 				if addr == vv {
 					publickeys += v
 					publickeys += "\n"
+					break
 				}
 			}
 		}

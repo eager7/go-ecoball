@@ -84,7 +84,7 @@ $./ecoclient wallet list_keys --name $WALLETFILE --password $PASSWORD
 ### account
 #### create account
 ```
-$./ecoclient wallet createaccount --account $ACCOUNTNAME --password $PASSWORD
+$./ecoclient create account --creator $CREATORNAME --name $ACCOUNTNAME --owner $OWNERPUBLICKEY --active $ACTIVEPUBLICKEY
 ```
 ### transfer
 #### transfer aba  to another person
