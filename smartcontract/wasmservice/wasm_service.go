@@ -67,8 +67,6 @@ func NewWasmService(s state.InterfaceState, account common.AccountName, contract
 	if err1 != nil {
 		return nil, errors.New("json.Unmarshal failed")
 	}
-	log.Debug("NewWasmService json.Unmarshal: ", args)
-
     num := len(args)
     var param = Param{
     	Arg:	args,
@@ -210,6 +208,7 @@ func (ws *WasmService) RegisterApi() {
 	functions.Register("ABA_printdf", ws.printdf)
 	//memory
 	functions.Register("ABA_malloc", ws.malloc)
+	functions.Register("ABA_len",    ws.len)
 	functions.Register("ABA_strlen", ws.strlen)
 	functions.Register("ABA_strcmp", ws.strcmp)
 	functions.Register("ABA_memcpy", ws.memcpy)
