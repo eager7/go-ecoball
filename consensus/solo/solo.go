@@ -17,57 +17,92 @@
 package solo
 
 import (
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
-	"time"
+	"github.com/ecoball/go-ecoball/net/dispatcher"
+	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/txpool"
+	"time"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
 
 type Solo struct {
 	stop   chan struct{}
+	msg    <-chan interface{}
 	ledger ledger.Ledger
 	txPool *txpool.TxPool
+	Chains map[common.Hash]common.Hash
 }
 
-func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (*Solo, error) {
-	solo := &Solo{ledger: l, stop:make(chan struct{}, 1), txPool:txPool}
+func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (solo *Solo, err error) {
+	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool, Chains: make(map[common.Hash]common.Hash, 1)}
 	actor := &soloActor{solo: solo}
 	NewSoloActor(actor)
+
+	messages := []uint32{
+		message.APP_MSG_BLKS,
+	}
+
+	solo.msg, err = dispatcher.Subscribe(messages...)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
 	return solo, nil
 }
 
-func (s *Solo) Start() error {
+func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
 	t := time.NewTimer(time.Second * 1)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-
-	go func() {
-		for {
-			t.Reset(time.Second * 3)
-			select {
-				case <-t.C:
-					log.Debug("Request transactions from tx pool")
-					txs, _ := s.txPool.GetTxsList(config.ChainHash)
-					block, err := s.ledger.NewTxBlock(config.ChainHash, txs, conData, time.Now().UnixNano())
-					if err != nil {
-						log.Fatal(err)
-					}
-					if err := block.SetSignature(&config.Root); err != nil {
-						log.Fatal(err)
-					}
-					if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
-						log.Fatal(err)
-					}
-				case <- s.stop: {
-					log.Info("Stop Solo Mode")
-					return
-				}
+	for {
+		t.Reset(time.Second * 1)
+		select {
+		case <-t.C:
+			if !config.StartNode {
+				continue
+			}
+			log.Debug("Request transactions from tx pool")
+			txs, _ := solo.txPool.GetTxsList(chainID)
+			if len(txs) == 0 {
+				log.Info("no transaction in this time")
+				continue
+			}
+			block, err := solo.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
+			if err != nil {
+				log.Fatal(err)
+			}
+			if err := block.SetSignature(&config.Root); err != nil {
+				log.Fatal(err)
+			}
+			if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
+				log.Fatal(err)
+			}
+		case <-solo.stop:
+			{
+				log.Info("Stop Solo Mode")
+				return
+			}
+		case msg := <-solo.msg:
+			in, ok := msg.(message.EcoBallNetMsg)
+			if !ok {
+				log.Error("can't parse msg")
+				continue
+			}
+			log.Info("receive msg:", message.MessageToStr[in.Type()])
+			block := new(types.Block)
+			if err := block.Deserialize(in.Data()); err != nil {
+				log.Error(err)
+				continue
+			}
+			if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
+				log.Fatal(err)
 			}
 		}
-	}()
-	return nil
+	}
 }

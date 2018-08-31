@@ -9,6 +9,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/state"
 	"strconv"
+	"github.com/ecoball/go-ecoball/common/event"
 )
 
 var log = elog.NewLogger("native", config.LogLevel)
@@ -76,7 +77,17 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		accounts := []common.AccountName{to1, to2}
 		ns.state.ElectionToVote(from, accounts)
 	case "reg_chain":
-
+		index := common.NameToIndex(ns.params[0])
+		consensus := ns.params[1]
+		if err := ns.state.RegisterChain(index, common.SingleHash(index.Bytes())); err != nil {
+			return nil, err
+		}
+		hash := common.SingleHash(index.Bytes())
+		if consensus == "solo" {
+			event.Send(event.ActorNil, event.ActorConsensusSolo, hash)
+		} else {
+			log.Warn("not support now")
+		}
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", ns.method))
 	}

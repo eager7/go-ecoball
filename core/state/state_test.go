@@ -28,6 +28,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 func TestStateNew(t *testing.T) {
@@ -178,10 +179,12 @@ func TestStateDBCopy(t *testing.T) {
 		t.Fatal(err)
 	}
 	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc,  state.AbaToken, new(big.Int).SetInt64(100)))
+	errors.CheckErrorPanic(s.SetResourceLimits(indexAcc, indexAcc, 10, 10, types.BlockCpuLimit, types.BlockNetLimit))
 	s.CommitToDB()
 	value, err := s.AccountGetBalance(indexAcc,  state.AbaToken)
 	errors.CheckErrorPanic(err)
-	elog.Log.Info("value1[100]:", value)
+	elog.Log.Info(value)
+	errors.CheckEqualPanic(value.Uint64() == 80)
 
 	copy, err := s.CopyState()
 	errors.CheckErrorPanic(err)
@@ -190,14 +193,11 @@ func TestStateDBCopy(t *testing.T) {
 	copy.AccountAddBalance(indexAcc,  state.AbaToken, new(big.Int).SetUint64(300))
 	balance, err := copy.AccountGetBalance(indexAcc, state.AbaToken)
 	errors.CheckErrorPanic(err)
-	errors.CheckEqualPanic(balance.Uint64() == 400)
 	elog.Log.Info(balance)
+	errors.CheckEqualPanic(balance.Uint64() == 380)
 
-	balance, err = s.AccountGetBalance(indexAcc, state.AbaToken)
-	errors.CheckErrorPanic(err)
-	errors.CheckEqualPanic(balance.Uint64() == 100)
-	elog.Log.Info(balance)
-
+	errors.CheckErrorPanic(copy.SubResources(indexAcc, 1, 1, types.BlockCpuLimit, types.BlockNetLimit))
+	elog.Log.Debug(copy.RequireResources(indexAcc, types.BlockCpuLimit, types.BlockNetLimit, time.Now().UnixNano()))
 }
 
 func TestStateDBReset(t *testing.T) {

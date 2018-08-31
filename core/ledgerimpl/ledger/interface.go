@@ -6,8 +6,10 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
+var L Ledger
+
 type Ledger interface {
-	NewTxChain(chainID common.Hash, path string) (err error)
+	NewTxChain(chainID common.Hash) (err error)
 
 	GetTxBlock(chainID common.Hash, hash common.Hash) (*types.Block, error)
 	NewTxBlock(chainID common.Hash, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
@@ -26,8 +28,8 @@ type Ledger interface {
 	//GetContract(index common.AccountName) (*types.DeployInfo, error)
 	AccountGet(chainID common.Hash, index common.AccountName) (*state.Account, error)
 	//AddPermission(index common.AccountName, perm state.Permission) error
-	//FindPermission(index common.AccountName, name string) (string, error)
-	//CheckPermission(index common.AccountName, name string, hash common.Hash, sig []common.Signature) error
+	FindPermission(chainID common.Hash, index common.AccountName, name string) (string, error)
+	CheckPermission(chainID common.Hash, index common.AccountName, name string, hash common.Hash, sig []common.Signature) error
 	RequireResources(chainID common.Hash, index common.AccountName, timeStamp int64) (float64, float64, error)
 	GetProducerList(chainID common.Hash, ) ([]common.AccountName, error)
 	//AccountGetBalance(index common.AccountName, token string) (uint64, error)

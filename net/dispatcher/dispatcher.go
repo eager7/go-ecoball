@@ -1,3 +1,19 @@
+// Copyright 2018 The go-ecoball Authors
+// This file is part of the go-ecoball.
+//
+// The go-ecoball is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ecoball is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
+
 package dispatcher
 
 import (
@@ -34,9 +50,9 @@ func (ds *Dispatcher) publish(msg message.EcoBallNetMsg) {
 	ds.ps.Pub(msg, message.MessageToStr[msg.Type()])
 }
 
-func (ds *Dispatcher) subscribe(msgType ...uint32) <-chan interface{} {
+func (ds *Dispatcher) subscribe(msgs ...uint32) <-chan interface{} {
 	var msgstr []string
-	for _, msg := range msgType {
+	for _, msg := range msgs {
 		msgstr = append(msgstr, message.MessageToStr[msg])
 	}
 	if len(msgstr) > 0 {
@@ -61,11 +77,11 @@ func (ds *Dispatcher) shutdown() {
 	ds.ps.Shutdown()
 }
 
-func Subscribe (msgType ...uint32) (<-chan interface{}, error) {
+func Subscribe (msgs ...uint32) (<-chan interface{}, error) {
 	if dispatcher == nil {
 		return nil, fmt.Errorf(errorStr)
 	}
-	return dispatcher.subscribe(msgType...), nil
+	return dispatcher.subscribe(msgs...), nil
 }
 
 func UnSubscribe (chn chan interface{}, msgs ...uint32) error {

@@ -25,32 +25,32 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
-type Block_FirstRound struct {
-	Blockfirst types.Block
+type BlockFirstRound struct {
+	BlockFirst types.Block
 }
 
-type Block_SecondRound struct {
-	Blocksecond types.Block
+type BlockSecondRound struct {
+	BlockSecond types.Block
 }
 
-type Signature_Preblock struct {
-	Signature_preblock pb.SignaturePreblock
+type SignaturePreBlock struct {
+	SignPreBlock pb.SignaturePreblock
 }
 
-func (sign *Signature_Preblock) Serialize() ([]byte, error) {
-	b, err := sign.Signature_preblock.Marshal()
+func (sign *SignaturePreBlock) Serialize() ([]byte, error) {
+	b, err := sign.SignPreBlock.Marshal()
 	if err != nil {
 		return nil, err
 	}
 	return b, nil
 }
 
-func (sign *Signature_Preblock) Deserialize(data []byte) error {
+func (sign *SignaturePreBlock) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")
 	}
 
-	if err := sign.Signature_preblock.Unmarshal(data); err != nil {
+	if err := sign.SignPreBlock.Unmarshal(data); err != nil {
 		return err
 	}
 	return nil
@@ -125,34 +125,34 @@ func (toutmsg *TimeoutMsg) Deserialize(data []byte) error {
 	return nil
 }
 
-type Signature_BlkF struct {
-	Signature_blkf pb.Signature
+type SignatureBlkF struct {
+	signatureBlkF pb.Signature
 }
 
-func (sign *Signature_BlkF) Serialize() ([]byte, error) {
-	b, err := sign.Signature_blkf.Marshal()
+func (sign *SignatureBlkF) Serialize() ([]byte, error) {
+	b, err := sign.signatureBlkF.Marshal()
 	if err != nil {
 		return nil, err
 	}
 	return b, nil
 }
 
-func (sign *Signature_BlkF) Deserialize(data []byte) error {
+func (sign *SignatureBlkF) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")
 	}
 
-	if err := sign.Signature_blkf.Unmarshal(data); err != nil {
+	if err := sign.signatureBlkF.Unmarshal(data); err != nil {
 		return err
 	}
 	return nil
 }
 
-type Block_Syn struct {
+type BlockSyn struct {
 	Blksyn pb.BlockSyn
 }
 
-func (bls *Block_Syn) Serialize() ([]byte, error) {
+func (bls *BlockSyn) Serialize() ([]byte, error) {
 	b, err := bls.Blksyn.Marshal()
 	if err != nil {
 		return nil, err
@@ -160,7 +160,7 @@ func (bls *Block_Syn) Serialize() ([]byte, error) {
 	return b, nil
 }
 
-func (bls *Block_Syn) Deserialize(data []byte) error {
+func (bls *BlockSyn) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")
 	}

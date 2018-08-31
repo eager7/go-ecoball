@@ -66,7 +66,7 @@ func HdGossipBlkAck2Msg(data []byte) error {
 }
 
 func HdSignPreMsg(data []byte) error {
-	signpre_receive := ababft.Signature_Preblock{}
+	signpre_receive := ababft.SignaturePreBlock{}
 	err := signpre_receive.Deserialize(data)
 	if err != nil {
 		return err
@@ -77,13 +77,13 @@ func HdSignPreMsg(data []byte) error {
 }
 
 func HdBlkFMsg(data []byte) error {
-	block_firstround := ababft.Block_FirstRound{}
-	err := block_firstround.Blockfirst.Deserialize(data)
+	blockFirstRound := ababft.BlockFirstRound{}
+	err := blockFirstRound.BlockFirst.Deserialize(data)
 	if err != nil {
 		return err
 	}
 	log.Debug("dispatch first round block msg")
-	eactor.Send(0, eactor.ActorConsensus, block_firstround)
+	eactor.Send(0, eactor.ActorConsensus, blockFirstRound)
 	return nil
 }
 
@@ -121,7 +121,7 @@ func HdToutMsg(data []byte) error {
 }
 
 func HdSignBlkFMsg(data []byte) error {
-	signblkf_receive := ababft.Signature_BlkF{}
+	signblkf_receive := ababft.SignatureBlkF{}
 	err := signblkf_receive.Deserialize(data)
 	if err != nil {
 		return err
@@ -132,8 +132,8 @@ func HdSignBlkFMsg(data []byte) error {
 }
 
 func HdBlkSMsg(data []byte) error {
-	block_secondround := ababft.Block_SecondRound{}
-	err := block_secondround.Blocksecond.Deserialize(data)
+	block_secondround := ababft.BlockSecondRound{}
+	err := block_secondround.BlockSecond.Deserialize(data)
 	if err != nil {
 		return err
 	}
@@ -143,7 +143,7 @@ func HdBlkSMsg(data []byte) error {
 }
 
 func HdBlkSynMsg(data []byte) error {
-	blksyn := ababft.Block_Syn{}
+	blksyn := ababft.BlockSyn{}
 	err := blksyn.Deserialize(data)
 	if err != nil {
 		return err

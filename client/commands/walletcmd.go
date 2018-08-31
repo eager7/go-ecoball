@@ -19,14 +19,15 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
+	//"strings"
 
 	//"github.com/ecoball/go-ecoball/account"
-	//"github.com/ecoball/go-ecoball/common"
+	outerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	innerCommon "github.com/ecoball/go-ecoball/http/common"
 	"github.com/urfave/cli"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 var (
@@ -244,18 +245,35 @@ func createWallet(c *cli.Context) error {
 	return nil
 }
 
-func GetPublicKeys() ([]string, error) {
+func GetPublicKeys() (string, error) {
 	resp, err := rpc.WalletCall("GetPublicKeys", []interface{}{})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return nil, err
+		return "", err
 	}
 	if nil != resp["result"] {
 		data := resp["result"].(string)
-		datas := strings.Split(data, "\n")
-		return datas, nil
+		//datas := strings.Split(data, "\n")
+		return data, nil
 	}
-	return nil, nil
+	return "", nil
+}
+
+func sign_transaction(chainId outerCommon.Hash, required_keys string, trx *types.Transaction) error {
+	data, err := trx.Serialize()
+	if err != nil{
+		return err;
+	}
+	resp, errcode := rpc.WalletCall("sign_transaction", []interface{}{chainId.HexString(), required_keys, outerCommon.ToHex(data)})
+	if errcode != nil {
+		fmt.Fprintln(os.Stderr, errcode)
+		return err
+	}
+	if nil != resp["result"] {
+		data = outerCommon.FromHex(resp["result"].(string))
+		trx.Deserialize(data)
+	}
+	return nil
 }
 
 func createKey(c *cli.Context) error {

@@ -232,3 +232,26 @@ func GetPublicKeys(params []interface{}) *common.Response {
 
 	return common.NewResponse(common.SUCCESS, publickeys)
 }
+
+func Sign_transaction(params []interface{}) *common.Response {
+	if len(params) < 1 {
+		log.Error("invalid arguments")
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	switch params[0].(type){
+	case string:
+		//list account
+		//chainId := params[0].(string)
+		required_keys := params[1].(string)
+		transaction_data := params[2].(string)
+		datas := strings.Split(required_keys, "\n")
+		signTransaction, err := wallet.SignTransaction(inner.FromHex(transaction_data), datas)
+		if err != nil {
+			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
+		}
+		return common.NewResponse(common.SUCCESS, inner.ToHex(signTransaction))
+	default:
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+}

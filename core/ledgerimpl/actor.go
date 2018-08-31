@@ -19,7 +19,9 @@ package ledgerimpl
 import (
 	"reflect"
 
+	"fmt"
 	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -56,18 +58,28 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		l.pid.Stop()
 	case *actor.Restarting:
 	case *types.Block:
+		chain, ok := l.ledger.ChainTxs[msg.ChainID]
+		if !ok {
+			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.ChainID.HexString()))
+			return
+		}
 		begin := time.Now().UnixNano()
-		if err := l.ledger.ChainTxs[msg.ChainID].SaveBlock(msg); err != nil {
-			log.Error("save block error:", err)
+		if err := chain.SaveBlock(msg); err != nil {
+			log.Error("save block["+msg.ChainID.HexString()+"] error:", err)
 			break
 		}
 		end := time.Now().UnixNano()
-		log.Warn("save block:", (end-begin)/1000, "us")
+		log.Info("save block["+msg.ChainID.HexString()+"]:", (end-begin)/1000, "us")
 	case *dpos.DposBlock:
 		//TODO
 
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {
 			log.Error("send block to tx pool error:", err)
+		}
+	case common.Hash:
+		log.Info("add new chain:", msg.HexString())
+		if err := l.ledger.NewTxChain(msg); err != nil {
+			log.Error(err)
 		}
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))

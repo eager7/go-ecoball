@@ -39,7 +39,7 @@ import (
 var lock sync.Mutex
 var coreApi iface.CoreAPI
 
-// PutSerBlock Put a block dag node to ipfs, API for client
+// PutBlock Put a block dag node to ipfs, API for client
 func PutBlock(blockData []byte) (string, error) {
 	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 	file := filepath.Join(dir, "block.bin")

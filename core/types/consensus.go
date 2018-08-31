@@ -367,13 +367,13 @@ func (s *SoloData) Show() {
 ///////////////////////////////////////////aBft/////////////////////////////////////
 type AbaBftData struct {
 	NumberRound        uint32
-	PerBlockSignatures []common.Signature
+	PreBlockSignatures []common.Signature
 }
 
 func (a *AbaBftData) Serialize() ([]byte, error) {
 	var sig []*pb.Signature
-	for i := 0; i < len(a.PerBlockSignatures); i++ {
-		s := &pb.Signature{PubKey: a.PerBlockSignatures[i].PubKey, SigData: a.PerBlockSignatures[i].SigData}
+	for i := 0; i < len(a.PreBlockSignatures); i++ {
+		s := &pb.Signature{PubKey: a.PreBlockSignatures[i].PubKey, SigData: a.PreBlockSignatures[i].SigData}
 		sig = append(sig, s)
 	}
 	pbData := pb.AbaBftData{
@@ -400,7 +400,7 @@ func (a *AbaBftData) Deserialize(data []byte) error {
 			PubKey:  common.CopyBytes(pbData.Sign[i].PubKey),
 			SigData: common.CopyBytes(pbData.Sign[i].SigData),
 		}
-		a.PerBlockSignatures = append(a.PerBlockSignatures, sig)
+		a.PreBlockSignatures = append(a.PreBlockSignatures, sig)
 	}
 	return nil
 }
@@ -410,10 +410,10 @@ func (a AbaBftData) GetObject() interface{} {
 func (a *AbaBftData) Show() {
 	fmt.Println("\t-----------AbaBft------------")
 	fmt.Println("\tNumberRound    :", a.NumberRound)
-	fmt.Println("\tSig Len        :", len(a.PerBlockSignatures))
-	for i := 0; i < len(a.PerBlockSignatures); i++ {
-		fmt.Println("\tPublicKey      :", common.ToHex(a.PerBlockSignatures[i].PubKey))
-		fmt.Println("\tSigData        :", common.ToHex(a.PerBlockSignatures[i].SigData))
+	fmt.Println("\tSig Len        :", len(a.PreBlockSignatures))
+	for i := 0; i < len(a.PreBlockSignatures); i++ {
+		fmt.Println("\tPublicKey      :", common.ToHex(a.PreBlockSignatures[i].PubKey))
+		fmt.Println("\tSigData        :", common.ToHex(a.PreBlockSignatures[i].SigData))
 	}
 }
 

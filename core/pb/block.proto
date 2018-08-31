@@ -282,12 +282,21 @@ message ToutMsg {
 ** Store Repo Stat Message
 */
 message StoreRepoStatMsg {
-    bytes   peer_hash           = 1;
-    uint32  chain_id            = 2;
-    uint64  repo_size           = 3;
-    uint64  storage_max         = 4;
-    uint64  num_objects         = 5;
-    repeated Cid cids           = 6;
+    bytes   peer_hash                = 1;
+    uint32  chain_id                 = 2;
+    uint64  repo_size                = 3;
+    uint64  storage_max              = 4;
+    uint64  num_objects              = 5;
+    repeated ShardInfo rand_blk_info = 6;
+    repeated Cid bad_blocks          = 7;
+}
+
+/**
+** Shard info
+*/
+message ShardInfo {
+	Cid     shard_cid   = 1;
+	uint64  shard_size  = 2;
 }
 
 /**

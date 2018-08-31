@@ -16,7 +16,7 @@
 package wallet
 
 import (
-	"bytes"
+	//"bytes"
 	"crypto/sha512"
 	"encoding/json"
 	"errors"
@@ -274,7 +274,7 @@ func (wallet *WalletImpl) ListPublicKey() ([]string, error) {
 	}
 
 	keys := []string{}
-	for _, publicKey := range wallet.AccountsMap {
+	for publicKey, _ := range wallet.AccountsMap {
 		keys = append(keys, publicKey)
 	}
 
@@ -288,13 +288,14 @@ func (wi *WalletImpl) CheckLocked() bool {
 	return wi.lockflag == locked
 }
 
-func (wallet *WalletImpl) TrySignDigest(digest []byte, publicKey []byte) (signData []byte, bFind bool) {
+func (wallet *WalletImpl) TrySignDigest(digest []byte, publicKey string) (signData []byte, bFind bool) {
 	privateKey := []byte{}
 	bFound := false
 	for public, private := range wallet.AccountsMap {
-		if bytes.Equal([]byte(public), publicKey) {
+		if strings.EqualFold(public, publicKey) {
 			privateKey = []byte(private)
 			bFound = true
+			break;
 		}
 	}
 

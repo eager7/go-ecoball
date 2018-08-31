@@ -100,9 +100,8 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 		return nil, err
 	}
 	var cpu, net float64
-	log.Notice("Handle Transaction in copy DB")
 	for i := 0; i < len(txs); i++ {
-		//log.Notice(txs[i].JsonString())
+		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in copy DB")
 		if _, c, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].JsonString())
 			return nil, err
@@ -111,7 +110,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 			net += n
 		}
 	}
-	return types.NewBlock(config.ChainHash, c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	return types.NewBlock(c.CurrentHeader.ChainID, c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
 }
 
 /**
@@ -138,6 +137,7 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 	}
 	for _, v := range block.Transactions {
 		if err := c.CheckTransaction(v); err != nil {
+			log.Warn(v.JsonString())
 			return err
 		}
 	}
@@ -158,10 +158,10 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return nil
 	}
 
-	log.Notice("Handle Transaction in final DB")
 	for i := 0; i < len(block.Transactions); i++ {
+		log.Notice("Handle Transaction:", block.Transactions[i].Type.String(), block.Transactions[i].Hash.HexString(), " in final DB")
 		if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
-			log.Error("Handle Transaction Error:", err)
+			log.Warn(block.Transactions[i].JsonString())
 			return err
 		}
 	}
@@ -174,11 +174,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 
 	for _, t := range block.Transactions {
 		payload, _ := t.Serialize()
-		if t.Type == types.TxDeploy {
-			c.TxsStore.BatchPut(common.IndexToBytes(t.Addr), payload)
-		} else {
-			c.TxsStore.BatchPut(t.Hash.Bytes(), payload)
-		}
+		c.TxsStore.BatchPut(t.Hash.Bytes(), payload)
 	}
 	if err := c.TxsStore.BatchCommit(); err != nil {
 		return err
@@ -265,7 +261,7 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
 /**
 *  @brief  create a genesis block with built-in account and contract, then save this block into block chain
  */
-func (c *ChainTx) GenesesBlockInit() error {
+func (c *ChainTx) GenesesBlockInit(chainID common.Hash) error {
 	if c.CurrentHeader != nil {
 		log.Debug("geneses block is existed")
 		c.CurrentHeader.Show()
@@ -295,7 +291,7 @@ func (c *ChainTx) GenesesBlockInit() error {
 	hashState := c.StateDB.FinalDB.GetHashRoot()
 
 	fmt.Println(hash.HexString())
-	header, err := types.NewHeader(types.VersionHeader, config.ChainHash, 1, config.ChainHash, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
+	header, err := types.NewHeader(types.VersionHeader, chainID, 1, chainID, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
 	if err != nil {
 		return err
 	}
@@ -384,13 +380,9 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 		if value, err := c.AccountGetBalance(tx.From, state.AbaToken); err != nil {
 			return err
 		} else if value.Sign() <= 0 {
-			log.Error(err)
 			return errors.New(log, errors.ErrDoubleSpend.ErrorInfo())
 		}
 	case types.TxDeploy:
-		if data, _ := c.TxsStore.Get(tx.Addr.Bytes()); data != nil {
-			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
-		}
 	case types.TxInvoke:
 		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
 			return errors.New(log, errors.ErrDuplicatedTx.ErrorInfo())
@@ -459,6 +451,15 @@ func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, cod
 func (c *ChainTx) GetContract(index common.AccountName) (*types.DeployInfo, error) {
 	return c.StateDB.FinalDB.GetContract(index)
 }
+
+/**
+*  @brief  get the abi of contract
+*  @param  indexAcc - the uuid of account
+*/
+func (c *ChainTx) GetContractAbi(index common.AccountName) ([]byte, error) {
+	return c.StateDB.FinalDB.GetContractAbi(index)
+}
+
 func (c *ChainTx) AddPermission(index common.AccountName, perm state.Permission) error {
 	return c.StateDB.FinalDB.AddPermission(index, perm)
 }
@@ -513,7 +514,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 			return nil, 0, 0, err
 		}
 	case types.TxDeploy:
-		if err := s.CheckPermission(tx.From, state.Active, tx.Hash, tx.Signatures); err != nil {
+		if err := s.CheckPermission(tx.Addr, state.Active, tx.Hash, tx.Signatures); err != nil {
 			return nil, 0, 0, err
 		}
 		payload, ok := tx.Payload.GetObject().(types.DeployInfo)
@@ -564,5 +565,6 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	if err := s.SubResources(tx.From, cpu, net, cpuLimit, netLimit); err != nil {
 		return nil, 0, 0, err
 	}
+	log.Debug("result:", ret, "cpu:", cpu, "net:", net)
 	return ret, cpu, net, nil
 }

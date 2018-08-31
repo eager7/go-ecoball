@@ -6,18 +6,29 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"math/big"
+	"sort"
 )
 
 var cpuAmount = "cpu_amount"
 var netAmount = "net_amount"
 var prodsList = "prods_list"
+var chainList = "chain_list"
 var votingAmount = "voting_amount"
 var flag = false
+
 const VotesLimit = 200
+const ChainLimit = 200
 
 //var BlockCpu = BlockCpuLimit
 //var BlockNet = BlockNetLimit
-
+type Producer struct {
+	Index  common.AccountName
+	Amount uint64
+}
+type Chain struct {
+	Hash common.Hash
+	Index common.AccountName
+}
 type Resource struct {
 	Ram struct {
 		Quota float64 `json:"quota"`
@@ -263,12 +274,15 @@ func (s *State) RequireResources(index common.AccountName, cpuLimit, netLimit fl
  *  @param index - account's index
  */
 func (s *State) RegisterProducer(index common.AccountName) error {
+	if err := s.initProducersList(); err != nil {
+		return err
+	}
 	s.prodMutex.Lock()
 	if _, ok := s.Producers[index]; ok {
 		s.prodMutex.Unlock()
 		return errors.New(log, fmt.Sprintf("the account:%s was already registed", index.String()))
 	}
-	if err := s.checkAccountCertification(index); err != nil {
+	if err := s.checkAccountCertification(index, VotesLimit); err != nil {
 		s.prodMutex.Unlock()
 		return nil
 	}
@@ -278,10 +292,90 @@ func (s *State) RegisterProducer(index common.AccountName) error {
 }
 
 /**
+ *  @brief register a new transaction chain
+ *  @param index - account's index
+ */
+func (s *State) RegisterChain(index common.AccountName, hash common.Hash) error {
+	if _, err := s.GetChainList(); err != nil {
+		return err
+	}
+	s.chainMutex.Lock()
+	if _, ok := s.Chains[hash]; ok {
+		s.chainMutex.Unlock()
+		return errors.New(log, fmt.Sprintf("the chain:%s was already registed", hash.HexString()))
+	}
+	if err := s.checkAccountCertification(index, ChainLimit); err != nil {
+		s.chainMutex.Unlock()
+		return nil
+	}
+	s.Chains[hash] = index
+	s.chainMutex.Unlock()
+
+	return s.commitChains()
+}
+func (s *State) commitChains() error {
+	if len(s.Chains) == 0 {
+		return nil
+	}
+
+	s.chainMutex.Lock()
+	defer s.chainMutex.Unlock()
+	var Keys []string
+	for k := range s.Chains {
+		Keys = append(Keys, k.HexString())
+	}
+	sort.Strings(Keys)
+	var List []Chain
+	for _, v := range Keys {
+		hash := common.HexToHash(v)
+		list := Chain{hash, s.Chains[hash]}
+		List = append(List, list)
+	}
+
+	data, err := json.Marshal(List)
+	if err != nil {
+		return errors.New(log, fmt.Sprintf("error convert to json string:%s", err.Error()))
+	}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	if err := s.trie.TryUpdate([]byte(chainList), data); err != nil {
+		return errors.New(log, fmt.Sprintf("error update trie:%s", err.Error()))
+	}
+	return nil
+}
+func (s *State) GetChainList() ([]Chain, error) {
+	s.chainMutex.Lock()
+	defer s.chainMutex.Unlock()
+	if len(s.Chains) == 0 {
+		data, err := s.trie.TryGet([]byte(chainList))
+		if err != nil {
+			return nil, errors.New(log, fmt.Sprintf("can't get chainList from DB:%s", err.Error()))
+		}
+		if len(data) != 0 {
+			var Chains []Chain
+			if err := json.Unmarshal(data, &Chains); err != nil {
+				return nil, errors.New(log, fmt.Sprintf("can't unmarshal Chains List from json string:%s", err.Error()))
+			}
+			for _, v := range Chains {
+				s.Chains[v.Hash] = v.Index
+			}
+		}
+	}
+	var list []Chain
+	for k := range s.Chains {
+		c := Chain{k, s.Chains[k]}
+		list = append(list, c)
+	}
+	return list, nil
+}
+/**
  *  @brief cancel register as a candidate node
  *  @param index - account's index
  */
 func (s *State) UnRegisterProducer(index common.AccountName) error {
+	if err := s.initProducersList(); err != nil {
+		return err
+	}
 	s.prodMutex.Lock()
 	if _, ok := s.Producers[index]; !ok {
 		s.prodMutex.Unlock()
@@ -312,6 +406,9 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	if acc.Resource.Votes.Staked == 0 {
 		return errors.New(log, fmt.Sprintf("the account:%s has no enough vote", index.String()))
 	}
+	if err := s.initProducersList(); err != nil {
+		return err
+	}
 	s.prodMutex.RLock()
 	for _, v := range accounts {
 		if _, ok := s.Producers[v]; !ok {
@@ -334,8 +431,8 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 			return err
 		}
 		var accFactors []AccFactor
-		for _, v := range producers{
-			accFactor := AccFactor{Actor:v, Weight:1, Permission:Active}
+		for _, v := range producers {
+			accFactor := AccFactor{Actor: v, Weight: 1, Permission: Active}
 			accFactors = append(accFactors, accFactor)
 		}
 		perm := NewPermission(Active, Owner, 2, []KeyFactor{}, accFactors)
@@ -360,6 +457,9 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
  *  @param accounts - candidate node list
  */
 func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountName) error {
+	if err := s.initProducersList(); err != nil {
+		return err
+	}
 	s.prodMutex.Lock()
 	for k := range acc.Votes.Producers {
 		if _, ok := s.Producers[k]; ok {
@@ -368,7 +468,7 @@ func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountNa
 		delete(acc.Votes.Producers, k)
 	}
 	for _, v := range accounts {
-		if err := s.checkAccountCertification(v); err != nil {
+		if err := s.checkAccountCertification(v, VotesLimit); err != nil {
 			s.prodMutex.Unlock()
 			return err
 		}
@@ -389,6 +489,9 @@ func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountNa
  *  @param votesOld - account's votes before changed
  */
 func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
+	if err := s.initProducersList(); err != nil {
+		return err
+	}
 	s.prodMutex.Lock()
 	for k := range acc.Votes.Producers {
 		acc.Votes.Producers[k] = acc.Votes.Staked
@@ -407,14 +510,14 @@ func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
  *  @brief check whether the account is qualified
  *  @param index - account's index
  */
-func (s *State) checkAccountCertification(index common.AccountName) error {
+func (s *State) checkAccountCertification(index common.AccountName, votes uint64) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
 	}
-	if acc.Votes.Staked < VotesLimit {
+	if acc.Votes.Staked < votes {
 		acc.Show()
-		return errors.New(log, fmt.Sprintf("the account:%s has no enough staked", index.String()))
+		return errors.New(log, fmt.Sprintf("the account:%s has no enough staked:%d", index.String(), acc.Votes.Staked))
 	}
 	return nil
 }
@@ -423,22 +526,25 @@ func (s *State) checkAccountCertification(index common.AccountName) error {
  *  @brief store the producers' list into mpt trie
  */
 func (s *State) commitProducersList() error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	//if err := s.initProducersList(); err != nil {
+	//	return err
+	//}
 	s.prodMutex.Lock()
 	defer s.prodMutex.Unlock()
-	if len(s.Producers) == 0 {
-		data, err := s.trie.TryGet([]byte(prodsList))
-		if err != nil {
-			return errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
-		}
-		if len(data) != 0 {
-			if err := json.Unmarshal(data, &s.Producers); err != nil {
-				return errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
-			}
-		}
+	var Keys []common.AccountName
+	for k := range s.Producers {
+		Keys = append(Keys, k)
 	}
-	data, err := json.Marshal(s.Producers)
+	sort.Slice(Keys, func(i, j int) bool {
+		return uint64(Keys[i]) > uint64(Keys[j])
+	})
+	var List []Producer
+	for _, v := range Keys {
+		list := Producer{v, s.Producers[v]}
+		List = append(List, list)
+	}
+
+	data, err := json.Marshal(List)
 	if err != nil {
 		return errors.New(log, fmt.Sprintf("error convert to json string:%s", err.Error()))
 	}
@@ -467,22 +573,12 @@ func (s *State) GetProducerList() ([]common.AccountName, error) {
 	if !s.RequireVotingInfo() {
 		return nil, errors.New(log, "the main network has not been started")
 	}
-	s.prodMutex.Lock()
-	defer s.prodMutex.Unlock()
-	if len(s.Producers) == 0 {
-		s.mutex.RLock()
-		defer s.mutex.RUnlock()
-		data, err := s.trie.TryGet([]byte(prodsList))
-		if err != nil {
-			return nil, errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
-		}
-		if len(data) != 0 {
-			if err := json.Unmarshal(data, &s.Producers); err != nil {
-				return nil, errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
-			}
-		}
+	if err := s.initProducersList(); err != nil {
+		return nil, err
 	}
 	var list []common.AccountName
+	s.prodMutex.RLock()
+	defer s.prodMutex.RUnlock()
 	for k := range s.Producers {
 		list = append(list, k)
 		if len(list) == 21 {
@@ -490,6 +586,29 @@ func (s *State) GetProducerList() ([]common.AccountName, error) {
 		}
 	}
 	return list, nil
+}
+
+func (s *State) initProducersList() error {
+	if len(s.Producers) == 0 {
+		s.prodMutex.Lock()
+		defer s.prodMutex.Unlock()
+		s.mutex.RLock()
+		defer s.mutex.RUnlock()
+		data, err := s.trie.TryGet([]byte(prodsList))
+		if err != nil {
+			return errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
+		}
+		if len(data) != 0 {
+			var Producers []Producer
+			if err := json.Unmarshal(data, &Producers); err != nil {
+				return errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
+			}
+			for _, v := range Producers {
+				s.Producers[v.Index] = v.Amount
+			}
+		}
+	}
+	return nil
 }
 
 /**
@@ -542,10 +661,11 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 }
 func (a *Account) SubResourceLimits(cpu, net float64, cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) error {
 	if a.Cpu.Available < cpu {
-		return errors.New(log, fmt.Sprintf("the account:%s cpu amount is not enough", a.Index.String()))
+		log.Warn(a.JsonString(false))
+		return errors.New(log, fmt.Sprintf("the account:%s cpu avaiable[%f] is not enough", a.Index.String(), a.Cpu.Available))
 	}
 	if a.Net.Available < net {
-		return errors.New(log, fmt.Sprintf("the account:%s net amount is not enough", a.Index.String()))
+		return errors.New(log, fmt.Sprintf("the account:%s net avaiable[%f] is not enough", a.Index.String(), a.Net.Available))
 	}
 	a.Cpu.Used += cpu
 	a.Net.Used += net

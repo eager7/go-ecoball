@@ -53,6 +53,9 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 	case *types.Block:
 		log.Debug("new block delete transactions")
 		go p.handleNewBlock(msg)
+	case common.Hash:
+		log.Info("Add New TxList:", msg.HexString())
+		p.txPool.AddTxsList(msg)
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}
@@ -75,10 +78,11 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		log.Warn("transaction already in the txn pool" + tx.Hash.HexString())
 		return nil
 	}
-	p.txPool.txsCache.Add(tx.Hash, tx.Hash)
+	p.txPool.txsCache.Add(tx.Hash, nil)
 
 	ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
 	if err != nil {
+		log.Warn(tx.JsonString())
 		return err
 	}
 	log.Debug(ret, cpu, net, err)

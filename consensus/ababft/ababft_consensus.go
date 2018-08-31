@@ -44,8 +44,8 @@ const (
 var selfaccountname common.AccountName
 var soloaccount account.Account
 
-type ServiceAbabft struct {
-	Actor *ActorAbabft // save the actor object
+type ServiceABABFT struct {
+	Actor *ActorABABFT // save the actor object
 	pid   *actor.PID
 	ledger ledger.Ledger
 	account *account.Account
@@ -58,36 +58,36 @@ type PeerInfo struct {
 }
 
 type PeerAddrInfo struct {
-	AccAdress  common.Address
+	AccAddress common.Address
 	Index      int
 }
 
 type PeerInfoAccount struct {
-	Accountname common.AccountName
+	AccountName common.AccountName
 	Index       int
 }
 
-func ServiceAbabftGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.Account) (serviceAbabft *ServiceAbabft, err error) {
+func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.Account) (serviceABABFT *ServiceABABFT, err error) {
 	var pid *actor.PID
 
-	serviceAbabft = new(ServiceAbabft)
+	serviceABABFT = new(ServiceABABFT)
 
-	actorAbabft := &ActorAbabft{}
-	pid, err = ActorAbabftGen(actorAbabft)
+	actorABABFT := &ActorABABFT{}
+	pid, err = ActorABABFTGen(actorABABFT)
 	if err != nil {
 		return nil, err
 	}
-	actorAbabft.pid = pid
-	actorAbabft.status = 1
-	actorAbabft.serviceAbabft = serviceAbabft
-	serviceAbabft.Actor = actorAbabft
-	serviceAbabft.pid = pid
-	serviceAbabft.ledger = l
-	serviceAbabft.account = account
-	serviceAbabft.txPool = txPool
+	actorABABFT.pid = pid
+	actorABABFT.status = 1
+	actorABABFT.serviceABABFT = serviceABABFT
+	serviceABABFT.Actor = actorABABFT
+	serviceABABFT.pid = pid
+	serviceABABFT.ledger = l
+	serviceABABFT.account = account
+	serviceABABFT.txPool = txPool
 
-	current_ledger = l
-	primary_tag = 0
+	serviceABABFT.Actor.currentLedger = l
+	serviceABABFT.Actor.primaryTag = 0
 
 	selfaccountname = common.NameToIndex("worker1")
 	fmt.Println("selfaccountname:",selfaccountname)
@@ -95,24 +95,24 @@ func ServiceAbabftGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 	// cache the root account for solo mode
 	soloaccount = config.Root
 
-	return serviceAbabft, err
+	return serviceABABFT, err
 }
 
-func (serviceAbabft *ServiceAbabft) Start() error {
+func (serviceABABFT *ServiceABABFT) Start() error {
 	var err error
 	// start the ababft service
 	// build the peers list
 	// initialization
-	current_height_num = int(current_ledger.GetCurrentHeight(config.ChainHash))
-	verified_height = uint64(current_height_num) - 1
-	currentheader = &currentheader_data
-	currentheader_data = *(current_ledger.GetCurrentHeader(config.ChainHash))
+	serviceABABFT.Actor.currentHeightNum = int(serviceABABFT.Actor.currentLedger.GetCurrentHeight(config.ChainHash))
+	serviceABABFT.Actor.verifiedHeight = uint64(serviceABABFT.Actor.currentHeightNum) - 1
+	serviceABABFT.Actor.currentHeader = &(serviceABABFT.Actor.currentHeaderData)
+	serviceABABFT.Actor.currentHeaderData = *(serviceABABFT.Actor.currentLedger.GetCurrentHeader(config.ChainHash))
 
 	log.Debug("service start")
 	return err
 }
 
-func (serviceAbabft *ServiceAbabft) Stop() error {
+func (serviceABABFT *ServiceABABFT) Stop() error {
 	// stop the ababft
 	return nil
 }

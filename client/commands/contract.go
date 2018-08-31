@@ -127,15 +127,6 @@ func setContract(c *cli.Context) error {
 	}
 
 	//result
-	switch resp["errorCode"].(type) {
-	case map[string]interface{}:
-
-	case string:
-		fmt.Println(resp["result"].(string))
-		os.Exit(1)
-	}
-
-	//result
 	return rpc.EchoResult(resp)
 }
 

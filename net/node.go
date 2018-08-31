@@ -18,27 +18,27 @@ package net
 
 import (
 	"bytes"
-	"os"
-	"fmt"
 	"context"
+	"fmt"
+	"os"
 
-	"github.com/ipfs/go-ipfs/core"
-	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
-	"gx/ipfs/QmXScvRbYh9X9okLuX9YMnz1HR4WgRTU2hocjBs15nmCNG/go-libp2p-floodsub"
-	"github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/net/util"
-	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/net/p2p"
-	"github.com/ecoball/go-ecoball/net/ipfs"
 	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
+	"github.com/ecoball/go-ecoball/net/ipfs"
+	"github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/p2p"
+	"github.com/ecoball/go-ecoball/net/util"
+	"github.com/ipfs/go-ipfs/core"
+	"gx/ipfs/QmXScvRbYh9X9okLuX9YMnz1HR4WgRTU2hocjBs15nmCNG/go-libp2p-floodsub"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 )
 
 type NetCtrl struct {
-	IpfsCtrl   *ipfs.IpfsCtrl
-	NetNode    *NetNode
-	network    p2p.EcoballNetwork
-	actor      *NetActor
+	IpfsCtrl *ipfs.IpfsCtrl
+	NetNode  *NetNode
+	network  p2p.EcoballNetwork
+	actor    *NetActor
 }
 
 var log = elog.NewLogger("net", elog.DebugLog)
@@ -49,14 +49,14 @@ var ecoballChainId uint32 = 1
 var netCtrl *NetCtrl
 
 type NetNode struct {
-	ctx          context.Context
-	ipfsNode     *core.IpfsNode
-	self         peer.ID
-	network      p2p.EcoballNetwork
-	broadCastCh  chan message.EcoBallNetMsg
-	handlers 	 map[uint32]message.HandlerFunc
-	actorId      *actor.PID
-	pubSub       *floodsub.PubSub
+	ctx         context.Context
+	ipfsNode    *core.IpfsNode
+	self        peer.ID
+	network     p2p.EcoballNetwork
+	broadCastCh chan message.EcoBallNetMsg
+	handlers    map[uint32]message.HandlerFunc
+	actorId     *actor.PID
+	pubSub      *floodsub.PubSub
 
 	//TODO cache check
 	//netMsgCache  *lru.Cache
@@ -64,13 +64,13 @@ type NetNode struct {
 
 func New(parent context.Context, ipfs *core.IpfsNode, network p2p.EcoballNetwork) *NetNode {
 	netNode := &NetNode{
-		ctx: parent,
-		ipfsNode: ipfs,
-		self: ipfs.Identity,
-		network: network,
-		broadCastCh: make(chan message.EcoBallNetMsg, 4 * 1024),//TODO move to config
-		handlers: message.MakeHandlers(),
-		pubSub: ipfs.Floodsub,
+		ctx:         parent,
+		ipfsNode:    ipfs,
+		self:        ipfs.Identity,
+		network:     network,
+		broadCastCh: make(chan message.EcoBallNetMsg, 4*1024), //TODO move to config
+		handlers:    message.MakeHandlers(),
+		pubSub:      ipfs.Floodsub,
 	}
 	netNode.broadcastLoop()
 	netNode.subTxLoop()
@@ -78,7 +78,7 @@ func New(parent context.Context, ipfs *core.IpfsNode, network p2p.EcoballNetwork
 	return netNode
 }
 
-func (node *NetNode) SendMsg2RandomPeers(peerCounts int, msg message.EcoBallNetMsg){
+func (node *NetNode) SendMsg2RandomPeers(peerCounts int, msg message.EcoBallNetMsg) {
 	peers := node.SelectRandomPeers(peerCounts)
 	for _, pid := range peers {
 		err := node.network.SendMessage(context.Background(), pid, msg)
@@ -88,7 +88,7 @@ func (node *NetNode) SendMsg2RandomPeers(peerCounts int, msg message.EcoBallNetM
 	}
 }
 
-func (node *NetNode) SendMsg2Peer(pid peer.ID, msg message.EcoBallNetMsg) error{
+func (node *NetNode) SendMsg2Peer(pid peer.ID, msg message.EcoBallNetMsg) error {
 	err := node.network.SendMessage(context.Background(), pid, msg)
 	if err != nil {
 		log.Error("send msg to ", pid.Pretty(), err.Error())
@@ -105,6 +105,7 @@ func (node *NetNode) broadcastLoop() {
 		for {
 			select {
 			case msg := <-node.broadCastCh:
+				log.Debug("broadCastCh receive msg:", message.MessageToStr[msg.Type()])
 				//TODO cache check
 				//node.netMsgCache.Add(msg.DataSum, msg.Size)
 				node.broadcastMessage(msg)
@@ -123,7 +124,7 @@ func (node *NetNode) broadcastMessage(msg message.EcoBallNetMsg) {
 	}
 }
 
-func (node *NetNode)subTxLoop()  {
+func (node *NetNode) subTxLoop() {
 	go func() {
 		sub, err := node.pubSub.Subscribe("transaction")
 		if err != nil {
@@ -142,7 +143,7 @@ func (node *NetNode)subTxLoop()  {
 	}()
 }
 
-func (node *NetNode) connectedPeerIds() []peer.ID  {
+func (node *NetNode) connectedPeerIds() []peer.ID {
 	peers := []peer.ID{}
 	host := node.ipfsNode.PeerHost
 	if host == nil {
@@ -178,9 +179,9 @@ func (node *NetNode) SelectRandomPeers(k int) []peer.ID {
 }
 
 func (bs *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
-	log.Debug("receive msg:",incoming.Type(), "from ", p.Pretty())
+	log.Debug("receive msg:", message.MessageToStr[incoming.Type()], "from ", p.Pretty())
 	if incoming.Type() > message.APP_MSG_MAX {
-		log.Error("receive a invalid message ", incoming.Type())
+		log.Error("receive a invalid message ", message.MessageToStr[incoming.Type()])
 		return
 	}
 	handler, ok := bs.handlers[incoming.Type()]
@@ -188,13 +189,17 @@ func (bs *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming messa
 		err := handler(incoming.Data())
 		if err != nil {
 			log.Error(err.Error())
+			return
+		}
+		if err := dispatcher.Publish(incoming); err != nil {
+			log.Error(err)
 		}
 	} else {
 		dispatcher.Publish(incoming)
 		log.Error("publish msg ", incoming.Type())
+		return
 	}
 }
-
 
 func (bs *NetNode) ReceiveError(err error) {
 	// TODO log the network error
@@ -203,12 +208,12 @@ func (bs *NetNode) ReceiveError(err error) {
 
 // Connected/Disconnected warns net about peer connections
 func (bs *NetNode) PeerConnected(p peer.ID) {
-//TODO
+	//TODO
 }
 
 // Connected/Disconnected warns bitswap about peer connections
 func (bs *NetNode) PeerDisconnected(p peer.ID) {
-//TODO
+	//TODO
 }
 func (node *NetNode) SelfId() string {
 	return node.self.Pretty()
@@ -218,7 +223,7 @@ func (node *NetNode) SelfRawId() peer.ID {
 	return node.self
 }
 
-func (node *NetNode) Nbrs() []string  {
+func (node *NetNode) Nbrs() []string {
 	peers := []string{}
 	host := node.ipfsNode.PeerHost
 	if host == nil {
@@ -240,7 +245,7 @@ func (node *NetNode) GetActorPid() *actor.PID {
 	return node.actorId
 }
 
-func SetChainId(id uint32)  {
+func SetChainId(id uint32) {
 	ecoballChainId = id
 }
 
@@ -248,7 +253,7 @@ func GetChainId() uint32 {
 	return ecoballChainId
 }
 
-func InitNetWork()  {
+func InitNetWork() {
 	//TODO load config
 	//configFile, err := ioutil.ReadFile(ConfigFile)
 	//if err != nil {
@@ -268,16 +273,16 @@ func InitNetWork()  {
 	netNode := New(context.Background(), ipfsNode, network)
 	dispatcher.InitMsgDispatcher(netNode)
 
-	netCtrl = & NetCtrl{
-		IpfsCtrl:ipfsCtrl,
-		NetNode:netNode,
-		network:network,
+	netCtrl = &NetCtrl{
+		IpfsCtrl: ipfsCtrl,
+		NetNode:  netNode,
+		network:  network,
 	}
 
 	fmt.Printf("i am %s \n", netNode.SelfId())
 }
 
-func StartNetWork()  {
+func StartNetWork() {
 
 	netActor := NewNetActor(netCtrl.NetNode)
 	// gossiper.Start()

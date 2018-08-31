@@ -17,7 +17,6 @@
 package state
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
@@ -45,6 +44,9 @@ type State struct {
 	prodMutex sync.RWMutex
 	Producers map[common.AccountName]uint64
 
+	chainMutex sync.RWMutex
+	Chains     map[common.Hash]common.AccountName
+
 	mutex sync.RWMutex
 }
 
@@ -69,6 +71,7 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	st.Accounts = make(map[string]*Account, 1)
 	st.Params = make(map[string]uint64, 1)
 	st.Producers = make(map[common.AccountName]uint64, 1)
+	st.Chains = make(map[common.Hash]common.AccountName, 1)
 	return st, nil
 }
 
@@ -81,7 +84,9 @@ func (s *State) CopyState() (*State, error) {
 	params := make(map[string]uint64, 1)
 	accounts := make(map[string]*Account, 1)
 	prods := make(map[common.AccountName]uint64, 1)
+	chains := make(map[common.Hash]common.AccountName, 1)
 
+	/*
 	s.paraMutex.Lock()
 	defer s.paraMutex.Unlock()
 	if str, err := json.Marshal(s.Params); err != nil {
@@ -98,6 +103,7 @@ func (s *State) CopyState() (*State, error) {
 			return nil, err
 		}
 	}
+	*/
 	s.accMutex.RLock()
 	defer s.accMutex.RUnlock()
 	for _, v := range s.Accounts {
@@ -113,6 +119,7 @@ func (s *State) CopyState() (*State, error) {
 		Accounts:  accounts,
 		Params:    params,
 		Producers: prods,
+		Chains:    chains,
 	}, nil
 }
 
@@ -150,9 +157,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
 	//defer s.accMutex.Unlock()
 	//s.Accounts[index.String()] = *acc
 
-	s.paraMutex.Lock()
-	defer s.paraMutex.Unlock()
-	s.Params[addr.HexString()] = uint64(index)
+	s.commitParam(addr.HexString(), uint64(index))
 	return acc, nil
 }
 
@@ -212,6 +217,18 @@ func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, er
 }
 
 /**
+*  @brief get the abi of contract
+*  @param index - account's index
+*/
+func (s *State) GetContractAbi(index common.AccountName) ([]byte, error) {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return nil, err
+	}
+	return acc.Contract.Abi, err
+}
+
+/**
  *  @brief search the account by name index
  *  @param index - the account index
  */
@@ -244,11 +261,10 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
  *  @param addr - the account address
  */
 func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
-	s.paraMutex.Lock()
-	index, ok := s.Params[addr.HexString()]
-	s.paraMutex.Unlock()
-	if ok {
-		return s.GetAccountByName(common.AccountName(index))
+	if value, err := s.getParam(addr.HexString()); err != nil {
+		return nil, err
+	} else {
+		return s.GetAccountByName(common.AccountName(value))
 	}
 	s.mutex.Lock()
 	fData, err := s.trie.TryGet(addr.Bytes())

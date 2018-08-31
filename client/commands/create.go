@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"strconv"
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	innercommon "github.com/ecoball/go-ecoball/common"
@@ -40,6 +41,20 @@ var (
 						Name:  "active, a",
 						Usage: "active public key",
 					},
+					cli.StringFlag{
+						Name:  "permission, p",
+						Usage: "active permission",
+					},
+					cli.StringFlag{
+						Name:  "max-cpu-usage-ms",
+						Usage: "max-cpu-usage-ms",
+						Value: "0",
+					},
+					cli.StringFlag{
+						Name:  "max-net-usage",
+						Usage: "max-net-usage",
+						Value: "0",
+					},
 				},
 			},
 		},
@@ -58,6 +73,25 @@ func getInfo()(*types.Block, error) {
 		blockINfo.Deserialize(innercommon.FromHex(data))
 	}
 	return blockINfo, nil
+}
+
+func get_required_keys(chainId innercommon.Hash, required_keys, permission string, trx *types.Transaction)(string, error) {
+	data, err := trx.Serialize()
+	if err != nil{
+		return "", err;
+	}
+
+	resp, errcode := rpc.NodeCall("get_required_keys", []interface{}{chainId.HexString(), required_keys, permission, innercommon.ToHex(data)})
+	if errcode != nil {
+		fmt.Fprintln(os.Stderr, errcode)
+		return "", err
+	}
+
+	if nil != resp["result"] {
+		data := resp["result"].(string)
+		return data, nil
+	}
+	return "", err
 }
 
 func newAccount(c *cli.Context) error {
@@ -86,9 +120,6 @@ func newAccount(c *cli.Context) error {
 		return err
 	}
 
-	GetPublicKeys()
-	getInfo()
-
 	//owner key
 	owner := c.String("owner")
 	if "" == owner {
@@ -102,12 +133,52 @@ func newAccount(c *cli.Context) error {
 		active = owner
 	}
 
+	permission := c.String("permission")
+	if "" == permission {
+		permission = "active"
+	}
+
+	max_cpu_usage_ms, err := strconv.ParseFloat(c.String("max-cpu-usage-ms"), 64)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	max_net_usage, err := strconv.ParseFloat(c.String("max-net-usage"), 64)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+
+	info, err := getInfo(); if err != nil {
+		fmt.Println(err)
+	}
+	
+	publickeys, err := GetPublicKeys(); if err != nil {
+		fmt.Println(err)
+	}
+
 	creatorAccount := innercommon.NameToIndex(creator)
-	timeStamp := time.Now().Unix()
+	timeStamp := time.Now().UnixNano()
 
 	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, config.ChainHash, "owner", "new_account",
 		[]string{name, innercommon.AddressFromPubKey(innercommon.FromHex(owner)).HexString()}, 0, timeStamp)
-	invoke.SetSignature(&config.Root)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	invoke.Receipt.Cpu = max_cpu_usage_ms
+	invoke.Receipt.Net = max_net_usage
+	//invoke.SetSignature(&config.Root)
+
+	required_keys, err := get_required_keys(info.ChainID, publickeys, permission, invoke)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	errcode := sign_transaction(info.ChainID, required_keys, invoke)
+	if nil != errcode {
+		fmt.Println(errcode)
+	}
 
 	//rpc call
 	//resp, err := rpc.Call("createAccount", []interface{}{creator, name, owner, active})
