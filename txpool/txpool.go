@@ -46,7 +46,7 @@ func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
 	pool.PendingTxs = make(map[common.Hash]*types.TxsList, 1)
 	pool.AddTxsList(config.ChainHash)
 	//transaction pool actor
-	if _, err = NewTxPoolActor(pool); nil != err {
+	if _, err = NewTxPoolActor(pool, 3); nil != err {
 		pool = nil
 	}
 
