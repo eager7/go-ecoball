@@ -223,6 +223,13 @@ func (l *LedgerImpl) FindPermission(chainID common.Hash, index common.AccountNam
 	}
 	return chain.StateDB.FinalDB.FindPermission(index, name)
 }
+func (l *LedgerImpl) GetChainList(chainID common.Hash) ([]state.Chain, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.GetChainList()
+}
 func (l *LedgerImpl) CheckPermission(chainID common.Hash, index common.AccountName, name string, hash common.Hash, sig []common.Signature) error {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {

@@ -30,6 +30,7 @@ type Ledger interface {
 	//AddPermission(index common.AccountName, perm state.Permission) error
 	FindPermission(chainID common.Hash, index common.AccountName, name string) (string, error)
 	CheckPermission(chainID common.Hash, index common.AccountName, name string, hash common.Hash, sig []common.Signature) error
+	GetChainList(chainID common.Hash) ([]state.Chain, error)
 	RequireResources(chainID common.Hash, index common.AccountName, timeStamp int64) (float64, float64, error)
 	GetProducerList(chainID common.Hash, ) ([]common.AccountName, error)
 	//AccountGetBalance(index common.AccountName, token string) (uint64, error)

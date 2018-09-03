@@ -451,7 +451,9 @@ func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, cod
 func (c *ChainTx) GetContract(index common.AccountName) (*types.DeployInfo, error) {
 	return c.StateDB.FinalDB.GetContract(index)
 }
-
+func (c *ChainTx) GetChainList() ([]state.Chain, error) {
+	return c.StateDB.FinalDB.GetChainList()
+}
 /**
 *  @brief  get the abi of contract
 *  @param  indexAcc - the uuid of account
