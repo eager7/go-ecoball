@@ -183,13 +183,10 @@ func (wi *WalletImpl) ListKeys() map[string]string{
 */
 func (wi *WalletImpl) CreateKey() ([]byte, []byte, error) {
 	//create keys
-	pub, pri, err := createKey()
+	_, pri, err := createKey()
 	if err != nil {
 		return nil, nil, err
 	}
-
-	wi.lockflag = locked
-	wi.KeyData.AccountsMap[inner.ToHex(pub)] = inner.ToHex(pri)
 
 	pub, errcode := wi.ImportKey(inner.ToHex(pri)) 
 	if errcode != nil {

@@ -322,7 +322,6 @@ func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
 		}
 	}
 
-	Transaction.Show()
 	data, err := Transaction.Serialize()
 	if nil != err {
 		return nil, err
