@@ -2,9 +2,9 @@ package settlement
 
 import (
 	"math/big"
-	"github.com/ecoball/go-ecoball/net/market"
-	"github.com/ecoball/go-ecoball/net/proof"
-	"github.com/ecoball/go-ecoball/net/crypto"
+	//"github.com/ecoball/go-ecoball/net/market"
+	"github.com/ecoball/go-ecoball/dsn/proof"
+	//"github.com/ecoball/go-ecoball/net/crypto"
 )
 
 type Currency struct {
@@ -19,7 +19,7 @@ type RenterFee struct {
 
 
 type RenterContract struct {
-	RId crypto.PublicKey
+	//RId crypto.PublicKey
 	FileContracts map[string]proof.FileContract
 }
 
@@ -28,13 +28,19 @@ type HostContract struct {
 	StartAt proof.BlockHeight
 	FailedProofPerPeriod proof.BlockHeight
 	FailedProofTotal proof.BlockHeight
-	Setting market.StorageHostSetting
+	//Setting market.StorageHostSetting
 }
 
 type Settlement struct {
 	Host   map[string]HostContract
 	Renter map[string]RenterContract
 }
+
+type DiskResource struct{
+	TotalCapacity uint64
+	UsedCapacity  uint64
+}
+
 
 
 

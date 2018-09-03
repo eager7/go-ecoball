@@ -50,7 +50,7 @@ func (ws *WasmService) printsf(proc *exec.Process, v float32) uint32{
 	return 0
 }
 
-//C API :void printdf(float v)
+//C API :void printdf(double v)
 func (ws *WasmService) printdf(proc *exec.Process, v float64) uint32{
 
 	fmt.Printf("%f\n",v)

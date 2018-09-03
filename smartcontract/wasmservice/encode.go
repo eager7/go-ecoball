@@ -27,11 +27,12 @@ func(ws *WasmService)i64toa(proc *exec.Process, data int64)int32{
 	return int32(addr)
 }
 
-//for c api: int64 atoi(char *s)
+//for c api: int32 atoi(char *s)
 func(ws *WasmService)atoi(proc *exec.Process, p int32)int32{
 	data, err := proc.VMGetData(int(p))
 	if err != nil{
 		return -1
+
 	}
 	str := util.TrimBuffToString(data)
 	out, err := strconv.ParseInt(str, 10, 32)

@@ -1,10 +1,11 @@
-package crypto
+package proof
 
 import (
 	"bytes"
 
-	"github.com/ecoball/go-ecoball/net/crypto/ecoding"
-	"github.com/ecoball/go-ecoball/net/crypto/merkletree"
+	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
+	"github.com/ecoball/go-ecoball/dsn/proof/merkletree"
+	"github.com/ecoball/go-ecoball/dsn/crypto"
 )
 
 const (
@@ -25,7 +26,7 @@ type MerkleTree struct {
 // NewTree returns a MerkleTree, which can be used for getting Merkle roots and
 // Merkle proofs on data. See merkletree.Tree for more details.
 func NewTree() *MerkleTree {
-	return &MerkleTree{*merkletree.New(NewHash())}
+	return &MerkleTree{*merkletree.New(crypto.NewHash())}
 }
 
 // PushObject encodes and adds the hash of the encoded object to the tree as a
@@ -36,7 +37,7 @@ func (t *MerkleTree) PushObject(obj interface{}) {
 
 // Root is a redefinition of merkletree.Tree.Root, returning a Hash instead of
 // a []byte.
-func (t *MerkleTree) Root() (h Hash) {
+func (t *MerkleTree) Root() (h crypto.Hash) {
 	copy(h[:], t.Tree.Root())
 	return
 }
@@ -51,13 +52,13 @@ type CachedMerkleTree struct {
 // Merkle roots and proofs from data that has cached subroots. See
 // merkletree.CachedTree for more details.
 func NewCachedTree(height uint64) *CachedMerkleTree {
-	return &CachedMerkleTree{*merkletree.NewCachedTree(NewHash(), height)}
+	return &CachedMerkleTree{*merkletree.NewCachedTree(crypto.NewHash(), height)}
 }
 
 // Prove is a redefinition of merkletree.CachedTree.Prove, so that Sia-specific
 // types are used instead of the generic types used by the parent package. The
 // base is not a return value because the base is used as input.
-func (ct *CachedMerkleTree) Prove(base []byte, cachedHashSet []Hash) []Hash {
+func (ct *CachedMerkleTree) Prove(base []byte, cachedHashSet []crypto.Hash) []crypto.Hash {
 	// Turn the input in to a proof set that will be recognized by the high
 	// level tree.
 	cachedProofSet := make([][]byte, len(cachedHashSet)+1)
@@ -68,7 +69,7 @@ func (ct *CachedMerkleTree) Prove(base []byte, cachedHashSet []Hash) []Hash {
 	_, proofSet, _, _ := ct.CachedTree.Prove(cachedProofSet)
 
 	// convert proofSet to base and hashSet
-	hashSet := make([]Hash, len(proofSet)-1)
+	hashSet := make([]crypto.Hash, len(proofSet)-1)
 	for i, proof := range proofSet[1:] {
 		copy(hashSet[i][:], proof)
 	}
@@ -77,19 +78,19 @@ func (ct *CachedMerkleTree) Prove(base []byte, cachedHashSet []Hash) []Hash {
 
 // Push is a redefinition of merkletree.CachedTree.Push, with the added type
 // safety of only accepting a hash.
-func (ct *CachedMerkleTree) Push(h Hash) {
+func (ct *CachedMerkleTree) Push(h crypto.Hash) {
 	ct.CachedTree.Push(h[:])
 }
 
 // PushSubTree is a redefinition of merkletree.CachedTree.PushSubTree, with the
 // added type safety of only accepting a hash.
-func (ct *CachedMerkleTree) PushSubTree(height int, h Hash) error {
+func (ct *CachedMerkleTree) PushSubTree(height int, h crypto.Hash) error {
 	return ct.CachedTree.PushSubTree(height, h[:])
 }
 
 // Root is a redefinition of merkletree.CachedTree.Root, returning a Hash
 // instead of a []byte.
-func (ct *CachedMerkleTree) Root() (h Hash) {
+func (ct *CachedMerkleTree) Root() (h crypto.Hash) {
 	copy(h[:], ct.CachedTree.Root())
 	return
 }
@@ -105,7 +106,7 @@ func CalculateLeaves(dataSize uint64) uint64 {
 }
 
 // MerkleRoot returns the Merkle root of the input data.
-func MerkleRoot(b []byte) Hash {
+func MerkleRoot(b []byte) crypto.Hash {
 	t := NewTree()
 	buf := bytes.NewBuffer(b)
 	for buf.Len() > 0 {
@@ -116,7 +117,7 @@ func MerkleRoot(b []byte) Hash {
 
 // MerkleProof builds a Merkle proof that the data at segment 'proofIndex' is a
 // part of the Merkle root formed by 'b'.
-func MerkleProof(b []byte, proofIndex uint64) (base []byte, hashSet []Hash) {
+func MerkleProof(b []byte, proofIndex uint64) (base []byte, hashSet []crypto.Hash) {
 	// Create the tree.
 	t := NewTree()
 	t.SetIndex(proofIndex)
@@ -135,7 +136,7 @@ func MerkleProof(b []byte, proofIndex uint64) (base []byte, hashSet []Hash) {
 	}
 
 	base = proof[0]
-	hashSet = make([]Hash, len(proof)-1)
+	hashSet = make([]crypto.Hash, len(proof)-1)
 	for i, p := range proof[1:] {
 		copy(hashSet[i][:], p)
 	}
@@ -144,12 +145,12 @@ func MerkleProof(b []byte, proofIndex uint64) (base []byte, hashSet []Hash) {
 
 // VerifySegment will verify that a segment, given the proof, is a part of a
 // Merkle root.
-func VerifySegment(base []byte, hashSet []Hash, numSegments, proofIndex uint64, root Hash) bool {
+func VerifySegment(base []byte, hashSet []crypto.Hash, numSegments, proofIndex uint64, root crypto.Hash) bool {
 	// convert base and hashSet to proofSet
 	proofSet := make([][]byte, len(hashSet)+1)
 	proofSet[0] = base
 	for i := range hashSet {
 		proofSet[i+1] = hashSet[i][:]
 	}
-	return merkletree.VerifyProof(NewHash(), root[:], proofSet, proofIndex, numSegments)
+	return merkletree.VerifyProof(crypto.NewHash(), root[:], proofSet, proofIndex, numSegments)
 }

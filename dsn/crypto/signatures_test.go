@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/ecoball/go-ecoball/net/crypto/ecoding"
-	"github.com/ecoball/go-ecoball/net/crypto/fastrand"
+	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
+	"github.com/ecoball/go-ecoball/dsn/common/fastrand"
 )
 
 // TestUnitSignatureEncoding creates and encodes a public key, and verifies

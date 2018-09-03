@@ -1,8 +1,9 @@
 package proof
 
 import (
-	"github.com/ecoball/go-ecoball/net/crypto"
+	"github.com/ecoball/go-ecoball/dsn/crypto"
 	"errors"
+	//"github.com/ecoball/go-ecoball/dsn/proof"
 )
 
 var (
@@ -31,7 +32,7 @@ var SectorRoots []crypto.Hash
 
 type StorageProof struct {
 	ParentID FileContractID
-	Segment  [crypto.SegmentSize]byte
+	Segment  [SegmentSize]byte
 	HashSet  []crypto.Hash
 }
 
@@ -59,7 +60,7 @@ func CreateStoragePoof(fid FileContractID) (*StorageProof, error) {
 	if err != nil {
 		return nil, err
 	}
-	sectorIndex := segmentIndex / (SectorSize / crypto.SegmentSize)
+	sectorIndex := segmentIndex / (SectorSize / SegmentSize)
 	// Pull the corresponding sector into memory.
 	sectorRoot := SectorRoots[sectorIndex]
 	sectorBytes, err := ReadSector(sectorRoot)
@@ -67,14 +68,14 @@ func CreateStoragePoof(fid FileContractID) (*StorageProof, error) {
 		return nil, nil
 	}
 	//Build the storage proof for just the sector
-	sectorSegment := segmentIndex % (SectorSize / crypto.SegmentSize)
-	base, cachedHashSet := crypto.MerkleProof(sectorBytes, sectorSegment)
+	sectorSegment := segmentIndex % (SectorSize / SegmentSize)
+	base, cachedHashSet := MerkleProof(sectorBytes, sectorSegment)
 	//Using the sector, build a cached root.
 	log2SectorSize := uint64(0)
-	for 1<<log2SectorSize < (SectorSize / crypto.SegmentSize) {
+	for 1<<log2SectorSize < (SectorSize / SegmentSize) {
 		log2SectorSize++
 	}
-	ct := crypto.NewCachedTree(log2SectorSize)
+	ct := NewCachedTree(log2SectorSize)
 	ct.SetIndex(segmentIndex)
 	for _, root := range SectorRoots {
 		ct.Push(root)
@@ -103,18 +104,18 @@ func VerifyStorageProof(fid FileContractID, sp StorageProof) error {
 	if err != nil {
 		return err
 	}
-	leaves := crypto.CalculateLeaves(fc.FileSize)
-	segmentLen := uint64(crypto.SegmentSize)
+	leaves := CalculateLeaves(fc.FileSize)
+	segmentLen := uint64(SegmentSize)
 	//If this segment chosen is the final segment, it should only be as long
 	//as neccessary to complete the filesize
 	if segmentIndex == leaves - 1 {
-		segmentLen = fc.FileSize % crypto.SegmentSize
+		segmentLen = fc.FileSize % SegmentSize
 	}
 	if segmentLen == 0 {
-		segmentLen = uint64(crypto.SegmentSize)
+		segmentLen = uint64(SegmentSize)
 	}
 
-	verified := crypto.VerifySegment(
+	verified := VerifySegment(
 		sp.Segment[:segmentLen],
 		sp.HashSet,
 		leaves,

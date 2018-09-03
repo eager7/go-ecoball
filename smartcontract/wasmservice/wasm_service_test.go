@@ -21,7 +21,7 @@ func TestApi(t *testing.T) {
 	ws := wasmservice.WasmService{
 		Code:      data,
 		Args:      arg,
-		Method:    "test",
+		Method:    "init",
 	}
 	ws.RegisterApi()
 	ws.Execute()

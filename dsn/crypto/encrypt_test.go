@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"testing"
 
-	"github.com/ecoball/go-ecoball/net/crypto/fastrand"
+	"github.com/ecoball/go-ecoball/dsn/common/fastrand"
 )
 
 // TestTwofishEncryption checks that encryption and decryption works correctly.

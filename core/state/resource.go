@@ -42,12 +42,12 @@ type Resource struct {
 		Limit     float64 `json:"limit_byte, omitempty"`     //uint Byte
 	}
 	Cpu struct {
-		Staked    uint64  `json:"staked_aba, omitempty"`    //total stake delegated from account to self, uint ABA
-		Delegated uint64  `json:"delegated_aba, omitempty"` //total stake delegated to account from others, uint ABA
-		Used      float64 `json:"used_ms, omitempty"`       //uint ms
-		Available float64 `json:"available_ms, omitempty"`  //uint ms
-		Limit     float64 `json:"limit_ms, omitempty"`      //uint ms
-	}
+	Staked    uint64  `json:"staked_aba, omitempty"`    //total stake delegated from account to self, uint ABA
+	Delegated uint64  `json:"delegated_aba, omitempty"` //total stake delegated to account from others, uint ABA
+	Used      float64 `json:"used_ms, omitempty"`       //uint ms
+	Available float64 `json:"available_ms, omitempty"`  //uint ms
+	Limit     float64 `json:"limit_ms, omitempty"`      //uint ms
+}
 	Votes struct {
 		Staked    uint64                        `json:"staked_aba, omitempty"` //total stake delegated, uint ABA
 		Producers map[common.AccountName]uint64 `json:"producers, omitempty"`  //support nodes' list
