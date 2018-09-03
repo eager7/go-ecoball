@@ -16,6 +16,7 @@
 package wallet
 
 import (
+
 	//"bytes"
 	"crypto/sha512"
 	"encoding/json"
@@ -24,8 +25,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ecoball/go-ecoball/crypto/aes"
 	inner "github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/crypto/aes"
 )
 
 const (
@@ -34,15 +35,15 @@ const (
 )
 
 type KeyData struct {
-	Checksum [64]byte  `json:"Checksum"`
+	Checksum    [64]byte `json:"Checksum"`
 	AccountsMap map[string]string
 }
 
 type WalletImpl struct {
 	path string
 	KeyData
-	lockflag byte
-	Cipherkeys []byte  //存储加密后的数据
+	lockflag   byte
+	Cipherkeys []byte //存储加密后的数据
 }
 
 /**
@@ -125,17 +126,16 @@ func (wi *WalletImpl) Lock() error {
 }
 
 func (wi *WalletImpl) CheckPassword(password []byte) bool {
- 	return sha512.Sum512(password) == wi.Checksum 
+	return sha512.Sum512(password) == wi.Checksum
 }
 
-func (wi *WalletImpl) SetLockedState(){
+func (wi *WalletImpl) SetLockedState() {
 	wi.lockflag = locked
 }
 
-func (wi *WalletImpl) SetUnLockedState(){
+func (wi *WalletImpl) SetUnLockedState() {
 	wi.lockflag = unlock
 }
-
 
 /**
 方法：将密钥数据解密
@@ -153,8 +153,8 @@ func (wi *WalletImpl) Unlock(password []byte) error {
 	//unmarshal data
 	wallet := *wi
 	str := string(aeskeys)
-	result := strings.Index(str,"}}")
-	if len(str) > (result+2) {//代表有脏数据，需要截取
+	result := strings.Index(str, "}}")
+	if len(str) > (result + 2) { //代表有脏数据，需要截取
 		content := str[0 : result+2]
 		aeskeys = []byte(content)
 	}
@@ -174,8 +174,8 @@ func (wi *WalletImpl) Unlock(password []byte) error {
 	return nil
 }
 
-func (wi *WalletImpl) ListKeys() map[string]string{
-	return wi.AccountsMap;
+func (wi *WalletImpl) ListKeys() map[string]string {
+	return wi.AccountsMap
 }
 
 /**
@@ -188,17 +188,18 @@ func (wi *WalletImpl) CreateKey() ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 
-	pub, errcode := wi.ImportKey(inner.ToHex(pri)) 
+	pub, errcode := wi.ImportKey(inner.ToHex(pri))
 	if errcode != nil {
 		return nil, nil, errcode
 	}
+
 	return pub, pri, nil
 }
 
 func (wi *WalletImpl) RemoveKey(password []byte, publickey string) error {
 	wi.lockflag = locked
-	_, ok := wi.AccountsMap [ publickey ]
-	
+	_, ok := wi.AccountsMap[publickey]
+
 	if !ok {
 		wi.lockflag = unlock
 		return errors.New("publickey is not exist")
@@ -217,7 +218,7 @@ func (wi *WalletImpl) RemoveKey(password []byte, publickey string) error {
 		wi.lockflag = unlock
 		return err
 	}
-	
+
 	//unlock wallet
 	if err := wi.Unlock(password); nil != err {
 		wi.lockflag = unlock
@@ -241,8 +242,8 @@ func (wi *WalletImpl) ImportKey(privateKey string) ([]byte, error) {
 		}
 	}
 
-	//export publickey by privatekey 
-	pub, err := getPublicKey(privateKey)
+	//export publickey by privatekey
+	pub, err := getPublicKey(string(inner.FromHex(privateKey)))
 	if err != nil {
 		wi.lockflag = unlock
 		return nil, errors.New("get publickey error: " + err.Error())
@@ -257,13 +258,13 @@ func (wi *WalletImpl) ImportKey(privateKey string) ([]byte, error) {
 		wi.lockflag = unlock
 		return nil, errcode
 	}
-	
+
 	//write data
 	if err := wi.StoreWallet(); nil != err {
 		wi.lockflag = unlock
 		return nil, err
 	}
-	
+
 	wi.lockflag = unlock
 	return pub, nil
 }
@@ -295,7 +296,7 @@ func (wallet *WalletImpl) TrySignDigest(digest []byte, publicKey string) (signDa
 		if strings.EqualFold(public, publicKey) {
 			privateKey = []byte(private)
 			bFound = true
-			break;
+			break
 		}
 	}
 
