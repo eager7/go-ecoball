@@ -20,6 +20,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 )
 
 var interval = time.Millisecond * 100
@@ -332,6 +333,65 @@ func CreateNewChain(chainID common.Hash) {
 	time.Sleep(time.Second * 5)
 }
 
+func checkParam(abi commands.ABI, method string, arg []byte) (error){
+	var f interface{}
+
+	if err := json.Unmarshal(arg, &f); err != nil {
+		return err
+	}
+
+	m := f.(map[string]interface{})
+
+	var fields []commands.FieldDef
+	for _, action := range abi.Actions {
+		// first: find method
+		if action.Name == "transfer" {
+			fmt.Println("find transfer")
+			for _, struction := range abi.Structs {
+				// second: find struct
+				if struction.Name == action.Type {
+					fields = struction.Fields
+				}
+			}
+			break
+		}
+	}
+
+	args := make([]wasmservice.ParamTV, len(fields))
+	for i, field := range fields {
+		v := m[field.Name]
+		if v != nil {
+			args[i].Ptype = field.Type
+
+			switch vv := v.(type) {
+			case string:
+				if field.Type == "string" || field.Type == "account_name" || field.Type == "asset" {
+					args[i].Pval = vv
+				} else {
+					return fmt.Errorf("error, can't match abi struct field ty")
+				}
+				fmt.Println(field.Name, "is ", field.Type, "", vv)
+
+			//case int:
+			//	fmt.Println(field.Name, "is int", vv)
+
+			//case []interface{}:
+			//	fmt.Println(field.Name, "is an array:")
+			//	for i, u := range vv {
+			//		fmt.Println(i, u)
+			//	}
+			default:
+				return fmt.Errorf("error, ", field.Name, "is of a type I don’t know how to handle")
+			}
+		} else {
+			return fmt.Errorf("error, can't match abi struct field name")
+		}
+
+	}
+
+	return nil
+}
+
 func InvokeContract() {
 	time.Sleep(time.Second * 15)
 	log.Warn("Start Invoke contract")
@@ -355,6 +415,240 @@ func InvokeContract() {
 	errors.CheckErrorPanic(contract.SetSignature(&config.Root))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 500)
+
+
+	systemABI := []byte(`
+{
+  "types": [],
+  "structs": [{
+      "name": "nonce",
+       "base": "",
+       "fields": [
+          {"name":"value", "type":"string"}
+      ]
+    },{
+      "name": "transfer",
+      "base": "",
+      "fields": [
+         {"name":"from", "type":"account_name"},
+         {"name":"to", "type":"account_name"},
+         {"name":"quantity", "type":"asset"},
+         {"name":"memo", "type":"string"}
+      ]
+    },{
+     "name": "issue",
+     "base": "",
+     "fields": [
+        {"name":"to", "type":"account_name"},
+        {"name":"quantity", "type":"asset"}
+     ]
+    },{
+      "name": "account",
+      "base": "",
+      "fields": [
+        {"name":"currency", "type":"uint64"},
+        {"name":"balance", "type":"uint64"}
+      ]
+    },{
+      "name": "currency_stats",
+      "base": "",
+      "fields": [
+        {"name":"currency", "type":"uint64"},
+        {"name":"supply", "type":"uint64"}
+      ]
+    },{
+      "name": "delegatebw",
+      "base": "",
+      "fields": [
+         {"name":"from", "type":"account_name"},
+         {"name":"receiver", "type":"account_name"},
+         {"name":"stake_net", "type":"asset"},
+         {"name":"stake_cpu", "type":"asset"},
+         {"name":"stake_storage", "type":"asset"}
+      ]
+    },{
+      "name": "undelegatebw",
+      "base": "",
+      "fields": [
+         {"name":"from", "type":"account_name"},
+         {"name":"receiver", "type":"account_name"},
+         {"name":"unstake_net", "type":"asset"},
+         {"name":"unstake_cpu", "type":"asset"},
+         {"name":"unstake_bytes", "type":"uint64"}
+      ]
+    },{
+      "name": "refund",
+      "base": "",
+      "fields": [
+         {"name":"owner", "type":"account_name"}
+      ]
+    },{
+      "name": "delegated_bandwidth",
+      "base": "",
+      "fields": [
+         {"name":"from", "type":"account_name"},
+         {"name":"to", "type":"account_name"},
+         {"name":"net_weight", "type":"asset"},
+         {"name":"cpu_weight", "type":"asset"},
+         {"name":"storage_stake", "type":"asset"},
+         {"name":"storage_bytes", "type":"uint64"}
+      ]
+    },{
+      "name": "total_resources",
+      "base": "",
+      "fields": [
+         {"name":"owner", "type":"account_name"},
+         {"name":"net_weight", "type":"uint64"},
+         {"name":"cpu_weight", "type":"uint64"},
+         {"name":"storage_stake", "type":"uint64"},
+         {"name":"storage_bytes", "type":"uint64"}
+      ]
+    },{
+      "name": "eosio_parameters",
+      "base": "",
+      "fields": [
+         {"name":"target_block_size", "type":"uint32"},
+         {"name":"max_block_size", "type":"uint32"},
+         {"name":"target_block_acts_per_scope", "type":"uint32"},
+         {"name":"max_block_acts_per_scope", "type":"uint32"},
+         {"name":"target_block_acts", "type":"uint32"},
+         {"name":"max_block_acts", "type":"uint32"},
+         {"name":"max_storage_size", "type":"uint64"},
+         {"name":"max_transaction_lifetime", "type":"uint32"},
+         {"name":"max_transaction_exec_time", "type":"uint32"},
+         {"name":"max_authority_depth", "type":"uint16"},
+         {"name":"max_inline_depth", "type":"uint16"},
+         {"name":"max_inline_action_size", "type":"uint32"},
+         {"name":"max_generated_transaction_size", "type":"uint32"},
+         {"name":"percent_of_max_inflation_rate", "type":"uint32"},
+         {"name":"storage_reserve_ratio", "type":"uint32"}
+      ]
+    },{
+      "name": "eosio_global_state",
+      "base": "eosio_parameters",
+      "fields": [
+         {"name":"total_storage_bytes_reserved", "type":"uint64"},
+         {"name":"total_storage_stake", "type":"uint64"},
+         {"name":"payment_per_block", "type":"uint64"}
+      ]
+    },{
+      "name": "producer_info",
+      "base": "",
+      "fields": [
+         {"name":"owner",              "type":"account_name"},
+         {"name":"total_votes",        "type":"uint128"},
+         {"name":"prefs",              "type":"eosio_parameters"},
+         {"name":"packed_key",         "type":"uint8[]"},
+         {"name":"per_block_payments", "type":"uint64"},
+         {"name":"last_claim_time",    "type":"uint32"}
+      ]
+    },{
+      "name": "regproducer",
+      "base": "",
+      "fields": [
+        {"name":"producer",     "type":"account_name"},
+        {"name":"producer_key", "type":"bytes"},
+        {"name":"prefs",        "type":"eosio_parameters"}
+      ]
+    },{
+      "name": "unregprod",
+      "base": "",
+      "fields": [
+        {"name":"producer",     "type":"account_name"}
+      ]
+    },{
+      "name": "regproxy",
+      "base": "",
+      "fields": [
+        {"name":"proxy",     "type":"account_name"}
+      ]
+    },{
+      "name": "unregproxy",
+      "base": "",
+      "fields": [
+        {"name":"proxy",     "type":"account_name"}
+      ]
+    },{
+      "name": "voteproducer",
+      "base": "",
+      "fields": [
+        {"name":"voter",     "type":"account_name"},
+        {"name":"proxy",     "type":"account_name"},
+        {"name":"producers", "type":"account_name[]"}
+      ]
+    },{
+      "name": "voter_info",
+      "base": "",
+      "fields": [
+        {"name":"owner",             "type":"account_name"},
+        {"name":"proxy",             "type":"account_name"},
+        {"name":"last_update",       "type":"uint32"},
+        {"name":"is_proxy",          "type":"uint32"},
+        {"name":"staked",            "type":"uint64"},
+        {"name":"unstaking",         "type":"uint64"},
+        {"name":"unstake_per_week",  "type":"uint64"},
+        {"name":"proxied_votes",     "type":"uint128"},
+        {"name":"producers",         "type":"account_name[]"},
+        {"name":"deferred_trx_id",   "type":"uint32"},
+        {"name":"last_unstake",      "type":"uint32"}
+      ]
+    },{
+      "name": "claimrewards",
+      "base": "",
+      "fields": [
+        {"name":"owner",   "type":"account_name"}
+      ]
+    }
+  ],
+  "actions": [{
+      "name": "transfer",
+      "type": "transfer"
+    },{
+      "name": "issue",
+      "type": "issue"
+    },{
+      "name": "delegatebw",
+      "type": "delegatebw"
+    },{
+      "name": "undelegatebw",
+      "type": "undelegatebw"
+    },{
+      "name": "refund",
+      "type": "refund"
+    },{
+      "name": "regproducer",
+      "type": "regproducer"
+    },{
+      "name": "unregprod",
+      "type": "unregprod"
+    },{
+      "name": "regproxy",
+      "type": "regproxy"
+    },{
+      "name": "unregproxy",
+      "type": "unregproxy"
+    },{
+      "name": "voteproducer",
+      "type": "voteproducer"
+    },{
+      "name": "claimrewards",
+      "type": "claimrewards"
+    },{
+      "name": "nonce",
+      "type": "nonce"
+    }
+  ],
+  "tables": [
+  ]
+}
+`)
+
+	var abiDef commands.ABI
+	json.Unmarshal(systemABI, &abiDef)
+
+	transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": "nothing"}`)
+
+	checkParam(abiDef, "transfer", transfer)
 
 	//test param
 	time.Sleep(time.Second * 5)
