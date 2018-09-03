@@ -9,7 +9,7 @@ import (
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	innercommon "github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
+	//"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/urfave/cli"
 )
@@ -141,26 +141,29 @@ func newAccount(c *cli.Context) error {
 	max_cpu_usage_ms, err := strconv.ParseFloat(c.String("max-cpu-usage-ms"), 64)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	max_net_usage, err := strconv.ParseFloat(c.String("max-net-usage"), 64)
 	if err != nil {
 		fmt.Println(err)
+		return err
 	}
-
 
 	info, err := getInfo(); if err != nil {
 		fmt.Println(err)
+		return err
 	}
 	
 	publickeys, err := GetPublicKeys(); if err != nil {
 		fmt.Println(err)
+		return err
 	}
 
 	creatorAccount := innercommon.NameToIndex(creator)
 	timeStamp := time.Now().UnixNano()
 
-	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, config.ChainHash, "owner", "new_account",
+	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, info.ChainID, "owner", "new_account",
 		[]string{name, innercommon.AddressFromPubKey(innercommon.FromHex(owner)).HexString()}, 0, timeStamp)
 	if err != nil {
 		fmt.Println(err)
@@ -173,6 +176,12 @@ func newAccount(c *cli.Context) error {
 	required_keys, err := get_required_keys(info.ChainID, publickeys, permission, invoke)
 	if err != nil {
 		fmt.Println(err)
+		return err
+	}
+
+	if required_keys == "" {
+		fmt.Println("no required_keys")
+		return err
 	}
 
 	errcode := sign_transaction(info.ChainID, required_keys, invoke)

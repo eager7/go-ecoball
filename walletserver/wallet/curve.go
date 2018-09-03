@@ -56,8 +56,8 @@ func Verify(data []byte, publicKey []byte, signature []byte) (bool, error) {
 	return secp256k1.Verify(data, signature, publicKey)
 }
 
-func getPublicKey(privateKey string) ([]byte, error){
-	pri, err := secp256k1.ToECDSA([]byte(privateKey))
+func getPublicKey(privateKey []byte) ([]byte, error){
+	pri, err := secp256k1.ToECDSA(privateKey)
 	if err != nil {
 		return nil, errors.New("NewECDSAPrivateKey error: " + err.Error())
 	}
