@@ -301,6 +301,9 @@ func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
 		for _, wallet := range Wallets {
 			if !wallet.CheckLocked() {
 				if signData, bHave := wallet.TrySignDigest(transaction, publicKey); bHave {
+					/*flag, err := Verify(Transaction.Hash.Bytes(), inner.FromHex(publicKey), signData); if !flag || err != nil {
+						fmt.Println(err)
+					}*/
 					sig := new(inner.Signature)
 					sig.PubKey = []byte(publicKey)
 					sig.SigData = signData

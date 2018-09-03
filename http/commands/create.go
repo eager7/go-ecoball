@@ -96,7 +96,7 @@ func Get_required_keys(params []interface{}) *common.Response {
 
 		publickeys := ""
 		for _, v := range key_datas {
-			addr := innercommon.AddressFromPubKey([]byte(v))
+			addr := innercommon.AddressFromPubKey(innercommon.FromHex(v))
 			for _, vv := range public_address {
 				if addr == vv {
 					publickeys += v
@@ -105,8 +105,11 @@ func Get_required_keys(params []interface{}) *common.Response {
 				}
 			}
 		}
-		publickeys = strings.TrimSuffix(publickeys, "\n")
-		return common.NewResponse(common.SUCCESS, publickeys)
+		if "" != publickeys {
+			publickeys = strings.TrimSuffix(publickeys, "\n")
+			return common.NewResponse(common.SUCCESS, publickeys)
+		}
+		return common.NewResponse(common.SUCCESS, nil)
 	default:
 		return common.NewResponse(common.INVALID_PARAMS, nil)
 	}
