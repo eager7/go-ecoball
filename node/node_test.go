@@ -41,7 +41,7 @@ func TestRunMain(t *testing.T) {
 		s, _ := ababft.ServiceABABFTGen(ledger.L, txPool, &config.Worker2)
 		s.Start()
 		elog.Log.Info("send the start message to ababft")
-		event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
+		event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{config.ChainHash})
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}

@@ -92,7 +92,7 @@ func runNode(c *cli.Context) error {
 		serviceConsensus.Start()
 		println("start the ababft service")
 		if ledger.L.StateDB(config.ChainHash).RequireVotingInfo() {
-			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
+			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{config.ChainHash})
 		}
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
