@@ -203,7 +203,7 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 		t.Fatal(err)
 	}
 	log.Debug("load wasm ok")
-	tokenContract, err := types.NewDeployContract(index, index, config.ChainHash, state.Active, types.VmWasm, "system control", code, 0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(index, index, config.ChainHash, state.Active, types.VmWasm, "system control", code, nil, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -321,7 +321,7 @@ func AddTokenAccount(ledger ledger.Ledger, con *types.ConsensusData, t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	tokenContract, err := types.NewDeployContract(token, token, config.ChainHash, "active", types.VmWasm, "system control", code, 0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(token, token, config.ChainHash, "active", types.VmWasm, "system control", code, nil, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -350,7 +350,7 @@ func AddTokenAccount(ledger ledger.Ledger, con *types.ConsensusData, t *testing.
 }
 func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
 	var txs []*types.Transaction
-	tokenContract, err := types.NewDeployContract(delegate, delegate, config.ChainHash, "active", types.VmNative, "system control", nil, 0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(delegate, delegate, config.ChainHash, "active", types.VmNative, "system control", nil, nil, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}

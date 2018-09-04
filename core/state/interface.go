@@ -28,7 +28,7 @@ type InterfaceState interface {
 	TokenExisted(name string) bool
 	CopyState() (*State, error)
 	AddAccount(index common.AccountName, addr common.Address, timeStamp int64) (*Account, error)
-	SetContract(index common.AccountName, t types.VmType, des, code []byte) error
+	SetContract(index common.AccountName, t types.VmType, des, code []byte, abi []byte) error
 	GetContract(index common.AccountName) (*types.DeployInfo, error)
 	StoreSet(index common.AccountName, key, value []byte) (err error)
 	StoreGet(index common.AccountName, key []byte) (value []byte, err error)

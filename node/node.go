@@ -37,7 +37,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
-	"github.com/ecoball/go-ecoball/spectator"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
@@ -104,7 +103,7 @@ func runNode(c *cli.Context) error {
 	net.StartNetWork()
 
 	//start blockchain browser
-	ecoballGroup.Go(func() error {
+	/*ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
 			if err := spectator.Bystander(ledger.L); nil != err {
@@ -121,7 +120,7 @@ func runNode(c *cli.Context) error {
 		}
 
 		return nil
-	})
+	})*/
 
 	//start http server
 	ecoballGroup.Go(func() error {

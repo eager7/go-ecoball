@@ -445,8 +445,8 @@ func (c *ChainTx) StoreGet(index common.AccountName, key []byte) (value []byte, 
 //func (c *ChainTx) AddResourceLimits(from, to common.AccountName, cpu, net float32) error {
 //	return c.StateDB.AddResourceLimits(from, to, cpu, net)
 //}
-func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
-	return c.StateDB.FinalDB.SetContract(index, t, des, code)
+func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, code []byte, abi []byte) error {
+	return c.StateDB.FinalDB.SetContract(index, t, des, code, abi)
 }
 func (c *ChainTx) GetContract(index common.AccountName) (*types.DeployInfo, error) {
 	return c.StateDB.FinalDB.GetContract(index)
@@ -521,7 +521,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		if !ok {
 			return nil, 0, 0, errors.New(log, "transaction type error[deploy]")
 		}
-		if err := s.SetContract(tx.Addr, payload.TypeVm, payload.Describe, payload.Code); err != nil {
+		if err := s.SetContract(tx.Addr, payload.TypeVm, payload.Describe, payload.Code, payload.Abi); err != nil {
 			return nil, 0, 0, err
 		}
 	case types.TxInvoke:

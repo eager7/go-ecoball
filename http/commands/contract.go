@@ -29,6 +29,11 @@ import (
 	"github.com/ecoball/go-ecoball/http/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"encoding/json"
+	"fmt"
+	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
+	"github.com/ecoball/go-ecoball/http/common/abi"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"strconv"
 )
 
 var log = elog.NewLogger("commands", elog.DebugLog)
@@ -107,7 +112,7 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 	//from address
 	//from := account.AddressFromPubKey(common.Account.PublicKey)
 
-	transaction, err := types.NewDeployContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), config.ChainHash, "owner", types.VmWasm, description, code, 0, time)
+	transaction, err := types.NewDeployContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), config.ChainHash, "owner", types.VmWasm, description, code, nil, 0, time)
 	if nil != err {
 		return common.INVALID_PARAMS, ""
 	}
@@ -146,6 +151,78 @@ func InvokeContract(params []interface{}) *common.Response {
 	return common.NewResponse(common.SUCCESS, "")
 }
 
+func checkParam(abiDef abi.ABI, method string, arg []byte) ([]byte, error){
+	var f interface{}
+
+	if err := json.Unmarshal(arg, &f); err != nil {
+		return nil, err
+	}
+
+	m := f.(map[string]interface{})
+
+	var fields []abi.FieldDef
+	for _, action := range abiDef.Actions {
+		// first: find method
+		if string(action.Name) == method {
+			//fmt.Println("find ", method)
+			for _, struction := range abiDef.Structs {
+				// second: find struct
+				if struction.Name == action.Type {
+					fields = struction.Fields
+				}
+			}
+			break
+		}
+	}
+
+	if fields == nil {
+		return nil, errors.New(log, "can not find method " + method)
+	}
+
+	args := make([]wasmservice.ParamTV, len(fields))
+	for i, field := range fields {
+		v := m[field.Name]
+		if v != nil {
+			args[i].Ptype = field.Type
+
+			switch vv := v.(type) {
+			case string:
+				if field.Type == "string" || field.Type == "account_name" || field.Type == "asset" {
+					args[i].Pval = vv
+				} else {
+					return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
+				}
+				fmt.Println(field.Name, "is ", field.Type, "", vv)
+			case float64:
+				if field.Type == "int8" || field.Type == "int16" || field.Type == "int32" {
+					args[i].Pval = strconv.FormatInt(int64(vv), 10)
+				} else if field.Type == "uint8" || field.Type == "uint16" || field.Type == "uint32" {
+					args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+				} else {
+					return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
+				}
+
+				//case []interface{}:
+				//	fmt.Println(field.Name, "is an array:")
+				//	for i, u := range vv {
+				//		fmt.Println(i, u)
+				//	}
+			default:
+				return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type: %T", v))
+			}
+		} else {
+			return nil, errors.New(log, "can't match abi struct field name:  " + field.Name)
+		}
+
+	}
+
+	bs, err := json.Marshal(args)
+	if err != nil {
+		return nil, errors.New(log, "json.Marshal failed")
+	}
+	return bs, nil
+}
+
 func handleInvokeContract(params []interface{}) common.Errcode {
 	var (
 		//contractName   string
@@ -173,6 +250,10 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 		invalid = true
 	}
 
+	if invalid {
+		return common.INVALID_PARAMS
+	}
+
 	//if "" != contractParam {
 	//	parameters = strings.Split(contractParam, " ")
 	//}
@@ -196,11 +277,19 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	}
 	log.Debug("BuildWasmContractParam: ", string(argbyte))
 
-	parameters = append(parameters, string(argbyte[:]))
+	//contract, err := ledger.L.GetContract(config.ChainHash, innerCommon.NameToIndex(contractName))
+	//
+	//var abiDef abi.ABI
+	//if err = json.Unmarshal(contract.Abi, &abiDef); err != nil {
+	//	return common.INVALID_PARAMS
+	//}
+	//
+	//argbyte, err := checkParam(abiDef, contractMethod, []byte(contractParam))
+	//if err != nil {
+	//	return common.INVALID_PARAMS
+	//}
 
-	if invalid {
-		return common.INVALID_PARAMS
-	}
+	parameters = append(parameters, string(argbyte[:]))
 
 	//from address
 	//from := account.AddressFromPubKey(common.Account.PublicKey)
