@@ -21,19 +21,17 @@ import (
 )
 
 type FinalBlockHeader struct {
-	PrevHash          common.Hash
-	ProposalPublicKey []byte
-	Height            uint64
-	CMEpochNo         uint64
-	MinorBlockHash    common.Hash
-	Timestamp         uint64
-	CmBlockHash       common.Hash
-	TrxCount          uint32
-
-	StateRootHash       common.Hash
-	TrxHashRoot         common.Hash
-	ChangeStateRootHash common.Hash
-
+	PrevHash           common.Hash
+	Height             uint64
+	ProposalPubKey     []byte
+	CMEpochNo          uint64
+	TrxCount           uint32
+	MinorBlockHash     common.Hash
+	CmBlockHash        common.Hash
+	StateHashRoot      common.Hash
+	TrxHashRoot        common.Hash
+	StateDeltaHashRoot common.Hash
+	Timestamp          uint64
 	*COSign
 }
 

@@ -18,6 +18,7 @@ package block
 
 import (
 	"github.com/ecoball/go-ecoball/common"
+	"math/big"
 )
 
 type Shard struct {
@@ -28,10 +29,10 @@ type Shard struct {
 
 type CMBlockHeader struct {
 	PrevHash       common.Hash
-	LeaderPubKey   []byte
 	Height         uint64
+	LeaderPubKey   []byte
 	CadidatePubKey []byte
-	Nonce          uint32
+	Deposite       big.Int
 	ShardsHash     common.Hash /*shards hash, not include node address*/
 	Timestamp      uint64
 	*COSign
