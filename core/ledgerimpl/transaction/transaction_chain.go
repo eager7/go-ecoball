@@ -44,18 +44,15 @@ type StateDatabase struct {
 }
 
 type ChainTx struct {
-	BlockMap       map[common.Hash]uint64
-	BlockStore     store.Storage
-	HeaderStore    store.Storage
-	TxsStore       store.Storage
-	ConsensusStore store.Storage
+	BlockStore  store.Storage
+	HeaderStore store.Storage
+	TxsStore    store.Storage
 
+	BlockMap      map[common.Hash]uint64
 	CurrentHeader *types.Header
 	Geneses       *types.Header
 	StateDB       StateDatabase
-	//StateDB       *state.State
-	//TempStateDB   *state.State //txPool used
-	ledger ledger.Ledger
+	ledger        ledger.Ledger
 }
 
 func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {
@@ -96,23 +93,29 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
-	s, err := c.StateDB.FinalDB.CopyState()
-	if err != nil {
-		return nil, err
-	}
-	s.Type = state.CopyType
+	//s, err := c.StateDB.FinalDB.CopyState()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//s.Type = state.CopyType
 	var cpu, net float64
 	for i := 0; i < len(txs); i++ {
-		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in copy DB")
-		if _, c, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Final DB")
+		if _, cp, n, err := c.HandleTransaction(c.StateDB.FinalDB, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].JsonString())
+			c.ResetStateDB(c.CurrentHeader)
 			return nil, err
 		} else {
-			cpu += c
+			cpu += cp
 			net += n
 		}
 	}
-	return types.NewBlock(c.CurrentHeader.ChainID, c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	block, err := types.NewBlock(c.CurrentHeader.ChainID, c.CurrentHeader, c.StateDB.FinalDB.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	if err != nil {
+		c.ResetStateDB(c.CurrentHeader)
+		return nil, err
+	}
+	return block, nil
 }
 
 /**
@@ -160,13 +163,13 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return nil
 	}
 
-	for i := 0; i < len(block.Transactions); i++ {
+	/*for i := 0; i < len(block.Transactions); i++ {
 		log.Notice("Handle Transaction:", block.Transactions[i].Type.String(), block.Transactions[i].Hash.HexString(), " in final DB")
 		if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(block.Transactions[i].JsonString())
 			return err
 		}
-	}
+	}*/
 	if block.Height != 1 {
 		connect.Notify(info.InfoBlock, block)
 		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
@@ -456,10 +459,11 @@ func (c *ChainTx) GetContract(index common.AccountName) (*types.DeployInfo, erro
 func (c *ChainTx) GetChainList() ([]state.Chain, error) {
 	return c.StateDB.FinalDB.GetChainList()
 }
+
 /**
 *  @brief  get the abi of contract
 *  @param  indexAcc - the uuid of account
-*/
+ */
 func (c *ChainTx) GetContractAbi(index common.AccountName) ([]byte, error) {
 	return c.StateDB.FinalDB.GetContractAbi(index)
 }

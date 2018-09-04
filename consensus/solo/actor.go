@@ -35,7 +35,7 @@ func NewSoloActor(l *soloActor) (*actor.PID, error) {
 	props := actor.FromProducer(func() actor.Actor {
 		return l
 	})
-	pid, err := actor.SpawnNamed(props, "soloActor")
+	pid, err := actor.SpawnNamed(props, "soloActor" + time.Now().String())
 	if err != nil {
 		return nil, err
 	}

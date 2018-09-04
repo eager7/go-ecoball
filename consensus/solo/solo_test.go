@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func TestSoloModule(t *testing.T) {
+func xTestSoloModule(t *testing.T) {
 	net.InitNetWork()
 	ledger := example.Ledger("/tmp/solo")
 	txPool, err := txpool.Start(ledger)
@@ -28,7 +28,7 @@ func TestSoloModule(t *testing.T) {
 	if config.StartNode {
 		go autoGenerateTransaction()
 	}
-	example.Wait()
+	time.Sleep(time.Second * 10)
 }
 
 func autoGenerateTransaction() {
