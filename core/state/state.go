@@ -29,7 +29,16 @@ import (
 var log = elog.NewLogger("state", elog.DebugLog)
 var AbaToken = "ABA"
 
+type TypeState uint8
+
+const (
+	FinalType TypeState = 1
+	TempType  TypeState = 2
+	CopyType  TypeState = 3
+)
+
 type State struct {
+	Type   TypeState
 	path   string
 	trie   Trie
 	db     Database
@@ -75,6 +84,10 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	return st, nil
 }
 
+func (s *State) StateType() TypeState {
+	return s.Type
+}
+
 /**
  *  @brief copy a new trie into memory
  */
@@ -87,22 +100,22 @@ func (s *State) CopyState() (*State, error) {
 	chains := make(map[common.Hash]common.AccountName, 1)
 
 	/*
-	s.paraMutex.Lock()
-	defer s.paraMutex.Unlock()
-	if str, err := json.Marshal(s.Params); err != nil {
-		return nil, err
-	} else {
-		if err := json.Unmarshal(str, &params); err != nil {
+		s.paraMutex.Lock()
+		defer s.paraMutex.Unlock()
+		if str, err := json.Marshal(s.Params); err != nil {
 			return nil, err
+		} else {
+			if err := json.Unmarshal(str, &params); err != nil {
+				return nil, err
+			}
 		}
-	}
-	if str, err := json.Marshal(s.Producers); err != nil {
-		return nil, err
-	} else {
-		if err := json.Unmarshal(str, &prods); err != nil {
+		if str, err := json.Marshal(s.Producers); err != nil {
 			return nil, err
+		} else {
+			if err := json.Unmarshal(str, &prods); err != nil {
+				return nil, err
+			}
 		}
-	}
 	*/
 	s.accMutex.RLock()
 	defer s.accMutex.RUnlock()
@@ -220,7 +233,7 @@ func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, er
 /**
 *  @brief get the abi of contract
 *  @param index - account's index
-*/
+ */
 func (s *State) GetContractAbi(index common.AccountName) ([]byte, error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {

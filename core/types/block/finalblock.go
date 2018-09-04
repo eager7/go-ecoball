@@ -14,20 +14,28 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball library. If not, see <http://www.gnu.org/licenses/>.
 
-package message
+package block
 
 import (
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/types"
 )
 
-type ABABFTStart struct{
-	ChainID common.Hash
+type FinalBlockHeader struct {
+	PrevHash           common.Hash
+	Height             uint64
+	ProposalPubKey     []byte
+	CMEpochNo          uint64
+	TrxCount           uint32
+	MinorBlockHash     common.Hash
+	CmBlockHash        common.Hash
+	StateHashRoot      common.Hash
+	TrxHashRoot        common.Hash
+	StateDeltaHashRoot common.Hash
+	Timestamp          uint64
+	*COSign
 }
-type SoloStop struct{}
-type GetCurrentHeader struct{}
 
-type RegChain struct {
-	ChainID  common.Hash
-	Tx       *types.Transaction
+type FinalBlock struct {
+	*FinalBlockHeader
+	MinorBlocks []MinorBlockHeader
 }

@@ -67,6 +67,7 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash) (err error) {
 		return err
 	}
 	ChainTx.StateDB.TempDB, err = ChainTx.StateDB.FinalDB.CopyState()
+	ChainTx.StateDB.TempDB.Type = state.TempType
 	if err != nil {
 		return err
 	}
@@ -222,6 +223,13 @@ func (l *LedgerImpl) FindPermission(chainID common.Hash, index common.AccountNam
 		return "", errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
 	return chain.StateDB.FinalDB.FindPermission(index, name)
+}
+func (l *LedgerImpl) GetChainList(chainID common.Hash) ([]state.Chain, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.GetChainList()
 }
 func (l *LedgerImpl) CheckPermission(chainID common.Hash, index common.AccountName, name string, hash common.Hash, sig []common.Signature) error {
 	chain, ok := l.ChainTxs[chainID]

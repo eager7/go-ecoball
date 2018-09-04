@@ -18,13 +18,14 @@ package types
 
 import (
 	"encoding/json"
+	errIn "errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/trie"
-	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 type Block struct {
@@ -84,6 +85,24 @@ func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, co
 
 func (b *Block) SetSignature(account *account.Account) error {
 	return b.Header.SetSignature(account)
+}
+
+func (b *Block) GetTransaction(hash common.Hash) (*Transaction, error) {
+	for _, tx := range b.Transactions {
+		if hash.Equals(&tx.Hash) {
+			return tx, nil
+		}
+	}
+	return nil, errIn.New("can't find this transaction")
+}
+
+func (b *Block) IsExistedTransaction(hash common.Hash) bool {
+	for _, tx := range b.Transactions {
+		if hash.Equals(&tx.Hash) {
+			return true
+		}
+	}
+	return false
 }
 
 func GenesesBlockInitConsensusData(timestamp int64) *ConsensusData {
@@ -180,7 +199,7 @@ func (b *Block) JsonString(format bool) string {
 	if !format {
 		data, _ := json.Marshal(b)
 		return string(data)
-	}else {
+	} else {
 		data := b.Header.JsonString()
 		data += fmt.Sprintf("{CountTxs:%d}", b.CountTxs)
 		for _, v := range b.Transactions {

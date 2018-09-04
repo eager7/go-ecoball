@@ -7,16 +7,18 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/core/state"
-	"strconv"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/core/types"
+	"strconv"
 )
 
 var log = elog.NewLogger("native", config.LogLevel)
 
 type NativeService struct {
 	state     state.InterfaceState
-	owner     common.AccountName
+	tx        *types.Transaction
 	method    string
 	params    []string
 	cpuLimit  float64
@@ -24,10 +26,10 @@ type NativeService struct {
 	timeStamp int64
 }
 
-func NewNativeService(s state.InterfaceState, owner common.AccountName, method string, params []string, cpuLimit, netLimit float64, timeStamp int64) (*NativeService, error) {
+func NewNativeService(s state.InterfaceState, tx *types.Transaction, method string, params []string, cpuLimit, netLimit float64, timeStamp int64) (*NativeService, error) {
 	ns := &NativeService{
 		state:     s,
-		owner:     owner,
+		tx:        tx,
 		method:    method,
 		params:    params,
 		cpuLimit:  cpuLimit,
@@ -38,11 +40,11 @@ func NewNativeService(s state.InterfaceState, owner common.AccountName, method s
 }
 
 func (ns *NativeService) Execute() ([]byte, error) {
-	switch ns.owner {
+	switch ns.tx.Addr {
 	case common.NameToIndex("root"):
 		return ns.RootExecute()
 	case common.NameToIndex("delegate"):
-		return ns.SystemExecute(ns.owner)
+		return ns.SystemExecute(ns.tx.Addr)
 	default:
 		return nil, errors.New(log, "unknown native contract's owner")
 	}
@@ -82,9 +84,11 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := ns.state.RegisterChain(index, common.SingleHash(index.Bytes())); err != nil {
 			return nil, err
 		}
-		hash := common.SingleHash(index.Bytes())
-		if consensus == "solo" {
-			event.Send(event.ActorNil, event.ActorConsensusSolo, hash)
+		if consensus == "solo" && ns.state.StateType() == state.FinalType {
+			data := []byte(index.String() + consensus)
+			hash := common.SingleHash(data)
+			msg := &message.RegChain{ChainID: hash, Tx: ns.tx}
+			event.Send(event.ActorNil, event.ActorConsensusSolo, msg)
 		} else {
 			log.Warn("not support now")
 		}

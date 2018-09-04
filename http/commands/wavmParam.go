@@ -153,17 +153,17 @@ func BuildWasmContractParam(params []interface{}) ([]byte, error) {
 		case string:
 			arg := wasmservice.ParamTV{Ptype: "string", Pval: param.(string)}
 			args[i] = arg
-		case int32:
-			arg := wasmservice.ParamTV{Ptype: "int32", Pval: Int32ToString(param.(int32))}
+		case int:
+			arg := wasmservice.ParamTV{Ptype: "int", Pval: strconv.Itoa(param.(int))}
 			args[i] = arg
 		case int64:
 			arg := wasmservice.ParamTV{Ptype: "int64", Pval: strconv.FormatInt(param.(int64), 10)}
 			args[i] = arg
-		case []int32:
+		case []int:
 			bf := bytes.NewBuffer(nil)
-			array := param.([]int32)
+			array := param.([]int)
 			for i, tmp := range array {
-				bf.WriteString(Int32ToString(tmp))
+				bf.WriteString(strconv.Itoa(tmp))
 				if i != len(array)-1 {
 					bf.WriteString(",")
 				}

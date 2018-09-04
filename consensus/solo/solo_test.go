@@ -5,6 +5,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/solo"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/net"
@@ -15,7 +16,7 @@ import (
 	"time"
 )
 
-func TestSoloModule(t *testing.T) {
+func xTestSoloModule(t *testing.T) {
 	net.InitNetWork()
 	ledger := example.Ledger("/tmp/solo")
 	txPool, err := txpool.Start(ledger)
@@ -27,7 +28,7 @@ func TestSoloModule(t *testing.T) {
 	if config.StartNode {
 		go autoGenerateTransaction()
 	}
-	example.Wait()
+	time.Sleep(time.Second * 10)
 }
 
 func autoGenerateTransaction() {
@@ -51,7 +52,7 @@ func TestNewSolo(t *testing.T) {
 	net.StartNetWork()
 
 	solo.NewSoloConsensusServer(ledger, txPool)
-	event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
+	event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, Tx: nil})
 
 	example.CreateAccountBlock(config.ChainHash)
 	example.TokenTransferBlock(config.ChainHash)
