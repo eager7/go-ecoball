@@ -132,7 +132,6 @@ func (serviceABABFT *ServiceABABFT) Start() error {
 }
 
 func (serviceABABFT *ServiceABABFT) GenNewChain(chainID common.Hash) {
-	var err error
 	// generate the actor
 	// add the new actor to the chain map
 	// 1. check whether the chain exists

@@ -22,7 +22,7 @@ import (
 )
 
 type ABABFTStart struct{
-	chainID common.Hash
+	ChainID common.Hash
 }
 type SoloStop struct{}
 type GetCurrentHeader struct{}
