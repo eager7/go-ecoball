@@ -67,6 +67,7 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash) (err error) {
 		return err
 	}
 	ChainTx.StateDB.TempDB, err = ChainTx.StateDB.FinalDB.CopyState()
+	ChainTx.StateDB.TempDB.Type = state.TempType
 	if err != nil {
 		return err
 	}

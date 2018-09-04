@@ -84,7 +84,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := ns.state.RegisterChain(index, common.SingleHash(index.Bytes())); err != nil {
 			return nil, err
 		}
-		if consensus == "solo" {
+		if consensus == "solo" && ns.state.StateType() == state.FinalType {
 			data := []byte(index.String() + consensus)
 			hash := common.SingleHash(data)
 			msg := &message.RegChain{ChainID: hash, Tx: ns.tx}

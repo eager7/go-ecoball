@@ -20,8 +20,10 @@ import (
 	"reflect"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
+	"time"
 )
 
 type soloActor struct {
@@ -51,18 +53,41 @@ func (l *soloActor) Receive(ctx actor.Context) {
 	case *message.SoloStop:
 		log.Info("Receive Solo Stop Message")
 		l.solo.stop <- struct{}{}
-	case *message.RegChain :
+	case *message.RegChain:
 		log.Info("Receive Solo Create Message")
 		if chain, ok := l.solo.Chains[msg.ChainID]; ok {
 			log.Info("the chain is existed:", chain.HexString())
 			return
 		} else {
+			if msg.Tx == nil {
+				event.Send(event.ActorNil, event.ActorTxPool, msg.ChainID)
+				event.Send(event.ActorNil, event.ActorLedger, msg.ChainID)
+				l.solo.Chains[msg.ChainID] = msg.ChainID
+				go ConsensusWorkerThread(msg.ChainID, l.solo)
+			} else {
+				go l.CreateNewChain(msg)
+			}
+		}
+	default:
+		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
+	}
+}
+
+func (l *soloActor) CreateNewChain(msg *message.RegChain) {
+	for {
+		header := l.solo.ledger.GetCurrentHeader(config.ChainHash)
+		block, err := l.solo.ledger.GetTxBlock(config.ChainHash, header.Hash)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		if block.IsExistedTransaction(msg.Tx.Hash) {
 			event.Send(event.ActorNil, event.ActorTxPool, msg.ChainID)
 			event.Send(event.ActorNil, event.ActorLedger, msg.ChainID)
 			l.solo.Chains[msg.ChainID] = msg.ChainID
 			go ConsensusWorkerThread(msg.ChainID, l.solo)
+			break
 		}
-	default:
-		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
+		time.Sleep(time.Millisecond * 10)
 	}
 }

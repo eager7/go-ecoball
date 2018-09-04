@@ -86,6 +86,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 			return nil, err
 		}
 	}
+	c.StateDB.FinalDB.Type = state.FinalType
 
 	return c, nil
 }
@@ -99,6 +100,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 	if err != nil {
 		return nil, err
 	}
+	s.Type = state.CopyType
 	var cpu, net float64
 	for i := 0; i < len(txs); i++ {
 		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in copy DB")
