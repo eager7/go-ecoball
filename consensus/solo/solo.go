@@ -58,6 +58,7 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (solo *Solo,
 }
 
 func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
+	time.Sleep(time.Second * 1)
 	t := time.NewTimer(time.Second * 1)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
 	for {

@@ -22,7 +22,6 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/common"
 )
 
 type soloActor struct {
@@ -52,16 +51,16 @@ func (l *soloActor) Receive(ctx actor.Context) {
 	case *message.SoloStop:
 		log.Info("Receive Solo Stop Message")
 		l.solo.stop <- struct{}{}
-	case common.Hash :
+	case *message.RegChain :
 		log.Info("Receive Solo Create Message")
-		if chain, ok := l.solo.Chains[msg]; ok {
+		if chain, ok := l.solo.Chains[msg.ChainID]; ok {
 			log.Info("the chain is existed:", chain.HexString())
 			return
 		} else {
-			event.Send(event.ActorNil, event.ActorTxPool, msg)
-			event.Send(event.ActorNil, event.ActorLedger, msg)
-			l.solo.Chains[msg] = msg
-			go ConsensusWorkerThread(msg, l.solo)
+			event.Send(event.ActorNil, event.ActorTxPool, msg.ChainID)
+			event.Send(event.ActorNil, event.ActorLedger, msg.ChainID)
+			l.solo.Chains[msg.ChainID] = msg.ChainID
+			go ConsensusWorkerThread(msg.ChainID, l.solo)
 		}
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
