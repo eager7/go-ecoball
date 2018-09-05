@@ -129,7 +129,7 @@ func setContract(c *cli.Context) error {
 	defer abifile.Close()
 	abidata, err := ioutil.ReadAll(abifile)
 	if err != nil {
-		fmt.Println("read contract filr err: ", err.Error())
+		fmt.Println("read abi filr err: ", err.Error())
 		return err
 	}
 
@@ -146,8 +146,6 @@ func setContract(c *cli.Context) error {
 	}
 	
 	abi_str := hex.EncodeToString(abibyte)
-	fmt.Println(abi_str)
-	fmt.Println(abibyte)
 
 	//contract name
 	contractName := c.String("name")

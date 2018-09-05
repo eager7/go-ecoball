@@ -46,7 +46,7 @@ func SetContract(params []interface{}) *common.Response {
 	}
 
 	switch {
-	case len(params) == 3:
+	case len(params) == 4:
 		if errCode, result := handleSetContract(params); errCode != common.SUCCESS {
 			log.Error(errCode.Info())
 			return common.NewResponse(errCode, nil)
@@ -92,7 +92,6 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 
 	if v, ok := params[3].(string); ok {
 		abitmp, err := hex.DecodeString(v)
-		fmt.Println(v)
 		if err == nil {
 			abicode = abitmp
 		} else {
@@ -101,8 +100,6 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 	} else {
 		invalid = true
 	}
-
-	fmt.Println(abicode)
 
 	if invalid {
 		return common.INVALID_PARAMS, ""
