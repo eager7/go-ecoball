@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eoscanada/eos-go/ecc"
+	"github.com/ecoball/go-ecoball/common/ecc"
 )
 
 // For reference:

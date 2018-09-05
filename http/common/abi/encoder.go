@@ -9,7 +9,7 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/eoscanada/eos-go/ecc"
+	"github.com/ecoball/go-ecoball/common/ecc"
 	"github.com/ecoball/go-ecoball/common"
 )
 
