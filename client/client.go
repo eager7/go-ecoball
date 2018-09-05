@@ -28,13 +28,16 @@ import (
 	"github.com/ecoball/go-ecoball/client/commands"
 	"github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/net/cmd"
 	"github.com/peterh/liner"
 	"github.com/urfave/cli"
 )
 
+const STORAGE = "storage"
+
 var (
 	historyFilePath = filepath.Join(os.TempDir(), ".ecoclient_history")
-	commandName     = []string{"contract", "transfer", "wallet", "query", "attach"}
+	commandName     = []string{"contract", "transfer", "wallet", "query", "attach", STORAGE}
 )
 
 func newClientApp() *cli.App {
@@ -91,7 +94,7 @@ func main() {
 	}
 
 	//run
-	app.Run(os.Args)
+	appRun(app)
 }
 
 func newConsole() {
@@ -185,8 +188,21 @@ func handleLine(line string) error {
 	args := []string{os.Args[0]}
 	lines := strings.Fields(line)
 	args = append(args, lines...)
+	os.Args = args
 
 	//run
-	newClientApp().Run(args)
+	appRun(newClientApp())
 	return nil
+}
+
+func appRun(app *cli.App) (err error) {
+	if os.Args[1] == STORAGE {
+		temp := make([]string, 0, len(os.Args))
+		temp = append(temp, os.Args[0])
+		temp = append(temp, os.Args[2:]...)
+		os.Args = temp
+		cmd.StorageFun()
+		return nil
+	}
+	return app.Run(os.Args)
 }
