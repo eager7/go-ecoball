@@ -155,10 +155,10 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			return
 		}
 		actorC.status = 2
-		log.Debug("start ababft: receive the ababftstart message:", actorC.currentHeightNum,actorC.verifiedHeight,actorC.currentLedger.GetCurrentHeader(config.ChainHash))
+		log.Debug("start ababft: receive the ababftstart message:", actorC.currentHeightNum,actorC.verifiedHeight,actorC.currentLedger.GetCurrentHeader(actorC.chainID))
 
 		// check the status of the main net
-		if ok:=actorC.currentLedger.StateDB(config.ChainHash).RequireVotingInfo(); ok!=true {
+		if ok:=actorC.currentLedger.StateDB(actorC.chainID).RequireVotingInfo(); ok!=true {
 			// main net has not started yet
 			// currentheader = current_ledger.GetCurrentHeader()
 
@@ -200,7 +200,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				tTime := time.Now().UnixNano()
 				headerPayload:=&types.CMBlockHeader{}
 				// headerPayload.LeaderPubKey = actorC.serviceABABFT.account.PublicKey
-				blockSolo,err = actorC.serviceABABFT.ledger.NewTxBlock(config.ChainHash, txs, headerPayload, conData, tTime)
+				blockSolo,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, headerPayload, conData, tTime)
 				blockSolo.SetSignature(&soloaccount)
 				actorC.blockSecondRound.BlockSecond = *blockSolo
 				// save (the ledger will broadcast the block after writing the block into the DB)
@@ -250,7 +250,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		// clear and initialize the signature preblock array
 
 		// update the peers list by accountname
-		newPeers,err := actorC.currentLedger.GetProducerList(config.ChainHash)
+		newPeers,err := actorC.currentLedger.GetProducerList(actorC.chainID)
 		if err != nil {
 			log.Debug("fail to get peer list.")
 		}
@@ -272,7 +272,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			actorC.PeersListAccount[i].AccountName = common.NameToIndex(peersListAccountTS[i])
 			actorC.PeersListAccount[i].Index = i + 1
 
-			accountInfo,err := actorC.currentLedger.AccountGet(config.ChainHash, actorC.PeersListAccount[i].AccountName)
+			accountInfo,err := actorC.currentLedger.AccountGet(actorC.chainID, actorC.PeersListAccount[i].AccountName)
 			if err != nil {
 				log.Debug("fail to get account info.")
 			}
@@ -638,7 +638,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				tTime := time.Now().UnixNano()
 				headerPayload:=&types.CMBlockHeader{}
 				// headerPayload.LeaderPubKey = actorC.serviceABABFT.account.PublicKey
-				blockFirst,err = actorC.serviceABABFT.ledger.NewTxBlock(config.ChainHash, txs, headerPayload, conData, tTime)
+				blockFirst,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, headerPayload, conData, tTime)
 				blockFirst.SetSignature(actorC.serviceABABFT.account)
 				// broadcast the first-round block to peers for them to verify the transactions and wait for the corresponding signatures back
 				actorC.blockFirstRound.BlockFirst = *blockFirst
@@ -811,7 +811,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 					// 3. check the txs
 					txsIn := blockFirstReceived.Transactions
 					for index1, txIn := range txsIn {
-						err = actorC.serviceABABFT.ledger.CheckTransaction(config.ChainHash, txIn)
+						err = actorC.serviceABABFT.ledger.CheckTransaction(actorC.chainID, txIn)
 						if err != nil {
 							println("wrong tx, index:", index1)
 							return
@@ -1323,14 +1323,14 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 
 		// fmt.Println("reqsyn:",current_height_num,heightReq)
 		// 2. get the response blocks from the ledger
-		blkSynV,err1 := actorC.serviceABABFT.ledger.GetTxBlockByHeight(config.ChainHash, heightReq)
+		blkSynV,err1 := actorC.serviceABABFT.ledger.GetTxBlockByHeight(actorC.chainID, heightReq)
 		if err1 != nil || blkSynV == nil {
 			log.Debug("not find the block of the corresponding height in the ledger")
 			return
 		}
 
 		// fmt.Println("blkSynV:",blkSynV.Header)
-		blkSynF,err2 := actorC.serviceABABFT.ledger.GetTxBlockByHeight(config.ChainHash, heightReq+1)
+		blkSynF,err2 := actorC.serviceABABFT.ledger.GetTxBlockByHeight(actorC.chainID, heightReq+1)
 		if err2 != nil || blkSynF == nil {
 			log.Debug("not find the block of the corresponding height in the ledger")
 			return
@@ -1359,7 +1359,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			currentPreBlk,_ := actorC.currentLedger.GetTxBlock(actorC.chainID, actorC.currentHeader.PrevHash)
 			// current_blk := blkSynF
 			//err1 := actorC.serviceABABFT.ledger.ResetStateDB(currentPreBlk.Header.StateHash)
-			err1 := actorC.serviceABABFT.ledger.ResetStateDB(config.ChainHash, currentPreBlk.Header)
+			err1 := actorC.serviceABABFT.ledger.ResetStateDB(actorC.chainID, currentPreBlk.Header)
 			if err1 != nil {
 				fmt.Println("reset status error:", err1)
 			}
@@ -1401,7 +1401,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 
 		for i := int(heightReq); i <= actorC.currentHeightNum; i++ {
 			// get the response blocks from the ledger
-			blkSynSolo,err1 := actorC.serviceABABFT.ledger.GetTxBlockByHeight(config.ChainHash, uint64(i))
+			blkSynSolo,err1 := actorC.serviceABABFT.ledger.GetTxBlockByHeight(actorC.chainID, uint64(i))
 			if err1 != nil || blkSynSolo == nil {
 				log.Debug("not find the solo block of the corresponding height in the ledger")
 				return
@@ -1452,7 +1452,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 
 			var resultV bool
 			var blkVLocal *types.Block
-			blkVLocal,err = actorC.serviceABABFT.ledger.GetTxBlockByHeight(config.ChainHash, actorC.verifiedHeight)
+			blkVLocal,err = actorC.serviceABABFT.ledger.GetTxBlockByHeight(actorC.chainID, actorC.verifiedHeight)
 			if err != nil {
 				log.Debug("get previous block error")
 				return
@@ -1499,7 +1499,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				// here need one reset DB
 				//err = actorC.serviceABABFT.ledger.ResetStateDB(blk_pre.Header.Hash)
 				if actorC.verifiedHeight < uint64(actorC.currentHeightNum) {
-					err = actorC.serviceABABFT.ledger.ResetStateDB(config.ChainHash, blkVLocal.Header)
+					err = actorC.serviceABABFT.ledger.ResetStateDB(actorC.chainID, blkVLocal.Header)
 					if err != nil {
 						log.Debug("reset state db error:", err)
 						return
@@ -1719,7 +1719,7 @@ func (actorC *ActorABABFT) verifyHeader(blockIn *types.Block, currentRoundNumIn 
 
 	// generate the blockFirstCal for comparison
 	headerPayload:=&types.CMBlockHeader{}
-	actorC.blockFirstCal,err = actorC.serviceABABFT.ledger.NewTxBlock(config.ChainHash, txs, headerPayload, conDataC, headerIn.TimeStamp)
+	actorC.blockFirstCal,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, headerPayload, conDataC, headerIn.TimeStamp)
 	// fmt.Println("height:",blockIn.Height,blockFirstCal.Height)
 	// fmt.Println("merkle:",blockIn.Header.MerkleHash,blockFirstCal.Header.MerkleHash)
 	// fmt.Println("timestamp:",blockIn.Header.TimeStamp,blockFirstCal.Header.TimeStamp)

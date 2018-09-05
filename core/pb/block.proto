@@ -273,6 +273,7 @@ message SignaturePreblock {
 ** Synchronization Request
 */
 message RequestSyn {
+    bytes       ChainID        = 4;
     uint64      RequestHeight  = 1;
     bytes       PubKey         = 2;
     bytes       SigData        = 3;
@@ -282,6 +283,7 @@ message RequestSyn {
 ** Timeout Message
 */
 message ToutMsg {
+    bytes       ChainID        = 4;
     uint64      RoundNumber    = 1;
     bytes       PubKey         = 2;
     bytes       SigData        = 3;
@@ -291,6 +293,7 @@ message ToutMsg {
  ** Synchronization block
  */
  message BlockSyn {
+     bytes      ChainID                    = 3;
      BlockTx    Blksyn_v                   = 1;
      BlockTx    Blksyn_f                   = 2;
  }
