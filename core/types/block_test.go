@@ -73,7 +73,7 @@ func TestBlockCreate(t *testing.T) {
 	ledger := example.Ledger("/tmp/block_create")
 	root := common.NameToIndex("root")
 	var txs []*types.Transaction
-	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, 0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, nil,  0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
 	txs = append(txs, tokenContract)
@@ -119,7 +119,7 @@ func xTestBlockNew(t *testing.T) {
 	ledger := example.Ledger("/tmp/block_new")
 	root := common.NameToIndex("root")
 	var txs []*types.Transaction
-	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, 0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, nil,  0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
 	txs = append(txs, tokenContract)

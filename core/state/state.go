@@ -180,15 +180,16 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
  *  @param t - the virtual machine type
  *  @param des - the description of contract
  *  @param code - the code of contract
+ *  @param abi  - the abi of contract
  */
-func (s *State) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
+func (s *State) SetContract(index common.AccountName, t types.VmType, des, code []byte, abi []byte) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
 	}
 	acc.mutex.Lock()
 	defer acc.mutex.Unlock()
-	if err := acc.SetContract(t, des, code); err != nil {
+	if err := acc.SetContract(t, des, code, abi); err != nil {
 		return err
 	}
 	return s.commitAccount(acc)

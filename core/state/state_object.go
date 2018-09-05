@@ -108,10 +108,11 @@ func (a *Account) NewStoreTrie(path string) error {
  *  @param des - the description of smart contract
  *  @param code - the code of smart contract
  */
-func (a *Account) SetContract(t types.VmType, des, code []byte) error {
+func (a *Account) SetContract(t types.VmType, des, code []byte, abi []byte) error {
 	a.Contract.TypeVm = t
 	a.Contract.Describe = common.CopyBytes(des)
 	a.Contract.Code = common.CopyBytes(code)
+	a.Contract.Abi = common.CopyBytes(abi)
 	return nil
 }
 
@@ -256,6 +257,7 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 			TypeVm:   uint32(a.Contract.TypeVm),
 			Describe: common.CopyBytes(a.Contract.Describe),
 			Code:     common.CopyBytes(a.Contract.Code),
+			Abi:      common.CopyBytes(a.Contract.Abi),
 		},
 		Delegates: delegates,
 		Ram: &pb.Ram{
@@ -324,6 +326,7 @@ func (a *Account) Deserialize(data []byte) error {
 		TypeVm:   types.VmType(pbAcc.Contract.TypeVm),
 		Describe: common.CopyBytes(pbAcc.Contract.Describe),
 		Code:     common.CopyBytes(pbAcc.Contract.Code),
+		Abi:      common.CopyBytes(pbAcc.Contract.Abi),
 	}
 	a.Permissions = make(map[string]Permission, 1)
 	for _, v := range pbAcc.Tokens {
