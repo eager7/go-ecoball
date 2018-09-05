@@ -20,8 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
-	//"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/state"
 	"math/big"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -61,13 +59,12 @@ func GenesisBlockInit(ledger ledger.Ledger, timeStamp int64) (*types.Block, erro
 	return &block, nil
 }*/
 
-func PresetContract(s *state.State, timeStamp int64) error {
+func PresetContract(s *state.State, timeStamp int64, rootPubKey []byte) error {
 	if s == nil {
 		return errors.New("state is nil")
 	}
 	root := common.NameToIndex("root")
-	delegate := common.NameToIndex("delegate")
-	addr := common.AddressFromPubKey(config.Root.PublicKey)
+	addr := common.AddressFromPubKey(rootPubKey)
 	fmt.Println("preset insert a root account:", addr.HexString())
 	if _, err := s.AddAccount(root, addr, timeStamp); err != nil {
 		return err
@@ -80,7 +77,8 @@ func PresetContract(s *state.State, timeStamp int64) error {
 		fmt.Println(err)
 		return err
 	}
-
+/*
+	delegate := common.NameToIndex("delegate")
 	if _, err := s.AddAccount(delegate, common.AddressFromPubKey(config.Delegate.PublicKey), timeStamp); err != nil {
 		return err
 	}
@@ -92,6 +90,6 @@ func PresetContract(s *state.State, timeStamp int64) error {
 		fmt.Println(err)
 		return err
 	}
-
+*/
 	return nil
 }

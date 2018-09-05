@@ -24,7 +24,13 @@ import "github.com/ecoball/go-ecoball/common"
 type PreBlockTimeout struct{
 	ChainID common.Hash
 }
-type TxTimeout struct{}
-type SignTxTimeout struct{}
-type BlockSTimeout struct{}
+type TxTimeout struct{
+	ChainID common.Hash
+}
+type SignTxTimeout struct{
+	ChainID common.Hash
+}
+type BlockSTimeout struct{
+	ChainID common.Hash
+}
 

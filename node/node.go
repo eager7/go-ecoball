@@ -58,7 +58,7 @@ func runNode(c *cli.Context) error {
 	fmt.Println("Run Node")
 	log.Info("Build Geneses Block")
 	var err error
-	ledger.L, err = ledgerimpl.NewLedger(store.PathBlock)
+	ledger.L, err = ledgerimpl.NewLedger(store.PathBlock, config.ChainHash, config.User)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func runNode(c *cli.Context) error {
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
 		solo.NewSoloConsensusServer(ledger.L, txPool)
-		event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
+		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, PublicKey: config.Root.PublicKey})
 	case "DPOS":
 		log.Info("Start DPOS consensus")
 

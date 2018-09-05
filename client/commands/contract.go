@@ -25,6 +25,9 @@ import (
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/urfave/cli"
+	"github.com/ecoball/go-ecoball/http/common/abi"
+	"encoding/json"
+	"encoding/hex"
 )
 
 var (
@@ -51,6 +54,10 @@ var (
 					cli.StringFlag{
 						Name:  "description, d",
 						Usage: "contract description",
+					},
+					cli.StringFlag{
+						Name:  "abipath, ap",
+						Usage: "abi file path",
 					},
 				},
 			},
@@ -92,6 +99,12 @@ func setContract(c *cli.Context) error {
 		return errors.New("Invalid contrace file path")
 	}
 
+	//abi file path
+	abi_fileName := c.String("abipath")
+	if abi_fileName == ""{
+
+	}
+
 	//file data
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0666)
 	if err != nil {
@@ -105,6 +118,35 @@ func setContract(c *cli.Context) error {
 		fmt.Println("read contract filr err: ", err.Error())
 		return err
 	}
+
+	//file data
+	abifile, err := os.OpenFile(abi_fileName, os.O_RDONLY, 0666)
+	if err != nil {
+		fmt.Println("open file failed")
+		return errors.New("open file failed: " + abi_fileName)
+	}
+	
+	defer abifile.Close()
+	abidata, err := ioutil.ReadAll(abifile)
+	if err != nil {
+		fmt.Println("read abi filr err: ", err.Error())
+		return err
+	}
+
+	var contractAbi abi.ABI
+	if err = json.Unmarshal(abidata, &contractAbi); err != nil {
+		fmt.Errorf("ABI Unmarshal failed")
+		return err
+	}
+
+	abibyte, err := abi.MarshalBinary(contractAbi)
+	if err != nil {
+		fmt.Errorf("ABI MarshalBinary failed")
+		return err
+	}
+	
+	abi_str := hex.EncodeToString(abibyte)
+
 	//contract name
 	contractName := c.String("name")
 	if contractName == "" {
@@ -120,7 +162,7 @@ func setContract(c *cli.Context) error {
 	}
 
 	//rpc call
-	resp, err := rpc.NodeCall("setContract", []interface{}{common.ToHex(data), contractName, description})
+	resp, err := rpc.NodeCall("setContract", []interface{}{common.ToHex(data), contractName, description, abi_str})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

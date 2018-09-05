@@ -91,7 +91,7 @@ func TestTransfer() *types.Transaction {
 
 func Ledger(path string) ledger.Ledger {
 	os.RemoveAll(path)
-	l, err := ledgerimpl.NewLedger(path)
+	l, err := ledgerimpl.NewLedger(path, config.ChainHash, config.Root)
 	errors.CheckErrorPanic(err)
 	return l
 }
@@ -141,35 +141,35 @@ func AutoGenerateTransaction(ledger ledger.Ledger) {
 }
 
 func VotingProducer(ledger ledger.Ledger) {
-	//_, err := ledger.AccountGet(common.NameToIndex("worker1"))
-	//if err == nil {
-	//	log.Panic("Please Delete Block Database First, Then Restart Program")
-	//}
-
 	//set smart contract for root delegate
-	time.Sleep(time.Second * 15)
+	time.Sleep(time.Second * 5)
 	log.Warn("Start Voting Producer")
-	contract, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, types.VmNative, "system control", nil, nil, 0, time.Now().Unix())
+	contract, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, types.VmNative, "system control", nil, nil, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Root))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 500)
 
-	contract, err = types.NewDeployContract(common.NameToIndex("delegate"), common.NameToIndex("delegate"), config.ChainHash, state.Owner, types.VmNative, "system control", nil, nil, 0, time.Now().Unix())
+	/*contract, err = types.NewDeployContract(common.NameToIndex("delegate"), common.NameToIndex("delegate"), config.ChainHash, state.Owner, types.VmNative, "system control", nil, nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Delegate))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	time.Sleep(time.Millisecond * 500)*/
+
+	invoke, err := types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, "new_account", []string{"delegate", common.AddressFromPubKey(config.Delegate.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 500)
 
 	//create account worker1, worker2
 	time.Sleep(time.Second * 5)
-	invoke, err := types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 500)
 
-	invoke, err = types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, "new_account", []string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, "new_account", []string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
@@ -177,13 +177,13 @@ func VotingProducer(ledger ledger.Ledger) {
 
 	//transfer worker1, worker2 aba token
 	time.Sleep(time.Second * 5)
-	transfer, err := types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("worker1"), config.ChainHash, state.Owner, new(big.Int).SetUint64(10000), 0, time.Now().Unix())
+	transfer, err := types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("worker1"), config.ChainHash, state.Owner, new(big.Int).SetUint64(10000), 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	transfer.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
 	time.Sleep(time.Millisecond * 500)
 
-	transfer, err = types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, new(big.Int).SetUint64(10000), 1, time.Now().Unix())
+	transfer, err = types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, new(big.Int).SetUint64(10000), 1, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	transfer.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
@@ -191,13 +191,13 @@ func VotingProducer(ledger ledger.Ledger) {
 
 	//delegate for worker1 and worker2 cpu,net
 	time.Sleep(time.Second * 5)
-	invoke, err = types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("delegate"), config.ChainHash, state.Active, "pledge", []string{"root", "worker1", "500", "500"}, 0, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Active, "pledge", []string{"root", "worker1", "500", "500"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 500)
 
-	invoke, err = types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("delegate"), config.ChainHash, state.Active, "pledge", []string{"root", "worker2", "500", "500"}, 0, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Active, "pledge", []string{"root", "worker2", "500", "500"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
@@ -205,13 +205,13 @@ func VotingProducer(ledger ledger.Ledger) {
 
 	//worker1 and worker2 delegate aba to get votes
 	time.Sleep(time.Second * 5)
-	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("delegate"), config.ChainHash, state.Active, "pledge", []string{"worker1", "worker1", "4000", "4000"}, 0, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("root"), config.ChainHash, state.Active, "pledge", []string{"worker1", "worker1", "4000", "4000"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 500)
 
-	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("delegate"), config.ChainHash, state.Active, "pledge", []string{"worker2", "worker2", "4000", "4000"}, 0, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("root"), config.ChainHash, state.Active, "pledge", []string{"worker2", "worker2", "4000", "4000"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker2)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
@@ -244,6 +244,8 @@ func VotingProducer(ledger ledger.Ledger) {
 	invoke.SetSignature(&config.Worker2)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 500)
+
+	go AutoGenerateTransaction(ledger)
 }
 
 func CreateAccountBlock(chainID common.Hash) {
@@ -255,7 +257,12 @@ func CreateAccountBlock(chainID common.Hash) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, tokenContract))
 	time.Sleep(time.Second * 2)
 
-	invoke, err := types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke, err := types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"delegate", common.AddressFromPubKey(config.Delegate.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	invoke, err = types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
@@ -270,6 +277,14 @@ func CreateAccountBlock(chainID common.Hash) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
 
+	perm := state.NewPermission(state.Active, state.Owner, 2, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker2"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker3"), Weight: 1, Permission: "active"}})
+	param, err := json.Marshal(perm)
+	errors.CheckErrorPanic(err)
+	invoke, err = types.NewInvokeContract(root, root, chainID, state.Active, "set_account", []string{"root", string(param)}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
 	time.Sleep(time.Second * 2)
 }
 
@@ -277,6 +292,12 @@ func TokenTransferBlock(chainID common.Hash) {
 	log.Info("-----------------------------TokenTransferBlock")
 	root := common.NameToIndex("root")
 	transfer, err := types.NewTransfer(root, common.NameToIndex("worker1"), chainID, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(interval)
+
+	transfer, err = types.NewTransfer(root, common.NameToIndex("delegate"), chainID, "active", new(big.Int).SetUint64(10000), 101, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	transfer.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
@@ -363,7 +384,7 @@ func checkParam(abiDef abi.ABI, method string, arg []byte) ([]byte, error){
 	if fields == nil {
 		return nil, errors.New(log, "can not find method " + method)
 	}
-
+	
 	args := make([]wasmservice.ParamTV, len(fields))
 	for i, field := range fields {
 		v := m[field.Name]
@@ -379,14 +400,73 @@ func checkParam(abiDef abi.ABI, method string, arg []byte) ([]byte, error){
 				}
 				fmt.Println(field.Name, "is ", field.Type, "", vv)
 			case float64:
-				if field.Type == "int8" || field.Type == "int16" || field.Type == "int32" {
+				switch field.Type {
+				case "int8":
+					const INT8_MAX = int8(^uint8(0) >> 1)
+					const INT8_MIN = ^INT8_MAX
+					if int64(vv) >= int64(INT8_MIN) && int64(vv) <= int64(INT8_MAX) {
+						args[i].Pval = strconv.FormatInt(int64(vv), 10)
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int8 range"))
+					}
+				case "int16":
+					const INT16_MAX = int16(^uint16(0) >> 1)
+					const INT16_MIN = ^INT16_MAX
+					if int64(vv) >= int64(INT16_MIN) && int64(vv) <= int64(INT16_MAX) {
+						args[i].Pval = strconv.FormatInt(int64(vv), 10)
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int16 range"))
+					}
+				case "int32":
+					const INT32_MAX = int32(^uint32(0) >> 1)
+					const INT32_MIN = ^INT32_MAX
+					if int64(vv) >= int64(INT32_MIN) && int64(vv) <= int64(INT32_MAX) {
+						args[i].Pval = strconv.FormatInt(int64(vv), 10)
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int32 range"))
+					}
+				case "int64":
 					args[i].Pval = strconv.FormatInt(int64(vv), 10)
-				} else if field.Type == "uint8" || field.Type == "uint16" || field.Type == "uint32" {
+
+				case "uint8":
+					const UINT8_MIN uint8 = 0
+					const UINT8_MAX = ^uint8(0)
+					if uint64(vv) >= uint64(UINT8_MIN) && uint64(vv) <= uint64(UINT8_MAX) {
+						args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint8 range"))
+					}
+				case "uint16":
+					const UINT16_MIN uint16 = 0
+					const UINT16_MAX = ^uint16(0)
+					if uint64(vv) >= uint64(UINT16_MIN) && uint64(vv) <= uint64(UINT16_MAX) {
+						args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint16 range"))
+					}
+				case "uint32":
+					const UINT32_MIN uint32 = 0
+					const UINT32_MAX = ^uint32(0)
+					if uint64(vv) >= uint64(UINT32_MIN) && uint64(vv) <= uint64(UINT32_MAX) {
+						args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint32 range"))
+					}
+				case "uint64":
 					args[i].Pval = strconv.FormatUint(uint64(vv), 10)
-				} else {
+
+				default:
 					return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
 				}
-
+				//
+				//if field.Type == "int8" || field.Type == "int16" || field.Type == "int32" {
+				//	args[i].Pval = strconv.FormatInt(int64(vv), 10)
+				//} else if field.Type == "uint8" || field.Type == "uint16" || field.Type == "uint32" {
+				//	args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+				//} else {
+				//	return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
+				//}
+				fmt.Println(field.Name, "is ", field.Type, "", vv)
 			//case []interface{}:
 			//	fmt.Println(field.Name, "is an array:")
 			//	for i, u := range vv {
@@ -449,7 +529,7 @@ func InvokeContract(ledger ledger.Ledger) {
          {"name":"from", "type":"account_name"},
          {"name":"to", "type":"account_name"},
          {"name":"quantity", "type":"asset"},
-         {"name":"memo", "type":"int32"}
+         {"name":"memo", "type":"int16"}
       ]
     }
   ],
@@ -499,7 +579,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	//var abiDef abi.ABI
 	//json.Unmarshal(abiByte, &abiDef)
 
-	transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": 10}`)
+	transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": 1000}`)
 
 	argbyte, err := checkParam(abiDef, "transfer", transfer)
 	if err != nil {

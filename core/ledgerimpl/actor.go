@@ -21,11 +21,12 @@ import (
 
 	"fmt"
 	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
+	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/account"
 )
 
 type LedActor struct {
@@ -76,9 +77,10 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {
 			log.Error("send block to tx pool error:", err)
 		}
-	case common.Hash:
-		log.Info("add new chain:", msg.HexString())
-		if err := l.ledger.NewTxChain(msg); err != nil {
+	case *message.RegChain:
+		log.Info("add new chain:", msg.ChainID.HexString())
+		root := account.Account{PublicKey:msg.PublicKey, PrivateKey:nil}
+		if err := l.ledger.NewTxChain(msg.ChainID, root); err != nil {
 			log.Error(err)
 		}
 	default:
