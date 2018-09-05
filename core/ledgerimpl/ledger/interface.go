@@ -4,12 +4,13 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/account"
 )
 
 var L Ledger
 
 type Ledger interface {
-	NewTxChain(chainID common.Hash) (err error)
+	NewTxChain(chainID common.Hash, root account.Account) (err error)
 
 	GetTxBlock(chainID common.Hash, hash common.Hash) (*types.Block, error)
 	NewTxBlock(chainID common.Hash, txs []*types.Transaction, headerPayload types.Payload, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)

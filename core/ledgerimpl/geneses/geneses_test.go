@@ -61,7 +61,12 @@ func CreateAccountBlock(ledger ledger.Ledger, chainID common.Hash) *types.Block 
 	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().Unix())
+
+	invoke, err := types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"delegate", common.AddressFromPubKey(config.Delegate.PublicKey).HexString()}, 0, time.Now().Unix())
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+	invoke, err = types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
@@ -95,6 +100,11 @@ func TokenTransferBlock(ledger ledger.Ledger, chainID common.Hash) *types.Block 
 	transfer.SetSignature(&config.Root)
 	txs = append(txs, transfer)
 
+	transfer, err = types.NewTransfer(root, delegate, chainID, "active", new(big.Int).SetUint64(10000), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	txs = append(txs, transfer)
+
 	transfer, err = types.NewTransfer(root, worker3, chainID, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	transfer.SetSignature(&config.Root)
@@ -105,22 +115,18 @@ func TokenTransferBlock(ledger ledger.Ledger, chainID common.Hash) *types.Block 
 func PledgeContract(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 	elog.Log.Info("PledgeContract-----------------------4-------------------------------")
 	var txs []*types.Transaction
-	tokenContract, err := types.NewDeployContract(delegate, delegate, chainID, "active", types.VmNative, "system control", nil, nil, 0, time.Now().Unix())
-	errors.CheckErrorPanic(err)
-	tokenContract.SetSignature(&config.Delegate)
-	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(root, delegate, chainID, "owner", "pledge", []string{"root", "worker1", "100", "100"}, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(root, root, chainID, "owner", "pledge", []string{"root", "worker1", "100", "100"}, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(worker1, delegate, chainID, "owner", "pledge", []string{"worker1", "worker1", "200", "200"}, 0, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(worker1, root, chainID, "owner", "pledge", []string{"worker1", "worker1", "200", "200"}, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(worker2, delegate, chainID, "owner", "pledge", []string{"worker2", "worker2", "100", "100"}, 0, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(worker2, root, chainID, "owner", "pledge", []string{"worker2", "worker2", "100", "100"}, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker2)
 	txs = append(txs, invoke)
@@ -150,7 +156,7 @@ func VotingContract(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 func CancelPledgeContract(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 	elog.Log.Info("CancelPledgeContract---------------------6---------------------------------\n\n")
 	var txs []*types.Transaction
-	invoke, err := types.NewInvokeContract(worker1, delegate, chainID, "owner", "cancel_pledge", []string{"worker1", "worker1", "50", "50"}, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(worker1, root, chainID, "owner", "cancel_pledge", []string{"worker1", "worker1", "50", "50"}, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)

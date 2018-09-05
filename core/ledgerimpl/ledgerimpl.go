@@ -18,7 +18,6 @@ package ledgerimpl
 
 import (
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
@@ -28,6 +27,7 @@ import (
 	"sync"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"fmt"
+	"github.com/ecoball/go-ecoball/account"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.NoticeLog)
@@ -40,9 +40,9 @@ type LedgerImpl struct {
 	//ChainAc *account.ChainAccount
 }
 
-func NewLedger(path string) (l ledger.Ledger, err error) {
+func NewLedger(path string, chainID common.Hash, root account.Account) (l ledger.Ledger, err error) {
 	ll := &LedgerImpl{path: path, ChainTxs: make(map[common.Hash]*transaction.ChainTx, 1)}
-	if err := ll.NewTxChain(config.ChainHash); err != nil {
+	if err := ll.NewTxChain(chainID, root); err != nil {
 		return nil, err
 	}
 
@@ -55,7 +55,7 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 	return ll, nil
 }
 
-func (l *LedgerImpl) NewTxChain(chainID common.Hash) (err error) {
+func (l *LedgerImpl) NewTxChain(chainID common.Hash, root account.Account) (err error) {
 	if _, ok := l.ChainTxs[chainID]; ok {
 		return nil
 	}
@@ -63,7 +63,7 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash) (err error) {
 	if err != nil {
 		return err
 	}
-	if err := ChainTx.GenesesBlockInit(chainID); err != nil {
+	if err := ChainTx.GenesesBlockInit(chainID, root); err != nil {
 		return err
 	}
 	ChainTx.StateDB.TempDB, err = ChainTx.StateDB.FinalDB.CopyState()

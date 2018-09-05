@@ -143,6 +143,7 @@ message Miner {
 ** Signature Info
 */
 message Signature {
+    bytes       ChainID     = 3;
     bytes       PubKey      = 1;
     bytes       SigData     = 2;
 }
