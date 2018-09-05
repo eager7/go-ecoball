@@ -278,6 +278,9 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
 	if value, err := s.getParam(addr.HexString()); err != nil {
 		return nil, err
 	} else {
+		if value == 0 {
+			return nil, errors.New(log, fmt.Sprintf("the address:%s is not register be an account", addr.HexString()))
+		}
 		return s.GetAccountByName(common.AccountName(value))
 	}
 	s.mutex.Lock()

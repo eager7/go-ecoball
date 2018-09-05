@@ -21,13 +21,14 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
-type ABABFTStart struct{
+type ABABFTStart struct {
 	ChainID common.Hash
 }
 type SoloStop struct{}
 type GetCurrentHeader struct{}
 
 type RegChain struct {
-	ChainID  common.Hash
-	Tx       *types.Transaction
+	ChainID   common.Hash
+	PublicKey []byte
+	Tx        *types.Transaction
 }
