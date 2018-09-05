@@ -23,7 +23,7 @@ import (
 func TestRunMain(t *testing.T) {
 	net.InitNetWork()
 	os.RemoveAll("/tmp/node_test")
-	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, config.Root)
+	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, config.User)
 	errors.CheckErrorPanic(err)
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
 	ledger.L = L
