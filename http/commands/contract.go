@@ -35,6 +35,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"strconv"
 	"encoding/hex"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
 var log = elog.NewLogger("commands", elog.DebugLog)
@@ -207,14 +208,73 @@ func checkParam(abiDef abi.ABI, method string, arg []byte) ([]byte, error){
 				}
 				fmt.Println(field.Name, "is ", field.Type, "", vv)
 			case float64:
-				if field.Type == "int8" || field.Type == "int16" || field.Type == "int32" {
+				switch field.Type {
+				case "int8":
+					const INT8_MAX = int8(^uint8(0) >> 1)
+					const INT8_MIN = ^INT8_MAX
+					if int64(vv) >= int64(INT8_MIN) && int64(vv) <= int64(INT8_MAX) {
+						args[i].Pval = strconv.FormatInt(int64(vv), 10)
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int8 range"))
+					}
+				case "int16":
+					const INT16_MAX = int16(^uint16(0) >> 1)
+					const INT16_MIN = ^INT16_MAX
+					if int64(vv) >= int64(INT16_MIN) && int64(vv) <= int64(INT16_MAX) {
+						args[i].Pval = strconv.FormatInt(int64(vv), 10)
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int16 range"))
+					}
+				case "int32":
+					const INT32_MAX = int32(^uint32(0) >> 1)
+					const INT32_MIN = ^INT32_MAX
+					if int64(vv) >= int64(INT32_MIN) && int64(vv) <= int64(INT32_MAX) {
+						args[i].Pval = strconv.FormatInt(int64(vv), 10)
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int32 range"))
+					}
+				case "int64":
 					args[i].Pval = strconv.FormatInt(int64(vv), 10)
-				} else if field.Type == "uint8" || field.Type == "uint16" || field.Type == "uint32" {
+
+				case "uint8":
+					const UINT8_MIN uint8 = 0
+					const UINT8_MAX = ^uint8(0)
+					if uint64(vv) >= uint64(UINT8_MIN) && uint64(vv) <= uint64(UINT8_MAX) {
+						args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint8 range"))
+					}
+				case "uint16":
+					const UINT16_MIN uint16 = 0
+					const UINT16_MAX = ^uint16(0)
+					if uint64(vv) >= uint64(UINT16_MIN) && uint64(vv) <= uint64(UINT16_MAX) {
+						args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint16 range"))
+					}
+				case "uint32":
+					const UINT32_MIN uint32 = 0
+					const UINT32_MAX = ^uint32(0)
+					if uint64(vv) >= uint64(UINT32_MIN) && uint64(vv) <= uint64(UINT32_MAX) {
+						args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint32 range"))
+					}
+				case "uint64":
 					args[i].Pval = strconv.FormatUint(uint64(vv), 10)
-				} else {
+
+				default:
 					return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
 				}
-
+				//
+				//if field.Type == "int8" || field.Type == "int16" || field.Type == "int32" {
+				//	args[i].Pval = strconv.FormatInt(int64(vv), 10)
+				//} else if field.Type == "uint8" || field.Type == "uint16" || field.Type == "uint32" {
+				//	args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+				//} else {
+				//	return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
+				//}
+				fmt.Println(field.Name, "is ", field.Type, "", vv)
 				//case []interface{}:
 				//	fmt.Println(field.Name, "is an array:")
 				//	for i, u := range vv {
@@ -238,18 +298,18 @@ func checkParam(abiDef abi.ABI, method string, arg []byte) ([]byte, error){
 
 func handleInvokeContract(params []interface{}) common.Errcode {
 	var (
-		//contractName   string
+		contractName   string
 		contractMethod string
 		contractParam  string
 		parameters     []string
 		invalid        bool = false
 	)
 
-	//if v, ok := params[0].(string); ok {
-	//	contractName = v
-	//} else {
-	//	invalid = true
-	//}
+	if v, ok := params[0].(string); ok {
+		contractName = v
+	} else {
+		invalid = true
+	}
 
 	if v, ok := params[1].(string); ok {
 		contractMethod = v
@@ -264,6 +324,7 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	}
 
 	if invalid {
+		log.Debug("Param error")
 		return common.INVALID_PARAMS
 	}
 
@@ -271,36 +332,40 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	//	parameters = strings.Split(contractParam, " ")
 	//}
 
-	args, err := ParseParams(contractParam)
-	if err != nil {
-		return common.INVALID_PARAMS
-	}
-
-	data, err := json.Marshal(args)
-	if err != nil {
-		return common.INVALID_PARAMS
-	}
-	log.Debug("ParseParams: ", string(data))
-
-	argbyte, err := BuildWasmContractParam(args)
-	if err != nil {
-		//t.Errorf("build wasm contract param failed:%s", err)
-		//return
-		return common.INVALID_PARAMS
-	}
-	log.Debug("BuildWasmContractParam: ", string(argbyte))
-
-	//contract, err := ledger.L.GetContract(config.ChainHash, innerCommon.NameToIndex(contractName))
-	//
-	//var abiDef abi.ABI
-	//if err = json.Unmarshal(contract.Abi, &abiDef); err != nil {
-	//	return common.INVALID_PARAMS
-	//}
-	//
-	//argbyte, err := checkParam(abiDef, contractMethod, []byte(contractParam))
+	//args, err := ParseParams(contractParam)
 	//if err != nil {
 	//	return common.INVALID_PARAMS
 	//}
+	//
+	//data, err := json.Marshal(args)
+	//if err != nil {
+	//	return common.INVALID_PARAMS
+	//}
+	//log.Debug("ParseParams: ", string(data))
+	//
+	//argbyte, err := BuildWasmContractParam(args)
+	//if err != nil {
+	//	//t.Errorf("build wasm contract param failed:%s", err)
+	//	//return
+	//	return common.INVALID_PARAMS
+	//}
+	//log.Debug("BuildWasmContractParam: ", string(argbyte))
+
+	contract, err := ledger.L.GetContract(config.ChainHash, innerCommon.NameToIndex(contractName))
+
+	var abiDef abi.ABI
+	err = abi.UnmarshalBinary(contract.Abi, &abiDef)
+	if err != nil {
+		fmt.Errorf("can not find UnmarshalBinary abi file")
+		return common.INVALID_PARAMS
+	}
+
+	log.Debug("contractParam: ", contractParam)
+	argbyte, err := checkParam(abiDef, contractMethod, []byte(contractParam))
+	if err != nil {
+		log.Debug("checkParam error")
+		return common.INVALID_PARAMS
+	}
 
 	parameters = append(parameters, string(argbyte[:]))
 
