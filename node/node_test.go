@@ -70,7 +70,7 @@ func TestRunNode(t *testing.T) {
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
 		solo.NewSoloConsensusServer(ledger.L, txPool)
-		event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
+		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{config.ChainHash, nil})
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":
