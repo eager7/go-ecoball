@@ -99,7 +99,8 @@ func Ledger(path string) ledger.Ledger {
 func SaveBlock(ledger ledger.Ledger, txs []*types.Transaction, chainID common.Hash) *types.Block {
 	con, err := types.InitConsensusData(TimeStamp())
 	errors.CheckErrorPanic(err)
-	block, err := ledger.NewTxBlock(chainID, txs, *con, time.Now().UnixNano())
+	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey}
+	block, err := ledger.NewTxBlock(chainID, txs, headerPayload, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	block.SetSignature(&config.Root)
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(block.ChainID, block))
@@ -445,7 +446,7 @@ func InvokeContract(ledger ledger.Ledger) {
       "name": "transfer",
       "base": "",
       "fields": [
-         {"name":"from", "type":"string"},
+         {"name":"from", "type":"account_name"},
          {"name":"to", "type":"account_name"},
          {"name":"quantity", "type":"asset"},
          {"name":"memo", "type":"int32"}
@@ -498,7 +499,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	//var abiDef abi.ABI
 	//json.Unmarshal(abiByte, &abiDef)
 
-	transfer := []byte(`{"from": "gm2tsojvgene", "to": 10, "quantity": "100.0000 EOS", "memo": 10}`)
+	transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": 10}`)
 
 	argbyte, err := checkParam(abiDef, "transfer", transfer)
 	if err != nil {

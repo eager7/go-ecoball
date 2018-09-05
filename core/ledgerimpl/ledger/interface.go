@@ -12,7 +12,7 @@ type Ledger interface {
 	NewTxChain(chainID common.Hash) (err error)
 
 	GetTxBlock(chainID common.Hash, hash common.Hash) (*types.Block, error)
-	NewTxBlock(chainID common.Hash, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
+	NewTxBlock(chainID common.Hash, txs []*types.Transaction, headerPayload types.Payload, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
 	VerifyTxBlock(chainID common.Hash, block *types.Block) error
 	//SaveTxBlock(block *types.Block) error
 	GetTxBlockByHeight(chainID common.Hash, height uint64) (*types.Block, error)
@@ -23,7 +23,6 @@ type Ledger interface {
 	StateDB(chainID common.Hash, ) *state.State
 	ResetStateDB(chainID common.Hash, header *types.Header) error
 
-	//AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error)
 	SetContract(chainID common.Hash, index common.AccountName, t types.VmType, des, code []byte, abi []byte) error
 	GetContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error)
 	AccountGet(chainID common.Hash, index common.AccountName) (*state.Account, error)

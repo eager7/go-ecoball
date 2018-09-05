@@ -67,6 +67,10 @@ func (t TransferInfo) GetObject() interface{} {
 	return t
 }
 
+func (t *TransferInfo) Type() uint32 {
+	return uint32(TxTransfer)
+}
+
 func (t *TransferInfo) Show() {
 	fmt.Println(t.JsonString())
 }

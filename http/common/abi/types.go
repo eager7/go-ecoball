@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/ecoball/go-ecoball/common/ecc"
 )
 
 // For reference:
@@ -23,48 +21,6 @@ type PermissionName Name
 type ActionName Name
 type TableName Name
 type ScopeName Name
-
-func AN(in string) AccountName    { return AccountName(in) }
-func ActN(in string) ActionName   { return ActionName(in) }
-func PN(in string) PermissionName { return PermissionName(in) }
-
-type AccountResourceLimit struct {
-	Used      JSONInt64 `json:"used"`
-	Available JSONInt64 `json:"available"`
-	Max       JSONInt64 `json:"max"`
-}
-
-type DelegatedBandwidth struct {
-	From      AccountName `json:"from"`
-	To        AccountName `json:"to"`
-	NetWeight Asset       `json:"net_weight"`
-	CPUWeight Asset       `json:"cpu_weight"`
-}
-
-type TotalResources struct {
-	Owner     AccountName `json:"owner"`
-	NetWeight Asset       `json:"net_weight"`
-	CPUWeight Asset       `json:"cpu_weight"`
-	RAMBytes  JSONInt64   `json:"ram_bytes"`
-}
-
-type VoterInfo struct {
-	Owner             AccountName   `json:"owner"`
-	Proxy             AccountName   `json:"proxy"`
-	Producers         []AccountName `json:"producers"`
-	Staked            JSONInt64     `json:"staked"`
-	LastVoteWeight    JSONFloat64   `json:"last_vote_weight"`
-	ProxiedVoteWeight JSONFloat64   `json:"proxied_vote_weight"`
-	IsProxy           byte          `json:"is_proxy"`
-}
-
-type RefundRequest struct {
-	Owner       AccountName `json:"owner"`
-	RequestTime JSONTime    `json:"request_time"` //         {"name":"request_time", "type":"time_point_sec"},
-	NetAmount   Asset       `json:"net_amount"`
-	CPUAmount   Asset       `json:"cpu_amount"`
-}
-
 type CompressionType uint8
 
 const (
@@ -268,61 +224,61 @@ func (a Asset) MarshalJSON() (data []byte, err error) {
 	return json.Marshal(a.String())
 }
 
-type Permission struct {
-	PermName     string    `json:"perm_name"`
-	Parent       string    `json:"parent"`
-	RequiredAuth Authority `json:"required_auth"`
-}
-
-type PermissionLevel struct {
-	Actor      AccountName    `json:"actor"`
-	Permission PermissionName `json:"permission"`
-}
+//type Permission struct {
+//	PermName     string    `json:"perm_name"`
+//	Parent       string    `json:"parent"`
+//	RequiredAuth Authority `json:"required_auth"`
+//}
+//
+//type PermissionLevel struct {
+//	Actor      AccountName    `json:"actor"`
+//	Permission PermissionName `json:"permission"`
+//}
 
 // NewPermissionLevel parses strings like `account@active`,
 // `otheraccount@owner` and builds a PermissionLevel struct. It
 // validates that there is a single optional @ (where permission
 // defaults to 'active'), and validates length of account and
 // permission names.
-func NewPermissionLevel(in string) (out PermissionLevel, err error) {
-	parts := strings.Split(in, "@")
-	if len(parts) > 2 {
-		return out, fmt.Errorf("permission %q invalid, use account[@permission]", in)
-	}
+//func NewPermissionLevel(in string) (out PermissionLevel, err error) {
+//	parts := strings.Split(in, "@")
+//	if len(parts) > 2 {
+//		return out, fmt.Errorf("permission %q invalid, use account[@permission]", in)
+//	}
+//
+//	if len(parts[0]) > 12 {
+//		return out, fmt.Errorf("account name %q too long", parts[0])
+//	}
+//
+//	out.Actor = AccountName(parts[0])
+//	out.Permission = PermissionName("active")
+//	if len(parts) == 2 {
+//		if len(parts[1]) > 12 {
+//			return out, fmt.Errorf("permission %q name too long", parts[1])
+//		}
+//
+//		out.Permission = PermissionName(parts[1])
+//	}
+//
+//	return
+//}
+//
+//type PermissionLevelWeight struct {
+//	Permission PermissionLevel `json:"permission"`
+//	Weight     uint16          `json:"weight"` // weight_type
+//}
 
-	if len(parts[0]) > 12 {
-		return out, fmt.Errorf("account name %q too long", parts[0])
-	}
+//type Authority struct {
+//	Threshold uint32                  `json:"threshold"`
+//	Keys      []KeyWeight             `json:"keys,omitempty"`
+//	Accounts  []PermissionLevelWeight `json:"accounts,omitempty"`
+//	Waits     []WaitWeight            `json:"waits,omitempty"`
+//}
 
-	out.Actor = AccountName(parts[0])
-	out.Permission = PermissionName("active")
-	if len(parts) == 2 {
-		if len(parts[1]) > 12 {
-			return out, fmt.Errorf("permission %q name too long", parts[1])
-		}
-
-		out.Permission = PermissionName(parts[1])
-	}
-
-	return
-}
-
-type PermissionLevelWeight struct {
-	Permission PermissionLevel `json:"permission"`
-	Weight     uint16          `json:"weight"` // weight_type
-}
-
-type Authority struct {
-	Threshold uint32                  `json:"threshold"`
-	Keys      []KeyWeight             `json:"keys,omitempty"`
-	Accounts  []PermissionLevelWeight `json:"accounts,omitempty"`
-	Waits     []WaitWeight            `json:"waits,omitempty"`
-}
-
-type KeyWeight struct {
-	PublicKey ecc.PublicKey `json:"key"`
-	Weight    uint16        `json:"weight"` // weight_type
-}
+//type KeyWeight struct {
+//	PublicKey ecc.PublicKey `json:"key"`
+//	Weight    uint16        `json:"weight"` // weight_type
+//}
 
 type WaitWeight struct {
 	WaitSec uint32 `json:"wait_sec"`

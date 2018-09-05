@@ -18,7 +18,12 @@
 // Author: Xu Wang, 2018.07.16
 
 package ababft
-type PreBlockTimeout struct{}
+
+import "github.com/ecoball/go-ecoball/common"
+
+type PreBlockTimeout struct{
+	ChainID common.Hash
+}
 type TxTimeout struct{}
 type SignTxTimeout struct{}
 type BlockSTimeout struct{}

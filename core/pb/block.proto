@@ -21,6 +21,8 @@ package pb;
 ** Header info for compute hash
 */
 message Header {
+    uint32      Type                = 12;
+    bytes       Payload             = 13;
     bytes       ChainID             = 11;
     uint32      version             = 1;
     int64       timestamp           = 2;
@@ -39,6 +41,19 @@ message HeaderTx {
     BlockReceipt Receipt            = 2;
     repeated    Signature   sign    = 6;
     bytes       block_hash          = 7;
+}
+message     CMBlockHeader {
+    bytes       LeaderPubKey        = 1;
+    bytes       CandidatePubKey     = 2;
+    uint32      Nonce               = 3;
+    bytes       ShardsHash          = 4;
+}
+message MinorBlockHeader {
+    bytes       ProposalPublicKey   = 1;
+    bytes       StateChangeHash     = 2;
+    uint32      ShardId             = 3;
+    uint64      CMEpochNo           = 4;
+    bytes       CmBlockHash         = 5;
 }
 /**
 ** Block info for sync with nodes
@@ -247,6 +262,7 @@ message PushBlocks {
 ** Signature for the previous block
 */
 message SignaturePreblock {
+    bytes       ChainID     = 5;
     uint32      round       = 1;
     uint32      height      = 2;
     bytes       PubKey      = 3;

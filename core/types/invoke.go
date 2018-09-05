@@ -38,6 +38,10 @@ func NewInvokeContract(from, addr common.AccountName, chainID common.Hash, perm 
 	return trans, nil
 }
 
+func (i *InvokeInfo) Type() uint32 {
+	return uint32(TxInvoke)
+}
+
 func (i InvokeInfo) GetObject() interface{} {
 	return i
 }

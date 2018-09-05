@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-
-	"github.com/ecoball/go-ecoball/common/ecc"
 	"github.com/ecoball/go-ecoball/common"
 )
 
@@ -91,10 +89,10 @@ func (e *Encoder) Encode(v interface{}) (err error) {
 		return e.writeByteArray(cv)
 	case SHA256Bytes:
 		return e.writeSHA256Bytes(cv)
-	case ecc.PublicKey:
-		return e.writePublicKey(cv)
-	case ecc.Signature:
-		return e.writeSignature(cv)
+	//case ecc.PublicKey:
+	//	return e.writePublicKey(cv)
+	//case ecc.Signature:
+	//	return e.writeSignature(cv)
 	case Tstamp:
 		return e.writeTstamp(cv)
 	case BlockTimestamp:
@@ -282,29 +280,29 @@ func (e *Encoder) writeSHA256Bytes(s SHA256Bytes) error {
 	return e.toWriter(s)
 }
 
-func (e *Encoder) writePublicKey(pk ecc.PublicKey) (err error) {
-	if len(pk.Content) != 33 {
-		return fmt.Errorf("public key %q should be 33 bytes, was %d", hex.EncodeToString(pk.Content), len(pk.Content))
-	}
-
-	if err = e.writeByte(byte(pk.Curve)); err != nil {
-		return err
-	}
-
-	return e.toWriter(pk.Content)
-}
-
-func (e *Encoder) writeSignature(s ecc.Signature) (err error) {
-	if len(s.Content) != 65 {
-		return fmt.Errorf("signature should be 65 bytes, was %d", len(s.Content))
-	}
-
-	if err = e.writeByte(byte(s.Curve)); err != nil {
-		return
-	}
-
-	return e.toWriter(s.Content) // should write 65 bytes
-}
+//func (e *Encoder) writePublicKey(pk ecc.PublicKey) (err error) {
+//	if len(pk.Content) != 33 {
+//		return fmt.Errorf("public key %q should be 33 bytes, was %d", hex.EncodeToString(pk.Content), len(pk.Content))
+//	}
+//
+//	if err = e.writeByte(byte(pk.Curve)); err != nil {
+//		return err
+//	}
+//
+//	return e.toWriter(pk.Content)
+//}
+//
+//func (e *Encoder) writeSignature(s ecc.Signature) (err error) {
+//	if len(s.Content) != 65 {
+//		return fmt.Errorf("signature should be 65 bytes, was %d", len(s.Content))
+//	}
+//
+//	if err = e.writeByte(byte(s.Curve)); err != nil {
+//		return
+//	}
+//
+//	return e.toWriter(s.Content) // should write 65 bytes
+//}
 
 func (e *Encoder) writeTstamp(t Tstamp) (err error) {
 	n := uint64(t.UnixNano())
