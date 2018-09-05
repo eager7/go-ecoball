@@ -247,9 +247,12 @@ func (h *Header) Deserialize(data []byte) error {
 	switch HeaderType(pbHeader.Header.Type) {
 	case HeMinorBlock:
 		h.Payload = new(MinorBlockHeader)
+	case HeCmBlock:
+		h.Payload = new(CMBlockHeader)
 	default:
 		return errors.New(log, "unknown header type")
 	}
+	h.Type = HeaderType(pbHeader.Header.Type)
 	if err := h.Payload.Deserialize(pbHeader.Header.Payload); err != nil {
 		return err
 	}

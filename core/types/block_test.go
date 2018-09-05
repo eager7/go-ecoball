@@ -22,7 +22,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/utils"
-	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/test/example"
@@ -62,13 +61,16 @@ func TestBlockCreate(t *testing.T) {
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	block, err := ledger.NewTxBlock(config.ChainHash, txs, example.ConsensusData(), time.Now().UnixNano())
+	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey}
+	block, err := ledger.NewTxBlock(config.ChainHash, txs, headerPayload, example.ConsensusData(), time.Now().UnixNano())
 	block.SetSignature(&config.Root)
 	data, err := block.Serialize()
 	errors.CheckErrorPanic(err)
 
 	blockNew := new(types.Block)
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
+	//fmt.Println(block.JsonString(false))
+	//fmt.Println(blockNew.JsonString(false))
 	errors.CheckEqualPanic(block.JsonString(false) == blockNew.JsonString(false))
 
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(config.ChainHash, block))
@@ -102,7 +104,8 @@ func xTestBlockNew(t *testing.T) {
 
 	con, err := types.InitConsensusData(example.TimeStamp())
 	errors.CheckErrorPanic(err)
-	block, err := ledger.NewTxBlock(config.ChainHash, txs, *con, time.Now().UnixNano())
+	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey}
+	block, err := ledger.NewTxBlock(config.ChainHash, txs, headerPayload, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	block.SetSignature(&config.Root)
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(config.ChainHash, block))

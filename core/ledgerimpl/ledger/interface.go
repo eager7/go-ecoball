@@ -23,12 +23,7 @@ type Ledger interface {
 	StateDB(chainID common.Hash, ) *state.State
 	ResetStateDB(chainID common.Hash, header *types.Header) error
 
-	//AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error)
-<<<<<<< HEAD
-	//SetContract(index common.AccountName, t types.VmType, des, code []byte) error
-=======
 	SetContract(chainID common.Hash, index common.AccountName, t types.VmType, des, code []byte, abi []byte) error
->>>>>>> 1826b28870c002e2cc17e3e433dfae7a877f9073
 	GetContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error)
 	AccountGet(chainID common.Hash, index common.AccountName) (*state.Account, error)
 	//AddPermission(index common.AccountName, perm state.Permission) error

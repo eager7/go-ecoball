@@ -56,7 +56,7 @@ func TestGenesesBlockInit(t *testing.T) {
 func CreateAccountBlock(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 	elog.Log.Info("CreateAccountBlock--------------------------2----------------------------\n\n")
 	var txs []*types.Transaction
-	tokenContract, err := types.NewDeployContract(root, root, chainID, state.Active, types.VmNative, "system control", nil, 0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(root, root, chainID, state.Active, types.VmNative, "system control", nil, nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
 	txs = append(txs, tokenContract)
@@ -105,7 +105,7 @@ func TokenTransferBlock(ledger ledger.Ledger, chainID common.Hash) *types.Block 
 func PledgeContract(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 	elog.Log.Info("PledgeContract-----------------------4-------------------------------")
 	var txs []*types.Transaction
-	tokenContract, err := types.NewDeployContract(delegate, delegate, chainID, "active", types.VmNative, "system control", nil, 0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(delegate, delegate, chainID, "active", types.VmNative, "system control", nil, nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	tokenContract.SetSignature(&config.Delegate)
 	txs = append(txs, tokenContract)
