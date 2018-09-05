@@ -25,12 +25,12 @@ type FinalBlockHeader struct {
 	Height             uint64
 	ProposalPubKey     []byte
 	CMEpochNo          uint64
-	TrxCount           uint32
-	MinorBlockHash     common.Hash
 	CmBlockHash        common.Hash
+	TrxCount           uint32
+	TrxRootHash        common.Hash
+	StateDeltaRootHash common.Hash
+	MinorBlocksHash    common.Hash
 	StateHashRoot      common.Hash
-	TrxHashRoot        common.Hash
-	StateDeltaHashRoot common.Hash
 	Timestamp          uint64
 	*COSign
 }

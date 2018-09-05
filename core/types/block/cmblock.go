@@ -22,19 +22,19 @@ import (
 )
 
 type Shard struct {
-	Id          uint32
-	Member      []NodeInfo
-	MemeberAddr []NodeAddr
+	Id         uint32
+	Member     []NodeInfo
+	MemberAddr []NodeAddr
 }
 
 type CMBlockHeader struct {
-	PrevHash       common.Hash
-	Height         uint64
-	LeaderPubKey   []byte
-	CadidatePubKey []byte
-	Deposite       big.Int
-	ShardsHash     common.Hash /*shards hash, not include node address*/
-	Timestamp      uint64
+	PrevHash        common.Hash
+	Height          uint64
+	LeaderPubKey    []byte
+	CandidatePubKey []byte
+	Deposite        big.Int
+	ShardsHash      common.Hash /*shards hash, not include node address*/
+	Timestamp       uint64
 	*COSign
 }
 
