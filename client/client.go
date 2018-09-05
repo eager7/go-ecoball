@@ -71,6 +71,7 @@ func newClientApp() *cli.App {
 		commands.AttachCommands,
 		commands.CreateCommands,
 		commands.NetworkCommand,
+		commands.StorageCommands,
 	}
 
 	//set default action
@@ -196,7 +197,7 @@ func handleLine(line string) error {
 }
 
 func appRun(app *cli.App) (err error) {
-	if os.Args[1] == STORAGE {
+	if len(os.Args) >= 2 && os.Args[1] == STORAGE {
 		temp := make([]string, 0, len(os.Args))
 		temp = append(temp, os.Args[0])
 		temp = append(temp, os.Args[2:]...)
