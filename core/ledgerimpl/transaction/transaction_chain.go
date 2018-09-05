@@ -18,7 +18,9 @@ package transaction
 
 import (
 	"fmt"
+	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
@@ -33,8 +35,6 @@ import (
 	"github.com/ecoball/go-ecoball/spectator/info"
 	"math/big"
 	"time"
-	"github.com/ecoball/go-ecoball/account"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -267,7 +267,7 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
 /**
 *  @brief  create a genesis block with built-in account and contract, then save this block into block chain
  */
-func (c *ChainTx) GenesesBlockInit(chainID common.Hash, root account.Account) error {
+func (c *ChainTx) GenesesBlockInit(chainID common.Hash, user account.Account) error {
 	if c.CurrentHeader != nil {
 		log.Debug("geneses block is existed")
 		c.CurrentHeader.Show()
@@ -290,21 +290,18 @@ func (c *ChainTx) GenesesBlockInit(chainID common.Hash, root account.Account) er
 	hash := common.NewHash([]byte("EcoBall Geneses Block"))
 	conData := types.GenesesBlockInitConsensusData(timeStamp)
 
-	if err := geneses.PresetContract(c.StateDB.FinalDB, timeStamp, root.PublicKey); err != nil {
+	if err := geneses.PresetContract(c.StateDB.FinalDB, timeStamp, user.PublicKey); err != nil {
 		return err
 	}
 
-	hashState := c.StateDB.FinalDB.GetHashRoot()
-
-	fmt.Println(hash.HexString())
-	headerPayload := &types.CMBlockHeader{}
-	header, err := types.NewHeader(headerPayload, types.VersionHeader, chainID, 1, chainID, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
+	header, err := types.NewHeader(&types.CMBlockHeader{}, types.VersionHeader, chainID, 1, chainID, hash,
+		c.StateDB.FinalDB.GetHashRoot(), *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
 	if err != nil {
 		return err
 	}
 	block := &types.Block{Header: header, CountTxs: 0, Transactions: nil}
 
-	if err := block.SetSignature(&root); err != nil {
+	if err := block.SetSignature(&user); err != nil {
 		return err
 	}
 
@@ -312,7 +309,7 @@ func (c *ChainTx) GenesesBlockInit(chainID common.Hash, root account.Account) er
 		return err
 	}
 	c.CurrentHeader = block.Header
-	c.Geneses = block.Header //Store Geneses for timeStamp
+	//c.Geneses = block.Header //Store Geneses for timeStamp
 	if err := c.SaveBlock(block); err != nil {
 		log.Error("Save geneses block error:", err)
 		return err
@@ -342,9 +339,9 @@ func (c *ChainTx) RestoreCurrentHeader() (bool, error) {
 			return false, err
 		}
 		c.BlockMap[header.Hash] = header.Height
-		if header.Height == 1 {
-			c.Geneses = header //Store Geneses for timeStamp
-		}
+		//if header.Height == 1 {
+		//	c.Geneses = header //Store Geneses for timeStamp
+		//}
 		if header.Height > h {
 			h = header.Height
 			c.CurrentHeader = header

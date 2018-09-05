@@ -8,6 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/consensus/solo"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/net"
 	"github.com/ecoball/go-ecoball/spectator"
@@ -21,8 +22,11 @@ import (
 
 func TestRunMain(t *testing.T) {
 	net.InitNetWork()
-	ledger.L = example.Ledger("/tmp/run_test")
+	os.RemoveAll("/tmp/node_test")
+	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, config.Root)
+	errors.CheckErrorPanic(err)
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
+	ledger.L = L
 
 	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)
@@ -33,7 +37,7 @@ func TestRunMain(t *testing.T) {
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
 		solo.NewSoloConsensusServer(ledger.L, txPool)
-		event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
+		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, PublicKey: config.Root.PublicKey})
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":
@@ -49,7 +53,6 @@ func TestRunMain(t *testing.T) {
 	//start explorer
 	go spectator.Bystander(ledger.L)
 	if config.StartNode {
-		go example.AutoGenerateTransaction(ledger.L)
 		go example.VotingProducer(ledger.L)
 	}
 

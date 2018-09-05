@@ -28,6 +28,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/account"
+	"bytes"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.NoticeLog)
@@ -40,9 +42,9 @@ type LedgerImpl struct {
 	//ChainAc *account.ChainAccount
 }
 
-func NewLedger(path string, chainID common.Hash, root account.Account) (l ledger.Ledger, err error) {
+func NewLedger(path string, chainID common.Hash, user account.Account) (l ledger.Ledger, err error) {
 	ll := &LedgerImpl{path: path, ChainTxs: make(map[common.Hash]*transaction.ChainTx, 1)}
-	if err := ll.NewTxChain(chainID, root); err != nil {
+	if err := ll.NewTxChain(chainID, user); err != nil {
 		return nil, err
 	}
 
@@ -55,7 +57,7 @@ func NewLedger(path string, chainID common.Hash, root account.Account) (l ledger
 	return ll, nil
 }
 
-func (l *LedgerImpl) NewTxChain(chainID common.Hash, root account.Account) (err error) {
+func (l *LedgerImpl) NewTxChain(chainID common.Hash, user account.Account) (err error) {
 	if _, ok := l.ChainTxs[chainID]; ok {
 		return nil
 	}
@@ -63,9 +65,12 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash, root account.Account) (err 
 	if err != nil {
 		return err
 	}
-	if err := ChainTx.GenesesBlockInit(chainID, root); err != nil {
-		return err
+	if bytes.Equal(user.PublicKey, config.Root.PublicKey) {
+		if err := ChainTx.GenesesBlockInit(chainID, user); err != nil {
+			return err
+		}
 	}
+
 	ChainTx.StateDB.TempDB, err = ChainTx.StateDB.FinalDB.CopyState()
 	ChainTx.StateDB.TempDB.Type = state.TempType
 	if err != nil {
@@ -308,11 +313,11 @@ func (l *LedgerImpl) ResetStateDB(chainID common.Hash, header *types.Header) err
 	return chain.ResetStateDB(header)
 }
 
-func (l *LedgerImpl) GetGenesesTime(chainID common.Hash) int64 {
+/*func (l *LedgerImpl) GetGenesesTime(chainID common.Hash) int64 {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 		return 0
 	}
 	return chain.Geneses.TimeStamp
-}
+}*/
