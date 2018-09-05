@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
@@ -14,7 +13,7 @@ import (
 	"strconv"
 )
 
-var log = elog.NewLogger("native", config.LogLevel)
+var log = elog.NewLogger("native", elog.NoticeLog)
 
 type NativeService struct {
 	state     state.InterfaceState
@@ -43,8 +42,6 @@ func (ns *NativeService) Execute() ([]byte, error) {
 	switch ns.tx.Addr {
 	case common.NameToIndex("root"):
 		return ns.RootExecute()
-	case common.NameToIndex("delegate"):
-		return ns.SystemExecute(ns.tx.Addr)
 	default:
 		return nil, errors.New(log, "unknown native contract's owner")
 	}
@@ -84,22 +81,15 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := ns.state.RegisterChain(index, common.SingleHash(index.Bytes())); err != nil {
 			return nil, err
 		}
+		pubKey := common.FromHex(ns.params[2])
 		if consensus == "solo" && ns.state.StateType() == state.FinalType {
 			data := []byte(index.String() + consensus)
 			hash := common.SingleHash(data)
-			msg := &message.RegChain{ChainID: hash, Tx: ns.tx}
+			msg := &message.RegChain{ChainID: hash, Tx: ns.tx, PublicKey: pubKey}
 			event.Send(event.ActorNil, event.ActorConsensusSolo, msg)
 		} else {
 			log.Warn("not support now")
 		}
-	default:
-		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", ns.method))
-	}
-	return nil, nil
-}
-
-func (ns *NativeService) SystemExecute(index common.AccountName) ([]byte, error) {
-	switch ns.method {
 	case "pledge":
 		from := common.NameToIndex(ns.params[0])
 		to := common.NameToIndex(ns.params[1])

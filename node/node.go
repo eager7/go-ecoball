@@ -58,7 +58,7 @@ func runNode(c *cli.Context) error {
 	fmt.Println("Run Node")
 	log.Info("Build Geneses Block")
 	var err error
-	ledger.L, err = ledgerimpl.NewLedger(store.PathBlock)
+	ledger.L, err = ledgerimpl.NewLedger(store.PathBlock, config.ChainHash, config.Root)
 	if err != nil {
 		log.Fatal(err)
 	}

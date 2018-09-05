@@ -34,7 +34,7 @@ func TestABABFTPros(t *testing.T) {
 	log.Debug("start test for ababft")
 	// l, err := ledgerimpl.NewLedger("/tmp/geneses")
 	os.RemoveAll("/tmp/ABFT/")
-	l, err := ledgerimpl.NewLedger("/tmp/ABFT")
+	l, err := ledgerimpl.NewLedger("/tmp/ABFT", config.ChainHash, config.Root.PublicKey)
 	if err != nil {
 		t.Fatal(err)
 		fmt.Println("ledger fails")

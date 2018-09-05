@@ -91,7 +91,7 @@ func TestTransfer() *types.Transaction {
 
 func Ledger(path string) ledger.Ledger {
 	os.RemoveAll(path)
-	l, err := ledgerimpl.NewLedger(path)
+	l, err := ledgerimpl.NewLedger(path, config.ChainHash, config.Root.PublicKey)
 	errors.CheckErrorPanic(err)
 	return l
 }
@@ -255,7 +255,12 @@ func CreateAccountBlock(chainID common.Hash) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, tokenContract))
 	time.Sleep(time.Second * 2)
 
-	invoke, err := types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke, err := types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"delegate", common.AddressFromPubKey(config.Delegate.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	invoke, err = types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
@@ -270,6 +275,14 @@ func CreateAccountBlock(chainID common.Hash) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
 
+	perm := state.NewPermission(state.Active, state.Owner, 2, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker2"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker3"), Weight: 1, Permission: "active"}})
+	param, err := json.Marshal(perm)
+	errors.CheckErrorPanic(err)
+	invoke, err = types.NewInvokeContract(root, root, chainID, state.Active, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
 	time.Sleep(time.Second * 2)
 }
 
@@ -277,6 +290,12 @@ func TokenTransferBlock(chainID common.Hash) {
 	log.Info("-----------------------------TokenTransferBlock")
 	root := common.NameToIndex("root")
 	transfer, err := types.NewTransfer(root, common.NameToIndex("worker1"), chainID, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(interval)
+
+	transfer, err = types.NewTransfer(root, common.NameToIndex("delegate"), chainID, "active", new(big.Int).SetUint64(10000), 101, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	transfer.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
