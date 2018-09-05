@@ -75,6 +75,7 @@ type ActorABABFT struct {
 	receivedSignPreNum int                      // the number of received signatures for the previous block
 	receivedSignBlkFNum int                     // temporary parameters for received signatures for first round block
 	synStatus int
+	chainID common.Hash  // for multi-chain
 }
 
 const(
@@ -124,17 +125,20 @@ var Accounts_test []account.Account
 
 
 
-func ActorABABFTGen(actorABABFT *ActorABABFT) (*actor.PID, error) {
+func ActorABABFTGen(chainId common.Hash, actorABABFT *ActorABABFT) (*actor.PID, error) {
 	props := actor.FromProducer(func() actor.Actor {
 		return actorABABFT
 	})
-	pid, err := actor.SpawnNamed(props, "ActorABABFT")
+	chainStr := string("ABABFT")
+	chainStr += chainId.HexString()
+	pid, err := actor.SpawnNamed(props, chainStr)
 	if err != nil {
 		return nil, err
 	}
 	event.RegisterActor(event.ActorConsensus, pid)
 	actorABABFT.synStatus = 0
 	actorABABFT.TimeoutMSGs = make(map[string]int, 1000)
+	actorABABFT.chainID = chainId
 	return pid, err
 }
 
@@ -204,20 +208,19 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 					log.Fatal(err)
 					// return
 				}
+				// currentheader = blockSolo.Header
+				actorC.currentHeaderData = *(blockSolo.Header)
+				actorC.currentHeader = &actorC.currentHeaderData
+				actorC.verifiedHeight = blockSolo.Height
 				if err := event.Send(event.ActorNil, event.ActorLedger, blockSolo); err != nil {
 					log.Fatal(err)
 					// return
 				}
 
-				// currentheader = blockSolo.Header
-				actorC.currentHeaderData = *(blockSolo.Header)
-				actorC.currentHeader = &actorC.currentHeaderData
-
-				actorC.verifiedHeight = blockSolo.Height
 				fmt.Println("ababft solo height:", blockSolo.Height, blockSolo)
 				time.Sleep(time.Second * waitResponseTime)
 				// call itself again
-				event.Send(event.ActorNil,event.ActorConsensus,message.ABABFTStart{})
+				event.Send(event.ActorNil,event.ActorConsensus,message.ABABFTStart{actorC.chainID})
 			} else {
 				// is the solo peer
 				actorC.status = 102
@@ -406,7 +409,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 	case SignaturePreBlock:
 		log.Info("receive the preblock signature:", actorC.status,msg.SignPreBlock)
 		if actorC.status == 102 {
-			event.Send(event.ActorNil,event.ActorConsensus,message.ABABFTStart{})
+			event.Send(event.ActorNil,event.ActorConsensus,message.ABABFTStart{actorC.chainID})
 		}
 		// the prime will verify the signature for the previous block
 		roundIn := int(msg.SignPreBlock.Round)
@@ -659,7 +662,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				timeoutMsg.Toutmsg.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
 				event.Send(event.ActorConsensus,event.ActorP2P, timeoutMsg)
 				// start/enter the next turn
-				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
+				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
 			}
 		} else {
 			return
@@ -875,7 +878,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			// end test
 
 			// start/enter the next turn
-			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
+			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
 			// todo
 			// the above needed to be checked
 			// here, enter the next term and broadcast the preblock signature with the increased round number has the same effect as the changeview/ nextround message
@@ -1005,6 +1008,12 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 					return
 				}
 				*/
+
+				// currentheader = blockSecond.Header
+				actorC.currentHeaderData = *(blockSecond.Header)
+				actorC.currentHeader = &actorC.currentHeaderData
+				actorC.verifiedHeight = blockSecond.Height - 1
+
 				if err := event.Send(event.ActorNil, event.ActorLedger, &blockSecond); err != nil {
 					log.Fatal(err)
 					// return
@@ -1014,18 +1023,13 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 					// return
 				}
 
-				// currentheader = blockSecond.Header
-				actorC.currentHeaderData = *(blockSecond.Header)
-				actorC.currentHeader = &actorC.currentHeaderData
-
-				actorC.verifiedHeight = blockSecond.Height - 1
 				// 5. change the status
 				actorC.status = 7
 				actorC.primaryTag = 0
 
 				fmt.Println("save the generated block", blockSecond.Height,actorC.verifiedHeight)
 				// start/enter the next turn
-				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
+				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
 				return
 			} else {
 				// 1. did not receive enough signatures of first-round block from peers in the assigned time interval
@@ -1045,7 +1049,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				timeoutMsg.Toutmsg.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
 				event.Send(event.ActorConsensus,event.ActorP2P, timeoutMsg)
 				// 3. start/enter the next turn
-				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
+				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
 			}
 		}
 
@@ -1091,6 +1095,12 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 							return
 						}
 						*/
+						// currentheader = blockSecondReceived.Header
+						actorC.currentHeaderData = *(blockSecondReceived.Header)
+						actorC.currentHeader = &actorC.currentHeaderData
+						actorC.verifiedHeight = blockSecondReceived.Height
+						actorC.currentHeightNum = int(actorC.verifiedHeight)
+
 						if err := event.Send(event.ActorNil, event.ActorLedger, &blockSecondReceived); err != nil {
 							log.Fatal(err)
 							// return
@@ -1099,15 +1109,10 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 							log.Fatal(err)
 							// return
 						}
-						// currentheader = blockSecondReceived.Header
-						actorC.currentHeaderData = *(blockSecondReceived.Header)
-						actorC.currentHeader = &actorC.currentHeaderData
 
-						actorC.verifiedHeight = blockSecondReceived.Height
-						actorC.currentHeightNum = int(actorC.verifiedHeight)
 						log.Info("verified height of the solo mode:",actorC.verifiedHeight,actorC.currentHeightNum)
 						// time.Sleep( time.Second * 2 )
-						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
+						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
 					}
 				} else {
 					// send solo syn request
@@ -1215,7 +1220,10 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 						return
 					}
 					*/
-
+					// currentheader = blockSecondReceived.Header
+					actorC.currentHeaderData = *(blockSecondReceived.Header)
+					actorC.currentHeader = &actorC.currentHeaderData
+					actorC.verifiedHeight = blockSecondReceived.Height - 1
 					if err := event.Send(event.ActorNil, event.ActorLedger, &blockSecondReceived); err != nil {
 						log.Fatal(err)
 						// return
@@ -1225,11 +1233,6 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 						// return
 					}
 					// 4. change status
-					// currentheader = blockSecondReceived.Header
-					actorC.currentHeaderData = *(blockSecondReceived.Header)
-					actorC.currentHeader = &actorC.currentHeaderData
-
-					actorC.verifiedHeight = blockSecondReceived.Height - 1
 					actorC.status = 8
 					actorC.primaryTag = 0
 					// update the current_round_num
@@ -1239,7 +1242,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 
 					fmt.Println("BlockSecondRound,current_round_num:",actorC.currentRoundNum)
 					// start/enter the next turn
-					event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
+					event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
 					// 5. broadcast the received second-round block, which has been checked valid
 					// to let other peer know this block
 					actorC.blockSecondRound.BlockSecond = blockSecondReceived
@@ -1267,7 +1270,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			timeoutMsg.Toutmsg.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
 			event.Send(event.ActorConsensus,event.ActorP2P, timeoutMsg)
 			// start/enter the next turn
-			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
+			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
 			return
 		}
 
@@ -1501,6 +1504,10 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				return
 			}
 			*/
+			actorC.currentHeaderData = *(blkF.Header)
+			actorC.currentHeader = &actorC.currentHeaderData
+			actorC.verifiedHeight = blkV.Height
+
 			if err := event.Send(event.ActorNil, event.ActorLedger, &blkF); err != nil {
 				log.Fatal(err)
 				// return
@@ -1510,12 +1517,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				// return
 			}
 
-			// 4. only the block is sucessfully saved, then change the status
+			// 4. the block is successfully saved, then change the status
 			// currentheader = blkF.Header
-			actorC.currentHeaderData = *(blkF.Header)
-			actorC.currentHeader = &actorC.currentHeaderData
-
-			actorC.verifiedHeight = blkV.Height
 			actorC.status = 8
 			actorC.primaryTag = 0
 
@@ -1526,7 +1529,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			}
 
 			// start/enter the next turn
-			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
+			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
 
 			// todo
 			// take care of save and reset
@@ -1649,7 +1652,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 						// start/enter the next turn
 						actorC.status = 8
 						actorC.primaryTag = 0
-						event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
+						event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
 						// fmt.Println("reset according to the timeout msg:",i,maxR,current_round_num,countRS[i])
 						break
 					}
@@ -1660,6 +1663,11 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 
 		// change public key to account address
 
+		return
+
+	case *message.RegChain:
+		log.Info("Receive ABABFT Create Message")
+		go actorC.serviceABABFT.GenNewChain(msg.ChainID)
 		return
 
 	default :

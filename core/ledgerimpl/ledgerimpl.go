@@ -196,12 +196,12 @@ func (l *LedgerImpl) StoreGet(chainID common.Hash, index common.AccountName, key
 	}
 	return chain.StateDB.FinalDB.StoreGet(index, key)
 }
-func (l *LedgerImpl) SetContract(chainID common.Hash, index common.AccountName, t types.VmType, des, code []byte) error {
+func (l *LedgerImpl) SetContract(chainID common.Hash, index common.AccountName, t types.VmType, des, code []byte, abi []byte) error {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
-	return chain.StateDB.FinalDB.SetContract(index, t, des, code)
+	return chain.StateDB.FinalDB.SetContract(index, t, des, code, abi)
 }
 func (l *LedgerImpl) GetContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error) {
 	chain, ok := l.ChainTxs[chainID]

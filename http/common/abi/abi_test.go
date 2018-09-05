@@ -1,4 +1,4 @@
-package commands
+package abi
 
 import (
 	"encoding/json"

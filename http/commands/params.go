@@ -32,7 +32,7 @@ const (
 	PARAM_TYPE_ARRAY      = "array"
 	PARAM_TYPE_BYTE_ARRAY = "bytearray"
 	PARAM_TYPE_STRING     = "string"
-	PARAM_TYPE_INTEGER    = "int32"
+	PARAM_TYPE_INTEGER    = "int"
 	PARAM_TYPE_BOOLEAN    = "bool"
 	PARAM_LEFT_BRACKET    = "["
 	PARAM_RIGHT_BRACKET   = "]"

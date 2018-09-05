@@ -21,7 +21,9 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
-type ABABFTStart struct{}
+type ABABFTStart struct{
+	ChainID common.Hash
+}
 type SoloStop struct{}
 type GetCurrentHeader struct{}
 

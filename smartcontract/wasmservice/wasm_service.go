@@ -67,6 +67,8 @@ func NewWasmService(s state.InterfaceState, account common.AccountName, contract
 	if err1 != nil {
 		return nil, errors.New("json.Unmarshal failed")
 	}
+	log.Debug("NewWasmService ", args)
+
     num := len(args)
     var param = Param{
     	Arg:	args,
