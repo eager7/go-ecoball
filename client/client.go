@@ -17,6 +17,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -71,6 +72,7 @@ func newClientApp() *cli.App {
 		commands.AttachCommands,
 		commands.CreateCommands,
 		commands.NetworkCommand,
+		commands.StorageCommands,
 	}
 
 	//set default action
@@ -89,12 +91,19 @@ func main() {
 		if c.Bool("console") {
 			newConsole()
 		}
-
 		return nil
 	}
 
 	//run
-	appRun(app)
+	var result int
+	if err := appRun(app); nil != err {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
+		result = 1
+	} else {
+		result = 0
+	}
+
+	os.Exit(result)
 }
 
 func newConsole() {
@@ -102,7 +111,7 @@ func newConsole() {
 	defer func() {
 		state.Close()
 		if err := recover(); err != nil {
-			fmt.Println("panic occur：", err)
+			fmt.Println("panic occur:", err)
 		}
 	}()
 
@@ -176,7 +185,9 @@ func newConsole() {
 				if "exit" == line {
 					return
 				} else {
-					handleLine(line)
+					if err := handleLine(line); nil != err {
+						fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
+					}
 				}
 				scheduler <- "ecoclient: \\>"
 			}
@@ -191,18 +202,20 @@ func handleLine(line string) error {
 	os.Args = args
 
 	//run
-	appRun(newClientApp())
-	return nil
+	return appRun(newClientApp())
 }
 
 func appRun(app *cli.App) (err error) {
-	if os.Args[1] == STORAGE {
+	if len(os.Args) >= 2 && os.Args[1] == STORAGE {
 		temp := make([]string, 0, len(os.Args))
 		temp = append(temp, os.Args[0])
 		temp = append(temp, os.Args[2:]...)
 		os.Args = temp
-		cmd.StorageFun()
-		return nil
+		result := cmd.StorageFun()
+		if 0 != result {
+			err = errors.New("storage command execution error!!")
+		}
+		return
 	}
 	return app.Run(os.Args)
 }

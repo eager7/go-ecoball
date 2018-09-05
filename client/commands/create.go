@@ -1,11 +1,27 @@
+// Copyright 2018 The go-ecoball Authors
+// This file is part of the go-ecoball.
+//
+// The go-ecoball is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ecoball is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
+
 package commands
 
 import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
 	"strconv"
+	"time"
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	innercommon "github.com/ecoball/go-ecoball/common"
@@ -61,7 +77,7 @@ var (
 	}
 )
 
-func getInfo()(*types.Block, error) {
+func getInfo() (*types.Block, error) {
 	resp, err := rpc.NodeCall("getInfo", []interface{}{})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -75,10 +91,10 @@ func getInfo()(*types.Block, error) {
 	return blockINfo, nil
 }
 
-func get_required_keys(chainId innercommon.Hash, required_keys, permission string, trx *types.Transaction)(string, error) {
+func get_required_keys(chainId innercommon.Hash, required_keys, permission string, trx *types.Transaction) (string, error) {
 	data, err := trx.Serialize()
-	if err != nil{
-		return "", err;
+	if err != nil {
+		return "", err
 	}
 
 	resp, errcode := rpc.NodeCall("get_required_keys", []interface{}{chainId.HexString(), required_keys, permission, innercommon.ToHex(data)})
@@ -150,12 +166,14 @@ func newAccount(c *cli.Context) error {
 		return err
 	}
 
-	info, err := getInfo(); if err != nil {
+	info, err := getInfo()
+	if err != nil {
 		fmt.Println(err)
 		return err
 	}
-	
-	publickeys, err := GetPublicKeys(); if err != nil {
+
+	publickeys, err := GetPublicKeys()
+	if err != nil {
 		fmt.Println(err)
 		return err
 	}

@@ -84,7 +84,7 @@ type PeerInfoAccount struct {
 
 func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.Account) (serviceABABFT *ServiceABABFT, err error) {
 	var pid *actor.PID
-	chainHash,_ := common.DoubleHash(config.Root.PublicKey)
+	chainHash := config.ChainHash
 	serviceABABFT = new(ServiceABABFT)
 
 	actorABABFT := &ActorABABFT{}
@@ -192,10 +192,6 @@ func (serviceABABFT *ServiceABABFT) GenNewChain(chainID common.Hash) {
 		time.Sleep(time.Second * 10)
 		return
 	}
-
-
-
-
 
 	return
 }
