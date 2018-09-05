@@ -192,8 +192,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 					txs = append(txs, v)
 				}
 				*/
-				txs, _ := actorC.serviceABABFT.txPool.GetTxsList(config.ChainHash)
-
+				txs, _ := actorC.serviceABABFT.txPool.GetTxsList(actorC.chainID)
 
 				// generate the block in the form of second round block
 				var blockSolo *types.Block
@@ -237,6 +236,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				// send solo syn request
 				var requestsyn REQSynSolo
 				requestsyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
+				requestsyn.Reqsyn.ChainID = actorC.chainID.Bytes()
 				hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentHeightNum+1)))
 				requestsyn.Reqsyn.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
 				requestsyn.Reqsyn.RequestHeight = uint64(actorC.currentHeightNum)+1
@@ -407,7 +407,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				select {
 				case <-t1.C:
 					// timeout for the preblock signature
-					err = event.Send(event.ActorConsensus, event.ActorConsensus, TxTimeout{})
+					err = event.Send(event.ActorConsensus, event.ActorConsensus, TxTimeout{actorC.chainID})
 					t1.Stop()
 				}
 			}()
@@ -455,6 +455,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 					// send synchronization message
 					var requestSyn REQSyn
 					requestSyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
+					requestSyn.Reqsyn.ChainID = actorC.chainID.Bytes()
 					hashTS,_ := common.DoubleHash(Uint64ToBytes(actorC.verifiedHeight+1))
 					requestSyn.Reqsyn.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
 					requestSyn.Reqsyn.RequestHeight = actorC.verifiedHeight+1
@@ -523,6 +524,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		}
 
 	case PreBlockTimeout:
+		// check the chain ID
 		if ok := bytes.Equal(msg.ChainID.Bytes(),actorC.chainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for preblock timeout")
 			return
@@ -631,7 +633,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				for _, v := range txList.Txs {
 					txs = append(txs, v)
 				}*/
-				txs, _ := actorC.serviceABABFT.txPool.GetTxsList(config.ChainHash)
+				txs, _ := actorC.serviceABABFT.txPool.GetTxsList(actorC.chainID)
 				// log.Debug("obtained tx list", txs[0])
 				// generate the first-round block
 				var blockFirst *types.Block
@@ -665,7 +667,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 					select {
 					case <-t2.C:
 						// timeout for the preblock signature
-						err = event.Send(event.ActorConsensus, event.ActorConsensus, SignTxTimeout{})
+						err = event.Send(event.ActorConsensus, event.ActorConsensus, SignTxTimeout{actorC.chainID})
 						t2.Stop()
 					}
 				}()
@@ -675,6 +677,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				actorC.primaryTag = 0 // reset to zero, and the next primary will take the turn
 				// send out the timeout message
 				var timeoutMsg TimeoutMsg
+				timeoutMsg.Toutmsg.ChainID = actorC.chainID.Bytes()
 				timeoutMsg.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum)
 				timeoutMsg.Toutmsg.PubKey = actorC.serviceABABFT.account.PublicKey
 				hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentRoundNum)))
@@ -720,6 +723,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 					if (actorC.verifiedHeight+2) < blockFirstReceived.Header.Height {
 						// send synchronization message
 						var requestSyn REQSyn
+						requestSyn.Reqsyn.ChainID = actorC.chainID.Bytes()
 						requestSyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
 						hashTS,_ := common.DoubleHash(Uint64ToBytes(actorC.verifiedHeight+1))
 						requestSyn.Reqsyn.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
@@ -819,6 +823,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 					}
 					// 4. sign the received first-round block
 					var signBlkFSend SignatureBlkF
+					signBlkFSend.signatureBlkF.ChainID = actorC.chainID.Bytes()
 					signBlkFSend.signatureBlkF.PubKey = actorC.serviceABABFT.account.PublicKey
 					signBlkFSend.signatureBlkF.SigData,err = actorC.serviceABABFT.account.Sign(blockFirstReceived.Header.Hash.Bytes())
 					// 5. broadcast the signature of the first round block
@@ -840,6 +845,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 						// create the signature for first-round block for test
 						for i:=0;i<actorC.NumPeers;i++ {
 							var signBlkfSend1 SignatureBlkF
+							signBlkfSend1.signatureBlkF.ChainID = actorC.chainID.Bytes()
 							signBlkfSend1.signatureBlkF.PubKey = Accounts_test[i].PublicKey
 							signBlkfSend1.signatureBlkF.SigData,err = Accounts_test[i].Sign(blockFirstReceived.Header.Hash.Bytes())
 							// fmt.Println("Accounts_test:",i,Accounts_test[i].PublicKey,signBlkfSend1.signatureBlkF)
@@ -856,7 +862,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 						select {
 						case <-t3.C:
 							// timeout for the second-round(final) block
-							err = event.Send(event.ActorConsensus, event.ActorConsensus, BlockSTimeout{})
+							err = event.Send(event.ActorConsensus, event.ActorConsensus, BlockSTimeout{actorC.chainID})
 							t3.Stop()
 						}
 					}()
@@ -865,6 +871,11 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		}
 
 	case TxTimeout:
+		// check the chain ID
+		if ok := bytes.Equal(msg.ChainID.Bytes(),actorC.chainID.Bytes()); ok != true {
+			log.Debug("wrong chain ID for transaction timeout")
+			return
+		}
 		// for test 2018.08.01
 		if TestTag == true {
 			// primary_tag = 0
@@ -880,6 +891,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			actorC.primaryTag = 0
 			// send out the timeout message
 			var timeoutMsg TimeoutMsg
+			timeoutMsg.Toutmsg.ChainID = actorC.chainID.Bytes()
 			timeoutMsg.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum)
 			timeoutMsg.Toutmsg.PubKey = actorC.serviceABABFT.account.PublicKey
 			hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentRoundNum)))
@@ -892,6 +904,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				actorC.status = 5
 				for i:=0;i<actorC.NumPeers;i++ {
 					var timeoutMsg1 TimeoutMsg
+					timeoutMsg1.Toutmsg.ChainID = actorC.chainID.Bytes()
 					timeoutMsg1.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum+1)
 					timeoutMsg1.Toutmsg.PubKey = Accounts_test[i].PublicKey
 					hashT,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentRoundNum+1)))
@@ -912,6 +925,11 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		}
 
 	case SignatureBlkF:
+		// check the chain ID
+		if ok := bytes.Equal(msg.signatureBlkF.ChainID,actorC.chainID.Bytes()); ok != true {
+			log.Debug("wrong chain ID for signature of the first-round block")
+			return
+		}
 		// fmt.Println("SignatureBlkF:",received_signblkf_num,msg.signatureBlkF)
 		// the prime will verify the signatures of first-round block from peers
 		if actorC.primaryTag == 1 && actorC.status == 4 {
@@ -968,6 +986,11 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 	case SignTxTimeout:
 		// fmt.Println("received_signblkf_num:",received_signblkf_num)
 		log.Info("start to generate second round block",actorC.primaryTag, actorC.status,actorC.receivedSignBlkFNum,int(2*len(actorC.PeersAddrList)/3),actorC.signatureBlkFList)
+		// check the chain ID
+		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.ChainID.Bytes()); ok != true {
+			log.Debug("wrong chain ID for SignTxTimeout")
+			return
+		}
 		if actorC.primaryTag == 1 && actorC.status == 4 {
 			// check the number of the signatures of first-round block from peers
 			if actorC.receivedSignBlkFNum >= int(2*len(actorC.PeersAddrList)/3) {
@@ -1068,6 +1091,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				//}
 				// send out the timeout message
 				var timeoutMsg TimeoutMsg
+				timeoutMsg.Toutmsg.ChainID = actorC.chainID.Bytes()
 				timeoutMsg.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum)
 				timeoutMsg.Toutmsg.PubKey = actorC.serviceABABFT.account.PublicKey
 				hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentRoundNum)))
@@ -1087,6 +1111,11 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		}
 		// test end
 		log.Info("ababbt peer status:", actorC.primaryTag, actorC.status)
+		// check the chain ID
+		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.BlockSecond.Header.ChainID.Bytes()); ok != true {
+			log.Debug("wrong chain ID for BlockSecondRound")
+			return
+		}
 		// check whether it is solo mode
 		if actorC.status == 102 || actorC.status == 101 {
 			if actorC.status == 102 {
@@ -1142,6 +1171,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				} else {
 					// send solo syn request
 					var reqSynSolo REQSynSolo
+					reqSynSolo.Reqsyn.ChainID = actorC.chainID.Bytes()
 					reqSynSolo.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
 					hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentHeightNum+1)))
 					reqSynSolo.Reqsyn.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
@@ -1176,6 +1206,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				} else if (blockSecondReceived.Header.Height-2) > actorC.verifiedHeight {
 					// send synchronization message
 					var requestSyn REQSyn
+					requestSyn.Reqsyn.ChainID = actorC.chainID.Bytes()
 					requestSyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
 					hashTS,_ := common.DoubleHash(Uint64ToBytes(actorC.verifiedHeight+1))
 					requestSyn.Reqsyn.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
@@ -1278,6 +1309,11 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			}
 		}
 	case BlockSTimeout:
+		// check the chain ID
+		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.ChainID.Bytes()); ok != true {
+			log.Debug("wrong chain ID for BlockSTimeout")
+			return
+		}
 		if actorC.primaryTag == 0 && actorC.status == 5 {
 			actorC.status = 8
 			actorC.primaryTag = 0
@@ -1289,6 +1325,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			//}
 			// send out the timeout message
 			var timeoutMsg TimeoutMsg
+			timeoutMsg.Toutmsg.ChainID = actorC.chainID.Bytes()
 			timeoutMsg.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum)
 			timeoutMsg.Toutmsg.PubKey = actorC.serviceABABFT.account.PublicKey
 			hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentRoundNum)))
@@ -1300,6 +1337,11 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		}
 
 	case REQSyn:
+		// check the chain ID
+		if ok := bytes.Equal(msg.Reqsyn.ChainID,actorC.chainID.Bytes()); ok != true {
+			log.Debug("wrong chain ID for REQSyn")
+			return
+		}
 		// receive the shronization request
 		heightReq := msg.Reqsyn.RequestHeight // verified_height+1
 		pubKeyIn := msg.Reqsyn.PubKey
@@ -1337,6 +1379,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		}
 		// 3. send the found /blocks
 		var blkSynSend BlockSyn
+		blkSynSend.Blksyn.ChainID = actorC.chainID.Bytes()
 		blkSynSend.Blksyn.BlksynV,err = blkSynV.Blk2BlkTx()
 		if err != nil {
 			log.Debug("block_v to blockTx transformation fails")
@@ -1382,6 +1425,11 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		// test end
 	case REQSynSolo:
 		log.Info("receive the solo block requirement:",msg.Reqsyn.RequestHeight)
+		// check the chain ID
+		if ok := bytes.Equal(msg.Reqsyn.ChainID,actorC.chainID.Bytes()); ok != true {
+			log.Debug("wrong chain ID for REQSynSolo")
+			return
+		}
 		// receive the solo synchronization request
 		heightReq := msg.Reqsyn.RequestHeight
 		pubKeyIn := msg.Reqsyn.PubKey
@@ -1417,6 +1465,12 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			actorC.synStatus = 1
 		}
 		// test end
+
+		// check the chain ID
+		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.Blksyn.ChainID); ok != true {
+			log.Debug("wrong chain ID for BlockSyn")
+			return
+		}
 
 		if actorC.synStatus != 1 {
 			return
@@ -1563,6 +1617,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			// the verified block has bigger height
 			// send synchronization message
 			var requestSyn REQSyn
+			requestSyn.Reqsyn.ChainID = actorC.chainID.Bytes()
 			requestSyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
 			hashTS,_ := common.DoubleHash(Uint64ToBytes(actorC.verifiedHeight+1))
 			requestSyn.Reqsyn.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
@@ -1576,6 +1631,12 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		return
 
 	case TimeoutMsg:
+		// check the chain ID
+		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.Toutmsg.ChainID); ok != true {
+			log.Debug("wrong chain ID for TimeoutMsg")
+			return
+		}
+
 		// todo
 		// the waiting time maybe need to be longer after every time out
 
@@ -1767,7 +1828,7 @@ func (actorC *ActorABABFT) verifyHeader(blockIn *types.Block, currentRoundNumIn 
 	}
 	// check Hash common.Hash
 	headerPayload1:=&types.CMBlockHeader{}
-	headerCal,err1 := types.NewHeader(headerPayload1, headerIn.Version, config.ChainHash, headerIn.Height, headerIn.PrevHash,
+	headerCal,err1 := types.NewHeader(headerPayload1, headerIn.Version, actorC.chainID, headerIn.Height, headerIn.PrevHash,
 		headerIn.MerkleHash, headerIn.StateHash, headerIn.ConsensusData, headerIn.Bloom, headerIn.Receipt.BlockCpu, headerIn.Receipt.BlockNet, headerIn.TimeStamp)
 	if ok := bytes.Equal(headerCal.Hash.Bytes(), headerIn.Hash.Bytes()); ok != true {
 		println("Hash is wrong")
@@ -1791,7 +1852,7 @@ func (actorC *ActorABABFT) updateBlock(blockFirst types.Block, conData types.Con
 	var err error
 	headerIn := blockFirst.Header
 	headerPayload:=&types.CMBlockHeader{}
-	header, _ := types.NewHeader(headerPayload, headerIn.Version, config.ChainHash, headerIn.Height, headerIn.PrevHash, headerIn.MerkleHash,
+	header, _ := types.NewHeader(headerPayload, headerIn.Version, actorC.chainID, headerIn.Height, headerIn.PrevHash, headerIn.MerkleHash,
 		headerIn.StateHash, conData, headerIn.Bloom, headerIn.Receipt.BlockCpu, headerIn.Receipt.BlockNet, headerIn.TimeStamp)
 	blockSecond = types.Block{Header:header, CountTxs:uint32(len(blockFirst.Transactions)), Transactions:blockFirst.Transactions,}
 	return blockSecond,err
@@ -1871,7 +1932,7 @@ func (actorC *ActorABABFT) verifySignatures(dataBlksReceived *types.AbaBftData, 
 	// calculate firstround block header hash for the check of the first-round block signatures
 	headerPayload:=&types.CMBlockHeader{}
 	conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{NumberRound:uint32(dataBlksReceived.NumberRound), PreBlockSignatures:signBlksPreBlk},}
-	headerReCal, _ := types.NewHeader(headerPayload, curHeader.Version, config.ChainHash, curHeader.Height, curHeader.PrevHash, curHeader.MerkleHash,
+	headerReCal, _ := types.NewHeader(headerPayload, curHeader.Version, actorC.chainID, curHeader.Height, curHeader.PrevHash, curHeader.MerkleHash,
 		curHeader.StateHash, conData, curHeader.Bloom, curHeader.Receipt.BlockCpu, curHeader.Receipt.BlockNet, curHeader.TimeStamp)
 	blkFHash := headerReCal.Hash
 	// fmt.Println("blkFHash:",blkFHash)
@@ -1959,6 +2020,10 @@ func (actorC *ActorABABFT) blkSynVerify(blockIn types.Block, blkPre types.Block)
 		log.Debug("protocal error")
 		return false,nil
 	}
+
+	// todo
+	// check the chain ID
+
 	// 2. check the block generator
 	dataBlockReceived := blockIn.ConsensusData.Payload.(*types.AbaBftData)
 	roundNumIn := int(dataBlockReceived.NumberRound)
