@@ -1,30 +1,30 @@
-package commands
+package abi
 
-type Name string
-type AccountName Name
-type PermissionName Name
-type ActionName Name
-type TableName Name
-type ScopeName Name
+//type Name string
+//type AccountName Name
+//type PermissionName Name
+//type ActionName Name
+//type TableName Name
+//type ScopeName Name
 
-type HexBytes []byte
+//type HexBytes []byte
 
 type Extension struct {
 	Type uint16   `json:"type"`
 	Data HexBytes `json:"data"`
 }
-
-// NOTE: there's also a new ExtendedSymbol (which includes the contract (as AccountName) on which it is)
-type Symbol struct {
-	Precision uint8
-	Symbol    string
-}
-
-// NOTE: there's also ExtendedAsset which is a quantity with the attached contract (AccountName)
-type Asset struct {
-	Amount int64
-	Symbol
-}
+//
+//// NOTE: there's also a new ExtendedSymbol (which includes the contract (as AccountName) on which it is)
+//type Symbol struct {
+//	Precision uint8
+//	Symbol    string
+//}
+//
+//// NOTE: there's also ExtendedAsset which is a quantity with the attached contract (AccountName)
+//type Asset struct {
+//	Amount int64
+//	Symbol
+//}
 
 
 // see: libraries/chain/contracts/abi_serializer.cpp:53...

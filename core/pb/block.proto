@@ -95,6 +95,7 @@ message DeployInfo {
     uint32      TypeVm      = 5;
 	bytes       Describe    = 4;
 	bytes       Code        = 6;
+	bytes       Abi         = 7;
 }
 
 message ParamData {

@@ -33,9 +33,9 @@ type MinorBlockHeader struct {
 	PrevHash          common.Hash
 	ProposalPublicKey []byte
 	Height            uint64
-	TrxHashRoot       common.Hash
-	StateChangeHash   common.Hash
 	ShardId           uint16
+	TrxHashRoot       common.Hash
+	StateDeltaHash    common.Hash
 	CMEpochNo         uint64
 	CmBlockHash       common.Hash
 	Timestamp         uint64
@@ -45,5 +45,5 @@ type MinorBlockHeader struct {
 type MinorBlock struct {
 	*MinorBlockHeader
 	Transactions []*types.Transaction
-	StateChange  []Account
+	StateDelta   []Account
 }

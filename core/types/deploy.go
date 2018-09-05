@@ -31,11 +31,12 @@ type DeployInfo struct {
 	Abi      []byte `json:"abi"`
 }
 
-func NewDeployContract(from, addr common.AccountName, chainID common.Hash, perm string, vm VmType, des string, code []byte, nonce uint64, time int64) (*Transaction, error) {
+func NewDeployContract(from, addr common.AccountName, chainID common.Hash, perm string, vm VmType, des string, code []byte, abi []byte, nonce uint64, time int64) (*Transaction, error) {
 	deploy := &DeployInfo{
 		TypeVm:   vm,
 		Describe: []byte(des),
 		Code:     code,
+		Abi:	  abi,
 	}
 	trans, err := NewTransaction(TxDeploy, from, addr, chainID, perm, deploy, nonce, time)
 	if err != nil {
@@ -53,6 +54,7 @@ func (d *DeployInfo) Serialize() ([]byte, error) {
 		TypeVm:   uint32(d.TypeVm),
 		Describe: d.Describe,
 		Code:     d.Code,
+		Abi:      d.Abi,
 	}
 	b, err := p.Marshal()
 	if err != nil {
@@ -76,6 +78,7 @@ func (d *DeployInfo) Deserialize(data []byte) error {
 	d.TypeVm = VmType(deploy.TypeVm)
 	d.Describe = common.CopyBytes(deploy.Describe)
 	d.Code = common.CopyBytes(deploy.Code)
+	d.Abi = common.CopyBytes(deploy.Abi)
 
 	return nil
 }

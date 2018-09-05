@@ -37,7 +37,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
-	"github.com/ecoball/go-ecoball/spectator"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
@@ -92,7 +91,7 @@ func runNode(c *cli.Context) error {
 		serviceConsensus.Start()
 		println("start the ababft service")
 		if ledger.L.StateDB(config.ChainHash).RequireVotingInfo() {
-			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
+			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{config.ChainHash})
 		}
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
@@ -104,7 +103,7 @@ func runNode(c *cli.Context) error {
 	net.StartNetWork()
 
 	//start blockchain browser
-	ecoballGroup.Go(func() error {
+	/*ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
 			if err := spectator.Bystander(ledger.L); nil != err {
@@ -121,7 +120,7 @@ func runNode(c *cli.Context) error {
 		}
 
 		return nil
-	})
+	})*/
 
 	//start http server
 	ecoballGroup.Go(func() error {
