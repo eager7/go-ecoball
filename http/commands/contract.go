@@ -34,6 +34,7 @@ import (
 	"github.com/ecoball/go-ecoball/http/common/abi"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"strconv"
+	"encoding/hex"
 )
 
 var log = elog.NewLogger("commands", elog.DebugLog)
@@ -68,6 +69,7 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 		contractName string
 		description  string
 		invalid      bool = false
+		abicode      []byte
 	)
 
 	if v, ok := params[0].(string); ok {
@@ -87,6 +89,20 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 	} else {
 		invalid = true
 	}
+
+	if v, ok := params[3].(string); ok {
+		abitmp, err := hex.DecodeString(v)
+		fmt.Println(v)
+		if err == nil {
+			abicode = abitmp
+		} else {
+			invalid = true
+		}
+	} else {
+		invalid = true
+	}
+
+	fmt.Println(abicode)
 
 	if invalid {
 		return common.INVALID_PARAMS, ""
@@ -112,7 +128,7 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 	//from address
 	//from := account.AddressFromPubKey(common.Account.PublicKey)
 
-	transaction, err := types.NewDeployContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), config.ChainHash, "owner", types.VmWasm, description, code, nil, 0, time)
+	transaction, err := types.NewDeployContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), config.ChainHash, "owner", types.VmWasm, description, code, abicode, 0, time)
 	if nil != err {
 		return common.INVALID_PARAMS, ""
 	}
