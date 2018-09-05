@@ -198,7 +198,9 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				// generate the block in the form of second round block
 				var blockSolo *types.Block
 				tTime := time.Now().UnixNano()
-				blockSolo,err = actorC.serviceABABFT.ledger.NewTxBlock(config.ChainHash, txs, conData, tTime)
+				headerPayload:=&types.CMBlockHeader{}
+				// headerPayload.LeaderPubKey = actorC.serviceABABFT.account.PublicKey
+				blockSolo,err = actorC.serviceABABFT.ledger.NewTxBlock(config.ChainHash, txs, headerPayload, conData, tTime)
 				blockSolo.SetSignature(&soloaccount)
 				actorC.blockSecondRound.BlockSecond = *blockSolo
 				// save (the ledger will broadcast the block after writing the block into the DB)
@@ -634,7 +636,9 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 				// generate the first-round block
 				var blockFirst *types.Block
 				tTime := time.Now().UnixNano()
-				blockFirst,err = actorC.serviceABABFT.ledger.NewTxBlock(config.ChainHash, txs, conData, tTime)
+				headerPayload:=&types.CMBlockHeader{}
+				// headerPayload.LeaderPubKey = actorC.serviceABABFT.account.PublicKey
+				blockFirst,err = actorC.serviceABABFT.ledger.NewTxBlock(config.ChainHash, txs, headerPayload, conData, tTime)
 				blockFirst.SetSignature(actorC.serviceABABFT.account)
 				// broadcast the first-round block to peers for them to verify the transactions and wait for the corresponding signatures back
 				actorC.blockFirstRound.BlockFirst = *blockFirst
@@ -1714,7 +1718,8 @@ func (actorC *ActorABABFT) verifyHeader(blockIn *types.Block, currentRoundNumIn 
 	// fmt.Println("after reset",err)
 
 	// generate the blockFirstCal for comparison
-	actorC.blockFirstCal,err = actorC.serviceABABFT.ledger.NewTxBlock(config.ChainHash, txs, conDataC, headerIn.TimeStamp)
+	headerPayload:=&types.CMBlockHeader{}
+	actorC.blockFirstCal,err = actorC.serviceABABFT.ledger.NewTxBlock(config.ChainHash, txs, headerPayload, conDataC, headerIn.TimeStamp)
 	// fmt.Println("height:",blockIn.Height,blockFirstCal.Height)
 	// fmt.Println("merkle:",blockIn.Header.MerkleHash,blockFirstCal.Header.MerkleHash)
 	// fmt.Println("timestamp:",blockIn.Header.TimeStamp,blockFirstCal.Header.TimeStamp)
