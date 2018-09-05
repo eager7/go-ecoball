@@ -305,7 +305,7 @@ func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
 						fmt.Println(err)
 					}*/
 					sig := new(inner.Signature)
-					sig.PubKey = []byte(publicKey)
+					sig.PubKey = inner.FromHex(publicKey)
 					sig.SigData = signData
 
 					Transaction.Signatures = append(Transaction.Signatures, *sig)
