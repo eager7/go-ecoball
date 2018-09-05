@@ -1766,7 +1766,8 @@ func (actorC *ActorABABFT) verifyHeader(blockIn *types.Block, currentRoundNumIn 
 		return false,nil
 	}
 	// check Hash common.Hash
-	headerCal,err1 := types.NewHeader(headerIn.Version, config.ChainHash, headerIn.Height, headerIn.PrevHash,
+	headerPayload1:=&types.CMBlockHeader{}
+	headerCal,err1 := types.NewHeader(headerPayload1, headerIn.Version, config.ChainHash, headerIn.Height, headerIn.PrevHash,
 		headerIn.MerkleHash, headerIn.StateHash, headerIn.ConsensusData, headerIn.Bloom, headerIn.Receipt.BlockCpu, headerIn.Receipt.BlockNet, headerIn.TimeStamp)
 	if ok := bytes.Equal(headerCal.Hash.Bytes(), headerIn.Hash.Bytes()); ok != true {
 		println("Hash is wrong")
@@ -1789,7 +1790,8 @@ func (actorC *ActorABABFT) updateBlock(blockFirst types.Block, conData types.Con
 	var blockSecond types.Block
 	var err error
 	headerIn := blockFirst.Header
-	header, _ := types.NewHeader(headerIn.Version, config.ChainHash, headerIn.Height, headerIn.PrevHash, headerIn.MerkleHash,
+	headerPayload:=&types.CMBlockHeader{}
+	header, _ := types.NewHeader(headerPayload, headerIn.Version, config.ChainHash, headerIn.Height, headerIn.PrevHash, headerIn.MerkleHash,
 		headerIn.StateHash, conData, headerIn.Bloom, headerIn.Receipt.BlockCpu, headerIn.Receipt.BlockNet, headerIn.TimeStamp)
 	blockSecond = types.Block{Header:header, CountTxs:uint32(len(blockFirst.Transactions)), Transactions:blockFirst.Transactions,}
 	return blockSecond,err
@@ -1867,8 +1869,9 @@ func (actorC *ActorABABFT) verifySignatures(dataBlksReceived *types.AbaBftData, 
 	// 3. check the current block signature
 	numVerified = 0
 	// calculate firstround block header hash for the check of the first-round block signatures
+	headerPayload:=&types.CMBlockHeader{}
 	conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{NumberRound:uint32(dataBlksReceived.NumberRound), PreBlockSignatures:signBlksPreBlk},}
-	headerReCal, _ := types.NewHeader(curHeader.Version, config.ChainHash, curHeader.Height, curHeader.PrevHash, curHeader.MerkleHash,
+	headerReCal, _ := types.NewHeader(headerPayload, curHeader.Version, config.ChainHash, curHeader.Height, curHeader.PrevHash, curHeader.MerkleHash,
 		curHeader.StateHash, conData, curHeader.Bloom, curHeader.Receipt.BlockCpu, curHeader.Receipt.BlockNet, curHeader.TimeStamp)
 	blkFHash := headerReCal.Hash
 	// fmt.Println("blkFHash:",blkFHash)
