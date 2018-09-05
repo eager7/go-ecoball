@@ -92,7 +92,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @brief  create a new block, this function will execute the transaction to rebuild mpt trie
 *  @param  consensusData - the data of consensus module set
  */
-func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, headerPayload types.Payload, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
 	//s, err := c.StateDB.FinalDB.CopyState()
 	//if err != nil {
 	//	return nil, err
@@ -110,7 +110,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 			net += n
 		}
 	}
-	block, err := types.NewBlock(c.CurrentHeader.ChainID, c.CurrentHeader, c.StateDB.FinalDB.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	block, err := types.NewBlock(c.CurrentHeader.ChainID, c.CurrentHeader, c.StateDB.FinalDB.GetHashRoot(), headerPayload, consensusData, txs, cpu, net, timeStamp)
 	if err != nil {
 		c.ResetStateDB(c.CurrentHeader)
 		return nil, err
@@ -296,7 +296,8 @@ func (c *ChainTx) GenesesBlockInit(chainID common.Hash) error {
 	hashState := c.StateDB.FinalDB.GetHashRoot()
 
 	fmt.Println(hash.HexString())
-	header, err := types.NewHeader(types.VersionHeader, chainID, 1, chainID, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
+	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey}
+	header, err := types.NewHeader(headerPayload, types.VersionHeader, chainID, 1, chainID, hash, hashState, *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
 	if err != nil {
 		return err
 	}

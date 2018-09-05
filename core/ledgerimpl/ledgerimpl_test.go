@@ -56,7 +56,8 @@ func TestLedgerImpl_ResetStateDB(t *testing.T) {
 	elog.Log.Info("reset block to create block")
 	errors.CheckErrorPanic(l.ResetStateDB(config.ChainHash, prevBlock.Header))
 	elog.Log.Info("reset block:")
-	newBlock, err := l.NewTxBlock(config.ChainHash, currentBlock.Transactions, currentBlock.ConsensusData, currentBlock.TimeStamp)
+	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey}
+	newBlock, err := l.NewTxBlock(config.ChainHash, currentBlock.Transactions, headerPayload, currentBlock.ConsensusData, currentBlock.TimeStamp)
 	errors.CheckErrorPanic(err)
 	newBlock.SetSignature(&config.Root)
 	errors.CheckEqualPanic(currentBlock.JsonString(false) == newBlock.JsonString(false))
@@ -65,7 +66,7 @@ func TestLedgerImpl_ResetStateDB(t *testing.T) {
 func CreateAccountBlock(ledger ledger.Ledger) *types.Block {
 	elog.Log.Info("CreateAccountBlock------------------------------------------------------\n\n")
 	var txs []*types.Transaction
-	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, 0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
 	txs = append(txs, tokenContract)

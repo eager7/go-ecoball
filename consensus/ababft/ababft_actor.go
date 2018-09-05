@@ -149,6 +149,11 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 	// deal with the message
 	switch msg := ctx.Message().(type) {
 	case message.ABABFTStart:
+		// check the chain ID
+		if ok:=bytes.Equal(msg.ChainID.Bytes(),actorC.chainID.Bytes()); ok != true {
+			log.Debug("the message is not for this chain")
+			return
+		}
 		actorC.status = 2
 		log.Debug("start ababft: receive the ababftstart message:", actorC.currentHeightNum,actorC.verifiedHeight,actorC.currentLedger.GetCurrentHeader(config.ChainHash))
 
@@ -313,7 +318,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			// as there is a long time since last block, maybe the chain is blocked somewhere
 			// to generate the block after the previous block (i.e. the latest verified block)
 			var currentBlock *types.Block
-			currentBlock,err = actorC.currentLedger.GetTxBlock(config.ChainHash, actorC.currentHeader.PrevHash)
+			currentBlock,err = actorC.currentLedger.GetTxBlock(actorC.chainID, actorC.currentHeader.PrevHash)
 			if err != nil {
 				fmt.Println("get previous block error.")
 			}
@@ -364,13 +369,13 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			actorC.currentRoundNum ++
 			fmt.Println("ABABFTStart:current_round_num:",actorC.currentRoundNum,actorC.selfIndex)
 			// log.Debug("primary")
-			// set up a timer to wait for the signaturePreblock from other peera
+			// set up a timer to wait for the signaturePreblock from other peers
 			t0 := time.NewTimer(time.Second * waitResponseTime * 2)
 			go func() {
 				select {
 				case <-t0.C:
 					// timeout for the preblock signature
-					err = event.Send(event.ActorConsensus, event.ActorConsensus, PreBlockTimeout{})
+					err = event.Send(event.ActorConsensus, event.ActorConsensus, PreBlockTimeout{ChainID:actorC.chainID})
 					t0.Stop()
 				}
 			}()
@@ -382,6 +387,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			var signaturePreSend SignaturePreBlock
 			signaturePreSend.SignPreBlock.PubKey = signaturePreblock.PubKey
 			signaturePreSend.SignPreBlock.SigData = signaturePreblock.SigData
+			signaturePreSend.SignPreBlock.ChainID = actorC.chainID.Bytes()
 			// todo
 			// for the signature of previous block, maybe the round number is not needed
 			signaturePreSend.SignPreBlock.Round = uint32(actorC.currentRoundNum)
@@ -408,6 +414,11 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 
 	case SignaturePreBlock:
 		log.Info("receive the preblock signature:", actorC.status,msg.SignPreBlock)
+		// check the chain ID
+		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.SignPreBlock.ChainID); ok != true {
+			log.Debug("wrong chain ID for preblock signature")
+			return
+		}
 		if actorC.status == 102 {
 			event.Send(event.ActorNil,event.ActorConsensus,message.ABABFTStart{actorC.chainID})
 		}
@@ -510,6 +521,10 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		}
 
 	case PreBlockTimeout:
+		if ok := bytes.Equal(msg.ChainID.Bytes(),actorC.chainID.Bytes()); ok != true {
+			log.Debug("wrong chain ID for preblock timeout")
+			return
+		}
 		if actorC.primaryTag == 1 && (actorC.status == 2 || actorC.status == 3){
 			// 1. check the cache cache_signature_preblk
 			headerHashes := actorC.currentHeader.Hash.Bytes()
@@ -676,6 +691,12 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			// log.Debug("debug for first round block")
 		}
 		// end of test
+
+		// check the chain ID
+		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.BlockFirst.Header.ChainID.Bytes()); ok != true {
+			log.Debug("wrong chain ID for first round block")
+			return
+		}
 
 		log.Info("current height and receive the first round block:",actorC.currentHeightNum, msg.BlockFirst.Header)
 
@@ -1331,7 +1352,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			// fmt.Println("blkSynSend f:",blkSynSend.Blksyn.BlksynF.Header)
 			// fmt.Println("currentheader.PrevHash:",currentheader.PrevHash)
 			// fmt.Println("before reset: currentheader.Hash:",currentheader.Hash)
-			currentPreBlk,_ := actorC.currentLedger.GetTxBlock(config.ChainHash, actorC.currentHeader.PrevHash)
+			currentPreBlk,_ := actorC.currentLedger.GetTxBlock(actorC.chainID, actorC.currentHeader.PrevHash)
 			// current_blk := blkSynF
 			//err1 := actorC.serviceABABFT.ledger.ResetStateDB(currentPreBlk.Header.StateHash)
 			err1 := actorC.serviceABABFT.ledger.ResetStateDB(config.ChainHash, currentPreBlk.Header)
@@ -1344,7 +1365,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			// fmt.Println("compare state hash:", current_blk.Header.StateHash, blockFirstCal.StateHash)
 
 			// currentheader = current_ledger.GetCurrentHeader()
-			oldBlock,_ := actorC.currentLedger.GetTxBlock(config.ChainHash, actorC.currentHeader.PrevHash)
+			oldBlock,_ := actorC.currentLedger.GetTxBlock(actorC.chainID, actorC.currentHeader.PrevHash)
 			// currentheader = oldBlock.Header
 			actorC.currentHeaderData = *(oldBlock.Header)
 			actorC.currentHeader = &actorC.currentHeaderData
