@@ -80,6 +80,10 @@ func (d *DeployInfo) Deserialize(data []byte) error {
 	return nil
 }
 
+func (d *DeployInfo) Type() uint32 {
+	return uint32(TxDeploy)
+}
+
 func (d DeployInfo) GetObject() interface{} {
 	return d
 }

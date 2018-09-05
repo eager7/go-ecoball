@@ -32,42 +32,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 )
 
-func TestHeader(t *testing.T) {
-	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-	h, err := types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
-	errors.CheckErrorPanic(err)
-	errors.CheckErrorPanic(h.SetSignature(&config.Root))
-	h.Show()
 
-	data, err := h.Serialize()
-	errors.CheckErrorPanic(err)
-
-	h2 := new(types.Header)
-	errors.CheckErrorPanic(h2.Deserialize(data))
-
-	h2.Show()
-	errors.CheckEqualPanic(h.JsonString() == h2.JsonString())
-
-	//ABA BFT
-	sig1 := common.Signature{PubKey: []byte("1234"), SigData: []byte("5678")}
-	sig2 := common.Signature{PubKey: []byte("4321"), SigData: []byte("8765")}
-	var sigPer []common.Signature
-	sigPer = append(sigPer, sig1)
-	sigPer = append(sigPer, sig2)
-	abaData := types.AbaBftData{NumberRound: 5, PreBlockSignatures: sigPer}
-	conData = types.ConsensusData{Type: types.ConABFT, Payload: &abaData}
-	h, err = types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
-	errors.CheckErrorPanic(err)
-	errors.CheckErrorPanic(h.SetSignature(&config.Root))
-
-	data, err = h.Serialize()
-	errors.CheckErrorPanic(err)
-
-	h2 = new(types.Header)
-	errors.CheckErrorPanic(h2.Deserialize(data))
-	errors.CheckEqualPanic(h.JsonString() == h2.JsonString())
-	h2.Show()
-}
 
 func TestBlockCreate(t *testing.T) {
 	ledger := example.Ledger("/tmp/block_create")
