@@ -17,7 +17,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -211,11 +210,7 @@ func appRun(app *cli.App) (err error) {
 		temp = append(temp, os.Args[0])
 		temp = append(temp, os.Args[2:]...)
 		os.Args = temp
-		result := cmd.StorageFun()
-		if 0 != result {
-			err = errors.New("storage command execution error!!")
-		}
-		return
+		return cmd.StorageFun()
 	}
 	return app.Run(os.Args)
 }

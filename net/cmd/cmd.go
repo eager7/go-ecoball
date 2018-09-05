@@ -5,15 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"math/rand"
 	"os"
-	"os/signal"
 	"path/filepath"
-	"runtime/pprof"
 	"strings"
-	"sync"
-	"syscall"
 	"time"
 
 	oldcmds "github.com/ipfs/go-ipfs/commands"
@@ -41,32 +36,9 @@ var log = logging.Logger("cmd/ipfs")
 
 var errRequestCanceled = errors.New("request canceled")
 
-const (
-	EnvEnableProfiling = "IPFS_PROF"
-	cpuProfile         = "ipfs.cpuprof"
-	heapProfile        = "ipfs.memprof"
-)
-
-func StorageFun() int {
+func StorageFun() error {
 	rand.Seed(time.Now().UnixNano())
 	ctx := logging.ContextWithLoggable(context.Background(), loggables.Uuid("session"))
-	var err error
-
-	// we'll call this local helper to output errors.
-	// this is so we control how to print errors in one place.
-	printErr := func(err error) {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
-	}
-
-	stopFunc, err := profileIfEnabled()
-	if err != nil {
-		printErr(err)
-		return 1
-	}
-	defer stopFunc() // to be executed as late as possible
-
-	intrh, ctx := setupInterruptHandler(ctx)
-	defer intrh.Close()
 
 	// Handle `ipfs help'
 	if len(os.Args) == 2 {
@@ -120,13 +92,8 @@ func StorageFun() int {
 		}, nil
 	}
 
-	err = cli.Run(ctx, Root, os.Args, os.Stdin, os.Stdout, os.Stderr, buildEnv, makeExecutor)
-	if err != nil {
-		return 1
-	}
-
-	// everything went better than expected :)
-	return 0
+	err := cli.Run(ctx, Root, os.Args, os.Stdin, os.Stdout, os.Stderr, buildEnv, makeExecutor)
+	return err
 }
 
 func checkDebug(req *cmds.Request) {
@@ -273,117 +240,6 @@ func getRepoPath(req *cmds.Request) (string, error) {
 
 func loadConfig(path string) (*config.Config, error) {
 	return fsrepo.ConfigAt(path)
-}
-
-// startProfiling begins CPU profiling and returns a `stop` function to be
-// executed as late as possible. The stop function captures the memprofile.
-func startProfiling() (func(), error) {
-	// start CPU profiling as early as possible
-	ofi, err := os.Create(cpuProfile)
-	if err != nil {
-		return nil, err
-	}
-	pprof.StartCPUProfile(ofi)
-	go func() {
-		for range time.NewTicker(time.Second * 30).C {
-			err := writeHeapProfileToFile()
-			if err != nil {
-				log.Error(err)
-			}
-		}
-	}()
-
-	stopProfiling := func() {
-		pprof.StopCPUProfile()
-		ofi.Close() // captured by the closure
-	}
-	return stopProfiling, nil
-}
-
-func writeHeapProfileToFile() error {
-	mprof, err := os.Create(heapProfile)
-	if err != nil {
-		return err
-	}
-	defer mprof.Close() // _after_ writing the heap profile
-	return pprof.WriteHeapProfile(mprof)
-}
-
-// IntrHandler helps set up an interrupt handler that can
-// be cleanly shut down through the io.Closer interface.
-type IntrHandler struct {
-	sig chan os.Signal
-	wg  sync.WaitGroup
-}
-
-func NewIntrHandler() *IntrHandler {
-	ih := &IntrHandler{}
-	ih.sig = make(chan os.Signal, 1)
-	return ih
-}
-
-func (ih *IntrHandler) Close() error {
-	close(ih.sig)
-	ih.wg.Wait()
-	return nil
-}
-
-// Handle starts handling the given signals, and will call the handler
-// callback function each time a signal is catched. The function is passed
-// the number of times the handler has been triggered in total, as
-// well as the handler itself, so that the handling logic can use the
-// handler's wait group to ensure clean shutdown when Close() is called.
-func (ih *IntrHandler) Handle(handler func(count int, ih *IntrHandler), sigs ...os.Signal) {
-	signal.Notify(ih.sig, sigs...)
-	ih.wg.Add(1)
-	go func() {
-		defer ih.wg.Done()
-		count := 0
-		for range ih.sig {
-			count++
-			handler(count, ih)
-		}
-		signal.Stop(ih.sig)
-	}()
-}
-
-func setupInterruptHandler(ctx context.Context) (io.Closer, context.Context) {
-	intrh := NewIntrHandler()
-	ctx, cancelFunc := context.WithCancel(ctx)
-
-	handlerFunc := func(count int, ih *IntrHandler) {
-		switch count {
-		case 1:
-			fmt.Println() // Prevent un-terminated ^C character in terminal
-
-			ih.wg.Add(1)
-			go func() {
-				defer ih.wg.Done()
-				cancelFunc()
-			}()
-
-		default:
-			fmt.Println("Received another interrupt before graceful shutdown, terminating...")
-			os.Exit(-1)
-		}
-	}
-
-	intrh.Handle(handlerFunc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
-
-	return intrh, ctx
-}
-
-func profileIfEnabled() (func(), error) {
-	// FIXME this is a temporary hack so profiling of asynchronous operations
-	// works as intended.
-	if os.Getenv(EnvEnableProfiling) != "" {
-		stopProfilingFunc, err := startProfiling() // TODO maybe change this to its own option... profiling makes it slower.
-		if err != nil {
-			return nil, err
-		}
-		return stopProfilingFunc, nil
-	}
-	return func() {}, nil
 }
 
 var apiFileErrorFmt string = `Failed to parse '%[1]s/api' file.
