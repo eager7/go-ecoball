@@ -6,14 +6,76 @@ import (
 	commands "github.com/ipfs/go-ipfs/core/commands"
 
 	cmds "gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
+	cmdkit "gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
 )
+
+var storageHelptext = cmdkit.HelpText{
+	Tagline:  "Global p2p merkle-dag storage filesystem.",
+	Synopsis: "storage [--config=<config> | -c] [--debug=<debug> | -D] [--help=<help>] [-h=<h>] [--local=<local> | -L] [--api=<api>] <command> ...",
+	Subcommands: `
+BASIC COMMANDS
+add <path>    Add a file to distributed storage
+cat <ref>     Show distributed storage object data
+get <ref>     Download distributed storage objects
+ls <ref>      List links from an object
+refs <ref>    List hashes of links from an object
+
+DATA STRUCTURE COMMANDS
+block         Interact with raw blocks in the datastore
+object        Interact with raw dag nodes
+files         Interact with objects as if they were a unix filesystem
+dag           Interact with IPLD documents (experimental)
+
+ADVANCED COMMANDS
+daemon        Start a long-running daemon process
+mount         Mount an IPFS read-only mountpoint
+resolve       Resolve any type of name
+name          Publish and resolve IPNS names
+key           Create and list IPNS name keypairs
+dns           Resolve DNS links
+pin           Pin objects to local storage
+repo          Manipulate the IPFS repository
+stats         Various operational stats
+p2p           Libp2p stream mounting
+filestore     Manage the filestore (experimental)
+
+NETWORK COMMANDS
+id            Show info about IPFS peers
+bootstrap     Add or remove bootstrap peers
+swarm         Manage connections to the p2p network
+dht           Query the DHT for values or peers
+ping          Measure the latency of a connection
+diag          Print diagnostics
+
+TOOL COMMANDS
+config        Manage configuration
+version       Show distributed storage version information
+update        Download and apply go-ipfs updates
+commands      List all available commands
+
+Use 'storage <command> --help' to learn more about each command.
+
+distributed storage uses a repository in the local file system. By default, the repo is
+located at ~/.ipfs. To change the repo location, set the $IPFS_PATH
+environment variable:
+
+export IPFS_PATH=/path/to/ipfsrepo
+
+EXIT STATUS
+
+The CLI will exit with one of the following values:
+
+0     Successful execution.
+1     Failed executions.
+`,
+}
 
 // This is the CLI root, used for executing commands accessible to CLI clients.
 // Some subcommands (like 'ipfs daemon' or 'ipfs init') are only accessible here,
 // and can't be called through the HTTP API.
 var Root = &cmds.Command{
 	Options:  commands.Root.Options,
-	Helptext: commands.Root.Helptext,
+	Helptext: storageHelptext,
 }
 
 // commandsClientCmd is the "ipfs commands" command for local cli
