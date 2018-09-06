@@ -2,12 +2,9 @@ package renter
 
 import (
 	"math/big"
-	//"github.com/ecoball/go-ecoball/net/proof"
-	//"github.com/ecoball/go-ecoball/net/settlement"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/core/store"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"os"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
 	"github.com/ecoball/go-ecoball/dsn/crypto"
@@ -16,12 +13,21 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	innerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
+	"context"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ipfs/go-ipfs/core"
+	"path/filepath"
+	"gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit/files"
+	"path"
 )
 
 var (
+	ipfsNode *core.IpfsNode
 	errUnSyncedStat = errors.New("Block is unsynced!")
 	errCreateContract = errors.New("failed to create file contract")
+	errCheckColFailed = errors.New("Checking collateral failed")
 )
+
 // An allowance dictates how much the Renter is allowed to spend in a given
 // period. Note that funds are spent on both storage and bandwidth
 type Allowance struct {
@@ -29,6 +35,7 @@ type Allowance struct {
 	Period      uint64
 	RenewWindow uint64
 }
+
 type FileContract struct {
 	PublicKey   []byte
 	Cid         string
@@ -36,16 +43,17 @@ type FileContract struct {
 	FileSize    uint64
 	Redundancy  uint8
 	Funds       big.Int
-	//Expiration  proof.BlockHeight
 	StartAt     uint64
-	// 0 : nerver expired
 	Expiration  uint64
 }
 
 type RenterConf struct {
-	AccountName   string
+	AccountName   common.AccountName
 	Redundancy    uint8
 	Allowance     big.Int
+	Collateral    big.Int
+	MaxCollateral big.Int
+	ChainId       common.Hash
 }
 
 type fileInfo struct {
@@ -57,53 +65,59 @@ type fileInfo struct {
 	fee             big.Int
 }
 
-
-type Renter interface {
-	Files() []fileInfo
-	TotalCost() big.Int
-	GetFile(cid string) error
-	AddFile(fpath string) error
-}
-
-type renter struct {
+type Renter struct {
 	isSynced bool
 	account  account.Account
 	files    map[string]fileInfo
-	ledger   ledger.Ledger
-	chainId  common.Hash
-	db       store.Storage
 	conf     RenterConf
+	ledger   ledger.Ledger
+	db       store.Storage
+	ctx      context.Context
 }
 
-func NewRenter(l ledger.Ledger, aac account.Account, conf RenterConf)  {
-	
+func NewRenter(ctx context.Context,l ledger.Ledger ,ac account.Account, conf RenterConf) Renter {
+	r := Renter{
+		account: ac,
+		ledger: l,
+		conf: conf,
+		files: make(map[string]fileInfo, 64),
+		ctx: ctx,
+	}
+	//TODO init db
+
+	return r
 }
 
-func (r *renter) estimateFee(fname string, conf RenterConf) big.Int {
+func (r *Renter) Start()  {
+	r.loadFileInfo()
+	r.getBlockSyncState(r.conf.ChainId)
+}
+func (r *Renter) estimateFee(fname string, conf RenterConf) big.Int {
 	//TODO
 	var fee big.Int
 	return fee
 }
 
-func (r *renter) getCurBlockHeight() uint64 {
-	return 0
-}
-
-func (r *renter) getBlockSyncState(chainId common.Hash) bool {
-	go func() {
-		timerChan := time.NewTicker(10 * time.Second).C
-		//var syncState bool
-		for {
-			select {
-			case timerChan:
-				//TODO get current block synced state
+func (r *Renter) getBlockSyncState(chainId common.Hash) bool {
+	timerChan := time.NewTicker(10 * time.Second).C
+	var syncState bool
+	for {
+		select {
+		case timerChan:
+			//TODO get current block synced state
+			if syncState {
+				r.isSynced = true
+				return true
 			}
+		case <-r.ctx.Done():
+			return false
 		}
-	}()
+
+	}
 	return false
 }
 
-func (r *renter)createFileContract(fname string, cid string) ([]byte, error) {
+func (r *Renter)createFileContract(fname string, cid string) ([]byte, error) {
 	fi, err := os.Stat(fname)
 	if err != nil {
 		return nil, err
@@ -113,7 +127,7 @@ func (r *renter)createFileContract(fname string, cid string) ([]byte, error) {
 	fc.FileSize = uint64(fi.Size())
 	fc.PublicKey = r.account.PublicKey
 	fc.Cid = cid
-	fc.StartAt = r.getCurBlockHeight()
+	fc.StartAt = r.ledger.GetCurrentHeight(r.conf.ChainId)
 	fc.Expiration = 0
 	fc.Funds = r.estimateFee(fname, r.conf)
 	fc.Redundancy = r.conf.Redundancy
@@ -125,7 +139,7 @@ func (r *renter)createFileContract(fname string, cid string) ([]byte, error) {
 	return append(fcBytes, sig[:]...), nil
 }
 
-func (r *renter) InvokeFileContract(fname, cid string) error {
+func (r *Renter) InvokeFileContract(fname, cid string) error {
 	if !r.isSynced {
 		return errUnSyncedStat
 	}
@@ -134,8 +148,8 @@ func (r *renter) InvokeFileContract(fname, cid string) error {
 		return  errCreateContract
 	}
 	timeNow := time.Now().Unix()
-	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex(r.conf.AccountName),
-		innerCommon.NameToIndex("root"), r.chainId,
+	transaction, err := types.NewInvokeContract(r.conf.AccountName,
+		innerCommon.NameToIndex("root"), r.conf.ChainId,
 		"owner", "reg_file", []string{string(fc)}, 0, timeNow)
 	if err != nil {
 		return err
@@ -158,22 +172,58 @@ func (r *renter) InvokeFileContract(fname, cid string) error {
 	f.fee = r.estimateFee(fname, r.conf)
 	r.files[cid] = f
 
+	r.persistFileInfo(f)
+
 	return nil
 }
 
-func (r *renter) Start()  {
-	
+func (r *Renter)checkCollateral() bool {
+	sacc, err := r.ledger.AccountGet(r.conf.ChainId, r.conf.AccountName)
+	if err != nil {
+		return false
+	}
+	//TODO much more checking
+	if sacc.Votes.Staked > 0 {
+		return true
+	}
+	return false
 }
 
-func (r *renter) AddFile(fpath string) error {
+func (r *Renter) AddFile(fpath string) (string, error) {
+	if !r.isSynced {
+		return "", errUnSyncedStat
+	}
+	colState := r.checkCollateral()
+	if !colState {
+		return "", errCheckColFailed
+	}
+	//TODO erasure coding and add file
+	adder, err := NewEcoAdder(r.ctx, ipfsNode.Pinning,ipfsNode.Blockstore, ipfsNode.DAG)
+	if err != nil {
+		return "", err
+	}
+	adder.SetRedundancy(r.conf.Redundancy)
+	fpath = filepath.ToSlash(filepath.Clean(fpath))
+	stat, err := os.Lstat(fpath)
+	if err != nil {
+		return "", err
+	}
+	af, err := files.NewSerialFile(path.Base(fpath), fpath, false, stat)
+	if err != nil {
+		return "", err
+	}
+	adder.AddFile(af)
+	dagnode, err := adder.Finalize()
+	r.InvokeFileContract(fpath, dagnode.String())
+	return dagnode.String(), nil
+}
+
+func (r *Renter) GetFile(cid string) error {
+	//TODO
 	return nil
 }
 
-func (r *renter) GetFile(cid string) error {
-	return nil
-}
-
-func (r *renter) Files() []fileInfo {
+func (r *Renter) Files() []fileInfo {
 	var files []fileInfo
 	for _, v := range r.files {
 		files = append(files, v)
@@ -181,7 +231,7 @@ func (r *renter) Files() []fileInfo {
 	return files
 }
 
-func (r *renter) TotalCost() big.Int {
+func (r *Renter) TotalCost() big.Int {
 	fee := new(big.Int)
 	for _, v := range r.files {
 		fee = fee.Add(fee, &v.fee)
@@ -189,4 +239,19 @@ func (r *renter) TotalCost() big.Int {
 	return *fee
 }
 
+func (r *Renter) persistFileInfo(fi fileInfo) error {
+	//TODO
+	//r.db.Put()
+	return nil
+}
 
+func (r *Renter) loadFileInfo() error {
+	//TODO
+	//r.db.Get()
+	return nil
+}
+
+
+func SetIpfsNode(node *core.IpfsNode)  {
+	ipfsNode = node
+}
