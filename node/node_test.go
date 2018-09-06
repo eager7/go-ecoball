@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
@@ -23,7 +24,7 @@ import (
 func TestRunMain(t *testing.T) {
 	net.InitNetWork()
 	os.RemoveAll("/tmp/node_test")
-	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, config.User)
+	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
 	ledger.L = L
@@ -36,8 +37,8 @@ func TestRunMain(t *testing.T) {
 	//start consensus
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
-		solo.NewSoloConsensusServer(ledger.L, txPool)
-		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, PublicKey: config.Root.PublicKey})
+		solo.NewSoloConsensusServer(ledger.L, txPool, config.User)
+		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, Address: common.AddressFromPubKey(config.Root.PublicKey)})
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":
@@ -72,8 +73,8 @@ func TestRunNode(t *testing.T) {
 	//start consensus
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
-		solo.NewSoloConsensusServer(ledger.L, txPool)
-		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, PublicKey: config.Root.PublicKey, Tx: nil})
+		solo.NewSoloConsensusServer(ledger.L, txPool, config.User)
+		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, Address: common.AddressFromPubKey(config.Root.PublicKey), Tx: nil})
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":

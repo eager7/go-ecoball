@@ -59,8 +59,8 @@ time_slot = 500              # block interval time, uint ms
 start_node = "true"
 root_privkey = "0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6"
 root_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c" # used to chain ID
-user_privkey = ""
-user_pubkey = ""
+user_privkey = "0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6"
+user_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c"
 #user_privkey = "0x1eec266c518c0c5adfd3bbf0e4a40b22cad482a0eedfa836e90b5dcc4a643878"
 #user_pubkey = "0x045a8d217b04abc5fc44a724041eb5adeb8aff6f8559f759b6797026a638b2136e2e8ddb8eee52ef4f431a5af02b44732475648da1f9ddc7265e70a64f8ec24c17"
 

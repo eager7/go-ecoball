@@ -18,7 +18,6 @@ package solo
 
 import (
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
@@ -27,20 +26,22 @@ import (
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/txpool"
 	"time"
+	"github.com/ecoball/go-ecoball/account"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
 
 type Solo struct {
+	account account.Account
 	stop   chan struct{}
 	msg    <-chan interface{}
 	ledger ledger.Ledger
 	txPool *txpool.TxPool
-	Chains map[common.Hash]common.Hash
+	Chains map[common.Hash]common.Address
 }
 
-func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (solo *Solo, err error) {
-	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool, Chains: make(map[common.Hash]common.Hash, 1)}
+func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.Account) (solo *Solo, err error) {
+	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool, Chains: make(map[common.Hash]common.Address, 1), account:acc}
 	actor := &soloActor{solo: solo}
 	NewSoloActor(actor)
 
@@ -57,18 +58,20 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool) (solo *Solo,
 	return solo, nil
 }
 
-func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
+func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address) {
 	time.Sleep(time.Second * 1)
 	t := time.NewTimer(time.Second * 1)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
+	root := common.AddressFromPubKey(solo.account.PublicKey)
+	startNode := root.Equals(&addr)
 	for {
 		t.Reset(time.Second * 1)
 		select {
 		case <-t.C:
-			if !config.StartNode {
+			if !startNode {
 				continue
 			}
-			log.Debug("Request transactions from tx pool")
+			log.Debug("Request transactions from tx pool[", chainID.HexString() ,"]")
 			txs, _ := solo.txPool.GetTxsList(chainID)
 			if len(txs) == 0 {
 				log.Info("no transaction in this time")
@@ -78,7 +81,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			if err := block.SetSignature(&config.Root); err != nil {
+			if err := block.SetSignature(&solo.account); err != nil {
 				log.Fatal(err)
 			}
 			if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
