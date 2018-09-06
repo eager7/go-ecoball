@@ -22,6 +22,8 @@ const (
 	SUCCESS Errcode = iota
 	INVALID_ACCOUNT
 	INVALID_PARAMS
+	INVALID_CONTRACT_ABI
+	TRX_FAIL
 	GENERATE_KEY_PAIR_FAILED
 	INTERNAL_ERROR
 	SAMEDATA
@@ -31,6 +33,8 @@ var ErrorCodeInfo = map[Errcode]string{
 	SUCCESS:                  "success",
 	INVALID_ACCOUNT:          "invalid account",
 	INVALID_PARAMS:           "invalid arguments",
+	INVALID_CONTRACT_ABI:     "contract abi error",
+	TRX_FAIL:				  "create transcation failed",
 	GENERATE_KEY_PAIR_FAILED: "generate key pair failed",
 	INTERNAL_ERROR:           "internal error",
 	SAMEDATA:                 "duplicated data",

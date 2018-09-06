@@ -20,9 +20,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"encoding/hex"
 	"strconv"
+	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 )
 
 var interval = time.Millisecond * 100
@@ -384,7 +384,7 @@ func checkParam(abiDef abi.ABI, method string, arg []byte) ([]byte, error){
 	if fields == nil {
 		return nil, errors.New(log, "can not find method " + method)
 	}
-	
+
 	args := make([]wasmservice.ParamTV, len(fields))
 	for i, field := range fields {
 		v := m[field.Name]
@@ -393,67 +393,113 @@ func checkParam(abiDef abi.ABI, method string, arg []byte) ([]byte, error){
 
 			switch vv := v.(type) {
 			case string:
-				if field.Type == "string" || field.Type == "account_name" || field.Type == "asset" {
-					args[i].Pval = vv
-				} else {
-					return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
-				}
-				fmt.Println(field.Name, "is ", field.Type, "", vv)
-			case float64:
+			//	if field.Type == "string" || field.Type == "account_name" || field.Type == "asset" {
+			//		args[i].Pval = vv
+			//	} else {
+			//		return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
+			//	}
+			//	fmt.Println(field.Name, "is ", field.Type, "", vv)
+			//case float64:
 				switch field.Type {
+				case "string","account_name","asset":
+					args[i].Pval = vv
 				case "int8":
 					const INT8_MAX = int8(^uint8(0) >> 1)
 					const INT8_MIN = ^INT8_MAX
-					if int64(vv) >= int64(INT8_MIN) && int64(vv) <= int64(INT8_MAX) {
-						args[i].Pval = strconv.FormatInt(int64(vv), 10)
+					a, err := strconv.ParseInt(vv, 10, 8)
+					if err != nil {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int8 range"))
+					}
+					if a >= int64(INT8_MIN) && a <= int64(INT8_MAX) {
+						args[i].Pval = vv
 					} else {
 						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int8 range"))
 					}
 				case "int16":
 					const INT16_MAX = int16(^uint16(0) >> 1)
 					const INT16_MIN = ^INT16_MAX
-					if int64(vv) >= int64(INT16_MIN) && int64(vv) <= int64(INT16_MAX) {
-						args[i].Pval = strconv.FormatInt(int64(vv), 10)
+					a, err := strconv.ParseInt(vv, 10, 16)
+					if err != nil {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int16 range"))
+					}
+					if a >= int64(INT16_MIN) && a <= int64(INT16_MAX) {
+						args[i].Pval = vv
 					} else {
 						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int16 range"))
 					}
 				case "int32":
 					const INT32_MAX = int32(^uint32(0) >> 1)
 					const INT32_MIN = ^INT32_MAX
-					if int64(vv) >= int64(INT32_MIN) && int64(vv) <= int64(INT32_MAX) {
-						args[i].Pval = strconv.FormatInt(int64(vv), 10)
+					a, err := strconv.ParseInt(vv, 10, 32)
+					if err != nil {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int32 range"))
+					}
+					if a >= int64(INT32_MIN) && a <= int64(INT32_MAX) {
+						args[i].Pval = vv
 					} else {
 						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int32 range"))
 					}
 				case "int64":
-					args[i].Pval = strconv.FormatInt(int64(vv), 10)
+					const INT64_MAX = int64(^uint64(0) >> 1)
+					const INT64_MIN = ^INT64_MAX
+					a, err := strconv.ParseInt(vv, 10, 64)
+					if err != nil {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int64 range"))
+					}
+					if a >= INT64_MIN && a <= INT64_MAX {
+						args[i].Pval = vv
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int64 range"))
+					}
 
 				case "uint8":
 					const UINT8_MIN uint8 = 0
 					const UINT8_MAX = ^uint8(0)
-					if uint64(vv) >= uint64(UINT8_MIN) && uint64(vv) <= uint64(UINT8_MAX) {
-						args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+					a, err := strconv.ParseUint(vv, 10, 8)
+					if err != nil {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint8 range"))
+					}
+					if a >= uint64(UINT8_MIN) && a <= uint64(UINT8_MAX) {
+						args[i].Pval = vv
 					} else {
 						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint8 range"))
 					}
 				case "uint16":
 					const UINT16_MIN uint16 = 0
 					const UINT16_MAX = ^uint16(0)
-					if uint64(vv) >= uint64(UINT16_MIN) && uint64(vv) <= uint64(UINT16_MAX) {
-						args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+					a, err := strconv.ParseUint(vv, 10, 16)
+					if err != nil {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint16 range"))
+					}
+					if a >= uint64(UINT16_MIN) && a <= uint64(UINT16_MAX) {
+						args[i].Pval = vv
 					} else {
 						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint16 range"))
 					}
 				case "uint32":
 					const UINT32_MIN uint32 = 0
 					const UINT32_MAX = ^uint32(0)
-					if uint64(vv) >= uint64(UINT32_MIN) && uint64(vv) <= uint64(UINT32_MAX) {
-						args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+					a, err := strconv.ParseUint(vv, 10, 32)
+					if err != nil {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint32 range"))
+					}
+					if a >= uint64(UINT32_MIN) && a <= uint64(UINT32_MAX) {
+						args[i].Pval = vv
 					} else {
 						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint32 range"))
 					}
 				case "uint64":
-					args[i].Pval = strconv.FormatUint(uint64(vv), 10)
+					const UINT64_MIN uint64 = 0
+					const UINT64_MAX = ^uint64(0)
+					a, err := strconv.ParseUint(vv, 10, 64)
+					if err != nil {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint64 range"))
+					}
+					if a >= UINT64_MIN && a <= UINT64_MAX {
+						args[i].Pval = vv
+					} else {
+						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint64 range"))
+					}
 
 				default:
 					return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
@@ -467,13 +513,13 @@ func checkParam(abiDef abi.ABI, method string, arg []byte) ([]byte, error){
 				//	return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
 				//}
 				fmt.Println(field.Name, "is ", field.Type, "", vv)
-			//case []interface{}:
-			//	fmt.Println(field.Name, "is an array:")
-			//	for i, u := range vv {
-			//		fmt.Println(i, u)
-			//	}
+				//case []interface{}:
+				//	fmt.Println(field.Name, "is an array:")
+				//	for i, u := range vv {
+				//		fmt.Println(i, u)
+				//	}
 			default:
-				return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type: %T", v))
+				return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type: ", v))
 			}
 		} else {
 			return nil, errors.New(log, "can't match abi struct field name:  " + field.Name)
@@ -529,7 +575,7 @@ func InvokeContract(ledger ledger.Ledger) {
          {"name":"from", "type":"account_name"},
          {"name":"to", "type":"account_name"},
          {"name":"quantity", "type":"asset"},
-         {"name":"memo", "type":"int16"}
+         {"name":"memo", "type":"int64"}
       ]
     }
   ],
@@ -579,7 +625,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	//var abiDef abi.ABI
 	//json.Unmarshal(abiByte, &abiDef)
 
-	transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": 1000}`)
+	transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": "-9223372036854775807"}`)
 
 	argbyte, err := checkParam(abiDef, "transfer", transfer)
 	if err != nil {
