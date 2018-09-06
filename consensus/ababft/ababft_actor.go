@@ -26,15 +26,12 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/common"
-	"time"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"bytes"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/account"
 	"encoding/binary"
-	"github.com/ecoball/go-ecoball/common/config"
 	"reflect"
 )
 type ActorABABFT struct {
@@ -89,40 +86,6 @@ const TestTag = false
 
 const ThresholdRound = 60
 
-// var Num_peers int
-// var Peers_list []PeerInfo                // Peer information for consensus
-// var Peers_addr_list []PeerAddrInfo       // Peer address information for consensus
-// var Peers_list_account []PeerInfoAccount // Peer information for consensus
-// var Self_index int                       // the index of this peer in the peers list
-// var current_round_num int                // current round number
-// var current_height_num int               // current height, according to the blocks saved in the local ledger
-// var current_ledger ledger.Ledger
-
-// var primary_tag int // 0: verification peer; 1: is the primary peer, who generate the block at current round;
-// var signature_preblock_list [][]byte // list for saving the signatures for the previous block
-// var signature_preblock_list []common.Signature // list for saving the signatures for the previous block
-// var signature_BlkF_list [][]byte // list for saving the signatures for the first round block
-// var signature_BlkF_list []common.Signature // list for saving the signatures for the first round block
-// var block_firstround BlockFirstRound // temporary parameters for the first round block
-// var block_secondround BlockSecondRound // temporary parameters for the second round block
-// var currentheader *types.Header // temporary parameters for the current block header, according to the blocks saved in the local ledger
-// var currentheader_data types.Header
-// var current_payload types.AbaBftData              // temporary parameters for current payload
-// var received_signpre_num int                      // the number of received signatures for the previous block
-// var cache_signature_preblk []pb.SignaturePreblock // cache the received signatures for the previous block
-// var blockFirstCal *types.Block                    // cache the first-round block
-// var received_signblkf_num int                     // temporary parameters for received signatures for first round block
-// var TimeoutMsgs = make(map[string]int, 1000)      // cache the timeout message
-// var verified_height uint64
-
-// var delta_roundnum int
-
-// var syn_status int
-// for test 2018.07.31
-var Accounts_test []account.Account
-// test end
-
-
 
 func ActorABABFTGen(chainId common.Hash, actorABABFT *ActorABABFT) (*actor.PID, error) {
 	props := actor.FromProducer(func() actor.Actor {
@@ -156,7 +119,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			log.Debug("the message is not for this chain")
 			return
 		}
-		ProcessSTARTABABFT(actorC)
+		ProcessSTART(actorC)
 		return
 
 	case SignaturePreBlock:
@@ -166,7 +129,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			log.Debug("wrong chain ID for preblock signature")
 			return
 		}
-		ProcessSignPreBlkABABFT(actorC,msg)
+		ProcessSignPreBlk(actorC,msg)
 		return
 
 	case PreBlockTimeout:
@@ -179,184 +142,13 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		return
 
 	case BlockFirstRound:
-		// for test 2018.07.27
-		if TestTag == true {
-			actorC.primaryTag = 0
-			actorC.status = 5
-			// log.Debug("debug for first round block")
-		}
-		// end of test
-
 		// check the chain ID
 		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.BlockFirst.Header.ChainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for first round block")
 			return
 		}
-
-		log.Info("current height and receive the first round block:",actorC.currentHeightNum, msg.BlockFirst.Header)
-
-		if actorC.primaryTag == 0 && (actorC.status == 2 || actorC.status == 5) {
-			// to verify the first round block
-			blockFirstReceived := msg.BlockFirst
-			// the protocal type is ababft
-			if blockFirstReceived.ConsensusData.Type == types.ConABFT {
-				dataPreBlkReceived := blockFirstReceived.ConsensusData.Payload.(*types.AbaBftData)
-				// 1. check the round number
-				// 1a. current round number
-				if dataPreBlkReceived.NumberRound < uint32(actorC.currentRoundNum) {
-					return
-				} else if dataPreBlkReceived.NumberRound > uint32(actorC.currentRoundNum) {
-					// require synchronization, the longest chain is ok
-					// in case that somebody may skip the current generator, only the different height can call the synchronization
-					if (actorC.verifiedHeight+2) < blockFirstReceived.Header.Height {
-						// send synchronization message
-						var requestSyn REQSyn
-						requestSyn.Reqsyn.ChainID = actorC.chainID.Bytes()
-						requestSyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
-						hashTS,_ := common.DoubleHash(Uint64ToBytes(actorC.verifiedHeight+1))
-						requestSyn.Reqsyn.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
-						requestSyn.Reqsyn.RequestHeight = actorC.verifiedHeight+1
-						event.Send(event.ActorConsensus,event.ActorP2P, requestSyn)
-						actorC.synStatus = 1
-						// todo
-						// attention:
-						// to against the height cheat, do not change the actorC.status
-					}
-				} else {
-					// 1b. the round number corresponding to the block generator
-					indexG := (actorC.currentRoundNum-1) % actorC.NumPeers + 1
-					pubKeyGIn := blockFirstReceived.Signatures[0].PubKey
-					var indexGIn int
-					indexGIn = -1
-					/*
-					for _, peer := range Peers_list {
-						if ok := bytes.Equal(peer.PublicKey, pubKeyGIn); ok == true {
-							indexGIn = int(peer.Index)
-							break
-						}
-					}
-					*/
-					// change public key to account address
-					for _, peerAddr := range actorC.PeersAddrList {
-						peerAddrIns := common.AddressFromPubKey(pubKeyGIn)
-						if ok := bytes.Equal(peerAddr.AccAddress.Bytes(), peerAddrIns.Bytes()); ok == true {
-							indexGIn = int(peerAddr.Index)
-							break
-						}
-					}
-					if indexG != indexGIn {
-						// illegal block generator
-						return
-					}
-					// 1c. check the block header, except the consensus data
-					var validBlk bool
-					validBlk,err = actorC.verifyHeader(&blockFirstReceived, actorC.currentRoundNum, *(actorC.currentHeader))
-					if validBlk ==false {
-						println("header check fail")
-						return
-					}
-					// 2. check the preblock signature
-					signPreBlkList := dataPreBlkReceived.PreBlockSignatures
-					headerHashes := actorC.currentHeader.Hash.Bytes()
-					var numVerified int
-					numVerified = 0
-					for index, signPreBlk := range signPreBlkList {
-						// 2a. check the peers in the peer list
-						var peerInTag bool
-						peerInTag = false
-						/*
-						for _, peer := range Peers_list {
-							if ok := bytes.Equal(peer.PublicKey, signPreBlk.PubKey); ok == true {
-								peerInTag = true
-								break
-							}
-						}
-						*/
-						// change public key to account address
-						for _, peerAddr := range actorC.PeersAddrList {
-							peerAddrIns := common.AddressFromPubKey(signPreBlk.PubKey)
-							if ok := bytes.Equal(peerAddr.AccAddress.Bytes(), peerAddrIns.Bytes()); ok == true {
-								peerInTag = true
-								break
-							}
-						}
-						if peerInTag == false {
-							// there exists signature not from the peer list
-							fmt.Println("the signature is not from the peer list, its index is:", index)
-							return
-						}
-						// 2b. verify the correctness of the signature
-						pubKeyIn := signPreBlk.PubKey
-						signDataIn := signPreBlk.SigData
-						var resultVerify bool
-						resultVerify, err = secp256k1.Verify(headerHashes, signDataIn, pubKeyIn)
-						if resultVerify == true {
-							numVerified++
-						}
-					}
-					// 2c. check the valid signature number
-					if numVerified < int(len(actorC.PeersAddrList)/3+1){
-						// not enough signature
-						fmt.Println("not enough signature for second round block")
-						return
-					}
-					// 3. check the txs
-					txsIn := blockFirstReceived.Transactions
-					for index1, txIn := range txsIn {
-						err = actorC.serviceABABFT.ledger.CheckTransaction(actorC.chainID, txIn)
-						if err != nil {
-							println("wrong tx, index:", index1)
-							return
-						}
-					}
-					// 4. sign the received first-round block
-					var signBlkFSend SignatureBlkF
-					signBlkFSend.signatureBlkF.ChainID = actorC.chainID.Bytes()
-					signBlkFSend.signatureBlkF.PubKey = actorC.serviceABABFT.account.PublicKey
-					signBlkFSend.signatureBlkF.SigData,err = actorC.serviceABABFT.account.Sign(blockFirstReceived.Header.Hash.Bytes())
-					// 5. broadcast the signature of the first round block
-					event.Send(event.ActorConsensus, event.ActorP2P, signBlkFSend)
-					// 6. change the status
-					actorC.status = 6
-					// fmt.Println("signBlkFSend:",signBlkFSend)
-					// clean the cache_signature_preblk
-					actorC.cacheSignaturePreBlk = make([]pb.SignaturePreblock,len(actorC.PeersAddrList)*2)
-					// send the received first-round block to other peers in case that network is not good
-					actorC.blockFirstRound.BlockFirst = blockFirstReceived
-					event.Send(event.ActorConsensus,event.ActorP2P,actorC.blockFirstRound)
-					log.Info("generate the signature for first round block",actorC.blockFirstRound.BlockFirst.Height)
-
-					// for test 2018.07.31
-					if TestTag == true {
-						actorC.primaryTag = 1
-						actorC.status = 4
-						// create the signature for first-round block for test
-						for i:=0;i<actorC.NumPeers;i++ {
-							var signBlkfSend1 SignatureBlkF
-							signBlkfSend1.signatureBlkF.ChainID = actorC.chainID.Bytes()
-							signBlkfSend1.signatureBlkF.PubKey = Accounts_test[i].PublicKey
-							signBlkfSend1.signatureBlkF.SigData,err = Accounts_test[i].Sign(blockFirstReceived.Header.Hash.Bytes())
-							// fmt.Println("Accounts_test:",i,Accounts_test[i].PublicKey,signBlkfSend1.signatureBlkF)
-							event.Send(event.ActorNil, event.ActorConsensus, signBlkfSend1)
-						}
-						fmt.Println("blockFirstReceived.Header.Hash:", dataPreBlkReceived.NumberRound, blockFirstReceived.Header.Hash, blockFirstReceived.Header.MerkleHash, blockFirstReceived.Header.StateHash)
-					}
-					// test end
-
-
-					// 7. set the timer for waiting the second-round(final) block
-					t3 := time.NewTimer(time.Second * waitResponseTime)
-					go func() {
-						select {
-						case <-t3.C:
-							// timeout for the second-round(final) block
-							err = event.Send(event.ActorConsensus, event.ActorConsensus, BlockSTimeout{actorC.chainID})
-							t3.Stop()
-						}
-					}()
-				}
-			}
-		}
+		ProcessBlkF(actorC,msg)
+		return
 
 	case TxTimeout:
 		// check the chain ID
@@ -364,53 +156,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			log.Debug("wrong chain ID for transaction timeout")
 			return
 		}
-		// for test 2018.08.01
-		if TestTag == true {
-			// primary_tag = 0
-			// actorC.status = 5
-			fmt.Println("timeout test needs to be specified")
-		}
-		// end test
-
-		if actorC.primaryTag == 0 && (actorC.status == 2 || actorC.status == 5) {
-			// not receive the first round block
-			// change the status
-			actorC.status = 8
-			actorC.primaryTag = 0
-			// send out the timeout message
-			var timeoutMsg TimeoutMsg
-			timeoutMsg.Toutmsg.ChainID = actorC.chainID.Bytes()
-			timeoutMsg.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum)
-			timeoutMsg.Toutmsg.PubKey = actorC.serviceABABFT.account.PublicKey
-			hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentRoundNum)))
-			timeoutMsg.Toutmsg.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
-			event.Send(event.ActorConsensus,event.ActorP2P, timeoutMsg)
-
-			// for test 2018.08.01
-			if TestTag == true {
-				actorC.primaryTag = 0
-				actorC.status = 5
-				for i:=0;i<actorC.NumPeers;i++ {
-					var timeoutMsg1 TimeoutMsg
-					timeoutMsg1.Toutmsg.ChainID = actorC.chainID.Bytes()
-					timeoutMsg1.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum+1)
-					timeoutMsg1.Toutmsg.PubKey = Accounts_test[i].PublicKey
-					hashT,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentRoundNum+1)))
-					timeoutMsg1.Toutmsg.SigData,_ = Accounts_test[i].Sign(hashT.Bytes())
-					event.Send(event.ActorNil, event.ActorConsensus, timeoutMsg1)
-				}
-				return
-			}
-			// end test
-
-			// start/enter the next turn
-			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
-			// todo
-			// the above needed to be checked
-			// here, enter the next term and broadcast the preblock signature with the increased round number has the same effect as the changeview/ nextround message
-			// handle of the timeout message has been added, please check case TimeoutMsg
-			return
-		}
+		ProcessTxTimeout(actorC)
+		return
 
 	case SignatureBlkF:
 		// check the chain ID
@@ -418,411 +165,35 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			log.Debug("wrong chain ID for signature of the first-round block")
 			return
 		}
-		// fmt.Println("SignatureBlkF:",received_signblkf_num,msg.signatureBlkF)
-		// the prime will verify the signatures of first-round block from peers
-		if actorC.primaryTag == 1 && actorC.status == 4 {
-			// verify the signature
-			// 1. check the peer in the peers list
-			pubKeyIn := msg.signatureBlkF.PubKey
-			var foundPeer bool
-			foundPeer = false
-			var peerIndex int
-			/*
-			for index,peer := range Peers_list {
-				if ok := bytes.Equal(peer.PublicKey, pubKeyIn); ok == true {
-					foundPeer = true
-					peerIndex = index
-					break
-				}
-			}
-			*/
-			// change public key to account address
-			for index, peerAddr := range actorC.PeersAddrList {
-				peerAddrIns := common.AddressFromPubKey(pubKeyIn)
-				if ok := bytes.Equal(peerAddr.AccAddress.Bytes(), peerAddrIns.Bytes()); ok == true {
-					foundPeer = true
-					peerIndex = index
-					break
-				}
-			}
-
-			if foundPeer == false {
-				// the signature is not from the peer in the list
-				return
-			}
-			// 2. verify the correctness of the signature
-			if actorC.signatureBlkFList[peerIndex].SigData != nil {
-				// already receive the signature
-				return
-			}
-			signDataIn := msg.signatureBlkF.SigData
-			headerHashes := actorC.blockFirstRound.BlockFirst.Header.Hash.Bytes()
-			var resultVerify bool
-			resultVerify, err = secp256k1.Verify(headerHashes, signDataIn, pubKeyIn)
-			if resultVerify == true {
-				// add the incoming signature to signature preblock list
-				actorC.signatureBlkFList[peerIndex].SigData = signDataIn
-				actorC.signatureBlkFList[peerIndex].PubKey = pubKeyIn
-				actorC.receivedSignBlkFNum ++
-				return
-			} else {
-				return
-			}
-
-		}
+		ProcessSignBlkF(actorC,msg)
+		return
 
 	case SignTxTimeout:
-		// fmt.Println("received_signblkf_num:",received_signblkf_num)
-		log.Info("start to generate second round block",actorC.primaryTag, actorC.status,actorC.receivedSignBlkFNum,int(2*len(actorC.PeersAddrList)/3),actorC.signatureBlkFList)
 		// check the chain ID
 		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.ChainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for SignTxTimeout")
 			return
 		}
-		if actorC.primaryTag == 1 && actorC.status == 4 {
-			// check the number of the signatures of first-round block from peers
-			if actorC.receivedSignBlkFNum >= int(2*len(actorC.PeersAddrList)/3) {
-				// enough first-round block signatures, so generate the second-round(final) block
-				// 1. add the first-round block signatures into ConsensusData
-				pubKeyTagB := []byte(pubKeyTag)
-				signDataTagB := []byte(signDataTag)
-				var signTag common.Signature
-				signTag.PubKey = pubKeyTagB
-				signTag.SigData = signDataTagB
-
-				conABABFTData := actorC.blockFirstRound.BlockFirst.ConsensusData.Payload.(*types.AbaBftData)
-				// prepare the ConsensusData
-				// add the tag to distinguish preblock signature and second round signature
-				conABABFTData.PreBlockSignatures = append(conABABFTData.PreBlockSignatures, signTag)
-				for _, signBlkF := range actorC.signatureBlkFList {
-					/*
-					if signBlkF != nil {
-						var sign_tmp common.Signature
-						sign_tmp.SigData = signBlkF
-						sign_tmp.PubKey = Peers_list[index].PublicKey
-						conABABFTData.PreBlockSignatures = append(conABABFTData.PreBlockSignatures, sign_tmp)
-					}
-					*/
-					// change public key to account address
-					if signBlkF.SigData != nil {
-						var signTmp common.Signature
-						signTmp.SigData = signBlkF.SigData
-						signTmp.PubKey = signBlkF.PubKey
-						conABABFTData.PreBlockSignatures = append(conABABFTData.PreBlockSignatures, signTmp)
-					}
-				}
-
-				conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{NumberRound:uint32(actorC.currentRoundNum), PreBlockSignatures:conABABFTData.PreBlockSignatures,}}
-				// 2. generate the second-round(final) block
-				var blockSecond types.Block
-				blockSecond,err =  actorC.updateBlock(actorC.blockFirstRound.BlockFirst, conData)
-				blockSecond.SetSignature(actorC.serviceABABFT.account)
-				// fmt.Println("blockSecond:",blockSecond.Header)
-
-				// 3. broadcast the second-round(final) block
-				actorC.blockSecondRound.BlockSecond = blockSecond
-				// the ledger will multicast the block_secondround after the block is saved in the DB
-				// event.Send(event.ActorConsensus, event.ActorP2P, block_secondround)
-
-				// for test 2018.07.31
-				if TestTag == true {
-					for i:=0;i<actorC.NumPeers;i++ {
-						actorC.primaryTag = 0
-						actorC.status = 6
-						event.Send(event.ActorNil, event.ActorConsensus, actorC.blockSecondRound)
-					}
-					time.Sleep(time.Second * 10)
-					return
-				}
-				//
-
-				// 4. save the second-round(final) block to ledger
-				/*
-				if err = actorC.serviceABABFT.ledger.SaveTxBlock(&blockSecond); err != nil {
-					// log.Error("save block error:", err)
-					println("save block error:", err)
-					return
-				}
-				*/
-
-				// currentheader = blockSecond.Header
-				actorC.currentHeaderData = *(blockSecond.Header)
-				actorC.currentHeader = &actorC.currentHeaderData
-				actorC.verifiedHeight = blockSecond.Height - 1
-
-				if err := event.Send(event.ActorNil, event.ActorLedger, &blockSecond); err != nil {
-					log.Fatal(err)
-					// return
-				}
-				if err := event.Send(event.ActorConsensus, event.ActorP2P, &blockSecond); err != nil {
-					log.Fatal(err)
-					// return
-				}
-
-				// 5. change the status
-				actorC.status = 7
-				actorC.primaryTag = 0
-
-				fmt.Println("save the generated block", blockSecond.Height,actorC.verifiedHeight)
-				// start/enter the next turn
-				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
-				return
-			} else {
-				// 1. did not receive enough signatures of first-round block from peers in the assigned time interval
-				actorC.status = 7
-				actorC.primaryTag = 0 // reset to zero, and the next primary will take the turn
-				// 2. reset the stateDB
-				//err = actorC.serviceABABFT.ledger.ResetStateDB(currentheader.Hash)
-				//if err != nil {
-				//	log.Debug("ResetStateDB fail")
-				//	return
-				//}
-				// send out the timeout message
-				var timeoutMsg TimeoutMsg
-				timeoutMsg.Toutmsg.ChainID = actorC.chainID.Bytes()
-				timeoutMsg.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum)
-				timeoutMsg.Toutmsg.PubKey = actorC.serviceABABFT.account.PublicKey
-				hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentRoundNum)))
-				timeoutMsg.Toutmsg.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
-				event.Send(event.ActorConsensus,event.ActorP2P, timeoutMsg)
-				// 3. start/enter the next turn
-				event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
-			}
-		}
+		ProcessSignTxTimeout(actorC)
+		return
 
 	case BlockSecondRound:
-		// for test 2018.08.09
-		if TestTag == true {
-			fmt.Println("get second round block")
-			actorC.primaryTag = 0
-			actorC.status = 6
-		}
-		// test end
-		log.Info("ababbt peer status:", actorC.primaryTag, actorC.status)
 		// check the chain ID
 		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.BlockSecond.Header.ChainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for BlockSecondRound")
 			return
 		}
-		// check whether it is solo mode
-		if actorC.status == 102 || actorC.status == 101 {
-			if actorC.status == 102 {
-				// solo peer
-				blockSecondReceived := msg.BlockSecond
-				log.Info("ababbt solo block height vs current_height_num:", blockSecondReceived.Header.Height,actorC.currentHeightNum)
-				if int(blockSecondReceived.Header.Height) <= actorC.currentHeightNum {
-					return
-				} else if int(blockSecondReceived.Header.Height) == (actorC.currentHeightNum+1) {
-					// check and save
-					blockSecondReceived := msg.BlockSecond
-					if blockSecondReceived.ConsensusData.Type == types.ConABFT {
-						dataBlkReceived := blockSecondReceived.ConsensusData.Payload.(*types.AbaBftData)
-						// check the signature comes from the root
-						if ok := bytes.Equal(blockSecondReceived.Signatures[0].PubKey,config.Root.PublicKey); ok != true {
-							println("the solo block should be signed by the root")
-							return
-						}
+		ProcessBlkS(actorC,msg)
+		return
 
-						// check the block header(the consensus data is null)
-						var validBlk bool
-						validBlk,err = actorC.verifyHeader(&blockSecondReceived, int(dataBlkReceived.NumberRound), *(actorC.currentHeader))
-						if validBlk ==false {
-							println("header check fail")
-							return
-						}
-						// save the solo block ( in the form of second-round block)
-						/*
-						if err = actorC.serviceABABFT.ledger.SaveTxBlock(&blockSecondReceived); err != nil {
-							println("save solo block error:", err)
-							return
-						}
-						*/
-						// currentheader = blockSecondReceived.Header
-						actorC.currentHeaderData = *(blockSecondReceived.Header)
-						actorC.currentHeader = &actorC.currentHeaderData
-						actorC.verifiedHeight = blockSecondReceived.Height
-						actorC.currentHeightNum = int(actorC.verifiedHeight)
-
-						if err := event.Send(event.ActorNil, event.ActorLedger, &blockSecondReceived); err != nil {
-							log.Fatal(err)
-							// return
-						}
-						if err := event.Send(event.ActorNil, event.ActorP2P, &blockSecondReceived); err != nil {
-							log.Fatal(err)
-							// return
-						}
-
-						log.Info("verified height of the solo mode:",actorC.verifiedHeight,actorC.currentHeightNum)
-						// time.Sleep( time.Second * 2 )
-						event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
-					}
-				} else {
-					// send solo syn request
-					var reqSynSolo REQSynSolo
-					reqSynSolo.Reqsyn.ChainID = actorC.chainID.Bytes()
-					reqSynSolo.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
-					hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentHeightNum+1)))
-					reqSynSolo.Reqsyn.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
-					reqSynSolo.Reqsyn.RequestHeight = uint64(actorC.currentHeightNum)+1
-					event.Send(event.ActorConsensus,event.ActorP2P, reqSynSolo)
-					log.Info("send requirements:", reqSynSolo.Reqsyn.RequestHeight, actorC.currentHeightNum)
-				}
-			}
-
-			return
-		}
-
-		if actorC.primaryTag == 0 && (actorC.status == 6 || actorC.status == 2 || actorC.status == 5) {
-			// to verify the first round block
-			blockSecondReceived := msg.BlockSecond
-			// check the protocol type is ababft
-			if blockSecondReceived.ConsensusData.Type == types.ConABFT {
-				dataBlkReceived := blockSecondReceived.ConsensusData.Payload.(*types.AbaBftData)
-
-				// for test 2018.08.09
-				if TestTag == true {
-					actorC.verifiedHeight = uint64(actorC.currentHeightNum) - 1
-					fmt.Println("blockSecondReceived.Header.Height:", blockSecondReceived.Header.Height,actorC.verifiedHeight,actorC.currentHeightNum)
-				}
-				//
-
-				log.Info("received secondround block:", blockSecondReceived.Header.Height,actorC.verifiedHeight,actorC.currentHeightNum, dataBlkReceived.NumberRound, blockSecondReceived.Header)
-				// 1. check the round number and height
-				// 1a. current round number
-				if dataBlkReceived.NumberRound < uint32(actorC.currentRoundNum) || blockSecondReceived.Header.Height <= uint64(actorC.currentHeightNum) {
-					return
-				} else if (blockSecondReceived.Header.Height-2) > actorC.verifiedHeight {
-					// send synchronization message
-					var requestSyn REQSyn
-					requestSyn.Reqsyn.ChainID = actorC.chainID.Bytes()
-					requestSyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
-					hashTS,_ := common.DoubleHash(Uint64ToBytes(actorC.verifiedHeight+1))
-					requestSyn.Reqsyn.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
-					requestSyn.Reqsyn.RequestHeight = actorC.verifiedHeight+1
-					event.Send(event.ActorConsensus,event.ActorP2P, requestSyn)
-					actorC.synStatus = 1
-
-					// todo
-					// attention:
-					// to against the height cheat, do not change the actorC.status
-				} else {
-					// here, the add new block into the ledger, dataBlkReceived.NumberRound >= current_round_num is ok instead of dataBlkReceived.NumberRound == current_round_num
-					// 1b. the round number corresponding to the block generator
-					indexG := (int(dataBlkReceived.NumberRound)-1) % actorC.NumPeers + 1
-					pubKeyGIn := blockSecondReceived.Signatures[0].PubKey
-					var indexGIn int
-					indexGIn = -1
-					/*
-					for _, peer := range Peers_list {
-						if ok := bytes.Equal(peer.PublicKey, pubKeyGIn); ok == true {
-							indexGIn = int(peer.Index)
-							break
-						}
-					}
-					*/
-					// change public key to account address
-					for _, peerAddr := range actorC.PeersAddrList {
-						peerAddrIns := common.AddressFromPubKey(pubKeyGIn)
-						if ok := bytes.Equal(peerAddr.AccAddress.Bytes(), peerAddrIns.Bytes()); ok == true {
-							indexGIn = int(peerAddr.Index)
-							break
-						}
-					}
-					if indexG != indexGIn {
-						// illegal block generator
-						return
-					}
-					// 1c. check the block header, except the consensus data
-					var validBlk bool
-					validBlk,err = actorC.verifyHeader(&blockSecondReceived, int(dataBlkReceived.NumberRound), *(actorC.currentHeader))
-					// todo
-					// can check the hash and statdb and merker root instead of the total head to speed up
-					if validBlk ==false {
-						println("header check fail")
-						return
-					}
-					// 2. check the signatures ( for both previous and current blocks) in ConsensusData
-					preBlkHash := actorC.currentHeader.Hash
-					validBlk, err = actorC.verifySignatures(dataBlkReceived, preBlkHash, blockSecondReceived.Header)
-					if validBlk ==false {
-						println("previous and first-round blocks signatures check fail")
-						return
-					}
-
-					// for test 2018.08.01
-					if TestTag == true {
-						fmt.Println("received and verified second round:", blockSecondReceived.Height, blockSecondReceived.Header.Hash, blockSecondReceived.MerkleHash, blockSecondReceived.StateHash)
-						// return
-					}
-					// test end
-
-					// 3.save the second-round block into the ledger
-					/*
-					if err = actorC.serviceABABFT.ledger.SaveTxBlock(&blockSecondReceived); err != nil {
-						// log.Error("save block error:", err)
-						println("save block error:", err)
-						return
-					}
-					*/
-					// currentheader = blockSecondReceived.Header
-					actorC.currentHeaderData = *(blockSecondReceived.Header)
-					actorC.currentHeader = &actorC.currentHeaderData
-					actorC.verifiedHeight = blockSecondReceived.Height - 1
-					if err := event.Send(event.ActorNil, event.ActorLedger, &blockSecondReceived); err != nil {
-						log.Fatal(err)
-						// return
-					}
-					if err := event.Send(event.ActorNil, event.ActorP2P, &blockSecondReceived); err != nil {
-						log.Fatal(err)
-						// return
-					}
-					// 4. change status
-					actorC.status = 8
-					actorC.primaryTag = 0
-					// update the current_round_num
-					if int(dataBlkReceived.NumberRound) > actorC.currentRoundNum {
-						actorC.currentRoundNum = int(dataBlkReceived.NumberRound)
-					}
-
-					fmt.Println("BlockSecondRound,current_round_num:",actorC.currentRoundNum)
-					// start/enter the next turn
-					event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
-					// 5. broadcast the received second-round block, which has been checked valid
-					// to let other peer know this block
-					actorC.blockSecondRound.BlockSecond = blockSecondReceived
-					// as the ledger will multicast the block after the block is saved in DB, so following code is not need any more
-					// event.Send(event.ActorConsensus, event.ActorP2P, block_secondround)
-					return
-				}
-			}
-		}
 	case BlockSTimeout:
 		// check the chain ID
 		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.ChainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for BlockSTimeout")
 			return
 		}
-		if actorC.primaryTag == 0 && actorC.status == 5 {
-			actorC.status = 8
-			actorC.primaryTag = 0
-			// reset the state of merkle tree, statehash and so on
-			// err = actorC.serviceABABFT.ledger.ResetStateDB(currentheader.Hash)
-			//if err != nil {
-			//	log.Debug("ResetStateDB fail")
-			//	return
-			//}
-			// send out the timeout message
-			var timeoutMsg TimeoutMsg
-			timeoutMsg.Toutmsg.ChainID = actorC.chainID.Bytes()
-			timeoutMsg.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum)
-			timeoutMsg.Toutmsg.PubKey = actorC.serviceABABFT.account.PublicKey
-			hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentRoundNum)))
-			timeoutMsg.Toutmsg.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
-			event.Send(event.ActorConsensus,event.ActorP2P, timeoutMsg)
-			// start/enter the next turn
-			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
-			return
-		}
+		ProcessBlkSTimeout(actorC)
+		return
 
 	case REQSyn:
 		// check the chain ID
@@ -830,292 +201,25 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			log.Debug("wrong chain ID for REQSyn")
 			return
 		}
-		// receive the shronization request
-		heightReq := msg.Reqsyn.RequestHeight // verified_height+1
-		pubKeyIn := msg.Reqsyn.PubKey
-		signDataIn := msg.Reqsyn.SigData
-		// modify the synchronization code
-		// only the verified block will be send back
-		// 1. check the height of the verified chain
+		ProcessREQSyn(actorC,msg)
+		return
 
-		if heightReq > uint64(actorC.currentHeightNum - 1) {
-			// This peer will reply only when the required height is less or equal to the height of verified block in this peer ledger.
-			return
-		}
-		// check the signature of the request message
-		hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(heightReq)))
-		var signVerify bool
-		signVerify, err = secp256k1.Verify(hashTS.Bytes(), signDataIn, pubKeyIn)
-		if signVerify != true {
-			println("Syn request message signature is wrong")
-			return
-		}
-
-		// fmt.Println("reqsyn:",current_height_num,heightReq)
-		// 2. get the response blocks from the ledger
-		blkSynV,err1 := actorC.serviceABABFT.ledger.GetTxBlockByHeight(actorC.chainID, heightReq)
-		if err1 != nil || blkSynV == nil {
-			log.Debug("not find the block of the corresponding height in the ledger")
-			return
-		}
-
-		// fmt.Println("blkSynV:",blkSynV.Header)
-		blkSynF,err2 := actorC.serviceABABFT.ledger.GetTxBlockByHeight(actorC.chainID, heightReq+1)
-		if err2 != nil || blkSynF == nil {
-			log.Debug("not find the block of the corresponding height in the ledger")
-			return
-		}
-		// 3. send the found /blocks
-		var blkSynSend BlockSyn
-		blkSynSend.Blksyn.ChainID = actorC.chainID.Bytes()
-		blkSynSend.Blksyn.BlksynV,err = blkSynV.Blk2BlkTx()
-		if err != nil {
-			log.Debug("block_v to blockTx transformation fails")
-			return
-		}
-		blkSynSend.Blksyn.BlksynF,err = blkSynF.Blk2BlkTx()
-		if err != nil {
-			log.Debug("block_f to blockTx transformation fails")
-		}
-		event.Send(event.ActorConsensus,event.ActorP2P, blkSynSend)
-
-		// for test 2018.08.02
-		if TestTag == true {
-			// fmt.Println("blkSynV:",blkSynV.Header)
-			// fmt.Println("blkSynF:",blkSynF.Header)
-			// fmt.Println("blkSynSend v:",blkSynSend.Blksyn.BlksynV.Header)
-			// fmt.Println("blkSynSend f:",blkSynSend.Blksyn.BlksynF.Header)
-			// fmt.Println("currentheader.PrevHash:",currentheader.PrevHash)
-			// fmt.Println("before reset: currentheader.Hash:",currentheader.Hash)
-			currentPreBlk,_ := actorC.currentLedger.GetTxBlock(actorC.chainID, actorC.currentHeader.PrevHash)
-			// current_blk := blkSynF
-			//err1 := actorC.serviceABABFT.ledger.ResetStateDB(currentPreBlk.Header.StateHash)
-			err1 := actorC.serviceABABFT.ledger.ResetStateDB(actorC.chainID, currentPreBlk.Header)
-			if err1 != nil {
-				fmt.Println("reset status error:", err1)
-			}
-			// blockFirstCal,err = actorC.serviceABABFT.ledger.NewTxBlock(current_blk.Transactions,current_blk.Header.ConsensusData, current_blk.Header.TimeStamp)
-			// fmt.Println("current_blk.hash verfigy:",current_blk.Header.Hash, currentheader.Hash)
-			// fmt.Println("compare merkle hash:", current_blk.Header.MerkleHash, blockFirstCal.MerkleHash)
-			// fmt.Println("compare state hash:", current_blk.Header.StateHash, blockFirstCal.StateHash)
-
-			// currentheader = current_ledger.GetCurrentHeader()
-			oldBlock,_ := actorC.currentLedger.GetTxBlock(actorC.chainID, actorC.currentHeader.PrevHash)
-			// currentheader = oldBlock.Header
-			actorC.currentHeaderData = *(oldBlock.Header)
-			actorC.currentHeader = &actorC.currentHeaderData
-
-			// fmt.Println("after reset: currentheader.Hash:",currentheader.Hash)
-			actorC.currentHeightNum = actorC.currentHeightNum - 1
-			actorC.verifiedHeight = uint64(actorC.currentHeightNum) - 1
-			event.Send(event.ActorNil,event.ActorConsensus, blkSynSend)
-		}
-		// test end
 	case REQSynSolo:
-		log.Info("receive the solo block requirement:",msg.Reqsyn.RequestHeight)
 		// check the chain ID
 		if ok := bytes.Equal(msg.Reqsyn.ChainID,actorC.chainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for REQSynSolo")
 			return
 		}
-		// receive the solo synchronization request
-		heightReq := msg.Reqsyn.RequestHeight
-		pubKeyIn := msg.Reqsyn.PubKey
-		signDataIn := msg.Reqsyn.SigData
-		// check the required height
-		if heightReq > uint64(actorC.currentHeightNum) {
-			return
-		}
-		// check the signature of the request message
-		hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(heightReq)))
-		var signVerify bool
-		signVerify, err = secp256k1.Verify(hashTS.Bytes(), signDataIn, pubKeyIn)
-		if signVerify != true {
-			println("Solo Syn request message signature is wrong")
-			return
-		}
-
-		for i := int(heightReq); i <= actorC.currentHeightNum; i++ {
-			// get the response blocks from the ledger
-			blkSynSolo,err1 := actorC.serviceABABFT.ledger.GetTxBlockByHeight(actorC.chainID, uint64(i))
-			if err1 != nil || blkSynSolo == nil {
-				log.Debug("not find the solo block of the corresponding height in the ledger")
-				return
-			}
-			// send the solo block
-			event.Send(event.ActorConsensus,event.ActorP2P, blkSynSolo)
-			log.Info("send the required solo block:", blkSynSolo.Height)
-		}
+		ProcessREQSynSolo(actorC,msg)
 		return
-	case BlockSyn:
-		// for test 2018.08.08
-		if TestTag == true {
-			actorC.synStatus = 1
-		}
-		// test end
 
+	case BlockSyn:
 		// check the chain ID
 		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.Blksyn.ChainID); ok != true {
 			log.Debug("wrong chain ID for BlockSyn")
 			return
 		}
-
-		if actorC.synStatus != 1 {
-			return
-		}
-		var blkV types.Block
-		var blkF types.Block
-		err = blkV.BlkTx2Blk(*msg.Blksyn.BlksynV)
-		if err != nil {
-			log.Debug("blockTx to block_v transformation fails")
-		}
-		err = blkF.BlkTx2Blk(*msg.Blksyn.BlksynF)
-		if err != nil {
-			log.Debug("blockTx to block_f transformation fails")
-		}
-		// fmt.Println("blkV:",blkV.Header)
-		// fmt.Println("blkF:",blkF.Header)
-
-		// for test 2018.08.06
-		if TestTag == true {
-			fmt.Println("heightSynV:", blkV.Header.Height,actorC.currentHeightNum,actorC.verifiedHeight)
-			// fmt.Println("blkV.Header:",blkV.Header)
-		}
-		// test end
-
-
-		heightSynV := blkV.Header.Height
-		if heightSynV == (actorC.verifiedHeight+1) {
-			// the current_height_num has been verified
-			// 1. verify the verified block blkV
-
-			// todo
-			// maybe only check the hash is enough
-
-			var resultV bool
-			var blkVLocal *types.Block
-			blkVLocal,err = actorC.serviceABABFT.ledger.GetTxBlockByHeight(actorC.chainID, actorC.verifiedHeight)
-			if err != nil {
-				log.Debug("get previous block error")
-				return
-			}
-
-			if ok := bytes.Equal(blkV.Hash.Bytes(),actorC.currentHeader.Hash.Bytes()); ok == true {
-				// the blkV is the same as current block, just to verify and save blkF
-				resultV = true
-				blkV.Header = actorC.currentHeader
-				fmt.Println("already have")
-
-			} else {
-				// verify blkV
-				resultV,err = actorC.blkSynVerify(blkV, *blkVLocal)
-				fmt.Println("have not yet")
-			}
-
-
-			// for test 2018.08.06
-			if TestTag == true {
-				// fmt.Println("blkV.Hash:",blkV.Hash)
-				// fmt.Println("currentheader.Hash:",currentheader.Hash)
-				if ok := bytes.Equal(blkV.Hash.Bytes(),actorC.currentHeader.Hash.Bytes()); ok == true {
-					resultV = true
-				}
-			}
-			// test end
-
-			if resultV == false {
-				log.Debug("verification of blkV fails")
-				return
-			}
-			// 2. verify the verified block blkF
-			var resultF bool
-			resultF,err = actorC.blkSynVerify(blkF, blkV)
-			if resultF == false {
-				log.Debug("verification of blkF fails")
-				return
-			}
-			// 3. save the blocks
-			// 3.1 save blkV
-			if ok := bytes.Equal(blkV.Hash.Bytes(), actorC.currentHeader.Hash.Bytes()); ok != true {
-				// the blkV is not in the ledger,then save blkV
-				// here need one reset DB
-				//err = actorC.serviceABABFT.ledger.ResetStateDB(blk_pre.Header.Hash)
-				if actorC.verifiedHeight < uint64(actorC.currentHeightNum) {
-					err = actorC.serviceABABFT.ledger.ResetStateDB(actorC.chainID, blkVLocal.Header)
-					if err != nil {
-						log.Debug("reset state db error:", err)
-						return
-					}
-				}
-				/*
-				if err = actorC.serviceABABFT.ledger.SaveTxBlock(&blkV); err != nil {
-					log.Debug("save block error:", err)
-					return
-				}
-				*/
-				if err := event.Send(event.ActorNil, event.ActorLedger, &blkV); err != nil {
-					log.Fatal(err)
-					// return
-				}
-				if err := event.Send(event.ActorConsensus, event.ActorP2P, &blkV); err != nil {
-					log.Fatal(err)
-					// return
-				}
-			}  else {
-				// the blkV has been in the ledger
-			}
-			// 3.2 save blkF
-			/*
-			if err = actorC.serviceABABFT.ledger.SaveTxBlock(&blkF); err != nil {
-				log.Debug("save block error:", err)
-				return
-			}
-			*/
-			actorC.currentHeaderData = *(blkF.Header)
-			actorC.currentHeader = &actorC.currentHeaderData
-			actorC.verifiedHeight = blkV.Height
-
-			if err := event.Send(event.ActorNil, event.ActorLedger, &blkF); err != nil {
-				log.Fatal(err)
-				// return
-			}
-			if err := event.Send(event.ActorConsensus, event.ActorP2P, &blkF); err != nil {
-				log.Fatal(err)
-				// return
-			}
-
-			// 4. the block is successfully saved, then change the status
-			// currentheader = blkF.Header
-			actorC.status = 8
-			actorC.primaryTag = 0
-
-			// update the current_round_num
-			blkRoundNum := int(blkV.ConsensusData.Payload.(*types.AbaBftData).NumberRound)
-			if actorC.currentRoundNum < blkRoundNum {
-				actorC.currentRoundNum = blkRoundNum
-			}
-
-			// start/enter the next turn
-			event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
-
-			// todo
-			// take care of save and reset
-
-		} else if heightSynV >uint64(actorC.currentHeightNum) {
-			// the verified block has bigger height
-			// send synchronization message
-			var requestSyn REQSyn
-			requestSyn.Reqsyn.ChainID = actorC.chainID.Bytes()
-			requestSyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
-			hashTS,_ := common.DoubleHash(Uint64ToBytes(actorC.verifiedHeight+1))
-			requestSyn.Reqsyn.SigData,_ = actorC.serviceABABFT.account.Sign(hashTS.Bytes())
-			requestSyn.Reqsyn.RequestHeight = actorC.verifiedHeight+1
-			event.Send(event.ActorConsensus,event.ActorP2P, requestSyn)
-			actorC.synStatus = 1
-		}
-		// todo
-		// only need to check the hash and signature is enough?
-		// this may help to speed up the ababft
+		ProcessBlkSyn(actorC,msg)
 		return
 
 	case TimeoutMsg:
@@ -1124,119 +228,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			log.Debug("wrong chain ID for TimeoutMsg")
 			return
 		}
-
-		// todo
-		// the waiting time maybe need to be longer after every time out
-
-		pubKeyIn := msg.Toutmsg.PubKey
-		roundIn := int(msg.Toutmsg.RoundNumber)
-		signDataIn := msg.Toutmsg.SigData
-		fmt.Println("receive the TimeoutMsg:", pubKeyIn, roundIn,actorC.currentRoundNum)
-		// check the peer in the peers list
-		if roundIn < actorC.currentRoundNum {
-			return
-		}
-		// check the signature
-		hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(roundIn)))
-		var signVerify bool
-		signVerify, err = secp256k1.Verify(hashTS.Bytes(), signDataIn, pubKeyIn)
-		if signVerify != true {
-			println("time out message signature is wrong")
-			return
-		}
-		/*
-		for _, peer := range Peers_list {
-			if ok := bytes.Equal(peer.PublicKey, pubKeyIn); ok == true {
-				// legal peer
-				// fmt.Println("TimeoutMsgs:",TimeoutMsgs)
-				if _, ok1 := TimeoutMsgs[string(pubKeyIn)]; ok1 != true {
-					TimeoutMsgs[string(pubKeyIn)] = roundIn
-					//fmt.Println("TimeoutMsgs, add:",TimeoutMsgs[string(pubKeyIn)])
-				} else if TimeoutMsgs[string(pubKeyIn)] >= roundIn {
-					return
-				}
-
-				TimeoutMsgs[string(pubKeyIn)] = roundIn
-				// to count the number is enough
-				var count_r [1000]int
-				var max_r int
-				max_r = 0
-				for _,v := range TimeoutMsgs {
-					if v > current_round_num {
-						count_r[v-current_round_num]++
-					}
-					if v > max_r {
-						max_r = v
-					}
-				}
-
-				var total_count int
-				total_count = 0
-				for i := max_r-current_round_num; i > 0; i-- {
-					total_count = total_count + count_r[i]
-					if total_count >= int(2*len(Peers_list)/3+1) {
-						// reset the round number
-						current_round_num += i
-						// start/enter the next turn
-						actorC.status = 8
-						primary_tag = 0
-						event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{})
-						// fmt.Println("reset according to the timeout msg:",i,max_r,current_round_num,count_r[i])
-						break
-					}
-				}
-				break
-			}
-		}
-		*/
-		// change public key to account address
-		for _, peerAddr := range actorC.PeersAddrList {
-			peerAddrIns := common.AddressFromPubKey(pubKeyIn)
-			if ok := bytes.Equal(peerAddr.AccAddress.Bytes(), peerAddrIns.Bytes()); ok == true {
-				// legal peer
-				// fmt.Println("TimeoutMsgs:",TimeoutMsgs)
-				if _, ok1 := actorC.TimeoutMSGs[peerAddrIns.HexString()]; ok1 != true {
-					actorC.TimeoutMSGs[peerAddrIns.HexString()] = roundIn
-					//fmt.Println("TimeoutMsgs, add:",TimeoutMsgs[string(pubKeyIn)])
-				} else if actorC.TimeoutMSGs[peerAddrIns.HexString()] >= roundIn {
-					return
-				}
-
-				actorC.TimeoutMSGs[peerAddrIns.HexString()] = roundIn
-				// to count the number is enough
-				var countRS [1000]int
-				var maxR int
-				maxR = 0
-				for _,v := range actorC.TimeoutMSGs {
-					if v > actorC.currentRoundNum {
-						countRS[v-actorC.currentRoundNum]++
-					}
-					if v > maxR {
-						maxR = v
-					}
-				}
-
-				var totalCount int
-				totalCount = 0
-				for i := maxR -actorC.currentRoundNum; i > 0; i-- {
-					totalCount = totalCount + countRS[i]
-					if totalCount >= int(2*len(actorC.PeersAddrList)/3) {
-						// reset the round number
-						actorC.currentRoundNum += i
-						// start/enter the next turn
-						actorC.status = 8
-						actorC.primaryTag = 0
-						event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
-						// fmt.Println("reset according to the timeout msg:",i,maxR,current_round_num,countRS[i])
-						break
-					}
-				}
-				break
-			}
-		}
-
-		// change public key to account address
-
+		ProcessTimeoutMsg(actorC,msg)
 		return
 
 	case *message.RegChain:
