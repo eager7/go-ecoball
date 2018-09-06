@@ -52,7 +52,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 	switch ns.method {
 	case "new_account":
 		index := common.NameToIndex(ns.params[0])
-		addr := common.FormHexString(ns.params[1])
+		addr := common.AddressFormHexString(ns.params[1])
 		if _, err := ns.state.AddAccount(index, addr, ns.timeStamp); err != nil {
 			return nil, err
 		}
@@ -81,11 +81,11 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := ns.state.RegisterChain(index, common.SingleHash(index.Bytes())); err != nil {
 			return nil, err
 		}
-		pubKey := common.FromHex(ns.params[2])
+		addr := common.AddressFormHexString(ns.params[2])
 		if consensus == "solo" && ns.state.StateType() == state.FinalType {
 			data := []byte(index.String() + consensus)
 			hash := common.SingleHash(data)
-			msg := &message.RegChain{ChainID: hash, Tx: ns.tx, PublicKey: pubKey}
+			msg := &message.RegChain{ChainID: hash, Tx: ns.tx, Address: addr}
 			event.Send(event.ActorNil, event.ActorConsensusSolo, msg)
 		} else {
 			log.Warn("not support now")

@@ -91,7 +91,7 @@ func TestTransfer() *types.Transaction {
 
 func Ledger(path string) ledger.Ledger {
 	os.RemoveAll(path)
-	l, err := ledgerimpl.NewLedger(path, config.ChainHash, config.Root)
+	l, err := ledgerimpl.NewLedger(path, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 	return l
 }
@@ -349,7 +349,7 @@ func PledgeContract(chainID common.Hash) {
 }
 func CreateNewChain(chainID common.Hash) {
 	log.Info("-----------------------------CreateNewChain")
-	invoke, err := types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("root"), chainID, "active", "reg_chain", []string{"worker1", "solo"}, 0, time.Now().UnixNano())
+	invoke, err := types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("root"), chainID, "active", "reg_chain", []string{"worker1", "solo", common.AddressFromPubKey(config.Root.PublicKey).HexString()}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))

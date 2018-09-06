@@ -23,7 +23,7 @@ func xTestSoloModule(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	net.StartNetWork()
 
-	solo.NewSoloConsensusServer(ledger, txPool)
+	solo.NewSoloConsensusServer(ledger, txPool, config.User)
 	event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
 	if config.StartNode {
 		go autoGenerateTransaction()
@@ -51,8 +51,8 @@ func TestNewSolo(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	net.StartNetWork()
 
-	solo.NewSoloConsensusServer(ledger, txPool)
-	event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, Tx: nil})
+	solo.NewSoloConsensusServer(ledger, txPool, config.User)
+	event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, PublicKey:config.Root.PublicKey, Tx: nil})
 
 	example.CreateAccountBlock(config.ChainHash)
 	example.TokenTransferBlock(config.ChainHash)

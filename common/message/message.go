@@ -28,7 +28,7 @@ type SoloStop struct{}
 type GetCurrentHeader struct{}
 
 type RegChain struct {
-	ChainID   common.Hash
-	PublicKey []byte
-	Tx        *types.Transaction
+	ChainID common.Hash
+	Address common.Address
+	Tx      *types.Transaction
 }
