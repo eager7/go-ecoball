@@ -16,6 +16,20 @@
 
 package common
 
+
+import (
+	"bytes"
+	"bufio"
+	"encoding/binary"
+)
+
 const (
 //SegmentSize = 64
 )
+func int64ToBytes(n int64) []byte {
+	var buf bytes.Buffer
+	writer := bufio.NewWriter(&buf)
+	binary.Write(writer, binary.BigEndian, &n)
+	writer.Flush()
+	return buf.Bytes()
+}
