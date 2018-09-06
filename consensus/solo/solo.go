@@ -27,8 +27,6 @@ import (
 	"github.com/ecoball/go-ecoball/txpool"
 	"time"
 	"github.com/ecoball/go-ecoball/account"
-	"bytes"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
@@ -39,11 +37,11 @@ type Solo struct {
 	msg    <-chan interface{}
 	ledger ledger.Ledger
 	txPool *txpool.TxPool
-	Chains map[common.Hash]common.Hash
+	Chains map[common.Hash]common.Address
 }
 
 func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.Account) (solo *Solo, err error) {
-	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool, Chains: make(map[common.Hash]common.Hash, 1), account:acc}
+	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool, Chains: make(map[common.Hash]common.Address, 1), account:acc}
 	actor := &soloActor{solo: solo}
 	NewSoloActor(actor)
 
@@ -60,11 +58,12 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.
 	return solo, nil
 }
 
-func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
+func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address) {
 	time.Sleep(time.Second * 1)
 	t := time.NewTimer(time.Second * 1)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-	startNode := bytes.Equal(solo.account.PublicKey, config.Root.PublicKey)
+	root := common.AddressFromPubKey(solo.account.PublicKey)
+	startNode := root.Equals(&addr)
 	for {
 		t.Reset(time.Second * 1)
 		select {
@@ -72,7 +71,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo) {
 			if !startNode {
 				continue
 			}
-			log.Debug("Request transactions from tx pool")
+			log.Debug("Request transactions from tx pool[", chainID.HexString() ,"]")
 			txs, _ := solo.txPool.GetTxsList(chainID)
 			if len(txs) == 0 {
 				log.Info("no transaction in this time")

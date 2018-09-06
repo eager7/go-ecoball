@@ -62,8 +62,8 @@ func (l *soloActor) Receive(ctx actor.Context) {
 			if msg.Tx == nil {
 				event.Send(event.ActorNil, event.ActorTxPool, msg)
 				event.Send(event.ActorNil, event.ActorLedger, msg)
-				l.solo.Chains[msg.ChainID] = msg.ChainID
-				go ConsensusWorkerThread(msg.ChainID, l.solo)
+				l.solo.Chains[msg.ChainID] = msg.Address
+				go ConsensusWorkerThread(msg.ChainID, l.solo, msg.Address)
 			} else {
 				go l.CreateNewChain(msg)
 			}
@@ -84,8 +84,8 @@ func (l *soloActor) CreateNewChain(msg *message.RegChain) {
 		if block.IsExistedTransaction(msg.Tx.Hash) {
 			event.Send(event.ActorNil, event.ActorTxPool, msg)
 			event.Send(event.ActorNil, event.ActorLedger, msg)
-			l.solo.Chains[msg.ChainID] = msg.ChainID
-			go ConsensusWorkerThread(msg.ChainID, l.solo)
+			l.solo.Chains[msg.ChainID] = msg.Address
+			go ConsensusWorkerThread(msg.ChainID, l.solo, msg.Address)
 			break
 		}
 		time.Sleep(time.Millisecond * 10)

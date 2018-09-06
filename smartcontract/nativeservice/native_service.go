@@ -82,14 +82,17 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			return nil, err
 		}
 		addr := common.AddressFormHexString(ns.params[2])
-		if consensus == "solo" && ns.state.StateType() == state.FinalType {
-			data := []byte(index.String() + consensus)
-			hash := common.SingleHash(data)
-			msg := &message.RegChain{ChainID: hash, Tx: ns.tx, Address: addr}
-			event.Send(event.ActorNil, event.ActorConsensusSolo, msg)
-		} else {
-			log.Warn("not support now")
+		if  ns.state.StateType()== state.FinalType {
+			if consensus == "solo" {
+				data := []byte(index.String() + consensus)
+				hash := common.SingleHash(data)
+				msg := &message.RegChain{ChainID: hash, Tx: ns.tx, Address: addr}
+				event.Send(event.ActorNil, event.ActorConsensusSolo, msg)
+			} else {
+				log.Warn("not support now")
+			}
 		}
+
 	case "pledge":
 		from := common.NameToIndex(ns.params[0])
 		to := common.NameToIndex(ns.params[1])

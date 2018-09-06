@@ -320,7 +320,7 @@ func TokenTransferBlock(chainID common.Hash) {
 func PledgeContract(chainID common.Hash) {
 	log.Info("-----------------------------PledgeContract")
 	root := common.NameToIndex("root")
-	
+
 	/*delegate := common.NameToIndex("delegate")
 
 	tokenContract, err := types.NewDeployContract(delegate, delegate, chainID, "active", types.VmNative, "system control", nil, nil, 0, time.Now().UnixNano())
