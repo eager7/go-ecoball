@@ -19,7 +19,6 @@ package wasmservice
 import (
 	"bytes"
 	"errors"
-	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/state"
@@ -37,8 +36,8 @@ import (
 var log = elog.NewLogger("wasm", config.LogLevel)
 
 type Param  struct{
-	Arg     []ParamTV   //参数数据
-	Addrs   []int       //参数地址
+	Arg     []ParamTV     //参数数据
+	Addrs   []int64       //参数地址
 }
 
 type ParamTV struct {
@@ -48,14 +47,14 @@ type ParamTV struct {
 
 type WasmService struct {
 	state     state.InterfaceState
-	addr      common.AccountName
+	Tx        *types.Transaction
 	Code      []byte
 	Args      Param
 	Method    string
 	timeStamp int64
 }
 
-func NewWasmService(s state.InterfaceState, account common.AccountName, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
+func NewWasmService(s state.InterfaceState, tx *types.Transaction, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
 	if contract == nil {
 		return nil, errors.New("contract is nil")
 	}
@@ -72,12 +71,12 @@ func NewWasmService(s state.InterfaceState, account common.AccountName, contract
     num := len(args)
     var param = Param{
     	Arg:	args,
-    	Addrs:	make([]int,num),
+    	Addrs:	make([]int64,num),
 	}
 
 	ws := &WasmService{
 		state:     s,
-		addr:      account,
+		Tx:        tx,
 		Code:      contract.Code,
 		Args:      param,
 		Method:    string(invoke.Method),
@@ -98,8 +97,8 @@ func (ws *WasmService) ParseParam(vm *exec.VM)([]uint64, error){
 	var(
 		addr     int
 		v_string string
-		v_int    int
-	//	v_int64  int64
+		v_int64  int64
+		v_uint64 uint64
 	)
 	pcount := len(ws.Args.Arg)
 	for index := 0;index < pcount; index++{
@@ -110,16 +109,16 @@ func (ws *WasmService) ParseParam(vm *exec.VM)([]uint64, error){
 		    if err != nil{
 		    	return nil, errors.New("para error")
 			}
-		    ws.Args.Addrs[index] = addr
-		case "int":
-			v_string = ws.Args.Arg[index].Pval
-			v_int, _ = strconv.Atoi(v_string)
-			ws.Args.Addrs[index] = v_int
-		/*case "int64":
+		    ws.Args.Addrs[index] = int64(addr)
+		case "int8","int16","int32","int64":
 			v_string = ws.Args.Arg[index].Pval
 			v_int64, _ = strconv.ParseInt(v_string, 10, 64)
 			ws.Args.Addrs[index] = v_int64
-		*/default:
+		case "uint8","uint16","uint32":
+			v_string = ws.Args.Arg[index].Pval
+			v_uint64, _ = strconv.ParseUint(v_string, 10, 64)
+			ws.Args.Addrs[index] = int64(v_uint64)
+		default:
 			return nil, errors.New("unsupport type")
 
 		}
@@ -208,6 +207,9 @@ func (ws *WasmService) RegisterApi() {
 	functions.Register("ABA_printui", ws.printui)
 	functions.Register("ABA_printsf", ws.printsf)
 	functions.Register("ABA_printdf", ws.printdf)
+	//blockchain
+	functions.Register("ABA_account_contain",ws.account_contain)
+	functions.Register("ABA_block_GetTime",ws.block_GetTime)
 	//memory
 	functions.Register("ABA_malloc", ws.malloc)
 	functions.Register("ABA_len",    ws.len)

@@ -66,7 +66,7 @@ func (a Address) HexString() string {
 	return ToHex(a[:])
 }
 
-func FormHexString(data string) Address {
+func AddressFormHexString(data string) Address {
 	return NewAddress(FromHex(data))
 }
 

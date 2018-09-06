@@ -26,7 +26,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/account"
 )
 
 type LedActor struct {
@@ -79,8 +78,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		}
 	case *message.RegChain:
 		log.Info("add new chain:", msg.ChainID.HexString())
-		root := account.Account{PublicKey:msg.PublicKey, PrivateKey:nil}
-		if err := l.ledger.NewTxChain(msg.ChainID, root); err != nil {
+		if err := l.ledger.NewTxChain(msg.ChainID, msg.Address); err != nil {
 			log.Error(err)
 		}
 	default:

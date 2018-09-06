@@ -53,3 +53,4 @@ func Query(params []interface{}) *common.Response {
 func QueryBalance(address string) (int64, common.Errcode) {
 	return 100, common.SUCCESS
 }
+

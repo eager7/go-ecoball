@@ -30,14 +30,14 @@ func (ws *WasmService) prints_l(proc *exec.Process, p int32, length int32) int32
 }
 
 //C API :void printi(int64 v)
-func (ws *WasmService) printi(proc *exec.Process, v int64) uint32{
+func (ws *WasmService) printi(proc *exec.Process, v int32) uint32{
 
 	fmt.Printf("%d\n",v)
 	return 0
 }
 
 //C API :void printui(uint64 v)
-func (ws *WasmService) printui(proc *exec.Process, v uint64) uint32{
+func (ws *WasmService) printui(proc *exec.Process, v uint32) uint32{
 
 	fmt.Printf("%d\n",v)
 	return 0

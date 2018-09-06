@@ -27,7 +27,6 @@ files         Interact with objects as if they were a unix filesystem
 dag           Interact with IPLD documents (experimental)
 
 ADVANCED COMMANDS
-daemon        Start a long-running daemon process
 mount         Mount an IPFS read-only mountpoint
 resolve       Resolve any type of name
 name          Publish and resolve IPNS names
@@ -51,7 +50,6 @@ TOOL COMMANDS
 config        Manage configuration
 version       Show distributed storage version information
 update        Download and apply go-ipfs updates
-commands      List all available commands
 
 Use 'storage <command> --help' to learn more about each command.
 
@@ -74,29 +72,13 @@ The CLI will exit with one of the following values:
 // Some subcommands (like 'ipfs daemon' or 'ipfs init') are only accessible here,
 // and can't be called through the HTTP API.
 var Root = &cmds.Command{
-	Options:  commands.Root.Options,
-	Helptext: storageHelptext,
-}
-
-// commandsClientCmd is the "ipfs commands" command for local cli
-var commandsClientCmd = commands.CommandsCmd(Root)
-
-// Commands in localCommands should always be run locally (even if daemon is running).
-// They can override subcommands in commands.Root by defining a subcommand with the same name.
-var localCommands = map[string]*cmds.Command{
-	"commands": commandsClientCmd,
+	Options:     commands.Root.Options,
+	Helptext:    storageHelptext,
+	Subcommands: commands.Root.Subcommands,
 }
 
 func init() {
-	// setting here instead of in literal to prevent initialization loop
-	// (some commands make references to Root)
-	Root.Subcommands = localCommands
-
-	for k, v := range commands.Root.Subcommands {
-		if _, found := Root.Subcommands[k]; !found {
-			Root.Subcommands[k] = v
-		}
-	}
+	delete(Root.Subcommands, "commands")
 }
 
 // NB: when necessary, properties are described using negatives in order to
@@ -144,9 +126,6 @@ func (d *cmdDetails) usesRepo() bool          { return !d.doesNotUseRepo }
 // properties so that other code can make decisions about whether to invoke a
 // command or return an error to the user.
 var cmdDetailsMap = map[string]cmdDetails{
-	"init":        {doesNotUseConfigAsInput: true, cannotRunOnDaemon: true, doesNotUseRepo: true},
-	"daemon":      {doesNotUseConfigAsInput: true, cannotRunOnDaemon: true},
-	"commands":    {doesNotUseRepo: true},
 	"version":     {doesNotUseConfigAsInput: true, doesNotUseRepo: true}, // must be permitted to run before init
 	"log":         {cannotRunOnClient: true},
 	"diag/cmds":   {cannotRunOnClient: true},

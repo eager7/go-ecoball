@@ -8,6 +8,21 @@ import (
 	"github.com/ecoball/go-ecoball/core/pb"
 )
 
+type NodeInfo struct {
+	PublicKey []byte
+}
+
+type NodeAddr struct {
+	Address string
+	Port    string
+}
+
+type Shard struct {
+	Id         uint32
+	Member     []NodeInfo
+	MemberAddr []NodeAddr
+}
+
 type CMBlockHeader struct {
 	LeaderPubKey    []byte
 	CandidatePubKey []byte

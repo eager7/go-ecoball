@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/log"
 	oldcmds "github.com/ipfs/go-ipfs/commands"
 	core "github.com/ipfs/go-ipfs/core"
 	corecmds "github.com/ipfs/go-ipfs/core/commands"
@@ -23,16 +24,12 @@ import (
 	"gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
 	"gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds/cli"
 	"gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds/http"
-	u "gx/ipfs/QmPdKqUcHGFdeSpvjVoaTRPPstGif9GBZb5Q56RVw9o69A/go-ipfs-util"
 	loggables "gx/ipfs/QmRPkGkHLB72caXgdDYnoaWigXNWx95BcYDKV1n3KTEpaG/go-libp2p-loggables"
 	manet "gx/ipfs/QmV6FjemM1K8oXjrvuq3wuVWWoU2TLDPmNnKrxHzY3v6Ai/go-multiaddr-net"
 	osh "gx/ipfs/QmXuBJ7DR6k3rmUEKtvVMhwjmXDuJgXXPUt4LQXKBMsU93/go-os-helper"
 	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	logging "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log"
 )
-
-// log is the command logger
-var log = logging.Logger("cmd/ipfs")
 
 var errRequestCanceled = errors.New("request canceled")
 
@@ -54,12 +51,10 @@ func StorageFun() error {
 	os.Args[0] = "storage"
 
 	buildEnv := func(ctx context.Context, req *cmds.Request) (cmds.Environment, error) {
-		checkDebug(req)
 		repoPath, err := getRepoPath(req)
 		if err != nil {
 			return nil, err
 		}
-		log.Debugf("config path is %s", repoPath)
 
 		// this sets up the function that will initialize the node
 		// this is so that we can construct the node lazily.
@@ -96,18 +91,6 @@ func StorageFun() error {
 	return err
 }
 
-func checkDebug(req *cmds.Request) {
-	// check if user wants to debug. option OR env var.
-	debug, _ := req.Options["debug"].(bool)
-	if debug || os.Getenv("IPFS_LOGGING") == "debug" {
-		u.Debug = true
-		logging.SetDebugLogging()
-	}
-	if u.GetenvBool("DEBUG") {
-		u.Debug = true
-	}
-}
-
 func makeExecutor(req *cmds.Request, env interface{}) (cmds.Executor, error) {
 	details := commandDetails(req.Path)
 	client, err := commandShouldRunOnDaemon(*details, req, env.(*oldcmds.Context))
@@ -129,7 +112,7 @@ func makeExecutor(req *cmds.Request, env interface{}) (cmds.Executor, error) {
 		}
 		if ok {
 			if _, err := loader.LoadPlugins(pluginpath); err != nil {
-				log.Error("error loading plugins: ", err)
+				fmt.Println("error loading plugins: ", err)
 			}
 		}
 
@@ -194,7 +177,7 @@ func commandShouldRunOnDaemon(details cmdDetails, req *cmds.Request, cctx *oldcm
 
 	client, err := getApiClient(cctx.ConfigRoot, apiAddrStr)
 	if err == repo.ErrApiNotRunning {
-		if apiAddrStr != "" && req.Command != daemonCmd {
+		if apiAddrStr != "" {
 			// if user SPECIFIED an api, and this cmd is not daemon
 			// we MUST use it. so error out.
 			return nil, err
@@ -208,7 +191,7 @@ func commandShouldRunOnDaemon(details cmdDetails, req *cmds.Request, cctx *oldcm
 	if client != nil {
 		if details.cannotRunOnDaemon {
 			// check if daemon locked. legacy error text, for now.
-			log.Debugf("Command cannot run on daemon. Checking if daemon is locked")
+			log.Debug("Command cannot run on daemon. Checking if daemon is locked")
 			if daemonLocked, _ := fsrepo.LockedByOtherProcess(cctx.ConfigRoot); daemonLocked {
 				return nil, cmds.ClientError("ipfs daemon is running. please stop it to run this command")
 			}
@@ -231,10 +214,8 @@ func getRepoPath(req *cmds.Request) (string, error) {
 		return repoOpt, nil
 	}
 
-	repoPath, err := fsrepo.BestKnownPath()
-	if err != nil {
-		return "", err
-	}
+	repoPath := "."
+
 	return repoPath, nil
 }
 

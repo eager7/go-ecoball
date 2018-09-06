@@ -27,9 +27,6 @@ import (
 	"sync"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"fmt"
-	"github.com/ecoball/go-ecoball/account"
-	"bytes"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.NoticeLog)
@@ -42,9 +39,9 @@ type LedgerImpl struct {
 	//ChainAc *account.ChainAccount
 }
 
-func NewLedger(path string, chainID common.Hash, user account.Account) (l ledger.Ledger, err error) {
+func NewLedger(path string, chainID common.Hash, addr common.Address) (l ledger.Ledger, err error) {
 	ll := &LedgerImpl{path: path, ChainTxs: make(map[common.Hash]*transaction.ChainTx, 1)}
-	if err := ll.NewTxChain(chainID, user); err != nil {
+	if err := ll.NewTxChain(chainID, addr); err != nil {
 		return nil, err
 	}
 
@@ -57,7 +54,7 @@ func NewLedger(path string, chainID common.Hash, user account.Account) (l ledger
 	return ll, nil
 }
 
-func (l *LedgerImpl) NewTxChain(chainID common.Hash, user account.Account) (err error) {
+func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address) (err error) {
 	if _, ok := l.ChainTxs[chainID]; ok {
 		return nil
 	}
@@ -65,11 +62,11 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash, user account.Account) (err 
 	if err != nil {
 		return err
 	}
-	if bytes.Equal(user.PublicKey, config.Root.PublicKey) {
-		if err := ChainTx.GenesesBlockInit(chainID, user); err != nil {
+	//if bytes.Equal(userKey.PublicKey, config.Root.PublicKey) {
+		if err := ChainTx.GenesesBlockInit(chainID, addr); err != nil {
 			return err
 		}
-	}
+	//}
 
 	ChainTx.StateDB.TempDB, err = ChainTx.StateDB.FinalDB.CopyState()
 	ChainTx.StateDB.TempDB.Type = state.TempType

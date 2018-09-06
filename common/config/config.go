@@ -39,10 +39,7 @@ const (
 	StringBlock     = "/Block"
 	StringHeader    = "/Header"
 	StringTxs       = "/Txs"
-	StringContract  = "/Contract"
 	StringState     = "/State"
-	StringConsensus = "/Consensus"
-	ConsensusPro    = "consensus_algorithm"
 	ListPeers       = "peer_list"
 	IndexPeers      = "peer_index"
 )
@@ -66,7 +63,7 @@ user_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f
 
 
 
-
+#debug config info
 worker1_privkey = "0xc3e2cbed03aacc62d8f32045013364ea493f6d24e84f26bcef4edc2e9d260c0e"
 worker1_pubkey = "0x04e0c1852b110d1586bf6202abf6e519cc4161d00c3780c04cfde80fd66748cc189b6b0e2771baeb28189ec42a363461357422bf76b1e0724fc63fc97daf52769f"
 

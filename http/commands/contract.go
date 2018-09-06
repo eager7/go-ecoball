@@ -34,7 +34,7 @@ import (
 	"github.com/ecoball/go-ecoball/http/common/abi"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"strconv"
-	"encoding/hex"
+	//"encoding/hex"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
@@ -47,7 +47,7 @@ func SetContract(params []interface{}) *common.Response {
 	}
 
 	switch {
-	case len(params) == 4:
+	case len(params) == 1:
 		if errCode, result := handleSetContract(params); errCode != common.SUCCESS {
 			log.Error(errCode.Info())
 			return common.NewResponse(errCode, nil)
@@ -65,7 +65,7 @@ func SetContract(params []interface{}) *common.Response {
 func handleSetContract(params []interface{}) (common.Errcode, string) {
 
 	//Get account address
-	var (
+	/*var (
 		code         []byte
 		contractName string
 		description  string
@@ -104,10 +104,10 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 
 	if invalid {
 		return common.INVALID_PARAMS, ""
-	}
+	}*/
 
 	//time
-	time := time.Now().Unix()
+	//time := time.Now().Unix()
 
 	//generate key pair
 	keyData, err := secp256k1.NewECDSAPrivateKey()
@@ -126,16 +126,27 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 	//from address
 	//from := account.AddressFromPubKey(common.Account.PublicKey)
 
-	transaction, err := types.NewDeployContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), config.ChainHash, "owner", types.VmWasm, description, code, abicode, 0, time)
-	if nil != err {
+	transaction := new(types.Transaction)//{
+	//	Payload: &types.InvokeInfo{}}
+	
+	var invalid bool
+	var name string 
+	//invoke.Show()
+	//account name
+	if v, ok := params[0].(string); ok {
+		name = v
+	} else {
+		invalid = true
+	}
+	
+	if invalid {
 		return common.INVALID_PARAMS, ""
 	}
-
-	err = transaction.SetSignature(&config.Root)
-	if err != nil {
-		return common.INVALID_ACCOUNT, ""
+	
+	if err := transaction.Deserialize(innerCommon.FromHex(name)); err != nil {
+		fmt.Println(err)
+		return common.INVALID_PARAMS, ""
 	}
-
 	//send to txpool
 	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
 	if nil != err {

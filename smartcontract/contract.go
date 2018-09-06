@@ -54,7 +54,7 @@ func NewContractService(s state.InterfaceState, tx *types.Transaction, cpuLimit,
 		}
 		return service, nil
 	case types.VmWasm:
-		service, err := wasmservice.NewWasmService(s, tx.Addr, contract, &invoke, timeStamp)
+		service, err := wasmservice.NewWasmService(s, tx, contract, &invoke, timeStamp)
 		if err != nil {
 			return nil, err
 		}

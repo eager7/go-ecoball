@@ -22,6 +22,9 @@ import (
 	"fmt"
 	"os"
 
+	"gx/ipfs/QmXScvRbYh9X9okLuX9YMnz1HR4WgRTU2hocjBs15nmCNG/go-libp2p-floodsub"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
@@ -30,8 +33,6 @@ import (
 	"github.com/ecoball/go-ecoball/net/p2p"
 	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ipfs/go-ipfs/core"
-	"gx/ipfs/QmXScvRbYh9X9okLuX9YMnz1HR4WgRTU2hocjBs15nmCNG/go-libp2p-floodsub"
-	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 )
 
 type NetCtrl struct {
@@ -261,7 +262,7 @@ func InitNetWork() {
 	//}
 	//TODO move to config file
 	//InitIpfsConfig(path)
-	var path = "/tmp/store"
+	var path = "."
 
 	ipfsCtrl, err := ipfs.InitIpfs(path)
 	if err != nil {

@@ -59,15 +59,16 @@ func GenesisBlockInit(ledger ledger.Ledger, timeStamp int64) (*types.Block, erro
 	return &block, nil
 }*/
 
-func PresetContract(s *state.State, timeStamp int64, rootPubKey []byte) error {
+func PresetContract(s *state.State, timeStamp int64, addr common.Address) error {
 	if s == nil {
 		return errors.New("state is nil")
 	}
 	root := common.NameToIndex("root")
-	addr := common.AddressFromPubKey(rootPubKey)
 	fmt.Println("preset insert a root account:", addr.HexString())
-	if _, err := s.AddAccount(root, addr, timeStamp); err != nil {
+	if root, err := s.AddAccount(root, addr, timeStamp); err != nil {
 		return err
+	} else {
+		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
 	}
 	if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(90000)); err != nil {
 		return err

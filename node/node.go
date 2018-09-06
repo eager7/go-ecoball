@@ -40,6 +40,7 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 var (
@@ -58,7 +59,7 @@ func runNode(c *cli.Context) error {
 	fmt.Println("Run Node")
 	log.Info("Build Geneses Block")
 	var err error
-	ledger.L, err = ledgerimpl.NewLedger(store.PathBlock, config.ChainHash, config.User)
+	ledger.L, err = ledgerimpl.NewLedger(store.PathBlock, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,8 +75,8 @@ func runNode(c *cli.Context) error {
 	//start consensus
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
-		solo.NewSoloConsensusServer(ledger.L, txPool)
-		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, PublicKey: config.Root.PublicKey})
+		solo.NewSoloConsensusServer(ledger.L, txPool, config.User)
+		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, Address: common.AddressFromPubKey(config.Root.PublicKey)})
 	case "DPOS":
 		log.Info("Start DPOS consensus")
 
