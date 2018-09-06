@@ -194,7 +194,7 @@ func commandShouldRunOnDaemon(details cmdDetails, req *cmds.Request, cctx *oldcm
 
 	client, err := getApiClient(cctx.ConfigRoot, apiAddrStr)
 	if err == repo.ErrApiNotRunning {
-		if apiAddrStr != "" && req.Command != daemonCmd {
+		if apiAddrStr != "" {
 			// if user SPECIFIED an api, and this cmd is not daemon
 			// we MUST use it. so error out.
 			return nil, err
@@ -231,10 +231,8 @@ func getRepoPath(req *cmds.Request) (string, error) {
 		return repoOpt, nil
 	}
 
-	repoPath, err := fsrepo.BestKnownPath()
-	if err != nil {
-		return "", err
-	}
+	repoPath := "."
+
 	return repoPath, nil
 }
 
