@@ -21,13 +21,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/urfave/cli"
 	"github.com/ecoball/go-ecoball/http/common/abi"
 	"encoding/json"
-	"encoding/hex"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 var (
@@ -58,6 +59,10 @@ var (
 					cli.StringFlag{
 						Name:  "abipath, ap",
 						Usage: "abi file path",
+					},
+					cli.StringFlag{
+						Name:  "permission, per",
+						Usage: "active permission",
 					},
 				},
 			},
@@ -102,7 +107,8 @@ func setContract(c *cli.Context) error {
 	//abi file path
 	abi_fileName := c.String("abipath")
 	if abi_fileName == ""{
-
+		fmt.Println("Invalid abifile path: ", fileName)
+		return errors.New("Invalid abi file path")
 	}
 
 	//file data
@@ -145,8 +151,6 @@ func setContract(c *cli.Context) error {
 		return err
 	}
 	
-	abi_str := hex.EncodeToString(abibyte)
-
 	//contract name
 	contractName := c.String("name")
 	if contractName == "" {
@@ -161,8 +165,54 @@ func setContract(c *cli.Context) error {
 		return errors.New("Invalid contract description")
 	}
 
+	permission := c.String("permission")
+	if "" == permission {
+		permission = "active"
+	}
+
+	info, err := getInfo()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	publickeys, err := GetPublicKeys()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	time := time.Now().UnixNano()
+	transaction, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex(contractName), info.ChainID, "owner", types.VmWasm, description, data, abibyte, 0, time)
+	if nil != err {
+		return err
+	}
+
+	required_keys, err := get_required_keys(info.ChainID, publickeys, permission, transaction)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	if required_keys == "" {
+		fmt.Println("no required_keys")
+		return err
+	}
+
+	errcode := sign_transaction(info.ChainID, required_keys, transaction)
+	if nil != errcode {
+		fmt.Println(errcode)
+	}
+
+	datas, err := transaction.Serialize()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
 	//rpc call
-	resp, err := rpc.NodeCall("setContract", []interface{}{common.ToHex(data), contractName, description, abi_str})
+	//resp, err := rpc.NodeCall("setContract", []interface{}{common.ToHex(data), contractName, description, abi_str})
+	resp, err := rpc.NodeCall("setContract", []interface{}{common.ToHex(datas)})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
