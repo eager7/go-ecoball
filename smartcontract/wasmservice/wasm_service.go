@@ -207,6 +207,9 @@ func (ws *WasmService) RegisterApi() {
 	functions.Register("ABA_printui", ws.printui)
 	functions.Register("ABA_printsf", ws.printsf)
 	functions.Register("ABA_printdf", ws.printdf)
+	//blockchain
+	functions.Register("ABA_account_contain",ws.account_contain)
+	functions.Register("ABA_block_GetTime",ws.block_GetTime)
 	//memory
 	functions.Register("ABA_malloc", ws.malloc)
 	functions.Register("ABA_len",    ws.len)
