@@ -83,16 +83,18 @@ func getInfo() (*types.Block, error) {
 		fmt.Fprintln(os.Stderr, err)
 		return nil, err
 	}
-	blockINfo := new(types.Block)
+
 	if nil != resp["result"] {
 		switch resp["result"].(type) {
 		case string:
 			data := resp["result"].(string)
+			blockINfo := new(types.Block)
 			blockINfo.Deserialize(innercommon.FromHex(data))
+			return blockINfo, nil
 		default:
 		}
 	}
-	return blockINfo, nil
+	return nil, nil
 }
 
 func get_required_keys(chainId innercommon.Hash, required_keys, permission string, trx *types.Transaction) (string, error) {

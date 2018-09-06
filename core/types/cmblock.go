@@ -86,4 +86,3 @@ func (c *CMBlockHeader) Show() {
 func (c *CMBlockHeader) Type() uint32 {
 	return uint32(HeCmBlock)
 }
-

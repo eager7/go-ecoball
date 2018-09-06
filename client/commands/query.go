@@ -22,6 +22,8 @@ import (
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/urfave/cli"
+	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 var (
@@ -44,6 +46,33 @@ var (
 		},
 	}
 )
+
+func get_account(name string)(*state.Account, error){
+	info, err := getInfo()
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	
+	//rpc call
+	resp, err := rpc.NodeCall("get_account", []interface{}{info.ChainID.HexString(), name})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return nil, err
+	}
+
+	if nil != resp["result"] {
+		switch resp["result"].(type) {
+		case string:
+			data := resp["result"].(string)
+			accountInfo := new(state.Account)
+			accountInfo.Deserialize(common.FromHex(data))
+			return accountInfo, nil
+		default:
+		}
+	}
+	return nil, nil
+}
 
 func queryBalance(c *cli.Context) error {
 	//Check the number of flags

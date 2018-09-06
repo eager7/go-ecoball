@@ -115,6 +115,34 @@ func Get_required_keys(params []interface{}) *common.Response {
 	}
 }
 
+func Get_account(params []interface{}) *common.Response {
+	if len(params) < 1 {
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	switch params[0].(type) {
+	case string:
+		chainId := params[0].(string)
+		name := params[1].(string)
+		hash := new(innercommon.Hash)
+		data, err := ledger.L.AccountGet(hash.FormHexString(chainId), innercommon.NameToIndex(name))
+		if err != nil {
+			return common.NewResponse(common.INTERNAL_ERROR, "AccountGet failed")
+		}
+
+		accountInfo, errcode := data.Serialize()
+		if errcode != nil {
+			return common.NewResponse(common.INTERNAL_ERROR, "Serialize failed")
+		}
+
+		return common.NewResponse(common.SUCCESS, innercommon.ToHex(accountInfo))
+		default:
+			return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	return common.NewResponse(common.SUCCESS, "")
+}
+
 func handleCreateAccount(params []interface{}) common.Errcode {
 	/*var (
 		creator string

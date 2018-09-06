@@ -17,6 +17,7 @@
 package solo
 
 import (
+	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
@@ -26,22 +27,21 @@ import (
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/txpool"
 	"time"
-	"github.com/ecoball/go-ecoball/account"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
 
 type Solo struct {
 	account account.Account
-	stop   chan struct{}
-	msg    <-chan interface{}
-	ledger ledger.Ledger
-	txPool *txpool.TxPool
-	Chains map[common.Hash]common.Address
+	stop    chan struct{}
+	msg     <-chan interface{}
+	ledger  ledger.Ledger
+	txPool  *txpool.TxPool
+	Chains  map[common.Hash]common.Address
 }
 
 func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.Account) (solo *Solo, err error) {
-	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool, Chains: make(map[common.Hash]common.Address, 1), account:acc}
+	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool, Chains: make(map[common.Hash]common.Address, 1), account: acc}
 	actor := &soloActor{solo: solo}
 	NewSoloActor(actor)
 
@@ -71,7 +71,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 			if !startNode {
 				continue
 			}
-			log.Debug("Request transactions from tx pool[", chainID.HexString() ,"]")
+			log.Debug("Request transactions from tx pool[", chainID.HexString(), "]")
 			txs, _ := solo.txPool.GetTxsList(chainID)
 			if len(txs) == 0 {
 				log.Info("no transaction in this time")

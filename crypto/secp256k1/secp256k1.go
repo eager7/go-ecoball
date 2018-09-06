@@ -128,9 +128,9 @@ func RecoverECDSAPublicKey(msg []byte, signature []byte) ([]byte, error) {
 
 //私钥签名
 func Sign(msg []byte, seckey []byte) ([]byte, error) {
-	/*if len(msg) != 32 {
+	if len(msg) != 32 {
 		return nil, ErrInvalidMsgLen
-	}*/
+	}
 
 	if C.secp256k1_ec_seckey_verify(ctx, cBuf(seckey)) != 1 {
 		return nil, ErrInvalidPrivateKey
