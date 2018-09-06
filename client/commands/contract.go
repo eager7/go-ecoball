@@ -204,8 +204,6 @@ func setContract(c *cli.Context) error {
 		fmt.Println(errcode)
 	}
 
-	transaction.Payload.Show()
-
 	datas, err := transaction.Serialize()
 	if err != nil {
 		fmt.Println(err)
