@@ -56,11 +56,11 @@ var soloaccount account.Account
 
 type ServiceABABFT struct {
 	// Actor *ActorABABFT // save the actor object
-	// pid   *actor.PID
+	pid   *actor.PID
 	ledger ledger.Ledger
 	account *account.Account
 	txPool *txpool.TxPool
-	mapPID map[common.Hash]*actor.PID  // for multi-chain
+	// mapPID map[common.Hash]*actor.PID  // for multi-chain
 	mapActor map[common.Hash]*ActorABABFT
 	mapNewChainBlk map[common.Hash]types.Header
 	// msg    <-chan interface{} // only the main chain can generate the subchain
@@ -86,19 +86,20 @@ func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 	var pid *actor.PID
 	chainHash := config.ChainHash
 	serviceABABFT = new(ServiceABABFT)
-
 	actorABABFT := &ActorABABFT{}
+
 	pid, err = ActorABABFTGen(chainHash,actorABABFT)
 	if err != nil {
 		return nil, err
 	}
+	serviceABABFT.pid = pid
+
 	actorABABFT.pid = pid
 	actorABABFT.status = 1
 	actorABABFT.serviceABABFT = serviceABABFT
-	//serviceABABFT.Actor = actorABABFT
+	// serviceABABFT.Actor = actorABABFT
 	serviceABABFT.mapActor[chainHash] = actorABABFT
-	// serviceABABFT.pid = pid
-	serviceABABFT.mapPID[chainHash] = pid
+	// serviceABABFT.mapPID[chainHash] = pid
 	serviceABABFT.ledger = l
 	serviceABABFT.account = account
 	serviceABABFT.txPool = txPool
@@ -157,20 +158,27 @@ func (serviceABABFT *ServiceABABFT) GenNewChain(chainID common.Hash) {
 		}
 		if ok := bytes.Equal(serviceABABFT.mapNewChainBlk[chainID].Hash.Bytes(),TxBlock.Hash.Bytes()); ok == true {
 			// 5. create an Actor for the new chain
-			var pid *actor.PID
 			actorABABFT := &ActorABABFT{}
+			/*
+			var pid *actor.PID
+
 			pid, err = ActorABABFTGen(chainID,actorABABFT)
 			if err != nil {
 				log.Info("error when create new Actor for new chain:", chainID.HexString())
 				return
 			}
 			actorABABFT.pid = pid
+			*/
+			actorABABFT.pid = serviceABABFT.pid
+			actorABABFT.synStatus = 0
+			actorABABFT.TimeoutMSGs = make(map[string]int, 1000)
+			actorABABFT.chainID = chainID
 			actorABABFT.status = 1
 			actorABABFT.serviceABABFT = serviceABABFT
 
 			// 6. register the new chain
 			serviceABABFT.mapActor[chainID] = actorABABFT
-			serviceABABFT.mapPID[chainID] = pid
+			// serviceABABFT.mapPID[chainID] = pid
 
 			// 7. initialization
 			serviceABABFT.mapActor[chainID].currentHeightNum = int(serviceABABFT.mapActor[chainID].currentLedger.GetCurrentHeight(chainID))
