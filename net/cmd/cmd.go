@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ecoball/go-ecoball/common/elog"
 	oldcmds "github.com/ipfs/go-ipfs/commands"
 	core "github.com/ipfs/go-ipfs/core"
 	corecmds "github.com/ipfs/go-ipfs/core/commands"
@@ -32,7 +33,7 @@ import (
 )
 
 // log is the command logger
-var log = logging.Logger("cmd/ipfs")
+var log = elog.NewLogger("storage", elog.NoticeLog)
 
 var errRequestCanceled = errors.New("request canceled")
 
@@ -59,7 +60,7 @@ func StorageFun() error {
 		if err != nil {
 			return nil, err
 		}
-		log.Debugf("config path is %s", repoPath)
+		log.Debug("config path is ", repoPath)
 
 		// this sets up the function that will initialize the node
 		// this is so that we can construct the node lazily.
@@ -208,7 +209,7 @@ func commandShouldRunOnDaemon(details cmdDetails, req *cmds.Request, cctx *oldcm
 	if client != nil {
 		if details.cannotRunOnDaemon {
 			// check if daemon locked. legacy error text, for now.
-			log.Debugf("Command cannot run on daemon. Checking if daemon is locked")
+			log.Debug("Command cannot run on daemon. Checking if daemon is locked")
 			if daemonLocked, _ := fsrepo.LockedByOtherProcess(cctx.ConfigRoot); daemonLocked {
 				return nil, cmds.ClientError("ipfs daemon is running. please stop it to run this command")
 			}
