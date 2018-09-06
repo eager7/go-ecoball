@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
@@ -18,7 +19,6 @@ import (
 	"os/signal"
 	"syscall"
 	"testing"
-	"github.com/ecoball/go-ecoball/common"
 )
 
 func TestRunMain(t *testing.T) {
@@ -38,7 +38,7 @@ func TestRunMain(t *testing.T) {
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
 		solo.NewSoloConsensusServer(ledger.L, txPool, config.User)
-		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, PublicKey: config.Root.PublicKey})
+		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, Address: common.AddressFromPubKey(config.Root.PublicKey)})
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":
@@ -74,7 +74,7 @@ func TestRunNode(t *testing.T) {
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
 		solo.NewSoloConsensusServer(ledger.L, txPool, config.User)
-		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, PublicKey: config.Root.PublicKey, Tx: nil})
+		event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, Address: common.AddressFromPubKey(config.Root.PublicKey), Tx: nil})
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":
