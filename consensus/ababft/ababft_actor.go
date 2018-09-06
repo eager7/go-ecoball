@@ -81,9 +81,6 @@ const(
 
 var log = elog.NewLogger("ABABFT", elog.NoticeLog)
 
-// to run the go test, please set TestTag to True
-const TestTag = false
-
 const ThresholdRound = 60
 
 
@@ -108,9 +105,6 @@ func ActorABABFTGen(chainId common.Hash, actorABABFT *ActorABABFT) (*actor.PID, 
 }
 
 func (actorC *ActorABABFT) Receive(ctx actor.Context) {
-	var err error
-	// log.Debug("ababft service receives the message")
-
 	// deal with the message
 	switch msg := ctx.Message().(type) {
 	case message.ABABFTStart:
@@ -528,14 +522,6 @@ func (actorC *ActorABABFT) blkSynVerify(blockIn types.Block, blkPre types.Block)
 			break
 		}
 	}
-	// for test 2018.08.10
-	if TestTag == true {
-		fmt.Println("syn roundNumIn:", roundNumIn, indexGIn, pukeyGIns)
-		fmt.Println("peer address list:", actorC.PeersAddrList)
-		fmt.Println("blockIn.header:", blockIn.Height, blockIn.Hash, blockIn.MerkleHash, blockIn.StateHash)
-	}
-	// test end
-
 
 	if indexG != indexGIn {
 		log.Debug("illegal block generator")
