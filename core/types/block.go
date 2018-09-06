@@ -32,6 +32,7 @@ type Block struct {
 	*Header
 	CountTxs     uint32
 	Transactions []*Transaction
+	Shards       []Shard
 }
 
 func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, headerPayload Payload, consensusData ConsensusData, txs []*Transaction, cpu, net float64, timeStamp int64) (*Block, error) {
@@ -79,8 +80,17 @@ func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, he
 	if err != nil {
 		return nil, err
 	}
-	block := Block{header, uint32(len(txs)), txs}
+	block := Block{
+		Header:       header,
+		CountTxs:     uint32(len(txs)),
+		Transactions: txs,
+		Shards:       nil,
+	}
 	return &block, nil
+}
+
+func (b *Block) CmBlockSetData(Shards []Shard) {
+	b.Shards = Shards
 }
 
 func (b *Block) SetSignature(account *account.Account) error {
