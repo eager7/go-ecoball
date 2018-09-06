@@ -85,8 +85,12 @@ func getInfo() (*types.Block, error) {
 	}
 	blockINfo := new(types.Block)
 	if nil != resp["result"] {
-		data := resp["result"].(string)
-		blockINfo.Deserialize(innercommon.FromHex(data))
+		switch resp["result"].(type) {
+		case string:
+			data := resp["result"].(string)
+			blockINfo.Deserialize(innercommon.FromHex(data))
+		default:
+		}
 	}
 	return blockINfo, nil
 }
@@ -104,8 +108,12 @@ func get_required_keys(chainId innercommon.Hash, required_keys, permission strin
 	}
 
 	if nil != resp["result"] {
-		data := resp["result"].(string)
-		return data, nil
+		switch resp["result"].(type) {
+		case string:
+			data := resp["result"].(string)
+			return data, nil
+		default:
+		}
 	}
 	return "", err
 }
