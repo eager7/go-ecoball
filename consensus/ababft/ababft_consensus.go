@@ -59,7 +59,7 @@ type ServiceABABFT struct {
 	mapActor map[common.Hash]*ActorABABFT
 	mapNewChainBlk map[common.Hash]types.Header
 	// msgChan    <-chan interface{} // only the main chain can generate the subchain
-	mapMsgChan map[common.Hash]<-chan interface{}
+	mapMsgChan map[common.Hash]chan actor.Context
 	mapMsgstop map[common.Hash]chan struct{}
 	// stop   chan struct{}
 }
@@ -97,6 +97,9 @@ func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 	// serviceABABFT.Actor = actorABABFT
 	serviceABABFT.mapActor = make(map[common.Hash]*ActorABABFT)
 	serviceABABFT.mapActor[chainHash] = actorABABFT
+	serviceABABFT.mapNewChainBlk = make(map[common.Hash]types.Header)
+	serviceABABFT.mapMsgChan = make(map[common.Hash]chan actor.Context)
+	serviceABABFT.mapMsgstop = make(map[common.Hash]chan struct{})
 	// serviceABABFT.mapPID[chainHash] = pid
 	serviceABABFT.ledger = l
 	serviceABABFT.account = account
@@ -115,13 +118,11 @@ func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 		return nil, err
 	}
 	*/
-	actorABABFT.msgChan = make(<-chan interface{})
+	actorABABFT.msgChan = make(chan actor.Context, 256)
 	serviceABABFT.mapMsgChan[chainHash] = actorABABFT.msgChan
 	actorABABFT.msgStop = make(chan struct{})
 	serviceABABFT.mapMsgstop[chainHash] = actorABABFT.msgStop
 
-	serviceABABFT.mapNewChainBlk = make(map[common.Hash]types.Header)
-	serviceABABFT.mapMsgChan = make(map[common.Hash]<-chan interface{})
 	selfaccountname = common.NameToIndex("worker2")
 	fmt.Println("selfaccountname:",selfaccountname)
 
@@ -206,7 +207,7 @@ func (serviceABABFT *ServiceABABFT) GenNewChain(chainID common.Hash) {
 				return
 			}
 			*/
-			actorABABFT.msgChan = make(<-chan interface{})
+			actorABABFT.msgChan = make(chan actor.Context, 256)
 			serviceABABFT.mapMsgChan[chainID] = actorABABFT.msgChan
 			actorABABFT.msgStop = make(chan struct{})
 			serviceABABFT.mapMsgstop[chainID] = actorABABFT.msgStop
