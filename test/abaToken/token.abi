@@ -1,0 +1,43 @@
+{
+  "types": [],
+  "structs": [{
+      "name": "create",
+      "base": "",
+      "fields": [
+         {"name":"creator", "type":"string"},
+         {"name":"max_supply", "type":"int32"},
+         {"name":"token_id", "type":"string"}
+      ]
+    },{
+      "name": "issue",
+      "base": "",
+      "fields": [
+         {"name":"to", "type":"string"},
+         {"name":"amount", "type":"int32"},
+         {"name":"token_id", "type":"string"}
+      ]
+    },{	
+      "name": "transfer",
+      "base": "",
+      "fields": [
+         {"name":"from", "type":"string"},
+         {"name":"to", "type":"string"},
+         {"name":"amount", "type":"int32"},
+         {"name":"token_id", "type":"string"}
+      ]
+    }
+  ],
+  "actions": [{
+      "name": "create",
+      "type": "create"
+    },{
+      "name": "issue",
+      "type": "issue"
+    },{	
+      "name": "transfer",
+      "type": "transfer"
+    }
+  ],
+  "tables": [
+  ]
+}
