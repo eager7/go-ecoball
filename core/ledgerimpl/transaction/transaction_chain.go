@@ -572,7 +572,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		return nil, 0, 0, err
 	}
 	log.Debug("result:", ret, "cpu:", cpu, "net:", net)
-	tx.Receipt.From, _ = s.GetAccountByName(tx.From)
-	tx.Receipt.To, _ = s.GetAccountByName(tx.Addr)
+	//tx.Receipt.From, _ = s.GetAccountByName(tx.From)
+	//tx.Receipt.To, _ = s.GetAccountByName(tx.Addr)
 	return ret, cpu, net, nil
 }
