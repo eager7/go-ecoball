@@ -30,10 +30,11 @@ import (
 	"bytes"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"fmt"
-	"github.com/ecoball/go-ecoball/common/message"
+	netMsg "github.com/ecoball/go-ecoball/common/message"
 	"encoding/binary"
 	"reflect"
 )
+
 type ActorABABFT struct {
 	status uint // 1: actor generated,
 	// 2: running,
@@ -71,7 +72,11 @@ type ActorABABFT struct {
 	receivedSignPreNum int                      // the number of received signatures for the previous block
 	receivedSignBlkFNum int                     // temporary parameters for received signatures for first round block
 	synStatus int
-	chainID common.Hash  // for multi-chain
+
+	// multiple chain
+	chainID common.Hash
+	msgChan <-chan interface{} // use channel
+	msgStop chan struct{}
 }
 
 const(
@@ -100,14 +105,16 @@ func ActorABABFTGen(chainId common.Hash, actorABABFT *ActorABABFT) (*actor.PID, 
 	event.RegisterActor(event.ActorConsensus, pid)
 	actorABABFT.synStatus = 0
 	actorABABFT.TimeoutMSGs = make(map[string]int, 1000)
+
 	actorABABFT.chainID = chainId
+
 	return pid, err
 }
 
 func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 	// deal with the message
 	switch msg := ctx.Message().(type) {
-	case message.ABABFTStart:
+	case netMsg.ABABFTStart:
 		// check the chain ID
 		if ok:=bytes.Equal(msg.ChainID.Bytes(),actorC.chainID.Bytes()); ok != true {
 			log.Debug("the message is not for this chain")
@@ -225,7 +232,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		ProcessTimeoutMsg(actorC,msg)
 		return
 
-	case *message.RegChain:
+	case *netMsg.RegChain:
 		log.Info("Receive ABABFT Create Message")
 		go actorC.serviceABABFT.GenNewChain(msg.ChainID)
 		return

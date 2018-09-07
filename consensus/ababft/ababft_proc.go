@@ -213,6 +213,9 @@ func ProcessSTART(actorC *ActorABABFT) {
 			case <-t0.C:
 				// timeout for the preblock signature
 				err = event.Send(event.ActorConsensus, event.ActorConsensus, PreBlockTimeout{ChainID:actorC.chainID})
+				if err != nil {
+					log.Fatal(err)
+				}
 				t0.Stop()
 			}
 		}()
@@ -243,6 +246,9 @@ func ProcessSTART(actorC *ActorABABFT) {
 			case <-t1.C:
 				// timeout for the preblock signature
 				err = event.Send(event.ActorConsensus, event.ActorConsensus, TxTimeout{actorC.chainID})
+				if err != nil {
+					log.Fatal(err)
+				}
 				t1.Stop()
 			}
 		}()
@@ -387,6 +393,9 @@ func ProcessPreBlkTimeout(actorC *ActorABABFT) {
 			signDataIn := signPreBlk.SigData
 			var resultVerify bool
 			resultVerify, err = secp256k1.Verify(headerHashes, signDataIn, pubKeyIn)
+			if err != nil {
+				log.Fatal(err)
+			}
 			if resultVerify == true {
 				// add the incoming signature to signature preblock list
 				actorC.signaturePreBlockList[peerIndex].SigData = signDataIn
@@ -428,6 +437,9 @@ func ProcessPreBlkTimeout(actorC *ActorABABFT) {
 			headerPayload:=&types.CMBlockHeader{}
 			// headerPayload.LeaderPubKey = actorC.serviceABABFT.account.PublicKey
 			blockFirst,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, headerPayload, conData, tTime)
+			if err != nil {
+				log.Fatal(err)
+			}
 			blockFirst.SetSignature(actorC.serviceABABFT.account)
 			// broadcast the first-round block to peers for them to verify the transactions and wait for the corresponding signatures back
 			actorC.blockFirstRound.BlockFirst = *blockFirst
@@ -447,6 +459,9 @@ func ProcessPreBlkTimeout(actorC *ActorABABFT) {
 				case <-t2.C:
 					// timeout for the preblock signature
 					err = event.Send(event.ActorConsensus, event.ActorConsensus, SignTxTimeout{actorC.chainID})
+					if err != nil {
+						log.Fatal(err)
+					}
 					t2.Stop()
 				}
 			}()
@@ -523,6 +538,9 @@ func ProcessBlkF(actorC *ActorABABFT, msg BlockFirstRound) {
 				// 1c. check the block header, except the consensus data
 				var validBlk bool
 				validBlk,err = actorC.verifyHeader(&blockFirstReceived, actorC.currentRoundNum, *(actorC.currentHeader))
+				if err != nil {
+					log.Fatal(err)
+				}
 				if validBlk ==false {
 					println("header check fail")
 					return
@@ -554,6 +572,9 @@ func ProcessBlkF(actorC *ActorABABFT, msg BlockFirstRound) {
 					signDataIn := signPreBlk.SigData
 					var resultVerify bool
 					resultVerify, err = secp256k1.Verify(headerHashes, signDataIn, pubKeyIn)
+					if err != nil {
+						log.Fatal(err)
+					}
 					if resultVerify == true {
 						numVerified++
 					}
@@ -578,6 +599,10 @@ func ProcessBlkF(actorC *ActorABABFT, msg BlockFirstRound) {
 				signBlkFSend.signatureBlkF.ChainID = actorC.chainID.Bytes()
 				signBlkFSend.signatureBlkF.PubKey = actorC.serviceABABFT.account.PublicKey
 				signBlkFSend.signatureBlkF.SigData,err = actorC.serviceABABFT.account.Sign(blockFirstReceived.Header.Hash.Bytes())
+				if err != nil {
+					log.Fatal(err)
+				}
+
 				// 5. broadcast the signature of the first round block
 				event.Send(event.ActorConsensus, event.ActorP2P, signBlkFSend)
 				// 6. change the status
@@ -596,6 +621,9 @@ func ProcessBlkF(actorC *ActorABABFT, msg BlockFirstRound) {
 					case <-t3.C:
 						// timeout for the second-round(final) block
 						err = event.Send(event.ActorConsensus, event.ActorConsensus, BlockSTimeout{actorC.chainID})
+						if err != nil {
+							log.Fatal(err)
+						}
 						t3.Stop()
 					}
 				}()
@@ -709,6 +737,9 @@ func ProcessSignTxTimeout(actorC *ActorABABFT) {
 			// 2. generate the second-round(final) block
 			var blockSecond types.Block
 			blockSecond,err =  actorC.updateBlock(actorC.blockFirstRound.BlockFirst, conData)
+			if err != nil {
+				log.Fatal(err)
+			}
 			blockSecond.SetSignature(actorC.serviceABABFT.account)
 			// fmt.Println("blockSecond:",blockSecond.Header)
 
@@ -782,6 +813,9 @@ func ProcessBlkS(actorC *ActorABABFT, msg BlockSecondRound) {
 					// check the block header(the consensus data is null)
 					var validBlk bool
 					validBlk,err = actorC.verifyHeader(&blockSecondReceived, int(dataBlkReceived.NumberRound), *(actorC.currentHeader))
+					if err != nil {
+						log.Fatal(err)
+					}
 					if validBlk ==false {
 						println("header check fail")
 						return
@@ -867,6 +901,9 @@ func ProcessBlkS(actorC *ActorABABFT, msg BlockSecondRound) {
 				validBlk,err = actorC.verifyHeader(&blockSecondReceived, int(dataBlkReceived.NumberRound), *(actorC.currentHeader))
 				// todo
 				// can check the hash and statdb and merker root instead of the total head to speed up
+				if err != nil {
+					log.Fatal(err)
+				}
 				if validBlk ==false {
 					println("header check fail")
 					return
@@ -874,6 +911,9 @@ func ProcessBlkS(actorC *ActorABABFT, msg BlockSecondRound) {
 				// 2. check the signatures ( for both previous and current blocks) in ConsensusData
 				preBlkHash := actorC.currentHeader.Hash
 				validBlk, err = actorC.verifySignatures(dataBlkReceived, preBlkHash, blockSecondReceived.Header)
+				if err != nil {
+					log.Fatal(err)
+				}
 				if validBlk ==false {
 					println("previous and first-round blocks signatures check fail")
 					return
@@ -953,6 +993,9 @@ func ProcessREQSyn(actorC *ActorABABFT, msg REQSyn) {
 	hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(heightReq)))
 	var signVerify bool
 	signVerify, err = secp256k1.Verify(hashTS.Bytes(), signDataIn, pubKeyIn)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if signVerify != true {
 		println("Syn request message signature is wrong")
 		return
@@ -1067,6 +1110,9 @@ func ProcessBlkSyn(actorC *ActorABABFT, msg BlockSyn) {
 		} else {
 			// verify blkV
 			resultV,err = actorC.blkSynVerify(blkV, *blkVLocal)
+			if err != nil {
+				log.Fatal(err)
+			}
 			fmt.Println("have not yet")
 		}
 
@@ -1077,6 +1123,9 @@ func ProcessBlkSyn(actorC *ActorABABFT, msg BlockSyn) {
 		// 2. verify the verified block blkF
 		var resultF bool
 		resultF,err = actorC.blkSynVerify(blkF, blkV)
+		if err != nil {
+			log.Fatal(err)
+		}
 		if resultF == false {
 			log.Debug("verification of blkF fails")
 			return
@@ -1212,7 +1261,7 @@ func ProcessTimeoutMsg(actorC *ActorABABFT, msg TimeoutMsg) {
 					actorC.status = 8
 					actorC.primaryTag = 0
 					event.Send(event.ActorConsensus, event.ActorConsensus, message.ABABFTStart{actorC.chainID})
-					// fmt.Println("reset according to the timeout msg:",i,maxR,current_round_num,countRS[i])
+					// fmt.Println("reset according to the timeout msgChan:",i,maxR,current_round_num,countRS[i])
 					break
 				}
 			}
