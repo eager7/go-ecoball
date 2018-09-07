@@ -144,6 +144,9 @@ func (serviceABABFT *ServiceABABFT) Start() error {
 	serviceABABFT.mapActor[chainHash].currentHeader = &(serviceABABFT.mapActor[chainHash].currentHeaderData)
 	serviceABABFT.mapActor[chainHash].currentHeaderData = *(serviceABABFT.mapActor[chainHash].currentLedger.GetCurrentHeader(chainHash))
 
+	// start the thread for the chain
+	go ConsensusABABFTThread(serviceABABFT.mapActor[chainHash])
+
 	log.Debug("service start")
 	return err
 }
@@ -217,6 +220,8 @@ func (serviceABABFT *ServiceABABFT) GenNewChain(chainID common.Hash) {
 			serviceABABFT.mapActor[chainID].verifiedHeight = uint64(serviceABABFT.mapActor[chainID].currentHeightNum) - 1
 			serviceABABFT.mapActor[chainID].currentHeader = &(serviceABABFT.mapActor[chainID].currentHeaderData)
 			serviceABABFT.mapActor[chainID].currentHeaderData = *(serviceABABFT.mapActor[chainID].currentLedger.GetCurrentHeader(chainID))
+			// start the thread for the chain
+			go ConsensusABABFTThread(serviceABABFT.mapActor[chainID])
 
 			// 8. start the actor
 			event.Send(event.ActorNil, event.ActorConsensus, netMsg.ABABFTStart{chainID})

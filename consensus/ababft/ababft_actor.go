@@ -135,110 +135,218 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 	case SignaturePreBlock:
 		log.Info("receive the preblock signature:", actorC.status,msg.SignPreBlock)
 		// check the chain ID
+		chainIn := common.BytesToHash(msg.SignPreBlock.ChainID)
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this SignaturePreBlock to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.SignPreBlock.ChainID); ok != true {
 			log.Debug("wrong chain ID for preblock signature")
 			return
 		}
 		ProcessSignPreBlk(actorC,msg)
+		*/
 		return
 
 	case PreBlockTimeout:
 		// check the chain ID
+		chainIn := msg.ChainID
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this PreBlockTimeout to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok := bytes.Equal(msg.ChainID.Bytes(),actorC.chainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for preblock timeout")
 			return
 		}
 		ProcessPreBlkTimeout(actorC)
+		*/
 		return
 
 	case BlockFirstRound:
 		// check the chain ID
+		chainIn := msg.BlockFirst.Header.ChainID
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this BlockFirstRound to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.BlockFirst.Header.ChainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for first round block")
 			return
 		}
 		ProcessBlkF(actorC,msg)
+		*/
 		return
 
 	case TxTimeout:
 		// check the chain ID
+		chainIn := msg.ChainID
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this TxTimeout to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok := bytes.Equal(msg.ChainID.Bytes(),actorC.chainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for transaction timeout")
 			return
 		}
 		ProcessTxTimeout(actorC)
+		*/
 		return
 
 	case SignatureBlkF:
 		// check the chain ID
+		chainIn := common.BytesToHash(msg.signatureBlkF.ChainID)
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this SignatureBlkF to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok := bytes.Equal(msg.signatureBlkF.ChainID,actorC.chainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for signature of the first-round block")
 			return
 		}
 		ProcessSignBlkF(actorC,msg)
+		*/
 		return
 
 	case SignTxTimeout:
 		// check the chain ID
+		chainIn := msg.ChainID
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this SignTxTimeout to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.ChainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for SignTxTimeout")
 			return
 		}
 		ProcessSignTxTimeout(actorC)
+		*/
 		return
 
 	case BlockSecondRound:
 		// check the chain ID
+		chainIn := msg.BlockSecond.Header.ChainID
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this BlockSecondRound to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.BlockSecond.Header.ChainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for BlockSecondRound")
 			return
 		}
 		ProcessBlkS(actorC,msg)
+		*/
 		return
 
 	case BlockSTimeout:
 		// check the chain ID
+		chainIn := msg.ChainID
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this BlockSTimeout to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.ChainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for BlockSTimeout")
 			return
 		}
 		ProcessBlkSTimeout(actorC)
+		*/
 		return
 
 	case REQSyn:
 		// check the chain ID
+		chainIn := common.BytesToHash(msg.Reqsyn.ChainID)
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this REQSyn to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok := bytes.Equal(msg.Reqsyn.ChainID,actorC.chainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for REQSyn")
 			return
 		}
 		ProcessREQSyn(actorC,msg)
+		*/
 		return
 
 	case REQSynSolo:
 		// check the chain ID
+		chainIn := common.BytesToHash(msg.Reqsyn.ChainID)
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this REQSynSolo to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok := bytes.Equal(msg.Reqsyn.ChainID,actorC.chainID.Bytes()); ok != true {
 			log.Debug("wrong chain ID for REQSynSolo")
 			return
 		}
 		ProcessREQSynSolo(actorC,msg)
+		*/
 		return
 
 	case BlockSyn:
 		// check the chain ID
+		chainIn := common.BytesToHash(msg.Blksyn.ChainID)
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this BlockSyn to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.Blksyn.ChainID); ok != true {
 			log.Debug("wrong chain ID for BlockSyn")
 			return
 		}
 		ProcessBlkSyn(actorC,msg)
+		*/
 		return
 
 	case TimeoutMsg:
 		// check the chain ID
+		chainIn := common.BytesToHash(msg.Toutmsg.ChainID)
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this TimeoutMsg to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok := bytes.Equal(actorC.chainID.Bytes(),msg.Toutmsg.ChainID); ok != true {
 			log.Debug("wrong chain ID for TimeoutMsg")
 			return
 		}
 		ProcessTimeoutMsg(actorC,msg)
+		*/
 		return
 
 	case *netMsg.RegChain:
