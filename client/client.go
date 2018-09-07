@@ -83,6 +83,10 @@ func newClientApp() *cli.App {
 }
 
 func main() {
+	//interrupt handle
+	go interruptHandle()
+
+	//client
 	app := newClientApp()
 
 	//console
@@ -213,4 +217,13 @@ func appRun(app *cli.App) (err error) {
 		return cmd.StorageFun()
 	}
 	return app.Run(os.Args)
+}
+
+func interruptHandle() {
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	defer signal.Stop(interrupt)
+	sig := <-interrupt
+	fmt.Println("ecowallet received signal:", sig)
+	os.Exit(1)
 }

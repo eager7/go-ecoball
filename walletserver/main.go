@@ -39,5 +39,5 @@ func wait() {
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer signal.Stop(interrupt)
 	sig := <-interrupt
-	log.Info("ecoball received signal:", sig)
+	log.Info("ecowallet received signal:", sig)
 }
