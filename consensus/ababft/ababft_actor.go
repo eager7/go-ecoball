@@ -75,7 +75,7 @@ type ActorABABFT struct {
 
 	// multiple chain
 	chainID common.Hash
-	msgChan <-chan interface{} // use channel
+	msgChan chan actor.Context // use channel, combined with actor
 	msgStop chan struct{}
 }
 
@@ -116,11 +116,20 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case netMsg.ABABFTStart:
 		// check the chain ID
+		chainIn := msg.ChainID
+		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
+			log.Info("the chain found, send this ABABFTStart to the corresponding channel")
+			msgChan <- ctx
+		} else {
+			log.Info("Not found the corresponding chain")
+		}
+		/*
 		if ok:=bytes.Equal(msg.ChainID.Bytes(),actorC.chainID.Bytes()); ok != true {
 			log.Debug("the message is not for this chain")
 			return
 		}
 		ProcessSTART(actorC)
+		*/
 		return
 
 	case SignaturePreBlock:
