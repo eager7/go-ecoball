@@ -519,6 +519,9 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		if err := s.AccountAddBalance(tx.Addr, state.AbaToken, payload.Value); err != nil {
 			return nil, 0, 0, err
 		}
+
+		tx.Receipt.From.Balance, _ = s.AccountGetBalance(tx.From, state.AbaToken)
+		tx.Receipt.To.Balance, _ = s.AccountGetBalance(tx.Addr, state.AbaToken)
 	case types.TxDeploy:
 		if err := s.CheckPermission(tx.Addr, state.Active, tx.Hash, tx.Signatures); err != nil {
 			return nil, 0, 0, err
@@ -572,5 +575,6 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		return nil, 0, 0, err
 	}
 	log.Debug("result:", ret, "cpu:", cpu, "net:", net)
+
 	return ret, cpu, net, nil
 }
