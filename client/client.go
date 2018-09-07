@@ -224,6 +224,6 @@ func interruptHandle() {
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer signal.Stop(interrupt)
 	sig := <-interrupt
-	fmt.Println("ecowallet received signal:", sig)
+	fmt.Println("ecoclient received signal:", sig)
 	os.Exit(1)
 }
