@@ -36,6 +36,7 @@ import (
 	"strconv"
 	//"encoding/hex"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"strings"
 )
 
 var log = elog.NewLogger("commands", elog.DebugLog)
@@ -539,23 +540,31 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	//}
 	//log.Debug("BuildWasmContractParam: ", string(argbyte))
 
-	contract, err := ledger.L.GetContract(config.ChainHash, innerCommon.NameToIndex(contractName))
+	if "new_account" == contractMethod {
+		//parameter := strings.Split(contractParam, ",")
+	}else if "pledge" == contractMethod {
+		parameters = strings.Split(contractParam, ",")
+	}else if "set_account" == contractMethod {
 
-	var abiDef abi.ABI
-	err = abi.UnmarshalBinary(contract.Abi, &abiDef)
-	if err != nil {
-		fmt.Errorf("can not find UnmarshalBinary abi file")
-		return common.INVALID_CONTRACT_ABI
+	}else {
+		contract, err := ledger.L.GetContract(config.ChainHash, innerCommon.NameToIndex(contractName))
+
+		var abiDef abi.ABI
+		err = abi.UnmarshalBinary(contract.Abi, &abiDef)
+		if err != nil {
+			fmt.Errorf("can not find UnmarshalBinary abi file")
+			return common.INVALID_CONTRACT_ABI
+		}
+	
+		log.Debug("contractParam: ", contractParam)
+		argbyte, err := checkParam(abiDef, contractMethod, []byte(contractParam))
+		if err != nil {
+			log.Debug("checkParam error")
+			return common.INVALID_PARAMS
+		}
+	
+		parameters = append(parameters, string(argbyte[:]))
 	}
-
-	log.Debug("contractParam: ", contractParam)
-	argbyte, err := checkParam(abiDef, contractMethod, []byte(contractParam))
-	if err != nil {
-		log.Debug("checkParam error")
-		return common.INVALID_PARAMS
-	}
-
-	parameters = append(parameters, string(argbyte[:]))
 
 	//from address
 	//from := account.AddressFromPubKey(common.Account.PublicKey)
