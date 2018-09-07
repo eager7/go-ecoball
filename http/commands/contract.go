@@ -545,7 +545,8 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	}else if "pledge" == contractMethod {
 		parameters = strings.Split(contractParam, ",")
 	}else if "set_account" == contractMethod {
-
+		parameters = append(parameters, contractName)
+		parameters = append(parameters, contractParam)
 	}else {
 		contract, err := ledger.L.GetContract(config.ChainHash, innerCommon.NameToIndex(contractName))
 
