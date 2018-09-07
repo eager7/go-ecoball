@@ -30,7 +30,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"bytes"
 	"time"
-	"github.com/ecoball/go-ecoball/common/message"
+	netMsg "github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/common/event"
 )
 
@@ -49,11 +49,6 @@ const (
 var selfaccountname common.AccountName
 var soloaccount account.Account
 
-
-
-
-
-
 type ServiceABABFT struct {
 	// Actor *ActorABABFT // save the actor object
 	pid   *actor.PID
@@ -63,7 +58,9 @@ type ServiceABABFT struct {
 	// mapPID map[common.Hash]*actor.PID  // for multi-chain
 	mapActor map[common.Hash]*ActorABABFT
 	mapNewChainBlk map[common.Hash]types.Header
-	// msg    <-chan interface{} // only the main chain can generate the subchain
+	// msgChan    <-chan interface{} // only the main chain can generate the subchain
+	mapMsgChan map[common.Hash]<-chan interface{}
+	mapMsgstop map[common.Hash]chan struct{}
 	// stop   chan struct{}
 }
 
@@ -98,6 +95,7 @@ func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 	actorABABFT.status = 1
 	actorABABFT.serviceABABFT = serviceABABFT
 	// serviceABABFT.Actor = actorABABFT
+	serviceABABFT.mapActor = make(map[common.Hash]*ActorABABFT)
 	serviceABABFT.mapActor[chainHash] = actorABABFT
 	// serviceABABFT.mapPID[chainHash] = pid
 	serviceABABFT.ledger = l
@@ -106,7 +104,24 @@ func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 
 	serviceABABFT.mapActor[chainHash].currentLedger = l
 	serviceABABFT.mapActor[chainHash].primaryTag = 0
+	/*
+	// define the channel
+	messages := []uint32{
+		commonMsg.APP_MSG_BLKS,
+	}
+	actorABABFT.msgChan, err = dispatcher.Subscribe(messages...)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	*/
+	actorABABFT.msgChan = make(<-chan interface{})
+	serviceABABFT.mapMsgChan[chainHash] = actorABABFT.msgChan
+	actorABABFT.msgStop = make(chan struct{})
+	serviceABABFT.mapMsgstop[chainHash] = actorABABFT.msgStop
 
+	serviceABABFT.mapNewChainBlk = make(map[common.Hash]types.Header)
+	serviceABABFT.mapMsgChan = make(map[common.Hash]<-chan interface{})
 	selfaccountname = common.NameToIndex("worker2")
 	fmt.Println("selfaccountname:",selfaccountname)
 
@@ -179,6 +194,22 @@ func (serviceABABFT *ServiceABABFT) GenNewChain(chainID common.Hash) {
 			// 6. register the new chain
 			serviceABABFT.mapActor[chainID] = actorABABFT
 			// serviceABABFT.mapPID[chainID] = pid
+			/*
+			// define the channel
+			messages := []uint32{
+				commonMsg.APP_MSG_BLKS,
+			}
+
+			actorABABFT.msgChan, err = dispatcher.Subscribe(messages...)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			*/
+			actorABABFT.msgChan = make(<-chan interface{})
+			serviceABABFT.mapMsgChan[chainID] = actorABABFT.msgChan
+			actorABABFT.msgStop = make(chan struct{})
+			serviceABABFT.mapMsgstop[chainID] = actorABABFT.msgStop
 
 			// 7. initialization
 			serviceABABFT.mapActor[chainID].currentHeightNum = int(serviceABABFT.mapActor[chainID].currentLedger.GetCurrentHeight(chainID))
@@ -187,7 +218,7 @@ func (serviceABABFT *ServiceABABFT) GenNewChain(chainID common.Hash) {
 			serviceABABFT.mapActor[chainID].currentHeaderData = *(serviceABABFT.mapActor[chainID].currentLedger.GetCurrentHeader(chainID))
 
 			// 8. start the actor
-			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{chainID})
+			event.Send(event.ActorNil, event.ActorConsensus, netMsg.ABABFTStart{chainID})
 
 		} else {
 			log.Info("Fail to pass the header check, when generating new chain")
