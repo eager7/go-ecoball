@@ -14,6 +14,9 @@ func(ws *WasmService)db_put(proc *exec.Process, key int32, value int32 )int32{
 	if err != nil{
 		return -1
 	}
+	if(len(k_msg) == 0 || len(v_msg) == 0){
+		return -1
+	}
 	ws.state.StoreSet(ws.Tx.Addr,k_msg,v_msg)
 	return 0
 }
@@ -26,6 +29,9 @@ func(ws *WasmService)db_get(proc *exec.Process, key int32)int32{
 	}
 	value,err := ws.state.StoreGet(ws.Tx.Addr,k_msg)
 	if err != nil{
+		return -1
+	}
+	if(len(value) == 0){
 		return -1
 	}
 	addr,err := proc.VMSetBlock(value)
