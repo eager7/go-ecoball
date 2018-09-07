@@ -33,6 +33,7 @@ import (
 	netMsg "github.com/ecoball/go-ecoball/common/message"
 	"encoding/binary"
 	"reflect"
+	"github.com/ecoball/go-ecoball/account"
 )
 
 type ActorABABFT struct {
@@ -74,9 +75,12 @@ type ActorABABFT struct {
 	synStatus int
 
 	// multiple chain
-	chainID common.Hash
-	msgChan chan actor.Context // use channel, combined with actor
-	msgStop chan struct{}
+	chainID     common.Hash
+	msgChan     chan actor.Context // use channel, combined with actor
+	msgStop     chan struct{}
+	addressRoot common.Address
+	soloaccount account.Account
+	startNode   bool
 }
 
 const(
@@ -351,7 +355,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 
 	case *netMsg.RegChain:
 		log.Info("Receive ABABFT Create Message")
-		go actorC.serviceABABFT.GenNewChain(msg.ChainID)
+		go actorC.serviceABABFT.GenNewChain(msg.ChainID, msg.Address)
 		return
 
 	default :

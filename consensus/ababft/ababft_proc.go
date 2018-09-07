@@ -4,7 +4,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"fmt"
 	"time"
-	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/types"
 	"sort"
 	"github.com/ecoball/go-ecoball/common"
@@ -27,7 +26,7 @@ func ProcessSTART(actorC *ActorABABFT) {
 		actorC.verifiedHeight = uint64(actorC.currentHeightNum)
 		log.Debug("ababft is in solo mode!")
 		// if soloaccount.PrivateKey != nil {
-		if config.StartNode == true {
+		if actorC.startNode == true {
 			// is the solo prime
 			actorC.status = 101
 
@@ -52,7 +51,7 @@ func ProcessSTART(actorC *ActorABABFT) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			blockSolo.SetSignature(&soloaccount)
+			blockSolo.SetSignature(&actorC.soloaccount)
 			actorC.blockSecondRound.BlockSecond = *blockSolo
 			// save (the ledger will broadcast the block after writing the block into the DB)
 			if err = event.Send(event.ActorNil, event.ActorP2P, blockSolo); err != nil {
@@ -806,7 +805,8 @@ func ProcessBlkS(actorC *ActorABABFT, msg BlockSecondRound) {
 				if blockSecondReceived.ConsensusData.Type == types.ConABFT {
 					dataBlkReceived := blockSecondReceived.ConsensusData.Payload.(*types.AbaBftData)
 					// check the signature comes from the root
-					if ok := bytes.Equal(blockSecondReceived.Signatures[0].PubKey,config.Root.PublicKey); ok != true {
+					addrIn := common.AddressFromPubKey(blockSecondReceived.Signatures[0].PubKey)
+					if ok := bytes.Equal(addrIn.Bytes(),actorC.addressRoot.Bytes()); ok != true {
 						println("the solo block should be signed by the root")
 						return
 					}

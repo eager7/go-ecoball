@@ -82,7 +82,7 @@ func ConsensusABABFTThread(actorC *ActorABABFT) {
 				}
 			case *message.RegChain:
 				{
-					go actorC.serviceABABFT.GenNewChain(msg.ChainID)
+					go actorC.serviceABABFT.GenNewChain(msg.ChainID,msg.Address)
 					continue
 				}
 			default :

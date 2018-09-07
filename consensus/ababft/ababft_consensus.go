@@ -47,7 +47,6 @@ const (
 )
 
 var selfaccountname common.AccountName
-var soloaccount account.Account
 
 type ServiceABABFT struct {
 	// Actor *ActorABABFT // save the actor object
@@ -94,6 +93,10 @@ func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 	actorABABFT.pid = pid
 	actorABABFT.status = 1
 	actorABABFT.serviceABABFT = serviceABABFT
+	actorABABFT.addressRoot = common.AddressFromPubKey(config.Root.PublicKey)
+	address := common.AddressFromPubKey(account.PublicKey)
+	actorABABFT.startNode = actorABABFT.addressRoot.Equals(&address)
+
 	// serviceABABFT.Actor = actorABABFT
 	serviceABABFT.mapActor = make(map[common.Hash]*ActorABABFT)
 	serviceABABFT.mapActor[chainHash] = actorABABFT
@@ -127,7 +130,7 @@ func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 	fmt.Println("selfaccountname:",selfaccountname)
 
 	// cache the root account for solo mode
-	soloaccount = config.Root
+	actorABABFT.soloaccount = *account // here, the soloaccount is the same as ABABFT account
 
 	return serviceABABFT, err
 }
@@ -151,7 +154,7 @@ func (serviceABABFT *ServiceABABFT) Start() error {
 	return err
 }
 
-func (serviceABABFT *ServiceABABFT) GenNewChain(chainID common.Hash) {
+func (serviceABABFT *ServiceABABFT) GenNewChain(chainID common.Hash, root common.Address) {
 	// generate the actor
 	// add the new actor to the chain map
 	// 1. check whether the chain exists
@@ -194,6 +197,9 @@ func (serviceABABFT *ServiceABABFT) GenNewChain(chainID common.Hash) {
 			actorABABFT.chainID = chainID
 			actorABABFT.status = 1
 			actorABABFT.serviceABABFT = serviceABABFT
+			actorABABFT.addressRoot = root
+			address := common.AddressFromPubKey(actorABABFT.serviceABABFT.account.PublicKey)
+			actorABABFT.startNode = actorABABFT.addressRoot.Equals(&address)
 
 			// 6. register the new chain
 			serviceABABFT.mapActor[chainID] = actorABABFT
@@ -235,6 +241,9 @@ func (serviceABABFT *ServiceABABFT) GenNewChain(chainID common.Hash) {
 	} else {
 		serviceABABFT.mapNewChainBlk[chainID] = *(serviceABABFT.mapActor[config.ChainHash].currentHeader)
 		time.Sleep(time.Second * 10)
+		// todo
+		// following need to be checked in case of infinite recursion
+		serviceABABFT.GenNewChain(chainID, root)
 		return
 	}
 
