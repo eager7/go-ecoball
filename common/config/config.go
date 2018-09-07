@@ -36,12 +36,12 @@ var PeerList []string
 var PeerIndex []string
 
 const (
-	StringBlock     = "/Block"
-	StringHeader    = "/Header"
-	StringTxs       = "/Txs"
-	StringState     = "/State"
-	ListPeers       = "peer_list"
-	IndexPeers      = "peer_index"
+	StringBlock  = "/Block"
+	StringHeader = "/Header"
+	StringTxs    = "/Txs"
+	StringState  = "/State"
+	ListPeers    = "peer_list"
+	IndexPeers   = "peer_index"
 )
 
 var configDefault = `#toml configuration for EcoBall system
@@ -98,6 +98,7 @@ var (
 	LogDir             string
 	OutputToTerminal   bool
 	LogLevel           int
+	ConfigDir          string
 	ConsensusAlgorithm string
 	StartNode          bool
 	Root               account.Account
@@ -160,12 +161,14 @@ func InitConfig(filePath, config string) error {
 func init() {
 	if flag.Lookup("test.v") == nil {
 		fmt.Println("normal run")
+		ConfigDir = "."
 		if err := SetConfig("."); err != nil {
 			fmt.Println("init config failed: ", err)
 			os.Exit(-1)
 		}
 	} else {
 		fmt.Println("run under go test")
+		ConfigDir = "/tmp/"
 		if err := SetConfig("/tmp/"); err != nil {
 			fmt.Println("init config failed: ", err)
 			os.Exit(-1)

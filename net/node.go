@@ -26,6 +26,7 @@ import (
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
+	ecoballConfig "github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/ipfs"
@@ -262,7 +263,7 @@ func InitNetWork() {
 	//}
 	//TODO move to config file
 	//InitIpfsConfig(path)
-	var path = "."
+	var path = ecoballConfig.ConfigDir
 
 	ipfsCtrl, err := ipfs.InitIpfs(path)
 	if err != nil {

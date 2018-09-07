@@ -29,6 +29,8 @@ import (
 	osh "gx/ipfs/QmXuBJ7DR6k3rmUEKtvVMhwjmXDuJgXXPUt4LQXKBMsU93/go-os-helper"
 	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	logging "gx/ipfs/QmcVVHfdyv15GVPk7NrxdWjh2hLVccXnoD8j2tyQShiXJb/go-log"
+
+	ecoballConfig "github.com/ecoball/go-ecoball/common/config"
 )
 
 var errRequestCanceled = errors.New("request canceled")
@@ -214,7 +216,7 @@ func getRepoPath(req *cmds.Request) (string, error) {
 		return repoOpt, nil
 	}
 
-	repoPath := "."
+	repoPath := ecoballConfig.ConfigDir
 
 	return repoPath, nil
 }
