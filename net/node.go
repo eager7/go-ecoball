@@ -263,7 +263,7 @@ func InitNetWork() {
 	//}
 	//TODO move to config file
 	//InitIpfsConfig(path)
-	var path = ecoballConfig.ConfigDir
+	var path = ecoballConfig.IpfsDir
 
 	ipfsCtrl, err := ipfs.InitIpfs(path)
 	if err != nil {

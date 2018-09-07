@@ -98,7 +98,7 @@ var (
 	LogDir             string
 	OutputToTerminal   bool
 	LogLevel           int
-	ConfigDir          string
+	IpfsDir            string
 	ConsensusAlgorithm string
 	StartNode          bool
 	Root               account.Account
@@ -161,14 +161,14 @@ func InitConfig(filePath, config string) error {
 func init() {
 	if flag.Lookup("test.v") == nil {
 		fmt.Println("normal run")
-		ConfigDir = "."
+		IpfsDir = "."
 		if err := SetConfig("."); err != nil {
 			fmt.Println("init config failed: ", err)
 			os.Exit(-1)
 		}
 	} else {
 		fmt.Println("run under go test")
-		ConfigDir = "/tmp/"
+		IpfsDir = "/tmp/ipfs"
 		if err := SetConfig("/tmp/"); err != nil {
 			fmt.Println("init config failed: ", err)
 			os.Exit(-1)

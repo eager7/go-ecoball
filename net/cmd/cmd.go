@@ -216,7 +216,7 @@ func getRepoPath(req *cmds.Request) (string, error) {
 		return repoOpt, nil
 	}
 
-	repoPath := ecoballConfig.ConfigDir
+	repoPath := ecoballConfig.IpfsDir
 
 	return repoPath, nil
 }
