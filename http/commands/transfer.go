@@ -36,7 +36,7 @@ func Transfer(params []interface{}) *common.Response {
 	}
 
 	switch {
-	case len(params) == 3:
+	case len(params) == 1:
 		if errCode := handleTransfer(params); errCode != common.SUCCESS {
 			log.Error(errCode.Info())
 			return common.NewResponse(errCode, nil)
