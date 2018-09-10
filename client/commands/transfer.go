@@ -87,12 +87,41 @@ func transferAction(c *cli.Context) error {
 
 	bigValue := big.NewInt(value)
 
+	info, err := getInfo()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	publickeys, err := GetPublicKeys()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
 	//time
 	time := time.Now().UnixNano()
 
 	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), config.ChainHash, "owner", bigValue, 0, time)
 	if nil != err {
 		return err
+	}
+
+	permission := "active"
+	required_keys, err := get_required_keys(info.ChainID, publickeys, permission, transaction)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	if required_keys == "" {
+		fmt.Println("no required_keys")
+		return err
+	}
+
+	errcode := sign_transaction(info.ChainID, required_keys, transaction)
+	if nil != errcode {
+		fmt.Println(errcode)
 	}
 
 	data, err := transaction.Serialize()
