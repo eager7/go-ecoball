@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/urfave/cli"
 )
@@ -31,6 +32,7 @@ var (
 		Category:    "Network",
 		Description: "network manager",
 		ArgsUsage:   "[args]",
+		Action:      clientCommon.DefaultAction,
 		Subcommands: []cli.Command{
 			{
 				Name:   "id",

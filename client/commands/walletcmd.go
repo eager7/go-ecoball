@@ -22,12 +22,12 @@ import (
 	//"strings"
 
 	//"github.com/ecoball/go-ecoball/account"
-	outerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
+	outerCommon "github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/types"
 	innerCommon "github.com/ecoball/go-ecoball/http/common"
 	"github.com/urfave/cli"
-	"github.com/ecoball/go-ecoball/core/types"
 )
 
 var (
@@ -261,8 +261,8 @@ func GetPublicKeys() (string, error) {
 
 func sign_transaction(chainId outerCommon.Hash, required_keys string, trx *types.Transaction) error {
 	data, err := trx.Serialize()
-	if err != nil{
-		return err;
+	if err != nil {
+		return err
 	}
 	resp, errcode := rpc.WalletCall("sign_transaction", []interface{}{chainId.HexString(), required_keys, outerCommon.ToHex(data)})
 	if errcode != nil {

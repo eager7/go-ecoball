@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"time"
 
+	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	innercommon "github.com/ecoball/go-ecoball/common"
 	//"github.com/ecoball/go-ecoball/common/config"
@@ -35,6 +36,7 @@ var (
 		Name:     "create",
 		Usage:    "create operations",
 		Category: "Create",
+		Action:   clientCommon.DefaultAction,
 		Subcommands: []cli.Command{
 			{
 				Name:   "account",
