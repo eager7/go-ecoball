@@ -565,6 +565,11 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 		}
 	
 		parameters = append(parameters, string(argbyte[:]))
+
+		//var storage []byte
+		//key := []byte(`xyx`)
+		//storage, err := ledger.L.StoreGet(config.ChainHash, innerCommon.NameToIndex(contractName), key)
+		//fmt.Println("storage: ", string(storage))
 	}
 
 	//from address
@@ -574,7 +579,7 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	//address := innerCommon.NewAddress(innerCommon.CopyBytes(innerCommon.FromHex(contractAddress)))
 
 	//time
-	time := time.Now().Unix()
+	time := time.Now().UnixNano()
 
 	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex("root"), config.ChainHash, "owner", contractMethod, parameters, 0, time)
 	if nil != err {
