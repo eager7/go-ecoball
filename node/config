@@ -1,0 +1,116 @@
+{
+  "Identity": {
+    "PeerID": "QmQX8opBvcnrMhZeNbMtZCFHapnm55NJSZPXqUMQhrMYU1",
+    "PrivKey": "CAASqQkwggSlAgEAAoIBAQDeOAFpdDhPQN8oPUrnm8pWl8hij1/s7jdsR2YEFxcpttjAKPLjVchQ79BrDoJJcUeao+iD9gBH1UOPxpo5XuZeoi+J4kwY6hIUdL2HNg5ug7uDfy6dDgs09sWjgpXoxt67E5KCDnyYqpCP3jSw8fUtt33qrCQF97ND5ywi1gdlptxZ6KPes62VEPlyLDFqJY8wb6/J6o2IGgrguXRpfDVkB/j8f8teisYHgEcLm8/7cbJGHH+DGE+GQIQr6a9d4wP8Xl9otnEXgyzo5MDP6AyZzmtelSB932pCFHcJcaChhs7nK/qkAE3n96ZyLzQkybr8/LadnO0tdw/n/zKzFehzAgMBAAECggEBAM6Tydw6ik5CxDEoKYX9sa+mEkZteoNLQIKMLS4IOSQyMnUQnBryF/IFvf6H0l5rzGDZlsF14vTkMJZrzdsfeZDnvMG1eYB/uKcDj10ux2O9Wof3p2GhOJHYBgrmzm1C0rOekkgNJ47UoObdbqY/h+kj9w49UI+roR6yvLj1tpKrO5sHS49LiMhw8r8CoATfS5dSupk82LjXuyT9xAbgNTo3teA4WAkv7FoOWRw3JsLNhbMNO7RP0bo9D/kQuGiP0prUfUO7oMZMNuy0IraRbRBqP75OlXaJU0FTw8KutKp7Fry2aqKFjP58Bz4Vhf/dv4GKp6f2a5iP+YIPrJ1PTiECgYEA+l4AWDpY4N8i++SOazuXsDAgrYpSbTlmLT9jjXeS++0wFW/tjDNPwJ6p3XW2/X7A26SCLC3njcE0U5nlCxLcaPVZ/x69Ga4aDhfcpGIEVY2Orulm2FuE8yq/bKgS/Xx8i99QhaS5IBYZzDJqplj2SHLSyS00dBqKn/2F0EHpaKcCgYEA4zfh4X1dRSOLAze0q6T32/tKRxfpzdMHWas/k7oKc/7mEwPDV2HsYz1CpDvrojk9YiJBIbFZinrp00Ld/pABD/+tBoR2Iy6HVfE9SyB42jgJRzQ5vuTB/m70nAbVFbOsHbfY3xFC+qPKxLWar2w9rO7eAGMnoVU7dXiDGuMUr1UCgYBsFgrmDAJ0ykArKOfHKYn5+T0SToX5O29+F0CeQUIGWsaIarLN9RT4HkdNIVWnqIIQELxV4Fd33jH96ZF1L2ZSNaHtvtJ6dKww62JI4Tvnx14S6xaITzJdXFYZzZGtN4H5TKZRm+SEEqZ+fkGGoR9p9ZBEY6yidxbjrSqI1vuyPwKBgQDJk4EMB6jgNnkUIK5i/FZ7zUKHMbrVQ5sovNkJWKn/YCqCwfrhodkR7X4ar6IK6BcB4XvAxVK3nPWl25OQS/b1V5EL0CXybkvYPc1vwd4VUlNA3R9BsDY+X/cYGKOfvic6sihvNSQjsX2o56fUawWITt2aoFy/LxsxyvkcuEpYhQKBgQDfkI+28oxdZnRhwygEor5Gqix3H6tNbpLsGq6it8vHNDQzv/2HBpNG45BL3LlTAI8+85DJjtxHU3HtDqZ0VrXExxq781KucVC4eFVpqJgqSJRdtx1PlxTlGwWCDzb7A8p/A4gjpEN8mxKEYUTNBth2UuJ7MPtCyR6zlemcyii/Vw=="
+  },
+  "Datastore": {
+    "StorageMax": "10GB",
+    "StorageGCWatermark": 90,
+    "GCPeriod": "1h",
+    "Spec": {
+      "mounts": [
+        {
+          "child": {
+            "path": "blocks",
+            "shardFunc": "/repo/flatfs/shard/v1/next-to-last/2",
+            "sync": true,
+            "type": "flatfs"
+          },
+          "mountpoint": "/blocks",
+          "prefix": "flatfs.datastore",
+          "type": "measure"
+        },
+        {
+          "child": {
+            "compression": "none",
+            "path": "datastore",
+            "type": "levelds"
+          },
+          "mountpoint": "/",
+          "prefix": "leveldb.datastore",
+          "type": "measure"
+        }
+      ],
+      "type": "mount"
+    },
+    "HashOnRead": false,
+    "BloomFilterSize": 0
+  },
+  "Addresses": {
+    "Swarm": [
+      "/ip4/0.0.0.0/tcp/4011",
+      "/ip6/::/tcp/4011"
+    ],
+    "Announce": [],
+    "NoAnnounce": [],
+    "API": "/ip4/127.0.0.1/tcp/5001",
+    "Gateway": "/ip4/127.0.0.1/tcp/8080"
+  },
+  "Mounts": {
+    "IPFS": "/ipfs",
+    "IPNS": "/ipns",
+    "FuseAllowOther": false
+  },
+  "Discovery": {
+    "MDNS": {
+      "Enabled": true,
+      "Interval": 10
+    }
+  },
+  "Routing": {
+    "Type": "dht"
+  },
+  "Ipns": {
+    "RepublishPeriod": "",
+    "RecordLifetime": "",
+    "ResolveCacheSize": 128
+  },
+  "Bootstrap": [],
+  "Gateway": {
+    "HTTPHeaders": {
+      "Access-Control-Allow-Headers": [
+        "X-Requested-With",
+        "Range"
+      ],
+      "Access-Control-Allow-Methods": [
+        "GET"
+      ],
+      "Access-Control-Allow-Origin": [
+        "*"
+      ]
+    },
+    "RootRedirect": "",
+    "Writable": false,
+    "PathPrefixes": []
+  },
+  "API": {
+    "HTTPHeaders": {
+      "Server": [
+        "go-ipfs/0.4.18-dev"
+      ]
+    }
+  },
+  "Swarm": {
+    "AddrFilters": null,
+    "DisableBandwidthMetrics": false,
+    "DisableNatPortMap": false,
+    "DisableRelay": false,
+    "EnableRelayHop": false,
+    "ConnMgr": {
+      "Type": "basic",
+      "LowWater": 600,
+      "HighWater": 900,
+      "GracePeriod": "20s"
+    }
+  },
+  "Reprovider": {
+    "Interval": "12h",
+    "Strategy": "all"
+  },
+  "Experimental": {
+    "FilestoreEnabled": false,
+    "UrlstoreEnabled": false,
+    "ShardingEnabled": false,
+    "Libp2pStreamMounting": false
+  }
+}

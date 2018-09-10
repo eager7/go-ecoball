@@ -37,7 +37,7 @@ type Ledger interface {
 	//AccountSubBalance(index common.AccountName, token string, value uint64) error
 
 	//AddResourceLimits(from, to common.AccountName, cpu, net float32) error
-	//StoreGet(index common.AccountName, key []byte) ([]byte, error)
+	StoreGet(chainID common.Hash, index common.AccountName, key []byte) (value []byte, err error)
 	//StoreSet(index common.AccountName, key, value []byte) error
 
 	//TokenCreate(index common.AccountName, token string, maximum uint64) error
