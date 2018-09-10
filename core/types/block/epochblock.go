@@ -19,6 +19,8 @@ package block
 type EpochBlockHeader struct {
 	CMEpochNo        uint64
 	FinalBlockHeight uint64
+	Round            uint16
+	Candidate        NodeInfo
 	Timestamp        uint64
 	*COSign
 }

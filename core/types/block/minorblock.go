@@ -37,7 +37,7 @@ type MinorBlockHeader struct {
 	TrxHashRoot       common.Hash
 	StateDeltaHash    common.Hash
 	CMEpochNo         uint64
-	CmBlockHash       common.Hash
+	CMBlockHash       common.Hash
 	Timestamp         uint64
 	*COSign
 }
