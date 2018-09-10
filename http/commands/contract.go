@@ -540,6 +540,8 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	//}
 	//log.Debug("BuildWasmContractParam: ", string(argbyte))
 
+	ChainHash := config.ChainHash
+	from := innerCommon.NameToIndex("root")
 	if "new_account" == contractMethod {
 		parameter := strings.Split(contractParam, ",")
 		for _, v := range parameter {
@@ -554,6 +556,16 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	}else if "set_account" == contractMethod {
 		parameters = append(parameters, contractName)
 		parameters = append(parameters, contractParam)
+	}else if "reg_chain" == contractMethod {
+		parameter := strings.Split(contractParam, ",")
+		if len(parameter) == 3{
+			from = innerCommon.NameToIndex(parameter[0])
+			ChainHash = innerCommon.SingleHash(innerCommon.FromHex(parameter[1]))
+			parameters = append(parameters, parameter[0])
+			parameters = append(parameters, innerCommon.AddressFromPubKey(innerCommon.FromHex(parameter[2])).HexString())
+		}else {
+			return common.INVALID_PARAMS
+		}
 	}else {
 		contract, err := ledger.L.GetContract(config.ChainHash, innerCommon.NameToIndex(contractName))
 
@@ -587,7 +599,7 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	//time
 	time := time.Now().UnixNano()
 
-	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex("root"), config.ChainHash, "owner", contractMethod, parameters, 0, time)
+	transaction, err := types.NewInvokeContract(from, innerCommon.NameToIndex("root"), ChainHash, "owner", contractMethod, parameters, 0, time)
 	if nil != err {
 		return common.TRX_FAIL
 	}
@@ -597,6 +609,7 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	if err != nil {
 		return common.INVALID_ACCOUNT
 	}
+	transaction.Show()
 
 	//send to txpool
 	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
