@@ -23,12 +23,14 @@ import (
 	"os"
 	"time"
 
+	"encoding/json"
+
+	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/urfave/cli"
-	"github.com/ecoball/go-ecoball/http/common/abi"
-	"encoding/json"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/http/common/abi"
+	"github.com/urfave/cli"
 )
 
 var (
@@ -38,6 +40,7 @@ var (
 		Category:    "Contract",
 		Description: "you could deploy or execute contract",
 		ArgsUsage:   "[args]",
+		Action:      clientCommon.DefaultAction,
 		Subcommands: []cli.Command{
 			{
 				Name:   "deploy",
@@ -106,7 +109,7 @@ func setContract(c *cli.Context) error {
 
 	//abi file path
 	abi_fileName := c.String("abipath")
-	if abi_fileName == ""{
+	if abi_fileName == "" {
 		fmt.Println("Invalid abifile path: ", fileName)
 		return errors.New("Invalid abi file path")
 	}
@@ -131,7 +134,7 @@ func setContract(c *cli.Context) error {
 		fmt.Println("open file failed")
 		return errors.New("open file failed: " + abi_fileName)
 	}
-	
+
 	defer abifile.Close()
 	abidata, err := ioutil.ReadAll(abifile)
 	if err != nil {
@@ -150,7 +153,7 @@ func setContract(c *cli.Context) error {
 		fmt.Errorf("ABI MarshalBinary failed")
 		return err
 	}
-	
+
 	//contract name
 	contractName := c.String("name")
 	if contractName == "" {

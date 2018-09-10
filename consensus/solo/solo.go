@@ -27,6 +27,7 @@ import (
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/txpool"
 	"time"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
@@ -54,6 +55,9 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.
 		log.Error(err)
 		return nil, err
 	}
+	//start main chain
+	solo.Chains[config.ChainHash] = common.AddressFromPubKey(config.Root.PublicKey)
+	go ConsensusWorkerThread(config.ChainHash, solo, solo.Chains[config.ChainHash])
 
 	return solo, nil
 }

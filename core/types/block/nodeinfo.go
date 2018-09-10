@@ -18,9 +18,6 @@ package block
 
 type NodeInfo struct {
 	PublicKey []byte
-}
-
-type NodeAddr struct {
-	Address string
-	Port    string
+	Address   string
+	Port      string
 }

@@ -20,10 +20,11 @@ import (
 	"fmt"
 	"os"
 
+	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
-	"github.com/urfave/cli"
-	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/urfave/cli"
 )
 
 var (
@@ -31,6 +32,7 @@ var (
 		Name:     "query",
 		Usage:    "operations for query state",
 		Category: "Query",
+		Action:   clientCommon.DefaultAction,
 		Subcommands: []cli.Command{
 			{
 				Name:   "balance",
@@ -47,13 +49,13 @@ var (
 	}
 )
 
-func get_account(name string)(*state.Account, error){
+func get_account(name string) (*state.Account, error) {
 	info, err := getInfo()
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-	
+
 	//rpc call
 	resp, err := rpc.NodeCall("get_account", []interface{}{info.ChainID.HexString(), name})
 	if err != nil {

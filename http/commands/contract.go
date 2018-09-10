@@ -541,7 +541,14 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	//log.Debug("BuildWasmContractParam: ", string(argbyte))
 
 	if "new_account" == contractMethod {
-		//parameter := strings.Split(contractParam, ",")
+		parameter := strings.Split(contractParam, ",")
+		for _, v := range parameter {
+			if strings.Contains(v, "0x") {
+				parameters = append(parameters, innerCommon.AddressFromPubKey(innerCommon.FromHex(v)).HexString())
+			}else {
+				parameters = append(parameters, v)
+			}
+		}
 	}else if "pledge" == contractMethod {
 		parameters = strings.Split(contractParam, ",")
 	}else if "set_account" == contractMethod {

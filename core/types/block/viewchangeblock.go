@@ -16,13 +16,15 @@
 
 package block
 
-type EpochBlockHeader struct {
+type ViewChangeBlockHeader struct {
 	CMEpochNo        uint64
 	FinalBlockHeight uint64
+	Round            uint16
+	Candidate        NodeInfo
 	Timestamp        uint64
 	*COSign
 }
 
-type EpochBlock struct {
-	*EpochBlockHeader
+type ViewChangeBlock struct {
+	*ViewChangeBlockHeader
 }
