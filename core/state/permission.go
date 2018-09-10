@@ -188,7 +188,7 @@ func (a *Account) checkPermission(state *State, name string, signatures []common
 			}
 		}
 		if err := perm.checkPermission(state, signatures); err != nil {
-			log.Error(fmt.Sprintf("account:%s", a.Index.String()))
+			log.Error(fmt.Sprintf("account:%s", a.JsonString(false)))
 			return err
 		}
 	}
