@@ -88,7 +88,7 @@ func transferAction(c *cli.Context) error {
 	bigValue := big.NewInt(value)
 
 	//time
-	time := time.Now().Unix()
+	time := time.Now().UnixNano()
 
 	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), config.ChainHash, "owner", bigValue, 0, time)
 	if nil != err {
