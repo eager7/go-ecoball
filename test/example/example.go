@@ -570,27 +570,59 @@ func InvokeContract(ledger ledger.Ledger) {
 
 //	simpleABI := []byte(`
 //{
-//  "types": [],
-//  "structs": [{
-//      "name": "transfer",
+// "types": [],
+// "structs": [{
+//     "name": "transfer",
+//     "base": "",
+//     "fields": [
+//        {"name":"from", "type":"string"},
+//        {"name":"to", "type":"string"},
+//        {"name":"quantity", "type":"string"},
+//        {"name":"memo", "type":"int32"}
+//     ]
+//   },{
+//      "name": "account",
 //      "base": "",
 //      "fields": [
-//         {"name":"from", "type":"string"},
-//         {"name":"to", "type":"string"},
-//         {"name":"quantity", "type":"string"},
-//         {"name":"memo", "type":"int32"}
+//        {"name":"balance", "type":"asset"}
+//      ]
+//    },{
+//      "name": "currency_stats",
+//      "base": "",
+//      "fields": [
+//        {"name":"supply", "type":"asset"},
+//        {"name":"max_supply", "type":"asset"},
+//        {"name":"issuer", "type":"account_name"}
 //      ]
 //    }
-//  ],
-//  "actions": [{
-//      "name": "transfer",
-//      "type": "transfer"
-//    }
-//  ],
-//  "tables": [
-//  ]
+// ],
+// "actions": [{
+//     "name": "transfer",
+//     "type": "transfer"
+//   }
+// ],
+// "tables": [{
+//	"name": "accounts",
+//	"type": "account",
+//	"index_type": "i64",
+//	"key_names" : ["currency"],
+//	"key_types" : ["uint64"]
+//	},{
+//	"name": "stat",
+//	"type": "currency_stats",
+//	"index_type": "i64",
+//	"key_names" : ["currency"],
+//	"key_types" : ["uint64"]
+//	}
+// ]
 //}
 //`)
+//
+//	var simpleAbi abi.ABI
+//	if err = json.Unmarshal(simpleABI, &simpleAbi); err != nil {
+//		fmt.Errorf("ABI Unmarshal failed")
+//		return
+//	}
 
 	var contractAbi abi.ABI
 	if err = json.Unmarshal(abidata, &contractAbi); err != nil {
