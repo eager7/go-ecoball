@@ -573,10 +573,9 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	
 		parameters = append(parameters, string(argbyte[:]))
 
-		//var storage []byte
-		//key := []byte(`xyx`)
-		//storage, err := ledger.L.StoreGet(config.ChainHash, innerCommon.NameToIndex(contractName), key)
-		//fmt.Println("storage: ", string(storage))
+		key := []byte(`supply`)
+		storage, err := ledger.L.StoreGet(config.ChainHash, innerCommon.NameToIndex(contractName), key)
+		fmt.Println("storage: ", string(storage))
 	}
 
 	//from address
