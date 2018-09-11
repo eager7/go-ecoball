@@ -58,7 +58,8 @@ type ServiceABABFT struct {
 	mapActor map[common.Hash]*ActorABABFT
 	mapNewChainBlk map[common.Hash]types.Header
 	// msgChan    <-chan interface{} // only the main chain can generate the subchain
-	mapMsgChan map[common.Hash]chan actor.Context
+	// mapMsgChan map[common.Hash]chan actor.Context
+	mapMsgChan map[common.Hash]chan interface{}
 	mapMsgstop map[common.Hash]chan struct{}
 	// stop   chan struct{}
 }
@@ -101,7 +102,8 @@ func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 	serviceABABFT.mapActor = make(map[common.Hash]*ActorABABFT)
 	serviceABABFT.mapActor[chainHash] = actorABABFT
 	serviceABABFT.mapNewChainBlk = make(map[common.Hash]types.Header)
-	serviceABABFT.mapMsgChan = make(map[common.Hash]chan actor.Context)
+	// serviceABABFT.mapMsgChan = make(map[common.Hash]chan actor.Context)
+	serviceABABFT.mapMsgChan = make(map[common.Hash]chan interface{})
 	serviceABABFT.mapMsgstop = make(map[common.Hash]chan struct{})
 	// serviceABABFT.mapPID[chainHash] = pid
 	serviceABABFT.ledger = l
@@ -121,12 +123,12 @@ func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 		return nil, err
 	}
 	*/
-	actorABABFT.msgChan = make(chan actor.Context, 256)
+	actorABABFT.msgChan = make(chan interface{}, 256)
 	serviceABABFT.mapMsgChan[chainHash] = actorABABFT.msgChan
 	actorABABFT.msgStop = make(chan struct{})
 	serviceABABFT.mapMsgstop[chainHash] = actorABABFT.msgStop
 
-	selfaccountname = common.NameToIndex("worker2")
+	selfaccountname = common.NameToIndex("root")
 	fmt.Println("selfaccountname:",selfaccountname)
 
 	// cache the root account for solo mode
@@ -216,7 +218,8 @@ func (serviceABABFT *ServiceABABFT) GenNewChain(chainID common.Hash, root common
 				return
 			}
 			*/
-			actorABABFT.msgChan = make(chan actor.Context, 256)
+			// actorABABFT.msgChan = make(chan actor.Context, 256)
+			actorABABFT.msgChan = make(chan interface{}, 256)
 			serviceABABFT.mapMsgChan[chainID] = actorABABFT.msgChan
 			actorABABFT.msgStop = make(chan struct{})
 			serviceABABFT.mapMsgstop[chainID] = actorABABFT.msgStop
