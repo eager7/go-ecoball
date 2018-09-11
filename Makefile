@@ -52,4 +52,6 @@ clean:
 
 test:
 	@echo "\033[;31mhello world \033[0m"
-	@echo ${GOBIN}
+	@echo $(PATH)
+	@echo $(GOPATH)
+	@echo $(GOBIN)
