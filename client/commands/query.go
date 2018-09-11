@@ -50,6 +50,11 @@ var (
 						Name:  "account_name, n",
 						Usage: "account name",
 					},
+					cli.StringFlag{
+						Name:  "chainId, c",
+						Usage: "chainId hash",
+						Value: "config.hash",
+					},
 				},
 			},
 		},
@@ -84,15 +89,9 @@ func GetChainList(c *cli.Context) error {
 	return nil
 }
 
-func get_account(name string) (*state.Account, error) {
-	info, err := getInfo()
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-
+func get_account(chainId common.Hash, name string) (*state.Account, error) {
 	//rpc call
-	resp, err := rpc.NodeCall("get_account", []interface{}{info.ChainID.HexString(), name})
+	resp, err := rpc.NodeCall("get_account", []interface{}{chainId.HexString(), name})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return nil, err
@@ -124,7 +123,19 @@ func queryAccount(c *cli.Context) error {
 		fmt.Println("Invalid account address: ", address)
 	}
 
-	accountInfo, err := get_account(address)
+	info, err := getInfo()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	chainId := info.ChainID
+	chainIdStr := c.String("chainId")
+	if "config.hash" != chainIdStr && "" != chainIdStr {
+		chainId = common.HexToHash(chainIdStr)
+	}
+
+	accountInfo, err := get_account(chainId, address)
 	accountInfo.Show()
 	if nil != err {
 		return err
