@@ -78,12 +78,12 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 	case "reg_chain":
 		index := common.NameToIndex(ns.params[0])
 		consensus := ns.params[1]
-		data := []byte(index.String() + consensus)
+		addr := common.AddressFormHexString(ns.params[2])
+		data := []byte(index.String() + consensus + addr.HexString())
 		hash := common.SingleHash(data)
 		if err := ns.state.RegisterChain(index, hash); err != nil {
 			return nil, err
 		}
-		addr := common.AddressFormHexString(ns.params[2])
 		if  ns.state.StateType()== state.FinalType {
 			if consensus == "solo" {
 				msg := &message.RegChain{ChainID: hash, Tx: ns.tx, Address: addr}
