@@ -22,6 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/test/example"
 	"testing"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"fmt"
 )
 
 func TestTransfer(t *testing.T) {
@@ -61,4 +62,10 @@ func TestInvoke(t *testing.T) {
 	errors.CheckErrorPanic(i2.Deserialize(data))
 
 	errors.CheckEqualPanic(i.JsonString() == i2.JsonString())
+}
+
+func TestSize(t *testing.T) {
+	tx := example.TestTransfer()
+	data, _ := tx.Serialize()
+	fmt.Println(len(data))
 }

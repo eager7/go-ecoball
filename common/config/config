@@ -1,0 +1,5 @@
+#! /bin/sh
+
+export CGO_ENABLED="1"
+export GOBIN=$(GOPATH)/bin
+
