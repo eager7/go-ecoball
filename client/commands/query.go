@@ -41,36 +41,20 @@ var (
 				Action: GetChainList,
 				Flags: []cli.Flag{},
 			},
+			{
+				Name:   "account",
+				Usage:  "query account's info",
+				Action: queryAccount,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "account_name, n",
+						Usage: "account name",
+					},
+				},
+			},
 		},
 	}
 )
-
-func get_account(name string) (*state.Account, error) {
-	info, err := getInfo()
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-
-	//rpc call
-	resp, err := rpc.NodeCall("get_account", []interface{}{info.ChainID.HexString(), name})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return nil, err
-	}
-
-	if nil != resp["result"] {
-		switch resp["result"].(type) {
-		case string:
-			data := resp["result"].(string)
-			accountInfo := new(state.Account)
-			accountInfo.Deserialize(common.FromHex(data))
-			return accountInfo, nil
-		default:
-		}
-	}
-	return nil, nil
-}
 
 func GetChainList(c *cli.Context) error {
 	resp, err := rpc.NodeCall("Get_ChainList", []interface{}{})
@@ -100,7 +84,34 @@ func GetChainList(c *cli.Context) error {
 	return nil
 }
 
-func queryBalance(c *cli.Context) error {
+func get_account(name string) (*state.Account, error) {
+	info, err := getInfo()
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	//rpc call
+	resp, err := rpc.NodeCall("get_account", []interface{}{info.ChainID.HexString(), name})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return nil, err
+	}
+
+	if nil != resp["result"] {
+		switch resp["result"].(type) {
+		case string:
+			data := resp["result"].(string)
+			accountInfo := new(state.Account)
+			accountInfo.Deserialize(common.FromHex(data))
+			return accountInfo, nil
+		default:
+		}
+	}
+	return nil, nil
+}
+
+func queryAccount(c *cli.Context) error {
 	//Check the number of flags
 	if c.NumFlags() == 0 {
 		cli.ShowSubcommandHelp(c)
@@ -108,18 +119,15 @@ func queryBalance(c *cli.Context) error {
 	}
 
 	//account address
-	address := c.String("address")
+	address := c.String("account_name")
 	if address == "" {
 		fmt.Println("Invalid account address: ", address)
 	}
 
-	//rpc call
-	resp, err := rpc.NodeCall("query", []interface{}{string("balance"), address})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	accountInfo, err := get_account(address)
+	accountInfo.Show()
+	if nil != err {
 		return err
 	}
-
-	//result
-	return rpc.EchoResult(resp)
+	return nil
 }

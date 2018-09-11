@@ -99,7 +99,7 @@ func getInfo() (*types.Block, error) {
 			data := resp["result"].(string)
 			blockINfo := new(types.Block)
 			blockINfo.Deserialize(innercommon.FromHex(data))
-			blockINfo.Show(true)
+			//blockINfo.Show(true)
 			return blockINfo, nil
 		default:
 		}
