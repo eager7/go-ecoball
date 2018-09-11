@@ -127,7 +127,6 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			log.Info("the chain found, send this ABABFTStart to the corresponding channel")
 			// msgChan <- ctx
 			msgChan <- msgIn
-			log.Info("ctx:",ctx,ctx.Message())
 		} else {
 			log.Info("Not found the corresponding chain")
 		}

@@ -25,6 +25,8 @@ func ProcessSTART(actorC *ActorABABFT) {
 		actorC.currentRoundNum = 0
 		actorC.verifiedHeight = uint64(actorC.currentHeightNum)
 		log.Debug("ababft is in solo mode!")
+		log.Debug("actorC.currentHeader",actorC.currentHeader)
+		log.Debug("actorC.currentHeader Signatures:", len(actorC.currentHeader.Signatures))
 		// if soloaccount.PrivateKey != nil {
 		if actorC.startNode == true {
 			// is the solo prime
@@ -33,7 +35,9 @@ func ProcessSTART(actorC *ActorABABFT) {
 			// generate the solo block
 			// consensus data
 			var signPreSend []common.Signature
-			signPreSend = append(signPreSend, actorC.currentHeader.Signatures[0])
+			if len(actorC.currentHeader.Signatures) > 0 {
+				signPreSend = append(signPreSend, actorC.currentHeader.Signatures[0])
+			}
 			conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{NumberRound:uint32(actorC.currentRoundNum), PreBlockSignatures:signPreSend,}}
 			// tx list
 			txs, err1 := actorC.serviceABABFT.txPool.GetTxsList(actorC.chainID)

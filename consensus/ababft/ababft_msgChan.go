@@ -14,11 +14,9 @@ func ConsensusABABFTThread(actorC *ActorABABFT) {
 				return
 			}
 		case msgIn :=<- actorC.msgChan:
-			log.Info("receive the actorC.msgChan:", msgIn)
 			switch msg := msgIn.(type) {
 			case message.ABABFTStart:
 				{
-					log.Info("thread receive the ABABFTStart msg;")
 					ProcessSTART(actorC)
 					continue
 				}
