@@ -51,5 +51,4 @@ clean:
 .PHONY: test
 test:
 	@echo "\033[;31mhello world \033[0m"
-	$(shell export GOBIN=/bin)
 	@echo ${GOBIN}
