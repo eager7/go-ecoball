@@ -19,6 +19,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
@@ -35,15 +36,10 @@ var (
 		Action:   clientCommon.DefaultAction,
 		Subcommands: []cli.Command{
 			{
-				Name:   "balance",
-				Usage:  "query account's balance",
-				Action: queryBalance,
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "address, a",
-						Usage: "account address",
-					},
-				},
+				Name:   "listchain",
+				Usage:  "query all chain id",
+				Action: GetChainList,
+				Flags: []cli.Flag{},
 			},
 		},
 	}
@@ -74,6 +70,34 @@ func get_account(name string) (*state.Account, error) {
 		}
 	}
 	return nil, nil
+}
+
+func GetChainList(c *cli.Context) error {
+	resp, err := rpc.NodeCall("Get_ChainList", []interface{}{})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return err
+	}
+
+	if nil != resp["result"] {
+		switch resp["result"].(type) {
+		case string:
+			data := resp["result"].(string)
+			//chainList := []state.Chain{}
+			chainInfo_str := strings.Split(data, "\n")
+			for _, v := range chainInfo_str {
+				/*chain := new(state.Chain)
+				chain_str := strings.Split(v, ":")
+				chain.Index = common.NameToIndex(chain_str[0])
+				chain.Hash = common.HexToHash(chain_str[1])
+				chainList = append(chainList, *chain)*/
+				fmt.Println(v)
+			}
+			return nil
+		default:
+		}
+	}
+	return nil
 }
 
 func queryBalance(c *cli.Context) error {

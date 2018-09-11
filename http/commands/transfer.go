@@ -96,6 +96,7 @@ func handleTransfer(params []interface{}) common.Errcode {
 	if err := transaction.Deserialize(inner.FromHex(name)); err != nil {
 		return common.INVALID_PARAMS
 	}
+	//transaction.Show()
 
 	//send to txpool
 	err := event.Send(event.ActorNil, event.ActorTxPool, &transaction)
