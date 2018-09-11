@@ -1,0 +1,7 @@
+#! /bin/sh
+
+OS:=$(shell uname | sed 's/CYGWIN.*/windows/;s/Darwin/macosx/' | tr '[A-Z]' '[a-z]')
+
+export CGO_ENABLED="1"
+export GOBIN=${GOPATH}/bin
+
