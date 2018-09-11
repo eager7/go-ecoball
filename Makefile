@@ -49,6 +49,7 @@ clean:
 	make -C client/protos clean
 
 .PHONY: test
+
 test:
 	@echo "\033[;31mhello world \033[0m"
 	@echo ${GOBIN}
