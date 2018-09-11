@@ -23,10 +23,14 @@ import (
 	"testing"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"fmt"
+	"math/big"
 )
 
 func TestTransfer(t *testing.T) {
 	tx := example.TestTransfer()
+	tx.Receipt.Hash = tx.Hash
+	tx.Receipt.From = types.AccountReceipt{Balance: new(big.Int).SetUint64(1000)}
+	tx.Receipt.To = types.AccountReceipt{Balance: new(big.Int).SetUint64(1000)}
 	result, err := tx.VerifySignature()
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(result)
@@ -49,7 +53,8 @@ func TestDeploy(t *testing.T) {
 
 	dep := &types.Transaction{Payload: new(types.DeployInfo)}
 	errors.CheckErrorPanic(dep.Deserialize(data))
-
+	elog.Log.Debug(deploy.JsonString())
+	elog.Log.Info(dep.JsonString())
 	errors.CheckEqualPanic(dep.JsonString() == deploy.JsonString())
 }
 

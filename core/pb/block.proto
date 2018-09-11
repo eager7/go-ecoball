@@ -112,6 +112,8 @@ message TransactionReceipt {
     double      Cpu         = 2;
     double      Net         = 3;
     bytes       Result      = 4;
+    bytes       From        = 5;
+    bytes       To          = 6;
 }
 message BlockReceipt {
     double BlockCpu = 1;
