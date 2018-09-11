@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"time"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 type soloActor struct {
@@ -59,7 +60,7 @@ func (l *soloActor) Receive(ctx actor.Context) {
 			log.Info("the chain is existed:", chain.HexString())
 			return
 		} else {
-			if msg.Tx == nil {
+			if msg.TxHash.Equals(&common.Hash{}) {
 				event.Send(event.ActorNil, event.ActorTxPool, msg)
 				event.Send(event.ActorNil, event.ActorLedger, msg)
 				l.solo.Chains[msg.ChainID] = msg.Address
@@ -81,7 +82,7 @@ func (l *soloActor) CreateNewChain(msg *message.RegChain) {
 			log.Error(err)
 			continue
 		}
-		if block.IsExistedTransaction(msg.Tx.Hash) {
+		if block.IsExistedTransaction(msg.TxHash) {
 			event.Send(event.ActorNil, event.ActorTxPool, msg)
 			event.Send(event.ActorNil, event.ActorLedger, msg)
 			l.solo.Chains[msg.ChainID] = msg.Address

@@ -25,6 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
+	"math/big"
 )
 
 const VersionTx = 1
@@ -82,6 +83,20 @@ func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash
 		Nonce:      nonce,
 		TimeStamp:  time,
 		Payload:    payload,
+		Signatures: nil,
+		Hash:       common.Hash{},
+		Receipt:    TransactionReceipt{
+			From:   AccountReceipt{
+				Balance: new(big.Int).SetUint64(0),
+			},
+			To:     AccountReceipt{
+				Balance: new(big.Int).SetUint64(0),
+			},
+			Hash:   common.Hash{},
+			Cpu:    0,
+			Net:    0,
+			Result: nil,
+		},
 	}
 	if tx.Permission == "" {
 		tx.Permission = "active"
@@ -152,6 +167,14 @@ func (t *Transaction) protoBuf() (*pb.Transaction, error) {
 		s := &pb.Signature{PubKey: t.Signatures[i].PubKey, SigData: t.Signatures[i].SigData}
 		sig = append(sig, s)
 	}
+	from, err := t.Receipt.From.Balance.GobEncode()
+	if err != nil {
+		return nil, err
+	}
+	to, err := t.Receipt.To.Balance.GobEncode()
+	if err != nil {
+		return nil, err
+	}
 	p := &pb.Transaction{
 		Payload: &pb.TxPayload{
 			Version:    t.Version,
@@ -164,9 +187,16 @@ func (t *Transaction) protoBuf() (*pb.Transaction, error) {
 			Nonce:      t.Nonce,
 			Timestamp:  t.TimeStamp,
 		},
-		Sign:    sig,
-		Hash:    t.Hash.Bytes(),
-		Receipt: &pb.TransactionReceipt{Hash: t.Hash.Bytes(), Cpu: t.Receipt.Cpu, Net: t.Receipt.Net, Result: common.CopyBytes(t.Receipt.Result)},
+		Sign: sig,
+		Hash: t.Hash.Bytes(),
+		Receipt: &pb.TransactionReceipt{
+			Hash:   t.Hash.Bytes(),
+			Cpu:    t.Receipt.Cpu,
+			Net:    t.Receipt.Net,
+			Result: common.CopyBytes(t.Receipt.Result),
+			From:   from,
+			To:     to,
+		},
 	}
 	return p, nil
 }
@@ -209,7 +239,22 @@ func (t *Transaction) Deserialize(data []byte) error {
 	t.Addr = common.AccountName(txPb.Payload.Addr)
 	t.Nonce = txPb.Payload.Nonce
 	t.TimeStamp = txPb.Payload.Timestamp
-	t.Receipt = TransactionReceipt{Hash: common.NewHash(txPb.Receipt.Hash), Cpu: txPb.Receipt.Cpu, Net: txPb.Receipt.Net, Result: common.CopyBytes(txPb.Receipt.Result)}
+	from := new(big.Int)
+	if err := from.GobDecode(txPb.Receipt.From); err != nil {
+		return errors.New(log, fmt.Sprintf("GobDecode err:%s", err.Error()))
+	}
+	to := new(big.Int)
+	if err := to.GobDecode(txPb.Receipt.To); err != nil {
+		return errors.New(log, fmt.Sprintf("GobDecode err:%s", err.Error()))
+	}
+	t.Receipt = TransactionReceipt{
+		From:   AccountReceipt{Balance: from},
+		To:     AccountReceipt{Balance: to},
+		Hash:   common.NewHash(txPb.Receipt.Hash),
+		Cpu:    txPb.Receipt.Cpu,
+		Net:    txPb.Receipt.Net,
+		Result: common.CopyBytes(txPb.Receipt.Result),
+	}
 	if t.Payload == nil {
 		switch t.Type {
 		case TxTransfer:

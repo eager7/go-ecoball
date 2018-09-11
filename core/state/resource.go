@@ -26,8 +26,10 @@ type Producer struct {
 	Amount uint64
 }
 type Chain struct {
-	Hash common.Hash
-	Index common.AccountName
+	Hash    common.Hash
+	TxHash  common.Hash
+	Address common.Address
+	Index   common.AccountName
 }
 type Resource struct {
 	Ram struct {
@@ -42,12 +44,12 @@ type Resource struct {
 		Limit     float64 `json:"limit_byte, omitempty"`     //uint Byte
 	}
 	Cpu struct {
-	Staked    uint64  `json:"staked_aba, omitempty"`    //total stake delegated from account to self, uint ABA
-	Delegated uint64  `json:"delegated_aba, omitempty"` //total stake delegated to account from others, uint ABA
-	Used      float64 `json:"used_ms, omitempty"`       //uint ms
-	Available float64 `json:"available_ms, omitempty"`  //uint ms
-	Limit     float64 `json:"limit_ms, omitempty"`      //uint ms
-}
+		Staked    uint64  `json:"staked_aba, omitempty"`    //total stake delegated from account to self, uint ABA
+		Delegated uint64  `json:"delegated_aba, omitempty"` //total stake delegated to account from others, uint ABA
+		Used      float64 `json:"used_ms, omitempty"`       //uint ms
+		Available float64 `json:"available_ms, omitempty"`  //uint ms
+		Limit     float64 `json:"limit_ms, omitempty"`      //uint ms
+	}
 	Votes struct {
 		Staked    uint64                        `json:"staked_aba, omitempty"` //total stake delegated, uint ABA
 		Producers map[common.AccountName]uint64 `json:"producers, omitempty"`  //support nodes' list
@@ -295,7 +297,7 @@ func (s *State) RegisterProducer(index common.AccountName) error {
  *  @brief register a new transaction chain
  *  @param index - account's index
  */
-func (s *State) RegisterChain(index common.AccountName, hash common.Hash) error {
+func (s *State) RegisterChain(index common.AccountName, hash, txHash common.Hash, addr common.Address) error {
 	if _, err := s.GetChainList(); err != nil {
 		return err
 	}
@@ -308,7 +310,12 @@ func (s *State) RegisterChain(index common.AccountName, hash common.Hash) error 
 		s.chainMutex.Unlock()
 		return nil
 	}
-	s.Chains[hash] = index
+	s.Chains[hash] = Chain{
+		Hash:    hash,
+		TxHash:  txHash,
+		Address: addr,
+		Index:   index,
+	}
 	s.chainMutex.Unlock()
 
 	return s.commitChains()
@@ -328,8 +335,7 @@ func (s *State) commitChains() error {
 	var List []Chain
 	for _, v := range Keys {
 		hash := common.HexToHash(v)
-		list := Chain{hash, s.Chains[hash]}
-		List = append(List, list)
+		List = append(List, s.Chains[hash])
 	}
 
 	data, err := json.Marshal(List)
@@ -357,18 +363,24 @@ func (s *State) GetChainList() ([]Chain, error) {
 				return nil, errors.New(log, fmt.Sprintf("can't unmarshal Chains List from json string:%s", err.Error()))
 			}
 			for _, v := range Chains {
-				s.Chains[v.Hash] = v.Index
+				s.Chains[v.Hash] = v
 			}
 		}
 	}
 	var list []Chain
-	for k := range s.Chains {
-		c := Chain{k, s.Chains[k]}
+	for _, v := range s.Chains {
+		c := Chain{
+			Hash:    v.Hash,
+			TxHash:  v.TxHash,
+			Address: v.Address,
+			Index:   v.Index,
+		}
 		list = append(list, c)
 		log.Debug(c.Hash.HexString(), c.Index.String())
 	}
 	return list, nil
 }
+
 /**
  *  @brief cancel register as a candidate node
  *  @param index - account's index
@@ -413,7 +425,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	s.prodMutex.RLock()
 	for _, v := range accounts {
 		if _, ok := s.Producers[v]; !ok {
-			s.prodMutex.Unlock()
+			s.prodMutex.RUnlock()
 			return errors.New(log, fmt.Sprintf("the account:%s is not register", v.String()))
 		}
 	}
