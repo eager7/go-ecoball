@@ -365,6 +365,7 @@ func (s *State) GetChainList() ([]Chain, error) {
 	for k := range s.Chains {
 		c := Chain{k, s.Chains[k]}
 		list = append(list, c)
+		log.Debug(c.Hash.HexString(), c.Index.String())
 	}
 	return list, nil
 }
