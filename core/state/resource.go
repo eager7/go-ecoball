@@ -413,7 +413,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	s.prodMutex.RLock()
 	for _, v := range accounts {
 		if _, ok := s.Producers[v]; !ok {
-			s.prodMutex.Unlock()
+			s.prodMutex.RUnlock()
 			return errors.New(log, fmt.Sprintf("the account:%s is not register", v.String()))
 		}
 	}
