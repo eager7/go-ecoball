@@ -48,13 +48,7 @@ message     CMBlockHeader {
     uint32      Nonce               = 3;
     bytes       ShardsHash          = 4;
 }
-message MinorBlockHeader {
-    bytes       ProposalPublicKey   = 1;
-    bytes       StateChangeHash     = 2;
-    uint32      ShardId             = 3;
-    uint64      CMEpochNo           = 4;
-    bytes       CmBlockHash         = 5;
-}
+
 /**
 ** Block info for sync with nodes
 */
@@ -329,4 +323,33 @@ message Cid {
     uint64  version = 1;
     uint64	codec   = 2;
     bytes   hash    = 3;
+}
+
+
+//Shard Block
+message MinorBlockHeader {
+    bytes       ChainID             = 1;
+    uint32      Version             = 2;
+    uint64      Height              = 3;
+    uint64      Timestamp           = 4;
+    bytes       PrevHash            = 5;
+    bytes       TrxHashRoot         = 6;
+    bytes       StateDeltaHash      = 7;
+    bytes       CMBlockHash         = 8;
+    bytes       ProposalPublicKey   = 9;
+    ConsensusData ConsData          = 10;
+    uint32      ShardId             = 11;
+    uint64      CMEpochNo           = 12;
+
+    BlockReceipt Receipt            = 13;
+    bytes       Hash                = 14;
+}
+message AccountMinor {
+    bytes Balance = 1;
+    bytes Nonce   = 2;
+}
+message MinorBlock {
+    MinorBlockHeader Header = 1;
+    repeated    Transaction Transactions = 2;
+    repeated    AccountMinor StateDelta  = 3;
 }
