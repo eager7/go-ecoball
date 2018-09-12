@@ -36,7 +36,7 @@ import (
 
 // in this version, the peers take turns to generate the block
 const (
-	waitResponseTime = 2
+	waitResponseTime = 4
 )
 
 type stateAbabft byte
@@ -97,7 +97,6 @@ func ServiceABABFTGen(l ledger.Ledger, txPool *txpool.TxPool, account *account.A
 	actorABABFT.addressRoot = common.AddressFromPubKey(config.Root.PublicKey)
 	address := common.AddressFromPubKey(account.PublicKey)
 	actorABABFT.startNode = actorABABFT.addressRoot.Equals(&address)
-
 	// serviceABABFT.Actor = actorABABFT
 	serviceABABFT.mapActor = make(map[common.Hash]*ActorABABFT)
 	serviceABABFT.mapActor[chainHash] = actorABABFT

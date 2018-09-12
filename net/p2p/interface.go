@@ -17,38 +17,30 @@
 package p2p
 
 import (
-	//bsmsg "github.com/ecoball/go-ecoball/net/p2p/pb"
-	ifconnmgr "gx/ipfs/QmXuucFcuvAWYAJfhHV2h4BYreHEAsLSsiquosiXeuduTN/go-libp2p-interface-connmgr"
-	protocol "gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
-	peer "gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
-	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
-	pmsg "github.com/ecoball/go-ecoball/net/message"
 	"context"
-)
-
-var (
-	ProtocolP2pV1    protocol.ID = "/ecoball/app/1.0.0"
+	pmsg "github.com/ecoball/go-ecoball/net/message"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+	"gx/ipfs/QmZ383TySJVeZWzGnWui6pRcKyYZk9VkKTuW7tmKRWk5au/go-libp2p-routing"
+	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
+	"gx/ipfs/QmXuucFcuvAWYAJfhHV2h4BYreHEAsLSsiquosiXeuduTN/go-libp2p-interface-connmgr"
 )
 
 type EcoballNetwork interface {
+	Host() host.Host
 
-	// SendMessage sends a netmsg message to a peer.
-	SendMessage(
-		context.Context,
-		peer.ID,
-		pmsg.EcoBallNetMsg) error
-
-	// SetDelegate registers the Reciver to handle messages received from the
-	// network.
+	// SetDelegate registers the Reciver to handle messages received from the network.
 	SetDelegate(Receiver)
 
 	ConnectTo(context.Context, peer.ID) error
+
+	// Start the local discovery and messgage pump
+	Start()
 
 	NewMessageSender(context.Context, peer.ID) (MessageSender, error)
 
 	ConnectionManager() ifconnmgr.ConnManager
 
-	Routing
+	routing.PeerRouting
 }
 
 type MessageSender interface {
@@ -69,12 +61,4 @@ type Receiver interface {
 	// Connected/Disconnected warns net about peer connections
 	PeerConnected(peer.ID)
 	PeerDisconnected(peer.ID)
-}
-
-type Routing interface {
-	// FindProvidersAsync returns a channel of providers for the given key
-	FindProvidersAsync(context.Context, *cid.Cid, int) <-chan peer.ID
-
-	// Provide provides the key to the network
-	Provide(context.Context, *cid.Cid) error
 }

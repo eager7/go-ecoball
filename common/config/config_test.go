@@ -34,6 +34,7 @@ func TestConfig(t *testing.T) {
 	fmt.Println("worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString())
 	fmt.Println("worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString())
 	fmt.Println("worker3", common.AddressFromPubKey(config.Worker3.PublicKey).HexString())
+	fmt.Println("root:", common.AddressFromPubKey(config.Root.PublicKey).HexString())
 
 	fmt.Println("chain Id:", config.ChainHash.HexString())
 }

@@ -127,7 +127,6 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 			log.Info("the chain found, send this ABABFTStart to the corresponding channel")
 			// msgChan <- ctx
 			msgChan <- msgIn
-			log.Info("ctx:",ctx,ctx.Message())
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -141,7 +140,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		return
 
 	case SignaturePreBlock:
-		log.Info("receive the preblock signature:", actorC.status,msg.SignPreBlock)
+		log.Info("receive the preblock signature:", actorC.status,msg.SignPreBlock.Round,msg.SignPreBlock)
 		// check the chain ID
 		chainIn := common.BytesToHash(msg.SignPreBlock.ChainID)
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {

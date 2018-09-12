@@ -143,6 +143,23 @@ func Get_account(params []interface{}) *common.Response {
 	return common.NewResponse(common.SUCCESS, "")
 }
 
+func Get_ChainList(params []interface{}) *common.Response {
+	chainList, errcode := ledger.L.GetChainList(config.ChainHash)
+	if errcode != nil {
+		return common.NewResponse(common.INVALID_PARAMS, "get block faild")
+	}
+
+	chainList_str := ""
+	for _, v := range chainList{
+		/*chainList_str += v.Index.String()
+		chainList_str += ":"*/
+		chainList_str += v.Hash.HexString()
+		chainList_str += "\n"
+	}
+	chainList_str = strings.TrimSuffix(chainList_str, "\n")
+	return common.NewResponse(common.SUCCESS, chainList_str)
+}
+
 func handleCreateAccount(params []interface{}) common.Errcode {
 	/*var (
 		creator string

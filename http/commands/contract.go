@@ -37,6 +37,7 @@ import (
 	//"encoding/hex"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"strings"
+
 )
 
 var log = elog.NewLogger("commands", elog.DebugLog)
@@ -485,6 +486,41 @@ func checkParam(abiDef abi.ABI, method string, arg []byte) ([]byte, error){
 //	return bs, nil
 //}
 
+func getContractTable(contractName string, accountName string, abiDef abi.ABI, tableName string) ([]byte, error){
+
+	var fields []abi.FieldDef
+	for _, table := range abiDef.Tables {
+		if string(table.Name) == tableName {
+			for _, struction := range abiDef.Structs {
+				if struction.Name == table.Type {
+					fields = struction.Fields
+				}
+			}
+		}
+	}
+
+	if fields == nil {
+		return nil, errors.New(log, "can not find struct of table  " + tableName)
+	}
+
+	table := make(map[string]string, len(fields))
+
+	for i, _ := range fields {
+		key := []byte(fields[i].Name)
+		storage, err := ledger.L.StoreGet(config.ChainHash, innerCommon.NameToIndex(contractName), key)
+		if err != nil {
+			return nil, errors.New(log, "can not get store " + fields[i].Name)
+		}
+		fmt.Println(fields[i].Name + ": " + string(storage))
+		table[fields[i].Name] = string(storage)
+	}
+
+	js, _ := json.Marshal(table)
+	fmt.Println("json format: ", string(js))
+
+	return nil, nil
+}
+
 func handleInvokeContract(params []interface{}) common.Errcode {
 	var (
 		contractName   string
@@ -549,7 +585,7 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 				parameters = append(parameters, v)
 			}
 		}
-	}else if "pledge" == contractMethod {
+	}else if "pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
 		parameters = strings.Split(contractParam, ",")
 	}else if "set_account" == contractMethod {
 		parameters = strings.Split(contractParam, "--")
@@ -581,9 +617,7 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	
 		parameters = append(parameters, string(argbyte[:]))
 
-		key := []byte(`supply`)
-		storage, err := ledger.L.StoreGet(config.ChainHash, innerCommon.NameToIndex(contractName), key)
-		fmt.Println("storage: ", string(storage))
+		getContractTable(contractName, "root", abiDef, "stat")
 	}
 
 	//from address

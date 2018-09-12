@@ -43,6 +43,12 @@ type StateDatabase struct {
 	TempDB  *state.State //temp database used for tx pool pre-handle transaction
 }
 
+type CurrentHeaders struct {
+	CmHeader *types.Header
+	MinorHeader *types.Header
+	FinalHeader *types.Header
+}
+
 type ChainTx struct {
 	BlockStore  store.Storage
 	HeaderStore store.Storage
@@ -268,8 +274,7 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
  */
 func (c *ChainTx) GenesesBlockInit(chainID common.Hash, addr common.Address) error {
 	if c.CurrentHeader != nil {
-		log.Debug("geneses block is existed")
-		c.CurrentHeader.Show()
+		log.Debug("geneses block is existed:", c.CurrentHeader.Height)
 		return nil
 	}
 
@@ -307,14 +312,14 @@ func (c *ChainTx) GenesesBlockInit(chainID common.Hash, addr common.Address) err
 	if err := c.VerifyTxBlock(block); err != nil {
 		return err
 	}
-	c.CurrentHeader = block.Header
+	//c.CurrentHeader = block.Header
 	//c.Geneses = block.Header //Store Geneses for timeStamp
 	if err := c.SaveBlock(block); err != nil {
 		log.Error("Save geneses block error:", err)
 		return err
 	}
 
-	c.CurrentHeader = block.Header
+	//c.CurrentHeader = block.Header
 	return nil
 }
 

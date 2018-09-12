@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/net/p2p"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
 )
 
@@ -131,7 +132,7 @@ func (this *Gossiper) run() {
 
 		// Rumor-Mongering
 		case msgs2bePush := <- this.msgPushChan:
-			go dispatcher.SendMsgToRandomPeers(this.pushPeerCount, msgs2bePush)
+			go p2p.SendMsg2RandomPeers(this.pushPeerCount, msgs2bePush)
 		}
 	}
 }
@@ -164,7 +165,7 @@ func (this *Gossiper) handlePullReqMsg(msg message.EcoBallNetMsg) {
 		blkCount = 0
 	}
 	hash := header.Hash
-	peer, _ := dispatcher.GetPeerID()
+	peer, _ := p2p.GetPeerID()
 	blkAck := &types.BlkAckMsg{
 		Peer:peer,
 		ChainID:1,
@@ -188,7 +189,7 @@ func (this *Gossiper) handlePullReqMsg(msg message.EcoBallNetMsg) {
 	log.Debug("send pull blocks response to ", blkReqMsg.Peer.Pretty())
 	data, _ := blkAck.Serialize()
 	netMsg := message.New(message.APP_MSG_GOSSIP_PULL_BLK_ACK, data)
-	dispatcher.SendMessage(blkReqMsg.Peer, netMsg)
+	p2p.SendMsg2PeerWithId(blkReqMsg.Peer, netMsg)
 }
 
 func (this *Gossiper) handlePushMsg(msg message.EcoBallNetMsg) {

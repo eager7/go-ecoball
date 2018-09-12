@@ -58,10 +58,17 @@ var (
 					cli.StringFlag{
 						Name:  "active, a",
 						Usage: "active public key",
+						Value: "owner",
 					},
 					cli.StringFlag{
 						Name:  "permission, p",
 						Usage: "active permission",
+						Value: "active",
+					},
+					cli.StringFlag{
+						Name:  "chainId",
+						Usage: "chainId hash",
+						Value: "config.hash",
 					},
 					cli.StringFlag{
 						Name:  "max-cpu-usage-ms",
@@ -92,6 +99,7 @@ func getInfo() (*types.Block, error) {
 			data := resp["result"].(string)
 			blockINfo := new(types.Block)
 			blockINfo.Deserialize(innercommon.FromHex(data))
+			//blockINfo.Show(true)
 			return blockINfo, nil
 		default:
 		}
@@ -184,6 +192,12 @@ func newAccount(c *cli.Context) error {
 		return err
 	}
 
+	chainId := info.ChainID
+	chainIdStr := c.String("chainId")
+	if "config.hash" != chainIdStr && "" != chainIdStr {
+		chainId = innercommon.HexToHash(chainIdStr)
+	}
+
 	publickeys, err := GetPublicKeys()
 	if err != nil {
 		fmt.Println(err)
@@ -193,7 +207,7 @@ func newAccount(c *cli.Context) error {
 	creatorAccount := innercommon.NameToIndex(creator)
 	timeStamp := time.Now().UnixNano()
 
-	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, info.ChainID, "owner", "new_account",
+	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, chainId, "owner", "new_account",
 		[]string{name, innercommon.AddressFromPubKey(innercommon.FromHex(owner)).HexString()}, 0, timeStamp)
 	if err != nil {
 		fmt.Println(err)
