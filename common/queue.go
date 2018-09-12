@@ -14,16 +14,41 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball library. If not, see <http://www.gnu.org/licenses/>.
 
-package block
+package common
 
-//type COSign struct {
-//	//Round1         TBLS_SIG
-//	BitValidateor1 [32]uint8
-//	//Round2         TBLS_SIG
-//	BitValidateor2 [32]uint8
-//}
+import "container/list"
 
-type COSign struct {
-	Round1 uint16
-	Round2 uint16
+type Queue struct {
+	l *list.List
+}
+
+func NewQueue() *Queue {
+	return &Queue{l: list.New()}
+}
+
+func (q *Queue) Pop() interface{} {
+	if q.l.Back() != nil {
+		return q.l.Remove(q.l.Back())
+	}
+
+	return nil
+}
+
+func (q *Queue) Push(data interface{}) {
+	q.l.PushFront(data)
+}
+
+func (q *Queue) GetHeadValue() interface{} {
+	if q.l.Front() != nil {
+		return q.l.Front().Value
+	}
+	return nil
+}
+
+func (q *Queue) GetHead() interface{} {
+	return q.l.Front()
+}
+
+func (q *Queue) Length() int {
+	return q.l.Len()
 }
