@@ -15,7 +15,7 @@
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
 // Plugins is exported list of plugins that will be loaded
-package main
+package plugin
 
 import (
 	"github.com/ipfs/go-ipfs/plugin"

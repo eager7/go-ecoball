@@ -125,6 +125,9 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := ns.state.CancelDelegate(from, to, cpu, net, ns.cpuLimit, ns.netLimit); err != nil {
 			return nil, err
 		}
+	case "reg_proof":
+	case "reg_store":
+	case "reg_file":
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", ns.method))
 	}

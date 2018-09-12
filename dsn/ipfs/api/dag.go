@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package ipfs
+package api
 
 import (
 	"fmt"
@@ -26,18 +26,18 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"github.com/ipfs/go-ipfs/core"
-	"github.com/ecoball/go-ecoball/net/ipfs/ipld"
+	"github.com/ecoball/go-ecoball/dsn/ipfs/ipld"
 	"github.com/ipfs/go-ipfs/core/commands/dag"
 	"github.com/ipfs/go-ipfs/core/coreapi/interface"
 	cmd "github.com/ipfs/go-ipfs/commands"
 	opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
 	"gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
-	"github.com/ipfs/go-ipfs/core/coreapi"
+	//"github.com/ipfs/go-ipfs/core/coreapi"
 	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 )
 
 var lock sync.Mutex
-var coreApi iface.CoreAPI
+var coreApi iface.CoreAPI = DsnIpfsApi
 
 // PutBlock Put a block dag node to ipfs, API for client
 func PutBlock(blockData []byte) (string, error) {
@@ -80,8 +80,8 @@ func put(args []string) (string, error) {
 	rsp := cmds.NewWriterResponseEmitter(wc, req, cmds.Encoders[cmds.JSON])
 	var env cmd.Context
 	env.ConstructNode = func() (*core.IpfsNode, error) {
-		return ipfsCtrl.IpfsNode, nil
-
+		//return ipfsCtrl.IpfsNode, nil
+		return nil, nil
 	}
 
 	Root.Call(req, rsp, &env)
@@ -102,7 +102,9 @@ func PutChainBlock(ctx context.Context, blockData []byte) (string, error) {
 	r := bytes.NewReader(blockData)
 
 	if coreApi == nil {
-		coreApi = coreapi.NewCoreAPI(ipfsCtrl.IpfsNode)
+		//coreApi = coreapi.NewCoreAPI(ipfsCtrl.IpfsNode)
+		//TODO
+		return "", nil
 	}
 	rp, err := coreApi.Dag().Put(ctx, r, opt.Dag.InputEnc("raw"), opt.Dag.Codec(cid.EcoballRawData))
 	if err != nil {
@@ -121,7 +123,7 @@ func PutChainBlock(ctx context.Context, blockData []byte) (string, error) {
 func GetChainBlock(ctx context.Context, cid string) ([]byte, error) {
 	out := make(chan []byte)
 
-	go ipldecoball.ResolveShardLinks(ctx, IpfsNode, cid, out)
+	go ipld.ResolveShardLinks(ctx, IpfsNode, cid, out)
 	serBlock := <- out
 	if serBlock == nil  {
 		return nil, fmt.Errorf("error for resolving block link")
