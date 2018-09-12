@@ -35,6 +35,7 @@ import (
 	"github.com/ecoball/go-ecoball/net/p2p"
 	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ipfs/go-ipfs/core"
+	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
 	"github.com/urfave/cli"
 )
 
@@ -301,6 +302,9 @@ func StartNetWork() {
 
 //initialize
 func Initialize(c *cli.Context) error {
+	if fsrepo.IsInitialized(ecoballConfig.IpfsDir) {
+		return nil
+	}
 	cmd.Root.Subcommands["init"] = initCmd
 	os.Args[1] = "init"
 	return cmd.StorageFun()
