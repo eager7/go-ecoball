@@ -26,7 +26,7 @@ import (
 	"sync"
 )
 
-var log = elog.NewLogger("state", elog.DebugLog)
+var log = elog.NewLogger("state", elog.NoticeLog)
 var AbaToken = "ABA"
 
 type TypeState uint8
