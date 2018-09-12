@@ -34,13 +34,13 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 
 	"github.com/ecoball/go-ecoball/account"
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/common"
 )
 
 var (
@@ -48,6 +48,78 @@ var (
 		Name:   "run",
 		Usage:  "run node",
 		Action: runNode,
+		Flags: []cli.Flag{
+			cli.IntFlag{
+				Name:  "bits, b",
+				Usage: "Number of bits to use in the generated RSA private key.",
+				Value: 2048,
+			},
+			cli.BoolFlag{
+				Name:  "empty-repo, e",
+				Usage: "Don't add and pin help files to the local storage.",
+			},
+			cli.StringFlag{
+				Name:  "profile, p",
+				Usage: "Apply profile settings to config. Multiple profiles can be separated by ','",
+			},
+			cli.StringFlag{
+				Name:  "routing",
+				Usage: "Overrides the routing option",
+				Value: "default",
+			},
+			cli.BoolFlag{
+				Name:  "mount",
+				Usage: "Mounts this node to the filesystem",
+			},
+			cli.BoolFlag{
+				Name:  "writable",
+				Usage: "Enable writing objects (with POST, PUT and DELETE)",
+			},
+			cli.StringFlag{
+				Name:  "mount-ipfs",
+				Usage: "Path to the mountpoint for IPFS (if using --mount). Defaults to config setting.",
+			},
+			cli.StringFlag{
+				Name:  "mount-ipns",
+				Usage: "Path to the mountpoint for IPNS (if using --mount). Defaults to config setting.",
+			},
+			cli.BoolFlag{
+				Name:  "unrestricted-api",
+				Usage: "Allow API access to unlisted hashes",
+			},
+			cli.BoolFlag{
+				Name:  "disable-transport-encryption",
+				Usage: "Disable transport encryption (for debugging protocols)",
+			},
+			cli.BoolFlag{
+				Name:  "enable-gc",
+				Usage: "Enable automatic periodic repo garbage collection",
+			},
+			cli.BoolFlag{
+				Name:  "manage-fdlimit",
+				Usage: "Check and raise file descriptor limits if needed",
+			},
+			cli.BoolFlag{
+				Name:  "offline",
+				Usage: "Run offline. Do not connect to the rest of the network but provide local API.",
+			},
+			cli.BoolFlag{
+				Name:  "migrate",
+				Usage: "If true, assume yes at the migrate prompt. If false, assume no.",
+			},
+			cli.BoolFlag{
+				Name:  "enable-pubsub-experiment",
+				Usage: "Instantiate the ipfs daemon with the experimental pubsub feature enabled.",
+			},
+			cli.BoolFlag{
+				Name:  "enable-namesys-pubsub",
+				Usage: "Enable IPNS record distribution through pubsub; enables pubsub.",
+			},
+			cli.BoolFlag{
+				Name:  "enable-mplex-experiment",
+				Usage: "Add the experimental 'go-multiplex' stream muxer to libp2p on construction.",
+			},
+		},
 	}
 )
 
@@ -97,6 +169,34 @@ func runNode(c *cli.Context) error {
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
+
+	//storage
+	/*ecoballGroup.Go(func() error {
+		errChan := make(chan error, 1)
+		go func() {
+			//initialize
+			if err := net.Initialize(c); nil != err {
+				log.Error("net initialize failed: ", err)
+				errChan <- err
+			}
+
+			//start starage
+			if err := net.DaemonRun(c); nil != err {
+				log.Error("net daemon run failed: ", err)
+				errChan <- err
+			}
+		}()
+
+		select {
+		case <-ctx.Done():
+		case <-shutdown:
+		case err := <-errChan:
+			log.Error("goroutine start storage error exit: ", err)
+			return err
+		}
+
+		return nil
+	})*/
 
 	// do something before start the network
 	//TOD

@@ -15,3 +15,11 @@ func Millisecond() int64 {
 	return int64(uint64(n) * uint64(config.TimeSlot))
 }
 
+func StopTime(t *time.Timer) {
+	if !t.Stop() {
+		select {
+		case <-t.C:
+		default:
+		}
+	}
+}

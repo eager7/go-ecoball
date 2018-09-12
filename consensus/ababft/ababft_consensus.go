@@ -36,7 +36,7 @@ import (
 
 // in this version, the peers take turns to generate the block
 const (
-	waitResponseTime = 2
+	waitResponseTime = 4
 )
 
 type stateAbabft byte

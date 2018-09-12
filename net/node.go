@@ -28,12 +28,14 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	ecoballConfig "github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/net/cmd"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/ipfs"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/p2p"
 	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ipfs/go-ipfs/core"
+	"github.com/urfave/cli"
 )
 
 type NetCtrl struct {
@@ -295,4 +297,18 @@ func StartNetWork() {
 	netCtrl.IpfsCtrl.RepoStat.Start()
 
 	fmt.Printf("node %s is running.\n", netCtrl.NetNode.SelfId())
+}
+
+//initialize
+func Initialize(c *cli.Context) error {
+	cmd.Root.Subcommands["init"] = initCmd
+	os.Args[1] = "init"
+	return cmd.StorageFun()
+}
+
+//start storage
+func DaemonRun(c *cli.Context) error {
+	cmd.Root.Subcommands["daemon"] = daemonCmd
+	os.Args[1] = "daemon"
+	return cmd.StorageFun()
 }
