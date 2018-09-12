@@ -124,7 +124,7 @@ var (
 )
 
 func runNode(c *cli.Context) error {
-	//net.InitNetWork()
+	net.InitNetWork()
 	shutdown := make(chan bool, 1)
 	ecoballGroup, ctx := errgroup.WithContext(context.Background())
 
@@ -171,7 +171,7 @@ func runNode(c *cli.Context) error {
 	}
 
 	//storage
-	ecoballGroup.Go(func() error {
+	/*ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
 			//initialize
@@ -196,12 +196,12 @@ func runNode(c *cli.Context) error {
 		}
 
 		return nil
-	})
+	})*/
 
 	// do something before start the network
 	//TOD
 
-	//net.StartNetWork()
+	net.StartNetWork()
 
 	//start blockchain browser
 	/*ecoballGroup.Go(func() error {
