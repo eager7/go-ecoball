@@ -1,11 +1,11 @@
 package types
 
 import (
-	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/pb"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/core/pb"
 )
 
 type MinorBlockHeader struct {
@@ -76,4 +76,9 @@ func (m *MinorBlockHeader) Show() {
 
 func (m *MinorBlockHeader) Type() uint32 {
 	return uint32(HeMinorBlock)
+}
+
+func (b *Block) SetMinorBlockData(Txs []*Transaction) {
+	b.Transactions = Txs
+	b.CountTxs = uint32(len(Txs))
 }

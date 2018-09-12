@@ -30,9 +30,13 @@ import (
 
 type Block struct {
 	*Header
+	//Minor Block Data
 	CountTxs     uint32
 	Transactions []*Transaction
+	//Cm Block Data
 	Shards       []Shard
+	//Final Block Data
+	MinorBlocks []MinorBlockHeader
 }
 
 func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, headerPayload Payload, consensusData ConsensusData, txs []*Transaction, cpu, net float64, timeStamp int64) (*Block, error) {
@@ -87,10 +91,6 @@ func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, he
 		Shards:       nil,
 	}
 	return &block, nil
-}
-
-func (b *Block) CmBlockSetData(Shards []Shard) {
-	b.Shards = Shards
 }
 
 func (b *Block) SetSignature(account *account.Account) error {

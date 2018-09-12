@@ -16,3 +16,7 @@ type FinalBlock struct {
 	*FinalBlockHeader
 	MinorBlocks []MinorBlockHeader
 }
+
+func (b *Block) SetFinalBlockData() {
+
+}

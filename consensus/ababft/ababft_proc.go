@@ -37,6 +37,12 @@ func ProcessSTART(actorC *ActorABABFT) {
 			var signPreSend []common.Signature
 			if len(actorC.currentHeader.Signatures) > 0 {
 				signPreSend = append(signPreSend, actorC.currentHeader.Signatures[0])
+			} else {
+				sigTmp := common.Signature{}
+				sigDataTmp,_ := actorC.serviceABABFT.account.Sign(actorC.currentHeader.Hash.Bytes())
+				sigTmp.SigData = common.CopyBytes(sigDataTmp)
+				sigTmp.PubKey = common.CopyBytes(actorC.serviceABABFT.account.PublicKey)
+				signPreSend = append(signPreSend, sigTmp) 
 			}
 			conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{NumberRound:uint32(actorC.currentRoundNum), PreBlockSignatures:signPreSend,}}
 			// tx list
