@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package main
+package plugin
 
 import (
 	"fmt"
 	"gx/ipfs/QmZtNq8dArGfnpCZfx2pUNY7UcjGhVp5qqwQ4hH6mpTMRQ/go-ipld-format"
 	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
-	"github.com/ecoball/go-ecoball/net/ipfs/ipld"
+	"github.com/ecoball/go-ecoball/dsn/ipfs/ipld"
 	"github.com/ipfs/go-ipfs/core/coredag"
 	"github.com/ipfs/go-ipfs/plugin"
 )
@@ -44,12 +44,12 @@ func (this *ecoballRawPlugin) Init() error {
 
 func (this *ecoballRawPlugin) RegisterBlockDecoders(dec format.BlockDecoder) error {
 	fmt.Println("ecoball ipld plugin register decoders.")
-	dec.Register(cid.EcoballRawData, ipldecoball.DecodeRawData)
-	dec.Register(cid.EcoballShardData, ipldecoball.DecodeShardData)
+	dec.Register(cid.EcoballRawData, ipld.DecodeRawData)
+	dec.Register(cid.EcoballShardData, ipld.DecodeShardData)
 	return nil
 }
 
 func (this *ecoballRawPlugin) RegisterInputEncParsers(iec coredag.InputEncParsers) error {
-	iec.AddParser("raw", "ecoball-rawdata", ipldecoball.EcoballRawDataInputParser)
+	iec.AddParser("raw", "ecoball-rawdata", ipld.EcoballRawDataInputParser)
 	return nil
 }

@@ -19,6 +19,7 @@ import (
 	"os/signal"
 	"syscall"
 	"testing"
+	"github.com/ecoball/go-ecoball/http/rpc"
 )
 
 func TestRunMain(t *testing.T) {
@@ -50,7 +51,7 @@ func TestRunMain(t *testing.T) {
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
-
+	rpc.StartRPCServer()
 	//start explorer
 	go spectator.Bystander(ledger.L)
 	if config.StartNode {
@@ -87,11 +88,13 @@ func TestRunNode(t *testing.T) {
 	}
 
 	//start explorer
+	go rpc.StartRPCServer()
 	go spectator.Bystander(ledger.L)
 	if config.StartNode {
 		//go example.AutoGenerateTransaction(ledger.L)
 		//go example.VotingProducer(ledger.L)
 		go example.InvokeContract(ledger.L)
+		go example.QueryContractData(ledger.L)
 	}
 
 	wait()

@@ -36,7 +36,8 @@
       "base": "",
       "fields": [
         {"name":"supply", "type":"string"},
-        {"name":"max_supply", "type":"string"}
+        {"name":"max_supply", "type":"string"},
+		{"name":"issuer", "type":"string"}
       ]
     }
   ],
@@ -46,7 +47,7 @@
     },{
       "name": "issue",
       "type": "issue"
-    },{
+    },{	
       "name": "transfer",
       "type": "transfer"
     }
@@ -63,6 +64,6 @@
       "index_type": "i64",
       "key_names" : ["currency"],
       "key_types" : ["uint64"]
-    }
+    }  
   ]
 }
