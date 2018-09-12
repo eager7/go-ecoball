@@ -17,7 +17,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -124,11 +123,13 @@ var (
 )
 
 func runNode(c *cli.Context) error {
+	// get the ecoball configuration from config file
+
 	net.InitNetWork()
+
 	shutdown := make(chan bool, 1)
 	ecoballGroup, ctx := errgroup.WithContext(context.Background())
 
-	fmt.Println("Run Node")
 	log.Info("Build Geneses Block")
 	var err error
 	ledger.L, err = ledgerimpl.NewLedger(store.PathBlock, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))

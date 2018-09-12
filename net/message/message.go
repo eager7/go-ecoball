@@ -17,11 +17,12 @@
 package message
 
 import (
+        "io"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
-	"io"
+	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 )
 
 const (
@@ -69,6 +70,11 @@ var MessageToStr = map[uint32]string{
 var log = elog.NewLogger("message", elog.DebugLog)
 
 type HandlerFunc func(data []byte) (err error)
+
+type SendMsgJob struct {
+	Peers    []*peerstore.PeerInfo
+	Msg      EcoBallNetMsg
+}
 
 type EcoBallNetMsg interface {
 	ChainID() uint32
