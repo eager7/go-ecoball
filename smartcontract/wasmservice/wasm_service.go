@@ -230,4 +230,7 @@ func (ws *WasmService) RegisterApi() {
 	functions.Register("ABA_atoi64",ws.atoi64)
 	functions.Register("ABA_itoa",  ws.itoa)
 	functions.Register("ABA_i64toa",ws.i64toa)
+	//rand
+	functions.Register("ABA_rand",ws.rand)
+
 }
