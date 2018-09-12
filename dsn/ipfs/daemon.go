@@ -1,4 +1,4 @@
-package net
+package ipfs
 
 import (
 	"errors"
@@ -27,6 +27,7 @@ import (
 	"gx/ipfs/QmYYv3QFnfQbiwmi1tpkgKF8o4xFnZoBrvpupTiGJwL9nH/client_golang/prometheus"
 	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	"gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
 
 const (
@@ -54,7 +55,7 @@ const (
 	// apiAddrKwd    = "address-api"
 	// swarmAddrKwd  = "address-swarm"
 )
-
+var log = elog.NewLogger("net", elog.DebugLog)
 var daemonCmd = &cmds.Command{
 	Helptext: cmdkit.HelpText{
 		Tagline: "Run a network-connected IPFS node.",
@@ -480,7 +481,7 @@ func serveHTTPApi(req *cmds.Request, cctx *oldcmds.Context) (<-chan error, error
 }
 
 // printSwarmAddrs prints the addresses of the host
-func printSwarmAddrs(node *core.IpfsNode) {
+func PrintSwarmAddrs(node *core.IpfsNode) {
 	if !node.OnlineMode() {
 		fmt.Println("Swarm not listening, running in offline mode.")
 		return

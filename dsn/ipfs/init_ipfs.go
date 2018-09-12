@@ -34,6 +34,9 @@ import (
 	"github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	"github.com/ipfs/go-ipfs/plugin/loader"
+	"github.com/urfave/cli"
+	ecoballConfig "github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/dsn/cmd"
 )
 
 const (
@@ -42,7 +45,7 @@ const (
 
 type IpfsCtrl struct {
 	IpfsNode      *core.IpfsNode
-	RepoStat      *StoreStatMonitor
+	//RepoStat      *StoreStatMonitor
 }
 
 var errRepoExists = errors.New(`ipfs configuration file already exists!
@@ -288,15 +291,15 @@ func InitAndRunIpfs(path string) (*IpfsCtrl, error) {
 	var err error
 	IpfsNode, err = initIpfsNode(path)
 	if (err != nil) {
-		log.Error("error for initializing ipfs node:", err)
+		//log.Error("error for initializing ipfs node:", err)
 		return nil, err
 	}
 
-	storeStatEngine := NewStoreStatMonitor()
+	//storeStatEngine := NewStoreStatMonitor()
 
 	ipfsCtrl = &IpfsCtrl{
 		IpfsNode,
-		storeStatEngine,
+		//storeStatEngine,
 	}
 
 	return ipfsCtrl, nil
@@ -312,7 +315,7 @@ func printSwarmAddrs(node *core.IpfsNode) {
 	var lisAddrs []string
 	ifaceAddrs, err := node.PeerHost.Network().InterfaceListenAddresses()
 	if err != nil {
-		log.Error("failed to read listening addresses: %s", err)
+		//log.Error("failed to read listening addresses: %s", err)
 	}
 	for _, addr := range ifaceAddrs {
 		lisAddrs = append(lisAddrs, addr.String())
@@ -321,4 +324,20 @@ func printSwarmAddrs(node *core.IpfsNode) {
 	for _, addr := range lisAddrs {
 		fmt.Printf("Swarm listening on %s\n", addr)
 	}
+}
+//initialize
+func Initialize(c *cli.Context) error {
+	if fsrepo.IsInitialized(ecoballConfig.IpfsDir) {
+		return nil
+	}
+	cmd.Root.Subcommands["init"] = initCmd
+	os.Args[1] = "init"
+	return cmd.StorageFun()
+}
+
+//start storage
+func DaemonRun(c *cli.Context) error {
+	cmd.Root.Subcommands["daemon"] = daemonCmd
+	os.Args[1] = "daemon"
+	return cmd.StorageFun()
 }

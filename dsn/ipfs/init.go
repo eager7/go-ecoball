@@ -1,4 +1,4 @@
-package net
+package ipfs
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	nBitsForKeypairDefault = 2048
+	//nBitsForKeypairDefault = 2048
 )
 
 var initCmd = &cmds.Command{
@@ -113,11 +113,11 @@ environment variable:
 	},
 }
 
-var errRepoExists = errors.New(`ipfs configuration file already exists!
-Reinitializing would overwrite your keys.
-`)
+//var errRepoExists = errors.New(`ipfs configuration file already exists!
+//Reinitializing would overwrite your keys.
+//`)
 
-func initWithDefaults(out io.Writer, repoRoot string, profile string) error {
+func initWithDefaults_bak(out io.Writer, repoRoot string, profile string) error {
 	var profiles []string
 	if profile != "" {
 		profiles = strings.Split(profile, ",")
@@ -126,7 +126,7 @@ func initWithDefaults(out io.Writer, repoRoot string, profile string) error {
 	return doInit(out, repoRoot, false, nBitsForKeypairDefault, profiles, nil)
 }
 
-func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, confProfiles []string, conf *config.Config) error {
+func doInit_bak(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, confProfiles []string, conf *config.Config) error {
 	if _, err := fmt.Fprintf(out, "initializing IPFS node at %s\n", repoRoot); err != nil {
 		return err
 	}
@@ -171,7 +171,7 @@ func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, con
 	return initializeIpnsKeyspace(repoRoot)
 }
 
-func checkWritable(dir string) error {
+func checkWritable_bak(dir string) error {
 	_, err := os.Stat(dir)
 	if err == nil {
 		// dir exists, make sure we can write to it
@@ -199,7 +199,7 @@ func checkWritable(dir string) error {
 	return err
 }
 
-func addDefaultAssets(out io.Writer, repoRoot string) error {
+func addDefaultAssets_bak(out io.Writer, repoRoot string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -228,7 +228,7 @@ func addDefaultAssets(out io.Writer, repoRoot string) error {
 	return err
 }
 
-func initializeIpnsKeyspace(repoRoot string) error {
+func initializeIpnsKeyspace_bak(repoRoot string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

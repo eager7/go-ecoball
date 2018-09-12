@@ -21,17 +21,11 @@ import (
 	"fmt"
 	"os"
 	"time"
-	"github.com/urfave/cli"
 	"github.com/AsynkronIT/protoactor-go/actor"
-	ecoballConfig "github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/net/cmd"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
-	"github.com/ecoball/go-ecoball/net/ipfs"
 	"github.com/ecoball/go-ecoball/net/message"
-
 	"github.com/ecoball/go-ecoball/net/p2p"
-	fsrepo "github.com/ipfs/go-ipfs/repo/fsrepo"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
@@ -42,7 +36,6 @@ import (
 )
 
 type NetCtrl struct {
-	IpfsCtrl *ipfs.IpfsCtrl
 	NetNode  *NetNode
 	actor    *NetActor
 }
@@ -277,28 +270,28 @@ func InitNetWork() {
 	//}
 	//TODO move to config file
 	//InitIpfsConfig(path)
-	var path = ecoballConfig.IpfsDir
+	//var path = ecoballConfig.IpfsDir
 
-	ipfsCtrl, err := ipfs.InitAndRunIpfs(path)
-	if err != nil {
-		panic(err)
-		os.Exit(1)
-	}
-	ipfsNode := ipfsCtrl.IpfsNode
-
-	privkey := ipfsNode.PrivateKey
+	//ipfsCtrl, err := ipfs.InitAndRunIpfs(path)
+	//if err != nil {
+	//	panic(err)
+	//	os.Exit(1)
+	//}
+	//ipfsNode := ipfsCtrl.IpfsNode
+	//TODO get it from config file
+	//privkey := "GoB8dlm2yvhR4mqIpmIKzanFjfno3rAKL"
+	sk, _, err := ic.GenerateKeyPair(ic.RSA, 2048)
 	ipv4ListenAddr := fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", p2pListenP2PPort)//should come from config file
 	ipv6ListenAddr := fmt.Sprintf("/ip6/::/tcp/%d", p2pListenP2PPort)
 	listenAddr := []string{ipv4ListenAddr, ipv6ListenAddr}
 
-	netNode, err := New(context.Background(), privkey, listenAddr)
+	netNode, err := New(context.Background(), sk, listenAddr)
 	if err != nil {
 		log.Error(err)
 		os.Exit(1)
 	}
 
 	netCtrl = &NetCtrl{
-		IpfsCtrl: ipfsCtrl,
 		NetNode:  netNode,
 	}
 
@@ -314,26 +307,5 @@ func StartNetWork() {
 		log.Error("error for starting netnode,", err)
 		os.Exit(1)
 	}
-
-	//start store repo stat engine
-	netCtrl.IpfsCtrl.RepoStat.Start()
-
 	log.Info(netCtrl.NetNode.SelfId(), " is running.")
-}
-
-//initialize
-func Initialize(c *cli.Context) error {
-	if fsrepo.IsInitialized(ecoballConfig.IpfsDir) {
-		return nil
-	}
-	cmd.Root.Subcommands["init"] = initCmd
-	os.Args[1] = "init"
-	return cmd.StorageFun()
-}
-
-//start storage
-func DaemonRun(c *cli.Context) error {
-	cmd.Root.Subcommands["daemon"] = daemonCmd
-	os.Args[1] = "daemon"
-	return cmd.StorageFun()
 }
