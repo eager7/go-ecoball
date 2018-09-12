@@ -19,15 +19,16 @@ package solo
 import (
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
-	"github.com/ecoball/go-ecoball/net/message"
+	netMessage "github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/txpool"
 	"time"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
@@ -46,11 +47,11 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.
 	actor := &soloActor{solo: solo}
 	NewSoloActor(actor)
 
-	messages := []uint32{
-		message.APP_MSG_BLKS,
+	msg := []uint32{
+		netMessage.APP_MSG_BLKS,
 	}
 
-	solo.msg, err = dispatcher.Subscribe(messages...)
+	solo.msg, err = dispatcher.Subscribe(msg...)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -59,6 +60,18 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.
 	solo.Chains[config.ChainHash] = common.AddressFromPubKey(config.Root.PublicKey)
 	go ConsensusWorkerThread(config.ChainHash, solo, solo.Chains[config.ChainHash])
 
+	chains, err := l.GetChainList(config.ChainHash)
+	if err != nil {
+		return nil, err
+	}
+	for _, c := range chains {
+		m := message.RegChain{
+			ChainID: c.Hash,
+			Address: c.Address,
+			TxHash:  c.TxHash,
+		}
+		event.Send(event.ActorNil, event.ActorConsensusSolo, &m)
+	}
 	return solo, nil
 }
 
@@ -97,12 +110,12 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 				return
 			}
 		case msg := <-solo.msg:
-			in, ok := msg.(message.EcoBallNetMsg)
+			in, ok := msg.(netMessage.EcoBallNetMsg)
 			if !ok {
 				log.Error("can't parse msg")
 				continue
 			}
-			log.Info("receive msg:", message.MessageToStr[in.Type()])
+			log.Info("receive msg:", netMessage.MessageToStr[in.Type()])
 			block := new(types.Block)
 			if err := block.Deserialize(in.Data()); err != nil {
 				log.Error(err)

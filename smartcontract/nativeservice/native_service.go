@@ -78,15 +78,15 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 	case "reg_chain":
 		index := common.NameToIndex(ns.params[0])
 		consensus := ns.params[1]
-		if err := ns.state.RegisterChain(index, common.SingleHash(index.Bytes())); err != nil {
+		addr := common.AddressFormHexString(ns.params[2])
+		data := []byte(index.String() + consensus + addr.HexString())
+		hash := common.SingleHash(data)
+		if err := ns.state.RegisterChain(index, hash, ns.tx.Hash, addr); err != nil {
 			return nil, err
 		}
-		addr := common.AddressFormHexString(ns.params[2])
 		if  ns.state.StateType()== state.FinalType {
 			if consensus == "solo" {
-				data := []byte(index.String() + consensus)
-				hash := common.SingleHash(data)
-				msg := &message.RegChain{ChainID: hash, Tx: ns.tx, Address: addr}
+				msg := &message.RegChain{ChainID: hash, TxHash: ns.tx.Hash, Address: addr}
 				event.Send(event.ActorNil, event.ActorConsensusSolo, msg)
 			} else {
 				log.Warn("not support now")

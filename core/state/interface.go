@@ -8,7 +8,7 @@ import (
 
 type InterfaceState interface {
 	StateType() TypeState
-	RegisterChain(index common.AccountName, hash common.Hash) error
+	RegisterChain(index common.AccountName, hash, txHash common.Hash, addr common.Address) error
 	GetChainList() ([]Chain, error)
 	AddPermission(index common.AccountName, perm Permission) error
 	CheckPermission(index common.AccountName, name string, hash common.Hash, signatures []common.Signature) error

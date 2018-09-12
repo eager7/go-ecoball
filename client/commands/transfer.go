@@ -29,7 +29,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	inner "github.com/ecoball/go-ecoball/common"
 	"math/big"
-	"github.com/ecoball/go-ecoball/common/config"
+	//"github.com/ecoball/go-ecoball/common/config"
 )
 
 var (
@@ -51,6 +51,11 @@ var (
 			cli.Int64Flag{
 				Name:  "value, v",
 				Usage: "ABA amount",
+			},
+			cli.StringFlag{
+				Name:  "chainId, c",
+				Usage: "chainId hash",
+				Value: "config.hash",
 			},
 		},
 		Action: transferAction,
@@ -93,6 +98,12 @@ func transferAction(c *cli.Context) error {
 		return err
 	}
 
+	chainId := info.ChainID
+	chainIdStr := c.String("chainId")
+	if "config.hash" != chainIdStr && "" != chainIdStr {
+		chainId = inner.HexToHash(chainIdStr)
+	}
+
 	publickeys, err := GetPublicKeys()
 	if err != nil {
 		fmt.Println(err)
@@ -102,7 +113,7 @@ func transferAction(c *cli.Context) error {
 	//time
 	time := time.Now().UnixNano()
 
-	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), config.ChainHash, "owner", bigValue, 0, time)
+	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), chainId, "owner", bigValue, 0, time)
 	if nil != err {
 		return err
 	}

@@ -24,11 +24,12 @@ import (
 	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/net/p2p"
+	"github.com/ecoball/go-ecoball/net/ipfs/ipld"
 	dag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
 	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	"gx/ipfs/QmVzK524a2VWLqyvtBeiHKsUAWYgeAk4DBeZoY7vpNPNRx/go-block-format"
 	"gx/ipfs/QmYKNMEUK7nCVAefgXF1LVtZEZg3uRmBqiae4FJRXDNAyJ/go-path"
-	"github.com/ecoball/go-ecoball/net/ipfs/ipld"
 )
 
 const (
@@ -183,7 +184,7 @@ func (pe *StoreStatMonitor) collectStoreStat() {
 		randBlks[i] = blkInfo
 	}
 
-	peer, err := dispatcher.GetPeerID()
+	peer, err := p2p.GetPeerID()
 	if err != nil {
 		log.Error(err)
 		return
@@ -209,7 +210,8 @@ func (pe *StoreStatMonitor) sendRepoStatMsg(repoStat types.StoreRepoStat) {
 	}
 
 	netMsg := message.New(message.APP_MSG_STORE_STAT, data)
-	dispatcher.BroadcastMessage(netMsg)
+
+	p2p.BroadcastMessage(netMsg)
 
 	log.Debug("broadcast a store stat message")
 }

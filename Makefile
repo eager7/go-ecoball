@@ -1,5 +1,7 @@
 # Copyright QuakerChain All Rights Reserved.
 
+include common/config/config
+
 BASE_VERSION = 1.1.1
 
 all: ecoball ecoclient ecowallet proto plugins
@@ -8,12 +10,14 @@ all: ecoball ecoclient ecowallet proto plugins
 ecoball: proto plugins
 	@echo "\033[;32mbuild ecoball \033[0m"
 	mkdir -p build/
+	go install -v node/*.go
 	go build -v -o ecoball node/*.go
 	mv ecoball build/
 
 ecoclient: 
 	@echo "\033[;32mbuild ecoclient \033[0m"
 	mkdir -p build/
+	go install -v client/client.go
 	go build -v -o ecoclient client/client.go
 	mv ecoclient build/
 
@@ -45,5 +49,9 @@ clean:
 	make -C client/protos clean
 
 .PHONY: test
+
 test:
 	@echo "\033[;31mhello world \033[0m"
+	@echo $(PATH)
+	@echo $(GOPATH)
+	@echo $(GOBIN)

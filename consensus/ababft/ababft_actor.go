@@ -76,7 +76,8 @@ type ActorABABFT struct {
 
 	// multiple chain
 	chainID     common.Hash
-	msgChan     chan actor.Context // use channel, combined with actor
+	// msgChan     chan actor.Context // use channel, combined with actor
+	msgChan     chan interface{} // use channel, combined with actor
 	msgStop     chan struct{}
 	addressRoot common.Address
 	soloaccount account.Account
@@ -117,13 +118,15 @@ func ActorABABFTGen(chainId common.Hash, actorABABFT *ActorABABFT) (*actor.PID, 
 
 func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 	// deal with the message
-	switch msg := ctx.Message().(type) {
+	msgIn := ctx.Message()
+	switch msg := msgIn.(type) {
 	case netMsg.ABABFTStart:
 		// check the chain ID
 		chainIn := msg.ChainID
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this ABABFTStart to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -137,12 +140,13 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		return
 
 	case SignaturePreBlock:
-		log.Info("receive the preblock signature:", actorC.status,msg.SignPreBlock)
+		log.Info("receive the preblock signature:", actorC.status,msg.SignPreBlock.Round,msg.SignPreBlock)
 		// check the chain ID
 		chainIn := common.BytesToHash(msg.SignPreBlock.ChainID)
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this SignaturePreBlock to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -160,7 +164,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		chainIn := msg.ChainID
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this PreBlockTimeout to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -178,7 +183,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		chainIn := msg.BlockFirst.Header.ChainID
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this BlockFirstRound to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -196,7 +202,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		chainIn := msg.ChainID
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this TxTimeout to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -214,7 +221,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		chainIn := common.BytesToHash(msg.signatureBlkF.ChainID)
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this SignatureBlkF to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -232,7 +240,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		chainIn := msg.ChainID
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this SignTxTimeout to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -250,7 +259,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		chainIn := msg.BlockSecond.Header.ChainID
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this BlockSecondRound to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -268,7 +278,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		chainIn := msg.ChainID
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this BlockSTimeout to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -286,7 +297,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		chainIn := common.BytesToHash(msg.Reqsyn.ChainID)
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this REQSyn to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -304,7 +316,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		chainIn := common.BytesToHash(msg.Reqsyn.ChainID)
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this REQSynSolo to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -322,7 +335,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		chainIn := common.BytesToHash(msg.Blksyn.ChainID)
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this BlockSyn to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}
@@ -340,7 +354,8 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		chainIn := common.BytesToHash(msg.Toutmsg.ChainID)
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this TimeoutMsg to the corresponding channel")
-			msgChan <- ctx
+			// msgChan <- ctx
+			msgChan <- msgIn
 		} else {
 			log.Info("Not found the corresponding chain")
 		}

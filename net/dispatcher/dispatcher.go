@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/net/message"
 	"gx/ipfs/QmdbxjQWogRCHRaxhhGnYdT1oQJzL9GdqSKzCdqWr85AP2/pubsub"
-	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 )
 
 const (
@@ -32,18 +31,16 @@ var (
 	dispatcher *Dispatcher
 )
 
-func InitMsgDispatcher(sender MsgNode){
+func InitMsgDispatcher(){
 	if dispatcher == nil {
 		dispatcher = &Dispatcher{
 			pubsub.New(bufferSize),
-			sender,
 		}
 	}
 }
 
 type Dispatcher struct {
 	ps     *pubsub.PubSub
-	sender MsgNode
 }
 
 func (ds *Dispatcher) publish(msg message.EcoBallNetMsg) {
@@ -100,45 +97,4 @@ func Publish (msg message.EcoBallNetMsg) error {
 	dispatcher.publish(msg)
 
 	return nil
-}
-
-func SendMessage (pid peer.ID, msg message.EcoBallNetMsg) error {
-	if dispatcher == nil {
-		return fmt.Errorf(errorStr)
-	}
-	dispatcher.sender.SendMsg2Peer(pid, msg)
-
-	return nil
-}
-
-func SendMsgToRandomPeers (peerCounts int, msg message.EcoBallNetMsg) error {
-	if dispatcher == nil {
-		return fmt.Errorf(errorStr)
-	}
-	dispatcher.sender.SendMsg2RandomPeers(peerCounts, msg)
-
-	return nil
-}
-
-func BroadcastMessage (msg message.EcoBallNetMsg) error {
-	if dispatcher == nil {
-		return fmt.Errorf(errorStr)
-	}
-	dispatcher.sender.SendBroadcastMsg(msg)
-
-	return nil
-}
-
-func GetPeerID () (peer.ID, error) {
-	if dispatcher == nil {
-		return "", fmt.Errorf(errorStr)
-	}
-	return dispatcher.sender.SelfRawId(), nil
-}
-
-func GetRandomPeers (k int) ([]peer.ID, error) {
-	if dispatcher == nil {
-		return []peer.ID{}, fmt.Errorf(errorStr)
-	}
-	return dispatcher.sender.SelectRandomPeers(k), nil
 }

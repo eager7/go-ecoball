@@ -66,6 +66,12 @@ var (
 					cli.StringFlag{
 						Name:  "permission, per",
 						Usage: "active permission",
+						Value: "active",
+					},
+					cli.StringFlag{
+						Name:  "chainId, c",
+						Usage: "chainId hash",
+						Value: "config.hash",
 					},
 				},
 			},
@@ -179,6 +185,12 @@ func setContract(c *cli.Context) error {
 		return err
 	}
 
+	chainId := info.ChainID
+	chainIdStr := c.String("chainId")
+	if "config.hash" != chainIdStr && "" != chainIdStr {
+		chainId = common.HexToHash(chainIdStr)
+	}
+
 	publickeys, err := GetPublicKeys()
 	if err != nil {
 		fmt.Println(err)
@@ -186,7 +198,7 @@ func setContract(c *cli.Context) error {
 	}
 
 	time := time.Now().UnixNano()
-	transaction, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex(contractName), info.ChainID, "owner", types.VmWasm, description, data, abibyte, 0, time)
+	transaction, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex(contractName), chainId, "owner", types.VmWasm, description, data, abibyte, 0, time)
 	if nil != err {
 		return err
 	}

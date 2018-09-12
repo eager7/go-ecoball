@@ -52,7 +52,11 @@ func TestNewSolo(t *testing.T) {
 	net.StartNetWork()
 
 	solo.NewSoloConsensusServer(ledger, txPool, config.User)
-	event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, Address: common.AddressFromPubKey(config.Root.PublicKey), Tx: nil})
+	event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{
+		ChainID: config.ChainHash,
+		Address: common.AddressFromPubKey(config.Root.PublicKey),
+		TxHash:  common.Hash{},
+	})
 
 	example.CreateAccountBlock(config.ChainHash)
 	example.TokenTransferBlock(config.ChainHash)

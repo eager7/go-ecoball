@@ -18,7 +18,6 @@ package message
 
 import (
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type ABABFTStart struct {
@@ -30,5 +29,5 @@ type GetCurrentHeader struct{}
 type RegChain struct {
 	ChainID common.Hash
 	Address common.Address
-	Tx      *types.Transaction
+	TxHash  common.Hash
 }

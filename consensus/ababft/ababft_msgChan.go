@@ -14,7 +14,7 @@ func ConsensusABABFTThread(actorC *ActorABABFT) {
 				return
 			}
 		case msgIn :=<- actorC.msgChan:
-			switch msg := msgIn.Message().(type) {
+			switch msg := msgIn.(type) {
 			case message.ABABFTStart:
 				{
 					ProcessSTART(actorC)
@@ -87,7 +87,7 @@ func ConsensusABABFTThread(actorC *ActorABABFT) {
 				}
 			default :
 				log.Debug(msg)
-				log.Warn("unknown message", reflect.TypeOf(msgIn.Message()))
+				log.Warn("unknown message", reflect.TypeOf(msgIn))
 				continue
 			}
 

@@ -18,7 +18,7 @@ package gossiper
 
 import (
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/net/dispatcher"
+	"github.com/ecoball/go-ecoball/net/p2p"
 	"github.com/ecoball/go-ecoball/net/message"
 	eactor "github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
@@ -98,13 +98,13 @@ func (this *BlkSyncFsm)PullBlkRequest(msg message.EcoBallNetMsg) (uint32, bool) 
 	log.Debug("send gossip pull blocks request msg")
 	height := this.nodeLedger.GetCurrentHeight(config.ChainHash)
 	msgType := message.APP_MSG_GOSSIP_PULL_BLK_REQ
-	peers, _:= dispatcher.GetRandomPeers(1)
+	peers := p2p.GetRandomPeers(1)
 	if len(peers) >0 {
-		id, _ := dispatcher.GetPeerID()
+		id, _ := p2p.GetPeerID()
 		blkReq := types.BlkReqMsg{Peer:id, ChainID:1, BlkHeight: height}
 		data, _:= blkReq.Serialize()
 		netMsg := message.New(msgType, data)
-		if err := dispatcher.SendMessage(peers[0], netMsg); err == nil { //only select a peer to push state
+		if err := p2p.SendMsg2PeerWithId(peers[0], netMsg); err == nil { //only select a peer to push state
 			return BLK_WAIT_RES, false
 		}
 	}
@@ -159,7 +159,7 @@ func (this *BlkSyncFsm) HandlePullBlkAckMsg(msg message.EcoBallNetMsg)(uint32, b
 		}
 		data, _ := blkAck2.Serialize()
 		netMsg := message.New(message.APP_MSG_GOSSIP_PUSH_BLKS, data)
-		dispatcher.SendMessage(blkAckMsg.Peer, netMsg)
+		p2p.SendMsg2PeerWithId(blkAckMsg.Peer, netMsg)
 	}
 
 	return BLK_SYNC_IDLE, true

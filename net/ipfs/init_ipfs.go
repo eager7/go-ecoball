@@ -284,7 +284,7 @@ func initIpfsNode(path string) (*core.IpfsNode, error) {
 	return node, nil
 }
 
-func InitIpfs(path string) (*IpfsCtrl, error) {
+func InitAndRunIpfs(path string) (*IpfsCtrl, error) {
 	var err error
 	IpfsNode, err = initIpfsNode(path)
 	if (err != nil) {
@@ -320,14 +320,5 @@ func printSwarmAddrs(node *core.IpfsNode) {
 	sort.Sort(sort.StringSlice(lisAddrs))
 	for _, addr := range lisAddrs {
 		fmt.Printf("Swarm listening on %s\n", addr)
-	}
-
-	var addrs []string
-	for _, addr := range node.PeerHost.Addrs() {
-		addrs = append(addrs, addr.String())
-	}
-	sort.Sort(sort.StringSlice(addrs))
-	for _, addr := range addrs {
-		fmt.Printf("Swarm announcing %s\n", addr)
 	}
 }

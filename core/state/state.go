@@ -54,7 +54,7 @@ type State struct {
 	Producers map[common.AccountName]uint64
 
 	chainMutex sync.RWMutex
-	Chains     map[common.Hash]common.AccountName
+	Chains     map[common.Hash]Chain
 
 	mutex sync.RWMutex
 }
@@ -80,7 +80,7 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	st.Accounts = make(map[string]*Account, 1)
 	st.Params = make(map[string]uint64, 1)
 	st.Producers = make(map[common.AccountName]uint64, 1)
-	st.Chains = make(map[common.Hash]common.AccountName, 1)
+	st.Chains = make(map[common.Hash]Chain, 1)
 	return st, nil
 }
 
@@ -97,7 +97,7 @@ func (s *State) CopyState() (*State, error) {
 	params := make(map[string]uint64, 1)
 	accounts := make(map[string]*Account, 1)
 	prods := make(map[common.AccountName]uint64, 1)
-	chains := make(map[common.Hash]common.AccountName, 1)
+	chains := make(map[common.Hash]Chain, 1)
 
 	/*
 		s.paraMutex.Lock()

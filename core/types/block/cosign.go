@@ -16,9 +16,14 @@
 
 package block
 
+//type COSign struct {
+//	//Round1         TBLS_SIG
+//	BitValidateor1 [32]uint8
+//	//Round2         TBLS_SIG
+//	BitValidateor2 [32]uint8
+//}
+
 type COSign struct {
-	//Round1         TBLS_SIG
-	BitValidateor1 [32]uint8
-	//Round2         TBLS_SIG
-	BitValidateor2 [32]uint8
+	Round1 uint16
+	Round2 uint16
 }

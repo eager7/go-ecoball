@@ -54,13 +54,6 @@ func main() {
 		RunCommand,
 	}
 
-	//flags
-	app.Flags = []cli.Flag{
-		NewNameFlag(),
-		NewPasswordFlag(),
-		NewAddressFlag(),
-	}
-
 	//run
 	app.Run(os.Args)
 }
