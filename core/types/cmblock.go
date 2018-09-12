@@ -86,3 +86,7 @@ func (c *CMBlockHeader) Show() {
 func (c *CMBlockHeader) Type() uint32 {
 	return uint32(HeCmBlock)
 }
+
+func (b *Block) SetCmBlockData(Shards []Shard) {
+	b.Shards = Shards
+}
