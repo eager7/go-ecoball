@@ -51,7 +51,7 @@ func (s *ShardingActor) Receive(ctx actor.Context) {
 		s.instance.MsgDispatch(msg)
 
 	default:
-		log.Warn("ShardingActor received unknown type message:", msg, "type", reflect.TypeOf(msg))
+		log.Warn("ShardingActor received unknown type message ", msg, " type ", reflect.TypeOf(msg))
 	}
 }
 

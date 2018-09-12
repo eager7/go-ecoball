@@ -67,7 +67,7 @@ func MakeCommittee(ns *node.Node) sc.NodeInstance {
 			{ProductCommitteBlock, ActChainNotSync, cm.doBlockSync, BlockSync},
 			{ProductCommitteBlock, ActConsensusSuccess, cm.waitMinorBlock, WaitMinorBlock},
 			{ProductCommitteBlock, ActStateTimeout, cm.productViewChangeBlock, ProductViewChangeBlock},
-			{ProductCommitteBlock, ActRecvConsensusPacket, cm.processNetConsensusPacket, ProductCommitteBlock},
+			{ProductCommitteBlock, ActRecvConsensusPacket, cm.processCmConsensusPacket, ProductCommitteBlock},
 			/*missing_func consensus fail or timeout*/
 			/*{ProductCommitteBlock, ActConsensusFail, , },
 			{ProductCommitteBlock, ActProductTimeout, , },*/
@@ -81,7 +81,7 @@ func MakeCommittee(ns *node.Node) sc.NodeInstance {
 			{ProductFinalBlock, ActWaitMinorBlock, cm.waitMinorBlock, WaitMinorBlock},
 			{ProductFinalBlock, ActProductCommitteeBlock, cm.productCommitteeBlock, ProductCommitteBlock},
 			{ProductFinalBlock, ActStateTimeout, cm.productViewChangeBlock, ProductViewChangeBlock},
-			{ProductFinalBlock, ActRecvConsensusPacket, cm.processNetConsensusPacket, ProductFinalBlock},
+			{ProductFinalBlock, ActRecvConsensusPacket, cm.processFinalConsensusPacket, ProductFinalBlock},
 
 			/*missing_func consensus fail or timeout*/
 			/*{ProductCommitteBlock, ActConsensusFail, , },
@@ -90,7 +90,7 @@ func MakeCommittee(ns *node.Node) sc.NodeInstance {
 			{ProductViewChangeBlock, ActProductCommitteeBlock, cm.productCommitteeBlock, ProductCommitteBlock},
 			{ProductViewChangeBlock, ActProductFinalBlock, cm.productFinalBlock, ProductFinalBlock},
 			{ProductViewChangeBlock, ActStateTimeout, cm.productViewChangeBlock, ProductViewChangeBlock},
-			{ProductViewChangeBlock, ActRecvConsensusPacket, cm.processNetConsensusPacket, ProductViewChangeBlock},
+			{ProductViewChangeBlock, ActRecvConsensusPacket, cm.processViewchangeConsensusPacket, ProductViewChangeBlock},
 		})
 
 	return cm
@@ -103,7 +103,7 @@ func (c *committee) MsgDispatch(msg interface{}) {
 func (c *committee) Start() {
 	recvc, err := simulate.Subscribe(c.ns.Self.Port)
 	if err != nil {
-		log.Panic("simulate error %s", err)
+		log.Panic("simulate error ", err)
 		return
 	}
 

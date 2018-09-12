@@ -10,17 +10,15 @@ func (c *committee) consensusCb(bl interface{}) {
 	switch blockType := bl.(type) {
 	case *block.CMBlock:
 		c.recvCommitCmBlock(bl.(*block.CMBlock))
+	case *block.FinalBlock:
+		c.recvCommitFinalBlock(bl.(*block.FinalBlock))
 	default:
-		log.Error("consensus call back wrong packet type %d", blockType)
+		log.Error("consensus call back wrong packet type ", blockType)
 	}
 }
 
 func (c *committee) processConsensusPacket(packet netmsg.EcoBallNetMsg) {
 	c.fsm.Execute(ActRecvConsensusPacket, packet)
-}
-
-func (c *committee) processNetConsensusPacket(packet interface{}) {
-	c.cs.ProcessPacket(packet.(netmsg.EcoBallNetMsg))
 }
 
 func (c *committee) processShardingPacket(packet netmsg.EcoBallNetMsg) {
@@ -29,5 +27,5 @@ func (c *committee) processShardingPacket(packet netmsg.EcoBallNetMsg) {
 
 func (c *committee) dropPacket(packet interface{}) {
 	pkt := packet.(netmsg.EcoBallNetMsg)
-	log.Debug("drop packet type %d", pkt.Type())
+	log.Debug("drop packet type ", pkt.Type())
 }

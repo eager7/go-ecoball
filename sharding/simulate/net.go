@@ -23,7 +23,7 @@ func Sendto(addr string, port string, packet message.EcoBallNetMsg) error {
 	addrPort := addr + ":" + port
 	conn, err := net.DialTimeout("tcp", addrPort, 2*time.Second)
 	if err != nil {
-		log.Debug("connect to peer %s:%s error:%s", addr, port, err)
+		log.Debug("connect to peer ", addr, " ", port, " ", err)
 		return err
 	}
 
@@ -43,7 +43,7 @@ func Subscribe(port string) (<-chan message.EcoBallNetMsg, error) {
 func recvRoutine() {
 	l, err := net.Listen("tcp", "0.0.0.0:"+fmt.Sprint(listenPort))
 	if err != nil {
-		log.Error("start server listen error: %s", err)
+		log.Error("start server listen error ", err)
 		panic(err)
 	}
 
@@ -107,14 +107,14 @@ func recv(conn net.Conn) {
 
 		packetLen := binary.BigEndian.Uint32(bl)
 		if packetLen > 1024*1024*10 {
-			log.Error("drop packet wrong packet lenght %d", packetLen)
+			log.Error("drop packet wrong packet lenght ", packetLen)
 			break
 		}
 
 		buf := make([]byte, packetLen)
 		readLen, err := io.ReadFull(reader, buf)
 		if err != nil {
-			log.Error("read data error:%s", err)
+			log.Error("read data error s", err)
 			break
 		}
 
@@ -122,7 +122,7 @@ func recv(conn net.Conn) {
 			for {
 				length, err := io.ReadFull(reader, buf[readLen:])
 				if err != nil {
-					log.Error("continue read data error:%s", err)
+					log.Error("continue read data error ", err)
 					return
 				}
 
@@ -133,7 +133,7 @@ func recv(conn net.Conn) {
 				} else if uint32(readLen) == packetLen {
 					break
 				} else {
-					log.Error("continue read data length error:%s", err)
+					log.Error("continue read data length error ", err)
 					readerr = true
 					break
 				}
@@ -149,7 +149,7 @@ func recv(conn net.Conn) {
 
 		packet := message.New(packetType, data)
 
-		log.Debug("recv packet type:%d", packetType)
+		log.Debug("recv packet type ", packetType)
 		netMsgChain <- packet
 	}
 }

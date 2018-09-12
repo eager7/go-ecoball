@@ -7,7 +7,9 @@ type NodeInstance interface {
 
 const (
 	CS_PREPARE_BLOCK = iota
+	CS_PREPARE_BLOCK_RSP
 	CS_PRECOMMIT_BLOCK
+	CS_PRECOMMIT_BLOCK_RSP
 	CS_COMMIT_BLOCK
 	CS_END
 )
@@ -46,7 +48,7 @@ type ConsensusInstance interface {
 	MakeCsPacket(round uint16) *CsPacket
 	GetCsBlock() interface{}
 	CacheBlock(packet *CsPacket) *CsView
-	PrepareRsp(csp *CsPacket) uint16
-	PrecommitRsp(csp *CsPacket) uint16
+	PrepareRsp() uint16
+	PrecommitRsp() uint16
 	UpdateBlock(csp *CsPacket)
 }

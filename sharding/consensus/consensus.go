@@ -39,19 +39,48 @@ func MakeConsensus(ns *node.Node, cb csCompleteCb) *Consensus {
 	}
 }
 
+func (c *Consensus) StartConsensus(instance sc.ConsensusInstance) {
+	if c.ns.IsCmLeader() {
+		c.startBlockConsensusLeader(instance)
+	} else {
+		c.startBlockConsensusVoter(instance)
+	}
+}
+
 func (c *Consensus) ProcessPacket(packet netmsg.EcoBallNetMsg) {
 	var csp sc.CsPacket
 	err := json.Unmarshal(packet.Data(), &csp)
 	if err != nil {
-		log.Error("net packet unmarshal error:%s", err)
+		log.Error("net packet unmarshal error ", err)
 		return
 	}
 
 	view := c.instance.CacheBlock(&csp)
-	if !c.view.Equal(view) {
-		log.Error("view error current:%d %d %d %, recv: %d %d %d", c.view.EpochNo, c.view.FinalHeight, c.view.MinorHeight,
-			view.EpochNo, view.FinalHeight, view.MinorHeight)
+	if view == nil {
+		log.Error("cache packet error")
 		return
 	}
 
+	if !c.view.Equal(view) {
+		log.Error("view error current ", c.view.EpochNo, " ", c.view.FinalHeight, " ", c.view.MinorHeight, " packet view ",
+			view.EpochNo, " ", view.FinalHeight, " ", view.MinorHeight)
+		return
+	}
+
+	if c.ns.IsCmLeader() {
+		c.processPacketByLeader(&csp)
+	} else {
+		c.processPacketByVoter(&csp)
+	}
+}
+
+func (c *Consensus) IsCsRunning() bool {
+	if c.instance == nil && c.view == nil && c.round == RoundNIL {
+		return false
+	} else if c.instance != nil && c.view != nil && c.round != RoundNIL {
+		return true
+	} else {
+		panic("consensus wrong status")
+		return false
+	}
 }

@@ -26,7 +26,7 @@ func (m *minorBlockSet) clean() {
 func (m *minorBlockSet) setMinorBlock(minor *block.MinorBlock) {
 	shardid := minor.ShardId
 	if int(shardid) > len(m.blocks) || shardid < 1 {
-		log.Error("set minorBlock error shardid %d", shardid)
+		log.Error("set minorBlock error shardid ", shardid)
 		return
 	}
 
@@ -36,7 +36,7 @@ func (m *minorBlockSet) setMinorBlock(minor *block.MinorBlock) {
 func (m *minorBlockSet) syncMinorBlocks(minors []*block.MinorBlock) {
 	if len(m.blocks) != len(minors) {
 		panic("sync minor block length error")
-		log.Panic("sync minor block error len %d sync blocks len%d", len(m.blocks), len(minors))
+		log.Panic("sync minor block error len ", len(m.blocks), "  sync blocks len ", len(minors))
 		return
 	}
 
@@ -47,7 +47,7 @@ func (m *minorBlockSet) syncMinorBlocks(minors []*block.MinorBlock) {
 
 func (m *minorBlockSet) getMinorBlock(shardid uint16) *block.MinorBlock {
 	if int(shardid) > len(m.blocks) || shardid < 1 {
-		log.Error("get minorBlock error shardid %d", shardid)
+		log.Error("get minorBlock error shardid ", shardid)
 		return nil
 	}
 

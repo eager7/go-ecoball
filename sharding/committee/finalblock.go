@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/etime"
 	"github.com/ecoball/go-ecoball/core/types/block"
-	"github.com/ecoball/go-ecoball/net/message"
+	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -27,7 +27,7 @@ func (b *finalBlockCsi) CacheBlock(packet *sc.CsPacket) *sc.CsView {
 	var bk block.FinalBlock
 	err := json.Unmarshal(packet.Packet, &bk)
 	if err != nil {
-		log.Error("final block unmarshal error:%s", err)
+		log.Error("final block unmarshal error ", err)
 		return nil
 	}
 
@@ -52,7 +52,7 @@ func (b *finalBlockCsi) MakeCsPacket(round uint16) *sc.CsPacket {
 
 	data, err := json.Marshal(csp)
 	if err != nil {
-		log.Error("final block marshal error:%s", err)
+		log.Error("final block marshal error ", err)
 		return nil
 	}
 
@@ -65,12 +65,20 @@ func (b *finalBlockCsi) GetCsBlock() interface{} {
 	return b.block
 }
 
-func (b *finalBlockCsi) PrepareRsp(*sc.CsPacket) uint16 {
-	return 0
+func (b *finalBlockCsi) PrepareRsp() uint16 {
+	if b.cache.Round1 == 1 {
+		b.block.Round1++
+	}
+
+	return b.block.Round1
 }
 
-func (b *finalBlockCsi) PrecommitRsp(*sc.CsPacket) uint16 {
-	return 0
+func (b *finalBlockCsi) PrecommitRsp() uint16 {
+	if b.cache.Round2 == 1 {
+		b.block.Round2++
+	}
+
+	return b.block.Round2
 }
 
 func (b *finalBlockCsi) UpdateBlock(*sc.CsPacket) {
@@ -92,28 +100,29 @@ func (c *committee) productFinalBlock(msg interface{}) {
 
 	cms := newFinalBlockCsi(final)
 
-	if c.ns.IsCmLeader() {
-		c.cs.StartBlockConsensusLeader(cms)
-	} else {
-		c.cs.StartBlockConsensusVoter(cms)
-	}
+	c.cs.StartConsensus(cms)
 
 	c.stateTimer.Reset(sc.DefaultProductViewChangeBlockTimer * time.Second)
 }
 
-func (c *committee) recvConsensusFinalBlock(packet message.EcoBallNetMsg) {
+func (c *committee) recvCommitFinalBlock(bl *block.FinalBlock) {
+	log.Debug("recv consensus final block height ", bl.Height)
+	simulate.TellBlock(bl)
+}
 
-	var final block.FinalBlock
-
-	err := json.Unmarshal(packet.Data(), &final)
-	if err != nil {
-		log.Error("cm block Unmarshal error:%s", err)
-		return
+func (c *committee) processFinalConsensusPacket(packet interface{}) {
+	if c.ns.IsCmLeader() {
+		if !c.cs.IsCsRunning() {
+			panic("consensus is not running")
+			return
+		}
+	} else {
+		if !c.cs.IsCsRunning() {
+			c.productFinalBlock(nil)
+		}
 	}
 
-	log.Debug("recv consensus final block height:%d", final.Height)
-
-	simulate.TellBlock(&final)
+	c.cs.ProcessPacket(packet.(netmsg.EcoBallNetMsg))
 }
 
 func (c *committee) processWMBStateChange(packet interface{}) {
@@ -123,5 +132,5 @@ func (c *committee) processWMBStateChange(packet interface{}) {
 	}
 
 	c.productFinalBlock(nil)
-	c.cs.ProcessPacket(packet.(message.EcoBallNetMsg))
+	c.cs.ProcessPacket(packet.(netmsg.EcoBallNetMsg))
 }

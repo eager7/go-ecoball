@@ -27,7 +27,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 		return
 	} else if lastCmBlock.Height < lastFinalBlock.CMEpochNo {
 		panic("wrong sync status")
-		log.Panic("wrong sync status, cm block height: %d, final block number: %d", lastCmBlock.Height, lastFinalBlock.CMEpochNo)
+		log.Panic("wrong sync status, cm block height ", lastCmBlock.Height, " final block number ", lastFinalBlock.CMEpochNo)
 		return
 	}
 

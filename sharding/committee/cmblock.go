@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/etime"
 	"github.com/ecoball/go-ecoball/core/types/block"
+	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -26,7 +27,7 @@ func (b *cmBlockCsi) CacheBlock(packet *sc.CsPacket) *sc.CsView {
 	var block block.CMBlock
 	err := json.Unmarshal(packet.Packet, &block)
 	if err != nil {
-		log.Error("cm block unmarshal error:%s", err)
+		log.Error("cm block unmarshal error ", err)
 		return nil
 	}
 
@@ -50,7 +51,7 @@ func (b *cmBlockCsi) MakeCsPacket(round uint16) *sc.CsPacket {
 
 	data, err := json.Marshal(b.block)
 	if err != nil {
-		log.Error("cm block marshal error:%s", err)
+		log.Error("cm block marshal error ", err)
 		return nil
 	}
 
@@ -63,16 +64,25 @@ func (b *cmBlockCsi) GetCsBlock() interface{} {
 	return b.block
 }
 
-func (b *cmBlockCsi) PrepareRsp(*sc.CsPacket) uint16 {
-	return 0
+func (b *cmBlockCsi) PrepareRsp() uint16 {
+	if b.cache.Round1 == 1 {
+		b.block.Round1++
+	}
+
+	return b.block.Round1
 }
 
-func (b *cmBlockCsi) PrecommitRsp(*sc.CsPacket) uint16 {
-	return 0
+func (b *cmBlockCsi) PrecommitRsp() uint16 {
+	if b.cache.Round2 == 1 {
+		b.block.Round2++
+	}
+
+	return b.block.Round2
 }
 
 func (b *cmBlockCsi) UpdateBlock(*sc.CsPacket) {
-
+	b.block = b.cache
+	b.cache = nil
 }
 
 func (c *committee) productCommitteeBlock(msg interface{}) {
@@ -90,17 +100,27 @@ func (c *committee) productCommitteeBlock(msg interface{}) {
 
 	cms := newCmBlockCsi(cm)
 
-	if c.ns.IsCmLeader() {
-		c.cs.StartBlockConsensusLeader(cms)
-	} else {
-		c.cs.StartBlockConsensusVoter(cms)
-	}
+	c.cs.StartConsensus(cms)
 
 	c.stateTimer.Reset(sc.DefaultProductCMBlockTimer * time.Second)
 }
 
-func (c *committee) recvCommitCmBlock(bl *block.CMBlock) {
-	var cm block.CMBlock
+func (c *committee) processCmConsensusPacket(packet interface{}) {
+	if c.ns.IsCmLeader() {
+		if !c.cs.IsCsRunning() {
+			panic("consensus is not running")
+			return
+		}
+	} else {
+		if !c.cs.IsCsRunning() {
+			c.productCommitteeBlock(nil)
+		}
+	}
 
-	simulate.TellBlock(&cm)
+	c.cs.ProcessPacket(packet.(netmsg.EcoBallNetMsg))
+}
+
+func (c *committee) recvCommitCmBlock(bl *block.CMBlock) {
+	log.Debug("recv consensus cm block height ", bl.Height)
+	simulate.TellBlock(bl)
 }

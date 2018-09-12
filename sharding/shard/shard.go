@@ -28,7 +28,7 @@ func (c *shard) MsgDispatch(msg interface{}) {
 func (c *shard) Start() {
 	recvc, err := simulate.Subscribe(c.ns.Self.Port)
 	if err != nil {
-		log.Panic("simulate error %s", err)
+		log.Panic("simulate error ", err)
 		return
 	}
 

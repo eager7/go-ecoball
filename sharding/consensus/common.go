@@ -31,12 +31,32 @@ func (c *Consensus) sendCsPacket() {
 	csp := c.instance.MakeCsPacket(c.round)
 	data, err := json.Marshal(csp)
 	if err != nil {
-		log.Error("cm block marshal error:%s", err)
+		log.Error("cm block marshal error ", err)
 		return
 	}
 
 	packet := message.New(message.APP_MSG_CONSENSUS_PACKET, data)
 	c.bcastBlock(packet)
+}
+
+func (c *Consensus) gossipBlock(packet message.EcoBallNetMsg) {
+	var works []*node.Worker
+	if c.ns.NodeType == sc.NodeCommittee {
+		works = c.ns.GetCmWorks()
+	} else if c.ns.NodeType == sc.NodeShard {
+		works = c.ns.GetShardWorks()
+	} else {
+		log.Error("wrong node type")
+		return
+	}
+
+	for _, work := range works {
+		if c.ns.Self.Equal(work) {
+			continue
+		}
+
+		simulate.Sendto(work.Address, work.Port, packet)
+	}
 }
 
 func (c *Consensus) bcastBlock(packet message.EcoBallNetMsg) {
@@ -57,4 +77,17 @@ func (c *Consensus) bcastBlock(packet message.EcoBallNetMsg) {
 
 		simulate.Sendto(work.Address, work.Port, packet)
 	}
+}
+
+func (c *Consensus) csComplete() {
+	bl := c.instance.GetCsBlock()
+	c.completeCb(bl)
+
+	c.reset()
+}
+
+func (c *Consensus) reset() {
+	c.round = RoundNIL
+	c.instance = nil
+	c.view = nil
 }

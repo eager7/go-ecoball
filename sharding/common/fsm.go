@@ -39,7 +39,7 @@ func (f *Fsm) Execute(action int, msg interface{}) {
 		}
 	}
 
-	log.Panic("wrong fsm action %d state %d", action, f.state)
+	log.Panic("wrong fsm action ", action, " state ", f.state)
 	panic("wrong fsm")
 }
 
