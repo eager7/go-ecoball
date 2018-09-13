@@ -34,7 +34,11 @@ func (f *Fsm) Execute(action int, msg interface{}) {
 			if elem.Call != nil {
 				elem.Call(msg)
 			}
-			f.state = elem.Nextstate
+
+			if elem.Nextstate != 0 {
+				f.state = elem.Nextstate
+			}
+
 			return
 		}
 	}

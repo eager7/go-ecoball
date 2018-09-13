@@ -1,4 +1,4 @@
-package node
+package cell
 
 import (
 	"encoding/json"
@@ -16,7 +16,7 @@ var (
 	log = elog.NewLogger("sdnode", elog.DebugLog)
 )
 
-type Node struct {
+type Cell struct {
 	NodeType int
 	Shardid  uint16 /*only node is shard member*/
 	Self     Worker
@@ -31,8 +31,8 @@ type Node struct {
 	minorBlockPool *minorBlockSet
 }
 
-func MakeNode() *Node {
-	return &Node{
+func MakeCell() *Cell {
+	return &Cell{
 		cm:             makeWorkerSet(sc.DefaultCommitteMaxMember),
 		chain:          makeChainData(),
 		minorBlockPool: makeMinorBlockSet(),
@@ -53,7 +53,7 @@ type config struct {
 	Shard     []NodeConfig
 }
 
-func (n *Node) readConfigFile(filename string) *config {
+func (c *Cell) readConfigFile(filename string) *config {
 	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Info("read config file error")
@@ -62,40 +62,40 @@ func (n *Node) readConfigFile(filename string) *config {
 
 	str := string(bytes)
 
-	var c config
-	if err := json.Unmarshal([]byte(str), &c); err != nil {
+	var cfg config
+	if err := json.Unmarshal([]byte(str), &cfg); err != nil {
 		log.Info("json unmarshal error")
 		return nil
 	}
 
-	return &c
+	return &cfg
 }
 
-func (n *Node) LoadConfig() {
+func (c *Cell) LoadConfig() {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(dir)
 
-	c := n.readConfigFile(dir + "\\config.json")
-	if c == nil {
+	cfg := c.readConfigFile(dir + "\\config.json")
+	if cfg == nil {
 		return
 	}
 
-	n.Self.Pubkey = c.Pubkey
-	n.Self.Address = c.Address
-	n.Self.Port = c.Port
+	c.Self.Pubkey = cfg.Pubkey
+	c.Self.Address = cfg.Address
+	c.Self.Port = cfg.Port
 
 	nodeType := sc.NodeNil
-	for _, member := range c.Committee {
+	for _, member := range cfg.Committee {
 		var worker Worker
 		worker.Pubkey = member.Pubkey
 		worker.Address = member.Address
 		worker.Port = member.Port
 
-		n.addCommitteWorker(&worker)
-		if n.Self.Equal(&worker) {
+		c.addCommitteWorker(&worker)
+		if c.Self.Equal(&worker) {
 			nodeType = sc.NodeCommittee
 		}
 	}
@@ -104,41 +104,41 @@ func (n *Node) LoadConfig() {
 		nodeType = sc.NodeCandidate
 	}
 
-	n.NodeType = nodeType
+	c.NodeType = nodeType
 }
 
-func (n *Node) SetLastCMBlock(cmb *block.CMBlock) {
-	n.chain.setCMBlock(cmb)
+func (c *Cell) SetLastCMBlock(cmb *block.CMBlock) {
+	c.chain.setCMBlock(cmb)
 
 	var worker Worker
 	worker.Pubkey = string(cmb.Candidate.PublicKey)
 	worker.Address = cmb.Candidate.Address
 	worker.Port = cmb.Candidate.Port
 
-	n.addCommitteWorker(&worker)
-	if n.NodeType == sc.NodeShard {
-		n.saveShardsInfoFromCMBlock(cmb)
+	c.addCommitteWorker(&worker)
+	if c.NodeType == sc.NodeShard {
+		c.saveShardsInfoFromCMBlock(cmb)
 	}
 
-	n.minorBlockPool.resize(len(cmb.Shards))
+	c.minorBlockPool.resize(len(cmb.Shards))
 
 }
 
-func (n *Node) GetLastCMBlock() *block.CMBlock {
-	return n.chain.getCMBlock()
+func (c *Cell) GetLastCMBlock() *block.CMBlock {
+	return c.chain.getCMBlock()
 }
 
-func (n *Node) GetLastFinalBlock() *block.FinalBlock {
-	return n.chain.getFinalBlock()
+func (c *Cell) GetLastFinalBlock() *block.FinalBlock {
+	return c.chain.getFinalBlock()
 }
 
-func (n *Node) SetLastFinalBlock(block *block.FinalBlock) {
-	n.chain.setFinalBlock(block)
-	n.minorBlockPool.clean()
+func (c *Cell) SetLastFinalBlock(block *block.FinalBlock) {
+	c.chain.setFinalBlock(block)
+	c.minorBlockPool.clean()
 }
 
-func (n *Node) SyncCMBlockComplete(lastCMblock *block.CMBlock) {
-	curBlock := n.chain.getCMBlock()
+func (c *Cell) SyncCMBlockComplete(lastCMblock *block.CMBlock) {
+	curBlock := c.chain.getCMBlock()
 
 	var i uint64
 	if curBlock == nil {
@@ -159,60 +159,74 @@ func (n *Node) SyncCMBlockComplete(lastCMblock *block.CMBlock) {
 		worker.Address = cmb.Candidate.Address
 		worker.Port = cmb.Candidate.Port
 
-		n.addCommitteWorker(&worker)
+		c.addCommitteWorker(&worker)
 	}
 
-	n.SetLastCMBlock(lastCMblock)
+	c.SetLastCMBlock(lastCMblock)
 }
 
-func (n *Node) SetMinorBlockToPool(minor *block.MinorBlock) {
-	n.minorBlockPool.setMinorBlock(minor)
+func (c *Cell) SetMinorBlockToPool(minor *block.MinorBlock) {
+	c.minorBlockPool.setMinorBlock(minor)
 }
 
-func (n *Node) SyncMinorsBlockToPool(minors []*block.MinorBlock) {
-	n.minorBlockPool.syncMinorBlocks(minors)
+func (c *Cell) SyncMinorsBlockToPool(minors []*block.MinorBlock) {
+	c.minorBlockPool.syncMinorBlocks(minors)
 }
 
-func (n *Node) GetMinorBlockFromPool() *minorBlockSet {
-	return n.minorBlockPool
+func (c *Cell) GetMinorBlockFromPool() *minorBlockSet {
+	return c.minorBlockPool
 }
 
-func (n *Node) GetMinorBlockPoolCount() uint16 {
-	return n.minorBlockPool.count()
+func (c *Cell) GetMinorBlockPoolCount() uint16 {
+	return c.minorBlockPool.count()
 }
 
-func (n *Node) IsCmLeader() bool {
-	return n.cm.isLeader(&n.Self)
+func (c *Cell) IsCmLeader() bool {
+	return c.cm.isLeader(&c.Self)
 }
 
-func (n *Node) IsCmCandidateLeader() bool {
+func (c *Cell) IsCmCandidateLeader() bool {
 	/*should do vrf by cmblock*/
-	return n.cm.isCandidateLeader(&n.Self)
+	return c.cm.isCandidateLeader(&c.Self)
 }
 
-func (n *Node) GetCmWorks() []*Worker {
-	return n.cm.member
+func (c *Cell) GetWorks() []*Worker {
+	if c.NodeType == sc.NodeCommittee {
+		return c.cm.member
+	} else if c.NodeType == sc.NodeShard {
+		return c.shard
+	} else {
+		return nil
+	}
 }
 
-func (n *Node) GetCmWorksCounter() uint16 {
-	return uint16(len(n.cm.member))
+func (c *Cell) GetWorksCounter() uint16 {
+	if c.NodeType == sc.NodeCommittee {
+		return uint16(len(c.cm.member))
+	} else if c.NodeType == sc.NodeShard {
+		return uint16(len(c.shard))
+	} else {
+		return 0
+	}
 }
 
-func (n *Node) GetShardWorks() []*Worker {
-	return n.shard
+func (c *Cell) GetLeader() *Worker {
+	if c.NodeType == sc.NodeCommittee {
+		return c.cm.member[0]
+	} else if c.NodeType == sc.NodeShard {
+		return c.shard[0]
+	} else {
+		return nil
+	}
 }
 
-func (n *Node) GetShardWorksCounter() uint16 {
-	return uint16(len(n.shard))
+func (c *Cell) addCommitteWorker(worker *Worker) {
+	c.cm.addMember(worker)
 }
 
-func (n *Node) addCommitteWorker(worker *Worker) {
-	n.cm.addMember(worker)
-}
-
-func (n *Node) saveShardsInfoFromCMBlock(cmb *block.CMBlock) {
-	n.NodeType = sc.NodeCandidate
-	n.shard = n.shard[:0]
+func (c *Cell) saveShardsInfoFromCMBlock(cmb *block.CMBlock) {
+	c.NodeType = sc.NodeCandidate
+	c.shard = c.shard[:0]
 
 	for i, shard := range cmb.Shards {
 		for _, member := range shard.Member {
@@ -221,14 +235,14 @@ func (n *Node) saveShardsInfoFromCMBlock(cmb *block.CMBlock) {
 			worker.Address = member.Address
 			worker.Port = member.Port
 
-			if n.Self.Equal(&worker) {
-				n.NodeType = sc.NodeShard
-				n.Shardid = uint16(i + 1)
+			if c.Self.Equal(&worker) {
+				c.NodeType = sc.NodeShard
+				c.Shardid = uint16(i + 1)
 				break
 			}
 		}
 
-		if n.NodeType != sc.NodeShard {
+		if c.NodeType != sc.NodeShard {
 			continue
 		}
 
@@ -237,7 +251,7 @@ func (n *Node) saveShardsInfoFromCMBlock(cmb *block.CMBlock) {
 			worker.Pubkey = string(member.PublicKey)
 			worker.Address = member.Address
 			worker.Port = member.Port
-			n.shard = append(n.shard, &worker)
+			c.shard = append(c.shard, &worker)
 		}
 
 		break

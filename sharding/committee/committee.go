@@ -4,9 +4,9 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/message"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
-	"github.com/ecoball/go-ecoball/sharding/node"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 )
@@ -16,13 +16,14 @@ var (
 )
 
 const (
-	BlockSync = iota + 1
+	StateNil = iota + 1
+	BlockSync
 	Consensus
 	ProductCommitteBlock
 	WaitMinorBlock
 	ProductFinalBlock
 	ProductViewChangeBlock
-	StateNil
+	StateEnd
 )
 
 const (
@@ -39,7 +40,7 @@ const (
 )
 
 type committee struct {
-	ns          *node.Node
+	ns          *cell.Cell
 	fsm         *sc.Fsm
 	actorMsgc   chan interface{}
 	packetRecvc <-chan netmsg.EcoBallNetMsg
@@ -48,7 +49,7 @@ type committee struct {
 	cs *consensus.Consensus
 }
 
-func MakeCommittee(ns *node.Node) sc.NodeInstance {
+func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 	cm := &committee{
 		ns:        ns,
 		actorMsgc: make(chan interface{}),
@@ -61,7 +62,7 @@ func MakeCommittee(ns *node.Node) sc.NodeInstance {
 			{BlockSync, ActProductCommitteeBlock, cm.productCommitteeBlock, ProductCommitteBlock},
 			{BlockSync, ActWaitMinorBlock, cm.waitMinorBlock, WaitMinorBlock},
 			{BlockSync, ActProductFinalBlock, cm.productFinalBlock, ProductFinalBlock},
-			{BlockSync, ActStateTimeout, cm.processBlockSyncTimeout, BlockSync},
+			{BlockSync, ActStateTimeout, cm.processBlockSyncTimeout, StateNil},
 			{BlockSync, ActRecvConsensusPacket, cm.dropPacket, BlockSync},
 
 			{ProductCommitteBlock, ActChainNotSync, cm.doBlockSync, BlockSync},

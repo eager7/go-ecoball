@@ -1,4 +1,4 @@
-package node
+package cell
 
 import (
 	"container/list"
