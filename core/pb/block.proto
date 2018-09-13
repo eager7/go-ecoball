@@ -331,7 +331,7 @@ message MinorBlockHeader {
     bytes       ChainID             = 1;
     uint32      Version             = 2;
     uint64      Height              = 3;
-    uint64      Timestamp           = 4;
+    int64       Timestamp           = 4;
     bytes       PrevHash            = 5;
     bytes       TrxHashRoot         = 6;
     bytes       StateDeltaHash      = 7;

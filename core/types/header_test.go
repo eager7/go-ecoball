@@ -1,30 +1,55 @@
 package types_test
 
 import (
-	"testing"
-	"github.com/ecoball/go-ecoball/core/types"
+	"fmt"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"time"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/bloom"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/test/example"
+	"math/big"
+	"testing"
+	"time"
 )
 
 func TestMinorBlockHeader(t *testing.T) {
 	header := types.MinorBlockHeader{
+		ChainID:           config.ChainHash,
+		Version:           1,
+		Height:            1,
+		Timestamp:         time.Now().UnixNano(),
+		PrevHash:          common.Hash{},
+		TrxHashRoot:       common.Hash{},
+		StateDeltaHash:    common.Hash{},
+		CMBlockHash:       common.Hash{},
 		ProposalPublicKey: []byte("1234567890"),
-		StateChangeHash:   common.SingleHash([]byte("StateChangeHash")),
+		ConsData:          example.ConsensusData(),
 		ShardId:           1,
 		CMEpochNo:         2,
-		CmBlockHash:       common.SingleHash([]byte("CmBlockHash")),
+		Receipt:           types.BlockReceipt{},
+		Hash:              common.Hash{},
 	}
+	errors.CheckErrorPanic(header.ComputeHash())
 	data, err := header.Serialize()
 	errors.CheckErrorPanic(err)
 
 	headerNew := types.MinorBlockHeader{}
 	errors.CheckErrorPanic(headerNew.Deserialize(data))
-	headerNew.Show()
 	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
+
+	block := types.MinorBlock{
+		Header:       &header,
+		Transactions: []*types.Transaction{example.TestTransfer()},
+		StateDelta: []*types.AccountMinor{{
+			Balance: new(big.Int).SetUint64(100),
+			Nonce:   new(big.Int).SetUint64(2),
+		}}}
+	data, err = block.Serialize()
+	errors.CheckErrorPanic(err)
+	blockNew := types.MinorBlock{}
+	errors.CheckErrorPanic(blockNew.Deserialize(data))
+	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
 }
 
 func TestCmBlockHeader(t *testing.T) {
@@ -45,12 +70,7 @@ func TestCmBlockHeader(t *testing.T) {
 
 func TestHeader(t *testing.T) {
 	payload := &types.MinorBlockHeader{
-		ProposalPublicKey: []byte("1234567890"),
-		StateChangeHash:   common.SingleHash([]byte("StateChangeHash")),
-		ShardId:           1,
-		CMEpochNo:         2,
-		CmBlockHash:       common.SingleHash([]byte("CmBlockHash")),
-	}
+		ProposalPublicKey: []byte("1234567890")}
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
 	h, err := types.NewHeader(payload, types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
 	errors.CheckErrorPanic(err)

@@ -13,7 +13,7 @@ type MinorBlockHeader struct {
 	ChainID           common.Hash
 	Version           uint32
 	Height            uint64
-	Timestamp         uint64
+	Timestamp         int64
 	PrevHash          common.Hash
 	TrxHashRoot       common.Hash
 	StateDeltaHash    common.Hash
@@ -45,7 +45,7 @@ func (h *MinorBlockHeader) ProtoBuf() (*pb.MinorBlockHeader, error) {
 		return nil, err
 	}
 	pbHeader := &pb.MinorBlockHeader{
-		ChainID:           h.Hash.Bytes(),
+		ChainID:           h.ChainID.Bytes(),
 		Version:           h.Version,
 		Height:            h.Height,
 		Timestamp:         h.Timestamp,
@@ -57,8 +57,11 @@ func (h *MinorBlockHeader) ProtoBuf() (*pb.MinorBlockHeader, error) {
 		ConsData:          pbCon,
 		ShardId:           h.ShardId,
 		CMEpochNo:         h.CMEpochNo,
-		Receipt:           nil,
-		Hash:              nil,
+		Receipt: &pb.BlockReceipt{
+			BlockCpu: h.Receipt.BlockCpu,
+			BlockNet: h.Receipt.BlockNet,
+		},
+		Hash: h.Hash.Bytes(),
 	}
 	return pbHeader, nil
 }
@@ -68,6 +71,8 @@ func (h *MinorBlockHeader) unSignatureData() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	pbHeader.Receipt = nil
+	pbHeader.Hash = nil
 	data, err := pbHeader.Marshal()
 	if err != nil {
 		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
@@ -81,7 +86,7 @@ func (h *MinorBlockHeader) Serialize() ([]byte, error) {
 		return nil, err
 	}
 	protoHeader := pb.MinorBlockHeader{
-		ChainID:           h.Hash.Bytes(),
+		ChainID:           h.ChainID.Bytes(),
 		Version:           h.Version,
 		Height:            h.Height,
 		Timestamp:         h.Timestamp,
@@ -125,7 +130,7 @@ func (h *MinorBlockHeader) Deserialize(data []byte) error {
 	h.ShardId = pbHeader.ShardId
 	h.CMEpochNo = pbHeader.CMEpochNo
 	h.Hash = common.NewHash(pbHeader.Hash)
-	h.Receipt = BlockReceipt{BlockNet: pbHeader.Receipt.BlockNet, BlockCpu: pbHeader.Receipt.BlockCpu}
+	h.Receipt = BlockReceipt{BlockCpu: pbHeader.Receipt.BlockCpu, BlockNet: pbHeader.Receipt.BlockNet}
 
 	dataCon, err := pbHeader.ConsData.Marshal()
 	if err != nil {
@@ -160,8 +165,8 @@ func (h *MinorBlockHeader) Type() uint32 {
 }
 
 type AccountMinor struct {
-	Balance big.Int
-	Nonce   big.Int
+	Balance *big.Int
+	Nonce   *big.Int
 }
 
 func (a *AccountMinor) ProtoBuf() (*pb.AccountMinor, error) {
@@ -182,11 +187,36 @@ func (a *AccountMinor) ProtoBuf() (*pb.AccountMinor, error) {
 type MinorBlock struct {
 	Header       *MinorBlockHeader
 	Transactions []*Transaction
-	StateDelta   []AccountMinor
+	StateDelta   []*AccountMinor
 }
 
-func NewMinorBlock() {
-
+func (b *MinorBlock) SetReceipt(prevHeader *Header, txs []*Transaction, cpu, net float64) error {
+	var cpuLimit, netLimit float64
+	if cpu < (BlockCpuLimit / 10) {
+		cpuLimit = prevHeader.Receipt.BlockCpu * 1.01
+		if cpuLimit > VirtualBlockCpuLimit {
+			cpuLimit = VirtualBlockCpuLimit
+		}
+	} else {
+		cpuLimit = prevHeader.Receipt.BlockCpu * 0.99
+		if cpuLimit < BlockCpuLimit {
+			cpuLimit = BlockCpuLimit
+		}
+	}
+	if net < (BlockNetLimit / 10) {
+		netLimit = prevHeader.Receipt.BlockNet * 1.01
+		if netLimit > VirtualBlockNetLimit {
+			netLimit = VirtualBlockNetLimit
+		}
+	} else {
+		netLimit = prevHeader.Receipt.BlockNet * 0.99
+		if netLimit < BlockNetLimit {
+			netLimit = BlockNetLimit
+		}
+	}
+	b.Header.Receipt.BlockCpu = cpuLimit
+	b.Header.Receipt.BlockNet = netLimit
+	return nil
 }
 
 func (b *MinorBlock) ProtoBuf() (block *pb.MinorBlock, err error) {
@@ -195,24 +225,21 @@ func (b *MinorBlock) ProtoBuf() (block *pb.MinorBlock, err error) {
 	if err != nil {
 		return nil, err
 	}
-	var pbTxs []*pb.Transaction
+
 	for _, tx := range b.Transactions {
 		pbTx, err := tx.protoBuf()
 		if err != nil {
 			return nil, err
 		}
-		pbTxs = append(pbTxs, pbTx)
+		pbBlock.Transactions = append(pbBlock.Transactions, pbTx)
 	}
-	var pbStates []*pb.AccountMinor
 	for _, acc := range b.StateDelta {
 		pbState, err := acc.ProtoBuf()
 		if err != nil {
 			return nil, err
 		}
-		pbStates = append(pbStates, pbState)
+		pbBlock.StateDelta = append(pbBlock.StateDelta, pbState)
 	}
-	pbBlock.Transactions = append(pbBlock.Transactions, pbTxs...)
-	pbBlock.StateDelta = append(pbBlock.StateDelta, pbStates...)
 
 	return &pbBlock, nil
 }
@@ -241,6 +268,9 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 	if err != nil {
 		return err
 	}
+	if b.Header == nil {
+		b.Header = new(MinorBlockHeader)
+	}
 	err = b.Header.Deserialize(dataHeader)
 	if err != nil {
 		return err
@@ -264,14 +294,20 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 			return err
 		}
 		nonce := new(big.Int)
-		if err := balance.GobDecode(acc.Nonce); err != nil {
+		if err := nonce.GobDecode(acc.Nonce); err != nil {
 			return err
 		}
-		state := AccountMinor{
-			Balance: *balance,
-			Nonce:   *nonce,
-		}
-		b.StateDelta = append(b.StateDelta, state)
+		state := AccountMinor{Nonce: nonce, Balance: balance}
+		b.StateDelta = append(b.StateDelta, &state)
 	}
 	return nil
+}
+
+func (b *MinorBlock) JsonString() string {
+	data, err := json.Marshal(b)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return string(data)
 }
