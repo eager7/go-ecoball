@@ -13,10 +13,10 @@ var (
 )
 
 const (
-	RoundPrePare = iota + 1
-	RoundPreCommit
-	RoundCommit
-	RoundNIL
+	StepPrePare = iota + 1
+	StepPreCommit
+	StepCommit
+	StepNIL
 )
 
 type Consensus struct {
@@ -33,7 +33,7 @@ type csCompleteCb func(bl interface{})
 
 func MakeConsensus(ns *cell.Cell, cb csCompleteCb) *Consensus {
 	return &Consensus{
-		step:       RoundNIL,
+		step:       StepNIL,
 		ns:         ns,
 		completeCb: cb,
 	}
@@ -75,9 +75,9 @@ func (c *Consensus) ProcessPacket(packet netmsg.EcoBallNetMsg) {
 }
 
 func (c *Consensus) IsCsRunning() bool {
-	if c.instance == nil && c.view == nil && c.step == RoundNIL {
+	if c.instance == nil && c.view == nil && c.step == StepNIL {
 		return false
-	} else if c.instance != nil && c.view != nil && c.step != RoundNIL {
+	} else if c.instance != nil && c.view != nil && c.step != StepNIL {
 		return true
 	} else {
 		panic("consensus wrong status")

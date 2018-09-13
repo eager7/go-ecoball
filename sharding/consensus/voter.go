@@ -6,28 +6,30 @@ import (
 
 func (c *Consensus) startBlockConsensusVoter(instance sc.ConsensusInstance) {
 	c.view = instance.GetCsView()
+	log.Debug("currenet view ", c.view.EpochNo, " ", c.view.FinalHeight, " ", c.view.MinorHeight)
+
 	c.instance = instance
-	c.step = RoundPrePare
+	c.step = StepPrePare
 }
 
 func (c *Consensus) processPacketByVoter(csp *sc.CsPacket) {
-	if c.step == RoundPrePare {
-		if csp.Round == RoundPrePare {
+	if c.step == StepPrePare {
+		if csp.Step == StepPrePare {
 			c.processPrepare(csp)
-		} else if csp.Round == RoundPreCommit {
+		} else if csp.Step == StepPreCommit {
 			c.processPrecommit(csp)
-		} else if csp.Round == RoundCommit {
+		} else if csp.Step == StepCommit {
 			c.processCommit(csp)
 		} else {
-			log.Error("prepare receive packet round ", csp.Round)
+			log.Error("prepare receive packet round ", csp.Step)
 		}
-	} else if c.step == RoundPreCommit {
-		if csp.Round == RoundPreCommit {
+	} else if c.step == StepPreCommit {
+		if csp.Step == StepPreCommit {
 			c.processPrecommit(csp)
-		} else if csp.Round == RoundCommit {
+		} else if csp.Step == StepCommit {
 			c.processCommit(csp)
 		} else {
-			log.Error("precommit receive packet round ", csp.Round)
+			log.Error("precommit receive packet round ", csp.Step)
 		}
 	} else {
 		log.Error("voter round error ", c.step)
@@ -36,29 +38,34 @@ func (c *Consensus) processPacketByVoter(csp *sc.CsPacket) {
 }
 
 func (c *Consensus) processPrepare(csp *sc.CsPacket) {
+	log.Debug("process prepare")
 	c.instance.UpdateBlock(csp)
 	c.sendPrepareRsp()
 }
 
 func (c *Consensus) sendPrepareRsp() {
+	log.Debug("send prepare response")
 	c.sendCsRspPacket()
 }
 
 func (c *Consensus) processPrecommit(csp *sc.CsPacket) {
+	log.Debug("process precommit")
 	c.instance.UpdateBlock(csp)
-	c.step = RoundPreCommit
+	c.step = StepPreCommit
 
 	c.sendPrecommitRsp(csp)
 }
 
 func (c *Consensus) sendPrecommitRsp(csp *sc.CsPacket) {
+	log.Debug("send precommit response")
 	c.sendCsRspPacket()
 }
 
 func (c *Consensus) processCommit(csp *sc.CsPacket) {
+	log.Debug("process commit")
+
 	c.instance.UpdateBlock(csp)
-	c.step = RoundPreCommit
+	c.step = StepCommit
 
 	c.csComplete()
-
 }

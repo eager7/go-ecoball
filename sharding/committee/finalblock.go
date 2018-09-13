@@ -6,6 +6,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types/block"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 )
@@ -20,7 +21,7 @@ func newFinalBlockCsi(bk *block.FinalBlock) *finalBlockCsi {
 }
 
 func (b *finalBlockCsi) GetCsView() *sc.CsView {
-	return &sc.CsView{EpochNo: b.block.Height}
+	return &sc.CsView{EpochNo: b.block.CMEpochNo, FinalHeight: b.block.Height}
 }
 
 func (b *finalBlockCsi) CacheBlock(packet *sc.CsPacket) *sc.CsView {
@@ -34,23 +35,26 @@ func (b *finalBlockCsi) CacheBlock(packet *sc.CsPacket) *sc.CsView {
 	b.cache = &bk
 
 	return &sc.CsView{EpochNo: b.cache.CMEpochNo, FinalHeight: b.cache.Height}
-
 }
 
-func (b *finalBlockCsi) MakeCsPacket(round uint16) *sc.CsPacket {
-	csp := &sc.CsPacket{Round: round, BlockType: sc.SD_FINAL_BLOCK}
+func (b *finalBlockCsi) MakeCsPacket(step uint16) *sc.CsPacket {
+	csp := &sc.CsPacket{Step: step, BlockType: sc.SD_FINAL_BLOCK}
 
 	/*missing_func should fill in signature and bit map*/
-	if round == sc.CS_PREPARE_BLOCK {
-		b.block.COSign.Step1 = 1
-		b.block.COSign.Step2 = 0
-	} else if round == sc.CS_PRECOMMIT_BLOCK {
-		b.block.COSign.Step2 = 1
-	} else if round == sc.CS_COMMIT_BLOCK {
+	if step == consensus.StepPrePare {
+		log.Debug("make final prepare block")
+		b.block.Step1 = 1
+	} else if step == consensus.StepPreCommit {
+		log.Debug("make final precommit block")
+		b.block.Step2 = 1
+	} else if step == consensus.StepCommit {
 		log.Debug("make final commit block")
+	} else {
+		log.Fatal("step wrong")
+		return nil
 	}
 
-	data, err := json.Marshal(csp)
+	data, err := json.Marshal(b.block)
 	if err != nil {
 		log.Error("final block marshal error ", err)
 		return nil
@@ -82,45 +86,62 @@ func (b *finalBlockCsi) PrecommitRsp() uint16 {
 }
 
 func (b *finalBlockCsi) UpdateBlock(*sc.CsPacket) {
+	b.block = b.cache
+	b.cache = nil
+}
+
+func (c *committee) createFinalBlock() *block.FinalBlock {
+
+	lastcm := c.ns.GetLastCMBlock()
+	if lastcm == nil {
+		panic("cm block not exist")
+		return nil
+	}
+
+	lastfinal := c.ns.GetLastFinalBlock()
+	var height uint64
+	if lastfinal == nil {
+		height = 1
+	} else {
+		height = lastfinal.Height + 1
+	}
+
+	log.Debug("create final block epoch ", lastcm.Height, " height ", height)
+	final := block.NewFinalBlock(lastcm.Height, height)
+
+	return final
 
 }
 
 func (c *committee) productFinalBlock(msg interface{}) {
+	log.Debug("product final block")
 	etime.StopTime(c.stateTimer)
 
-	last := c.ns.GetLastFinalBlock()
-	var height uint64
-	if last == nil {
-		height = 1
-	} else {
-		height = last.Height + 1
+	final := c.createFinalBlock()
+	if final == nil {
+		return
 	}
-
-	final := block.NewFinalBlock(height)
 
 	cms := newFinalBlockCsi(final)
 
 	c.cs.StartConsensus(cms)
 
-	c.stateTimer.Reset(sc.DefaultProductViewChangeBlockTimer * time.Second)
-}
-
-func (c *committee) recvCommitFinalBlock(bl *block.FinalBlock) {
-	log.Debug("recv consensus final block height ", bl.Height)
-	simulate.TellBlock(bl)
+	c.stateTimer.Reset(sc.DefaultProductFinalBlockTimer * time.Second)
 }
 
 func (c *committee) processFinalConsensusPacket(packet interface{}) {
-	if c.ns.IsCmLeader() {
-		if !c.cs.IsCsRunning() {
-			panic("consensus is not running")
-			return
-		}
-	} else {
-		if !c.cs.IsCsRunning() {
-			c.productFinalBlock(nil)
-		}
-	}
+	log.Debug("process final consensus block")
+
+	//if c.ns.IsCmLeader() {
+	//	if !c.cs.IsCsRunning() {
+	//		panic("consensus is not running")
+	//		return
+	//	}
+	//} else {
+	//	if !c.cs.IsCsRunning() {
+	//		c.productFinalBlock(nil)
+	//	}
+	//}
 
 	c.cs.ProcessPacket(packet.(netmsg.EcoBallNetMsg))
 }
@@ -133,4 +154,17 @@ func (c *committee) processWMBStateChange(packet interface{}) {
 
 	c.productFinalBlock(nil)
 	c.cs.ProcessPacket(packet.(netmsg.EcoBallNetMsg))
+}
+
+func (c *committee) recvCommitFinalBlock(bl *block.FinalBlock) {
+	log.Debug("recv consensus final block height ", bl.Height)
+	simulate.TellBlock(bl)
+
+	c.ns.SetLastFinalBlock(bl)
+	if bl.Height%sc.DefaultEpochFinalBlockNumber == 0 {
+		c.fsm.Execute(ActProductCommitteeBlock, nil)
+	} else {
+		c.fsm.Execute(ActWaitMinorBlock, nil)
+	}
+
 }

@@ -16,17 +16,6 @@ func (c *committee) productViewChangeBlock(msg interface{}) {
 }
 
 func (c *committee) processViewchangeConsensusPacket(packet interface{}) {
-	if c.ns.IsCmLeader() {
-		if !c.cs.IsCsRunning() {
-			panic("consensus is not running")
-			return
-		}
-	} else {
-		if !c.cs.IsCsRunning() {
-			c.productViewChangeBlock(nil)
-		}
-	}
-
 	c.cs.ProcessPacket(packet.(netmsg.EcoBallNetMsg))
 }
 
