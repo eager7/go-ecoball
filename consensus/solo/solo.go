@@ -88,10 +88,10 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 			if !startNode {
 				continue
 			}
-			log.Debug("Request transactions from tx pool[", chainID.HexString(), "]")
+			//log.Debug("Request transactions from tx pool[", chainID.HexString(), "]")
 			txs, _ := solo.txPool.GetTxsList(chainID)
 			if len(txs) == 0 {
-				log.Info("no transaction in this time")
+				//log.Info("no transaction in this time")
 				continue
 			}
 			block, err := solo.ledger.NewTxBlock(chainID, txs, &types.CMBlockHeader{}, conData, time.Now().UnixNano())
