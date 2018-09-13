@@ -61,8 +61,7 @@ func TestBlockCreate(t *testing.T) {
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey}
-	block, err := ledger.NewTxBlock(config.ChainHash, txs, headerPayload, example.ConsensusData(), time.Now().UnixNano())
+	block, err := ledger.NewTxBlock(config.ChainHash, txs, example.ConsensusData(), time.Now().UnixNano())
 	block.SetSignature(&config.Root)
 	data, err := block.Serialize()
 	errors.CheckErrorPanic(err)
@@ -104,8 +103,7 @@ func xTestBlockNew(t *testing.T) {
 
 	con, err := types.InitConsensusData(example.TimeStamp())
 	errors.CheckErrorPanic(err)
-	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey}
-	block, err := ledger.NewTxBlock(config.ChainHash, txs, headerPayload, *con, time.Now().UnixNano())
+	block, err := ledger.NewTxBlock(config.ChainHash, txs, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	block.SetSignature(&config.Root)
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(config.ChainHash, block))

@@ -94,7 +94,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 				//log.Info("no transaction in this time")
 				continue
 			}
-			block, err := solo.ledger.NewTxBlock(chainID, txs, &types.CMBlockHeader{}, conData, time.Now().UnixNano())
+			block, err := solo.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
 			if err != nil {
 				log.Fatal(err)
 			}
