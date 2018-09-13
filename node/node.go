@@ -38,6 +38,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/dsn/ipfs"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
 )
@@ -172,17 +173,17 @@ func runNode(c *cli.Context) error {
 	}
 
 	//storage
-	/*ecoballGroup.Go(func() error {
+	ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
 			//initialize
-			if err := net.Initialize(c); nil != err {
+			if err := ipfs.Initialize(c); nil != err {
 				log.Error("net initialize failed: ", err)
 				errChan <- err
 			}
 
 			//start starage
-			if err := net.DaemonRun(c); nil != err {
+			if err := ipfs.DaemonRun(c); nil != err {
 				log.Error("net daemon run failed: ", err)
 				errChan <- err
 			}
@@ -197,7 +198,7 @@ func runNode(c *cli.Context) error {
 		}
 
 		return nil
-	})*/
+	})
 
 	// do something before start the network
 	//TOD
