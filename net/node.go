@@ -26,13 +26,14 @@ import (
 	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/p2p"
+	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/QmYAL9JsqVVPFWwM1ZzHNsofmTzRYQHJ2KqQaBmFJjJsNx/go-libp2p-connmgr"
-	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
 	ic "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
+	circuit "gx/ipfs/QmcQ56iqKP8ZRhRGLe5EReJVvrJZDaGzkuatrPv4Z1B6cG/go-libp2p-circuit"
 )
 
 type NetCtrl struct {
@@ -98,7 +99,10 @@ func New(parent context.Context, privKey ic.PrivKey, listen []string) (*NetNode,
 		return nil, err
 	}
 	mgr := connmgr.NewConnManager(DefaultConnMgrLowWater, DefaultConnMgrHighWater, grace)
+	var opts []circuit.RelayOpt
+	libp2pOpts = append(libp2pOpts, libp2p.EnableRelay(opts...))
 	libp2pOpts = append(libp2pOpts, libp2p.ConnectionManager(mgr))
+	libp2pOpts = append(libp2pOpts, libp2p.NATPortMap())
 
 	peerStore := peerstore.NewPeerstore()
 	peerStore.AddPrivKey(id, privKey)
