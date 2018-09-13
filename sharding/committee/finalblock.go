@@ -42,10 +42,10 @@ func (b *finalBlockCsi) MakeCsPacket(round uint16) *sc.CsPacket {
 
 	/*missing_func should fill in signature and bit map*/
 	if round == sc.CS_PREPARE_BLOCK {
-		b.block.COSign.Round1 = 1
-		b.block.COSign.Round2 = 0
+		b.block.COSign.Step1 = 1
+		b.block.COSign.Step2 = 0
 	} else if round == sc.CS_PRECOMMIT_BLOCK {
-		b.block.COSign.Round2 = 1
+		b.block.COSign.Step2 = 1
 	} else if round == sc.CS_COMMIT_BLOCK {
 		log.Debug("make final commit block")
 	}
@@ -66,19 +66,19 @@ func (b *finalBlockCsi) GetCsBlock() interface{} {
 }
 
 func (b *finalBlockCsi) PrepareRsp() uint16 {
-	if b.cache.Round1 == 1 {
-		b.block.Round1++
+	if b.cache.Step1 == 1 {
+		b.block.Step1++
 	}
 
-	return b.block.Round1
+	return b.block.Step1
 }
 
 func (b *finalBlockCsi) PrecommitRsp() uint16 {
-	if b.cache.Round2 == 1 {
-		b.block.Round2++
+	if b.cache.Step2 == 1 {
+		b.block.Step2++
 	}
 
-	return b.block.Round2
+	return b.block.Step2
 }
 
 func (b *finalBlockCsi) UpdateBlock(*sc.CsPacket) {

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/elog"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
-	"github.com/ecoball/go-ecoball/sharding/node"
 )
 
 var (
@@ -20,9 +20,9 @@ const (
 )
 
 type Consensus struct {
-	ns    *node.Node
-	round uint16
-	view  *sc.CsView
+	ns   *cell.Cell
+	step uint16
+	view *sc.CsView
 
 	instance sc.ConsensusInstance
 
@@ -31,9 +31,9 @@ type Consensus struct {
 
 type csCompleteCb func(bl interface{})
 
-func MakeConsensus(ns *node.Node, cb csCompleteCb) *Consensus {
+func MakeConsensus(ns *cell.Cell, cb csCompleteCb) *Consensus {
 	return &Consensus{
-		round:      RoundNIL,
+		step:       RoundNIL,
 		ns:         ns,
 		completeCb: cb,
 	}
@@ -75,9 +75,9 @@ func (c *Consensus) ProcessPacket(packet netmsg.EcoBallNetMsg) {
 }
 
 func (c *Consensus) IsCsRunning() bool {
-	if c.instance == nil && c.view == nil && c.round == RoundNIL {
+	if c.instance == nil && c.view == nil && c.step == RoundNIL {
 		return false
-	} else if c.instance != nil && c.view != nil && c.round != RoundNIL {
+	} else if c.instance != nil && c.view != nil && c.step != RoundNIL {
 		return true
 	} else {
 		panic("consensus wrong status")

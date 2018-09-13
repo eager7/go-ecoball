@@ -178,13 +178,13 @@ func runNode(c *cli.Context) error {
 		go func() {
 			//initialize
 			if err := ipfs.Initialize(c); nil != err {
-				log.Error("net initialize failed: ", err)
+				log.Error("storage initialize failed: ", err)
 				errChan <- err
 			}
 
 			//start starage
 			if err := ipfs.DaemonRun(c); nil != err {
-				log.Error("net daemon run failed: ", err)
+				log.Error("storage daemon run failed: ", err)
 				errChan <- err
 			}
 		}()

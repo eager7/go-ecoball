@@ -1,4 +1,4 @@
-package node
+package cell
 
 import "github.com/ecoball/go-ecoball/core/types/block"
 

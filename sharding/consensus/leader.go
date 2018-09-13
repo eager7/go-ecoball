@@ -12,7 +12,7 @@ func (c *Consensus) startBlockConsensusLeader(instance sc.ConsensusInstance) {
 }
 
 func (c *Consensus) sendPrepare() {
-	c.round = RoundPrePare
+	c.step = RoundPrePare
 	c.sendCsPacket()
 }
 
@@ -24,7 +24,7 @@ func (c *Consensus) prepareRsp(csp *sc.CsPacket) {
 }
 
 func (c *Consensus) sendPreCommit() {
-	c.round = RoundPreCommit
+	c.step = RoundPreCommit
 	c.sendCsPacket()
 }
 
@@ -36,19 +36,19 @@ func (c *Consensus) precommitRsp(csp *sc.CsPacket) {
 }
 
 func (c *Consensus) sendCommit() {
-	c.round = RoundCommit
+	c.step = RoundCommit
 	c.sendCsPacket()
 
 	c.csComplete()
 }
 
 func (c *Consensus) processPacketByLeader(csp *sc.CsPacket) {
-	if c.round != csp.Round {
-		log.Error("packet round error leader round ", c.round, " packet round ", csp.Round)
+	if c.step != csp.Round {
+		log.Error("packet round error leader round ", c.step, " packet round ", csp.Round)
 		return
 	}
 
-	switch c.round {
+	switch c.step {
 	case RoundPrePare:
 		c.prepareRsp(csp)
 	case RoundPreCommit:
@@ -56,7 +56,7 @@ func (c *Consensus) processPacketByLeader(csp *sc.CsPacket) {
 	case RoundCommit:
 		log.Error("leader didn't need recevie commit message")
 	default:
-		log.Error("leader round error ", c.round)
+		log.Error("leader round error ", c.step)
 		panic("leader round error ")
 	}
 }

@@ -7,9 +7,7 @@ type NodeInstance interface {
 
 const (
 	CS_PREPARE_BLOCK = iota
-	CS_PREPARE_BLOCK_RSP
 	CS_PRECOMMIT_BLOCK
-	CS_PRECOMMIT_BLOCK_RSP
 	CS_COMMIT_BLOCK
 	CS_END
 )
