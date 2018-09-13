@@ -61,7 +61,7 @@ func TestBlockCreate(t *testing.T) {
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey}
+	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey, ConsData:example.ConsensusData()}
 	block, err := ledger.NewTxBlock(config.ChainHash, txs, headerPayload, example.ConsensusData(), time.Now().UnixNano())
 	block.SetSignature(&config.Root)
 	data, err := block.Serialize()

@@ -42,12 +42,6 @@ message HeaderTx {
     repeated    Signature   sign    = 6;
     bytes       block_hash          = 7;
 }
-message     CMBlockHeader {
-    bytes       LeaderPubKey        = 1;
-    bytes       CandidatePubKey     = 2;
-    uint32      Nonce               = 3;
-    bytes       ShardsHash          = 4;
-}
 
 /**
 ** Block info for sync with nodes
@@ -352,4 +346,38 @@ message MinorBlock {
     MinorBlockHeader Header = 1;
     repeated    Transaction Transactions = 2;
     repeated    AccountMinor StateDelta  = 3;
+}
+
+message NodeInfo {
+    bytes   PublicKey = 1;
+}
+
+message CMBlockHeader {
+    bytes           ChainID         = 1;
+    uint32          Version         = 2;
+    uint64          Height          = 3;
+    int64           Timestamp       = 4;
+    bytes           PrevHash        = 5;
+    ConsensusData   ConsData        = 6;
+    bytes           LeaderPubKey    = 8;
+    uint32          Nonce           = 9;
+    NodeInfo        Candidate       = 10;
+    bytes           ShardsHash      = 11;
+    bytes           Hash            = 12;
+}
+
+message NodeAddr {
+    string Address = 1;
+    string Port    = 2;
+}
+
+message Shard {
+    uint32   Id                  = 1;
+    repeated NodeInfo Member     = 2;
+    repeated NodeAddr MemberAddr = 3;
+}
+
+message CMBlock {
+    CMBlockHeader  Header = 1;
+    repeated Shard Shards = 2;
 }

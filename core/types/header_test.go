@@ -1,7 +1,6 @@
 package types_test
 
 import (
-	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
@@ -11,6 +10,7 @@ import (
 	"math/big"
 	"testing"
 	"time"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
 
 func TestMinorBlockHeader(t *testing.T) {
@@ -54,11 +54,21 @@ func TestMinorBlockHeader(t *testing.T) {
 
 func TestCmBlockHeader(t *testing.T) {
 	header := types.CMBlockHeader{
-		LeaderPubKey:    []byte("1234567890"),
-		CandidatePubKey: []byte("CandidatePubKey"),
-		Nonce:           110,
-		ShardsHash:      common.SingleHash([]byte("ShardsHash")),
+		ChainID:      config.ChainHash,
+		Version:      0,
+		Height:       10,
+		Timestamp:    2340,
+		PrevHash:     common.Hash{},
+		ConsData:     example.ConsensusData(),
+		LeaderPubKey: []byte("12345678909876554432"),
+		Nonce:        23450,
+		Candidate: types.NodeInfo{
+			PublicKey: config.Root.PublicKey,
+		},
+		ShardsHash: config.ChainHash,
+		Hash:       common.Hash{},
 	}
+	errors.CheckErrorPanic(header.ComputeHash())
 	data, err := header.Serialize()
 	errors.CheckErrorPanic(err)
 
@@ -66,16 +76,34 @@ func TestCmBlockHeader(t *testing.T) {
 	errors.CheckErrorPanic(headerNew.Deserialize(data))
 	headerNew.Show()
 	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
+
+	block := types.CMBlock{
+		Header: &header,
+		Shards: []types.Shard{types.Shard{
+			Id: 10,
+			Member: []types.NodeInfo{
+				{PublicKey: nil},
+			},
+			MemberAddr: []types.NodeAddr{{
+				Address: "1234",
+				Port:    "5678",
+			}},
+		}},
+	}
+	data, err = block.Serialize()
+	errors.CheckErrorPanic(err)
+	blockNew := types.CMBlock{}
+	errors.CheckErrorPanic(blockNew.Deserialize(data))
+	elog.Log.Notice(block.JsonString())
+	elog.Log.Debug(blockNew.JsonString())
+	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
 }
 
 func TestHeader(t *testing.T) {
-	payload := &types.MinorBlockHeader{
-		ProposalPublicKey: []byte("1234567890")}
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-	h, err := types.NewHeader(payload, types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
+	h, err := types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(h.SetSignature(&config.Root))
-	h.Show()
 
 	data, err := h.Serialize()
 	errors.CheckErrorPanic(err)
@@ -83,7 +111,6 @@ func TestHeader(t *testing.T) {
 	h2 := new(types.Header)
 	errors.CheckErrorPanic(h2.Deserialize(data))
 
-	h2.Show()
 	errors.CheckEqualPanic(h.JsonString() == h2.JsonString())
 
 	//ABA BFT
@@ -94,7 +121,7 @@ func TestHeader(t *testing.T) {
 	sigPer = append(sigPer, sig2)
 	abaData := types.AbaBftData{NumberRound: 5, PreBlockSignatures: sigPer}
 	conData = types.ConsensusData{Type: types.ConABFT, Payload: &abaData}
-	h, err = types.NewHeader(payload, types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
+	h, err = types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(h.SetSignature(&config.Root))
 
@@ -104,5 +131,4 @@ func TestHeader(t *testing.T) {
 	h2 = new(types.Header)
 	errors.CheckErrorPanic(h2.Deserialize(data))
 	errors.CheckEqualPanic(h.JsonString() == h2.JsonString())
-	h2.Show()
 }

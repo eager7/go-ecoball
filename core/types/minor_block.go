@@ -39,7 +39,10 @@ func (h *MinorBlockHeader) ComputeHash() error {
 	return nil
 }
 
-func (h *MinorBlockHeader) ProtoBuf() (*pb.MinorBlockHeader, error) {
+func (h *MinorBlockHeader) proto() (*pb.MinorBlockHeader, error) {
+	if h.ConsData.Payload == nil {
+		return nil, errors.New(log, "the minor block header's consensus data is nil")
+	}
 	pbCon, err := h.ConsData.ProtoBuf()
 	if err != nil {
 		return nil, err
@@ -67,7 +70,7 @@ func (h *MinorBlockHeader) ProtoBuf() (*pb.MinorBlockHeader, error) {
 }
 
 func (h *MinorBlockHeader) unSignatureData() ([]byte, error) {
-	pbHeader, err := h.ProtoBuf()
+	pbHeader, err := h.proto()
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +172,7 @@ type AccountMinor struct {
 	Nonce   *big.Int
 }
 
-func (a *AccountMinor) ProtoBuf() (*pb.AccountMinor, error) {
+func (a *AccountMinor) proto() (*pb.AccountMinor, error) {
 	balance, err := a.Balance.GobEncode()
 	if err != nil {
 		return nil, err
@@ -219,9 +222,9 @@ func (b *MinorBlock) SetReceipt(prevHeader *Header, txs []*Transaction, cpu, net
 	return nil
 }
 
-func (b *MinorBlock) ProtoBuf() (block *pb.MinorBlock, err error) {
+func (b *MinorBlock) proto() (block *pb.MinorBlock, err error) {
 	var pbBlock pb.MinorBlock
-	pbBlock.Header, err = b.Header.ProtoBuf()
+	pbBlock.Header, err = b.Header.proto()
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +237,7 @@ func (b *MinorBlock) ProtoBuf() (block *pb.MinorBlock, err error) {
 		pbBlock.Transactions = append(pbBlock.Transactions, pbTx)
 	}
 	for _, acc := range b.StateDelta {
-		pbState, err := acc.ProtoBuf()
+		pbState, err := acc.proto()
 		if err != nil {
 			return nil, err
 		}
@@ -245,7 +248,7 @@ func (b *MinorBlock) ProtoBuf() (block *pb.MinorBlock, err error) {
 }
 
 func (b *MinorBlock) Serialize() ([]byte, error) {
-	p, err := b.ProtoBuf()
+	p, err := b.proto()
 	if err != nil {
 		return nil, err
 	}
