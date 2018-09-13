@@ -3,6 +3,7 @@ package types_test
 import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -10,7 +11,6 @@ import (
 	"math/big"
 	"testing"
 	"time"
-	"github.com/ecoball/go-ecoball/common/elog"
 )
 
 func TestMinorBlockHeader(t *testing.T) {
@@ -74,7 +74,6 @@ func TestCmBlockHeader(t *testing.T) {
 
 	headerNew := types.CMBlockHeader{}
 	errors.CheckErrorPanic(headerNew.Deserialize(data))
-	headerNew.Show()
 	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
 
 	block := types.CMBlock{
@@ -96,6 +95,59 @@ func TestCmBlockHeader(t *testing.T) {
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
 	elog.Log.Notice(block.JsonString())
 	elog.Log.Debug(blockNew.JsonString())
+	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
+}
+
+func TestFinalBlockHeader(t *testing.T) {
+	header := types.FinalBlockHeader{
+		ChainID:            config.ChainHash,
+		Version:            10,
+		Height:             120,
+		Timestamp:          3450,
+		TrxCount:           670,
+		PrevHash:           config.ChainHash,
+		ConsData:           example.ConsensusData(),
+		ProposalPubKey:     []byte("123678435634w453226435"),
+		CMEpochNo:          570,
+		CMBlockHash:        config.ChainHash,
+		TrxRootHash:        config.ChainHash,
+		StateDeltaRootHash: config.ChainHash,
+		MinorBlocksHash:    config.ChainHash,
+		StateHashRoot:      config.ChainHash,
+		Hash:               config.ChainHash,
+	}
+	errors.CheckErrorPanic(header.ComputeHash())
+	data, err := header.Serialize()
+	errors.CheckErrorPanic(err)
+
+	headerNew := types.FinalBlockHeader{}
+	errors.CheckErrorPanic(headerNew.Deserialize(data))
+	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
+
+	headerMinor := types.MinorBlockHeader{
+		ChainID:           config.ChainHash,
+		Version:           1,
+		Height:            1,
+		Timestamp:         time.Now().UnixNano(),
+		PrevHash:          common.Hash{},
+		TrxHashRoot:       common.Hash{},
+		StateDeltaHash:    common.Hash{},
+		CMBlockHash:       common.Hash{},
+		ProposalPublicKey: []byte("1234567890"),
+		ConsData:          example.ConsensusData(),
+		ShardId:           1,
+		CMEpochNo:         2,
+		Receipt:           types.BlockReceipt{},
+		Hash:              common.Hash{},
+	}
+	block := types.FinalBlock{
+		Header:      &header,
+		MinorBlocks: []*types.MinorBlockHeader{&headerMinor},
+	}
+	data, err = block.Serialize()
+	errors.CheckErrorPanic(err)
+	blockNew := types.FinalBlock{}
+	errors.CheckErrorPanic(blockNew.Deserialize(data))
 	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
 }
 

@@ -84,30 +84,11 @@ func (h *MinorBlockHeader) unSignatureData() ([]byte, error) {
 }
 
 func (h *MinorBlockHeader) Serialize() ([]byte, error) {
-	pbCon, err := h.ConsData.ProtoBuf()
+	pbHeader, err := h.proto()
 	if err != nil {
 		return nil, err
 	}
-	protoHeader := pb.MinorBlockHeader{
-		ChainID:           h.ChainID.Bytes(),
-		Version:           h.Version,
-		Height:            h.Height,
-		Timestamp:         h.Timestamp,
-		PrevHash:          h.PrevHash.Bytes(),
-		TrxHashRoot:       h.TrxHashRoot.Bytes(),
-		StateDeltaHash:    h.StateDeltaHash.Bytes(),
-		CMBlockHash:       h.CMBlockHash.Bytes(),
-		ProposalPublicKey: h.ProposalPublicKey,
-		ConsData:          pbCon,
-		ShardId:           h.ShardId,
-		CMEpochNo:         h.CMEpochNo,
-		Receipt: &pb.BlockReceipt{
-			BlockCpu: h.Receipt.BlockCpu,
-			BlockNet: h.Receipt.BlockNet,
-		},
-		Hash: h.Hash.Bytes(),
-	}
-	data, err := protoHeader.Marshal()
+	data, err := pbHeader.Marshal()
 	if err != nil {
 		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
 	}
