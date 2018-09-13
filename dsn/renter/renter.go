@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit/files"
 	"path"
+	"github.com/ecoball/go-ecoball/dsn/renter/pb"
 )
 
 var (
@@ -75,7 +76,7 @@ type Renter struct {
 	ctx      context.Context
 }
 
-func NewRenter(ctx context.Context,l ledger.Ledger ,ac account.Account, conf RenterConf) Renter {
+func NewRenter(ctx context.Context,l ledger.Ledger ,ac account.Account, conf RenterConf) *Renter {
 	r := Renter{
 		account: ac,
 		ledger: l,
@@ -85,7 +86,7 @@ func NewRenter(ctx context.Context,l ledger.Ledger ,ac account.Account, conf Ren
 	}
 	//TODO init db
 
-	return r
+	return &r
 }
 
 func (r *Renter) Start()  {
@@ -254,4 +255,37 @@ func (r *Renter) loadFileInfo() error {
 
 func SetIpfsNode(node *core.IpfsNode)  {
 	ipfsNode = node
+}
+
+func (fc *FileContract) Serialize() ([]byte, error) {
+	var pfc pb.FcMessage
+	pfc.PublicKey = fc.PublicKey
+	pfc.Cid = fc.Cid
+	pfc.LocalPath = fc.LocalPath
+	pfc.FileSize = fc.FileSize
+	pfc.Redundancy = uint32(fc.Redundancy)
+	pfc.Funds, _ = fc.Funds.GobEncode()
+	pfc.StartAt = fc.StartAt
+	pfc.Expiration = fc.Expiration
+	return pfc.Marshal()
+}
+
+func (fc *FileContract) Deserialize(data []byte) error {
+	var pfc pb.FcMessage
+	err := pfc.Unmarshal(data)
+	if err != nil {
+		return err
+	}
+	fc.PublicKey = pfc.PublicKey
+	fc.Cid = pfc.Cid
+	fc.LocalPath = pfc.LocalPath
+	fc.FileSize = pfc.FileSize
+	fc.Redundancy = uint8(pfc.Redundancy)
+	err = fc.Funds.GobDecode(pfc.Funds)
+	if err != nil {
+		return err
+	}
+	fc.StartAt = pfc.StartAt
+	fc.Expiration = pfc.Expiration
+	return nil
 }
