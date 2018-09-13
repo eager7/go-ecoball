@@ -36,9 +36,9 @@ proto:
 plugins:
 	@echo "\033[;32mbuild ipld plugin file \033[0m"
 	mkdir -p build/plugins
-	make -C net/ipfs/ipld/plugin
-	chmod +x net/ipfs/ipld/plugin/ecoball.so
-	mv net/ipfs/ipld/plugin/ecoball.so build/plugins
+	make -C dsn/ipfs/plugin
+	chmod +x dsn/ipfs/plugin/ecoball.so
+	mv dsn/ipfs/plugin/ecoball.so build/plugins
 
 .PHONY: clean
 clean:

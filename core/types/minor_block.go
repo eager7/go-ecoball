@@ -186,7 +186,7 @@ type MinorBlock struct {
 }
 
 func NewMinorBlock() {
-	
+
 }
 
 func (b *MinorBlock) ProtoBuf() (block *pb.MinorBlock, err error) {

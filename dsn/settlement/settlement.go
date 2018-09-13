@@ -14,6 +14,13 @@ import (
 	"github.com/ecoball/go-ecoball/dsn/renter"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"context"
+	//"github.com/ecoball/go-ecoball/core/types/block"
+	cid2 "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	"github.com/ecoball/go-ecoball/dsn/common"
+	"github.com/ecoball/go-ecoball/core/state"
+	ecommon "github.com/ecoball/go-ecoball/common"
+	"encoding/binary"
+	"reflect"
 )
 
 var (
@@ -58,7 +65,7 @@ type Settler struct {
 func NewStorageSettler(ctx context.Context, l ledger.Ledger) *Settler {
 	return &Settler{
 		ledger: l,
-		rClient: InitRedis(DefaultRedisConf()),
+		rClient: common.InitRedis(common.DefaultRedisConf()),
 		msgChan: make(chan SettleMsg, 4 * 1024),
 		ctx:ctx,
 	}
@@ -70,20 +77,11 @@ func (s *Settler) rxLoop() {
 		case v := <-s.msgChan:
 			switch v.MsgType {
 			case STYPEANN:
-				err := s.handleHostAnce(v.data)
-				if err != nil {
-					fmt.Errorf("settle ", err)
-				}
+
 			case STYPEPROOF:
-				err := s.handleStorageProof(v.data)
-				if err != nil {
-					fmt.Errorf("settle ", err)
-				}
+
 			case STYPEFILECONTRACT:
-				err := s.handleFileContract(v.data)
-				if err != nil {
-					fmt.Errorf("settle ", err)
-				}
+
 			}
 		case <-s.ctx.Done():
 			return
@@ -92,7 +90,7 @@ func (s *Settler) rxLoop() {
 }
 
 func (s *Settler) Start() error {
-	s.rxLoop()
+	//s.rxLoop()
 	return nil
 }
 
@@ -196,13 +194,17 @@ func (s *Settler)storeOnlineTime(proof host.StorageProof) error {
 	return r.Err()
 }
 
-func (s *Settler)verifyStorageProof(data []byte) (bool, error) {
+func (s *Settler)verifyStorageProof(data []byte, st state.InterfaceState) (bool, error) {
 	proof, err := s.decodeProof(data)
 	if err != nil {
 		return false, err
 	}
 	baseBlockService := ipfsNode.BaseBlocks
-	block, err := baseBlockService.Get(&proof.Cid)
+	cid, err := cid2.Decode(proof.Cid)
+	if err != nil {
+		return false, err
+	}
+	block, err := baseBlockService.Get(cid)
 	if err != nil {
 		return false, err
 	}
@@ -210,22 +212,44 @@ func (s *Settler)verifyStorageProof(data []byte) (bool, error) {
 	rootHash := dproof.MerkleRoot(blockData)
 	numberSegment := len(blockData) / dproof.SegmentSize
 	ret := dproof.VerifySegment(proof.Segment[:], proof.HashSet, uint64(numberSegment), proof.SegmentIndex, rootHash)
+
 	if ret {
 		s.storeReposize(proof)
 	}
 	return ret, nil
 }
 
-func (s *Settler)handleHostAnce(data []byte) error {
+func (s *Settler) storeAccountState(data interface{}, st state.InterfaceState) error {
+	var err error
+	switch data.(type) {
+	case *host.HostAncContract:
+		sKey := []byte("store_an")
+		value := data.(*host.HostAncContract).SeriStateStore()
+		err = st.StoreSet(ecommon.NameToIndex(data.(*host.HostAncContract).AccountName), sKey, value)
+	case *host.StorageProof:
+
+	case *renter.FileContract:
+
+	default:
+
+	}
+	return err
+}
+
+func (s *Settler)HandleHostAnce(data []byte, st state.InterfaceState) error {
 	c, err := s.decodeAnnouncement(data)
+	if err != nil {
+		return err
+	}
+	err = s.storeAccountState(&c,st)
 	if err != nil {
 		return err
 	}
 	return s.storeStoragecap(c)
 }
 
-func (s *Settler)handleStorageProof(data []byte) error {
-	valid, err := s.verifyStorageProof(data)
+func (s *Settler)HandleStorageProof(data []byte, st state.InterfaceState) error {
+	valid, err := s.verifyStorageProof(data, st)
 	if err != nil {
 		return err
 	}

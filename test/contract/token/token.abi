@@ -25,6 +25,19 @@
          {"name":"amount", "type":"int32"},
          {"name":"token_id", "type":"string"}
       ]
+    },{
+      "name": "account",
+      "base": "",
+      "fields": [
+        {"name":"balance", "type":"string"}
+      ]
+    },{
+      "name": "currency_stats",
+      "base": "",
+      "fields": [
+        {"name":"supply", "type":"string"},
+        {"name":"max_supply", "type":"string"}
+      ]
     }
   ],
   "actions": [{
@@ -33,11 +46,23 @@
     },{
       "name": "issue",
       "type": "issue"
-    },{	
+    },{
       "name": "transfer",
       "type": "transfer"
     }
   ],
-  "tables": [
+  "tables": [{
+      "name": "accounts",
+      "type": "account",
+      "index_type": "i64",
+      "key_names" : ["currency"],
+      "key_types" : ["uint64"]
+    },{
+      "name": "stat",
+      "type": "currency_stats",
+      "index_type": "i64",
+      "key_names" : ["currency"],
+      "key_types" : ["uint64"]
+    }
   ]
 }

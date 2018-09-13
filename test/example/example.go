@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"strconv"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
+	"bytes"
 )
 
 var interval = time.Millisecond * 100
@@ -552,7 +553,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	path := os.Getenv("GOPATH")
 
 	//file data
-	file, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/abaToken.wasm", os.O_RDONLY, 0666)
+	file, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/program.wasm", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file failed")
 		return
@@ -565,7 +566,7 @@ func InvokeContract(ledger ledger.Ledger) {
 		return
 	}
 
-	abifile, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/abaToken.abi", os.O_RDONLY, 0666)
+	abifile, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/token.abi", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file failed")
 		return
@@ -671,7 +672,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	//json.Unmarshal(abiByte, &abiDef)
 
 	//transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": "-100"}`)
-	create := []byte(`{"issue": "user1", "max_supply": "800", "token_id": "xyx"}`)
+	create := []byte(`{"creator": "user1", "max_supply": "800", "token_id": "xyx"}`)
 
 	argbyte, err := checkParam(abiDef, "create", create)
 	if err != nil {
@@ -710,10 +711,87 @@ func InvokeContract(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
 
-	//var storage []byte
-	key := []byte(`supply`)
-	storage, err := ledger.StoreGet(config.ChainHash, common.NameToIndex("root"), key)
-	fmt.Println("storage: %s", string(storage))
+}
+
+func getContractTable(contractName string, accountName string, abiDef abi.ABI, tableName string) ([]byte, error){
+	var fields []abi.FieldDef
+	for _, table := range abiDef.Tables {
+		if string(table.Name) == tableName {
+			for _, struction := range abiDef.Structs {
+				if struction.Name == table.Type {
+					fields = struction.Fields
+				}
+			}
+		}
+	}
+
+	if fields == nil {
+		return nil, errors.New(log, "can not find struct of table  " + tableName)
+	}
+
+	key := []byte("xyx")
+	storage, err := ledger.L.StoreGet(config.ChainHash, common.NameToIndex(contractName), key)
+	fmt.Println("xyx: " + string(storage))
+
+	key = []byte(accountName)
+	storage, err = ledger.L.StoreGet(config.ChainHash, common.NameToIndex(contractName), key)
+	fmt.Println(fields[0].Name + ": " + string(storage))
+
+	type QueryRes struct {
+		Balance 	string	`json:"balance"`
+	}
+
+	resp := QueryRes{string(storage)}
+
+	js, _ := json.Marshal(resp)
+	fmt.Println("json format: ", string(js))
+
+
+	buf := new(bytes.Buffer)
+	enc := json.NewEncoder(buf)
+
+	type json_object struct {
+		Name 	string		`json:"name"`
+		Value	string		`json:"value"`
+	}
+
+	//var v map[string]string
+	table := make(map[string]string, len(fields))
+	
+	for i, _ := range fields {
+		table[fields[i].Name] = string(storage)
+		//table[i].Name = fields[i].Name
+		//table[i].Value = string(storage)
+	}
+
+	if err := enc.Encode(&table); err != nil {
+		fmt.Errorf("Encode failed")
+	}
+	fmt.Println("encode: " + string(buf.Bytes()))
+
+
+	return nil, err
+}
+
+func QueryContractData(ledger ledger.Ledger) {
+	time.Sleep(time.Second * 10)
+
+	log.Warn("Query Contract Data")
+
+	contractGet, err := ledger.GetContract(config.ChainHash, common.NameToIndex("root"))
+	if err != nil {
+		fmt.Errorf("can not find contract abi file")
+		return
+	}
+
+	var abiDef abi.ABI
+	err = abi.UnmarshalBinary(contractGet.Abi, &abiDef)
+	if err != nil {
+		fmt.Errorf("can not find UnmarshalBinary abi file")
+		return
+	}
+
+	getContractTable("root", "root", abiDef, "accounts")
 }
 
 func Wait() {

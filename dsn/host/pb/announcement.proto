@@ -1,0 +1,22 @@
+syntax = "proto3";
+package pb;
+
+message Announcement {
+	bytes  PublicKey     = 1;
+	uint64 TotalStorage  = 2;
+	uint64 StartAt       = 3;
+	bytes  Collateral    = 4;
+	bytes  MaxCollateral = 5;
+	string AccountName   = 6;
+}
+
+message Proof {
+    bytes  PublicKey    = 1;
+    uint64 RepoSize     = 2;
+    string Cid          = 3;
+    uint64 SegmentIndex = 4;
+    bytes  Segment      = 5;
+    bytes  HashSet      = 6;
+    uint64 AtHeight     = 7;
+    string AccountName  = 8;
+}

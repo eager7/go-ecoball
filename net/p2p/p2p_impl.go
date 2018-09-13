@@ -20,43 +20,105 @@ import (
 	"fmt"
 	"io"
 	"context"
-
-	ifconnmgr "gx/ipfs/QmXuucFcuvAWYAJfhHV2h4BYreHEAsLSsiquosiXeuduTN/go-libp2p-interface-connmgr"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
-	routing "gx/ipfs/QmZ383TySJVeZWzGnWui6pRcKyYZk9VkKTuW7tmKRWk5au/go-libp2p-routing"
+	"sync"
+	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/util"
+	kb "gx/ipfs/QmesQqwonP618R7cJZoFfA4ioYhhMKnDmtUxcAvvxEEGnw/go-libp2p-kbucket"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
 	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
-	peer "gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
-	cid "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
-	host "gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
-	pmsg "github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/common/elog"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
+	"gx/ipfs/QmXuucFcuvAWYAJfhHV2h4BYreHEAsLSsiquosiXeuduTN/go-libp2p-interface-connmgr"
+	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/discovery"
+	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
 )
 
+const (
+	// K is the maximum number of requests to perform before returning failure.
+	KValue                 = 20
+	// Alpha is the concurrency factor for asynchronous requests.
+	AlphaValue             = 3
 
-var sendMessageTimeout = time.Minute * 10
-var log = elog.NewLogger("p2p", elog.DebugLog)
+	sendMessageChanBuff    = 1024
+	sendMessageTimeout     = time.Minute * 10
 
-func NewFromIpfsHost(host host.Host, r routing.ContentRouting) EcoballNetwork {
-	ecoballNetwork := impl{
-		host:    host,
-		routing: r,
+	discoveryConnTimeout   = time.Second * 30
+
+	ServiceTag                 = "_net-discovery._udp"
+
+	ProtocolP2pV1  protocol.ID = "/ecoball/app/1.0.0"
+)
+
+var (
+	log = elog.NewLogger("p2p", elog.DebugLog)
+	netImpl *impl
+)
+
+func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
+	if netImpl != nil {
+		return netImpl
 	}
-	host.SetStreamHandler(ProtocolP2pV1, ecoballNetwork.handleNewStream)
-	host.Network().Notify((*netNotifiee)(&ecoballNetwork))
+	netImpl = &impl{
+		ctx:          ctx,
+		host:         host,
+		sendJbQueue:  make(chan interface{}, sendMessageChanBuff),
+	}
+	netImpl.routingTable = initRoutingTable(host)
+
+	host.SetStreamHandler(ProtocolP2pV1, netImpl.handleNewStream)
+	host.Network().Notify((*netNotifiee)(netImpl))
 	// TODO: StopNotify.
-	return &ecoballNetwork
+	return netImpl
 }
 
-// impl transforms the ipfs network interface, which sends and receives
+func GetPeerID() (peer.ID, error) {
+	if netImpl == nil {
+		return "", fmt.Errorf(networkError)
+	}
+	return netImpl.host.ID(), nil
+}
+
+func GetRandomPeers(k int) []peer.ID {
+	if netImpl == nil {
+		return []peer.ID{}
+	}
+	return netImpl.selectRandomPeers(k)
+}
+
+func initRoutingTable(host host.Host) (table *kb.RoutingTable) {
+	peerID := kb.ConvertPeerID(host.ID())
+
+	rt := kb.NewRoutingTable(
+		KValue,
+		peerID,
+		time.Minute,   //TOD, should come from config file
+		host.Peerstore())
+	cmgr := host.ConnManager()
+	rt.PeerAdded = func(p peer.ID) {
+		cmgr.TagPeer(p, "kbucket", 5)
+	}
+	rt.PeerRemoved = func(p peer.ID) {
+		cmgr.UntagPeer(p, "kbucket")
+	}
+
+	return rt
+}
+
+// impl transforms the network interface, which sends and receives
 // NetMessage objects, into the ecoball network interface.
 type impl struct {
-	host    host.Host
-	routing routing.ContentRouting
+	ctx          context.Context
+	host         host.Host
 
 	// inbound messages from the network are forwarded to the receiver
-	receiver Receiver
+	receiver     Receiver
+
+	sendJbQueue  chan interface{}
+
+	routingTable *kb.RoutingTable
+	rtLock       sync.Mutex
 }
 
 type streamMessageSender struct {
@@ -71,11 +133,11 @@ func (s *streamMessageSender) Reset() error {
 	return s.s.Reset()
 }
 
-func (s *streamMessageSender) SendMsg(ctx context.Context, msg pmsg.EcoBallNetMsg) error {
+func (s *streamMessageSender) SendMsg(ctx context.Context, msg message.EcoBallNetMsg) error {
 	return msgToStream(ctx, s.s, msg)
 }
 
-func msgToStream(ctx context.Context, s inet.Stream, msg pmsg.EcoBallNetMsg) error {
+func msgToStream(ctx context.Context, s inet.Stream, msg message.EcoBallNetMsg) error {
 	deadline := time.Now().Add(sendMessageTimeout)
 	if dl, ok := ctx.Deadline(); ok {
 		deadline = dl
@@ -101,6 +163,10 @@ func msgToStream(ctx context.Context, s inet.Stream, msg pmsg.EcoBallNetMsg) err
 	return nil
 }
 
+func (bsnet *impl) Host() host.Host {
+	return bsnet.host
+}
+
 func (bsnet *impl) NewMessageSender(ctx context.Context, p peer.ID) (MessageSender, error) {
 	s, err := bsnet.newStreamToPeer(ctx, p)
 	if err != nil {
@@ -113,10 +179,10 @@ func (bsnet *impl) newStreamToPeer(ctx context.Context, p peer.ID) (inet.Stream,
 	return bsnet.host.NewStream(ctx, p, ProtocolP2pV1)
 }
 
-func (bsnet *impl) SendMessage(
+func (bsnet *impl) sendMessage(
 	ctx context.Context,
 	p peer.ID,
-	outgoing pmsg.EcoBallNetMsg) error {
+	outgoing message.EcoBallNetMsg) error {
 
 	s, err := bsnet.newStreamToPeer(ctx, p)
 	if err != nil {
@@ -139,37 +205,74 @@ func (bsnet *impl) ConnectTo(ctx context.Context, p peer.ID) error {
 	return bsnet.host.Connect(ctx, pstore.PeerInfo{ID: p})
 }
 
-func (bsnet *impl) FindProvidersAsync(ctx context.Context, k *cid.Cid, max int) <-chan peer.ID {
-	connectedPeers := bsnet.host.Network().Peers()
-	out := make(chan peer.ID, len(connectedPeers)) // just enough buffer for these connectedPeers
-	for _, id := range connectedPeers {
-		if id == bsnet.host.ID() {
-			continue // ignore self as provider
-		}
-		out <- id
+func (bsnet *impl) FindPeer(ctx context.Context, id peer.ID) (pstore.PeerInfo, error) {
+	// Check if were already connected to them
+	if pi := bsnet.FindLocal(id); pi.ID != "" {
+		return pi, nil
 	}
 
-	go func() {
-		defer close(out)
-		providers := bsnet.routing.FindProvidersAsync(ctx, k, max)
-		for info := range providers {
-			if info.ID == bsnet.host.ID() {
-				continue // ignore self as provider
-			}
-			bsnet.host.Peerstore().AddAddrs(info.ID, info.Addrs, pstore.TempAddrTTL)
-			select {
-			case <-ctx.Done():
-				return
-			case out <- info.ID:
-			}
+	peers := bsnet.routingTable.NearestPeers(kb.ConvertPeerID(id), AlphaValue)
+	if len(peers) == 0 {
+		return pstore.PeerInfo{}, kb.ErrLookupFailure
+	}
+
+	for _, p := range peers {
+		if p == id {
+			log.Debug("found target peer in list of closest peers...")
+			return bsnet.host.Peerstore().PeerInfo(p), nil
 		}
-	}()
-	return out
+	}
+
+	return pstore.PeerInfo{}, kb.ErrLookupFailure
 }
 
-// Provide provides the key to the network
-func (bsnet *impl) Provide(ctx context.Context, k *cid.Cid) error {
-	return bsnet.routing.Provide(ctx, k, true)
+func (bsnet *impl) FindLocal(id peer.ID) pstore.PeerInfo {
+	switch bsnet.host.Network().Connectedness(id) {
+	case inet.Connected, inet.CanConnect:
+		return bsnet.host.Peerstore().PeerInfo(id)
+	default:
+		return pstore.PeerInfo{}
+	}
+}
+
+func (bsnet *impl) ConnectionManager() ifconnmgr.ConnManager {
+	return bsnet.host.ConnManager()
+}
+
+// select randomly k peers from remote peers and returns them.
+func (bsnet *impl) selectRandomPeers(k int) []peer.ID {
+	if netImpl == nil {
+		return []peer.ID{}
+	}
+	conns := netImpl.host.Network().Conns()
+	if len(conns) < k {
+		k = len(conns)
+	}
+	indices := util.GetRandomIndices(k, len(conns)-1)
+	peers := make([]peer.ID, len(indices))
+	for i, j := range indices {
+		pid := conns[j].RemotePeer()
+		peers[i] = pid
+	}
+
+	return peers
+}
+
+func (bsnet *impl) update(p peer.ID) {
+	bsnet.rtLock.Lock()
+	defer bsnet.rtLock.Unlock()
+	bsnet.routingTable.Update(p)
+}
+
+func (bsnet *impl) remove(p peer.ID) {
+	bsnet.rtLock.Lock()
+	defer bsnet.rtLock.Unlock()
+	bsnet.routingTable.Remove(p)
+}
+
+func (bsnet *impl) nearestPeersToQuery(id peer.ID, count int) []peer.ID {
+	closer := bsnet.routingTable.NearestPeers(kb.ConvertKey(id.String()), count)
+	return closer
 }
 
 func (bsnet *impl) handleNewStream(s inet.Stream) {
@@ -185,7 +288,7 @@ func (bsnet *impl) handleNewStreamMsg(s inet.Stream) {
 
 	reader := ggio.NewDelimitedReader(s, inet.MessageSizeMax)
 	for {
-		received, err := pmsg.FromPBReader(reader)
+		received, err := message.FromPBReader(reader)
 		if err != nil {
 			if err != io.EOF {
 				s.Reset()
@@ -198,29 +301,67 @@ func (bsnet *impl) handleNewStreamMsg(s inet.Stream) {
 		p := s.Conn().RemotePeer()
 		ctx := context.Background()
 		log.Debug("p2p net handleNewStream from ", s.Conn().RemotePeer())
+		bsnet.update(p)
 		bsnet.receiver.ReceiveMessage(ctx, p, received)
 	}
 }
 
-func (bsnet *impl) ConnectionManager() ifconnmgr.ConnManager {
-	return bsnet.host.ConnManager()
+func (bsnet *impl) SendMsgJob(job *message.SendMsgJob) {
+	bsnet.sendJbQueue <- job
 }
 
-type netNotifiee impl
-
-func (nn *netNotifiee) impl() *impl {
-	return (*impl)(nn)
+func (bsnet *impl) handleSendJob() {
+	go func() {
+		for {
+			select {
+			case job, ok := <- bsnet.sendJbQueue:
+				if !ok {
+					log.Error("chan for sending job queue was closed")
+					return
+				}
+				sendJb, ok := job.(*message.SendMsgJob)
+				if ok {
+					for _, pi := range sendJb.Peers {
+						if pi.ID == bsnet.host.ID() {
+							continue
+						}
+						addr := bsnet.host.Peerstore().Addrs(pi.ID)
+						if len(addr) == 0 && len(pi.Addrs) >0 {
+							if err := bsnet.host.Connect(bsnet.ctx, *pi); err != nil {
+								log.Error(err)
+								continue
+							}
+						}
+						if err:= bsnet.sendMessage(bsnet.ctx, pi.ID, sendJb.Msg); err != nil {
+							log.Error("send message to ", pi.ID.Pretty(), err)
+						}
+					}
+				}
+			}
+		}
+	}()
 }
 
-func (nn *netNotifiee) Connected(n inet.Network, v inet.Conn) {
-	nn.impl().receiver.PeerConnected(v.RemotePeer())
+
+
+func (bsnet *impl) StartLocalDiscovery() error {
+	service, err := discovery.NewMdnsService(bsnet.ctx, bsnet.host, 10*time.Second, ServiceTag)
+	if err != nil {
+		return fmt.Errorf("net discovery error,", err)
+	}
+	service.RegisterNotifee((*netNotifiee)(bsnet))
+
+	return nil
 }
 
-func (nn *netNotifiee) Disconnected(n inet.Network, v inet.Conn) {
-	nn.impl().receiver.PeerDisconnected(v.RemotePeer())
-}
+func (bsnet *impl) Start() {
+	// it is up to the requirement of network sharding,
+	// e.g: should come from config file
+	if true {
+		if err := bsnet.StartLocalDiscovery(); err != nil {
+			log.Error(err)
+		}
+	}
 
-func (nn *netNotifiee) OpenedStream(n inet.Network, v inet.Stream) {}
-func (nn *netNotifiee) ClosedStream(n inet.Network, v inet.Stream) {}
-func (nn *netNotifiee) Listen(n inet.Network, a ma.Multiaddr)      {}
-func (nn *netNotifiee) ListenClose(n inet.Network, a ma.Multiaddr) {}
+	bsnet.handleSendJob()
+}
