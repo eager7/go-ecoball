@@ -114,7 +114,7 @@ $ ./ecoclient contract invoke -n $CONTRACTNAME -m $METHORD -p $PARA1 $PARA2 $PAR
 ```
 #### register new chain
 ```
-$ ./ecoclient contract invoke -n $CONTRACTNAME -m reg_chain -p $PARA1,$PARA2,$PARA3 ...
+$ ./ecoclient contract invoke -n $CONTRACTNAME -m reg_chain -p $PARA1,$PARA2,$PARA3
 ```
 #### set account
 ```
