@@ -161,7 +161,7 @@ func InitConfig(filePath, config string) error {
 func init() {
 	if flag.Lookup("test.v") == nil {
 		fmt.Println("normal run")
-		IpfsDir = "./storage"
+		IpfsDir = "/tmp/storage"
 		if err := SetConfig("."); err != nil {
 			fmt.Println("init config failed: ", err)
 			os.Exit(-1)

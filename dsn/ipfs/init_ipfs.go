@@ -20,18 +20,11 @@ import (
 
 	"errors"
 	"fmt"
-	"io"
 	"os"
-	"path"
-	"strings"
 	"context"
 	"sort"
 	"path/filepath"
-
-	"github.com/ipfs/go-ipfs/assets"
 	"github.com/ipfs/go-ipfs/core"
-	"github.com/ipfs/go-ipfs/namesys"
-	"github.com/ipfs/go-ipfs/repo/config"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	"github.com/ipfs/go-ipfs/plugin/loader"
 	"github.com/urfave/cli"
@@ -54,141 +47,6 @@ Reinitializing would overwrite your keys.
 
 var ipfsCtrl *IpfsCtrl
 var IpfsNode *core.IpfsNode
-
-func initWithDefaults(out io.Writer, repoRoot string, profile string) error {
-	var profiles []string
-	if profile != "" {
-		profiles = strings.Split(profile, ",")
-	}
-
-	return doInit(out, repoRoot, false, nBitsForKeypairDefault, profiles, nil)
-}
-
-func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, confProfiles []string, conf *config.Config) error {
-	if _, err := fmt.Fprintf(out, "initializing IPFS node at %s\n", repoRoot); err != nil {
-		return err
-	}
-
-	if err := checkWritable(repoRoot); err != nil {
-		return err
-	}
-
-	if fsrepo.IsInitialized(repoRoot) {
-		return errRepoExists
-	}
-
-	if conf == nil {
-		var err error
-		conf, err = config.Init(out, nBitsForKeypair)
-		if err != nil {
-			return err
-		}
-	}
-
-	for _, profile := range confProfiles {
-		transformer, ok := config.Profiles[profile]
-		if !ok {
-			return fmt.Errorf("invalid configuration profile: %s", profile)
-		}
-
-		if err := transformer.Transform(conf); err != nil {
-			return err
-		}
-	}
-
-	if err := fsrepo.Init(repoRoot, conf); err != nil {
-		return err
-	}
-
-	if !empty {
-		if err := addDefaultAssets(out, repoRoot); err != nil {
-			return err
-		}
-	}
-
-	return initializeIpnsKeyspace(repoRoot)
-}
-
-func checkWritable(dir string) error {
-	_, err := os.Stat(dir)
-	if err == nil {
-		// dir exists, make sure we can write to it
-		testfile := path.Join(dir, "test")
-		fi, err := os.Create(testfile)
-		if err != nil {
-			if os.IsPermission(err) {
-				return fmt.Errorf("%s is not writeable by the current user", dir)
-			}
-			return fmt.Errorf("unexpected error while checking writeablility of repo root: %s", err)
-		}
-		fi.Close()
-		return os.Remove(testfile)
-	}
-
-	if os.IsNotExist(err) {
-		// dir doesn't exist, check that we can create it
-		return os.Mkdir(dir, 0775)
-	}
-
-	if os.IsPermission(err) {
-		return fmt.Errorf("cannot write to %s, incorrect permissions", err)
-	}
-
-	return err
-}
-
-func addDefaultAssets(out io.Writer, repoRoot string) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	r, err := fsrepo.Open(repoRoot)
-	if err != nil { // NB: repo is owned by the node
-		return err
-	}
-
-	nd, err := core.NewNode(ctx, &core.BuildCfg{Repo: r})
-	if err != nil {
-		return err
-	}
-	defer nd.Close()
-
-	dkey, err := assets.SeedInitDocs(nd)
-	if err != nil {
-		return fmt.Errorf("init: seeding init docs failed: %s", err)
-	}
-	fmt.Printf("init: seeded init docs %s", dkey)
-
-	if _, err = fmt.Fprintf(out, "to get started, enter:\n"); err != nil {
-		return err
-	}
-
-	_, err = fmt.Fprintf(out, "\n\tipfs cat /ipfs/%s/readme\n\n", dkey)
-	return err
-}
-
-func initializeIpnsKeyspace(repoRoot string) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	r, err := fsrepo.Open(repoRoot)
-	if err != nil { // NB: repo is owned by the node
-		return err
-	}
-
-	nd, err := core.NewNode(ctx, &core.BuildCfg{Repo: r})
-	if err != nil {
-		return err
-	}
-	defer nd.Close()
-
-	err = nd.SetupOfflineRouting()
-	if err != nil {
-		return err
-	}
-
-	return namesys.InitializeKeyspace(ctx, nd.Namesys, nd.Pinning, nd.PrivateKey)
-}
-
 // load ecoball ipfs ipld format plugin
 func loadIpldPlugin() {
 	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))

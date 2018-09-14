@@ -117,7 +117,7 @@ environment variable:
 //Reinitializing would overwrite your keys.
 //`)
 
-func initWithDefaults_bak(out io.Writer, repoRoot string, profile string) error {
+func initWithDefaults(out io.Writer, repoRoot string, profile string) error {
 	var profiles []string
 	if profile != "" {
 		profiles = strings.Split(profile, ",")
@@ -126,7 +126,7 @@ func initWithDefaults_bak(out io.Writer, repoRoot string, profile string) error 
 	return doInit(out, repoRoot, false, nBitsForKeypairDefault, profiles, nil)
 }
 
-func doInit_bak(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, confProfiles []string, conf *config.Config) error {
+func doInit(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int, confProfiles []string, conf *config.Config) error {
 	if _, err := fmt.Fprintf(out, "initializing IPFS node at %s\n", repoRoot); err != nil {
 		return err
 	}
@@ -171,7 +171,7 @@ func doInit_bak(out io.Writer, repoRoot string, empty bool, nBitsForKeypair int,
 	return initializeIpnsKeyspace(repoRoot)
 }
 
-func checkWritable_bak(dir string) error {
+func checkWritable(dir string) error {
 	_, err := os.Stat(dir)
 	if err == nil {
 		// dir exists, make sure we can write to it
@@ -199,7 +199,7 @@ func checkWritable_bak(dir string) error {
 	return err
 }
 
-func addDefaultAssets_bak(out io.Writer, repoRoot string) error {
+func addDefaultAssets(out io.Writer, repoRoot string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -228,7 +228,7 @@ func addDefaultAssets_bak(out io.Writer, repoRoot string) error {
 	return err
 }
 
-func initializeIpnsKeyspace_bak(repoRoot string) error {
+func initializeIpnsKeyspace(repoRoot string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

@@ -1,4 +1,4 @@
-package renter
+package api
 
 import (
 	"context"
@@ -57,12 +57,12 @@ type AddedObject struct {
 }
 
 // NewAdder Returns a new EcoAdder used for a file add operation.
-func NewEcoAdder(ctx context.Context, p pin.Pinner, bs bstore.GCBlockstore, ds ipld.DAGService) (*EcoAdder, error) {
+func NewEcoAdder(ctx context.Context) (*EcoAdder, error) {
 	return &EcoAdder{
 		ctx:        ctx,
-		pinning:    p,
-		blockstore: bs,
-		dagService: ds,
+		pinning:    dsnIpfsNode.Pinning,
+		blockstore: dsnIpfsNode.Blockstore,
+		dagService: dsnIpfsNode.DAG,
 		Progress:   false,
 		Hidden:     true,
 		Pin:        true,
@@ -297,7 +297,7 @@ func Add(n *core.IpfsNode, r io.Reader) (string, error) {
 func AddWithContext(ctx context.Context, n *core.IpfsNode, r io.Reader) (string, error) {
 	defer n.Blockstore.PinLock().Unlock()
 
-	fileAdder, err := NewEcoAdder(ctx, n.Pinning, n.Blockstore, n.DAG)
+	fileAdder, err := NewEcoAdder(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -325,7 +325,7 @@ func AddR(n *core.IpfsNode, root string) (key string, err error) {
 	}
 	defer f.Close()
 
-	fileAdder, err := NewEcoAdder(n.Context(), n.Pinning, n.Blockstore, n.DAG)
+	fileAdder, err := NewEcoAdder(n.Context())
 	if err != nil {
 		return "", err
 	}
@@ -349,7 +349,7 @@ func AddR(n *core.IpfsNode, root string) (key string, err error) {
 // the directory, and and error if any.
 func AddWrapped(n *core.IpfsNode, r io.Reader, filename string) (string, ipld.Node, error) {
 	file := files.NewReaderFile(filename, filename, ioutil.NopCloser(r), nil)
-	fileAdder, err := NewEcoAdder(n.Context(), n.Pinning, n.Blockstore, n.DAG)
+	fileAdder, err := NewEcoAdder(n.Context())
 	if err != nil {
 		return "", nil, err
 	}
