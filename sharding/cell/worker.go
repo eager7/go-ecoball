@@ -3,6 +3,7 @@ package cell
 import (
 	"container/list"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/types/block"
 )
 
 type Worker struct {
@@ -13,6 +14,12 @@ type Worker struct {
 
 func (a *Worker) Equal(b *Worker) bool {
 	return a.Pubkey == b.Pubkey
+}
+
+func (a *Worker) InitWork(b *block.NodeInfo) {
+	a.Pubkey = string(b.PublicKey)
+	a.Address = b.Address
+	a.Port = b.Port
 }
 
 type workerSet struct {
@@ -37,15 +44,15 @@ func (s *workerSet) addMember(w *Worker) *Worker {
 		result = append(result, w)
 		result = append(result, s.member[:length-1]...)
 		tail := s.member[length-1]
-		s.member = s.member[:0]
-		s.member = append(s.member, result...)
+
+		s.member = result
 		return tail
 	} else if length < s.max {
 		result := make([]*Worker, 0, s.max)
 		result = append(result, w)
 		result = append(result, s.member[:length]...)
-		s.member = s.member[:0]
-		s.member = append(s.member, result...)
+
+		s.member = result
 		return nil
 	} else {
 		panic("wrong set len")
@@ -73,6 +80,24 @@ func (s *workerSet) isCandidateLeader(self *Worker) bool {
 		return true
 	} else {
 		return false
+	}
+}
+
+func (s *workerSet) resetNewLeader(leader *Worker) {
+	for i, work := range s.member {
+		if work.Equal(leader) {
+			if i == 0 {
+				return
+			}
+
+			result := make([]*Worker, 0, s.max)
+			result = append(result, s.member[i:]...)
+			for j := i - 1; j >= 0; j-- {
+				result = append(result, s.member[j])
+			}
+
+			s.member = result
+		}
 	}
 }
 

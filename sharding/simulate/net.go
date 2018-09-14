@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/net/message"
+	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"io"
 	"net"
 	"time"
@@ -16,10 +17,10 @@ var (
 	log = elog.NewLogger("sdsimulate", elog.DebugLog)
 )
 
-var netMsgChain chan message.EcoBallNetMsg
+var netMsgChain chan *sc.NetPacket
 var listenPort string
 
-func Sendto(addr string, port string, packet message.EcoBallNetMsg) error {
+func Sendto(addr string, port string, packet *sc.CsPacket) error {
 	addrPort := addr + ":" + port
 	conn, err := net.DialTimeout("tcp", addrPort, 2*time.Second)
 	if err != nil {
@@ -31,8 +32,8 @@ func Sendto(addr string, port string, packet message.EcoBallNetMsg) error {
 
 }
 
-func Subscribe(port string) (<-chan message.EcoBallNetMsg, error) {
-	netMsgChain = make(chan message.EcoBallNetMsg)
+func Subscribe(port string, chanSize uint16) (<-chan *sc.NetPacket, error) {
+	netMsgChain = make(chan *sc.NetPacket, chanSize)
 
 	listenPort = port
 	go recvRoutine()
@@ -62,26 +63,26 @@ func recvRoutine() {
 	return
 }
 
-func send(conn net.Conn, packet message.EcoBallNetMsg) error {
+func send(conn net.Conn, packet *sc.CsPacket) error {
 	defer conn.Close()
 
+	data, err := json.Marshal(packet)
+	if err != nil {
+		log.Error("wrong packet")
+		return err
+	}
+
 	var length uint32
-	length = uint32(len(packet.Data()) + 4)
+	length = uint32(len(data))
 
 	buf := &bytes.Buffer{}
-	err := binary.Write(buf, binary.BigEndian, length)
+	err = binary.Write(buf, binary.BigEndian, length)
 	if err != nil {
 		log.Error("write packet length error")
 		return err
 	}
 
-	err = binary.Write(buf, binary.BigEndian, packet.Type())
-	if err != nil {
-		log.Error("write packet length error")
-		return err
-	}
-
-	err = binary.Write(buf, binary.BigEndian, packet.Data())
+	err = binary.Write(buf, binary.BigEndian, data)
 	if err != nil {
 		log.Error(" write packet  error")
 		return err
@@ -144,12 +145,14 @@ func recv(conn net.Conn) {
 			break
 		}
 
-		packetType := uint32(binary.BigEndian.Uint32(buf))
-		data := buf[4:packetLen]
+		var packet sc.NetPacket
+		err = json.Unmarshal(buf, &packet)
+		if err != nil {
+			log.Error("unmarshal packet error")
+			return
+		}
 
-		packet := message.New(packetType, data)
-
-		log.Debug("recv packet type ", packetType)
-		netMsgChain <- packet
+		log.Debug("recv packet ", packet.PacketType, "block ", packet.BlockType)
+		netMsgChain <- &packet
 	}
 }

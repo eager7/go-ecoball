@@ -13,15 +13,28 @@ const (
 	SD_END
 )
 
-type SdPacket struct {
-	BlockType uint16
-	Packet    []byte
+type NetPacket struct {
+	ChainId    uint32
+	PacketType uint32
+	CsType     uint16
+	BlockType  uint16
+	Step       uint16
+	Packet     []byte
 }
 
 type CsPacket struct {
-	Step      uint16
-	BlockType uint16
-	Packet    []byte
+	PacketType uint32
+	CsType     uint16
+	BlockType  uint16
+	Step       uint16
+	Packet     interface{}
+}
+
+func (c *CsPacket) Copyhead(p *NetPacket) {
+	c.PacketType = p.PacketType
+	c.BlockType = p.BlockType
+	c.CsType = p.CsType
+	c.Step = p.Step
 }
 
 type CsView struct {
@@ -38,7 +51,7 @@ type ConsensusInstance interface {
 	GetCsView() *CsView
 	MakeCsPacket(round uint16) *CsPacket
 	GetCsBlock() interface{}
-	CacheBlock(packet *CsPacket) *CsView
+	CacheBlock(bl interface{}) *CsView
 	PrepareRsp() uint16
 	PrecommitRsp() uint16
 	UpdateBlock(csp *CsPacket)

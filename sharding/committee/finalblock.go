@@ -24,21 +24,14 @@ func (b *finalBlockCsi) GetCsView() *sc.CsView {
 	return &sc.CsView{EpochNo: b.block.CMEpochNo, FinalHeight: b.block.Height}
 }
 
-func (b *finalBlockCsi) CacheBlock(packet *sc.CsPacket) *sc.CsView {
-	var bk block.FinalBlock
-	err := json.Unmarshal(packet.Packet, &bk)
-	if err != nil {
-		log.Error("final block unmarshal error ", err)
-		return nil
-	}
-
-	b.cache = &bk
+func (b *finalBlockCsi) CacheBlock(bl interface{}) *sc.CsView {
+	b.cache = bl.(*block.FinalBlock)
 
 	return &sc.CsView{EpochNo: b.cache.CMEpochNo, FinalHeight: b.cache.Height}
 }
 
 func (b *finalBlockCsi) MakeCsPacket(step uint16) *sc.CsPacket {
-	csp := &sc.CsPacket{Step: step, BlockType: sc.SD_FINAL_BLOCK}
+	csp := &sc.CsPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_FINAL_BLOCK, Step: step}
 
 	/*missing_func should fill in signature and bit map*/
 	if step == consensus.StepPrePare {
@@ -129,31 +122,22 @@ func (c *committee) productFinalBlock(msg interface{}) {
 	c.stateTimer.Reset(sc.DefaultProductFinalBlockTimer * time.Second)
 }
 
-func (c *committee) processFinalConsensusPacket(packet interface{}) {
+func (c *committee) processConsensusFinalPacket(p interface{}) {
 	log.Debug("process final consensus block")
 
-	//if c.ns.IsCmLeader() {
-	//	if !c.cs.IsCsRunning() {
-	//		panic("consensus is not running")
-	//		return
-	//	}
-	//} else {
-	//	if !c.cs.IsCsRunning() {
-	//		c.productFinalBlock(nil)
-	//	}
-	//}
-
-	c.cs.ProcessPacket(packet.(netmsg.EcoBallNetMsg))
+	c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
-func (c *committee) processWMBStateChange(packet interface{}) {
+func (c *committee) processWMBStateChange(p interface{}) {
+	log.Debug("process final consensus packet on waiting status")
+
 	if c.ns.IsCmLeader() {
 		log.Error("we are leader of commit, drop packet")
 		return
 	}
 
 	c.productFinalBlock(nil)
-	c.cs.ProcessPacket(packet.(netmsg.EcoBallNetMsg))
+	c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
 func (c *committee) recvCommitFinalBlock(bl *block.FinalBlock) {

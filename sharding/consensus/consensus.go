@@ -1,9 +1,7 @@
 package consensus
 
 import (
-	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/elog"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 )
@@ -47,15 +45,8 @@ func (c *Consensus) StartConsensus(instance sc.ConsensusInstance) {
 	}
 }
 
-func (c *Consensus) ProcessPacket(packet netmsg.EcoBallNetMsg) {
-	var csp sc.CsPacket
-	err := json.Unmarshal(packet.Data(), &csp)
-	if err != nil {
-		log.Error("net packet unmarshal error ", err)
-		return
-	}
-
-	view := c.instance.CacheBlock(&csp)
+func (c *Consensus) ProcessPacket(csp *sc.CsPacket) {
+	view := c.instance.CacheBlock(csp.Packet)
 	if view == nil {
 		log.Error("cache packet error")
 		return
@@ -68,9 +59,9 @@ func (c *Consensus) ProcessPacket(packet netmsg.EcoBallNetMsg) {
 	}
 
 	if c.ns.IsCmLeader() {
-		c.processPacketByLeader(&csp)
+		c.processPacketByLeader(csp)
 	} else {
-		c.processPacketByVoter(&csp)
+		c.processPacketByVoter(csp)
 	}
 }
 

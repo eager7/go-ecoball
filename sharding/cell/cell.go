@@ -107,35 +107,45 @@ func (c *Cell) LoadConfig() {
 	c.NodeType = nodeType
 }
 
-func (c *Cell) SetLastCMBlock(cmb *block.CMBlock) {
-	c.chain.setCMBlock(cmb)
+func (c *Cell) SetLastCMBlock(bk *block.CMBlock) {
+	c.chain.setCMBlock(bk)
 
-	var worker Worker
-	if len(cmb.Candidate.PublicKey) != 0 {
-		worker.Pubkey = string(cmb.Candidate.PublicKey)
-		worker.Address = cmb.Candidate.Address
-		worker.Port = cmb.Candidate.Port
-		c.addCommitteWorker(&worker)
+	worker := &Worker{}
+	if len(bk.Candidate.PublicKey) != 0 {
+		worker.InitWork(&bk.Candidate)
+		c.addCommitteWorker(worker)
 	}
 
 	if c.NodeType == sc.NodeShard {
-		c.saveShardsInfoFromCMBlock(cmb)
+		c.saveShardsInfoFromCMBlock(bk)
 	}
 
-	c.minorBlockPool.resize(len(cmb.Shards))
+	c.minorBlockPool.resize(len(bk.Shards))
 }
 
 func (c *Cell) GetLastCMBlock() *block.CMBlock {
 	return c.chain.getCMBlock()
 }
 
+func (c *Cell) SetLastFinalBlock(bk *block.FinalBlock) {
+	c.chain.setFinalBlock(bk)
+	c.minorBlockPool.clean()
+}
+
 func (c *Cell) GetLastFinalBlock() *block.FinalBlock {
 	return c.chain.getFinalBlock()
 }
 
-func (c *Cell) SetLastFinalBlock(block *block.FinalBlock) {
-	c.chain.setFinalBlock(block)
-	c.minorBlockPool.clean()
+func (c *Cell) SetLastViewchangeBlock(bk *block.ViewChangeBlock) {
+	leader := &Worker{}
+	leader.InitWork(&bk.Candidate)
+
+	c.cm.resetNewLeader(leader)
+	c.chain.setViewchangeBlock(bk)
+}
+
+func (c *Cell) GetLastViewchangeBlock() *block.ViewChangeBlock {
+	return c.chain.getViewchangeBlock()
 }
 
 func (c *Cell) SyncCMBlockComplete(lastCMblock *block.CMBlock) {
