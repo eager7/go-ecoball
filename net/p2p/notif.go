@@ -54,13 +54,13 @@ func (nn *netNotifiee) Disconnected(n inet.Network, v inet.Conn) {
 
 func (nn *netNotifiee) HandlePeerFound(p pstore.PeerInfo) {
 	log.SetLogLevel(elog.InfoLog)
-	log.Debug("trying peer info: ", p)
+	log.Debug("net:trying peer info: ", p)
 	ctx, cancel := context.WithTimeout(nn.ctx, discoveryConnTimeout)
 	defer cancel()
 	if err := nn.host.Connect(ctx, p); err != nil {
-		log.Debug("Failed to connect to peer found by discovery: ", err)
+		log.Debug("net:Failed to connect to peer found by discovery: ", err)
 	} else {
-		log.Debug("connected to peer ", p)
+		log.Debug("net:connected to peer ", p)
 	}
 	log.SetLogLevel(elog.DebugLog)
 }
