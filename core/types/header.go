@@ -30,12 +30,6 @@ import (
 
 const VersionHeader = 1
 
-type HeaderType uint32
-
-const (
-	HeMinorBlock HeaderType = 1
-	HeCmBlock    HeaderType = 2
-)
 
 type Header struct {
 	//Type          HeaderType

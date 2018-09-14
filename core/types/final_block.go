@@ -134,6 +134,10 @@ func (h *FinalBlockHeader) JsonString() string {
 	return string(data)
 }
 
+func (h *FinalBlockHeader) Type() uint32 {
+	return uint32(HeFinalBlock)
+}
+
 type FinalBlock struct {
 	Header *FinalBlockHeader
 	MinorBlocks []*MinorBlockHeader
