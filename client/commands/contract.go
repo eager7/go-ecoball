@@ -418,26 +418,25 @@ func checkParam(abiDef abi.ABI, method string, arg []byte) ([]byte, error){
 }
 
 func GetContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error){
-	resp, errcode := rpc.NodeCall("get_required_keys", []interface{}{chainID.HexString(), index.String()})
+	resp, errcode := rpc.NodeCall("GetContract", []interface{}{chainID.HexString(), index.String()})
 	if errcode != nil {
 		fmt.Fprintln(os.Stderr, errcode)
 		return nil, errcode
 	}
 
+	deploy := new(types.DeployInfo)
 	if nil != resp["result"] {
 		switch resp["result"].(type) {
 		case string:
 			data := resp["result"].(string)
-			deploy := new(types.DeployInfo)
 			if err := deploy.Deserialize(common.FromHex(data)); err != nil{
 				return nil, err
 			}
 			return deploy, nil
-			//return data, nil
 		default:
 		}
 	}
-	return nil, nil
+	return deploy, nil
 }
 
 func invokeContract(c *cli.Context) error {
@@ -467,6 +466,12 @@ func invokeContract(c *cli.Context) error {
 	var parameters []string
 
 	info, err := getInfo()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	publickeys, err := GetPublicKeys()
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -527,6 +532,22 @@ func invokeContract(c *cli.Context) error {
 	if nil != err {
 		fmt.Println(err)
 		return err
+	}
+
+	required_keys, err := get_required_keys(info.ChainID, publickeys, "active", transaction)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	if required_keys == "" {
+		fmt.Println("no required_keys")
+		return err
+	}
+
+	errcode := sign_transaction(info.ChainID, required_keys, transaction)
+	if nil != errcode {
+		fmt.Println(errcode)
 	}
 	
 	data, err := transaction.Serialize()

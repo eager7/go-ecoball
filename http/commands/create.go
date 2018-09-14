@@ -161,35 +161,6 @@ func Get_ChainList(params []interface{}) *common.Response {
 }
 
 func handleCreateAccount(params []interface{}) common.Errcode {
-	/*var (
-		creator string
-		name    string
-		owner   string
-		//	active  string
-		invalid bool = false
-	)
-
-	//creator name
-	if v, ok := params[0].(string); ok {
-		creator = v
-	} else {
-		invalid = true
-	}
-
-	//account name
-	if v, ok := params[1].(string); ok {
-		name = v
-	} else {
-		invalid = true
-	}
-
-	//owner key
-	if v, ok := params[2].(string); ok {
-		owner = v
-	} else {
-		invalid = true
-	}*/
-
 	invoke := new(types.Transaction)//{
 	//	Payload: &types.InvokeInfo{}}
 
