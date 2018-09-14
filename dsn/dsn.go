@@ -24,13 +24,20 @@ type Dsn struct {
 
 var dsn *Dsn
 
-func StartDsn(ctx context.Context, l ledger.Ledger, a account.Account, conf DsnConf)  {
-	h := host.NewStorageHost(ctx, l, a, conf.hConf)
+func InitDefaultConf() DsnConf {
+	return DsnConf{
+		hConf: host.InitDefaultConf(),
+		rConf: renter.InitDefaultConf(),
+	}
+}
+
+func StartDsn(ctx context.Context, l ledger.Ledger, ha, ra account.Account, conf DsnConf)  {
+	h := host.NewStorageHost(ctx, l, ha, conf.hConf)
 	go h.Start()
-	r := renter.NewRenter(ctx, l, a, conf.rConf)
-	go r.Start()
+	r := renter.NewRenter(ctx, l, ra, conf.rConf)
+	//go r.Start()
 	s := settlement.NewStorageSettler(ctx, l)
-	go s.Start()
+	//go s.Start()
 
 	dsn.h = h
 	dsn.r = r
@@ -39,7 +46,13 @@ func StartDsn(ctx context.Context, l ledger.Ledger, a account.Account, conf DsnC
 }
 
 func AddFile(file string) (string, error) {
+	//TODO file pin
 	return dsn.r.AddFile(file)
+}
+
+func GetFile(cid string) ([]byte, error) {
+	//TODO
+	return nil, nil
 }
 
 func HandleStoreAnn(para string, st state.InterfaceState)  {
@@ -48,5 +61,11 @@ func HandleStoreAnn(para string, st state.InterfaceState)  {
 }
 
 func HandleStorageProof(para string, st state.InterfaceState)  {
+	data := []byte(para)
+	dsn.s.HandleStorageProof(data, st)
+}
 
+func HandleFileContract(para string, st state.InterfaceState)  {
+	data := []byte(para)
+	dsn.s.HandleFileContract(data, st)
 }

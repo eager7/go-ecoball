@@ -28,7 +28,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 )
 var log = elog.NewLogger("store", elog.DebugLog)
-const PathBlock = "DataBase/block"
+const PathBlock = "/tmp/DataBase/block"
 
 type LevelDBStore struct {
 	db    *leveldb.DB

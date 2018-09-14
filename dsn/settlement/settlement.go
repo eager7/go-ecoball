@@ -9,22 +9,19 @@ import (
 	"github.com/ecoball/go-ecoball/dsn/host"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
 	"github.com/ecoball/go-ecoball/dsn/crypto"
-	"github.com/ipfs/go-ipfs/core"
 	"github.com/go-redis/redis"
 	"github.com/ecoball/go-ecoball/dsn/renter"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"context"
-	//"github.com/ecoball/go-ecoball/core/types/block"
-	cid2 "gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	"github.com/ecoball/go-ecoball/dsn/common"
 	"github.com/ecoball/go-ecoball/core/state"
 	ecommon "github.com/ecoball/go-ecoball/common"
-	"encoding/binary"
-	"reflect"
+	//hpb "github.com/ecoball/go-ecoball/dsn/host/pb"
+	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
+	"io/ioutil"
 )
 
 var (
-	ipfsNode *core.IpfsNode
 	errProofInvalid = errors.New("Storage proof is invalid")
 )
 
@@ -57,9 +54,9 @@ type SettleMsg struct {
 
 type Settler struct {
 	ledger    ledger.Ledger
-	rClient  *redis.Client
-	msgChan  chan SettleMsg
-	ctx      context.Context
+	rClient   *redis.Client
+	msgChan   chan SettleMsg
+	ctx       context.Context
 }
 
 func NewStorageSettler(ctx context.Context, l ledger.Ledger) *Settler {
@@ -100,21 +97,18 @@ func (s *Settler) payToHost(spf host.StorageProof) error {
 }
 
 // decodeAnnouncement decodes announcement bytes into a host announcement
-func (s *Settler) decodeAnnouncement(fullAnnouncement []byte) (contract host.HostAncContract, err error) {
+func (s *Settler) decodeAnnouncement(fullAnnouncement []byte) (host.HostAncContract, error) {
 	var announcement host.HostAncContract
 	dec := encoding.NewDecoder(bytes.NewReader(fullAnnouncement))
-	err = dec.Decode(&announcement)
+	err := dec.Decode(&announcement)
 	if err != nil {
 		return announcement, err
 	}
-
-	// Read the signature out of the reader
 	var sig crypto.Signature
 	err = dec.Decode(&sig)
 	if err != nil {
 		return announcement, err
 	}
-
 	var pk crypto.PublicKey
 	copy(pk[:], announcement.PublicKey)
 	annHash := crypto.HashObject(announcement)
@@ -199,20 +193,18 @@ func (s *Settler)verifyStorageProof(data []byte, st state.InterfaceState) (bool,
 	if err != nil {
 		return false, err
 	}
-	baseBlockService := ipfsNode.BaseBlocks
-	cid, err := cid2.Decode(proof.Cid)
+	block, err := api.IpfsBlockGet(s.ctx, proof.Cid)
 	if err != nil {
 		return false, err
 	}
-	block, err := baseBlockService.Get(cid)
+	blockData, err := ioutil.ReadAll(block)
 	if err != nil {
 		return false, err
 	}
-	blockData := block.RawData()
 	rootHash := dproof.MerkleRoot(blockData)
 	numberSegment := len(blockData) / dproof.SegmentSize
 	ret := dproof.VerifySegment(proof.Segment[:], proof.HashSet, uint64(numberSegment), proof.SegmentIndex, rootHash)
-
+	s.storeAccountState(proof, st)
 	if ret {
 		s.storeReposize(proof)
 	}
@@ -272,17 +264,14 @@ func (s *Settler) storeFileContractInfo(fc renter.FileContract) error {
 	return nil
 }
 
-func (s *Settler) handleFileContract(data []byte) error {
+func (s *Settler) HandleFileContract(data []byte, st state.InterfaceState) error {
 	fc, err := s.decodeFileContract(data)
 	if err != nil {
 		return err
 	}
+	s.storeAccountState(fc, st)
 	s.storeFileContractInfo(fc)
 	return nil
-}
-
-func SetIpfsNode(node *core.IpfsNode)  {
-	ipfsNode = node
 }
 
 

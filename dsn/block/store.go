@@ -5,16 +5,12 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/ecoball/go-ecoball/dsn/common"
 	"context"
-	//"github.com/ecoball/go-ecoball/dsn/ipfs/ipld"
-	coreiface "github.com/ipfs/go-ipfs/core/coreapi/interface"
-	opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
-	"bytes"
-	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
+	"io/ioutil"
 )
 
 type DsnStore struct {
 	rClient  *redis.Client
-	api      coreiface.CoreAPI
 	ctx      context.Context
 }
 
@@ -27,28 +23,22 @@ func NewDsnStore(ctx context.Context) *DsnStore {
 
 func (ds *DsnStore) Put(key, value []byte) error  {
 	skey := string(key)
-	r := bytes.NewReader(value)
-	rp, err := ds.api.Dag().Put(ds.ctx, r, opt.Dag.InputEnc("raw"), opt.Dag.Codec(cid.EcoballRawData))
+	cid, err := api.IpfsAbaBlkPut(ds.ctx, value)
 	if err != nil {
 		return err
 	}
-	cidValue := rp.Root().String()
-	ret := ds.rClient.Set(skey, cidValue, -1)
+	ret := ds.rClient.Set(skey, cid, -1)
 	return ret.Err()
 }
 
 func (ds *DsnStore) Get(key []byte) ([]byte, error)  {
 	skey := string(key)
 	cid := ds.rClient.Get(skey).String()
-	path, err := coreiface.ParsePath(cid)
+	blk, err := api.IpfsBlockGet(ds.ctx, cid)
 	if err != nil {
 		return nil, nil
 	}
-	node, err := ds.api.Dag().Get(ds.ctx, path)
-	if err != nil {
-		return nil, err
-	}
-	return node.RawData(), nil
+	return ioutil.ReadAll(blk)
 }
 
 func (ds *DsnStore) Has(key []byte) (bool, error) {

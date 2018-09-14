@@ -2,7 +2,6 @@ package committee
 
 import (
 	"github.com/ecoball/go-ecoball/common/etime"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -12,7 +11,7 @@ func (c *committee) processStateTimeout() {
 	c.fsm.Execute(ActStateTimeout, nil)
 }
 
-func (c *committee) processConsensusPacket(packet netmsg.EcoBallNetMsg) {
+func (c *committee) processConsensusPacket(packet *sc.CsPacket) {
 	c.fsm.Execute(ActRecvConsensusPacket, packet)
 }
 

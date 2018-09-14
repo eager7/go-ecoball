@@ -1,10 +1,5 @@
 package consensus
 
-import (
-	"encoding/json"
-	"github.com/ecoball/go-ecoball/net/message"
-)
-
 func (c *Consensus) isVoteEnough(counter uint16) bool {
 	if counter == c.ns.GetWorksCounter() {
 		return true
@@ -16,28 +11,14 @@ func (c *Consensus) isVoteEnough(counter uint16) bool {
 
 func (c *Consensus) sendCsPacket() {
 	csp := c.instance.MakeCsPacket(c.step)
-	data, err := json.Marshal(csp)
-	if err != nil {
-		log.Error("cm block marshal error ", err)
-		return
-	}
 
-	packet := message.New(message.APP_MSG_CONSENSUS_PACKET, data)
-
-	c.BroadcastBlock(packet)
+	c.BroadcastBlock(csp)
 }
 
 func (c *Consensus) sendCsRspPacket() {
 	csp := c.instance.MakeCsPacket(c.step)
-	data, err := json.Marshal(csp)
-	if err != nil {
-		log.Error("cm block marshal error ", err)
-		return
-	}
 
-	packet := message.New(message.APP_MSG_CONSENSUS_PACKET, data)
-
-	c.sendToLeader(packet)
+	c.sendToLeader(csp)
 }
 
 func (c *Consensus) reset() {

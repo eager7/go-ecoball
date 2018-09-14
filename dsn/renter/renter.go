@@ -15,15 +15,11 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"context"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ipfs/go-ipfs/core"
-	"path/filepath"
-	"gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit/files"
-	"path"
 	"github.com/ecoball/go-ecoball/dsn/renter/pb"
+	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
 )
 
 var (
-	ipfsNode *core.IpfsNode
 	errUnSyncedStat = errors.New("Block is unsynced!")
 	errCreateContract = errors.New("failed to create file contract")
 	errCheckColFailed = errors.New("Checking collateral failed")
@@ -49,12 +45,12 @@ type FileContract struct {
 }
 
 type RenterConf struct {
-	AccountName   common.AccountName
+	AccountName   string
 	Redundancy    uint8
-	Allowance     big.Int
-	Collateral    big.Int
-	MaxCollateral big.Int
-	ChainId       common.Hash
+	Allowance     string
+	Collateral    string
+	MaxCollateral string
+	ChainId       string
 }
 
 type fileInfo struct {
@@ -76,6 +72,17 @@ type Renter struct {
 	ctx      context.Context
 }
 
+func InitDefaultConf() RenterConf {
+	return RenterConf{
+		AccountName: "root",
+		Redundancy: 1,
+		Allowance: "100",
+		Collateral: "10000",
+		MaxCollateral: "20000",
+		ChainId: "cf4bfc19264aa4bbd6898c0ef43ce5465c794fd587e622fccc19980e634cd9f2",
+	}
+}
+
 func NewRenter(ctx context.Context,l ledger.Ledger ,ac account.Account, conf RenterConf) *Renter {
 	r := Renter{
 		account: ac,
@@ -91,7 +98,7 @@ func NewRenter(ctx context.Context,l ledger.Ledger ,ac account.Account, conf Ren
 
 func (r *Renter) Start()  {
 	r.loadFileInfo()
-	r.getBlockSyncState(r.conf.ChainId)
+	r.getBlockSyncState(common.HexToHash(r.conf.ChainId))
 }
 func (r *Renter) estimateFee(fname string, conf RenterConf) big.Int {
 	//TODO
@@ -104,7 +111,7 @@ func (r *Renter) getBlockSyncState(chainId common.Hash) bool {
 	var syncState bool
 	for {
 		select {
-		case timerChan:
+		case <-timerChan:
 			//TODO get current block synced state
 			if syncState {
 				r.isSynced = true
@@ -128,7 +135,7 @@ func (r *Renter)createFileContract(fname string, cid string) ([]byte, error) {
 	fc.FileSize = uint64(fi.Size())
 	fc.PublicKey = r.account.PublicKey
 	fc.Cid = cid
-	fc.StartAt = r.ledger.GetCurrentHeight(r.conf.ChainId)
+	fc.StartAt = r.ledger.GetCurrentHeight(common.HexToHash(r.conf.ChainId))
 	fc.Expiration = 0
 	fc.Funds = r.estimateFee(fname, r.conf)
 	fc.Redundancy = r.conf.Redundancy
@@ -149,8 +156,8 @@ func (r *Renter) InvokeFileContract(fname, cid string) error {
 		return  errCreateContract
 	}
 	timeNow := time.Now().Unix()
-	transaction, err := types.NewInvokeContract(r.conf.AccountName,
-		innerCommon.NameToIndex("root"), r.conf.ChainId,
+	transaction, err := types.NewInvokeContract(common.NameToIndex(r.conf.AccountName),
+		innerCommon.NameToIndex("root"), common.HexToHash(r.conf.ChainId),
 		"owner", "reg_file", []string{string(fc)}, 0, timeNow)
 	if err != nil {
 		return err
@@ -179,7 +186,7 @@ func (r *Renter) InvokeFileContract(fname, cid string) error {
 }
 
 func (r *Renter)checkCollateral() bool {
-	sacc, err := r.ledger.AccountGet(r.conf.ChainId, r.conf.AccountName)
+	sacc, err := r.ledger.AccountGet(common.HexToHash(r.conf.ChainId), common.NameToIndex(r.conf.AccountName))
 	if err != nil {
 		return false
 	}
@@ -191,32 +198,20 @@ func (r *Renter)checkCollateral() bool {
 }
 
 func (r *Renter) AddFile(fpath string) (string, error) {
-	if !r.isSynced {
-		return "", errUnSyncedStat
-	}
-	colState := r.checkCollateral()
-	if !colState {
-		return "", errCheckColFailed
-	}
-	//TODO erasure coding and add file
-	adder, err := NewEcoAdder(r.ctx, ipfsNode.Pinning,ipfsNode.Blockstore, ipfsNode.DAG)
+	//TODO
+	//if !r.isSynced {
+	//	return "", errUnSyncedStat
+	//}
+	//colState := r.checkCollateral()
+	//if !colState {
+	//	return "", errCheckColFailed
+	//}
+	cid, err := api.IpfsAddEraFile(r.ctx, fpath, r.conf.Redundancy)
 	if err != nil {
 		return "", err
 	}
-	adder.SetRedundancy(r.conf.Redundancy)
-	fpath = filepath.ToSlash(filepath.Clean(fpath))
-	stat, err := os.Lstat(fpath)
-	if err != nil {
-		return "", err
-	}
-	af, err := files.NewSerialFile(path.Base(fpath), fpath, false, stat)
-	if err != nil {
-		return "", err
-	}
-	adder.AddFile(af)
-	dagnode, err := adder.Finalize()
-	r.InvokeFileContract(fpath, dagnode.String())
-	return dagnode.String(), nil
+	r.InvokeFileContract(fpath, cid)
+	return cid, nil
 }
 
 func (r *Renter) GetFile(cid string) error {
@@ -252,10 +247,6 @@ func (r *Renter) loadFileInfo() error {
 	return nil
 }
 
-
-func SetIpfsNode(node *core.IpfsNode)  {
-	ipfsNode = node
-}
 
 func (fc *FileContract) Serialize() ([]byte, error) {
 	var pfc pb.FcMessage

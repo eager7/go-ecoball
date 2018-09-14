@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package api
+package cmd
 
 import (
-	"fmt"
+	//"fmt"
 	"bytes"
 	"os"
 	"sync"
@@ -26,18 +26,18 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"github.com/ipfs/go-ipfs/core"
-	"github.com/ecoball/go-ecoball/dsn/ipfs/ipld"
+	//"github.com/ecoball/go-ecoball/dsn/ipfs/ipld"
 	"github.com/ipfs/go-ipfs/core/commands/dag"
-	"github.com/ipfs/go-ipfs/core/coreapi/interface"
+	//"github.com/ipfs/go-ipfs/core/coreapi/interface"
 	cmd "github.com/ipfs/go-ipfs/commands"
-	opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
+	//opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
 	"gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
 	//"github.com/ipfs/go-ipfs/core/coreapi"
-	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	//"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 )
 
 var lock sync.Mutex
-var coreApi iface.CoreAPI = DsnIpfsApi
+//var coreApi iface.CoreAPI = DsnIpfsApi
 
 // PutBlock Put a block dag node to ipfs, API for client
 func PutBlock(blockData []byte) (string, error) {
@@ -99,35 +99,37 @@ func put(args []string) (string, error) {
 
 // PutChainBlock Get a block from IPFS DAG, API for daemon
 func PutChainBlock(ctx context.Context, blockData []byte) (string, error) {
-	r := bytes.NewReader(blockData)
+	//r := bytes.NewReader(blockData)
 
-	if coreApi == nil {
+	//if coreApi == nil {
 		//coreApi = coreapi.NewCoreAPI(ipfsCtrl.IpfsNode)
-		//TODO
-		return "", nil
-	}
-	rp, err := coreApi.Dag().Put(ctx, r, opt.Dag.InputEnc("raw"), opt.Dag.Codec(cid.EcoballRawData))
-	if err != nil {
-		log.Error("error for putting chain block: ", err)
-		return "", err
-	}
+	//	//TODO
+	//	return "", nil
+	//}
+	//rp, err := coreApi.Dag().Put(ctx, r, opt.Dag.InputEnc("raw"), opt.Dag.Codec(cid.EcoballRawData))
+	//if err != nil {
+	//	log.Error("error for putting chain block: ", err)
+	//	return "", err
+	//}
 
-	cid := rp.Root().String()
+	//cid := rp.Root().String()
 
-	log.Debug("Put a block DAG node: ", cid)
+	//log.Debug("Put a block DAG node: ", cid)
 
-	return cid, nil
+	//return cid, nil
+	return "", nil
 }
 
 // GetChainBlock Get a block from IPFS DAG, API for daemon
 func GetChainBlock(ctx context.Context, cid string) ([]byte, error) {
-	out := make(chan []byte)
+	//out := make(chan []byte)
 
-	go ipld.ResolveShardLinks(ctx, IpfsNode, cid, out)
-	serBlock := <- out
-	if serBlock == nil  {
-		return nil, fmt.Errorf("error for resolving block link")
-	}
+	//go ipld.ResolveShardLinks(ctx, IpfsNode, cid, out)
+	//serBlock := <- out
+	//if serBlock == nil  {
+	//	return nil, fmt.Errorf("error for resolving block link")
+	//}
 
-	return serBlock, nil
+	//return serBlock, nil
+	return nil, nil
 }

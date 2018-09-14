@@ -66,6 +66,6 @@ func (c *Consensus) processCommit(csp *sc.CsPacket) {
 
 	c.instance.UpdateBlock(csp)
 	c.step = StepCommit
-
 	c.csComplete()
+	c.GossipBlock(csp)
 }
