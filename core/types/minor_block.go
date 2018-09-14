@@ -140,10 +140,6 @@ func (h *MinorBlockHeader) JsonString() string {
 	return string(data)
 }
 
-func (h *MinorBlockHeader) Show() {
-	log.Debug(h.JsonString())
-}
-
 func (h *MinorBlockHeader) Type() uint32 {
 	return uint32(HeMinorBlock)
 }

@@ -44,7 +44,7 @@ type StateDatabase struct {
 }
 
 type CurrentHeaders struct {
-	CmHeader *types.Header
+	CmHeader    *types.Header
 	MinorHeader *types.Header
 	FinalHeader *types.Header
 }

@@ -128,10 +128,6 @@ func (h *CMBlockHeader) JsonString() string {
 	return string(data)
 }
 
-func (h *CMBlockHeader) Show() {
-	log.Debug(h.JsonString())
-}
-
 func (h *CMBlockHeader) Type() uint32 {
 	return uint32(HeCmBlock)
 }

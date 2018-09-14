@@ -639,7 +639,6 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	if err != nil {
 		return common.INVALID_ACCOUNT
 	}
-	transaction.Show()
 
 	//send to txpool
 	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
