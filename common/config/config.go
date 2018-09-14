@@ -47,6 +47,7 @@ const (
 var configDefault = `#toml configuration for EcoBall system
 http_port = "20678"          # client http port
 wallet_http_port = "20679"   # client wallet http port
+p2p_port = "4013"            # p2p network port
 version = "1.0"              # system version
 log_dir = "/tmp/Log/"        # log file location
 output_to_terminal = "true"  # debug output type	 	
@@ -94,6 +95,7 @@ var (
 	TimeSlot           int
 	HttpLocalPort      string
 	WalletHttpPort     string
+	P2PLocalPort       string
 	EcoVersion         string
 	LogDir             string
 	OutputToTerminal   bool
@@ -182,6 +184,7 @@ func initVariable() {
 	TimeSlot = viper.GetInt("time_slot")
 	HttpLocalPort = viper.GetString("http_port")
 	WalletHttpPort = viper.GetString("wallet_http_port")
+	P2PLocalPort = viper.GetString("p2p_port")
 	EcoVersion = viper.GetString("version")
 	LogDir = viper.GetString("log_dir")
 	OutputToTerminal = viper.GetBool("output_to_terminal")

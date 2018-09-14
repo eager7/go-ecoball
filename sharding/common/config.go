@@ -18,9 +18,15 @@ const (
 	DefaultThresholdOfMinorBlock = 80 /*Percent*/
 
 	/*timer of fsm state .second*/
-	DefaultSyncBlockTimer              = 10 //180
-	DefaultProductCMBlockTimer         = 10 //60
-	DefaultWaitMinorBlockTimer         = 10 //120
-	DefaultProductFinalBlockTimer      = 10 //60
-	DefaultProductViewChangeBlockTimer = 10 //60
+	DefaultSyncBlockTimer = 10 //180
+	DefaultBlockWindow    = 2
+
+	DefaultProductCmBlockTimer = 60
+	DefaultCmBlockWindow       = 10
+
+	DefaultWaitMinorBlockTimer    = 60
+	DefaultProductFinalBlockTimer = 60
+	DefaultFinalBlockWindow       = 10
+
+	DefaultProductViewChangeBlockTimer = 60
 )

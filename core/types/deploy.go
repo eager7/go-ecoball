@@ -91,10 +91,6 @@ func (d DeployInfo) GetObject() interface{} {
 	return d
 }
 
-func (d *DeployInfo) Show() {
-	fmt.Println(d.JsonString())
-}
-
 func (d *DeployInfo) show() {
 	fmt.Println("\t---------Show Deploy Info ----------")
 	fmt.Println("\tTypeVm        :", d.TypeVm)

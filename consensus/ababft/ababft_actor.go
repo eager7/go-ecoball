@@ -396,8 +396,7 @@ func (actorC *ActorABABFT) verifyHeader(blockIn *types.Block, currentRoundNumIn 
 	// fmt.Println("after reset",err)
 
 	// generate the blockFirstCal for comparison
-	headerPayload:=&types.CMBlockHeader{}
-	actorC.blockFirstCal,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, headerPayload, conDataC, headerIn.TimeStamp)
+	actorC.blockFirstCal,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, conDataC, headerIn.TimeStamp)
 	// fmt.Println("height:",blockIn.Height,blockFirstCal.Height)
 	// fmt.Println("merkle:",blockIn.Header.MerkleHash,blockFirstCal.Header.MerkleHash)
 	// fmt.Println("timestamp:",blockIn.Header.TimeStamp,blockFirstCal.Header.TimeStamp)
@@ -444,8 +443,7 @@ func (actorC *ActorABABFT) verifyHeader(blockIn *types.Block, currentRoundNumIn 
 		return false,nil
 	}
 	// check Hash common.Hash
-	headerPayload1:=&types.CMBlockHeader{}
-	headerCal,err1 := types.NewHeader(headerPayload1, headerIn.Version, actorC.chainID, headerIn.Height, headerIn.PrevHash,
+	headerCal,err1 := types.NewHeader( headerIn.Version, actorC.chainID, headerIn.Height, headerIn.PrevHash,
 		headerIn.MerkleHash, headerIn.StateHash, headerIn.ConsensusData, headerIn.Bloom, headerIn.Receipt.BlockCpu, headerIn.Receipt.BlockNet, headerIn.TimeStamp)
 	if ok := bytes.Equal(headerCal.Hash.Bytes(), headerIn.Hash.Bytes()); ok != true {
 		println("Hash is wrong")
@@ -468,8 +466,7 @@ func (actorC *ActorABABFT) updateBlock(blockFirst types.Block, conData types.Con
 	var blockSecond types.Block
 	var err error
 	headerIn := blockFirst.Header
-	headerPayload:=&types.CMBlockHeader{}
-	header, _ := types.NewHeader(headerPayload, headerIn.Version, actorC.chainID, headerIn.Height, headerIn.PrevHash, headerIn.MerkleHash,
+	header, _ := types.NewHeader( headerIn.Version, actorC.chainID, headerIn.Height, headerIn.PrevHash, headerIn.MerkleHash,
 		headerIn.StateHash, conData, headerIn.Bloom, headerIn.Receipt.BlockCpu, headerIn.Receipt.BlockNet, headerIn.TimeStamp)
 	blockSecond = types.Block{Header:header, CountTxs:uint32(len(blockFirst.Transactions)), Transactions:blockFirst.Transactions,}
 	return blockSecond,err
@@ -547,9 +544,8 @@ func (actorC *ActorABABFT) verifySignatures(dataBlksReceived *types.AbaBftData, 
 	// 3. check the current block signature
 	numVerified = 0
 	// calculate firstround block header hash for the check of the first-round block signatures
-	headerPayload:=&types.CMBlockHeader{}
 	conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{NumberRound:uint32(dataBlksReceived.NumberRound), PreBlockSignatures:signBlksPreBlk},}
-	headerReCal, _ := types.NewHeader(headerPayload, curHeader.Version, actorC.chainID, curHeader.Height, curHeader.PrevHash, curHeader.MerkleHash,
+	headerReCal, _ := types.NewHeader( curHeader.Version, actorC.chainID, curHeader.Height, curHeader.PrevHash, curHeader.MerkleHash,
 		curHeader.StateHash, conData, curHeader.Bloom, curHeader.Receipt.BlockCpu, curHeader.Receipt.BlockNet, curHeader.TimeStamp)
 	blkFHash := headerReCal.Hash
 	// fmt.Println("blkFHash:",blkFHash)

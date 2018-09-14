@@ -116,7 +116,7 @@ func get_required_keys(chainId innercommon.Hash, required_keys, permission strin
 	resp, errcode := rpc.NodeCall("get_required_keys", []interface{}{chainId.HexString(), required_keys, permission, innercommon.ToHex(data)})
 	if errcode != nil {
 		fmt.Fprintln(os.Stderr, errcode)
-		return "", err
+		return "", errcode
 	}
 
 	if nil != resp["result"] {
