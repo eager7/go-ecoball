@@ -99,26 +99,26 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
-	//s, err := c.StateDB.FinalDB.CopyState()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//s.Type = state.CopyType
+	s, err := c.StateDB.FinalDB.CopyState()
+	if err != nil {
+		return nil, err
+	}
+	s.Type = state.CopyType
 	var cpu, net float64
 	for i := 0; i < len(txs); i++ {
 		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Final DB")
-		if _, cp, n, err := c.HandleTransaction(c.StateDB.FinalDB, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].JsonString())
-			c.ResetStateDB(c.CurrentHeader)
+			//c.ResetStateDB(c.CurrentHeader)
 			return nil, err
 		} else {
 			cpu += cp
 			net += n
 		}
 	}
-	block, err := types.NewBlock(c.CurrentHeader.ChainID, c.CurrentHeader, c.StateDB.FinalDB.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	block, err := types.NewBlock(c.CurrentHeader.ChainID, c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
 	if err != nil {
-		c.ResetStateDB(c.CurrentHeader)
+		//c.ResetStateDB(c.CurrentHeader)
 		return nil, err
 	}
 	return block, nil
@@ -169,13 +169,13 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return nil
 	}
 
-	/*for i := 0; i < len(block.Transactions); i++ {
+	for i := 0; i < len(block.Transactions); i++ {
 		log.Notice("Handle Transaction:", block.Transactions[i].Type.String(), block.Transactions[i].Hash.HexString(), " in final DB")
 		if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(block.Transactions[i].JsonString())
 			return err
 		}
-	}*/
+	}
 	if block.Height != 1 {
 		connect.Notify(info.InfoBlock, block)
 		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
