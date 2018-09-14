@@ -43,7 +43,7 @@ type StateDatabase struct {
 	TempDB  *state.State //temp database used for tx pool pre-handle transaction
 }
 
-type CurrentHeaders struct {
+type LastHeaders struct {
 	CmHeader    *types.Header
 	MinorHeader *types.Header
 	FinalHeader *types.Header
@@ -59,6 +59,8 @@ type ChainTx struct {
 	Geneses       *types.Header
 	StateDB       StateDatabase
 	ledger        ledger.Ledger
+
+	LastHeader    LastHeaders
 }
 
 func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {

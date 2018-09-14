@@ -208,6 +208,10 @@ func (b *FinalBlock) Deserialize(data []byte) error {
 	return nil
 }
 
+func (b FinalBlock) GetObject() interface{} {
+	return b
+}
+
 func (b *FinalBlock) JsonString() string {
 	data, err := json.Marshal(b)
 	if err != nil {
@@ -215,4 +219,8 @@ func (b *FinalBlock) JsonString() string {
 		return ""
 	}
 	return string(data)
+}
+
+func (b *FinalBlock) Type() uint32 {
+	return b.Header.Type()
 }

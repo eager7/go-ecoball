@@ -283,6 +283,10 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 	return nil
 }
 
+func (b MinorBlock) GetObject() interface{} {
+	return b
+}
+
 func (b *MinorBlock) JsonString() string {
 	data, err := json.Marshal(b)
 	if err != nil {
@@ -290,4 +294,8 @@ func (b *MinorBlock) JsonString() string {
 		return ""
 	}
 	return string(data)
+}
+
+func (b *MinorBlock) Type() uint32 {
+	return b.Header.Type()
 }

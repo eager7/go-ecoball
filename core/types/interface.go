@@ -16,10 +16,10 @@ const (
 	HeFinalBlock HeaderType = 3
 )
 
-type HeInterface interface {
-
+type HeaderInterface interface {
+	Payload
 }
 
-type BInterface interface {
-	
+type BlockInterface interface {
+	Payload
 }

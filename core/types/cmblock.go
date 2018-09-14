@@ -254,6 +254,10 @@ func (b *CMBlock) Deserialize(data []byte) error {
 	return nil
 }
 
+func (b CMBlock) GetObject() interface{} {
+	return b
+}
+
 func (b *CMBlock) JsonString() string {
 	data, err := json.Marshal(b)
 	if err != nil {
@@ -262,3 +266,8 @@ func (b *CMBlock) JsonString() string {
 	}
 	return string(data)
 }
+
+func (b *CMBlock) Type() uint32 {
+	return b.Header.Type()
+}
+
