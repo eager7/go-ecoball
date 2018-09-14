@@ -111,17 +111,18 @@ func (c *Cell) SetLastCMBlock(cmb *block.CMBlock) {
 	c.chain.setCMBlock(cmb)
 
 	var worker Worker
-	worker.Pubkey = string(cmb.Candidate.PublicKey)
-	worker.Address = cmb.Candidate.Address
-	worker.Port = cmb.Candidate.Port
+	if len(cmb.Candidate.PublicKey) != 0 {
+		worker.Pubkey = string(cmb.Candidate.PublicKey)
+		worker.Address = cmb.Candidate.Address
+		worker.Port = cmb.Candidate.Port
+		c.addCommitteWorker(&worker)
+	}
 
-	c.addCommitteWorker(&worker)
 	if c.NodeType == sc.NodeShard {
 		c.saveShardsInfoFromCMBlock(cmb)
 	}
 
 	c.minorBlockPool.resize(len(cmb.Shards))
-
 }
 
 func (c *Cell) GetLastCMBlock() *block.CMBlock {
@@ -221,6 +222,7 @@ func (c *Cell) GetLeader() *Worker {
 }
 
 func (c *Cell) addCommitteWorker(worker *Worker) {
+	log.Debug("add commit worker key ", worker.Pubkey, " address ", worker.Address, " port ", worker.Port)
 	c.cm.addMember(worker)
 }
 

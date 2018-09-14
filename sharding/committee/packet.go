@@ -1,9 +1,8 @@
 package committee
 
 import (
-	netmsg "github.com/ecoball/go-ecoball/net/message"
-	//sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/core/types/block"
+	netmsg "github.com/ecoball/go-ecoball/net/message"
 )
 
 func (c *committee) consensusCb(bl interface{}) {
@@ -15,10 +14,6 @@ func (c *committee) consensusCb(bl interface{}) {
 	default:
 		log.Error("consensus call back wrong packet type ", blockType)
 	}
-}
-
-func (c *committee) processConsensusPacket(packet netmsg.EcoBallNetMsg) {
-	c.fsm.Execute(ActRecvConsensusPacket, packet)
 }
 
 func (c *committee) processShardingPacket(packet netmsg.EcoBallNetMsg) {

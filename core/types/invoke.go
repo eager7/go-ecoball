@@ -88,9 +88,7 @@ func (i *InvokeInfo) Deserialize(data []byte) error {
 
 	return nil
 }
-func (i *InvokeInfo) Show() {
-	fmt.Println(i.JsonString())
-}
+
 func (i *InvokeInfo) show() {
 	fmt.Println("\t---------Show Invoke Info ----------")
 	fmt.Println("\tMethod        :", string(i.Method))

@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"os"
 	"time"
-	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/p2p"
+	"github.com/AsynkronIT/protoactor-go/actor"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
@@ -34,6 +34,7 @@ import (
 	"gx/ipfs/QmYAL9JsqVVPFWwM1ZzHNsofmTzRYQHJ2KqQaBmFJjJsNx/go-libp2p-connmgr"
 	ic "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
 	circuit "gx/ipfs/QmcQ56iqKP8ZRhRGLe5EReJVvrJZDaGzkuatrPv4Z1B6cG/go-libp2p-circuit"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 type NetCtrl struct {
@@ -46,7 +47,7 @@ const (
 	DefaultConnMgrLowWater    = 600
 	DefaultConnMgrGracePeriod = time.Second * 20
 
-	p2pListenP2PPort          = 4013
+	p2pListenPort             = "4013"
 )
 
 var log = elog.NewLogger("net", elog.DebugLog)
@@ -285,8 +286,15 @@ func InitNetWork() {
 	//TODO get it from config file
 	//privkey := "GoB8dlm2yvhR4mqIpmIKzanFjfno3rAKL"
 	sk, _, err := ic.GenerateKeyPair(ic.RSA, 2048)
-	ipv4ListenAddr := fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", p2pListenP2PPort)//should come from config file
-	ipv6ListenAddr := fmt.Sprintf("/ip6/::/tcp/%d", p2pListenP2PPort)
+
+	var tcpPort string
+	if len(config.P2PLocalPort) == 0 {
+		tcpPort = p2pListenPort
+	} else {
+		tcpPort = config.P2PLocalPort
+	}
+	ipv4ListenAddr := fmt.Sprintf("/ip4/0.0.0.0/tcp/%s", tcpPort)//should come from config file
+	ipv6ListenAddr := fmt.Sprintf("/ip6/::/tcp/%s", tcpPort)
 	listenAddr := []string{ipv4ListenAddr, ipv6ListenAddr}
 
 	netNode, err := New(context.Background(), sk, listenAddr)
@@ -299,7 +307,7 @@ func InitNetWork() {
 		NetNode:  netNode,
 	}
 
-	log.Info("i am ", netNode.self.Pretty())
+	log.Info("i am ", netNode.SelfId())
 }
 
 func StartNetWork() {

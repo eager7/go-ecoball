@@ -12,6 +12,126 @@ type NodeInfo struct {
 	PublicKey []byte
 }
 
+type CMBlockHeader struct {
+	ChainID   common.Hash
+	Version   uint32
+	Height    uint64
+	Timestamp int64
+	PrevHash  common.Hash
+	ConsData  ConsensusData
+
+	LeaderPubKey []byte
+	Nonce        uint32
+	Candidate    NodeInfo
+	ShardsHash   common.Hash
+
+	Hash common.Hash
+}
+
+func (h *CMBlockHeader) ComputeHash() error {
+	data, err := h.unSignatureData()
+	if err != nil {
+		return err
+	}
+	h.Hash, err = common.DoubleHash(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (h *CMBlockHeader) proto() (*pb.CMBlockHeader, error) {
+	if h.ConsData.Payload == nil {
+		return nil, errors.New(log, "the cm block header's consensus data is nil")
+	}
+	pbCon, err := h.ConsData.ProtoBuf()
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CMBlockHeader{
+		ChainID:      h.ChainID.Bytes(),
+		Version:      h.Version,
+		Height:       h.Height,
+		Timestamp:    h.Timestamp,
+		PrevHash:     h.PrevHash.Bytes(),
+		ConsData:     pbCon,
+		LeaderPubKey: common.CopyBytes(h.LeaderPubKey),
+		Nonce:        h.Nonce,
+		Candidate: &pb.NodeInfo{
+			PublicKey: h.Candidate.PublicKey,
+		},
+		ShardsHash: h.ShardsHash.Bytes(),
+		Hash:       h.Hash.Bytes(),
+	}, nil
+}
+
+func (h *CMBlockHeader) unSignatureData() ([]byte, error) {
+	pbHeader, err := h.proto()
+	if err != nil {
+		return nil, err
+	}
+	pbHeader.Hash = nil
+	data, err := pbHeader.Marshal()
+	if err != nil {
+		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
+	}
+	return data, nil
+}
+
+func (h *CMBlockHeader) Serialize() ([]byte, error) {
+	pbHeader, err := h.proto()
+	if err != nil {
+		return nil, err
+	}
+	data, err := pbHeader.Marshal()
+	if err != nil {
+		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
+	}
+	return data, nil
+}
+
+func (h *CMBlockHeader) Deserialize(data []byte) error {
+	var pbHeader pb.CMBlockHeader
+	if err := pbHeader.Unmarshal(data); err != nil {
+		return err
+	}
+	h.ChainID = common.NewHash(pbHeader.ChainID)
+	h.Version = pbHeader.Version
+	h.Height = pbHeader.Height
+	h.Timestamp = pbHeader.Timestamp
+	h.PrevHash = common.NewHash(pbHeader.PrevHash)
+	h.LeaderPubKey = common.CopyBytes(pbHeader.LeaderPubKey)
+	h.Nonce = pbHeader.Nonce
+	h.Candidate = NodeInfo{PublicKey: common.CopyBytes(pbHeader.Candidate.PublicKey)}
+	h.ShardsHash = common.NewHash(pbHeader.ShardsHash)
+	h.Hash = common.NewHash(pbHeader.Hash)
+	dataCon, err := pbHeader.ConsData.Marshal()
+	if err != nil {
+		return err
+	}
+	if err := h.ConsData.Deserialize(dataCon); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (h CMBlockHeader) GetObject() interface{} {
+	return h
+}
+
+func (h *CMBlockHeader) JsonString() string {
+	data, err := json.Marshal(h)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return string(data)
+}
+
+func (h *CMBlockHeader) Type() uint32 {
+	return uint32(HeCmBlock)
+}
+
 type NodeAddr struct {
 	Address string
 	Port    string
@@ -23,55 +143,123 @@ type Shard struct {
 	MemberAddr []NodeAddr
 }
 
-type CMBlockHeader struct {
-	LeaderPubKey    []byte
-	CandidatePubKey []byte
-	Nonce           uint32
-	ShardsHash      common.Hash /*shards hash, not include node address*/
+func (s *Shard) proto() *pb.Shard {
+	pbShard := pb.Shard{
+		Id:         s.Id,
+		Member:     nil,
+		MemberAddr: nil,
+	}
+	for _, n := range s.Member {
+		pbNodeInfo := pb.NodeInfo{
+			PublicKey: n.PublicKey,
+		}
+		pbShard.Member = append(pbShard.Member, &pbNodeInfo)
+	}
+	for _, n := range s.MemberAddr {
+		pbNodeAddr := pb.NodeAddr{
+			Address: n.Address,
+			Port:    n.Port,
+		}
+		pbShard.MemberAddr = append(pbShard.MemberAddr, &pbNodeAddr)
+	}
+	return &pbShard
 }
 
-func (c *CMBlockHeader) Serialize() ([]byte, error) {
-	pbHeader := pb.CMBlockHeader{
-		LeaderPubKey:    common.CopyBytes(c.LeaderPubKey),
-		CandidatePubKey: common.CopyBytes(c.CandidatePubKey),
-		Nonce:           c.Nonce,
-		ShardsHash:      c.ShardsHash.Bytes(),
+func (s *Shard) Deserialize(data []byte) error {
+	var pbShard pb.Shard
+	if err := pbShard.Unmarshal(data); err != nil {
+		return err
 	}
-	data, err := pbHeader.Marshal()
+	s.Id = pbShard.Id
+	for _, v := range pbShard.Member {
+		nodeInfo := NodeInfo{
+			PublicKey: common.CopyBytes(v.PublicKey),
+		}
+		s.Member = append(s.Member, nodeInfo)
+	}
+	for _, v := range pbShard.MemberAddr {
+		nodeAddr := NodeAddr{
+			Address: v.Address,
+			Port:    v.Port,
+		}
+		s.MemberAddr = append(s.MemberAddr, nodeAddr)
+	}
+	return nil
+}
+
+type CMBlock struct {
+	Header *CMBlockHeader
+	Shards []Shard
+}
+
+func (b *CMBlock) proto() (block *pb.CMBlock, err error) {
+	var pbBlock pb.CMBlock
+	pbBlock.Header, err = b.Header.proto()
 	if err != nil {
-		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
+		return nil, err
+	}
+
+	for _, shard := range b.Shards {
+		pbShard := shard.proto()
+		pbBlock.Shards = append(pbBlock.Shards, pbShard)
+	}
+
+	return &pbBlock, nil
+}
+
+func (b *CMBlock) Serialize() ([]byte, error) {
+	p, err := b.proto()
+	if err != nil {
+		return nil, err
+	}
+	data, err := p.Marshal()
+	if err != nil {
+		return nil, err
 	}
 	return data, nil
 }
 
-func (c *CMBlockHeader) Deserialize(data []byte) error {
-	var pbHeader pb.CMBlockHeader
-	if err := pbHeader.Unmarshal(data); err != nil {
+func (b *CMBlock) Deserialize(data []byte) error {
+	if len(data) == 0 {
+		return errors.New(log, "input data's length is zero")
+	}
+	var pbBlock pb.CMBlock
+	if err := pbBlock.Unmarshal(data); err != nil {
 		return err
 	}
-	c.LeaderPubKey = common.CopyBytes(pbHeader.LeaderPubKey)
-	c.CandidatePubKey = common.CopyBytes(pbHeader.CandidatePubKey)
-	c.Nonce = pbHeader.Nonce
-	c.ShardsHash = common.NewHash(pbHeader.ShardsHash)
+	dataHeader, err := pbBlock.Header.Marshal()
+	if err != nil {
+		return err
+	}
+	if b.Header == nil {
+		b.Header = new(CMBlockHeader)
+	}
+	err = b.Header.Deserialize(dataHeader)
+	if err != nil {
+		return err
+	}
+
+	for _, pbShard := range pbBlock.Shards {
+		if bytes, err := pbShard.Marshal(); err != nil {
+			return err
+		} else {
+			var s Shard
+			if err := s.Deserialize(bytes); err != nil {
+				return err
+			}
+			b.Shards = append(b.Shards, s)
+		}
+	}
+
 	return nil
 }
 
-func (c CMBlockHeader) GetObject() interface{} {
-	return c
+func (b CMBlock) GetObject() interface{} {
+	return b
 }
 
-func (c *CMBlockHeader) JsonString() string {
-	data, err := json.Marshal(struct {
-		LeaderPubKey    string
-		CandidatePubKey string
-		Nonce           uint32
-		ShardsHash      string
-	}{
-		LeaderPubKey:    common.ToHex(c.LeaderPubKey),
-		CandidatePubKey: common.ToHex(c.CandidatePubKey),
-		Nonce:           c.Nonce,
-		ShardsHash:      c.ShardsHash.HexString(),
-	})
+func (b *CMBlock) JsonString() string {
+	data, err := json.Marshal(b)
 	if err != nil {
 		fmt.Println(err)
 		return ""
@@ -79,14 +267,7 @@ func (c *CMBlockHeader) JsonString() string {
 	return string(data)
 }
 
-func (c *CMBlockHeader) Show() {
-	log.Debug(c.JsonString())
+func (b *CMBlock) Type() uint32 {
+	return b.Header.Type()
 }
 
-func (c *CMBlockHeader) Type() uint32 {
-	return uint32(HeCmBlock)
-}
-
-func (b *Block) SetCmBlockData(Shards []Shard) {
-	b.Shards = Shards
-}

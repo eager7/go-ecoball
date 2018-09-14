@@ -6,17 +6,20 @@ import (
 
 func (c *Consensus) startBlockConsensusLeader(instance sc.ConsensusInstance) {
 	c.view = instance.GetCsView()
+	log.Debug("currenet view ", c.view.EpochNo, " ", c.view.FinalHeight, " ", c.view.MinorHeight)
 	c.instance = instance
 
 	c.sendPrepare()
 }
 
 func (c *Consensus) sendPrepare() {
-	c.step = RoundPrePare
+	log.Debug("send prepare")
+	c.step = StepPrePare
 	c.sendCsPacket()
 }
 
 func (c *Consensus) prepareRsp(csp *sc.CsPacket) {
+	log.Debug("prepare response")
 	counter := c.instance.PrepareRsp()
 	if c.isVoteEnough(counter) {
 		c.sendPreCommit()
@@ -24,11 +27,13 @@ func (c *Consensus) prepareRsp(csp *sc.CsPacket) {
 }
 
 func (c *Consensus) sendPreCommit() {
-	c.step = RoundPreCommit
+	log.Debug("send precommit")
+	c.step = StepPreCommit
 	c.sendCsPacket()
 }
 
 func (c *Consensus) precommitRsp(csp *sc.CsPacket) {
+	log.Debug("precommit response")
 	counter := c.instance.PrecommitRsp()
 	if c.isVoteEnough(counter) {
 		c.sendCommit()
@@ -36,24 +41,25 @@ func (c *Consensus) precommitRsp(csp *sc.CsPacket) {
 }
 
 func (c *Consensus) sendCommit() {
-	c.step = RoundCommit
+	log.Debug("send commit")
+	c.step = StepCommit
 	c.sendCsPacket()
 
 	c.csComplete()
 }
 
 func (c *Consensus) processPacketByLeader(csp *sc.CsPacket) {
-	if c.step != csp.Round {
-		log.Error("packet round error leader round ", c.step, " packet round ", csp.Round)
+	if c.step != csp.Step {
+		log.Error("packet round error leader round ", c.step, " packet round ", csp.Step)
 		return
 	}
 
 	switch c.step {
-	case RoundPrePare:
+	case StepPrePare:
 		c.prepareRsp(csp)
-	case RoundPreCommit:
+	case StepPreCommit:
 		c.precommitRsp(csp)
-	case RoundCommit:
+	case StepCommit:
 		log.Error("leader didn't need recevie commit message")
 	default:
 		log.Error("leader round error ", c.step)

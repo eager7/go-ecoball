@@ -40,15 +40,14 @@ func (c *Consensus) sendCsRspPacket() {
 	c.sendToLeader(packet)
 }
 
-func (c *Consensus) csComplete() {
-	bl := c.instance.GetCsBlock()
-	c.completeCb(bl)
-
-	c.reset()
-}
-
 func (c *Consensus) reset() {
-	c.step = RoundNIL
+	c.step = StepNIL
 	c.instance = nil
 	c.view = nil
+}
+
+func (c *Consensus) csComplete() {
+	bl := c.instance.GetCsBlock()
+	c.reset()
+	c.completeCb(bl)
 }

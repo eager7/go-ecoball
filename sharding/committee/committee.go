@@ -16,26 +16,20 @@ var (
 )
 
 const (
-	StateNil = iota + 1
-	BlockSync
-	Consensus
-	ProductCommitteBlock
-	WaitMinorBlock
-	ProductFinalBlock
-	ProductViewChangeBlock
-	StateEnd
+	blockSync = iota + 1
+	productCommitteBlock
+	waitMinorBlock
+	productFinalBlock
+	productViewChangeBlock
+	stateEnd
 )
 
 const (
 	ActProductCommitteeBlock = iota + 1
 	ActWaitMinorBlock
 	ActProductFinalBlock
-
 	ActChainNotSync
 	ActRecvConsensusPacket
-	ActConsensusSuccess
-	ActConsensusFail
-
 	ActStateTimeout
 )
 
@@ -57,41 +51,42 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 
 	cm.cs = consensus.MakeConsensus(cm.ns, cm.consensusCb)
 
-	cm.fsm = sc.NewFsm(BlockSync,
+	cm.fsm = sc.NewFsm(blockSync,
 		[]sc.FsmElem{
-			{BlockSync, ActProductCommitteeBlock, cm.productCommitteeBlock, ProductCommitteBlock},
-			{BlockSync, ActWaitMinorBlock, cm.waitMinorBlock, WaitMinorBlock},
-			{BlockSync, ActProductFinalBlock, cm.productFinalBlock, ProductFinalBlock},
-			{BlockSync, ActStateTimeout, cm.processBlockSyncTimeout, StateNil},
-			{BlockSync, ActRecvConsensusPacket, cm.dropPacket, BlockSync},
+			{blockSync, ActProductCommitteeBlock, cm.productCommitteeBlock, productCommitteBlock},
+			{blockSync, ActWaitMinorBlock, cm.waitMinorBlock, waitMinorBlock},
+			{blockSync, ActProductFinalBlock, cm.productFinalBlock, productFinalBlock},
+			{blockSync, ActStateTimeout, cm.processBlockSyncTimeout, sc.StateNil},
+			{blockSync, ActRecvConsensusPacket, cm.dropPacket, sc.StateNil},
 
-			{ProductCommitteBlock, ActChainNotSync, cm.doBlockSync, BlockSync},
-			{ProductCommitteBlock, ActConsensusSuccess, cm.waitMinorBlock, WaitMinorBlock},
-			{ProductCommitteBlock, ActStateTimeout, cm.productViewChangeBlock, ProductViewChangeBlock},
-			{ProductCommitteBlock, ActRecvConsensusPacket, cm.processCmConsensusPacket, ProductCommitteBlock},
-			/*missing_func consensus fail or timeout*/
-			/*{ProductCommitteBlock, ActConsensusFail, , },
-			{ProductCommitteBlock, ActProductTimeout, , },*/
-
-			{WaitMinorBlock, ActChainNotSync, cm.doBlockSync, BlockSync},
-			{WaitMinorBlock, ActProductFinalBlock, cm.productFinalBlock, ProductFinalBlock},
-			{WaitMinorBlock, ActStateTimeout, cm.productFinalBlock, ProductFinalBlock},
-			{WaitMinorBlock, ActRecvConsensusPacket, cm.processWMBStateChange, ProductFinalBlock},
-
-			{ProductFinalBlock, ActChainNotSync, cm.doBlockSync, BlockSync},
-			{ProductFinalBlock, ActWaitMinorBlock, cm.waitMinorBlock, WaitMinorBlock},
-			{ProductFinalBlock, ActProductCommitteeBlock, cm.productCommitteeBlock, ProductCommitteBlock},
-			{ProductFinalBlock, ActStateTimeout, cm.productViewChangeBlock, ProductViewChangeBlock},
-			{ProductFinalBlock, ActRecvConsensusPacket, cm.processFinalConsensusPacket, ProductFinalBlock},
+			{productCommitteBlock, ActChainNotSync, cm.doBlockSync, blockSync},
+			{productCommitteBlock, ActRecvConsensusPacket, cm.processCmConsensusPacket, sc.StateNil},
+			{productCommitteBlock, ActWaitMinorBlock, cm.waitMinorBlock, waitMinorBlock},
+			{productCommitteBlock, ActStateTimeout, cm.productViewChangeBlock, productViewChangeBlock},
 
 			/*missing_func consensus fail or timeout*/
 			/*{ProductCommitteBlock, ActConsensusFail, , },
 			{ProductCommitteBlock, ActProductTimeout, , },*/
 
-			{ProductViewChangeBlock, ActProductCommitteeBlock, cm.productCommitteeBlock, ProductCommitteBlock},
-			{ProductViewChangeBlock, ActProductFinalBlock, cm.productFinalBlock, ProductFinalBlock},
-			{ProductViewChangeBlock, ActStateTimeout, cm.productViewChangeBlock, ProductViewChangeBlock},
-			{ProductViewChangeBlock, ActRecvConsensusPacket, cm.processViewchangeConsensusPacket, ProductViewChangeBlock},
+			{waitMinorBlock, ActChainNotSync, cm.doBlockSync, blockSync},
+			{waitMinorBlock, ActProductFinalBlock, cm.productFinalBlock, productFinalBlock},
+			{waitMinorBlock, ActStateTimeout, cm.productFinalBlock, productFinalBlock},
+			{waitMinorBlock, ActRecvConsensusPacket, cm.processWMBStateChange, productFinalBlock},
+
+			{productFinalBlock, ActChainNotSync, cm.doBlockSync, blockSync},
+			{productFinalBlock, ActWaitMinorBlock, cm.waitMinorBlock, waitMinorBlock},
+			{productFinalBlock, ActProductCommitteeBlock, cm.productCommitteeBlock, productCommitteBlock},
+			{productFinalBlock, ActRecvConsensusPacket, cm.processFinalConsensusPacket, sc.StateNil},
+			{productFinalBlock, ActStateTimeout, cm.productViewChangeBlock, productViewChangeBlock},
+
+			/*missing_func consensus fail or timeout*/
+			/*{ProductCommitteBlock, ActConsensusFail, , },
+			{ProductCommitteBlock, ActProductTimeout, , },*/
+
+			{productViewChangeBlock, ActProductCommitteeBlock, cm.productCommitteeBlock, productCommitteBlock},
+			{productViewChangeBlock, ActProductFinalBlock, cm.productFinalBlock, productFinalBlock},
+			{productViewChangeBlock, ActStateTimeout, cm.productViewChangeBlock, productViewChangeBlock},
+			{productViewChangeBlock, ActRecvConsensusPacket, cm.processViewchangeConsensusPacket, sc.StateNil},
 		})
 
 	return cm
@@ -139,7 +134,6 @@ func (c *committee) processActorMsg(msg interface{}) {
 }
 
 func (c *committee) processPacket(packet netmsg.EcoBallNetMsg) {
-
 	switch packet.Type() {
 	case netmsg.APP_MSG_CONSENSUS_PACKET:
 		c.processConsensusPacket(packet)
@@ -148,8 +142,4 @@ func (c *committee) processPacket(packet netmsg.EcoBallNetMsg) {
 	default:
 		log.Error("wrong packet")
 	}
-}
-
-func (c *committee) processStateTimeout() {
-	c.fsm.Execute(ActStateTimeout, nil)
 }

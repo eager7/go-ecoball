@@ -123,7 +123,7 @@ func (this *EcoballShard) ResolveLink(path []string) (*node.Link, []string, erro
 }
 
 func (this *EcoballShard) Copy() node.Node {
-	panic("dont use this yet")
+	panic("don't use this yet")
 }
 
 func (this *EcoballShard) Links() []*node.Link {

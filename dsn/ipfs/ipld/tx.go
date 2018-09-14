@@ -146,7 +146,7 @@ func (this *EcoballTx) ResolveLink(path []string) (*node.Link, []string, error) 
 }
 
 func (this *EcoballTx) Copy() node.Node {
-	panic("dont use this yet")
+	panic("don't use this yet")
 }
 
 func (this *EcoballTx) Links() []*node.Link {

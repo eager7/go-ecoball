@@ -6,14 +6,7 @@ type NodeInstance interface {
 }
 
 const (
-	CS_PREPARE_BLOCK = iota
-	CS_PRECOMMIT_BLOCK
-	CS_COMMIT_BLOCK
-	CS_END
-)
-
-const (
-	SD_CM_BLOCK = iota
+	SD_CM_BLOCK = iota + 1
 	SD_FINAL_BLOCK
 	SD_MINOR_BLOCK
 	SD_VIEWCHANGE_BLOCK
@@ -26,7 +19,7 @@ type SdPacket struct {
 }
 
 type CsPacket struct {
-	Round     uint16
+	Step      uint16
 	BlockType uint16
 	Packet    []byte
 }
