@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/util"
+	"github.com/ecoball/go-ecoball/common/config"
 	kb "gx/ipfs/QmesQqwonP618R7cJZoFfA4ioYhhMKnDmtUxcAvvxEEGnw/go-libp2p-kbucket"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
@@ -33,6 +34,7 @@ import (
 	"gx/ipfs/QmXuucFcuvAWYAJfhHV2h4BYreHEAsLSsiquosiXeuduTN/go-libp2p-interface-connmgr"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/discovery"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
+
 )
 
 const (
@@ -356,11 +358,11 @@ func (bsnet *impl) StartLocalDiscovery() error {
 
 func (bsnet *impl) Start() {
 	// it is up to the requirement of network sharding,
-	// e.g: should come from config file
-	if true {
+	if config.EnableLocalDiscovery {
 		if err := bsnet.StartLocalDiscovery(); err != nil {
 			log.Error(err)
 		}
+		log.Debug("start p2p local discovery")
 	}
 
 	bsnet.handleSendJob()

@@ -21,9 +21,11 @@ package p2p
 import (
 	"context"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/config"
 	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+
 )
 
 type netNotifiee impl
@@ -53,7 +55,9 @@ func (nn *netNotifiee) Disconnected(n inet.Network, v inet.Conn) {
 }
 
 func (nn *netNotifiee) HandlePeerFound(p pstore.PeerInfo) {
-	log.SetLogLevel(elog.InfoLog)
+	if config.DisableLocalDisLog {
+		log.SetLogLevel(elog.InfoLog)
+	}
 	log.Debug("net:trying peer info: ", p)
 	ctx, cancel := context.WithTimeout(nn.ctx, discoveryConnTimeout)
 	defer cancel()
