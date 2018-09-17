@@ -1,5 +1,7 @@
 package types
 
+import "github.com/ecoball/go-ecoball/common"
+
 type Payload interface {
 	Serialize() ([]byte, error)
 	Deserialize(data []byte) error
@@ -16,10 +18,25 @@ const (
 	HeFinalBlock HeaderType = 3
 )
 
+func (h HeaderType) String() string {
+	switch h {
+	case HeCmBlock:
+		return "HeCmBlock Type"
+	case HeMinorBlock:
+		return "HeMinorBlock Type"
+	case HeFinalBlock:
+		return "HeFinalBlock Type"
+	default:
+		return "unknown type"
+	}
+}
+
 type HeaderInterface interface {
 	Payload
+	Hash() common.Hash
+	GetHeight() uint64
 }
 
 type BlockInterface interface {
-	Payload
+	HeaderInterface
 }

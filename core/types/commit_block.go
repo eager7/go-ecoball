@@ -25,7 +25,7 @@ type CMBlockHeader struct {
 	Candidate    NodeInfo
 	ShardsHash   common.Hash
 
-	Hash common.Hash
+	hash common.Hash
 }
 
 func (h *CMBlockHeader) ComputeHash() error {
@@ -33,7 +33,7 @@ func (h *CMBlockHeader) ComputeHash() error {
 	if err != nil {
 		return err
 	}
-	h.Hash, err = common.DoubleHash(data)
+	h.hash, err = common.DoubleHash(data)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (h *CMBlockHeader) proto() (*pb.CMBlockHeader, error) {
 			PublicKey: h.Candidate.PublicKey,
 		},
 		ShardsHash: h.ShardsHash.Bytes(),
-		Hash:       h.Hash.Bytes(),
+		Hash:       h.hash.Bytes(),
 	}, nil
 }
 
@@ -104,7 +104,7 @@ func (h *CMBlockHeader) Deserialize(data []byte) error {
 	h.Nonce = pbHeader.Nonce
 	h.Candidate = NodeInfo{PublicKey: common.CopyBytes(pbHeader.Candidate.PublicKey)}
 	h.ShardsHash = common.NewHash(pbHeader.ShardsHash)
-	h.Hash = common.NewHash(pbHeader.Hash)
+	h.hash = common.NewHash(pbHeader.Hash)
 	dataCon, err := pbHeader.ConsData.Marshal()
 	if err != nil {
 		return err
@@ -130,6 +130,13 @@ func (h *CMBlockHeader) JsonString() string {
 
 func (h *CMBlockHeader) Type() uint32 {
 	return uint32(HeCmBlock)
+}
+
+func (h *CMBlockHeader) Hash() common.Hash {
+	return h.hash
+}
+func (h *CMBlockHeader) GetHeight() uint64 {
+	return h.Height
 }
 
 type NodeAddr struct {

@@ -28,7 +28,6 @@ func TestMinorBlockHeader(t *testing.T) {
 		ShardId:           1,
 		CMEpochNo:         2,
 		Receipt:           types.BlockReceipt{},
-		Hash:              common.Hash{},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
 	data, err := header.Serialize()
@@ -66,7 +65,6 @@ func TestCmBlockHeader(t *testing.T) {
 			PublicKey: config.Root.PublicKey,
 		},
 		ShardsHash: config.ChainHash,
-		Hash:       common.Hash{},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
 	data, err := header.Serialize()
@@ -114,7 +112,6 @@ func TestFinalBlockHeader(t *testing.T) {
 		StateDeltaRootHash: config.ChainHash,
 		MinorBlocksHash:    config.ChainHash,
 		StateHashRoot:      config.ChainHash,
-		Hash:               config.ChainHash,
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
 	data, err := header.Serialize()
@@ -138,7 +135,6 @@ func TestFinalBlockHeader(t *testing.T) {
 		ShardId:           1,
 		CMEpochNo:         2,
 		Receipt:           types.BlockReceipt{},
-		Hash:              common.Hash{},
 	}
 	block := types.FinalBlock{
 		Header:      &header,
