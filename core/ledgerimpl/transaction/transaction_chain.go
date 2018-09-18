@@ -33,6 +33,7 @@ import (
 	"github.com/ecoball/go-ecoball/spectator/connect"
 	"github.com/ecoball/go-ecoball/spectator/info"
 	"math/big"
+	"sync"
 	"time"
 )
 
@@ -54,13 +55,14 @@ type ChainTx struct {
 	HeaderStore store.Storage
 	TxsStore    store.Storage
 
+	lockBlock     sync.Mutex
 	BlockMap      map[common.Hash]uint64
 	CurrentHeader *types.Header
 	Geneses       *types.Header
 	StateDB       StateDatabase
 	ledger        ledger.Ledger
 
-	LastHeader    LastHeaders
+	LastHeader LastHeaders
 }
 
 func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {
@@ -166,6 +168,8 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return errors.New(log, "block is nil")
 	}
 	//check block is existed
+	c.lockBlock.Lock()
+	defer c.lockBlock.Unlock()
 	if _, ok := c.BlockMap[block.Hash]; ok {
 		log.Warn("the block:", block.Height, "is existed")
 		return nil
@@ -344,7 +348,9 @@ func (c *ChainTx) RestoreCurrentHeader() (bool, error) {
 		if err := header.Deserialize([]byte(v)); err != nil {
 			return false, err
 		}
+		c.lockBlock.Lock()
 		c.BlockMap[header.Hash] = header.Height
+		c.lockBlock.Unlock()
 		//if header.Height == 1 {
 		//	c.Geneses = header //Store Geneses for timeStamp
 		//}

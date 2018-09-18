@@ -55,6 +55,44 @@ func Getinfo(params []interface{}) *common.Response {
 	return common.NewResponse(common.SUCCESS, innercommon.ToHex(data))
 }
 
+func GetBlock(params []interface{}) *common.Response {
+	if len(params) < 1 {
+		log.Error("invalid arguments")
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	switch {
+	case len(params) == 1:
+		var(
+			id uint64
+			invalid bool = false
+		)
+		if v, ok := params[0].(float64); ok {
+			id = uint64(v)
+		} else {
+			invalid = true
+		}
+		if invalid {
+			return common.NewResponse(common.INVALID_PARAMS, "id is invalid")
+		}
+
+		blockInfo, errcode := ledger.L.GetTxBlockByHeight(config.ChainHash, id)
+		if errcode != nil {
+			return common.NewResponse(common.INVALID_PARAMS, "get block faild")
+		}
+		
+		data, errs := blockInfo.Serialize()
+		if errs != nil{
+			return common.NewResponse(common.INVALID_PARAMS, "Serialize failed")
+		}
+		return common.NewResponse(common.SUCCESS, innercommon.ToHex(data))
+	default:
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	return common.NewResponse(common.SUCCESS, "")
+}
+
 func Get_required_keys(params []interface{}) *common.Response {
 	if len(params) < 1 {
 		log.Error("invalid arguments")

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"errors"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
@@ -30,20 +31,20 @@ import (
 
 var (
 	QueryCommands = cli.Command{
-		Name:     "query",
+		Name:     "get",
 		Usage:    "operations for query state",
-		Category: "Query",
+		Category: "Get",
 		Action:   clientCommon.DefaultAction,
 		Subcommands: []cli.Command{
 			{
 				Name:   "listchain",
-				Usage:  "query all chain id",
+				Usage:  "get all chain id",
 				Action: GetChainList,
 				Flags: []cli.Flag{},
 			},
 			{
 				Name:   "account",
-				Usage:  "query account's info",
+				Usage:  "get account's info",
 				Action: queryAccount,
 				Flags: []cli.Flag{
 					cli.StringFlag{
@@ -54,6 +55,17 @@ var (
 						Name:  "chainId, c",
 						Usage: "chainId hash",
 						Value: "config.hash",
+					},
+				},
+			},
+			{
+				Name:   "block",
+				Usage:  "get block's info",
+				Action: getBlock,
+				Flags: []cli.Flag{
+					cli.Int64Flag{
+						Name:  "id, i",
+						Usage: "block id",
 					},
 				},
 			},
@@ -121,6 +133,7 @@ func queryAccount(c *cli.Context) error {
 	address := c.String("account_name")
 	if address == "" {
 		fmt.Println("Invalid account address: ", address)
+		return errors.New("Invalid account address")
 	}
 
 	info, err := getInfo()
@@ -136,9 +149,32 @@ func queryAccount(c *cli.Context) error {
 	}
 
 	accountInfo, err := get_account(chainId, address)
-	accountInfo.Show()
 	if nil != err {
 		return err
 	}
+	accountInfo.Show()
+	return nil
+}
+
+func getBlock(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	//account address
+	id := c.Int64("id")
+	if id <= 0 {
+		fmt.Println("Invalid block id: ", id)
+		return errors.New("Invalid block id")
+	}
+
+	block, err := getBlockInfoById(id)
+	if nil != err {
+		return err
+	}
+	block.Show(false)
+	//result
 	return nil
 }
