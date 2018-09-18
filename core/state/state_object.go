@@ -92,7 +92,6 @@ func (a *Account) NewStoreTrie(path string) error {
 	}
 	a.diskDb = diskDb
 	a.db = NewDatabase(diskDb)
-	log.Notice("open trie", a.Hash.HexString())
 	a.trie, err = a.db.OpenTrie(a.Hash)
 	if err != nil {
 		log.Warn(a.Index.String(), "open nil trie")
@@ -155,7 +154,7 @@ func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debug(path, a.Index.String(), "StoreGet key:", string(key), "value:", string(value))
+	//log.Debug(path, a.Index.String(), "StoreGet key:", string(key), "value:", string(value))
 	return value, nil
 }
 

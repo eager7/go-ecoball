@@ -29,11 +29,12 @@ import (
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/smartcontract"
 	"github.com/ecoball/go-ecoball/spectator/connect"
 	"github.com/ecoball/go-ecoball/spectator/info"
 	"math/big"
 	"time"
+	"github.com/ecoball/go-ecoball/smartcontract"
+	"github.com/ecoball/go-ecoball/smartcontract/context"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -539,11 +540,17 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 			return nil, 0, 0, err
 		}
 	case types.TxInvoke:
-		service, err := smartcontract.NewContractService(s, tx, cpuLimit, netLimit, timeStamp)
-		if err != nil {
-			return nil, 0, 0, err
-		}
-		ret, err = service.Execute()
+		//service, err := smartcontract.NewContractService(s, tx, cpuLimit, netLimit, timeStamp)
+		//if err != nil {
+		//	return nil, 0, 0, err
+		//}
+		//ret, err = service.Execute()
+		//if err != nil {
+		//	return nil, 0, 0, err
+		//}
+		actionNew, _ := types.NewAction(tx)
+		trxContext, _ := context.NewTranscationContext(s, tx, cpuLimit, netLimit, timeStamp)
+		ret, err = smartcontract.DispatchAction(trxContext, actionNew)
 		if err != nil {
 			return nil, 0, 0, err
 		}

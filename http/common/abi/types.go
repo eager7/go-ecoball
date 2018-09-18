@@ -229,11 +229,11 @@ func (a Asset) MarshalJSON() (data []byte, err error) {
 //	Parent       string    `json:"parent"`
 //	RequiredAuth Authority `json:"required_auth"`
 //}
-//
-//type PermissionLevel struct {
-//	Actor      AccountName    `json:"actor"`
-//	Permission PermissionName `json:"permission"`
-//}
+
+type PermissionLevel struct {
+	Actor      AccountName    `json:"actor"`
+	Permission PermissionName `json:"permission"`
+}
 
 // NewPermissionLevel parses strings like `account@active`,
 // `otheraccount@owner` and builds a PermissionLevel struct. It

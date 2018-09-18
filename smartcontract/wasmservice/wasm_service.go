@@ -31,6 +31,7 @@ import (
 	"strings"
 	"encoding/json"
 	"strconv"
+	"github.com/ecoball/go-ecoball/smartcontract/context"
 )
 
 var log = elog.NewLogger("wasm", config.LogLevel)
@@ -47,14 +48,16 @@ type ParamTV struct {
 
 type WasmService struct {
 	state     state.InterfaceState
-	Tx        *types.Transaction
+	//Tx        *types.Transaction
+	action	  *types.Action
+	context   *context.ApplyContext
 	Code      []byte
 	Args      Param
 	Method    string
 	timeStamp int64
 }
 
-func NewWasmService(s state.InterfaceState, tx *types.Transaction, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
+func NewWasmService(s state.InterfaceState, tx *types.Transaction, action *types.Action, context *context.ApplyContext, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
 	if contract == nil {
 		return nil, errors.New("contract is nil")
 	}
@@ -76,7 +79,9 @@ func NewWasmService(s state.InterfaceState, tx *types.Transaction, contract *typ
 
 	ws := &WasmService{
 		state:     s,
-		Tx:        tx,
+		//Tx:		   tx,
+		action:    action,
+		context:	context,
 		Code:      contract.Code,
 		Args:      param,
 		Method:    string(invoke.Method),
@@ -232,5 +237,7 @@ func (ws *WasmService) RegisterApi() {
 	functions.Register("ABA_i64toa",ws.i64toa)
 	//rand
 	functions.Register("ABA_rand",ws.rand)
+	//inline action
+	functions.Register("inline_action", ws.inline_action)
 
 }

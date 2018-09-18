@@ -21,9 +21,6 @@ import (
 	"syscall"
 	"time"
 	"encoding/hex"
-	"strconv"
-	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
-	"bytes"
 )
 
 var interval = time.Millisecond * 100
@@ -369,185 +366,78 @@ func CreateNewChain(chainID common.Hash) {
 	time.Sleep(time.Second * 5)
 }
 
-func checkParam(abiDef abi.ABI, method string, arg []byte) ([]byte, error){
-	var f interface{}
-
-	if err := json.Unmarshal(arg, &f); err != nil {
-		return nil, err
-	}
-
-	m := f.(map[string]interface{})
-
-	var fields []abi.FieldDef
-	for _, action := range abiDef.Actions {
-		// first: find method
-		if string(action.Name) == method {
-			//fmt.Println("find ", method)
-			for _, struction := range abiDef.Structs {
-				// second: find struct
-				if struction.Name == action.Type {
-					fields = struction.Fields
-				}
-			}
-			break
-		}
-	}
-
-	if fields == nil {
-		return nil, errors.New(log, "can not find method " + method)
-	}
-
-	args := make([]wasmservice.ParamTV, len(fields))
-	for i, field := range fields {
-		v := m[field.Name]
-		if v != nil {
-			args[i].Ptype = field.Type
-
-			switch vv := v.(type) {
-			case string:
-			//	if field.Type == "string" || field.Type == "account_name" || field.Type == "asset" {
-			//		args[i].Pval = vv
-			//	} else {
-			//		return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
-			//	}
-			//	fmt.Println(field.Name, "is ", field.Type, "", vv)
-			//case float64:
-				switch field.Type {
-				case "string","account_name","asset":
-					args[i].Pval = vv
-				case "int8":
-					const INT8_MAX = int8(^uint8(0) >> 1)
-					const INT8_MIN = ^INT8_MAX
-					a, err := strconv.ParseInt(vv, 10, 8)
-					if err != nil {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int8 range"))
-					}
-					if a >= int64(INT8_MIN) && a <= int64(INT8_MAX) {
-						args[i].Pval = vv
-					} else {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int8 range"))
-					}
-				case "int16":
-					const INT16_MAX = int16(^uint16(0) >> 1)
-					const INT16_MIN = ^INT16_MAX
-					a, err := strconv.ParseInt(vv, 10, 16)
-					if err != nil {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int16 range"))
-					}
-					if a >= int64(INT16_MIN) && a <= int64(INT16_MAX) {
-						args[i].Pval = vv
-					} else {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int16 range"))
-					}
-				case "int32":
-					const INT32_MAX = int32(^uint32(0) >> 1)
-					const INT32_MIN = ^INT32_MAX
-					a, err := strconv.ParseInt(vv, 10, 32)
-					if err != nil {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int32 range"))
-					}
-					if a >= int64(INT32_MIN) && a <= int64(INT32_MAX) {
-						args[i].Pval = vv
-					} else {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int32 range"))
-					}
-				case "int64":
-					const INT64_MAX = int64(^uint64(0) >> 1)
-					const INT64_MIN = ^INT64_MAX
-					a, err := strconv.ParseInt(vv, 10, 64)
-					if err != nil {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int64 range"))
-					}
-					if a >= INT64_MIN && a <= INT64_MAX {
-						args[i].Pval = vv
-					} else {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of int64 range"))
-					}
-
-				case "uint8":
-					const UINT8_MIN uint8 = 0
-					const UINT8_MAX = ^uint8(0)
-					a, err := strconv.ParseUint(vv, 10, 8)
-					if err != nil {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint8 range"))
-					}
-					if a >= uint64(UINT8_MIN) && a <= uint64(UINT8_MAX) {
-						args[i].Pval = vv
-					} else {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint8 range"))
-					}
-				case "uint16":
-					const UINT16_MIN uint16 = 0
-					const UINT16_MAX = ^uint16(0)
-					a, err := strconv.ParseUint(vv, 10, 16)
-					if err != nil {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint16 range"))
-					}
-					if a >= uint64(UINT16_MIN) && a <= uint64(UINT16_MAX) {
-						args[i].Pval = vv
-					} else {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint16 range"))
-					}
-				case "uint32":
-					const UINT32_MIN uint32 = 0
-					const UINT32_MAX = ^uint32(0)
-					a, err := strconv.ParseUint(vv, 10, 32)
-					if err != nil {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint32 range"))
-					}
-					if a >= uint64(UINT32_MIN) && a <= uint64(UINT32_MAX) {
-						args[i].Pval = vv
-					} else {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint32 range"))
-					}
-				case "uint64":
-					const UINT64_MIN uint64 = 0
-					const UINT64_MAX = ^uint64(0)
-					a, err := strconv.ParseUint(vv, 10, 64)
-					if err != nil {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint64 range"))
-					}
-					if a >= UINT64_MIN && a <= UINT64_MAX {
-						args[i].Pval = vv
-					} else {
-						return nil, errors.New(log, fmt.Sprintln(vv, "is out of uint64 range"))
-					}
-
-				default:
-					return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
-				}
-				//
-				//if field.Type == "int8" || field.Type == "int16" || field.Type == "int32" {
-				//	args[i].Pval = strconv.FormatInt(int64(vv), 10)
-				//} else if field.Type == "uint8" || field.Type == "uint16" || field.Type == "uint32" {
-				//	args[i].Pval = strconv.FormatUint(uint64(vv), 10)
-				//} else {
-				//	return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type ", field.Type))
-				//}
-				fmt.Println(field.Name, "is ", field.Type, "", vv)
-				//case []interface{}:
-				//	fmt.Println(field.Name, "is an array:")
-				//	for i, u := range vv {
-				//		fmt.Println(i, u)
-				//	}
-			default:
-				return nil, errors.New(log, fmt.Sprintln("can't match abi struct field type: ", v))
-			}
-		} else {
-			return nil, errors.New(log, "can't match abi struct field name:  " + field.Name)
-		}
-
-	}
-
-	bs, err := json.Marshal(args)
-	if err != nil {
-		return nil, errors.New(log, "json.Marshal failed")
-	}
-	return bs, nil
-}
-
 func InvokeContract(ledger ledger.Ledger) {
+	log.Info("-----------------------------CreateAccountBlock")
+	root := common.NameToIndex("root")
+	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, nil, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, tokenContract))
 	time.Sleep(time.Second * 2)
+
+	invoke, err := types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"worker", common.AddressFromPubKey(config.Worker.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	log.Info("-----------------------------TokenTransferBlock")
+	transfer, err := types.NewTransfer(root, common.NameToIndex("worker"), config.ChainHash, "active", new(big.Int).SetUint64(1000), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(interval)
+
+	transfer, err = types.NewTransfer(root, common.NameToIndex("worker1"), config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(interval)
+
+	transfer, err = types.NewTransfer(root, common.NameToIndex("worker2"), config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 5)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker", "100", "100"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker1", "100", "100"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker2", "100", "100"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
 	log.Warn("Start Invoke contract")
 
 	path := os.Getenv("GOPATH")
@@ -566,7 +456,7 @@ func InvokeContract(ledger ledger.Ledger) {
 		return
 	}
 
-	abifile, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/token.abi", os.O_RDONLY, 0666)
+	abifile, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/simple_token.abi", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file failed")
 		return
@@ -648,14 +538,14 @@ func InvokeContract(ledger ledger.Ledger) {
 	}
 	fmt.Println("abibyte: ", hex.EncodeToString(abibyte))
 
-	contract, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, types.VmWasm, "test", data, abibyte, 0, time.Now().UnixNano())
+	contract, err := types.NewDeployContract(common.NameToIndex("worker"), common.NameToIndex("worker"), config.ChainHash, state.Owner, types.VmWasm, "test", data, abibyte, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
-	errors.CheckErrorPanic(contract.SetSignature(&config.Root))
+	errors.CheckErrorPanic(contract.SetSignature(&config.Worker))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 1500)
 
 
-	contractGet, err := ledger.GetContract(config.ChainHash, common.NameToIndex("root"))
+	contractGet, err := ledger.GetContract(config.ChainHash, common.NameToIndex("worker"))
 	if err != nil {
 		fmt.Errorf("can not find contract abi file")
 		return
@@ -668,113 +558,67 @@ func InvokeContract(ledger ledger.Ledger) {
 		return
 	}
 
-	//var abiDef abi.ABI
-	//json.Unmarshal(abiByte, &abiDef)
-
 	//transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": "-100"}`)
-	create := []byte(`{"creator": "user1", "max_supply": "800", "token_id": "xyx"}`)
+	create := []byte(`{"creator": "worker1", "max_supply": "800", "token_id": "xyx"}`)
 
-	argbyte, err := checkParam(abiDef, "create", create)
+	argbyte, err := abi.CheckParam(abiDef, "create", create)
 	if err != nil {
 		fmt.Errorf("can not find UnmarshalBinary abi file")
 		return
 	}
 
-	//test param
-	//time.Sleep(time.Second * 5)
-	//params, err := commands.ParseParams("string:foo,int32:2147483647")
-	//if err != nil {
-	//	return
-	//}
-	//
-	//data, err = json.Marshal(params)
-	//if err != nil {
-	//	return
-	//}
-	//log.Debug("ParseParams: ", string(data))
-	//
-	//argbyte, err := commands.BuildWasmContractParam(params)
-	//if err != nil {
-	//	//t.Errorf("build wasm contract param failed:%s", err)
-	//	//return
-	//	return
-	//}
-	//log.Debug("BuildWasmContractParam: ", string(argbyte))
-
 	var parameters []string
 
 	parameters = append(parameters, string(argbyte[:]))
 
-	invoke, err := types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, "test", parameters, 0, time.Now().UnixNano())
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "create", parameters, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
-	invoke.SetSignature(&config.Root)
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 2500)
+
+
+	issue := []byte(`{"to": "worker1", "amount": "100", "token_id": "xyx"}`)
+
+	argbyte, err = abi.CheckParam(abiDef, "issue", issue)
+	if err != nil {
+		fmt.Errorf("can not find UnmarshalBinary abi file")
+		return
+	}
+
+	var issueParameters []string
+
+	issueParameters = append(issueParameters, string(argbyte[:]))
+
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "issue", issueParameters, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 2500)
+
+
+	trans := []byte(`{"from": "worker1", "to": "worker2", "amount": "20", "token_id": "xyx"}`)
+
+	argbyte, err = abi.CheckParam(abiDef, "transfer", trans)
+	if err != nil {
+		fmt.Errorf("can not find UnmarshalBinary abi file")
+		return
+	}
+
+	var transferParameters []string
+
+	transferParameters = append(transferParameters, string(argbyte[:]))
+
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "transfer", transferParameters, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker1)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
 
 }
 
-func getContractTable(contractName string, accountName string, abiDef abi.ABI, tableName string) ([]byte, error){
-	var fields []abi.FieldDef
-	for _, table := range abiDef.Tables {
-		if string(table.Name) == tableName {
-			for _, struction := range abiDef.Structs {
-				if struction.Name == table.Type {
-					fields = struction.Fields
-				}
-			}
-		}
-	}
-
-	if fields == nil {
-		return nil, errors.New(log, "can not find struct of table  " + tableName)
-	}
-
-	key := []byte("xyx")
-	storage, err := ledger.L.StoreGet(config.ChainHash, common.NameToIndex(contractName), key)
-	fmt.Println("xyx: " + string(storage))
-
-	key = []byte(accountName)
-	storage, err = ledger.L.StoreGet(config.ChainHash, common.NameToIndex(contractName), key)
-	fmt.Println(fields[0].Name + ": " + string(storage))
-
-	type QueryRes struct {
-		Balance 	string	`json:"balance"`
-	}
-
-	resp := QueryRes{string(storage)}
-
-	js, _ := json.Marshal(resp)
-	fmt.Println("json format: ", string(js))
-
-
-	buf := new(bytes.Buffer)
-	enc := json.NewEncoder(buf)
-
-	type json_object struct {
-		Name 	string		`json:"name"`
-		Value	string		`json:"value"`
-	}
-
-	//var v map[string]string
-	table := make(map[string]string, len(fields))
-	
-	for i, _ := range fields {
-		table[fields[i].Name] = string(storage)
-		//table[i].Name = fields[i].Name
-		//table[i].Value = string(storage)
-	}
-
-	if err := enc.Encode(&table); err != nil {
-		fmt.Errorf("Encode failed")
-	}
-	fmt.Println("encode: " + string(buf.Bytes()))
-
-
-	return nil, err
-}
-
 func QueryContractData(ledger ledger.Ledger) {
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 30)
 
 	log.Warn("Query Contract Data")
 
@@ -791,7 +635,11 @@ func QueryContractData(ledger ledger.Ledger) {
 		return
 	}
 
-	getContractTable("root", "root", abiDef, "accounts")
+	abi.GetContractTable("root", "root", abiDef, "accounts")
+
+	abi.GetContractTable("root", "worker1", abiDef, "accounts")
+
+	abi.GetContractTable("root", "worker2", abiDef, "accounts")
 }
 
 func Wait() {
