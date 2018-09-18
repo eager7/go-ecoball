@@ -7,7 +7,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/store"
 	"os"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
-	"github.com/ecoball/go-ecoball/dsn/crypto"
 	"time"
 	"errors"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -17,12 +16,16 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/dsn/renter/pb"
 	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/elog"
+	"crypto/sha256"
 )
 
 var (
 	errUnSyncedStat = errors.New("Block is unsynced!")
 	errCreateContract = errors.New("failed to create file contract")
 	errCheckColFailed = errors.New("Checking collateral failed")
+	log = elog.NewLogger("dsn-r", elog.DebugLog)
 )
 
 // An allowance dictates how much the Renter is allowed to spend in a given
@@ -39,7 +42,8 @@ type FileContract struct {
 	LocalPath   string
 	FileSize    uint64
 	Redundancy  uint8
-	Funds       big.Int
+	//Funds       big.Int
+	Funds       []byte
 	StartAt     uint64
 	Expiration  uint64
 }
@@ -73,13 +77,14 @@ type Renter struct {
 }
 
 func InitDefaultConf() RenterConf {
+	chainId := config.ChainHash
 	return RenterConf{
 		AccountName: "root",
 		Redundancy: 1,
 		Allowance: "100",
 		Collateral: "10000",
 		MaxCollateral: "20000",
-		ChainId: "cf4bfc19264aa4bbd6898c0ef43ce5465c794fd587e622fccc19980e634cd9f2",
+		ChainId: common.ToHex(chainId[:]),
 	}
 }
 
@@ -98,12 +103,12 @@ func NewRenter(ctx context.Context,l ledger.Ledger ,ac account.Account, conf Ren
 
 func (r *Renter) Start()  {
 	r.loadFileInfo()
-	r.getBlockSyncState(common.HexToHash(r.conf.ChainId))
+	//r.getBlockSyncState(common.HexToHash(r.conf.ChainId))
 }
-func (r *Renter) estimateFee(fname string, conf RenterConf) big.Int {
+func (r *Renter) estimateFee(fname string, conf RenterConf) *big.Int {
 	//TODO
 	var fee big.Int
-	return fee
+	return &fee
 }
 
 func (r *Renter) getBlockSyncState(chainId common.Hash) bool {
@@ -137,13 +142,19 @@ func (r *Renter)createFileContract(fname string, cid string) ([]byte, error) {
 	fc.Cid = cid
 	fc.StartAt = r.ledger.GetCurrentHeight(common.HexToHash(r.conf.ChainId))
 	fc.Expiration = 0
-	fc.Funds = r.estimateFee(fname, r.conf)
+	fee := r.estimateFee(fname, r.conf)
+	fc.Funds, _ = fee.GobEncode()
 	fc.Redundancy = r.conf.Redundancy
 	fcBytes := encoding.Marshal(fc)
-	fcHash := crypto.HashBytes(fcBytes)
-	var sk crypto.SecretKey
-	copy(sk[:], r.account.PrivateKey)
-	sig := crypto.SignHash(fcHash, sk)
+	//fcHash := crypto.HashBytes(fcBytes)
+	//var sk crypto.SecretKey
+	//copy(sk[:], r.account.PrivateKey)
+	//sig := crypto.SignHash(fcHash, sk)
+	annHash := sha256.Sum256(fcBytes)
+	sig, err := r.account.Sign(annHash[:])
+	if err !=  nil {
+		return nil, err
+	}
 	return append(fcBytes, sig[:]...), nil
 }
 
@@ -155,13 +166,14 @@ func (r *Renter) InvokeFileContract(fname, cid string) error {
 	if err != nil {
 		return  errCreateContract
 	}
-	timeNow := time.Now().Unix()
+	timeNow := time.Now().UnixNano()
 	transaction, err := types.NewInvokeContract(common.NameToIndex(r.conf.AccountName),
 		innerCommon.NameToIndex("root"), common.HexToHash(r.conf.ChainId),
 		"owner", "reg_file", []string{string(fc)}, 0, timeNow)
 	if err != nil {
 		return err
 	}
+	transaction.SetSignature(&config.Root)
 	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
 	if err != nil {
 		return err
@@ -177,7 +189,7 @@ func (r *Renter) InvokeFileContract(fname, cid string) error {
 	f.fileId = cid
 	f.redundancy = r.conf.Redundancy
 	f.transactionId = transaction.Hash
-	f.fee = r.estimateFee(fname, r.conf)
+	f.fee = *r.estimateFee(fname, r.conf)
 	r.files[cid] = f
 
 	r.persistFileInfo(f)
@@ -197,7 +209,7 @@ func (r *Renter)checkCollateral() bool {
 	return false
 }
 
-func (r *Renter) AddFile(fpath string) (string, error) {
+func (r *Renter) AddFile(fpath string, era int8) (string, error) {
 	//TODO
 	//if !r.isSynced {
 	//	return "", errUnSyncedStat
@@ -206,7 +218,13 @@ func (r *Renter) AddFile(fpath string) (string, error) {
 	//if !colState {
 	//	return "", errCheckColFailed
 	//}
-	cid, err := api.IpfsAddEraFile(r.ctx, fpath, r.conf.Redundancy)
+	var redundancy uint8
+	if era == -1 {
+		redundancy = r.conf.Redundancy
+	} else {
+		redundancy = uint8(era)
+	}
+	cid, err := api.IpfsAddEraFile(r.ctx, fpath, redundancy)
 	if err != nil {
 		return "", err
 	}
@@ -255,7 +273,8 @@ func (fc *FileContract) Serialize() ([]byte, error) {
 	pfc.LocalPath = fc.LocalPath
 	pfc.FileSize = fc.FileSize
 	pfc.Redundancy = uint32(fc.Redundancy)
-	pfc.Funds, _ = fc.Funds.GobEncode()
+	//pfc.Funds, _ = fc.Funds.GobEncode()
+	pfc.Funds = fc.Funds
 	pfc.StartAt = fc.StartAt
 	pfc.Expiration = fc.Expiration
 	return pfc.Marshal()
@@ -272,10 +291,11 @@ func (fc *FileContract) Deserialize(data []byte) error {
 	fc.LocalPath = pfc.LocalPath
 	fc.FileSize = pfc.FileSize
 	fc.Redundancy = uint8(pfc.Redundancy)
-	err = fc.Funds.GobDecode(pfc.Funds)
-	if err != nil {
-		return err
-	}
+	//err = fc.Funds.GobDecode(pfc.Funds)
+	//if err != nil {
+	//	return err
+	//}
+	fc.Funds = pfc.Funds
 	fc.StartAt = pfc.StartAt
 	fc.Expiration = pfc.Expiration
 	return nil

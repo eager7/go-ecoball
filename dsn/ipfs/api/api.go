@@ -11,7 +11,6 @@ import (
 	"path"
 	"path/filepath"
 	"os"
-	//"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	"bytes"
 	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
