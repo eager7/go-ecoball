@@ -55,9 +55,8 @@ func ProcessSTART(actorC *ActorABABFT) {
 			// generate the block in the form of second round block
 			var blockSolo *types.Block
 			tTime := time.Now().UnixNano()
-			headerPayload:=&types.CMBlockHeader{}
 			// headerPayload.LeaderPubKey = actorC.serviceABABFT.account.PublicKey
-			blockSolo,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, headerPayload, conData, tTime)
+			blockSolo,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, conData, tTime)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -443,9 +442,8 @@ func ProcessPreBlkTimeout(actorC *ActorABABFT) {
 			// generate the first-round block
 			var blockFirst *types.Block
 			tTime := time.Now().UnixNano()
-			headerPayload:=&types.CMBlockHeader{}
 			// headerPayload.LeaderPubKey = actorC.serviceABABFT.account.PublicKey
-			blockFirst,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, headerPayload, conData, tTime)
+			blockFirst,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, conData, tTime)
 			if err != nil {
 				log.Fatal(err)
 			}

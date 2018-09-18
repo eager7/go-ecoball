@@ -10,11 +10,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/http/common"
-	//"github.com/ecoball/go-ecoball/core/store"
-	//"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
-	//"github.com/ecoball/go-ecoball/core/ledgerimpl/Ledger"
 	"encoding/json"
-	//"github.com/ecoball/go-ecoball/spectator/notify"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
@@ -24,8 +20,8 @@ func CreateAccount(params []interface{}) *common.Response {
 		return common.NewResponse(common.INVALID_PARAMS, nil)
 	}
 
-	//switch {
-	//case len(params) == 4:
+	switch {
+	case len(params) == 1:
 		if errCode := handleCreateAccount(params); errCode != common.SUCCESS {
 			log.Error(errCode.Info())
 			return common.NewResponse(errCode, nil)
@@ -33,9 +29,9 @@ func CreateAccount(params []interface{}) *common.Response {
 			return common.NewResponse(common.SUCCESS, nil)
 		}
 
-	//default:
-		//return common.NewResponse(common.INVALID_PARAMS, nil)
-	//}
+	default:
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
 
 	return common.NewResponse(common.SUCCESS, "")
 }
@@ -115,81 +111,7 @@ func Get_required_keys(params []interface{}) *common.Response {
 	}
 }
 
-func Get_account(params []interface{}) *common.Response {
-	if len(params) < 1 {
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	switch params[0].(type) {
-	case string:
-		chainId := params[0].(string)
-		name := params[1].(string)
-		hash := new(innercommon.Hash)
-		data, err := ledger.L.AccountGet(hash.FormHexString(chainId), innercommon.NameToIndex(name))
-		if err != nil {
-			return common.NewResponse(common.INTERNAL_ERROR, "AccountGet failed")
-		}
-
-		accountInfo, errcode := data.Serialize()
-		if errcode != nil {
-			return common.NewResponse(common.INTERNAL_ERROR, "Serialize failed")
-		}
-
-		return common.NewResponse(common.SUCCESS, innercommon.ToHex(accountInfo))
-		default:
-			return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	return common.NewResponse(common.SUCCESS, "")
-}
-
-func Get_ChainList(params []interface{}) *common.Response {
-	chainList, errcode := ledger.L.GetChainList(config.ChainHash)
-	if errcode != nil {
-		return common.NewResponse(common.INVALID_PARAMS, "get block faild")
-	}
-
-	chainList_str := ""
-	for _, v := range chainList{
-		/*chainList_str += v.Index.String()
-		chainList_str += ":"*/
-		chainList_str += v.Hash.HexString()
-		chainList_str += "\n"
-	}
-	chainList_str = strings.TrimSuffix(chainList_str, "\n")
-	return common.NewResponse(common.SUCCESS, chainList_str)
-}
-
 func handleCreateAccount(params []interface{}) common.Errcode {
-	/*var (
-		creator string
-		name    string
-		owner   string
-		//	active  string
-		invalid bool = false
-	)
-
-	//creator name
-	if v, ok := params[0].(string); ok {
-		creator = v
-	} else {
-		invalid = true
-	}
-
-	//account name
-	if v, ok := params[1].(string); ok {
-		name = v
-	} else {
-		invalid = true
-	}
-
-	//owner key
-	if v, ok := params[2].(string); ok {
-		owner = v
-	} else {
-		invalid = true
-	}*/
-
 	invoke := new(types.Transaction)//{
 	//	Payload: &types.InvokeInfo{}}
 

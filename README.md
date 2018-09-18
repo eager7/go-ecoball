@@ -92,14 +92,18 @@ $./ecoclient create account --creator $CREATORNAME --name $ACCOUNTNAME --owner $
 $ ./ecoclient transfer  --from $ADDRESS --to $ADDRESS --value $AMOUNT
 ```
 ### query
-#### query account balance
+#### query all chainId
 ```
-$ ./ecoclient query balance --address $ADDRESS
+$ ./ecoclient query listchain
+```
+#### query account's info
+```
+$ ./ecoclient query account -n $ACCOUNTNAME
 ```
 ### contract
 #### deploy contract,you will get contract address
 ```
-$ ./ecoclient contract deploy -p $CONTRACTFILE -n $CONTRACTNAME --d $DESCRIPTION
+$ ./ecoclient contract deploy -p $CONTRACTFILE -n $CONTRACTNAME --d $DESCRIPTION --ap $ABIFILE
 success!
 0x0133ac14c0633a2a5e09e7109dcb560f6f5270e1
 ```
@@ -108,6 +112,27 @@ success!
 ```
 $ ./ecoclient contract invoke -n $CONTRACTNAME -m $METHORD -p $PARA1 $PARA2 $PARA3 ...
 ```
+#### register new chain
+```
+$ ./ecoclient contract invoke -n $CONTRACTNAME -m reg_chain -p $PARA1,$PARA2,$PARA3
+```
+#### set account
+```
+$ ./ecoclient contract invoke -n $CONTRACTNAME -m set_account -p $ACCOUNTNAME--$PERMISSION
+```
+#### pledge transcation
+```
+$ ./ecoclient contract invoke -n $CONTRACTNAME -m pledge -p $PARA1,$PARA2,$PARA3 ...
+```
+#### voting to be producer
+```
+$ ./ecoclient contract invoke -n $CONTRACTNAME -m vote -p $PARA1,$PARA2,$PARA3 ...
+```
+#### register to producer
+```
+$ ./ecoclient contract invoke -n $CONTRACTNAME -m reg_prod -p $PARA1,$PARA2,$PARA3 ...
+```
+
 ### console
 There are currently two modes, command line mode and console mode, which by default is command line mode.
 If you want to open the console mode, you need to add option --console.

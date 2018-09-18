@@ -21,18 +21,24 @@ import (
 	"fmt"
 	"os"
 	"time"
-	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/p2p"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/AsynkronIT/protoactor-go/actor"
+	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
-	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/QmYAL9JsqVVPFWwM1ZzHNsofmTzRYQHJ2KqQaBmFJjJsNx/go-libp2p-connmgr"
-	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
+	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/host/basic"
 	ic "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
+	circuit "gx/ipfs/QmcQ56iqKP8ZRhRGLe5EReJVvrJZDaGzkuatrPv4Z1B6cG/go-libp2p-circuit"
+	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	mafilter "gx/ipfs/QmSW4uNHbvQia8iZDXzbwjiyHQtnyo9aFqfQAMasj3TJ6Y/go-maddr-filter"
+	mamask "gx/ipfs/QmSMZwvs3n4GBikZ7hKzT17c3bk65FmyZo2JqtJ16swqCv/multiaddr-filter"
+	"github.com/ipfs/go-ipfs/repo/fsrepo"
 )
 
 type NetCtrl struct {
@@ -45,7 +51,7 @@ const (
 	DefaultConnMgrLowWater    = 600
 	DefaultConnMgrGracePeriod = time.Second * 20
 
-	p2pListenP2PPort          = 4013
+	p2pListenPort             = "4013"
 )
 
 var log = elog.NewLogger("net", elog.DebugLog)
@@ -78,7 +84,86 @@ func constructPeerHost(ctx context.Context, id peer.ID, ps peerstore.Peerstore, 
 	return libp2p.New(ctx, options...)
 }
 
-func New(parent context.Context, privKey ic.PrivKey, listen []string) (*NetNode, error) {
+func makeAddrsFactory(cfg config.SwarmConfigInfo) (basichost.AddrsFactory, error) {
+	var annAddrs []ma.Multiaddr
+	for _, addr := range cfg.AnnounceAddr {
+		maddr, err := ma.NewMultiaddr(addr)
+		if err != nil {
+			return nil, err
+		}
+		annAddrs = append(annAddrs, maddr)
+	}
+
+	filters := mafilter.NewFilters()
+	noAnnAddrs := map[string]bool{}
+	for _, addr := range cfg.NoAnnounceAddr {
+		f, err := mamask.NewMask(addr)
+		if err == nil {
+			filters.AddDialFilter(f)
+			continue
+		}
+		maddr, err := ma.NewMultiaddr(addr)
+		if err != nil {
+			return nil, err
+		}
+		noAnnAddrs[maddr.String()] = true
+	}
+
+	return func(allAddrs []ma.Multiaddr) []ma.Multiaddr {
+		var addrs []ma.Multiaddr
+		if len(annAddrs) > 0 {
+			addrs = annAddrs
+		} else {
+			addrs = allAddrs
+		}
+
+		var out []ma.Multiaddr
+		for _, maddr := range addrs {
+			// check for exact matches
+			ok, _ := noAnnAddrs[maddr.String()]
+			// check for /ipcidr matches
+			if !ok && !filters.AddrBlocked(maddr) {
+				out = append(out, maddr)
+			}
+		}
+		return out
+	}, nil
+}
+
+func filterRelayAddrs(addrs []ma.Multiaddr) []ma.Multiaddr {
+	var raddrs []ma.Multiaddr
+	for _, addr := range addrs {
+		_, err := addr.ValueForProtocol(circuit.P_CIRCUIT)
+		if err == nil {
+			continue
+		}
+		raddrs = append(raddrs, addr)
+	}
+	return raddrs
+}
+
+func composeAddrsFactory(f, g basichost.AddrsFactory) basichost.AddrsFactory {
+	return func(addrs []ma.Multiaddr) []ma.Multiaddr {
+		return f(g(addrs))
+	}
+}
+
+//func New(parent context.Context, privKey ic.PrivKey, listen []string) (*NetNode, error) {
+func New(parent context.Context) (*NetNode, error) {
+	var privKey ic.PrivKey
+	dsnCfg, err := fsrepo.ConfigAt(config.IpfsDir)
+	if err != nil {
+		privKey, _, err = ic.GenerateKeyPair(ic.RSA, 2048)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		privKey, err = dsnCfg.Identity.DecodePrivateKey("passphrase todo!")
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	id, err := peer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return nil, fmt.Errorf("error for getting id from key,", err)
@@ -93,12 +178,36 @@ func New(parent context.Context, privKey ic.PrivKey, listen []string) (*NetNode,
 	}
 
 	var libp2pOpts []libp2p.Option
-	grace, err := time.ParseDuration(DefaultConnMgrGracePeriod.String())
+
+	addrsFactory, err := makeAddrsFactory(config.SwarmConfig)
 	if err != nil {
 		return nil, err
 	}
-	mgr := connmgr.NewConnManager(DefaultConnMgrLowWater, DefaultConnMgrHighWater, grace)
+	if !config.SwarmConfig.DisableRelay {
+		addrsFactory = composeAddrsFactory(addrsFactory, filterRelayAddrs)
+	}
+	libp2pOpts = append(libp2pOpts, libp2p.AddrsFactory(addrsFactory))
+
+	if !config.SwarmConfig.DisableNatPortMap {
+		libp2pOpts = append(libp2pOpts, libp2p.NATPortMap())
+	}
+
+	if !config.SwarmConfig.DisableRelay {
+		var opts []circuit.RelayOpt
+		if config.SwarmConfig.EnableRelayHop {
+			opts = append(opts, circuit.OptHop)
+		}
+		libp2pOpts = append(libp2pOpts, libp2p.EnableRelay(opts...))
+	}
+
+	period :=time.Duration(config.SwarmConfig.ConnGracePeriod) * time.Second
+	grace, err := time.ParseDuration(period.String())
+	if err != nil {
+		return nil, err
+	}
+	mgr := connmgr.NewConnManager(config.SwarmConfig.ConnLowWater, config.SwarmConfig.ConnHighWater, grace)
 	libp2pOpts = append(libp2pOpts, libp2p.ConnectionManager(mgr))
+
 
 	peerStore := peerstore.NewPeerstore()
 	peerStore.AddPrivKey(id, privKey)
@@ -112,7 +221,7 @@ func New(parent context.Context, privKey ic.PrivKey, listen []string) (*NetNode,
 	network.SetDelegate(netNode)
 
 	netNode.network = network
-	netNode.listen = listen
+	netNode.listen = config.SwarmConfig.ListenAddress
 
 	dispatcher.InitMsgDispatcher()
 
@@ -120,9 +229,9 @@ func New(parent context.Context, privKey ic.PrivKey, listen []string) (*NetNode,
 }
 
 func (node *NetNode) Start() error {
-	multiaddrs := make([]multiaddr.Multiaddr, len(node.listen))
+	multiaddrs := make([]ma.Multiaddr, len(node.listen))
 	for idx, v := range node.listen {
-		addr, err := multiaddr.NewMultiaddr(v)
+		addr, err := ma.NewMultiaddr(v)
 		if err != nil {
 			return err
 		}
@@ -279,13 +388,7 @@ func InitNetWork() {
 	//}
 	//ipfsNode := ipfsCtrl.IpfsNode
 	//TODO get it from config file
-	//privkey := "GoB8dlm2yvhR4mqIpmIKzanFjfno3rAKL"
-	sk, _, err := ic.GenerateKeyPair(ic.RSA, 2048)
-	ipv4ListenAddr := fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", p2pListenP2PPort)//should come from config file
-	ipv6ListenAddr := fmt.Sprintf("/ip6/::/tcp/%d", p2pListenP2PPort)
-	listenAddr := []string{ipv4ListenAddr, ipv6ListenAddr}
-
-	netNode, err := New(context.Background(), sk, listenAddr)
+	netNode, err := New(context.Background())
 	if err != nil {
 		log.Error(err)
 		os.Exit(1)
@@ -295,7 +398,7 @@ func InitNetWork() {
 		NetNode:  netNode,
 	}
 
-	log.Info("i am ", netNode.self.Pretty())
+	log.Info("i am ", netNode.SelfId())
 }
 
 func StartNetWork() {

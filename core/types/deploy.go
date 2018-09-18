@@ -36,7 +36,7 @@ func NewDeployContract(from, addr common.AccountName, chainID common.Hash, perm 
 		TypeVm:   vm,
 		Describe: []byte(des),
 		Code:     code,
-		Abi:	  abi,
+		Abi:      abi,
 	}
 	trans, err := NewTransaction(TxDeploy, from, addr, chainID, perm, deploy, nonce, time)
 	if err != nil {
@@ -89,10 +89,6 @@ func (d *DeployInfo) Type() uint32 {
 
 func (d DeployInfo) GetObject() interface{} {
 	return d
-}
-
-func (d *DeployInfo) Show() {
-	fmt.Println(d.JsonString())
 }
 
 func (d *DeployInfo) show() {

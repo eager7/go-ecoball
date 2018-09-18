@@ -17,8 +17,6 @@
 package commands
 
 import (
-	"time"
-
 	"github.com/ecoball/go-ecoball/core/types"
 
 	"github.com/ecoball/go-ecoball/account"
@@ -27,13 +25,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"github.com/ecoball/go-ecoball/http/common"
-	"github.com/ecoball/go-ecoball/common/config"
 	"fmt"
-	"github.com/ecoball/go-ecoball/http/common/abi"
-	//"encoding/hex"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"strings"
-
 )
 
 var log = elog.NewLogger("commands", elog.DebugLog)
@@ -61,52 +54,6 @@ func SetContract(params []interface{}) *common.Response {
 }
 
 func handleSetContract(params []interface{}) (common.Errcode, string) {
-
-	//Get account address
-	/*var (
-		code         []byte
-		contractName string
-		description  string
-		invalid      bool = false
-		abicode      []byte
-	)
-
-	if v, ok := params[0].(string); ok {
-		code = innerCommon.FromHex(v)
-	} else {
-		invalid = true
-	}
-
-	if v, ok := params[1].(string); ok {
-		contractName = v
-	} else {
-		invalid = true
-	}
-
-	if v, ok := params[2].(string); ok {
-		description = v
-	} else {
-		invalid = true
-	}
-
-	if v, ok := params[3].(string); ok {
-		abitmp, err := hex.DecodeString(v)
-		if err == nil {
-			abicode = abitmp
-		} else {
-			invalid = true
-		}
-	} else {
-		invalid = true
-	}
-
-	if invalid {
-		return common.INVALID_PARAMS, ""
-	}*/
-
-	//time
-	//time := time.Now().Unix()
-
 	//generate key pair
 	keyData, err := secp256k1.NewECDSAPrivateKey()
 	if err != nil {
@@ -126,9 +73,9 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 
 	transaction := new(types.Transaction)//{
 	//	Payload: &types.InvokeInfo{}}
-	
+
 	var invalid bool
-	var name string 
+	var name string
 	//invoke.Show()
 	//account name
 	if v, ok := params[0].(string); ok {
@@ -136,11 +83,11 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 	} else {
 		invalid = true
 	}
-	
+
 	if invalid {
 		return common.INVALID_PARAMS, ""
 	}
-	
+
 	if err := transaction.Deserialize(innerCommon.FromHex(name)); err != nil {
 		fmt.Println(err)
 		return common.INVALID_PARAMS, ""
@@ -161,7 +108,7 @@ func InvokeContract(params []interface{}) *common.Response {
 	}
 
 	switch {
-	case len(params) == 3:
+	case len(params) == 1:
 		if errCode := handleInvokeContract(params); errCode != common.SUCCESS {
 			log.Error(errCode.Info())
 			return common.NewResponse(errCode, nil)
@@ -174,128 +121,57 @@ func InvokeContract(params []interface{}) *common.Response {
 	return common.NewResponse(common.SUCCESS, "")
 }
 
+func GetContract(params []interface{}) *common.Response {
+	if len(params) < 1 {
+		log.Error("invalid arguments")
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	switch params[0].(type){
+	case string:
+		//list account
+		chainId := params[0].(string)
+		accountName := params[1].(string)
+		hash := new(innerCommon.Hash)
+		chainids := hash.FormHexString(chainId)
+		contract, err := ledger.L.GetContract(chainids, innerCommon.NameToIndex(accountName))
+		if err != nil {
+			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
+		}
+
+		data, err := contract.Serialize()
+		if err != nil {
+			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
+		}
+		return common.NewResponse(common.SUCCESS, innerCommon.ToHex(data))
+	default:
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+}
+
 func handleInvokeContract(params []interface{}) common.Errcode {
-	var (
-		contractName   string
-		contractMethod string
-		contractParam  string
-		parameters     []string
-		invalid        bool = false
-	)
+	transaction := new(types.Transaction)
+
+	var invalid bool
+	var name string
 
 	if v, ok := params[0].(string); ok {
-		contractName = v
-	} else {
-		invalid = true
-	}
-
-	if v, ok := params[1].(string); ok {
-		contractMethod = v
-	} else {
-		invalid = true
-	}
-
-	if v, ok := params[2].(string); ok {
-		contractParam = v
+		name = v
 	} else {
 		invalid = true
 	}
 
 	if invalid {
-		log.Debug("Param error")
 		return common.INVALID_PARAMS
 	}
 
-	//if "" != contractParam {
-	//	parameters = strings.Split(contractParam, " ")
-	//}
-
-	//args, err := ParseParams(contractParam)
-	//if err != nil {
-	//	return common.INVALID_PARAMS
-	//}
-	//
-	//data, err := json.Marshal(args)
-	//if err != nil {
-	//	return common.INVALID_PARAMS
-	//}
-	//log.Debug("ParseParams: ", string(data))
-	//
-	//argbyte, err := BuildWasmContractParam(args)
-	//if err != nil {
-	//	//t.Errorf("build wasm contract param failed:%s", err)
-	//	//return
-	//	return common.INVALID_PARAMS
-	//}
-	//log.Debug("BuildWasmContractParam: ", string(argbyte))
-
-	if "new_account" == contractMethod {
-		parameter := strings.Split(contractParam, ",")
-		for _, v := range parameter {
-			if strings.Contains(v, "0x") {
-				parameters = append(parameters, innerCommon.AddressFromPubKey(innerCommon.FromHex(v)).HexString())
-			}else {
-				parameters = append(parameters, v)
-			}
-		}
-	}else if "pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
-		parameters = strings.Split(contractParam, ",")
-	}else if "set_account" == contractMethod {
-		parameters = strings.Split(contractParam, "--")
-	}else if "reg_chain" == contractMethod {
-		parameter := strings.Split(contractParam, ",")
-		if len(parameter) == 3{
-			parameters = append(parameters, parameter[0])
-			parameters = append(parameters, parameter[1])
-			parameters = append(parameters, innerCommon.AddressFromPubKey(innerCommon.FromHex(parameter[2])).HexString())
-		}else {
-			return common.INVALID_PARAMS
-		}
-	}else {
-		contract, err := ledger.L.GetContract(config.ChainHash, innerCommon.NameToIndex(contractName))
-
-		var abiDef abi.ABI
-		err = abi.UnmarshalBinary(contract.Abi, &abiDef)
-		if err != nil {
-			fmt.Errorf("can not find UnmarshalBinary abi file")
-			return common.INVALID_CONTRACT_ABI
-		}
-	
-		log.Debug("contractParam: ", contractParam)
-		argbyte, err := abi.CheckParam(abiDef, contractMethod, []byte(contractParam))
-		if err != nil {
-			log.Debug("checkParam error")
-			return common.INVALID_PARAMS
-		}
-	
-		parameters = append(parameters, string(argbyte[:]))
-
-		abi.GetContractTable(contractName, "root", abiDef, "accounts")
+	if err := transaction.Deserialize(innerCommon.FromHex(name)); err != nil {
+		fmt.Println(err)
+		return common.INVALID_PARAMS
 	}
-
-	//from address
-	//from := account.AddressFromPubKey(common.Account.PublicKey)
-
-	//contract address
-	//address := innerCommon.NewAddress(innerCommon.CopyBytes(innerCommon.FromHex(contractAddress)))
-
-	//time
-	time := time.Now().UnixNano()
-
-	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), config.ChainHash, "owner", contractMethod, parameters, 0, time)
-	if nil != err {
-		return common.TRX_FAIL
-	}
-
-	// Just for test, must delete later
-	err = transaction.SetSignature(&config.Root)
-	if err != nil {
-		return common.INVALID_ACCOUNT
-	}
-	transaction.Show()
 
 	//send to txpool
-	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
+	err := event.Send(event.ActorNil, event.ActorTxPool, transaction)
 	if nil != err {
 		return common.INTERNAL_ERROR
 	}

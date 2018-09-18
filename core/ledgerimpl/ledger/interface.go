@@ -9,10 +9,10 @@ import (
 var L Ledger
 
 type Ledger interface {
-	//NewTxChain(chainID common.Hash, userKey []byte) (err error)
+	//GetShardBlock() (types.Payload, error)
 
 	GetTxBlock(chainID common.Hash, hash common.Hash) (*types.Block, error)
-	NewTxBlock(chainID common.Hash, txs []*types.Transaction, headerPayload types.Payload, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
+	NewTxBlock(chainID common.Hash, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
 	VerifyTxBlock(chainID common.Hash, block *types.Block) error
 	//SaveTxBlock(block *types.Block) error
 	GetTxBlockByHeight(chainID common.Hash, height uint64) (*types.Block, error)
@@ -45,4 +45,6 @@ type Ledger interface {
 
 	//GetGenesesTime() int64
 	GetChainTx(chainID common.Hash) ChainInterface
+
+	GetTransaction(chainID, transactionId common.Hash) (*types.Transaction, error)
 }

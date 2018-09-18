@@ -45,15 +45,6 @@ const (
 	VmNative VmType = 0x02
 )
 
-type Payload interface {
-	Serialize() ([]byte, error)
-	Deserialize(data []byte) error
-	GetObject() interface{}
-	Type() uint32
-	JsonString() string
-	Show()
-}
-
 type Transaction struct {
 	Version    uint32             `json:"version"`
 	ChainID    common.Hash        `json:"chain_id"`
@@ -85,11 +76,11 @@ func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash
 		Payload:    payload,
 		Signatures: nil,
 		Hash:       common.Hash{},
-		Receipt:    TransactionReceipt{
-			From:   AccountReceipt{
+		Receipt: TransactionReceipt{
+			From: AccountReceipt{
 				Balance: new(big.Int).SetUint64(0),
 			},
-			To:     AccountReceipt{
+			To: AccountReceipt{
 				Balance: new(big.Int).SetUint64(0),
 			},
 			Hash:   common.Hash{},
@@ -282,26 +273,6 @@ func (t *Transaction) Deserialize(data []byte) error {
 	return nil
 }
 
-func (t *Transaction) Show() {
-	fmt.Println(t.JsonString())
-	t.Payload.Show()
-}
-
-func (t *Transaction) show() {
-	fmt.Println("\t---------------Transaction-------------")
-	fmt.Println("\tVersion        :", t.Version)
-	fmt.Println("\tFrom           :", t.From.String())
-	fmt.Println("\tAddr           :", t.Addr.String())
-	fmt.Println("\tTime           :", t.TimeStamp)
-	fmt.Println("\tHash           :", t.Hash.HexString())
-	fmt.Println("\tSig Len        :", len(t.Signatures))
-	for i := 0; i < len(t.Signatures); i++ {
-		fmt.Println("\tPublicKey      :", common.ToHex(t.Signatures[i].PubKey))
-		fmt.Println("\tSigData        :", common.ToHex(t.Signatures[i].SigData))
-	}
-	t.Payload.Show()
-}
-
 func (t *Transaction) JsonString() string {
 	data, _ := json.Marshal(struct {
 		Version    uint32 `json:"version"`
@@ -322,63 +293,6 @@ func (t *Transaction) JsonString() string {
 		Hash: t.Hash.HexString(), Receipt: t.Receipt})
 	//data, _ = json.Marshal(t)
 	return string(data)
-}
-
-func charToSymbol(c byte) byte {
-	if c >= 'a' && c <= 'z' {
-		return c - 'a' + 6
-	}
-	if c >= '1' && c <= '5' {
-		return c - '1' + 1
-	}
-	return 0
-}
-
-func stringToIndex(name string) TxType {
-	var index uint64
-	var i uint32
-	sLen := uint32(len(name))
-	for ; i <= 12; i++ {
-		var c uint64
-		if i < sLen {
-			c = uint64(charToSymbol(name[i]))
-		}
-		if i < 12 {
-			c &= 0x1f
-			c <<= 64 - 5*(i+1)
-		} else {
-			c &= 0x0f
-		}
-		index |= c
-	}
-	return TxType(index)
-}
-
-func stringToBytes(name string) []byte {
-	slen := uint32(len(name))
-	var i uint32 = 0
-	var a []byte
-	for ; i < slen; i++ {
-		a[i] = name[i]
-	}
-	return a
-}
-
-func (t *Transaction) StringJson(data string) {
-	//tt := Transaction_invoke{}
-	json.Unmarshal([]byte(data), t)
-
-	/*t.Addr = common.NameToIndex(tt.Addr)
-	t.From = common.NameToIndex(tt.From)
-	t.Hash = common.HexToHash(tt.Hash)
-	t.Nonce = tt.Nonce
-	t.Permission = tt.Permission
-	//t.Receipt = tt.Receipt
-	t.Signatures = tt.Signatures
-	t.TimeStamp = tt.TimeStamp
-	t.Type = stringToIndex(tt.Type)
-	t.Version = tt.Version
-	t.Payload = &tt.Payload*/
 }
 
 func (t TxType) String() string {

@@ -97,8 +97,7 @@ func Ledger(path string) ledger.Ledger {
 func SaveBlock(ledger ledger.Ledger, txs []*types.Transaction, chainID common.Hash) *types.Block {
 	con, err := types.InitConsensusData(TimeStamp())
 	errors.CheckErrorPanic(err)
-	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey}
-	block, err := ledger.NewTxBlock(chainID, txs, headerPayload, *con, time.Now().UnixNano())
+	block, err := ledger.NewTxBlock(chainID, txs, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	block.SetSignature(&config.Root)
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(block.ChainID, block))

@@ -71,10 +71,6 @@ func (t *TransferInfo) Type() uint32 {
 	return uint32(TxTransfer)
 }
 
-func (t *TransferInfo) Show() {
-	fmt.Println(t.JsonString())
-}
-
 func (t *TransferInfo) show() {
 	fmt.Println("\tValue          :", t.Value)
 }

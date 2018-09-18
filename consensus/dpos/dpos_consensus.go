@@ -306,8 +306,7 @@ func (dpos *DposService) newBlock(tail *DposBlock, consensusState *types.DPosDat
 	}
 
 	conData := types.ConsensusData{Type:types.CondPos, Payload:consensusState}
-	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey}
-	block, err := dpos.chain.chainTx.NewBlock(dpos.ledger ,txs, headerPayload, conData, time.Now().UnixNano())
+	block, err := dpos.chain.chainTx.NewBlock(dpos.ledger ,txs, conData, time.Now().UnixNano())
 	if err != nil {
 		log.Error("Failed to create new block")
 		return nil, err

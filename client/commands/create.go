@@ -29,6 +29,7 @@ import (
 	//"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/urfave/cli"
+	outerCommon "github.com/ecoball/go-ecoball/http/common"
 )
 
 var (
@@ -93,15 +94,17 @@ func getInfo() (*types.Block, error) {
 		return nil, err
 	}
 
-	if nil != resp["result"] {
-		switch resp["result"].(type) {
-		case string:
-			data := resp["result"].(string)
-			blockINfo := new(types.Block)
-			blockINfo.Deserialize(innercommon.FromHex(data))
-			//blockINfo.Show(true)
-			return blockINfo, nil
-		default:
+	if int64(outerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
+		if nil != resp["result"] {
+			switch resp["result"].(type) {
+			case string:
+				data := resp["result"].(string)
+				blockINfo := new(types.Block)
+				blockINfo.Deserialize(innercommon.FromHex(data))
+				//blockINfo.Show(true)
+				return blockINfo, nil
+			default:
+			}
 		}
 	}
 	return nil, nil
@@ -116,15 +119,17 @@ func get_required_keys(chainId innercommon.Hash, required_keys, permission strin
 	resp, errcode := rpc.NodeCall("get_required_keys", []interface{}{chainId.HexString(), required_keys, permission, innercommon.ToHex(data)})
 	if errcode != nil {
 		fmt.Fprintln(os.Stderr, errcode)
-		return "", err
+		return "", errcode
 	}
 
-	if nil != resp["result"] {
-		switch resp["result"].(type) {
-		case string:
-			data := resp["result"].(string)
-			return data, nil
-		default:
+	if int64(outerCommon.SUCCESS) == int64(resp["errorCode"].(float64)){
+		if nil != resp["result"] {
+			switch resp["result"].(type) {
+			case string:
+				data := resp["result"].(string)
+				return data, nil
+			default:
+			}
 		}
 	}
 	return "", err

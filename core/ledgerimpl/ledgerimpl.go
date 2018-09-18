@@ -17,16 +17,16 @@
 package ledgerimpl
 
 import (
+	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
 	"sync"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"fmt"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.NoticeLog)
@@ -63,9 +63,9 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address) (err e
 		return err
 	}
 	//if bytes.Equal(userKey.PublicKey, config.Root.PublicKey) {
-		if err := ChainTx.GenesesBlockInit(chainID, addr); err != nil {
-			return err
-		}
+	if err := ChainTx.GenesesBlockInit(chainID, addr); err != nil {
+		return err
+	}
 	//}
 
 	ChainTx.StateDB.TempDB, err = ChainTx.StateDB.FinalDB.CopyState()
@@ -79,13 +79,13 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address) (err e
 	log.Info("Chains:", l.ChainTxs)
 	return nil
 }
-func (l *LedgerImpl) NewTxBlock(chainID common.Hash, txs []*types.Transaction, headerPayload types.Payload, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+func (l *LedgerImpl) NewTxBlock(chainID common.Hash, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
 	//return l.ChainTx.NewBlock(l, txs, consensusData, timeStamp)
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
-	return chain.NewBlock(l, txs, headerPayload, consensusData, timeStamp)
+	return chain.NewBlock(l, txs, consensusData, timeStamp)
 }
 func (l *LedgerImpl) GetTxBlock(chainID common.Hash, hash common.Hash) (*types.Block, error) {
 	chain, ok := l.ChainTxs[chainID]
@@ -152,6 +152,19 @@ func (l *LedgerImpl) CheckTransaction(chainID common.Hash, tx *types.Transaction
 		return err
 	}
 	return nil
+}
+
+func (l *LedgerImpl) GetTransaction(chainID, transactionId common.Hash)(*types.Transaction, error){
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+
+	trx, err := chain.GetTransaction(transactionId.Bytes())
+	if nil != err {
+		return nil, err
+	}
+	return trx, nil
 }
 
 func (l *LedgerImpl) PreHandleTransaction(chainID common.Hash, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error) {

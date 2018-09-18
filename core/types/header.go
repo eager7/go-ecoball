@@ -30,16 +30,9 @@ import (
 
 const VersionHeader = 1
 
-type HeaderType uint32
-
-const (
-	HeMinorBlock HeaderType = 1
-	HeCmBlock    HeaderType = 2
-)
-
 type Header struct {
-	Type          HeaderType
-	Payload       Payload
+	//Type          HeaderType
+	//Payload       Payload
 	Version       uint32
 	ChainID       common.Hash
 	TimeStamp     int64
@@ -68,19 +61,14 @@ var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
  *  @param bloom - the bloom filter of transactions
  *  @param timeStamp - the timeStamp of block, unit is ns
  */
-func NewHeader(payload Payload, version uint32, chainID common.Hash, height uint64, prevHash, merkleHash, stateHash common.Hash, conData ConsensusData, bloom bloom.Bloom, cpuLimit, netLimit float64, timeStamp int64) (*Header, error) {
+func NewHeader(version uint32, chainID common.Hash, height uint64, prevHash, merkleHash, stateHash common.Hash, conData ConsensusData, bloom bloom.Bloom, cpuLimit, netLimit float64, timeStamp int64) (*Header, error) {
 	if version != VersionHeader {
 		return nil, errors.New(log, "version mismatch")
-	}
-	if payload == nil {
-		return nil, errors.New(log, "header's payload is nil")
 	}
 	if conData.Payload == nil {
 		return nil, errors.New(log, "consensus' payload is nil")
 	}
 	header := Header{
-		Type:          HeaderType(payload.Type()),
-		Payload:       payload,
 		ChainID:       chainID,
 		Version:       version,
 		TimeStamp:     timeStamp,
@@ -188,17 +176,17 @@ func (h *Header) protoBuf() (*pb.HeaderTx, error) {
 	if err != nil {
 		return nil, err
 	}
-	if h.Payload == nil {
-		return nil, errors.New(log, "header payload is nil")
-	}
-	payload, err := h.Payload.Serialize()
+	//if h.Payload == nil {
+	//	return nil, errors.New(log, "header payload is nil")
+	//}
+	//payload, err := h.Payload.Serialize()
 	if err != nil {
 		return nil, err
 	}
 	return &pb.HeaderTx{
 		Header: &pb.Header{
-			Type:          uint32(h.Type),
-			Payload:       payload,
+			//Type:          uint32(h.Type),
+			//Payload:       payload,
 			Version:       h.Version,
 			ChainID:       h.ChainID.Bytes(),
 			Timestamp:     h.TimeStamp,
@@ -244,7 +232,7 @@ func (h *Header) Deserialize(data []byte) error {
 		return err
 	}
 
-	switch HeaderType(pbHeader.Header.Type) {
+	/*switch HeaderType(pbHeader.Header.Type) {
 	case HeMinorBlock:
 		h.Payload = new(MinorBlockHeader)
 	case HeCmBlock:
@@ -255,7 +243,7 @@ func (h *Header) Deserialize(data []byte) error {
 	h.Type = HeaderType(pbHeader.Header.Type)
 	if err := h.Payload.Deserialize(pbHeader.Header.Payload); err != nil {
 		return err
-	}
+	}*/
 
 	h.Version = pbHeader.Header.Version
 	h.ChainID = common.NewHash(pbHeader.Header.ChainID)

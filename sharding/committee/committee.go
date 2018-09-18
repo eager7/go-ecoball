@@ -4,9 +4,9 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/message"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
-	"github.com/ecoball/go-ecoball/sharding/node"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 )
@@ -16,115 +16,124 @@ var (
 )
 
 const (
-	BlockSync = iota + 1
-	Consensus
-	ProductCommitteBlock
-	WaitMinorBlock
-	ProductFinalBlock
-	ProductViewChangeBlock
-	StateNil
+	blockSync = iota + 1
+	productCommitteBlock
+	waitMinorBlock
+	productFinalBlock
+	productViewChangeBlock
+	stateEnd
 )
 
 const (
 	ActProductCommitteeBlock = iota + 1
 	ActWaitMinorBlock
 	ActProductFinalBlock
-
 	ActChainNotSync
 	ActRecvConsensusPacket
-	ActConsensusSuccess
-	ActConsensusFail
-
 	ActStateTimeout
 )
 
 type committee struct {
-	ns          *node.Node
-	fsm         *sc.Fsm
-	actorMsgc   chan interface{}
-	packetRecvc <-chan netmsg.EcoBallNetMsg
-	stateTimer  *time.Timer
+	ns         *cell.Cell
+	fsm        *sc.Fsm
+	actorc     chan interface{}
+	ppc        chan *sc.CsPacket
+	pvc        <-chan *sc.NetPacket
+	stateTimer *time.Timer
 
 	cs *consensus.Consensus
 }
 
-func MakeCommittee(ns *node.Node) sc.NodeInstance {
+func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 	cm := &committee{
-		ns:        ns,
-		actorMsgc: make(chan interface{}),
+		ns:     ns,
+		actorc: make(chan interface{}),
+		ppc:    make(chan *sc.CsPacket, sc.DefaultCommitteMaxMember),
 	}
 
 	cm.cs = consensus.MakeConsensus(cm.ns, cm.consensusCb)
 
-	cm.fsm = sc.NewFsm(BlockSync,
+	cm.fsm = sc.NewFsm(blockSync,
 		[]sc.FsmElem{
-			{BlockSync, ActProductCommitteeBlock, cm.productCommitteeBlock, ProductCommitteBlock},
-			{BlockSync, ActWaitMinorBlock, cm.waitMinorBlock, WaitMinorBlock},
-			{BlockSync, ActProductFinalBlock, cm.productFinalBlock, ProductFinalBlock},
-			{BlockSync, ActStateTimeout, cm.processBlockSyncTimeout, BlockSync},
-			{BlockSync, ActRecvConsensusPacket, cm.dropPacket, BlockSync},
+			{blockSync, ActProductCommitteeBlock, cm.productCommitteeBlock, productCommitteBlock},
+			{blockSync, ActWaitMinorBlock, cm.waitMinorBlock, waitMinorBlock},
+			{blockSync, ActProductFinalBlock, cm.productFinalBlock, productFinalBlock},
+			{blockSync, ActStateTimeout, cm.processBlockSyncTimeout, sc.StateNil},
+			{blockSync, ActRecvConsensusPacket, cm.dropPacket, sc.StateNil},
 
-			{ProductCommitteBlock, ActChainNotSync, cm.doBlockSync, BlockSync},
-			{ProductCommitteBlock, ActConsensusSuccess, cm.waitMinorBlock, WaitMinorBlock},
-			{ProductCommitteBlock, ActStateTimeout, cm.productViewChangeBlock, ProductViewChangeBlock},
-			{ProductCommitteBlock, ActRecvConsensusPacket, cm.processCmConsensusPacket, ProductCommitteBlock},
-			/*missing_func consensus fail or timeout*/
-			/*{ProductCommitteBlock, ActConsensusFail, , },
-			{ProductCommitteBlock, ActProductTimeout, , },*/
-
-			{WaitMinorBlock, ActChainNotSync, cm.doBlockSync, BlockSync},
-			{WaitMinorBlock, ActProductFinalBlock, cm.productFinalBlock, ProductFinalBlock},
-			{WaitMinorBlock, ActStateTimeout, cm.productFinalBlock, ProductFinalBlock},
-			{WaitMinorBlock, ActRecvConsensusPacket, cm.processWMBStateChange, ProductFinalBlock},
-
-			{ProductFinalBlock, ActChainNotSync, cm.doBlockSync, BlockSync},
-			{ProductFinalBlock, ActWaitMinorBlock, cm.waitMinorBlock, WaitMinorBlock},
-			{ProductFinalBlock, ActProductCommitteeBlock, cm.productCommitteeBlock, ProductCommitteBlock},
-			{ProductFinalBlock, ActStateTimeout, cm.productViewChangeBlock, ProductViewChangeBlock},
-			{ProductFinalBlock, ActRecvConsensusPacket, cm.processFinalConsensusPacket, ProductFinalBlock},
+			{productCommitteBlock, ActChainNotSync, cm.doBlockSync, blockSync},
+			{productCommitteBlock, ActRecvConsensusPacket, cm.processConsensusCmPacket, sc.StateNil},
+			{productCommitteBlock, ActWaitMinorBlock, cm.waitMinorBlock, waitMinorBlock},
+			{productCommitteBlock, ActStateTimeout, cm.productViewChangeBlock, productViewChangeBlock},
 
 			/*missing_func consensus fail or timeout*/
 			/*{ProductCommitteBlock, ActConsensusFail, , },
 			{ProductCommitteBlock, ActProductTimeout, , },*/
 
-			{ProductViewChangeBlock, ActProductCommitteeBlock, cm.productCommitteeBlock, ProductCommitteBlock},
-			{ProductViewChangeBlock, ActProductFinalBlock, cm.productFinalBlock, ProductFinalBlock},
-			{ProductViewChangeBlock, ActStateTimeout, cm.productViewChangeBlock, ProductViewChangeBlock},
-			{ProductViewChangeBlock, ActRecvConsensusPacket, cm.processViewchangeConsensusPacket, ProductViewChangeBlock},
+			{waitMinorBlock, ActChainNotSync, cm.doBlockSync, blockSync},
+			{waitMinorBlock, ActProductFinalBlock, cm.productFinalBlock, productFinalBlock},
+			{waitMinorBlock, ActStateTimeout, cm.productFinalBlock, productFinalBlock},
+			{waitMinorBlock, ActRecvConsensusPacket, cm.processWMBStateChange, productFinalBlock},
+
+			{productFinalBlock, ActChainNotSync, cm.doBlockSync, blockSync},
+			{productFinalBlock, ActWaitMinorBlock, cm.waitMinorBlock, waitMinorBlock},
+			{productFinalBlock, ActProductCommitteeBlock, cm.productCommitteeBlock, productCommitteBlock},
+			{productFinalBlock, ActRecvConsensusPacket, cm.processConsensusFinalPacket, sc.StateNil},
+			{productFinalBlock, ActStateTimeout, cm.productViewChangeBlock, productViewChangeBlock},
+
+			/*missing_func consensus fail or timeout*/
+			/*{ProductCommitteBlock, ActConsensusFail, , },
+			{ProductCommitteBlock, ActProductTimeout, , },*/
+
+			{productViewChangeBlock, ActProductCommitteeBlock, cm.productCommitteeBlock, productCommitteBlock},
+			{productViewChangeBlock, ActProductFinalBlock, cm.productFinalBlock, productFinalBlock},
+			{productViewChangeBlock, ActStateTimeout, cm.productViewChangeBlock, productViewChangeBlock},
+			{productViewChangeBlock, ActRecvConsensusPacket, cm.processViewchangeConsensusPacket, sc.StateNil},
 		})
 
 	return cm
 }
 
 func (c *committee) MsgDispatch(msg interface{}) {
-	c.actorMsgc <- msg
+	c.actorc <- msg
 }
 
 func (c *committee) Start() {
-	recvc, err := simulate.Subscribe(c.ns.Self.Port)
+	recvc, err := simulate.Subscribe(c.ns.Self.Port, sc.DefaultCommitteMaxMember)
 	if err != nil {
 		log.Panic("simulate error ", err)
 		return
 	}
 
-	c.packetRecvc = recvc
+	c.pvc = recvc
 	go c.cmRoutine()
-
-	c.stateTimer = time.NewTimer(sc.DefaultSyncBlockTimer * time.Second)
+	c.pvcRoutine()
 }
 
 func (c *committee) cmRoutine() {
 	log.Debug("start committee routine")
+	c.stateTimer = time.NewTimer(sc.DefaultSyncBlockTimer * time.Second)
 
 	for {
 		select {
-		case msg := <-c.actorMsgc:
+		case msg := <-c.actorc:
 			c.processActorMsg(msg)
-		case packet := <-c.packetRecvc:
+		case packet := <-c.ppc:
 			c.processPacket(packet)
 		case <-c.stateTimer.C:
 			c.processStateTimeout()
 		}
+	}
+}
+
+func (c *committee) pvcRoutine() {
+	for i := 0; i < sc.DefaultCommitteMaxMember; i++ {
+		go func() {
+			for {
+				packet := <-c.pvc
+				c.verifyPacket(packet)
+			}
+		}()
 	}
 }
 
@@ -137,18 +146,11 @@ func (c *committee) processActorMsg(msg interface{}) {
 	}
 }
 
-func (c *committee) processPacket(packet netmsg.EcoBallNetMsg) {
-
-	switch packet.Type() {
+func (c *committee) processPacket(packet *sc.CsPacket) {
+	switch packet.PacketType {
 	case netmsg.APP_MSG_CONSENSUS_PACKET:
 		c.processConsensusPacket(packet)
-	case netmsg.APP_MSG_SHARDING_PACKET:
-		c.processShardingPacket(packet)
 	default:
 		log.Error("wrong packet")
 	}
-}
-
-func (c *committee) processStateTimeout() {
-	c.fsm.Execute(ActStateTimeout, nil)
 }

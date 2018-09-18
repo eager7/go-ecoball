@@ -6,31 +6,35 @@ type NodeInstance interface {
 }
 
 const (
-	CS_PREPARE_BLOCK = iota
-	CS_PREPARE_BLOCK_RSP
-	CS_PRECOMMIT_BLOCK
-	CS_PRECOMMIT_BLOCK_RSP
-	CS_COMMIT_BLOCK
-	CS_END
-)
-
-const (
-	SD_CM_BLOCK = iota
+	SD_CM_BLOCK = iota + 1
 	SD_FINAL_BLOCK
 	SD_MINOR_BLOCK
 	SD_VIEWCHANGE_BLOCK
 	SD_END
 )
 
-type SdPacket struct {
-	BlockType uint16
-	Packet    []byte
+type NetPacket struct {
+	ChainId    uint32
+	PacketType uint32
+	CsType     uint16
+	BlockType  uint16
+	Step       uint16
+	Packet     []byte
 }
 
 type CsPacket struct {
-	Round     uint16
-	BlockType uint16
-	Packet    []byte
+	PacketType uint32
+	CsType     uint16
+	BlockType  uint16
+	Step       uint16
+	Packet     interface{}
+}
+
+func (c *CsPacket) Copyhead(p *NetPacket) {
+	c.PacketType = p.PacketType
+	c.BlockType = p.BlockType
+	c.CsType = p.CsType
+	c.Step = p.Step
 }
 
 type CsView struct {
@@ -47,7 +51,7 @@ type ConsensusInstance interface {
 	GetCsView() *CsView
 	MakeCsPacket(round uint16) *CsPacket
 	GetCsBlock() interface{}
-	CacheBlock(packet *CsPacket) *CsView
+	CacheBlock(bl interface{}) *CsView
 	PrepareRsp() uint16
 	PrecommitRsp() uint16
 	UpdateBlock(csp *CsPacket)

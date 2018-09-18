@@ -21,6 +21,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/utils"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -28,16 +29,13 @@ import (
 	"math/big"
 	"testing"
 	"time"
-	"github.com/ecoball/go-ecoball/common/event"
 )
-
-
 
 func TestBlockCreate(t *testing.T) {
 	ledger := example.Ledger("/tmp/block_create")
 	root := common.NameToIndex("root")
 	var txs []*types.Transaction
-	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, nil,  0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
 	txs = append(txs, tokenContract)
@@ -61,8 +59,7 @@ func TestBlockCreate(t *testing.T) {
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey}
-	block, err := ledger.NewTxBlock(config.ChainHash, txs, headerPayload, example.ConsensusData(), time.Now().UnixNano())
+	block, err := ledger.NewTxBlock(config.ChainHash, txs, example.ConsensusData(), time.Now().UnixNano())
 	block.SetSignature(&config.Root)
 	data, err := block.Serialize()
 	errors.CheckErrorPanic(err)
@@ -86,7 +83,7 @@ func xTestBlockNew(t *testing.T) {
 	ledger := example.Ledger("/tmp/block_new")
 	root := common.NameToIndex("root")
 	var txs []*types.Transaction
-	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, nil,  0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, nil, 0, time.Now().Unix())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
 	txs = append(txs, tokenContract)
@@ -104,8 +101,7 @@ func xTestBlockNew(t *testing.T) {
 
 	con, err := types.InitConsensusData(example.TimeStamp())
 	errors.CheckErrorPanic(err)
-	headerPayload := &types.CMBlockHeader{LeaderPubKey:config.Root.PublicKey}
-	block, err := ledger.NewTxBlock(config.ChainHash, txs, headerPayload, *con, time.Now().UnixNano())
+	block, err := ledger.NewTxBlock(config.ChainHash, txs, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	block.SetSignature(&config.Root)
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(config.ChainHash, block))

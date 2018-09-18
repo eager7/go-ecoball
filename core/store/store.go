@@ -17,17 +17,19 @@
 package store
 
 import (
+	"fmt"
+	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 	errLevel "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
-	"fmt"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/common/elog"
 )
+
 var log = elog.NewLogger("store", elog.DebugLog)
+
 const PathBlock = "DataBase/block"
 
 type LevelDBStore struct {
