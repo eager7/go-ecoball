@@ -172,7 +172,7 @@ func (a *AccountMinor) proto() (*pb.AccountMinor, error) {
 }
 
 type MinorBlock struct {
-	Header       *MinorBlockHeader
+	MinorBlockHeader
 	Transactions []*Transaction
 	StateDelta   []*AccountMinor
 }
@@ -201,14 +201,14 @@ func (b *MinorBlock) SetReceipt(prevHeader *Header, txs []*Transaction, cpu, net
 			netLimit = BlockNetLimit
 		}
 	}
-	b.Header.Receipt.BlockCpu = cpuLimit
-	b.Header.Receipt.BlockNet = netLimit
+	b.MinorBlockHeader.Receipt.BlockCpu = cpuLimit
+	b.MinorBlockHeader.Receipt.BlockNet = netLimit
 	return nil
 }
 
 func (b *MinorBlock) proto() (block *pb.MinorBlock, err error) {
 	var pbBlock pb.MinorBlock
-	pbBlock.Header, err = b.Header.proto()
+	pbBlock.Header, err = b.MinorBlockHeader.proto()
 	if err != nil {
 		return nil, err
 	}
@@ -255,10 +255,7 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 	if err != nil {
 		return err
 	}
-	if b.Header == nil {
-		b.Header = new(MinorBlockHeader)
-	}
-	err = b.Header.Deserialize(dataHeader)
+	err = b.MinorBlockHeader.Deserialize(dataHeader)
 	if err != nil {
 		return err
 	}
@@ -303,9 +300,6 @@ func (b *MinorBlock) JsonString() string {
 	return string(data)
 }
 
-func (b *MinorBlock) Type() uint32 {
-	return b.Header.Type()
-}
 
 
 

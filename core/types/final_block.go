@@ -146,13 +146,13 @@ func (h *FinalBlockHeader) GetHeight() uint64 {
 }
 
 type FinalBlock struct {
-	Header *FinalBlockHeader
+	FinalBlockHeader
 	MinorBlocks []*MinorBlockHeader
 }
 
 func (b *FinalBlock) proto() (block *pb.FinalBlock, err error) {
 	var pbBlock pb.FinalBlock
-	pbBlock.Header, err = b.Header.proto()
+	pbBlock.Header, err = b.FinalBlockHeader.proto()
 	if err != nil {
 		return nil, err
 	}
@@ -192,10 +192,7 @@ func (b *FinalBlock) Deserialize(data []byte) error {
 	if err != nil {
 		return err
 	}
-	if b.Header == nil {
-		b.Header = new(FinalBlockHeader)
-	}
-	err = b.Header.Deserialize(dataHeader)
+	err = b.FinalBlockHeader.Deserialize(dataHeader)
 	if err != nil {
 		return err
 	}
@@ -226,8 +223,4 @@ func (b *FinalBlock) JsonString() string {
 		return ""
 	}
 	return string(data)
-}
-
-func (b *FinalBlock) Type() uint32 {
-	return b.Header.Type()
 }
