@@ -92,6 +92,7 @@ peer_index = [ "1", "2" ]
 p2p_listen_address   = ["/ip4/0.0.0.0/tcp/4013","/ip6/::/tcp/4013"]
 announce_address     = []
 no_announce_address  = []
+bootstrap_address    = []
 disable_nat_port_map = false
 disable_relay        = false
 enable_relay_hop     = false
@@ -108,6 +109,7 @@ type SwarmConfigInfo struct {
 	ListenAddress      []string
 	AnnounceAddr       []string
 	NoAnnounceAddr     []string
+	BootStrapAddr      []string
 	DisableNatPortMap  bool
 	DisableRelay       bool
 	EnableRelayHop     bool
@@ -234,6 +236,7 @@ func initVariable() {
 		ListenAddress: viper.GetStringSlice("p2p_listen_address"),
 		AnnounceAddr: viper.GetStringSlice("announce_address"),
 		NoAnnounceAddr: viper.GetStringSlice("no_announce_address"),
+		BootStrapAddr: viper.GetStringSlice("bootstrap_address"),
 		DisableNatPortMap: viper.GetBool("disable_nat_port_map"),
 		DisableRelay: viper.GetBool("disable_relay"),
 		EnableRelayHop: viper.GetBool("enable_relay_hop"),

@@ -33,8 +33,8 @@ type EcoballNetwork interface {
 
 	ConnectTo(context.Context, peer.ID) error
 
-	// Start the local discovery and messgage pump
 	Start()
+	Stop()
 
 	NewMessageSender(context.Context, peer.ID) (MessageSender, error)
 
