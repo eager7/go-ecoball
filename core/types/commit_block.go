@@ -135,6 +135,9 @@ func (h *CMBlockHeader) Hash() common.Hash {
 func (h *CMBlockHeader) GetHeight() uint64 {
 	return h.Height
 }
+func (h *CMBlockHeader) GetChainID() common.Hash {
+	return h.ChainID
+}
 
 func (h CMBlockHeader) GetObject() interface{} {
 	return h

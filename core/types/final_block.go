@@ -144,7 +144,9 @@ func (h *FinalBlockHeader) Hash() common.Hash {
 func (h *FinalBlockHeader) GetHeight() uint64 {
 	return h.Height
 }
-
+func (h *FinalBlockHeader) GetChainID() common.Hash {
+	return h.ChainID
+}
 type FinalBlock struct {
 	FinalBlockHeader
 	MinorBlocks []*MinorBlockHeader

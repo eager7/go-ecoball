@@ -150,6 +150,9 @@ func (h *MinorBlockHeader) Hash() common.Hash {
 func (h *MinorBlockHeader) GetHeight() uint64 {
 	return h.Height
 }
+func (h *MinorBlockHeader) GetChainID() common.Hash {
+	return h.ChainID
+}
 
 type AccountMinor struct {
 	Balance *big.Int
