@@ -8,6 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
 
 type DsnConf struct {
@@ -22,8 +23,10 @@ type Dsn struct {
 	ctx  context.Context
 }
 
-var dsn *Dsn
-
+var (
+	dsn *Dsn
+	log = elog.NewLogger("dsn", elog.DebugLog)
+)
 func InitDefaultConf() DsnConf {
 	return DsnConf{
 		hConf: host.InitDefaultConf(),
@@ -31,7 +34,20 @@ func InitDefaultConf() DsnConf {
 	}
 }
 
-func StartDsn(ctx context.Context, l ledger.Ledger, ha, ra account.Account, conf DsnConf)  {
+func StartDsn(ctx context.Context, l ledger.Ledger) error {
+	dsn = new(Dsn)
+	//TODO ha should be host's account
+	ha, err := account.NewAccount(0)
+	if err != nil {
+		return err
+	}
+	//TODO ra should be renter's account
+	ra, err := account.NewAccount(0)
+	if err != nil {
+		return err
+	}
+	//TODO conf should be user's config
+	conf := InitDefaultConf()
 	h := host.NewStorageHost(ctx, l, ha, conf.hConf)
 	go h.Start()
 	r := renter.NewRenter(ctx, l, ra, conf.rConf)
@@ -43,11 +59,12 @@ func StartDsn(ctx context.Context, l ledger.Ledger, ha, ra account.Account, conf
 	dsn.r = r
 	dsn.s = s
 	dsn.ctx = ctx
+	return nil
 }
 
-func AddFile(file string) (string, error) {
+func AddFile(file string, era int8) (string, error) {
 	//TODO file pin
-	return dsn.r.AddFile(file)
+	return dsn.r.AddFile(file, era)
 }
 
 func GetFile(cid string) ([]byte, error) {

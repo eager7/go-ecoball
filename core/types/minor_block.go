@@ -24,7 +24,7 @@ type MinorBlockHeader struct {
 	CMEpochNo         uint64
 
 	Receipt BlockReceipt
-	Hash    common.Hash
+	hash    common.Hash
 }
 
 func (h *MinorBlockHeader) ComputeHash() error {
@@ -32,7 +32,7 @@ func (h *MinorBlockHeader) ComputeHash() error {
 	if err != nil {
 		return err
 	}
-	h.Hash, err = common.DoubleHash(data)
+	h.hash, err = common.DoubleHash(data)
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (h *MinorBlockHeader) proto() (*pb.MinorBlockHeader, error) {
 			BlockCpu: h.Receipt.BlockCpu,
 			BlockNet: h.Receipt.BlockNet,
 		},
-		Hash: h.Hash.Bytes(),
+		Hash: h.hash.Bytes(),
 	}
 	return pbHeader, nil
 }
@@ -113,7 +113,7 @@ func (h *MinorBlockHeader) Deserialize(data []byte) error {
 	h.ConsData = ConsensusData{}
 	h.ShardId = pbHeader.ShardId
 	h.CMEpochNo = pbHeader.CMEpochNo
-	h.Hash = common.NewHash(pbHeader.Hash)
+	h.hash = common.NewHash(pbHeader.Hash)
 	h.Receipt = BlockReceipt{BlockCpu: pbHeader.Receipt.BlockCpu, BlockNet: pbHeader.Receipt.BlockNet}
 
 	dataCon, err := pbHeader.ConsData.Marshal()
@@ -144,6 +144,13 @@ func (h *MinorBlockHeader) Type() uint32 {
 	return uint32(HeMinorBlock)
 }
 
+func (h *MinorBlockHeader) Hash() common.Hash {
+	return h.hash
+}
+func (h *MinorBlockHeader) GetHeight() uint64 {
+	return h.Height
+}
+
 type AccountMinor struct {
 	Balance *big.Int
 	Nonce   *big.Int
@@ -165,7 +172,7 @@ func (a *AccountMinor) proto() (*pb.AccountMinor, error) {
 }
 
 type MinorBlock struct {
-	Header       *MinorBlockHeader
+	MinorBlockHeader
 	Transactions []*Transaction
 	StateDelta   []*AccountMinor
 }
@@ -194,14 +201,14 @@ func (b *MinorBlock) SetReceipt(prevHeader *Header, txs []*Transaction, cpu, net
 			netLimit = BlockNetLimit
 		}
 	}
-	b.Header.Receipt.BlockCpu = cpuLimit
-	b.Header.Receipt.BlockNet = netLimit
+	b.MinorBlockHeader.Receipt.BlockCpu = cpuLimit
+	b.MinorBlockHeader.Receipt.BlockNet = netLimit
 	return nil
 }
 
 func (b *MinorBlock) proto() (block *pb.MinorBlock, err error) {
 	var pbBlock pb.MinorBlock
-	pbBlock.Header, err = b.Header.proto()
+	pbBlock.Header, err = b.MinorBlockHeader.proto()
 	if err != nil {
 		return nil, err
 	}
@@ -248,10 +255,7 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 	if err != nil {
 		return err
 	}
-	if b.Header == nil {
-		b.Header = new(MinorBlockHeader)
-	}
-	err = b.Header.Deserialize(dataHeader)
+	err = b.MinorBlockHeader.Deserialize(dataHeader)
 	if err != nil {
 		return err
 	}
@@ -294,8 +298,4 @@ func (b *MinorBlock) JsonString() string {
 		return ""
 	}
 	return string(data)
-}
-
-func (b *MinorBlock) Type() uint32 {
-	return b.Header.Type()
 }

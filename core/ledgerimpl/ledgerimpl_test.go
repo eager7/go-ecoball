@@ -18,6 +18,7 @@ package ledgerimpl_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
@@ -29,7 +30,6 @@ import (
 	"math/big"
 	"testing"
 	"time"
-	"fmt"
 )
 
 var root = common.NameToIndex("root")
@@ -49,8 +49,8 @@ func TestLedgerImpl_ResetStateDB(t *testing.T) {
 	elog.Log.Info("current block:", transferBlock.StateHash.HexString())
 	currentBlock, err := l.GetTxBlock(config.ChainHash, l.GetCurrentHeader(config.ChainHash).Hash)
 	errors.CheckErrorPanic(err)
-	fmt.Println(transferBlock.JsonString(false) )
-	fmt.Println(currentBlock.JsonString(false) )
+	fmt.Println(transferBlock.JsonString(false))
+	fmt.Println(currentBlock.JsonString(false))
 	errors.CheckEqualPanic(transferBlock.JsonString(false) == currentBlock.JsonString(false))
 	elog.Log.Info("prev block")
 	prevBlock, err := l.GetTxBlock(config.ChainHash, currentBlock.PrevHash)

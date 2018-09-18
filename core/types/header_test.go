@@ -28,7 +28,6 @@ func TestMinorBlockHeader(t *testing.T) {
 		ShardId:           1,
 		CMEpochNo:         2,
 		Receipt:           types.BlockReceipt{},
-		Hash:              common.Hash{},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
 	data, err := header.Serialize()
@@ -39,8 +38,8 @@ func TestMinorBlockHeader(t *testing.T) {
 	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
 
 	block := types.MinorBlock{
-		Header:       &header,
-		Transactions: []*types.Transaction{example.TestTransfer()},
+		MinorBlockHeader: header,
+		Transactions:     []*types.Transaction{example.TestTransfer()},
 		StateDelta: []*types.AccountMinor{{
 			Balance: new(big.Int).SetUint64(100),
 			Nonce:   new(big.Int).SetUint64(2),
@@ -66,7 +65,6 @@ func TestCmBlockHeader(t *testing.T) {
 			PublicKey: config.Root.PublicKey,
 		},
 		ShardsHash: config.ChainHash,
-		Hash:       common.Hash{},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
 	data, err := header.Serialize()
@@ -77,7 +75,7 @@ func TestCmBlockHeader(t *testing.T) {
 	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
 
 	block := types.CMBlock{
-		Header: &header,
+		CMBlockHeader: header,
 		Shards: []types.Shard{types.Shard{
 			Id: 10,
 			Member: []types.NodeInfo{
@@ -114,7 +112,6 @@ func TestFinalBlockHeader(t *testing.T) {
 		StateDeltaRootHash: config.ChainHash,
 		MinorBlocksHash:    config.ChainHash,
 		StateHashRoot:      config.ChainHash,
-		Hash:               config.ChainHash,
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
 	data, err := header.Serialize()
@@ -138,11 +135,10 @@ func TestFinalBlockHeader(t *testing.T) {
 		ShardId:           1,
 		CMEpochNo:         2,
 		Receipt:           types.BlockReceipt{},
-		Hash:              common.Hash{},
 	}
 	block := types.FinalBlock{
-		Header:      &header,
-		MinorBlocks: []*types.MinorBlockHeader{&headerMinor},
+		FinalBlockHeader: header,
+		MinorBlocks:      []*types.MinorBlockHeader{&headerMinor},
 	}
 	data, err = block.Serialize()
 	errors.CheckErrorPanic(err)

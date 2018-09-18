@@ -76,11 +76,11 @@ func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash
 		Payload:    payload,
 		Signatures: nil,
 		Hash:       common.Hash{},
-		Receipt:    TransactionReceipt{
-			From:   AccountReceipt{
+		Receipt: TransactionReceipt{
+			From: AccountReceipt{
 				Balance: new(big.Int).SetUint64(0),
 			},
-			To:     AccountReceipt{
+			To: AccountReceipt{
 				Balance: new(big.Int).SetUint64(0),
 			},
 			Hash:   common.Hash{},

@@ -61,7 +61,6 @@ func CreateAccountBlock(ledger ledger.Ledger, chainID common.Hash) *types.Block 
 	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
 	txs = append(txs, tokenContract)
 
-
 	invoke, err := types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"delegate", common.AddressFromPubKey(config.Delegate.PublicKey).HexString()}, 0, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)

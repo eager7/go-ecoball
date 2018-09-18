@@ -24,7 +24,7 @@ type FinalBlockHeader struct {
 	MinorBlocksHash    common.Hash
 	StateHashRoot      common.Hash
 
-	Hash common.Hash
+	hash common.Hash
 }
 
 func (h *FinalBlockHeader) ComputeHash() error {
@@ -32,7 +32,7 @@ func (h *FinalBlockHeader) ComputeHash() error {
 	if err != nil {
 		return err
 	}
-	h.Hash, err = common.DoubleHash(data)
+	h.hash, err = common.DoubleHash(data)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (h *FinalBlockHeader) proto() (*pb.FinalBlockHeader, error) {
 		MinorBlocksHash:    h.MinorBlocksHash.Bytes(),
 		StateHashRoot:      h.StateHashRoot.Bytes(),
 		ConsData:           pbCon,
-		Hash:               h.Hash.Bytes(),
+		Hash:               h.hash.Bytes(),
 	}
 	return pbHeader, nil
 }
@@ -112,7 +112,7 @@ func (h *FinalBlockHeader) Deserialize(data []byte) error {
 	h.StateDeltaRootHash = common.NewHash(pbHeader.StateDeltaRootHash)
 	h.MinorBlocksHash = common.NewHash(pbHeader.MinorBlocksHash)
 	h.StateHashRoot = common.NewHash(pbHeader.StateHashRoot)
-	h.Hash = common.NewHash(pbHeader.Hash)
+	h.hash = common.NewHash(pbHeader.Hash)
 
 	dataCon, err := pbHeader.ConsData.Marshal()
 	if err != nil {
@@ -138,14 +138,21 @@ func (h *FinalBlockHeader) Type() uint32 {
 	return uint32(HeFinalBlock)
 }
 
+func (h *FinalBlockHeader) Hash() common.Hash {
+	return h.hash
+}
+func (h *FinalBlockHeader) GetHeight() uint64 {
+	return h.Height
+}
+
 type FinalBlock struct {
-	Header *FinalBlockHeader
+	FinalBlockHeader
 	MinorBlocks []*MinorBlockHeader
 }
 
 func (b *FinalBlock) proto() (block *pb.FinalBlock, err error) {
 	var pbBlock pb.FinalBlock
-	pbBlock.Header, err = b.Header.proto()
+	pbBlock.Header, err = b.FinalBlockHeader.proto()
 	if err != nil {
 		return nil, err
 	}
@@ -185,10 +192,7 @@ func (b *FinalBlock) Deserialize(data []byte) error {
 	if err != nil {
 		return err
 	}
-	if b.Header == nil {
-		b.Header = new(FinalBlockHeader)
-	}
-	err = b.Header.Deserialize(dataHeader)
+	err = b.FinalBlockHeader.Deserialize(dataHeader)
 	if err != nil {
 		return err
 	}
@@ -219,8 +223,4 @@ func (b *FinalBlock) JsonString() string {
 		return ""
 	}
 	return string(data)
-}
-
-func (b *FinalBlock) Type() uint32 {
-	return b.Header.Type()
 }

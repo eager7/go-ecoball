@@ -18,11 +18,11 @@ package types_test
 
 import (
 	"fmt"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/types"
 	"reflect"
 	"testing"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/common"
 )
 
 func TestDBft(t *testing.T) {

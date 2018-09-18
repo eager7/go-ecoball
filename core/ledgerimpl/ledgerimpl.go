@@ -17,16 +17,16 @@
 package ledgerimpl
 
 import (
+	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
 	"sync"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"fmt"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.NoticeLog)
@@ -63,9 +63,9 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address) (err e
 		return err
 	}
 	//if bytes.Equal(userKey.PublicKey, config.Root.PublicKey) {
-		if err := ChainTx.GenesesBlockInit(chainID, addr); err != nil {
-			return err
-		}
+	if err := ChainTx.GenesesBlockInit(chainID, addr); err != nil {
+		return err
+	}
 	//}
 
 	ChainTx.StateDB.TempDB, err = ChainTx.StateDB.FinalDB.CopyState()

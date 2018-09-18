@@ -45,9 +45,9 @@ type StateDatabase struct {
 }
 
 type LastHeaders struct {
-	CmHeader    *types.Header
-	MinorHeader *types.Header
-	FinalHeader *types.Header
+	CmHeader    *types.CMBlockHeader
+	MinorHeader *types.MinorBlockHeader
+	FinalHeader *types.FinalBlockHeader
 }
 
 type ChainTx struct {
@@ -221,6 +221,108 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 
 	return nil
 }
+
+func (c *ChainTx) SaveShardBlock(block types.BlockInterface) (err error) {
+	if block == nil {
+		return errors.New(log, "the block is nil")
+	}
+	//check block is existed
+	c.lockBlock.Lock()
+	defer c.lockBlock.Unlock()
+	if _, ok := c.BlockMap[block.Hash()]; ok {
+		log.Warn("the block:", block.GetHeight(), "is existed")
+		return nil
+	}
+
+	if block.GetHeight() != 1 {
+		connect.Notify(info.InfoBlock, block)
+		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
+			log.Warn(err)
+		}
+	}
+
+	var heKey, heValue []byte
+	switch types.HeaderType(block.Type()) {
+	case types.HeCmBlock:
+		Block, ok := block.GetObject().(types.CMBlock)
+		if !ok {
+			return errors.New(log, fmt.Sprintf("type asserts error:%s", types.HeCmBlock.String()))
+		}
+		//TODO:Handle Shards
+		heValue, err = Block.CMBlockHeader.Serialize()
+		if err != nil {
+			return err
+		}
+		heKey = Block.CMBlockHeader.Hash().Bytes()
+
+		c.LastHeader.CmHeader = &Block.CMBlockHeader
+	case types.HeMinorBlock:
+		Block, ok := block.GetObject().(types.MinorBlock)
+		if !ok {
+			return errors.New(log, fmt.Sprintf("type asserts error:%s", types.HeMinorBlock.String()))
+		}
+		for i := 0; i < len(Block.Transactions); i++ {
+			log.Notice("Handle Transaction:", Block.Transactions[i].Type.String(), Block.Transactions[i].Hash.HexString(), " in final DB")
+			if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, Block.Transactions[i], Block.MinorBlockHeader.Timestamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+				log.Warn(Block.Transactions[i].JsonString())
+				return err
+			}
+		}
+		heValue, err = Block.MinorBlockHeader.Serialize()
+		if err != nil {
+			return err
+		}
+		heKey = Block.MinorBlockHeader.Hash().Bytes()
+		c.LastHeader.MinorHeader = &Block.MinorBlockHeader
+	case types.HeFinalBlock:
+		Block, ok := block.GetObject().(types.FinalBlock)
+		if !ok {
+			return errors.New(log, fmt.Sprintf("type asserts error:%s", types.HeFinalBlock.String()))
+		}
+		//TODO:Handle Minor Headers
+		heValue, err = Block.FinalBlockHeader.Serialize()
+		if err != nil {
+			return err
+		}
+		heKey = Block.FinalBlockHeader.Hash().Bytes()
+		c.LastHeader.FinalHeader = &Block.FinalBlockHeader
+	default:
+		return errors.New(log, fmt.Sprintf("unknown header type:%d", block.Type()))
+	}
+
+
+	if err := c.HeaderStore.Put(heKey, heValue); err != nil {
+		return err
+	}
+
+	payload, err := block.Serialize()
+	if err != nil {
+		return err
+	}
+	c.BlockStore.BatchPut(block.Hash().Bytes(), payload)
+	if err := c.BlockStore.BatchCommit(); err != nil {
+		return err
+	}
+	c.StateDB.FinalDB.CommitToDB()
+
+	c.BlockMap[block.Hash()] = block.GetHeight()
+
+	return nil
+}
+
+func (c *ChainTx) GetShardBlockByHash(typ types.HeaderType, hash common.Hash) (types.BlockInterface, error) {
+	dataBlock, err := c.BlockStore.Get(hash.Bytes())
+	if err != nil {
+		return nil, errors.New(log, fmt.Sprintf("GetBlock error:%s", err.Error()))
+	}
+
+	return types.BlockDeserialize(dataBlock, typ)
+}
+
+func (c *ChainTx) GetShardBlockByHeight(typ types.HeaderType, height uint64) (types.BlockInterface, error) {
+return nil, nil
+}
+
 
 /**
 *  @brief  return the highest block's hash
