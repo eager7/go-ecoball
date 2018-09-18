@@ -115,9 +115,6 @@ func StartRPCServer() (err error) {
 	//add attach
 	httpServer.AddHandleFunc("attach", commands.Attach)
 
-	//query
-	httpServer.AddHandleFunc("query", commands.Query)
-
 	//set contract
 	httpServer.AddHandleFunc("setContract", commands.SetContract)
 
