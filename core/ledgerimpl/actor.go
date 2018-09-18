@@ -69,7 +69,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			break
 		}
 		end := time.Now().UnixNano()
-		log.Info("save block["+msg.ChainID.HexString()+"]:", (end-begin)/1000, "us")
+		log.Info("save block["+msg.ChainID.HexString()+msg.Hash.HexString()+"]:", (end-begin)/1000, "us")
 	case types.BlockInterface:
 		chain, ok := l.ledger.ChainTxs[msg.GetChainID()]
 		if !ok {

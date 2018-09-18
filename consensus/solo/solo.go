@@ -98,6 +98,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 			if err != nil {
 				log.Fatal(err)
 			}
+			log.Debug(block.JsonString(false))
 			if err := block.SetSignature(&solo.account); err != nil {
 				log.Fatal(err)
 			}
