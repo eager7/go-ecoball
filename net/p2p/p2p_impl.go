@@ -34,7 +34,6 @@ import (
 	"gx/ipfs/QmXuucFcuvAWYAJfhHV2h4BYreHEAsLSsiquosiXeuduTN/go-libp2p-interface-connmgr"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/discovery"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
-
 )
 
 const (
@@ -65,6 +64,7 @@ func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
 	netImpl = &impl{
 		ctx:          ctx,
 		host:         host,
+		quitsendJb:   make(chan bool, 1),
 		sendJbQueue:  make(chan interface{}, sendMessageChanBuff),
 	}
 	netImpl.routingTable = initRoutingTable(host)
@@ -118,9 +118,13 @@ type impl struct {
 	receiver     Receiver
 
 	sendJbQueue  chan interface{}
+	quitsendJb   chan bool
 
 	routingTable *kb.RoutingTable
 	rtLock       sync.Mutex
+
+	mdnsService  discovery.Service
+	bootstrap    io.Closer
 }
 
 type streamMessageSender struct {
@@ -316,6 +320,8 @@ func (bsnet *impl) handleSendJob() {
 	go func() {
 		for {
 			select {
+			case <-bsnet.quitsendJb:
+				return
 			case job, ok := <- bsnet.sendJbQueue:
 				if !ok {
 					log.Error("chan for sending job queue was closed")
@@ -344,26 +350,44 @@ func (bsnet *impl) handleSendJob() {
 	}()
 }
 
-
-
-func (bsnet *impl) StartLocalDiscovery() error {
+func (bsnet *impl) StartLocalDiscovery() (discovery.Service, error) {
 	service, err := discovery.NewMdnsService(bsnet.ctx, bsnet.host, 10*time.Second, ServiceTag)
 	if err != nil {
-		return fmt.Errorf("net discovery error,", err)
+		return nil, fmt.Errorf("net discovery error,", err)
 	}
 	service.RegisterNotifee((*netNotifiee)(bsnet))
 
-	return nil
+	return service, nil
 }
 
+// Start network
 func (bsnet *impl) Start() {
 	// it is up to the requirement of network sharding,
 	if config.EnableLocalDiscovery {
-		if err := bsnet.StartLocalDiscovery(); err != nil {
+		var err error
+		bsnet.mdnsService, err = bsnet.StartLocalDiscovery()
+		if err != nil {
 			log.Error(err)
 		}
 		log.Debug("start p2p local discovery")
 	}
 
+	bsnet.bootstrap = bsnet.Bootstrap(config.SwarmConfig.BootStrapAddr)
+
 	bsnet.handleSendJob()
+}
+
+// Stop network
+func (bsnet *impl) Stop() {
+	if bsnet.mdnsService != nil  {
+		bsnet.mdnsService.Close()
+	}
+
+	if bsnet.bootstrap != nil {
+		bsnet.bootstrap.Close()
+	}
+
+	bsnet.host.Network().StopNotify((*netNotifiee)(bsnet))
+
+	bsnet.quitsendJb <- true
 }

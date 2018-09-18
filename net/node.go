@@ -38,6 +38,7 @@ import (
 	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	mafilter "gx/ipfs/QmSW4uNHbvQia8iZDXzbwjiyHQtnyo9aFqfQAMasj3TJ6Y/go-maddr-filter"
 	mamask "gx/ipfs/QmSMZwvs3n4GBikZ7hKzT17c3bk65FmyZo2JqtJ16swqCv/multiaddr-filter"
+	"github.com/ipfs/go-ipfs/repo/fsrepo"
 )
 
 type NetCtrl struct {
@@ -149,11 +150,20 @@ func composeAddrsFactory(f, g basichost.AddrsFactory) basichost.AddrsFactory {
 
 //func New(parent context.Context, privKey ic.PrivKey, listen []string) (*NetNode, error) {
 func New(parent context.Context) (*NetNode, error) {
-	//node private key should from config file
-	privKey, _, err := ic.GenerateKeyPair(ic.RSA, 2048)
+	var privKey ic.PrivKey
+	dsnCfg, err := fsrepo.ConfigAt(config.IpfsDir)
 	if err != nil {
-		return nil, err
+		privKey, _, err = ic.GenerateKeyPair(ic.RSA, 2048)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		privKey, err = dsnCfg.Identity.DecodePrivateKey("passphrase todo!")
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	id, err := peer.IDFromPrivateKey(privKey)
 	if err != nil {
 		return nil, fmt.Errorf("error for getting id from key,", err)
