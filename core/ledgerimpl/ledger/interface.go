@@ -46,4 +46,6 @@ type Ledger interface {
 
 	//GetGenesesTime() int64
 	GetChainTx(chainID common.Hash) ChainInterface
+
+	GetTransaction(chainID, transactionId common.Hash) (*types.Transaction, error)
 }
