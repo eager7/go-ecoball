@@ -41,6 +41,7 @@ import (
 	"github.com/ecoball/go-ecoball/dsn/ipfs"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
+	"github.com/ecoball/go-ecoball/dsn"
 )
 
 var (
@@ -204,6 +205,8 @@ func runNode(c *cli.Context) error {
 	//TOD
 
 	net.StartNetWork()
+
+	dsn.StartDsn(ctx, ledger.L)
 
 	//start blockchain browser
 	/*ecoballGroup.Go(func() error {
