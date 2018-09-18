@@ -66,8 +66,9 @@ var (
 				Action: getBlock,
 				Flags: []cli.Flag{
 					cli.Int64Flag{
-						Name:  "id, i",
-						Usage: "block id",
+						Name:  "height, he",
+						Usage: "block height",
+						Value: 1,
 					},
 				},
 			},
@@ -178,8 +179,8 @@ func queryAccount(c *cli.Context) error {
 	return nil
 }
 
-func getBlockInfoById(id int64) (*types.Block, error) {
-	resp, err := rpc.NodeCall("getBlock", []interface{}{id})
+func getBlockInfoById(height int64) (*types.Block, error) {
+	resp, err := rpc.NodeCall("getBlock", []interface{}{height})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return nil, err
@@ -209,13 +210,13 @@ func getBlock(c *cli.Context) error {
 	}
 
 	//account address
-	id := c.Int64("id")
-	if id <= 0 {
-		fmt.Println("Invalid block id: ", id)
+	height := c.Int64("height")
+	if height <= 0 {
+		fmt.Println("Invalid block id: ", height)
 		return errors.New("Invalid block id")
 	}
 
-	block, err := getBlockInfoById(id)
+	block, err := getBlockInfoById(height)
 	if nil != err {
 		return err
 	}
