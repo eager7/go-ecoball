@@ -93,6 +93,47 @@ func GetBlock(params []interface{}) *common.Response {
 	return common.NewResponse(common.SUCCESS, "")
 }
 
+func GetTransaction(params []interface{}) *common.Response {
+	if len(params) < 1 {
+		log.Error("invalid arguments")
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	switch {
+	case len(params) == 1:
+		var(
+			id string
+			invalid bool = false
+		)
+		if v, ok := params[0].(string); ok {
+			id = v
+		} else {
+			invalid = true
+		}
+		if invalid {
+			return common.NewResponse(common.INVALID_PARAMS, "id is invalid")
+		}
+
+		hash := new(innercommon.Hash)
+		TransactionId := hash.FormHexString(id)
+
+		trx, errcode := ledger.L.GetTransaction(config.ChainHash, TransactionId)
+		if errcode != nil {
+			return common.NewResponse(common.INVALID_PARAMS, "get block faild")
+		}
+		
+		data, errs := trx.Serialize()
+		if errs != nil{
+			return common.NewResponse(common.INVALID_PARAMS, "Serialize failed")
+		}
+		return common.NewResponse(common.SUCCESS, innercommon.ToHex(data))
+	default:
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	return common.NewResponse(common.SUCCESS, "")
+}
+
 func Get_required_keys(params []interface{}) *common.Response {
 	if len(params) < 1 {
 		log.Error("invalid arguments")

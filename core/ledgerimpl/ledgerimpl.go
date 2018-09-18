@@ -154,6 +154,19 @@ func (l *LedgerImpl) CheckTransaction(chainID common.Hash, tx *types.Transaction
 	return nil
 }
 
+func (l *LedgerImpl) GetTransaction(chainID, transactionId common.Hash)(*types.Transaction, error){
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+
+	trx, err := chain.GetTransaction(transactionId.Bytes())
+	if nil != err {
+		return nil, err
+	}
+	return trx, nil
+}
+
 func (l *LedgerImpl) PreHandleTransaction(chainID common.Hash, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {

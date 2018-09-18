@@ -308,7 +308,7 @@ func GetContract(params []interface{}) *common.Response {
 		if err != nil {
 			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 		}
-		
+
 		data, err := contract.Serialize()
 		if err != nil {
 			return common.NewResponse(common.INTERNAL_ERROR, err.Error())

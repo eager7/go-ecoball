@@ -100,7 +100,14 @@ func EchoResult(resp map[string]interface{}) error {
 	} else if errorCode != int64(innerCommon.SUCCESS) {
 		fmt.Println("failed: ", desc)
 		if nil != resp["result"] {
-			fmt.Println(resp["result"].(string))
+			switch resp["result"].(type) {
+			case string:
+				strResult := resp["result"].(string)
+				if "" != strResult {
+					fmt.Println(strResult)
+				}
+			default:	
+			}
 		}
 		return errors.New(desc)
 	} else {
@@ -120,5 +127,47 @@ func EchoResult(resp map[string]interface{}) error {
 
 	}
 
+	return nil
+}
+
+func EchoErrInfo(resp map[string]interface{}) error {
+	var (
+		errorCode int64
+		desc      string
+		invalid   bool = false
+	)
+
+	if v, ok := resp["errorCode"].(float64); ok {
+		errorCode = int64(v)
+	} else {
+		invalid = true
+	}
+
+	if v, ok := resp["desc"].(string); ok {
+		desc = v
+	} else {
+		invalid = true
+	}
+
+	if invalid {
+		fmt.Println("errorCode or desc of respone is wrong!")
+		return errors.New("errorCode or desc of respone is wrong!")
+	} else if errorCode != int64(innerCommon.SUCCESS) {
+		fmt.Println("failed: ", desc)
+		if nil != resp["result"] {
+			switch resp["result"].(type) {
+			case string:
+				strResult := resp["result"].(string)
+				if "" != strResult {
+					fmt.Println(strResult)
+				}
+			default:	
+			}
+		}
+		return errors.New(desc)
+	} else {
+		fmt.Println("success!")
+	}
+	
 	return nil
 }

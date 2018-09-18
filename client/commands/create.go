@@ -107,26 +107,6 @@ func getInfo() (*types.Block, error) {
 	return nil, nil
 }
 
-func getBlockInfoById(id int64) (*types.Block, error) {
-	resp, err := rpc.NodeCall("getBlock", []interface{}{id})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return nil, err
-	}
-
-	if nil != resp["result"] {
-		switch resp["result"].(type) {
-		case string:
-			data := resp["result"].(string)
-			blockINfo := new(types.Block)
-			blockINfo.Deserialize(innercommon.FromHex(data))
-			return blockINfo, nil
-		default:
-		}
-	}
-	return nil, nil
-}
-
 func get_required_keys(chainId innercommon.Hash, required_keys, permission string, trx *types.Transaction) (string, error) {
 	data, err := trx.Serialize()
 	if err != nil {
