@@ -70,6 +70,19 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		}
 		end := time.Now().UnixNano()
 		log.Info("save block["+msg.ChainID.HexString()+"]:", (end-begin)/1000, "us")
+	case types.BlockInterface:
+		chain, ok := l.ledger.ChainTxs[msg.GetChainID()]
+		if !ok {
+			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.GetChainID().HexString()))
+			return
+		}
+		begin := time.Now().UnixNano()
+		if err := chain.SaveShardBlock(msg); err != nil {
+			log.Error("save block["+msg.GetChainID().HexString()+"] error:", err)
+			break
+		}
+		end := time.Now().UnixNano()
+		log.Info("save block["+msg.GetChainID().HexString()+"]:", (end-begin)/1000, "us")
 	case *dpos.DposBlock:
 		//TODO
 

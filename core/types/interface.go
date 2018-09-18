@@ -37,6 +37,7 @@ func (h HeaderType) String() string {
 type HeaderInterface interface {
 	Payload
 	Hash() common.Hash
+	GetChainID() common.Hash
 	GetHeight() uint64
 }
 
