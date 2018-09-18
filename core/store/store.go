@@ -30,7 +30,7 @@ import (
 
 var log = elog.NewLogger("store", elog.DebugLog)
 
-const PathBlock = "/tmp/DataBase/block"
+const PathBlock = "DataBase/block"
 
 type LevelDBStore struct {
 	db    *leveldb.DB

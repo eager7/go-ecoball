@@ -115,7 +115,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 	s.Type = state.CopyType
 	var cpu, net float64
 	for i := 0; i < len(txs); i++ {
-		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Final DB")
+		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
 		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].JsonString())
 			//c.ResetStateDB(c.CurrentHeader)
