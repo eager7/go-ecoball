@@ -299,7 +299,3 @@ func (b *MinorBlock) JsonString() string {
 	}
 	return string(data)
 }
-
-
-
-

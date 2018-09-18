@@ -19,10 +19,10 @@ package transaction_test
 import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
 	"github.com/ecoball/go-ecoball/core/types"
 	"testing"
-	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 func TestBlockAdd(t *testing.T) {
@@ -39,4 +39,3 @@ func TestBlockAdd(t *testing.T) {
 		fmt.Println(block)
 	}
 }
-

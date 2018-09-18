@@ -3,8 +3,8 @@ package state
 import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
-	"math/big"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"math/big"
 )
 
 const abaTotal = 100000

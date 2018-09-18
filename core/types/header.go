@@ -30,7 +30,6 @@ import (
 
 const VersionHeader = 1
 
-
 type Header struct {
 	//Type          HeaderType
 	//Payload       Payload

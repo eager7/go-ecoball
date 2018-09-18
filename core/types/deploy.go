@@ -36,7 +36,7 @@ func NewDeployContract(from, addr common.AccountName, chainID common.Hash, perm 
 		TypeVm:   vm,
 		Describe: []byte(des),
 		Code:     code,
-		Abi:	  abi,
+		Abi:      abi,
 	}
 	trans, err := NewTransaction(TxDeploy, from, addr, chainID, perm, deploy, nonce, time)
 	if err != nil {

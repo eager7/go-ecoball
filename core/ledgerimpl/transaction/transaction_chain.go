@@ -315,23 +315,14 @@ func (c *ChainTx) GetShardBlockByHash(typ types.HeaderType, hash common.Hash) (t
 	if err != nil {
 		return nil, errors.New(log, fmt.Sprintf("GetBlock error:%s", err.Error()))
 	}
-	switch typ {
-	case types.HeCmBlock:
-		block := new(types.CMBlock)
-		if err := block.Deserialize(dataBlock); err != nil {
-			return nil, err
-		}
-		return block, nil
-	case types.HeMinorBlock:
-	case types.HeFinalBlock:
 
-	}
-	return nil, nil
+	return types.BlockDeserialize(dataBlock, typ)
 }
 
 func (c *ChainTx) GetShardBlockByHeight(typ types.HeaderType, height uint64) (types.BlockInterface, error) {
 return nil, nil
 }
+
 
 /**
 *  @brief  return the highest block's hash

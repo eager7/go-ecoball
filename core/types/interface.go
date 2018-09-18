@@ -1,6 +1,9 @@
 package types
 
-import "github.com/ecoball/go-ecoball/common"
+import (
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/errors"
+)
 
 type Payload interface {
 	Serialize() ([]byte, error)
@@ -39,4 +42,29 @@ type HeaderInterface interface {
 
 type BlockInterface interface {
 	HeaderInterface
+}
+
+func BlockDeserialize(data []byte, typ HeaderType) (BlockInterface, error) {
+	switch typ {
+	case HeCmBlock:
+		block := new(CMBlock)
+		if err := block.Deserialize(data); err != nil {
+			return nil, err
+		}
+		return block, nil
+	case HeMinorBlock:
+		block := new(MinorBlock)
+		if err := block.Deserialize(data); err != nil {
+			return nil, err
+		}
+		return block, nil
+	case HeFinalBlock:
+		block := new(FinalBlock)
+		if err := block.Deserialize(data); err != nil {
+			return nil, err
+		}
+		return block, nil
+	default:
+		return nil, errors.New(log, "unknown header type")
+	}
 }

@@ -17,15 +17,15 @@
 package types
 
 import (
-	errIn "errors"
 	"encoding/binary"
+	errIn "errors"
 	"fmt"
+	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"sort"
-	"github.com/ecoball/go-ecoball/account"
-	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 type ConType uint32
@@ -417,44 +417,44 @@ func (a *AbaBftData) Show() {
 	}
 }
 
-func GenesisABABFTInit(timestamp int64)  *AbaBftData{
+func GenesisABABFTInit(timestamp int64) *AbaBftData {
 	// array the peers list
 	/*
-	Num_peers_t := len(ababft.Peers_list)
-	var Peers_list_t []string
-	for i := 0; i < Num_peers_t; i++ {
-		Peers_list_t[i] = string(ababft.Peers_list[i].PublicKey)
-	}
-	// sort the peers as list
-	sort.Strings(Peers_list_t)
-	for i := 0; i < Num_peers_t; i++ {
-		ababft.Peers_list[i].PublicKey = []byte(Peers_list_t[i])
-		ababft.Peers_list[i].Index = i
-	}
-	log.Debug("generate the geneses")
-	var sigs []common.Signature
-	for i := 0; i < Num_peers_t; i++ {
-		sigs = append(sigs,common.Signature{ababft.Peers_list[i].PublicKey, []byte("hello,ababft")})
-	}
+		Num_peers_t := len(ababft.Peers_list)
+		var Peers_list_t []string
+		for i := 0; i < Num_peers_t; i++ {
+			Peers_list_t[i] = string(ababft.Peers_list[i].PublicKey)
+		}
+		// sort the peers as list
+		sort.Strings(Peers_list_t)
+		for i := 0; i < Num_peers_t; i++ {
+			ababft.Peers_list[i].PublicKey = []byte(Peers_list_t[i])
+			ababft.Peers_list[i].Index = i
+		}
+		log.Debug("generate the geneses")
+		var sigs []common.Signature
+		for i := 0; i < Num_peers_t; i++ {
+			sigs = append(sigs,common.Signature{ababft.Peers_list[i].PublicKey, []byte("hello,ababft")})
+		}
 	*/
 	var Num_peers_t int
 	Num_peers_t = 3
 	var Peers_list_t []string
-	Peers_list_t = append(Peers_list_t,string(config.Worker1.PublicKey))
-	Peers_list_t = append(Peers_list_t,string(config.Worker2.PublicKey))
-	Peers_list_t = append(Peers_list_t,string(config.Worker3.PublicKey))
+	Peers_list_t = append(Peers_list_t, string(config.Worker1.PublicKey))
+	Peers_list_t = append(Peers_list_t, string(config.Worker2.PublicKey))
+	Peers_list_t = append(Peers_list_t, string(config.Worker3.PublicKey))
 
 	sort.Strings(Peers_list_t)
 	var Peers_list []account.Account
 	for i := 0; i < Num_peers_t; i++ {
 		var peer account.Account
 		peer.PublicKey = []byte(Peers_list_t[i])
-		Peers_list = append(Peers_list,peer)
+		Peers_list = append(Peers_list, peer)
 	}
 	var sigs []common.Signature
 	for i := 0; i < Num_peers_t; i++ {
-		sigs = append(sigs,common.Signature{Peers_list[i].PublicKey, []byte("hello,ababft")})
+		sigs = append(sigs, common.Signature{Peers_list[i].PublicKey, []byte("hello,ababft")})
 	}
-	abaData := AbaBftData{0,sigs}
+	abaData := AbaBftData{0, sigs}
 	return &abaData
 }
