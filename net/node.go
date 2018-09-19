@@ -41,25 +41,13 @@ import (
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 )
 
-type NetCtrl struct {
-	NetNode  *NetNode
-	actor    *NetActor
-}
+var (
+	log = elog.NewLogger("net", elog.DebugLog)
 
-const (
-	DefaultConnMgrHighWater   = 900
-	DefaultConnMgrLowWater    = 600
-	DefaultConnMgrGracePeriod = time.Second * 20
+	ecoballChainId uint32 = 1
 
-	p2pListenPort             = "4013"
+	netNode  *NetNode
 )
-
-var log = elog.NewLogger("net", elog.DebugLog)
-
-//TODO move to config
-var ecoballChainId uint32 = 1
-
-var netCtrl *NetCtrl
 
 type NetNode struct {
 	ctx         context.Context
@@ -70,9 +58,6 @@ type NetNode struct {
 	actorId     *actor.PID
 	listen      []string
 	//pubSub      *floodsub.PubSub
-
-	//TODO cache check
-	//netMsgCache  *lru.Cache
 }
 
 func constructPeerHost(ctx context.Context, id peer.ID, ps peerstore.Peerstore, options ...libp2p.Option) (host.Host, error) {
@@ -371,44 +356,25 @@ func GetChainId() uint32 {
 	return ecoballChainId
 }
 
-func InitNetWork() {
-	//TODO load config
-	//configFile, err := ioutil.ReadFile(ConfigFile)
-	//if err != nil {
-	//
-	//}
-	//TODO move to config file
-	//InitIpfsConfig(path)
-	//var path = ecoballConfig.IpfsDir
-
-	//ipfsCtrl, err := ipfs.InitAndRunIpfs(path)
-	//if err != nil {
-	//	panic(err)
-	//	os.Exit(1)
-	//}
-	//ipfsNode := ipfsCtrl.IpfsNode
-	//TODO get it from config file
-	netNode, err := New(context.Background())
+func InitNetWork(ctx context.Context) {
+	var err error
+	netNode, err = New(ctx)
 	if err != nil {
 		log.Error(err)
 		os.Exit(1)
-	}
-
-	netCtrl = &NetCtrl{
-		NetNode:  netNode,
 	}
 
 	log.Info("i am ", netNode.SelfId())
 }
 
 func StartNetWork() {
-	netActor := NewNetActor(netCtrl.NetNode)
+	netActor := NewNetActor(netNode)
 	actorId, _ := netActor.Start()
-	netCtrl.NetNode.SetActorPid(actorId)
+	netNode.SetActorPid(actorId)
 
-	if err := netCtrl.NetNode.Start(); err != nil {
+	if err := netNode.Start(); err != nil {
 		log.Error("error for starting netnode,", err)
 		os.Exit(1)
 	}
-	log.Info(netCtrl.NetNode.SelfId(), " is running.")
+	log.Info(netNode.SelfId(), " is running.")
 }
