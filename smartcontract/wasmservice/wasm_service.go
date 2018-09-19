@@ -56,7 +56,7 @@ type WasmService struct {
 	timeStamp int64
 }
 
-func NewWasmService(s state.InterfaceState, tx *types.Transaction, action *types.Action, context *context.ApplyContext, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
+func NewWasmService(s state.InterfaceState, action *types.Action, context *context.ApplyContext, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
 	if contract == nil {
 		return nil, errors.New("contract is nil")
 	}

@@ -441,10 +441,10 @@ func InvokeContract(ledger ledger.Ledger) {
 
 	path := os.Getenv("GOPATH")
 
-	//file data
+	// contract file1 data
 	file, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/inline_action.wasm", os.O_RDONLY, 0666)
 	if err != nil {
-		fmt.Println("open file failed")
+		fmt.Println("open file inline_action.wasm failed")
 		return
 	}
 
@@ -455,14 +455,29 @@ func InvokeContract(ledger ledger.Ledger) {
 		return
 	}
 
+	// abi file, common for contract file1 and file2
 	abifile, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/simple_token.abi", os.O_RDONLY, 0666)
 	if err != nil {
-		fmt.Println("open file failed")
+		fmt.Println("open file simple_token.abi failed")
 		return
 	}
 
 	defer abifile.Close()
 	abidata, err := ioutil.ReadAll(abifile)
+	if err != nil {
+		fmt.Println("read contract filr err: ", err.Error())
+		return
+	}
+
+	//contract file2 data
+	file2, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/inline_action2.wasm", os.O_RDONLY, 0666)
+	if err != nil {
+		fmt.Println("open file inline_action2.wasm failed")
+		return
+	}
+
+	defer file2.Close()
+	data2, err := ioutil.ReadAll(file2)
 	if err != nil {
 		fmt.Println("read contract filr err: ", err.Error())
 		return
@@ -482,9 +497,18 @@ func InvokeContract(ledger ledger.Ledger) {
 	}
 	fmt.Println("abibyte: ", hex.EncodeToString(abibyte))
 
+	// deploy first contract
 	contract, err := types.NewDeployContract(common.NameToIndex("worker"), common.NameToIndex("worker"), config.ChainHash, state.Owner, types.VmWasm, "test", data, abibyte, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Worker))
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	time.Sleep(time.Millisecond * 1500)
+
+
+	// deploy second contract
+	contract, err = types.NewDeployContract(common.NameToIndex("worker2"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, types.VmWasm, "test", data2, abibyte, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(contract.SetSignature(&config.Worker2))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 1500)
 
@@ -504,6 +528,7 @@ func InvokeContract(ledger ledger.Ledger) {
 
 	//transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": "-100"}`)
 	//create := []byte(`{"creator": "worker1", "max_supply": "800", "token_id": "xyx"}`)
+	// first contract create
 	create := []byte(`["worker1", "800", "xyx"]`)
 
 	argbyte, err := abi.CheckParam(abiDef, "create", create)
@@ -523,7 +548,47 @@ func InvokeContract(ledger ledger.Ledger) {
 	time.Sleep(time.Millisecond * 2500)
 
 
-	issue := []byte(`{"to": "worker1", "amount": "100", "token_id": "xyx"}`)
+	// second contract create
+	create = []byte(`["worker1", "800", "xxx"]`)
+
+	argbyte, err = abi.CheckParam(abiDef, "create", create)
+	if err != nil {
+		fmt.Errorf("can not find UnmarshalBinary abi file")
+		return
+	}
+
+	var parameters2 []string
+
+	parameters2 = append(parameters2, string(argbyte[:]))
+
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, "create", parameters2, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 2500)
+
+	// second contract issue
+	issue := []byte(`{"to": "worker1", "amount": "100", "token_id": "xxx"}`)
+
+	argbyte, err = abi.CheckParam(abiDef, "issue", issue)
+	if err != nil {
+		fmt.Errorf("can not find UnmarshalBinary abi file")
+		return
+	}
+
+	var issueParameters2 []string
+
+	issueParameters2 = append(issueParameters2, string(argbyte[:]))
+
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, "issue", issueParameters2, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 2500)
+
+
+	// first contract issue, inline call second contract "transfer"
+	issue = []byte(`{"to": "worker1", "amount": "100", "token_id": "xyx"}`)
 
 	argbyte, err = abi.CheckParam(abiDef, "issue", issue)
 	if err != nil {
@@ -542,23 +607,23 @@ func InvokeContract(ledger ledger.Ledger) {
 	time.Sleep(time.Millisecond * 2500)
 
 
-	trans := []byte(`{"from": "worker1", "to": "worker2", "amount": "20", "token_id": "xyx"}`)
-
-	argbyte, err = abi.CheckParam(abiDef, "transfer", trans)
-	if err != nil {
-		fmt.Errorf("can not find UnmarshalBinary abi file")
-		return
-	}
-
-	var transferParameters []string
-
-	transferParameters = append(transferParameters, string(argbyte[:]))
-
-	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "transfer", transferParameters, 0, time.Now().UnixNano())
-	errors.CheckErrorPanic(err)
-	invoke.SetSignature(&config.Worker1)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	time.Sleep(time.Millisecond * 2500)
+	//trans := []byte(`{"from": "worker1", "to": "worker2", "amount": "20", "token_id": "xyx"}`)
+	//
+	//argbyte, err = abi.CheckParam(abiDef, "transfer", trans)
+	//if err != nil {
+	//	fmt.Errorf("can not find UnmarshalBinary abi file")
+	//	return
+	//}
+	//
+	//var transferParameters []string
+	//
+	//transferParameters = append(transferParameters, string(argbyte[:]))
+	//
+	//invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "transfer", transferParameters, 0, time.Now().UnixNano())
+	//errors.CheckErrorPanic(err)
+	//invoke.SetSignature(&config.Worker1)
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//time.Sleep(time.Millisecond * 2500)
 
 }
 
