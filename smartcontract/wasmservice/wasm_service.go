@@ -48,7 +48,6 @@ type ParamTV struct {
 
 type WasmService struct {
 	state     state.InterfaceState
-	//Tx        *types.Transaction
 	action	  *types.Action
 	context   *context.ApplyContext
 	Code      []byte
@@ -79,7 +78,6 @@ func NewWasmService(s state.InterfaceState, tx *types.Transaction, action *types
 
 	ws := &WasmService{
 		state:     s,
-		//Tx:		   tx,
 		action:    action,
 		context:	context,
 		Code:      contract.Code,
