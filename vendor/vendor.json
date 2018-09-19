@@ -1059,6 +1059,12 @@
 			"revisionTime": "2018-03-31T01:49:30Z"
 		},
 		{
+			"checksumSHA1": "FLlqiE6ZAnbeMTtJeWuc+sRbEyg=",
+			"path": "github.com/ugorji/go/codec",
+			"revision": "edc8f1f6bad21cca2dcbc2f4d4ced265111ccea6",
+			"revisionTime": "2018-06-26T13:29:13Z"
+		},
+		{
 			"checksumSHA1": "9/2qvuFPQxW7ZXzQSOYwqZb5cNg=",
 			"path": "github.com/urfave/cli",
 			"revision": "8e01ec4cd3e2d84ab2fe90d8210528ffbb06d8ff",
@@ -1221,6 +1227,12 @@
 			"path": "google.golang.org/genproto/protobuf/field_mask",
 			"revision": "51d0944304c3cbce4afe9e5247e21100037bff78",
 			"revisionTime": "2018-04-09T22:20:37Z"
+		},
+		{
+			"checksumSHA1": "q190bL03wQok3wVwYmMub2XhOiU=",
+			"path": "gopkg.in/go-playground/validator.v8",
+			"revision": "5f1438d3fca68893a817e4a66806cea46a9e4ebf",
+			"revisionTime": "2017-07-30T05:02:35Z"
 		},
 		{
 			"checksumSHA1": "ZSWoOPUNRr5+3dhkLK3C4cZAQPk=",
