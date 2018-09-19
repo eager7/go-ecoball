@@ -20,10 +20,13 @@ import (
 	"syscall"
 	"testing"
 	"github.com/ecoball/go-ecoball/http/rpc"
+	"golang.org/x/sync/errgroup"
+	"golang.org/x/net/context"
 )
 
 func TestRunMain(t *testing.T) {
-	net.InitNetWork()
+	_, ctx := errgroup.WithContext(context.Background())
+	net.InitNetWork(ctx)
 	os.RemoveAll("/tmp/node_test")
 	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
@@ -62,7 +65,8 @@ func TestRunMain(t *testing.T) {
 }
 
 func TestRunNode(t *testing.T) {
-	net.InitNetWork()
+	_, ctx := errgroup.WithContext(context.Background())
+	net.InitNetWork(ctx)
 	ledger.L = example.Ledger("/tmp/run_test")
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
 

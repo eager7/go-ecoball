@@ -91,14 +91,22 @@ $./ecoclient create account --creator $CREATORNAME --name $ACCOUNTNAME --owner $
 ```
 $ ./ecoclient transfer  --from $ADDRESS --to $ADDRESS --value $AMOUNT
 ```
-### query
-#### query all chainId
+### get
+#### get all chainId
 ```
-$ ./ecoclient query listchain
+$ ./ecoclient get listchain
 ```
-#### query account's info
+#### get account's info
 ```
-$ ./ecoclient query account -n $ACCOUNTNAME
+$ ./ecoclient get account -n $ACCOUNTNAME
+```
+#### get blockinfo by height
+```
+$ ./ecoclient get block --he $HEIGHT
+```
+#### get transaction by hash
+```
+$ ./ecoclient get transaction --id $HASH
 ```
 ### contract
 #### deploy contract,you will get contract address

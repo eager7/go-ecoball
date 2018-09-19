@@ -132,6 +132,7 @@ func StartRPCServer() (err error) {
 	httpServer.AddHandleFunc("GetContract", commands.GetContract)
 	httpServer.AddHandleFunc("getBlock", commands.GetBlock)
 	httpServer.AddHandleFunc("getTransaction", commands.GetTransaction)
+	httpServer.AddHandleFunc("StoreGet", commands.StoreGet)
 
 	httpServer.AddHandleFunc("netlistmyid", nrpc.CliServerListMyId)
 	httpServer.AddHandleFunc("netlistmypeer", nrpc.CliServerListMyPeers)
