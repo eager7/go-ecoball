@@ -442,7 +442,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	path := os.Getenv("GOPATH")
 
 	//file data
-	file, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/program.wasm", os.O_RDONLY, 0666)
+	file, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/inline_action.wasm", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file failed")
 		return
@@ -468,61 +468,6 @@ func InvokeContract(ledger ledger.Ledger) {
 		return
 	}
 
-//	simpleABI := []byte(`
-//{
-// "types": [],
-// "structs": [{
-//     "name": "transfer",
-//     "base": "",
-//     "fields": [
-//        {"name":"from", "type":"string"},
-//        {"name":"to", "type":"string"},
-//        {"name":"quantity", "type":"string"},
-//        {"name":"memo", "type":"int32"}
-//     ]
-//   },{
-//      "name": "account",
-//      "base": "",
-//      "fields": [
-//        {"name":"balance", "type":"asset"}
-//      ]
-//    },{
-//      "name": "currency_stats",
-//      "base": "",
-//      "fields": [
-//        {"name":"supply", "type":"asset"},
-//        {"name":"max_supply", "type":"asset"},
-//        {"name":"issuer", "type":"account_name"}
-//      ]
-//    }
-// ],
-// "actions": [{
-//     "name": "transfer",
-//     "type": "transfer"
-//   }
-// ],
-// "tables": [{
-//	"name": "accounts",
-//	"type": "account",
-//	"index_type": "i64",
-//	"key_names" : ["currency"],
-//	"key_types" : ["uint64"]
-//	},{
-//	"name": "stat",
-//	"type": "currency_stats",
-//	"index_type": "i64",
-//	"key_names" : ["currency"],
-//	"key_types" : ["uint64"]
-//	}
-// ]
-//}
-//`)
-//
-//	var simpleAbi abi.ABI
-//	if err = json.Unmarshal(simpleABI, &simpleAbi); err != nil {
-//		fmt.Errorf("ABI Unmarshal failed")
-//		return
-//	}
 
 	var contractAbi abi.ABI
 	if err = json.Unmarshal(abidata, &contractAbi); err != nil {
