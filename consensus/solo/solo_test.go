@@ -14,10 +14,13 @@ import (
 	"math/big"
 	"testing"
 	"time"
+	"golang.org/x/sync/errgroup"
+	"context"
 )
 
 func xTestSoloModule(t *testing.T) {
-	net.InitNetWork()
+	_, ctx := errgroup.WithContext(context.Background())
+	net.InitNetWork(ctx)
 	ledger := example.Ledger("/tmp/solo")
 	txPool, err := txpool.Start(ledger)
 	errors.CheckErrorPanic(err)
@@ -45,7 +48,8 @@ func autoGenerateTransaction() {
 }
 
 func TestNewSolo(t *testing.T) {
-	net.InitNetWork()
+	_, ctx := errgroup.WithContext(context.Background())
+	net.InitNetWork(ctx)
 	ledger := example.Ledger("/tmp/solo")
 	txPool, err := txpool.Start(ledger)
 	errors.CheckErrorPanic(err)

@@ -149,6 +149,32 @@ func GetContract(params []interface{}) *common.Response {
 	}
 }
 
+func StoreGet(params []interface{}) *common.Response {
+	if len(params) < 1 {
+		log.Error("invalid arguments")
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	switch params[0].(type){
+	case string:
+		//list account
+		chainId := params[0].(string)
+		accountName := params[1].(string)
+		key := params[2].(string)
+		hash := new(innerCommon.Hash)
+		chainids := hash.FormHexString(chainId)
+		storage, err := ledger.L.StoreGet(chainids, innerCommon.NameToIndex(accountName), innerCommon.FromHex(key))
+		if err != nil {
+			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
+		}
+
+		fmt.Println(string(storage))
+		return common.NewResponse(common.SUCCESS, innerCommon.ToHex(storage))
+	default:
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+}
+
 func handleInvokeContract(params []interface{}) common.Errcode {
 	transaction := new(types.Transaction)
 

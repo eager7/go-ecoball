@@ -78,7 +78,7 @@ var (
 				Action: getTransaction,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "id, i",
+						Name:  "hash, i",
 						Usage: "transaction hash",
 					},
 				},
