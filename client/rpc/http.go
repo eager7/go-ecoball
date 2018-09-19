@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -39,7 +38,6 @@ func newRequest(method, resource, address string, body io.Reader) (req *http.Req
 
 //post raw data
 func postRawResponse(resource, address, data string) ([]byte, error) {
-	fmt.Println(data)
 	req, err := newRequest("POST", resource, address, strings.NewReader(data))
 	if err != nil {
 		return nil, err
