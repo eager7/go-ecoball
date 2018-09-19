@@ -46,7 +46,7 @@ func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionD
 		dataSlice = append(dataSlice, data[dataLen - 1])
 	}
 
-	contractGet, err := ws.state.GetContract(common.NameToIndex("worker"))
+	contractGet, err := ws.state.GetContract(common.NameToIndex(string(contractSlice)))
 	if err != nil {
 		fmt.Errorf("can not find contract abi file")
 		return -2
