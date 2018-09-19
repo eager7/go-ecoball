@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/smartcontract/context"
 )
 
 var log = elog.NewLogger("contract", elog.DebugLog)
@@ -31,15 +32,15 @@ type ContractService interface {
 	Execute() ([]byte, error)
 }
 
-func NewContractService(s state.InterfaceState, tx *types.Transaction, cpuLimit, netLimit float64, timeStamp int64) (ContractService, error) {
-	if s == nil || tx == nil {
+func NewContractService(s state.InterfaceState, tx *types.Transaction, action *types.Action, context *context.ApplyContext, cpuLimit, netLimit float64, timeStamp int64) (ContractService, error) {
+	if s == nil || tx == nil || action == nil {
 		return nil, errors.New(log, "the contract service's ledger interface or tx is nil")
 	}
-	contract, err := s.GetContract(tx.Addr)
+	contract, err := s.GetContract(action.ContractAccount)
 	if err != nil {
 		return nil, err
 	}
-	invoke, ok := tx.Payload.GetObject().(types.InvokeInfo)
+	invoke, ok := action.Payload.GetObject().(types.InvokeInfo)
 	if !ok {
 		return nil, errors.New(log, "transaction type error[invoke]")
 	}
@@ -54,7 +55,7 @@ func NewContractService(s state.InterfaceState, tx *types.Transaction, cpuLimit,
 		}
 		return service, nil
 	case types.VmWasm:
-		service, err := wasmservice.NewWasmService(s, tx, contract, &invoke, timeStamp)
+		service, err := wasmservice.NewWasmService(s, tx, action, context, contract, &invoke, timeStamp)
 		if err != nil {
 			return nil, err
 		}

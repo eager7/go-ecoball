@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	//nBitsForKeypairDefault = 2048
+	nBitsForKeypairDefault = 2048
 )
 
 var initCmd = &cmds.Command{
@@ -113,9 +113,9 @@ environment variable:
 	},
 }
 
-//var errRepoExists = errors.New(`ipfs configuration file already exists!
-//Reinitializing would overwrite your keys.
-//`)
+var errRepoExists = errors.New(`ipfs configuration file already exists!
+Reinitializing would overwrite your keys.
+`)
 
 func initWithDefaults(out io.Writer, repoRoot string, profile string) error {
 	var profiles []string

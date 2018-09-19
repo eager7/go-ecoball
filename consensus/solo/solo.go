@@ -82,7 +82,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 	root := common.AddressFromPubKey(solo.account.PublicKey)
 	startNode := root.Equals(&addr)
 	for {
-		t.Reset(time.Second * 1)
+		t.Reset(time.Second * 2)
 		select {
 		case <-t.C:
 			if !startNode {
@@ -98,6 +98,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 			if err != nil {
 				log.Fatal(err)
 			}
+			log.Debug(block.JsonString(false))
 			if err := block.SetSignature(&solo.account); err != nil {
 				log.Fatal(err)
 			}

@@ -47,7 +47,6 @@ const (
 var configDefault = `#toml configuration for EcoBall system
 http_port = "20678"          # client http port
 wallet_http_port = "20679"   # client wallet http port
-p2p_port = "4013"            # p2p network port
 version = "1.0"              # system version
 log_dir = "/tmp/Log/"        # log file location
 output_to_terminal = "true"  # debug output type	 	
@@ -88,14 +87,42 @@ worker_pubkey = "0x04b15d8efb9dcf3a086a69a0f6c334ebcb47d21293e36e1f22440185f1b74
 peer_list = [ "120202c924ed1a67fd1719020ce599d723d09d48362376836e04b0be72dfe825e24d810000", 
               "120202935fb8d28b70706de6014a937402a30ae74a56987ed951abbe1ac9eeda56f0160000" ]
 peer_index = [ "1", "2" ]
+
+#p2p swarm config info
+p2p_listen_address   = ["/ip4/0.0.0.0/tcp/4013","/ip6/::/tcp/4013"]
+announce_address     = []
+no_announce_address  = []
+bootstrap_address    = []
+disable_nat_port_map = false
+disable_relay        = false
+enable_relay_hop     = false
+conn_mgr_lowwater    = 600
+conn_mgr_highwater   = 900
+conn_mgr_graceperiod = 20
+
+#p2p local discovery config info
+enable_local_discovery = true
+disable_localdis_log   = true
 `
+
+type SwarmConfigInfo struct {
+	ListenAddress      []string
+	AnnounceAddr       []string
+	NoAnnounceAddr     []string
+	BootStrapAddr      []string
+	DisableNatPortMap  bool
+	DisableRelay       bool
+	EnableRelayHop     bool
+	ConnLowWater       int
+	ConnHighWater      int
+	ConnGracePeriod    int
+}
 
 var (
 	ChainHash          common.Hash
 	TimeSlot           int
 	HttpLocalPort      string
 	WalletHttpPort     string
-	P2PLocalPort       string
 	EcoVersion         string
 	LogDir             string
 	OutputToTerminal   bool
@@ -110,6 +137,9 @@ var (
 	Worker1            account.Account
 	Worker2            account.Account
 	Worker3            account.Account
+	SwarmConfig        SwarmConfigInfo
+	EnableLocalDiscovery  bool
+	DisableLocalDisLog    bool
 )
 
 func SetConfig(filePath string) error {
@@ -184,7 +214,6 @@ func initVariable() {
 	TimeSlot = viper.GetInt("time_slot")
 	HttpLocalPort = viper.GetString("http_port")
 	WalletHttpPort = viper.GetString("wallet_http_port")
-	P2PLocalPort = viper.GetString("p2p_port")
 	EcoVersion = viper.GetString("version")
 	LogDir = viper.GetString("log_dir")
 	OutputToTerminal = viper.GetBool("output_to_terminal")
@@ -201,4 +230,21 @@ func initVariable() {
 	PeerList = viper.GetStringSlice(ListPeers)
 	PeerIndex = viper.GetStringSlice(IndexPeers)
 	ChainHash = common.SingleHash(common.FromHex(viper.GetString("root_pubkey")))
+
+	//init p2p swarm configuration
+	SwarmConfig = SwarmConfigInfo{
+		ListenAddress: viper.GetStringSlice("p2p_listen_address"),
+		AnnounceAddr: viper.GetStringSlice("announce_address"),
+		NoAnnounceAddr: viper.GetStringSlice("no_announce_address"),
+		BootStrapAddr: viper.GetStringSlice("bootstrap_address"),
+		DisableNatPortMap: viper.GetBool("disable_nat_port_map"),
+		DisableRelay: viper.GetBool("disable_relay"),
+		EnableRelayHop: viper.GetBool("enable_relay_hop"),
+		ConnLowWater: viper.GetInt("conn_mgr_lowwater"),
+		ConnHighWater: viper.GetInt("conn_mgr_highwater"),
+		ConnGracePeriod: viper.GetInt("conn_mgr_graceperiod"),
+	}
+
+	EnableLocalDiscovery = viper.GetBool("enable_local_discovery")
+	DisableLocalDisLog = viper.GetBool("disable_localdis_log")
 }

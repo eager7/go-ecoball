@@ -11,7 +11,6 @@ var L Ledger
 type Ledger interface {
 	//GetShardBlock() (types.Payload, error)
 
-
 	GetTxBlock(chainID common.Hash, hash common.Hash) (*types.Block, error)
 	NewTxBlock(chainID common.Hash, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error)
 	VerifyTxBlock(chainID common.Hash, block *types.Block) error
@@ -46,4 +45,6 @@ type Ledger interface {
 
 	//GetGenesesTime() int64
 	GetChainTx(chainID common.Hash) ChainInterface
+
+	GetTransaction(chainID, transactionId common.Hash) (*types.Transaction, error)
 }

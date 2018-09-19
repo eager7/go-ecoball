@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"github.com/ecoball/go-ecoball/dsn/host"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
-	"github.com/ecoball/go-ecoball/dsn/crypto"
 	"github.com/go-redis/redis"
 	"github.com/ecoball/go-ecoball/dsn/renter"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
@@ -16,13 +15,16 @@ import (
 	"github.com/ecoball/go-ecoball/dsn/common"
 	"github.com/ecoball/go-ecoball/core/state"
 	ecommon "github.com/ecoball/go-ecoball/common"
-	//hpb "github.com/ecoball/go-ecoball/dsn/host/pb"
 	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
 	"io/ioutil"
+	"github.com/ecoball/go-ecoball/common/elog"
+	"crypto/sha256"
+	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 )
 
 var (
 	errProofInvalid = errors.New("Storage proof is invalid")
+	log = elog.NewLogger("dsn-s", elog.DebugLog)
 )
 
 const (
@@ -104,15 +106,22 @@ func (s *Settler) decodeAnnouncement(fullAnnouncement []byte) (host.HostAncContr
 	if err != nil {
 		return announcement, err
 	}
-	var sig crypto.Signature
+	//TODO
+	//var sig crypto.Signature
+	var sig [65]byte
 	err = dec.Decode(&sig)
 	if err != nil {
 		return announcement, err
 	}
-	var pk crypto.PublicKey
-	copy(pk[:], announcement.PublicKey)
-	annHash := crypto.HashObject(announcement)
-	err = crypto.VerifyHash(annHash, pk, sig)
+	//var pk crypto.PublicKey
+	//copy(pk[:], announcement.PublicKey)
+	//annHash := crypto.HashObject(announcement)
+	//err = crypto.VerifyHash(annHash, pk, sig)
+	anHash := sha256.Sum256(encoding.Marshal(announcement))
+	ok, err := secp256k1.Verify(anHash[:], sig[:], announcement.PublicKey)
+	if !ok {
+		log.Error("sig check failed")
+	}
 	if err != nil {
 		return announcement, err
 	}
@@ -135,15 +144,21 @@ func (s *Settler) decodeProof(proof []byte) (host.StorageProof, error) {
 		return sp, err
 	}
 	// Read the signature out of the reader
-	var sig crypto.Signature
+	//var sig crypto.Signature
+	var sig [65]byte
 	err = dec.Decode(&sig)
 	if err != nil {
 		return sp, err
 	}
-	var pk crypto.PublicKey
-	copy(pk[:], sp.PublicKey)
-	proofHash := crypto.HashObject(sp)
-	err = crypto.VerifyHash(proofHash, pk, sig)
+	//var pk crypto.PublicKey
+	//copy(pk[:], sp.PublicKey)
+	//proofHash := crypto.HashObject(sp)
+	//err = crypto.VerifyHash(proofHash, pk, sig)
+	proofHash := sha256.Sum256(encoding.Marshal(sp))
+	ok, err := secp256k1.Verify(proofHash[:], sig[:], sp.PublicKey)
+	if !ok {
+		log.Error("sig check failed")
+	}
 	if err != nil {
 		return sp, err
 	}
@@ -157,15 +172,21 @@ func (s *Settler) decodeFileContract(data []byte) (renter.FileContract, error) {
 	if err != nil {
 		return fc, err
 	}
-	var sig crypto.Signature
+	//var sig crypto.Signature
+	var sig [65]byte
 	err = dec.Decode(&sig)
 	if err != nil {
 		return fc, err
 	}
-	var pk crypto.PublicKey
-	copy(pk[:], fc.PublicKey)
-	proofHash := crypto.HashObject(fc)
-	err = crypto.VerifyHash(proofHash, pk, sig)
+	//var pk crypto.PublicKey
+	//copy(pk[:], fc.PublicKey)
+	//proofHash := crypto.HashObject(fc)
+	//err = crypto.VerifyHash(proofHash, pk, sig)
+	fcHash := sha256.Sum256(encoding.Marshal(fc))
+	ok, err := secp256k1.Verify(fcHash[:], sig[:], fc.PublicKey)
+	if !ok {
+		log.Error("sig check failed")
+	}
 	if err != nil {
 		return fc, err
 	}
@@ -231,10 +252,12 @@ func (s *Settler) storeAccountState(data interface{}, st state.InterfaceState) e
 func (s *Settler)HandleHostAnce(data []byte, st state.InterfaceState) error {
 	c, err := s.decodeAnnouncement(data)
 	if err != nil {
+		log.Error(err.Error())
 		return err
 	}
 	err = s.storeAccountState(&c,st)
 	if err != nil {
+		log.Error(err.Error())
 		return err
 	}
 	return s.storeStoragecap(c)

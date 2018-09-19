@@ -29,13 +29,13 @@ type ShardInfo struct {
 }
 
 type StoreRepoStat struct {
-	Peer         peer.ID
-	ChainID      uint32
-	RepoSize     uint64
-	StorageMax   uint64
-	NumObjects   uint64
-	RandBlkInfo  []*ShardInfo
-	BadBlocks    []*cid.Cid
+	Peer        peer.ID
+	ChainID     uint32
+	RepoSize    uint64
+	StorageMax  uint64
+	NumObjects  uint64
+	RandBlkInfo []*ShardInfo
+	BadBlocks   []*cid.Cid
 }
 
 func (srs *StoreRepoStat) Serialize() ([]byte, error) {
@@ -51,9 +51,9 @@ func (srs *StoreRepoStat) Serialize() ([]byte, error) {
 	for _, cid := range srs.BadBlocks {
 		prefix := cid.Prefix()
 		pb_cid := &pb.Cid{
-			Version:  prefix.Version,
-			Codec:    prefix.Codec,
-			Hash:     cid.Hash(),
+			Version: prefix.Version,
+			Codec:   prefix.Codec,
+			Hash:    cid.Hash(),
 		}
 		pb_badcids = append(pb_badcids, pb_cid)
 	}
@@ -61,11 +61,11 @@ func (srs *StoreRepoStat) Serialize() ([]byte, error) {
 
 	var sis []*pb.ShardInfo
 	for _, shard := range srs.RandBlkInfo {
-		prefix :=shard.Cid.Prefix()
+		prefix := shard.Cid.Prefix()
 		pb_cid := &pb.Cid{
-			Version:  prefix.Version,
-			Codec:    prefix.Codec,
-			Hash:     shard.Cid.Hash(),
+			Version: prefix.Version,
+			Codec:   prefix.Codec,
+			Hash:    shard.Cid.Hash(),
 		}
 		si := &pb.ShardInfo{pb_cid, shard.RawSize}
 		sis = append(sis, si)

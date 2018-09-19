@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/state"
-	"math/big"
 	"github.com/ecoball/go-ecoball/core/types"
+	"math/big"
 )
 
 /*
@@ -78,19 +78,19 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 		fmt.Println(err)
 		return err
 	}
-/*
-	delegate := common.NameToIndex("delegate")
-	if _, err := s.AddAccount(delegate, common.AddressFromPubKey(config.Delegate.PublicKey), timeStamp); err != nil {
-		return err
-	}
-	if err := s.AccountAddBalance(delegate, state.AbaToken, new(big.Int).SetUint64(10000)); err != nil {
-		return err
-	}
-	fmt.Println("set root account's resource to [cpu:100, net:100]")
-	if err := s.SetResourceLimits(delegate, delegate, 1000, 1000, types.BlockCpuLimit, types.BlockNetLimit); err != nil {
-		fmt.Println(err)
-		return err
-	}
-*/
+	/*
+		delegate := common.NameToIndex("delegate")
+		if _, err := s.AddAccount(delegate, common.AddressFromPubKey(config.Delegate.PublicKey), timeStamp); err != nil {
+			return err
+		}
+		if err := s.AccountAddBalance(delegate, state.AbaToken, new(big.Int).SetUint64(10000)); err != nil {
+			return err
+		}
+		fmt.Println("set root account's resource to [cpu:100, net:100]")
+		if err := s.SetResourceLimits(delegate, delegate, 1000, 1000, types.BlockCpuLimit, types.BlockNetLimit); err != nil {
+			fmt.Println(err)
+			return err
+		}
+	*/
 	return nil
 }

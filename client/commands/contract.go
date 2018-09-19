@@ -34,6 +34,7 @@ import (
 	"strings"
 	"strconv"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
+	innerCommon "github.com/ecoball/go-ecoball/http/common"
 )
 
 var (
@@ -425,15 +426,17 @@ func GetContract(chainID common.Hash, index common.AccountName) (*types.DeployIn
 	}
 
 	deploy := new(types.DeployInfo)
-	if nil != resp["result"] {
-		switch resp["result"].(type) {
-		case string:
-			data := resp["result"].(string)
-			if err := deploy.Deserialize(common.FromHex(data)); err != nil{
-				return nil, err
+	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)){
+		if nil != resp["result"] {
+			switch resp["result"].(type) {
+			case string:
+				data := resp["result"].(string)
+				if err := deploy.Deserialize(common.FromHex(data)); err != nil{
+					return nil, err
+				}
+				return deploy, nil
+			default:
 			}
-			return deploy, nil
-		default:
 		}
 	}
 	return deploy, nil

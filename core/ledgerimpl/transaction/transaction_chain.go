@@ -29,11 +29,13 @@ import (
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/smartcontract"
 	"github.com/ecoball/go-ecoball/spectator/connect"
 	"github.com/ecoball/go-ecoball/spectator/info"
 	"math/big"
+	"sync"
 	"time"
+	"github.com/ecoball/go-ecoball/smartcontract"
+	"github.com/ecoball/go-ecoball/smartcontract/context"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -44,9 +46,14 @@ type StateDatabase struct {
 }
 
 type LastHeaders struct {
-	CmHeader    *types.Header
-	MinorHeader *types.Header
-	FinalHeader *types.Header
+	CmHeader    *types.CMBlockHeader
+	MinorHeader *types.MinorBlockHeader
+	FinalHeader *types.FinalBlockHeader
+}
+
+type BlockCache struct {
+	Height uint64
+	Type   types.HeaderType
 }
 
 type ChainTx struct {
@@ -54,17 +61,18 @@ type ChainTx struct {
 	HeaderStore store.Storage
 	TxsStore    store.Storage
 
-	BlockMap      map[common.Hash]uint64
+	lockBlock     sync.RWMutex
+	BlockMap      map[common.Hash]BlockCache
 	CurrentHeader *types.Header
 	Geneses       *types.Header
 	StateDB       StateDatabase
 	ledger        ledger.Ledger
 
-	LastHeader    LastHeaders
+	LastHeader LastHeaders
 }
 
 func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {
-	c = &ChainTx{BlockMap: make(map[common.Hash]uint64, 1), ledger: ledger}
+	c = &ChainTx{BlockMap: make(map[common.Hash]BlockCache, 1), ledger: ledger}
 	c.BlockStore, err = store.NewLevelDBStore(path+config.StringBlock, 0, 0)
 	if err != nil {
 		return nil, err
@@ -108,7 +116,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 	s.Type = state.CopyType
 	var cpu, net float64
 	for i := 0; i < len(txs); i++ {
-		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Final DB")
+		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
 		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].JsonString())
 			//c.ResetStateDB(c.CurrentHeader)
@@ -166,6 +174,8 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return errors.New(log, "block is nil")
 	}
 	//check block is existed
+	c.lockBlock.Lock()
+	defer c.lockBlock.Unlock()
 	if _, ok := c.BlockMap[block.Hash]; ok {
 		log.Warn("the block:", block.Height, "is existed")
 		return nil
@@ -213,7 +223,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
 	log.Notice(block.JsonString(true))
 	c.CurrentHeader = block.Header
-	c.BlockMap[block.Hash] = block.Height
+	c.BlockMap[block.Hash] = BlockCache{Height: block.Height}
 
 	return nil
 }
@@ -344,7 +354,9 @@ func (c *ChainTx) RestoreCurrentHeader() (bool, error) {
 		if err := header.Deserialize([]byte(v)); err != nil {
 			return false, err
 		}
-		c.BlockMap[header.Hash] = header.Height
+		c.lockBlock.Lock()
+		c.BlockMap[header.Hash] = BlockCache{Height: header.Height}
+		c.lockBlock.Unlock()
 		//if header.Height == 1 {
 		//	c.Geneses = header //Store Geneses for timeStamp
 		//}
@@ -541,11 +553,17 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 			return nil, 0, 0, err
 		}
 	case types.TxInvoke:
-		service, err := smartcontract.NewContractService(s, tx, cpuLimit, netLimit, timeStamp)
-		if err != nil {
-			return nil, 0, 0, err
-		}
-		ret, err = service.Execute()
+		//service, err := smartcontract.NewContractService(s, tx, cpuLimit, netLimit, timeStamp)
+		//if err != nil {
+		//	return nil, 0, 0, err
+		//}
+		//ret, err = service.Execute()
+		//if err != nil {
+		//	return nil, 0, 0, err
+		//}
+		actionNew, _ := types.NewAction(tx)
+		trxContext, _ := context.NewTranscationContext(s, tx, cpuLimit, netLimit, timeStamp)
+		ret, err = smartcontract.DispatchAction(trxContext, actionNew)
 		if err != nil {
 			return nil, 0, 0, err
 		}
@@ -584,4 +602,124 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	log.Debug("result:", ret, "cpu:", cpu, "net:", net)
 
 	return ret, cpu, net, nil
+}
+
+//ShardBlock
+func (c *ChainTx) SaveShardBlock(block types.BlockInterface) (err error) {
+	if block == nil {
+		return errors.New(log, "the block is nil")
+	}
+	//check block is existed
+	c.lockBlock.Lock()
+	defer c.lockBlock.Unlock()
+	if _, ok := c.BlockMap[block.Hash()]; ok {
+		log.Warn("the block:", block.GetHeight(), "is existed")
+		return nil
+	}
+
+	if block.GetHeight() != 1 {
+		connect.Notify(info.InfoBlock, block)
+		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
+			log.Warn(err)
+		}
+	}
+
+	var heKey, heValue []byte
+	switch types.HeaderType(block.Type()) {
+	case types.HeCmBlock:
+		Block, ok := block.GetObject().(types.CMBlock)
+		if !ok {
+			return errors.New(log, fmt.Sprintf("type asserts error:%s", types.HeCmBlock.String()))
+		}
+		//TODO:Handle Shards
+		heValue, err = Block.CMBlockHeader.Serialize()
+		if err != nil {
+			return err
+		}
+		heKey = Block.CMBlockHeader.Hash().Bytes()
+
+		c.LastHeader.CmHeader = &Block.CMBlockHeader
+	case types.HeMinorBlock:
+		Block, ok := block.GetObject().(types.MinorBlock)
+		if !ok {
+			return errors.New(log, fmt.Sprintf("type asserts error:%s", types.HeMinorBlock.String()))
+		}
+		for i := 0; i < len(Block.Transactions); i++ {
+			log.Notice("Handle Transaction:", Block.Transactions[i].Type.String(), Block.Transactions[i].Hash.HexString(), " in final DB")
+			if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, Block.Transactions[i], Block.MinorBlockHeader.Timestamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+				log.Warn(Block.Transactions[i].JsonString())
+				return err
+			}
+		}
+		heValue, err = Block.MinorBlockHeader.Serialize()
+		if err != nil {
+			return err
+		}
+		heKey = Block.MinorBlockHeader.Hash().Bytes()
+		c.LastHeader.MinorHeader = &Block.MinorBlockHeader
+	case types.HeFinalBlock:
+		Block, ok := block.GetObject().(types.FinalBlock)
+		if !ok {
+			return errors.New(log, fmt.Sprintf("type asserts error:%s", types.HeFinalBlock.String()))
+		}
+		//TODO:Handle Minor Headers
+		heValue, err = Block.FinalBlockHeader.Serialize()
+		if err != nil {
+			return err
+		}
+		heKey = Block.FinalBlockHeader.Hash().Bytes()
+		c.LastHeader.FinalHeader = &Block.FinalBlockHeader
+	default:
+		return errors.New(log, fmt.Sprintf("unknown header type:%d", block.Type()))
+	}
+
+	if err := c.HeaderStore.Put(heKey, heValue); err != nil {
+		return err
+	}
+
+	payload, err := block.Serialize()
+	if err != nil {
+		return err
+	}
+	c.BlockStore.BatchPut(block.Hash().Bytes(), payload)
+	if err := c.BlockStore.BatchCommit(); err != nil {
+		return err
+	}
+	c.StateDB.FinalDB.CommitToDB()
+	c.BlockMap[block.Hash()] = BlockCache{Height: block.GetHeight(), Type: types.HeaderType(block.Type())}
+
+	return nil
+}
+
+func (c *ChainTx) GetShardBlockByHash(typ types.HeaderType, hash common.Hash) (types.BlockInterface, error) {
+	dataBlock, err := c.BlockStore.Get(hash.Bytes())
+	if err != nil {
+		return nil, errors.New(log, fmt.Sprintf("GetBlock error:%s", err.Error()))
+	}
+
+	return types.BlockDeserialize(dataBlock, typ)
+}
+
+func (c *ChainTx) GetShardBlockByHeight(typ types.HeaderType, height uint64) (types.BlockInterface, error) {
+	c.lockBlock.RLock()
+	defer c.lockBlock.RUnlock()
+	for k, v := range c.BlockMap {
+		if v.Height == height && v.Type == typ {
+			return c.GetShardBlockByHash(typ, k)
+		}
+	}
+	return nil, errors.New(log, fmt.Sprintf("can't find this block:[type]%d, [height]%d", typ, height))
+}
+
+func (c *ChainTx) GetLastShardBlock(typ types.HeaderType) (types.BlockInterface, error) {
+	switch typ {
+	case types.HeFinalBlock:
+		return c.GetShardBlockByHash(typ, c.LastHeader.FinalHeader.Hash())
+	case types.HeMinorBlock:
+		return c.GetShardBlockByHash(typ, c.LastHeader.MinorHeader.Hash())
+	case types.HeCmBlock:
+		return c.GetShardBlockByHash(typ, c.LastHeader.CmHeader.Hash())
+	default:
+		return nil, errors.New(log, fmt.Sprintf("unknown block type:%d", typ))
+	}
 }

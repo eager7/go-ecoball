@@ -34,7 +34,7 @@ type Block struct {
 	CountTxs     uint32
 	Transactions []*Transaction
 	//Cm Block Data
-	Shards       []Shard
+	Shards []Shard
 	//Final Block Data
 	MinorBlocks []MinorBlockHeader
 }

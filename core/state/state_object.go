@@ -21,13 +21,13 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/mutex"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
 	"sort"
-	"github.com/ecoball/go-ecoball/common/mutex"
 )
 
 type Account struct {
@@ -92,7 +92,6 @@ func (a *Account) NewStoreTrie(path string) error {
 	}
 	a.diskDb = diskDb
 	a.db = NewDatabase(diskDb)
-	log.Notice("open trie", a.Hash.HexString())
 	a.trie, err = a.db.OpenTrie(a.Hash)
 	if err != nil {
 		log.Warn(a.Index.String(), "open nil trie")
@@ -155,7 +154,7 @@ func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debug(path, a.Index.String(), "StoreGet key:", string(key), "value:", string(value))
+	//log.Debug(path, a.Index.String(), "StoreGet key:", string(key), "value:", string(value))
 	return value, nil
 }
 

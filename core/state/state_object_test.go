@@ -2,14 +2,14 @@ package state_test
 
 import (
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
+	"os"
 	"testing"
 	"time"
-	"os"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/core/types"
 )
 
 func TestStateObject(t *testing.T) {
@@ -34,7 +34,6 @@ func TestStateObject(t *testing.T) {
 	errors.CheckEqualPanic(acc.JsonString(false) == acc2.JsonString(false))
 }
 
-
 func TestResourceRecover(t *testing.T) {
 	os.RemoveAll("/tmp/state_object_recover/")
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
@@ -49,7 +48,7 @@ func TestResourceRecover(t *testing.T) {
 	available := acc.Net.Available
 	elog.Log.Debug(common.JsonString(acc.Resource, false))
 
-	time.Sleep(time.Microsecond*100)
+	time.Sleep(time.Microsecond * 100)
 	ti := time.Now().UnixNano()
 	errors.CheckErrorPanic(acc.RecoverResources(100, 100, ti, types.BlockCpuLimit, types.BlockNetLimit))
 	elog.Log.Debug(common.JsonString(acc.Resource, false))

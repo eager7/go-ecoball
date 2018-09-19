@@ -98,6 +98,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 
 func (p *PoolActor) handleNewBlock(block *types.Block) {
 	for _, v := range block.Transactions {
+		log.Info("Delete tx:", v.Hash.HexString())
 		p.txPool.Delete(block.ChainID, v.Hash)
 	}
 }

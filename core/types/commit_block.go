@@ -25,7 +25,7 @@ type CMBlockHeader struct {
 	Candidate    NodeInfo
 	ShardsHash   common.Hash
 
-	Hash common.Hash
+	hash common.Hash
 }
 
 func (h *CMBlockHeader) ComputeHash() error {
@@ -33,7 +33,7 @@ func (h *CMBlockHeader) ComputeHash() error {
 	if err != nil {
 		return err
 	}
-	h.Hash, err = common.DoubleHash(data)
+	h.hash, err = common.DoubleHash(data)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (h *CMBlockHeader) proto() (*pb.CMBlockHeader, error) {
 			PublicKey: h.Candidate.PublicKey,
 		},
 		ShardsHash: h.ShardsHash.Bytes(),
-		Hash:       h.Hash.Bytes(),
+		Hash:       h.hash.Bytes(),
 	}, nil
 }
 
@@ -104,7 +104,7 @@ func (h *CMBlockHeader) Deserialize(data []byte) error {
 	h.Nonce = pbHeader.Nonce
 	h.Candidate = NodeInfo{PublicKey: common.CopyBytes(pbHeader.Candidate.PublicKey)}
 	h.ShardsHash = common.NewHash(pbHeader.ShardsHash)
-	h.Hash = common.NewHash(pbHeader.Hash)
+	h.hash = common.NewHash(pbHeader.Hash)
 	dataCon, err := pbHeader.ConsData.Marshal()
 	if err != nil {
 		return err
@@ -113,10 +113,6 @@ func (h *CMBlockHeader) Deserialize(data []byte) error {
 		return err
 	}
 	return nil
-}
-
-func (h CMBlockHeader) GetObject() interface{} {
-	return h
 }
 
 func (h *CMBlockHeader) JsonString() string {
@@ -130,6 +126,21 @@ func (h *CMBlockHeader) JsonString() string {
 
 func (h *CMBlockHeader) Type() uint32 {
 	return uint32(HeCmBlock)
+}
+
+func (h *CMBlockHeader) Hash() common.Hash {
+	return h.hash
+}
+
+func (h *CMBlockHeader) GetHeight() uint64 {
+	return h.Height
+}
+func (h *CMBlockHeader) GetChainID() common.Hash {
+	return h.ChainID
+}
+
+func (h CMBlockHeader) GetObject() interface{} {
+	return h
 }
 
 type NodeAddr struct {
@@ -188,13 +199,13 @@ func (s *Shard) Deserialize(data []byte) error {
 }
 
 type CMBlock struct {
-	Header *CMBlockHeader
+	CMBlockHeader
 	Shards []Shard
 }
 
 func (b *CMBlock) proto() (block *pb.CMBlock, err error) {
 	var pbBlock pb.CMBlock
-	pbBlock.Header, err = b.Header.proto()
+	pbBlock.Header, err = b.CMBlockHeader.proto()
 	if err != nil {
 		return nil, err
 	}
@@ -231,10 +242,8 @@ func (b *CMBlock) Deserialize(data []byte) error {
 	if err != nil {
 		return err
 	}
-	if b.Header == nil {
-		b.Header = new(CMBlockHeader)
-	}
-	err = b.Header.Deserialize(dataHeader)
+
+	err = b.CMBlockHeader.Deserialize(dataHeader)
 	if err != nil {
 		return err
 	}
@@ -254,10 +263,6 @@ func (b *CMBlock) Deserialize(data []byte) error {
 	return nil
 }
 
-func (b CMBlock) GetObject() interface{} {
-	return b
-}
-
 func (b *CMBlock) JsonString() string {
 	data, err := json.Marshal(b)
 	if err != nil {
@@ -267,7 +272,6 @@ func (b *CMBlock) JsonString() string {
 	return string(data)
 }
 
-func (b *CMBlock) Type() uint32 {
-	return b.Header.Type()
+func (b CMBlock) GetObject() interface{} {
+	return b
 }
-

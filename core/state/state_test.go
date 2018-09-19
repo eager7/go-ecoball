@@ -19,16 +19,16 @@ package state_test
 import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/store"
+	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
+	"os"
 	"testing"
 	"time"
-	"os"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/core/types"
 )
 
 func TestStateNew(t *testing.T) {
@@ -48,13 +48,13 @@ func TestStateNew(t *testing.T) {
 	fmt.Println("Value From:", balance)
 
 	value := new(big.Int).SetUint64(100)
-	if err := s.AccountAddBalance(indexAcc,  state.AbaToken, value); err != nil {
+	if err := s.AccountAddBalance(indexAcc, state.AbaToken, value); err != nil {
 		fmt.Println("Update Error:", err)
 	}
 
 	fmt.Println("Hash Root:", s.GetHashRoot().HexString())
 	s.CommitToDB()
-	balance, err = s.AccountGetBalance(indexAcc,  state.AbaToken)
+	balance, err = s.AccountGetBalance(indexAcc, state.AbaToken)
 	errors.CheckErrorPanic(err)
 	fmt.Println("Value:", balance)
 }
@@ -178,10 +178,10 @@ func TestStateDBCopy(t *testing.T) {
 	if _, err := s.AddAccount(indexAcc, addr, time.Now().UnixNano()); err != nil {
 		t.Fatal(err)
 	}
-	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc,  state.AbaToken, new(big.Int).SetInt64(100)))
+	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetInt64(100)))
 	errors.CheckErrorPanic(s.SetResourceLimits(indexAcc, indexAcc, 10, 10, types.BlockCpuLimit, types.BlockNetLimit))
 	s.CommitToDB()
-	value, err := s.AccountGetBalance(indexAcc,  state.AbaToken)
+	value, err := s.AccountGetBalance(indexAcc, state.AbaToken)
 	errors.CheckErrorPanic(err)
 	elog.Log.Info(value)
 	errors.CheckEqualPanic(value.Uint64() == 80)
@@ -190,7 +190,7 @@ func TestStateDBCopy(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(s.Accounts["pct"].JsonString(false) == copy.Accounts["pct"].JsonString(false))
 
-	copy.AccountAddBalance(indexAcc,  state.AbaToken, new(big.Int).SetUint64(300))
+	copy.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetUint64(300))
 	balance, err := copy.AccountGetBalance(indexAcc, state.AbaToken)
 	errors.CheckErrorPanic(err)
 	elog.Log.Info(balance)
@@ -212,7 +212,7 @@ func TestStateDBReset(t *testing.T) {
 	_, err = s.AddAccount(indexAcc, addr, timeStamp)
 	errors.CheckErrorPanic(err)
 
-	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc,  state.AbaToken, new(big.Int).SetInt64(100)))
+	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetInt64(100)))
 	s.CommitToDB()
 
 	checkBalance(100, indexAcc, s)
@@ -220,7 +220,7 @@ func TestStateDBReset(t *testing.T) {
 	prevHash := s.GetHashRoot()
 	elog.Log.Info(prevHash.HexString())
 
-	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc,  state.AbaToken, new(big.Int).SetInt64(100)))
+	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetInt64(100)))
 	s.CommitToDB()
 
 	checkBalance(200, indexAcc, s)
