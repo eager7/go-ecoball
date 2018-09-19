@@ -135,6 +135,12 @@
 			"revisionTime": "2018-01-10T05:33:47Z"
 		},
 		{
+			"checksumSHA1": "k0iN/r1ZV5HTG8Sll2ojgvmSfBQ=",
+			"path": "github.com/gin-gonic/gin",
+			"revision": "c00f21ff239822d013b80e54bd403fbc08a0b5ff",
+			"revisionTime": "2018-06-26T10:56:43Z"
+		},
+		{
 			"checksumSHA1": "Tg3j1xT2A1GaCKMNuOIJln97kVY=",
 			"path": "github.com/go-interpreter/wagon/disasm",
 			"revision": "d4bc452fd57e99224c6db45f22b01518d3478b3f",
