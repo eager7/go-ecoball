@@ -20,14 +20,15 @@ var (
 var netMsgChain chan *sc.NetPacket
 var listenPort string
 
-func Sendto(addr string, port string, packet *sc.CsPacket) error {
+func Sendto(addr string, port string, packet *sc.NetPacket) error {
 	addrPort := addr + ":" + port
-	conn, err := net.DialTimeout("tcp", addrPort, 2*time.Second)
+	conn, err := net.DialTimeout("tcp", addrPort, 100*time.Millisecond)
 	if err != nil {
-		log.Debug("connect to peer ", addr, " ", port, " ", err)
+		log.Debug("connect to peer ", addr, " port ", port, " ", err)
 		return err
 	}
 
+	log.Debug("send to peer ", addr, " port ", port)
 	return send(conn, packet)
 
 }
@@ -63,7 +64,7 @@ func recvRoutine() {
 	return
 }
 
-func send(conn net.Conn, packet *sc.CsPacket) error {
+func send(conn net.Conn, packet *sc.NetPacket) error {
 	defer conn.Close()
 
 	data, err := json.Marshal(packet)
@@ -89,6 +90,12 @@ func send(conn net.Conn, packet *sc.CsPacket) error {
 	}
 
 	_, err = conn.Write(buf.Bytes())
+	if err != nil {
+		log.Error("conn write error ", err)
+	}
+
+	log.Debug("send packet packet type ", packet.PacketType, " block type ", packet.BlockType)
+
 	return err
 }
 

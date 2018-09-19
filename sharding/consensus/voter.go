@@ -6,7 +6,7 @@ import (
 
 func (c *Consensus) startBlockConsensusVoter(instance sc.ConsensusInstance) {
 	c.view = instance.GetCsView()
-	log.Debug("currenet view ", c.view.EpochNo, " ", c.view.FinalHeight, " ", c.view.MinorHeight)
+	log.Debug("currenet view ", c.view.EpochNo, " ", c.view.FinalHeight, " ", c.view.MinorHeight, " ", c.view.Round)
 
 	c.instance = instance
 	c.step = StepPrePare
@@ -39,7 +39,6 @@ func (c *Consensus) processPacketByVoter(csp *sc.CsPacket) {
 
 func (c *Consensus) processPrepare(csp *sc.CsPacket) {
 	log.Debug("process prepare")
-	c.instance.UpdateBlock(csp)
 	c.sendPrepareRsp()
 }
 
@@ -50,7 +49,6 @@ func (c *Consensus) sendPrepareRsp() {
 
 func (c *Consensus) processPrecommit(csp *sc.CsPacket) {
 	log.Debug("process precommit")
-	c.instance.UpdateBlock(csp)
 	c.step = StepPreCommit
 
 	c.sendPrecommitRsp(csp)
@@ -64,8 +62,8 @@ func (c *Consensus) sendPrecommitRsp(csp *sc.CsPacket) {
 func (c *Consensus) processCommit(csp *sc.CsPacket) {
 	log.Debug("process commit")
 
-	c.instance.UpdateBlock(csp)
 	c.step = StepCommit
+	packet := c.instance.MakeNetPacket(c.step)
 	c.csComplete()
-	c.GossipBlock(csp)
+	c.GossipBlock(packet)
 }

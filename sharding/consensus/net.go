@@ -1,35 +1,43 @@
 package consensus
 
 import (
+	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"math"
+	"math/rand"
+	"time"
 )
 
-func (c *Consensus) sendToLeader(packet *sc.CsPacket) {
-	work := c.ns.GetLeader()
-	if work == nil {
+func (c *Consensus) sendToPeer(packet *sc.NetPacket, worker *cell.Worker) {
+	if worker == nil {
 		log.Error("leader is nil")
 		return
 	}
 
-	simulate.Sendto(work.Address, work.Port, packet)
+	go simulate.Sendto(worker.Address, worker.Port, packet)
 }
 
-func (c *Consensus) GossipBlock(csp *sc.CsPacket) {
+func (c *Consensus) GossipBlock(packet *sc.NetPacket) {
 	works := c.ns.GetWorks()
 	if works == nil {
 		log.Error("works is nil")
 		return
 	}
 
-	total := int(len(works))
-	if total < 5 {
+	if len(works) < 5 {
+		if len(works) > 1 {
+			rand.Seed(time.Now().UnixNano())
+			r := rand.Int31n(int32(len(works)))
+			log.Debug("gossip to peer address ", works[r].Address, " port ", works[r].Port)
+			go simulate.Sendto(works[r].Address, works[r].Port, packet)
+		}
 		return
 	}
 
 	peers := works[1:]
-	size := total - 1
+
+	size := int(len(peers))
 	number := int(math.Sqrt(float64(size)))
 
 	arr := make([]int, 0, 3*size)
@@ -73,16 +81,12 @@ func (c *Consensus) GossipBlock(csp *sc.CsPacket) {
 	//}
 
 	for _, index := range indexs {
-		if c.ns.Self.Equal(works[index]) {
-			continue
-		}
-
-		log.Debug("gossip to peer address ", works[index].Address, " port ", works[index].Port)
-		go simulate.Sendto(works[index].Address, works[index].Port, csp)
+		log.Debug("gossip to peer address ", peers[index].Address, " port ", peers[index].Port)
+		go simulate.Sendto(peers[index].Address, peers[index].Port, packet)
 	}
 }
 
-func (c *Consensus) BroadcastBlock(packet *sc.CsPacket) {
+func (c *Consensus) BroadcastBlock(packet *sc.NetPacket) {
 	works := c.ns.GetWorks()
 	if works == nil {
 		log.Error("works is nil")

@@ -86,7 +86,9 @@ func (bsnet *impl)bootstrapConnect(ctx context.Context, bsPeers []cfg.BootstrapP
 	var notConnected []pstore.PeerInfo
 	for _, p := range bsPeers {
 		if bsnet.host.Network().Connectedness(p.ID()) != inet.Connected {
-			addr, _ := ma.NewMultiaddr(strings.Split(p.String(), "/ipfs")[0])
+			protoNum := len(p.Multiaddr().Protocols())
+			sep := "/" + p.Multiaddr().Protocols()[protoNum-1].Name
+			addr, _ := ma.NewMultiaddr(strings.Split(p.String(), sep)[0])
 			peerInfo := pstore.PeerInfo{p.ID(), []ma.Multiaddr{addr}}
 			notConnected = append(notConnected, peerInfo)
 		}

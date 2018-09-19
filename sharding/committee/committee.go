@@ -34,61 +34,64 @@ const (
 )
 
 type committee struct {
-	ns         *cell.Cell
-	fsm        *sc.Fsm
-	actorc     chan interface{}
-	ppc        chan *sc.CsPacket
-	pvc        <-chan *sc.NetPacket
-	stateTimer *time.Timer
+	ns           *cell.Cell
+	fsm          *sc.Fsm
+	actorc       chan interface{}
+	ppc          chan *sc.CsPacket
+	pvc          <-chan *sc.NetPacket
+	stateTimer   *time.Timer
+	retransTimer *time.Timer
+	vccount      uint16
 
 	cs *consensus.Consensus
 }
 
 func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 	cm := &committee{
-		ns:     ns,
-		actorc: make(chan interface{}),
-		ppc:    make(chan *sc.CsPacket, sc.DefaultCommitteMaxMember),
+		ns:      ns,
+		actorc:  make(chan interface{}),
+		ppc:     make(chan *sc.CsPacket, sc.DefaultCommitteMaxMember),
+		vccount: 0,
 	}
 
-	cm.cs = consensus.MakeConsensus(cm.ns, cm.consensusCb)
+	cm.cs = consensus.MakeConsensus(cm.ns, cm.setRetransTimer, cm.consensusCb)
 
 	cm.fsm = sc.NewFsm(blockSync,
 		[]sc.FsmElem{
-			{blockSync, ActProductCommitteeBlock, cm.productCommitteeBlock, productCommitteBlock},
-			{blockSync, ActWaitMinorBlock, cm.waitMinorBlock, waitMinorBlock},
-			{blockSync, ActProductFinalBlock, cm.productFinalBlock, productFinalBlock},
-			{blockSync, ActStateTimeout, cm.processBlockSyncTimeout, sc.StateNil},
-			{blockSync, ActRecvConsensusPacket, cm.dropPacket, sc.StateNil},
+			{blockSync, ActProductCommitteeBlock, nil, cm.productCommitteeBlock, nil, productCommitteBlock},
+			{blockSync, ActWaitMinorBlock, nil, cm.waitMinorBlock, nil, waitMinorBlock},
+			{blockSync, ActProductFinalBlock, nil, cm.productFinalBlock, nil, productFinalBlock},
+			{blockSync, ActStateTimeout, nil, cm.processBlockSyncTimeout, nil, sc.StateNil},
+			{blockSync, ActRecvConsensusPacket, nil, cm.dropPacket, nil, sc.StateNil},
 
-			{productCommitteBlock, ActChainNotSync, cm.doBlockSync, blockSync},
-			{productCommitteBlock, ActRecvConsensusPacket, cm.processConsensusCmPacket, sc.StateNil},
-			{productCommitteBlock, ActWaitMinorBlock, cm.waitMinorBlock, waitMinorBlock},
-			{productCommitteBlock, ActStateTimeout, cm.productViewChangeBlock, productViewChangeBlock},
-
-			/*missing_func consensus fail or timeout*/
-			/*{ProductCommitteBlock, ActConsensusFail, , },
-			{ProductCommitteBlock, ActProductTimeout, , },*/
-
-			{waitMinorBlock, ActChainNotSync, cm.doBlockSync, blockSync},
-			{waitMinorBlock, ActProductFinalBlock, cm.productFinalBlock, productFinalBlock},
-			{waitMinorBlock, ActStateTimeout, cm.productFinalBlock, productFinalBlock},
-			{waitMinorBlock, ActRecvConsensusPacket, cm.processWMBStateChange, productFinalBlock},
-
-			{productFinalBlock, ActChainNotSync, cm.doBlockSync, blockSync},
-			{productFinalBlock, ActWaitMinorBlock, cm.waitMinorBlock, waitMinorBlock},
-			{productFinalBlock, ActProductCommitteeBlock, cm.productCommitteeBlock, productCommitteBlock},
-			{productFinalBlock, ActRecvConsensusPacket, cm.processConsensusFinalPacket, sc.StateNil},
-			{productFinalBlock, ActStateTimeout, cm.productViewChangeBlock, productViewChangeBlock},
+			{productCommitteBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
+			{productCommitteBlock, ActRecvConsensusPacket, nil, cm.processConsensusCmPacket, nil, sc.StateNil},
+			{productCommitteBlock, ActWaitMinorBlock, nil, cm.waitMinorBlock, nil, waitMinorBlock},
+			{productCommitteBlock, ActStateTimeout, cm.resetVcCounter, cm.productViewChangeBlock, nil, productViewChangeBlock},
 
 			/*missing_func consensus fail or timeout*/
 			/*{ProductCommitteBlock, ActConsensusFail, , },
 			{ProductCommitteBlock, ActProductTimeout, , },*/
 
-			{productViewChangeBlock, ActProductCommitteeBlock, cm.productCommitteeBlock, productCommitteBlock},
-			{productViewChangeBlock, ActProductFinalBlock, cm.productFinalBlock, productFinalBlock},
-			{productViewChangeBlock, ActStateTimeout, cm.productViewChangeBlock, productViewChangeBlock},
-			{productViewChangeBlock, ActRecvConsensusPacket, cm.processViewchangeConsensusPacket, sc.StateNil},
+			{waitMinorBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
+			{waitMinorBlock, ActProductFinalBlock, nil, cm.productFinalBlock, nil, productFinalBlock},
+			{waitMinorBlock, ActStateTimeout, nil, cm.productFinalBlock, nil, productFinalBlock},
+			{waitMinorBlock, ActRecvConsensusPacket, cm.processConsensBlockOnWaitStatus, nil, nil, productFinalBlock},
+
+			{productFinalBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
+			{productFinalBlock, ActWaitMinorBlock, nil, cm.waitMinorBlock, nil, waitMinorBlock},
+			{productFinalBlock, ActProductCommitteeBlock, nil, cm.productCommitteeBlock, nil, productCommitteBlock},
+			{productFinalBlock, ActRecvConsensusPacket, nil, cm.processConsensusFinalPacket, nil, sc.StateNil},
+			{productFinalBlock, ActStateTimeout, cm.resetVcCounter, cm.productViewChangeBlock, nil, productViewChangeBlock},
+
+			/*missing_func consensus fail or timeout*/
+			/*{ProductCommitteBlock, ActConsensusFail, , },
+			{ProductCommitteBlock, ActProductTimeout, , },*/
+
+			{productViewChangeBlock, ActProductCommitteeBlock, nil, cm.productCommitteeBlock, nil, productCommitteBlock},
+			{productViewChangeBlock, ActProductFinalBlock, nil, cm.productFinalBlock, nil, productFinalBlock},
+			{productViewChangeBlock, ActStateTimeout, cm.increaseCounter, cm.productViewChangeBlock, nil, productViewChangeBlock},
+			{productViewChangeBlock, ActRecvConsensusPacket, nil, cm.processViewchangeConsensusPacket, nil, sc.StateNil},
 		})
 
 	return cm
@@ -113,6 +116,7 @@ func (c *committee) Start() {
 func (c *committee) cmRoutine() {
 	log.Debug("start committee routine")
 	c.stateTimer = time.NewTimer(sc.DefaultSyncBlockTimer * time.Second)
+	c.retransTimer = time.NewTimer(sc.DefaultRetransTimer * time.Millisecond)
 
 	for {
 		select {
@@ -122,6 +126,8 @@ func (c *committee) cmRoutine() {
 			c.processPacket(packet)
 		case <-c.stateTimer.C:
 			c.processStateTimeout()
+		case <-c.retransTimer.C:
+			c.processRetransTimeout()
 		}
 	}
 }

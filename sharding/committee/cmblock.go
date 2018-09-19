@@ -12,34 +12,65 @@ import (
 )
 
 type cmBlockCsi struct {
-	block *block.CMBlock
+	bk    *block.CMBlock
 	cache *block.CMBlock
 }
 
-func newCmBlockCsi(block *block.CMBlock) *cmBlockCsi {
-	return &cmBlockCsi{block: block}
+func newCmBlockCsi(bk *block.CMBlock) *cmBlockCsi {
+	return &cmBlockCsi{bk: bk}
 }
 
 func (b *cmBlockCsi) GetCsView() *sc.CsView {
-	return &sc.CsView{EpochNo: b.block.Height}
+	return &sc.CsView{EpochNo: b.bk.Height}
 }
 
-func (b *cmBlockCsi) CacheBlock(bl interface{}) *sc.CsView {
-	b.cache = bl.(*block.CMBlock)
+func (b *cmBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
+	update := bl.(*block.CMBlock)
 
-	return &sc.CsView{EpochNo: b.cache.Height}
+	if !sc.Same(b.bk.Candidate.PublicKey, update.Candidate.PublicKey) {
+		log.Error("candidate public key not same")
+		return false
+	}
+
+	if update.Candidate.Address != b.bk.Candidate.Address {
+		log.Error("candidate address not same")
+		return false
+	}
+
+	if update.Candidate.Port != b.bk.Candidate.Port {
+		log.Error("candidate port not same")
+		return false
+	}
+
+	if update.Height != b.bk.Height {
+		log.Error("view error current ", b.bk.Height, " packet view ", update.Height)
+		return false
+	}
+
+	if !sc.Same(update.LeaderPubKey, b.bk.LeaderPubKey) {
+		log.Error("leader public key not same")
+		return false
+	}
+
+	if bLeader {
+		b.cache = update
+	} else {
+		b.bk = update
+	}
+
+	return true
 }
 
-func (b *cmBlockCsi) MakeCsPacket(step uint16) *sc.CsPacket {
-	csp := &sc.CsPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_CM_BLOCK, Step: step}
+func (b *cmBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
+	csp := &sc.NetPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_CM_BLOCK, Step: step}
 
 	/*missing_func should fill in signature and bit map*/
 	if step == consensus.StepPrePare {
 		log.Debug("make cm prepare block")
-		b.block.Step1 = 1
+		b.bk.Step1 = 1
 	} else if step == consensus.StepPreCommit {
 		log.Debug("make cm precommit block")
-		b.block.Step2 = 1
+		b.bk.Step2 = 1
 	} else if step == consensus.StepCommit {
 		log.Debug("make cm commit block")
 	} else {
@@ -47,7 +78,7 @@ func (b *cmBlockCsi) MakeCsPacket(step uint16) *sc.CsPacket {
 		return nil
 	}
 
-	data, err := json.Marshal(b.block)
+	data, err := json.Marshal(b.bk)
 	if err != nil {
 		log.Error("cm block marshal error ", err)
 		return nil
@@ -59,28 +90,27 @@ func (b *cmBlockCsi) MakeCsPacket(step uint16) *sc.CsPacket {
 }
 
 func (b *cmBlockCsi) GetCsBlock() interface{} {
-	return b.block
+	return b.bk
 }
 
 func (b *cmBlockCsi) PrepareRsp() uint16 {
 	if b.cache.Step1 == 1 {
-		b.block.Step1++
+		b.bk.Step1++
 	}
 
-	return b.block.Step1
+	return b.bk.Step1
 }
 
 func (b *cmBlockCsi) PrecommitRsp() uint16 {
 	if b.cache.Step2 == 1 {
-		b.block.Step2++
+		b.bk.Step2++
 	}
 
-	return b.block.Step2
+	return b.bk.Step2
 }
 
-func (b *cmBlockCsi) UpdateBlock(*sc.CsPacket) {
-	b.block = b.cache
-	b.cache = nil
+func (b *cmBlockCsi) GetCandidate() *block.NodeInfo {
+	return nil
 }
 
 func (c *committee) createCommitteeBlock() *block.CMBlock {
@@ -95,6 +125,21 @@ func (c *committee) createCommitteeBlock() *block.CMBlock {
 	log.Debug("create cm block height ", height)
 
 	cm := block.NewCMBlock(height)
+
+	candidate := simulate.GetCandidate()
+	if candidate != nil && len(candidate) > 0 {
+		cm.Candidate.PublicKey = []byte(candidate[0].Pubkey)
+		cm.Candidate.Address = candidate[0].Address
+		cm.Candidate.Port = candidate[0].Port
+	} else {
+		/*missing_func there is no candidate maybe we can select new leader by vrf*/
+		backup := c.ns.GetBackup()
+		if backup != nil {
+			cm.Candidate.PublicKey = []byte(backup.Pubkey)
+			cm.Candidate.Address = backup.Address
+			cm.Candidate.Port = backup.Port
+		}
+	}
 
 	return cm
 
@@ -112,8 +157,30 @@ func (c *committee) productCommitteeBlock(msg interface{}) {
 	c.stateTimer.Reset(sc.DefaultProductCmBlockTimer * time.Second)
 }
 
+func (c *committee) recheckCmPacket(p interface{}) bool {
+	/*recheck block*/
+	csp := p.(*sc.CsPacket)
+	if csp.BlockType != sc.SD_CM_BLOCK {
+		log.Error("it is not cm block, drop it")
+		return false
+	}
+
+	cm := csp.Packet.(*block.CMBlock)
+	last := c.ns.GetLastCMBlock()
+	if last != nil && cm.Height <= last.Height {
+		log.Error("old cm block, drop it")
+		return false
+	}
+
+	return true
+}
+
 func (c *committee) processConsensusCmPacket(p interface{}) {
 	log.Debug("process cm consensus packet")
+
+	if !c.recheckCmPacket(p) {
+		return
+	}
 
 	c.cs.ProcessPacket(p.(*sc.CsPacket))
 }

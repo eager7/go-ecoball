@@ -125,12 +125,10 @@ var (
 )
 
 func runNode(c *cli.Context) error {
-	// get the ecoball configuration from config file
-
-	net.InitNetWork()
-
 	shutdown := make(chan bool, 1)
 	ecoballGroup, ctx := errgroup.WithContext(context.Background())
+
+	net.InitNetWork(ctx)
 
 	log.Info("Build Geneses Block")
 	var err error
@@ -200,9 +198,6 @@ func runNode(c *cli.Context) error {
 
 		return nil
 	})
-
-	// do something before start the network
-	//TOD
 
 	net.StartNetWork()
 

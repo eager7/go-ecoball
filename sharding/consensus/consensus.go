@@ -22,56 +22,79 @@ type Consensus struct {
 	step uint16
 	view *sc.CsView
 
-	instance sc.ConsensusInstance
-
-	completeCb csCompleteCb
+	instance     sc.ConsensusInstance
+	retransTimer retransCb
+	completeCb   csCompleteCb
 }
 
 type csCompleteCb func(bl interface{})
+type retransCb func(bStart bool)
 
-func MakeConsensus(ns *cell.Cell, cb csCompleteCb) *Consensus {
+func MakeConsensus(ns *cell.Cell, rcb retransCb, ccb csCompleteCb) *Consensus {
 	return &Consensus{
-		step:       StepNIL,
-		ns:         ns,
-		completeCb: cb,
+		step:         StepNIL,
+		ns:           ns,
+		retransTimer: rcb,
+		completeCb:   ccb,
 	}
 }
 
 func (c *Consensus) StartConsensus(instance sc.ConsensusInstance) {
-	if c.ns.IsCmLeader() {
+	if c.ns.IsLeader() {
 		c.startBlockConsensusLeader(instance)
 	} else {
 		c.startBlockConsensusVoter(instance)
 	}
 }
 
-func (c *Consensus) ProcessPacket(csp *sc.CsPacket) {
-	view := c.instance.CacheBlock(csp.Packet)
-	if view == nil {
-		log.Error("cache packet error")
-		return
-	}
-
-	if !c.view.Equal(view) {
-		log.Error("view error current ", c.view.EpochNo, " ", c.view.FinalHeight, " ", c.view.MinorHeight, " packet view ",
-			view.EpochNo, " ", view.FinalHeight, " ", view.MinorHeight)
-		return
-	}
-
-	if c.ns.IsCmLeader() {
-		c.processPacketByLeader(csp)
+func (c *Consensus) StartVcConsensus(instance sc.ConsensusInstance, bCandi bool) {
+	if bCandi {
+		c.startBlockConsensusLeader(instance)
 	} else {
-		c.processPacketByVoter(csp)
+		c.startBlockConsensusVoter(instance)
 	}
 }
 
-func (c *Consensus) IsCsRunning() bool {
-	if c.instance == nil && c.view == nil && c.step == StepNIL {
-		return false
-	} else if c.instance != nil && c.view != nil && c.step != StepNIL {
-		return true
+func (c *Consensus) ProcessPacket(csp *sc.CsPacket) bool {
+	candidate := c.instance.GetCandidate()
+	if candidate != nil {
+		if c.ns.Self.EqualNode(candidate) {
+			if !c.instance.CheckBlock(csp.Packet, true) {
+				log.Error("check packet error")
+				return false
+			}
+			c.processPacketByLeader(csp)
+		} else {
+			if !c.instance.CheckBlock(csp.Packet, false) {
+				log.Error("check packet error")
+				return false
+			}
+
+			c.processPacketByVoter(csp)
+		}
 	} else {
-		panic("consensus wrong status")
-		return false
+		if c.ns.IsLeader() {
+			if !c.instance.CheckBlock(csp.Packet, true) {
+				log.Error("check packet error")
+				return false
+			}
+			c.processPacketByLeader(csp)
+		} else {
+			if !c.instance.CheckBlock(csp.Packet, false) {
+				log.Error("check packet error")
+				return false
+			}
+
+			c.processPacketByVoter(csp)
+		}
 	}
+	return true
+}
+
+func (c *Consensus) ProcessRetransPacket() {
+	if c.instance == nil {
+		return
+	}
+	log.Debug("resend packet  step ", c.step)
+	c.sendCsPacket()
 }
