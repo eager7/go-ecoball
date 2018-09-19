@@ -15,18 +15,21 @@ const (
 	DefaultShardMaxMember        = 100
 	DefaultEpochFinalBlockNumber = 100
 
-	DefaultThresholdOfMinorBlock = 80 /*Percent*/
+	DefaultThresholdOfMinorBlock = 80  /*Percent*/
+	DefaultThresholdOfConsensus  = 400 /*thousandth*/
 
 	/*timer of fsm state .second*/
 	DefaultSyncBlockTimer = 10 //180
-	DefaultBlockWindow    = 2
+	DefaultRetransTimer   = 1  //180
 
-	DefaultProductCmBlockTimer = 60
+	DefaultBlockWindow = 2
+
+	DefaultProductCmBlockTimer = 20
 	DefaultCmBlockWindow       = 10
 
-	DefaultWaitMinorBlockTimer    = 60
-	DefaultProductFinalBlockTimer = 60
+	DefaultWaitMinorBlockTimer    = 20
+	DefaultProductFinalBlockTimer = 20
 	DefaultFinalBlockWindow       = 10
 
-	DefaultProductViewChangeBlockTimer = 60
+	DefaultProductViewChangeBlockTimer = 40
 )

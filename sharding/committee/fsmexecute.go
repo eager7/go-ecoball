@@ -8,6 +8,7 @@ import (
 )
 
 func (c *committee) processStateTimeout() {
+	c.setRetransTimer(false)
 	c.fsm.Execute(ActStateTimeout, nil)
 }
 
@@ -22,7 +23,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 		return
 	}
 
-	c.ns.SyncCMBlockComplete(lastCmBlock)
+	c.ns.SyncCmBlockComplete(lastCmBlock)
 
 	lastFinalBlock := simulate.GetLastFinalBlock()
 	if lastFinalBlock == nil {

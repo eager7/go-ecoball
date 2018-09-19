@@ -8,7 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/http/common/abi"
 )
 
-func (ws *WasmService)inline_action(proc *exec.Process, account, action int32) int32{
+func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionData int32) int32{
 	//fmt.Println("wasm inline action")
 	contract_msg, err := proc.VMGetData(int(account))
 	if err != nil{
@@ -18,11 +18,33 @@ func (ws *WasmService)inline_action(proc *exec.Process, account, action int32) i
 	if err != nil{
 		return -1
 	}
-	if(len(contract_msg) == 0 || len(action_msg) == 0){
+	data, err := proc.VMGetData(int(actionData))
+	if err != nil{
+		return -1
+	}
+	if(len(contract_msg) == 0 || len(action_msg) == 0 || len(data) == 0){
 		return -1
 	}
 
-	fmt.Println("wasm inline action ", contract_msg, " ", action_msg)
+	fmt.Println("wasm inline action ", contract_msg, " ", action_msg, " ", data)
+
+	contractLen := len(contract_msg)
+	var contractSlice []byte = contract_msg[:contractLen - 1]
+	if contract_msg[contractLen - 1] != 0 {
+		contractSlice = append(contractSlice, contract_msg[contractLen - 1])
+	}
+
+	actionLen := len(action_msg)
+	var actionSlice []byte = action_msg[:actionLen - 1]
+	if action_msg[actionLen - 1] != 0 {
+		actionSlice = append(actionSlice, action_msg[actionLen - 1])
+	}
+
+	dataLen := len(data)
+	var dataSlice []byte = data[:dataLen - 1]
+	if data[dataLen - 1] != 0 {
+		dataSlice = append(dataSlice, data[dataLen - 1])
+	}
 
 	contractGet, err := ws.state.GetContract(common.NameToIndex("worker"))
 	if err != nil {
@@ -37,9 +59,7 @@ func (ws *WasmService)inline_action(proc *exec.Process, account, action int32) i
 		return -3
 	}
 
-	trans := []byte(`{"from": "worker1", "to": "worker2", "amount": "25", "token_id": "xyx"}`)
-
-	argbyte, err := abi.CheckParam(abiDef, "transfer", trans)
+	argbyte, err := abi.CheckParam(abiDef, string(actionSlice), dataSlice)
 	if err != nil {
 		fmt.Errorf("can not find UnmarshalBinary abi file")
 		return -4
@@ -49,10 +69,9 @@ func (ws *WasmService)inline_action(proc *exec.Process, account, action int32) i
 
 	issueParameters = append(issueParameters, string(argbyte[:]))
 
-	invoke := &types.InvokeInfo{Method: []byte("transfer"), Param: issueParameters}
+	invoke := &types.InvokeInfo{Method: actionSlice, Param: issueParameters}
 
-	actionNew, _ := types.NewSimpleAction("worker", invoke)
-	//smartcontract.ApplyExec(ws.context, actionNew)
+	actionNew, _ := types.NewSimpleAction(string(contractSlice), invoke)
 
 	ws.context.InlineAction = append(ws.context.InlineAction, *actionNew)
 

@@ -10,12 +10,16 @@ const (
 	StateNil = iota
 )
 
-type callFunc func(msg interface{})
+type PreCallFunc func(msg interface{}) bool
+type ActCallFunc func(msg interface{})
+type AfterCallFunc func(msg interface{})
 
 type FsmElem struct {
 	State     int
 	Action    int
-	Call      callFunc
+	PreAct    PreCallFunc
+	Act       ActCallFunc
+	AfterAct  AfterCallFunc
 	Nextstate int
 }
 
@@ -36,19 +40,31 @@ func (f *Fsm) Execute(action int, msg interface{}) {
 	for _, elem := range f.elems {
 		if f.state == elem.State &&
 			action == elem.Action {
-			if elem.Call != nil {
-				elem.Call(msg)
+
+			if elem.PreAct != nil {
+				if !elem.PreAct(msg) {
+					return
+				}
+			}
+
+			if elem.Act != nil {
+				elem.Act(msg)
 			}
 
 			if elem.Nextstate != StateNil {
 				f.state = elem.Nextstate
 				log.Debug("new state ", f.state)
 			}
+
+			if elem.AfterAct != nil {
+				elem.AfterAct(msg)
+			}
+
 			return
 		}
 	}
 
-	log.Panic("wrong fsm action ", action, " state ", f.state)
+	log.Panic("wrong fsm state ", f.state, "action  ", action)
 	panic("wrong fsm")
 }
 
