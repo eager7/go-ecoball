@@ -22,13 +22,13 @@ import (
 	"syscall"
 
 	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/http/rpc"
+	"github.com/ecoball/go-ecoball/walletserver/http"
 )
 
 var log = elog.NewLogger("wallet", elog.DebugLog)
 
 func main() {
-	go rpc.StartWalletRPCServer()
+	go http.StartHttpServer()
 
 	wait()
 }
