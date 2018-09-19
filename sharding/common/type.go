@@ -1,5 +1,9 @@
 package common
 
+import (
+	"github.com/ecoball/go-ecoball/core/types/block"
+)
+
 type NodeInstance interface {
 	Start()
 	MsgDispatch(msg interface{})
@@ -16,7 +20,6 @@ const (
 type NetPacket struct {
 	ChainId    uint32
 	PacketType uint32
-	CsType     uint16
 	BlockType  uint16
 	Step       uint16
 	Packet     []byte
@@ -24,7 +27,6 @@ type NetPacket struct {
 
 type CsPacket struct {
 	PacketType uint32
-	CsType     uint16
 	BlockType  uint16
 	Step       uint16
 	Packet     interface{}
@@ -33,7 +35,6 @@ type CsPacket struct {
 func (c *CsPacket) Copyhead(p *NetPacket) {
 	c.PacketType = p.PacketType
 	c.BlockType = p.BlockType
-	c.CsType = p.CsType
 	c.Step = p.Step
 }
 
@@ -41,18 +42,19 @@ type CsView struct {
 	EpochNo     uint64
 	FinalHeight uint64
 	MinorHeight uint64
+	Round       uint16
 }
 
 func (v1 *CsView) Equal(v2 *CsView) bool {
-	return v1.EpochNo == v2.EpochNo && v1.FinalHeight == v2.FinalHeight && v1.MinorHeight == v2.MinorHeight
+	return v1.EpochNo == v2.EpochNo && v1.FinalHeight == v2.FinalHeight && v1.MinorHeight == v2.MinorHeight && v1.Round == v2.Round
 }
 
 type ConsensusInstance interface {
 	GetCsView() *CsView
-	MakeCsPacket(round uint16) *CsPacket
+	MakeNetPacket(round uint16) *NetPacket
 	GetCsBlock() interface{}
-	CacheBlock(bl interface{}) *CsView
+	CheckBlock(bl interface{}, bLeader bool) bool
 	PrepareRsp() uint16
 	PrecommitRsp() uint16
-	UpdateBlock(csp *CsPacket)
+	GetCandidate() *block.NodeInfo
 }

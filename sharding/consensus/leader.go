@@ -6,7 +6,7 @@ import (
 
 func (c *Consensus) startBlockConsensusLeader(instance sc.ConsensusInstance) {
 	c.view = instance.GetCsView()
-	log.Debug("currenet view ", c.view.EpochNo, " ", c.view.FinalHeight, " ", c.view.MinorHeight)
+	log.Debug("currenet view ", c.view.EpochNo, " ", c.view.FinalHeight, " ", c.view.MinorHeight, " ", c.view.Round)
 	c.instance = instance
 
 	c.sendPrepare()
@@ -16,6 +16,7 @@ func (c *Consensus) sendPrepare() {
 	log.Debug("send prepare")
 	c.step = StepPrePare
 	c.sendCsPacket()
+	c.retransTimer(true)
 }
 
 func (c *Consensus) prepareRsp(csp *sc.CsPacket) {
@@ -30,12 +31,14 @@ func (c *Consensus) sendPreCommit() {
 	log.Debug("send precommit")
 	c.step = StepPreCommit
 	c.sendCsPacket()
+	c.retransTimer(true)
 }
 
 func (c *Consensus) precommitRsp(csp *sc.CsPacket) {
 	log.Debug("precommit response")
 	counter := c.instance.PrecommitRsp()
 	if c.isVoteEnough(counter) {
+		c.retransTimer(false)
 		c.sendCommit()
 	}
 }

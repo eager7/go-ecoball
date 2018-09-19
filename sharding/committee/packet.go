@@ -2,8 +2,10 @@ package committee
 
 import (
 	"encoding/json"
+	"github.com/ecoball/go-ecoball/common/etime"
 	"github.com/ecoball/go-ecoball/core/types/block"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"time"
 )
 
 func (c *committee) consensusCb(bl interface{}) {
@@ -12,6 +14,8 @@ func (c *committee) consensusCb(bl interface{}) {
 		c.recvCommitCmBlock(bl.(*block.CMBlock))
 	case *block.FinalBlock:
 		c.recvCommitFinalBlock(bl.(*block.FinalBlock))
+	case *block.ViewChangeBlock:
+		c.recvCommitViewchangeBlock(bl.(*block.ViewChangeBlock))
 	default:
 		log.Error("consensus call back wrong packet type ", blockType)
 	}
@@ -125,4 +129,16 @@ func (c *committee) verifyViewChangePacket(p *sc.NetPacket) {
 func (c *committee) dropPacket(packet interface{}) {
 	pkt := packet.(*sc.CsPacket)
 	log.Debug("drop packet type ", pkt.PacketType)
+}
+
+func (c *committee) setRetransTimer(bStart bool) {
+	etime.StopTime(c.retransTimer)
+
+	if bStart {
+		c.retransTimer.Reset(sc.DefaultRetransTimer * time.Second)
+	}
+}
+
+func (c *committee) processRetransTimeout() {
+	c.cs.ProcessRetransPacket()
 }

@@ -148,22 +148,22 @@ func (c *Cell) GetLastViewchangeBlock() *block.ViewChangeBlock {
 	return c.chain.getViewchangeBlock()
 }
 
-func (c *Cell) SyncCMBlockComplete(lastCMblock *block.CMBlock) {
+func (c *Cell) SyncCmBlockComplete(lastCmblock *block.CMBlock) {
 	curBlock := c.chain.getCMBlock()
 
 	var i uint64
 	if curBlock == nil {
 		i = 1
-	} else if curBlock.Height >= lastCMblock.Height {
+	} else if curBlock.Height >= lastCmblock.Height {
 		log.Error("sync cm block error")
 		return
-	} else if curBlock.Height+sc.DefaultCommitteMaxMember >= lastCMblock.Height {
+	} else if curBlock.Height+sc.DefaultCommitteMaxMember >= lastCmblock.Height {
 		i = curBlock.Height + 1
 	} else {
-		i = lastCMblock.Height - sc.DefaultCommitteMaxMember + 1
+		i = lastCmblock.Height - sc.DefaultCommitteMaxMember + 1
 	}
 
-	for ; i < lastCMblock.Height; i++ {
+	for ; i < lastCmblock.Height; i++ {
 		cmb := simulate.GetCMBlockByNumber(i)
 		var worker Worker
 		worker.Pubkey = string(cmb.Candidate.PublicKey)
@@ -173,7 +173,7 @@ func (c *Cell) SyncCMBlockComplete(lastCMblock *block.CMBlock) {
 		c.addCommitteWorker(&worker)
 	}
 
-	c.SetLastCMBlock(lastCMblock)
+	c.SetLastCMBlock(lastCmblock)
 }
 
 func (c *Cell) SetMinorBlockToPool(minor *block.MinorBlock) {
@@ -192,8 +192,26 @@ func (c *Cell) GetMinorBlockPoolCount() uint16 {
 	return c.minorBlockPool.count()
 }
 
-func (c *Cell) IsCmLeader() bool {
-	return c.cm.isLeader(&c.Self)
+func (c *Cell) IsLeader() bool {
+	if c.NodeType == sc.NodeCommittee {
+		return c.cm.isLeader(&c.Self)
+	} else if c.NodeType == sc.NodeShard {
+		return c.isShardLeader()
+	} else {
+		return false
+	}
+}
+
+func (c *Cell) isShardLeader() bool {
+	if len(c.shard) == 0 {
+		return false
+	}
+
+	if (&c.Self).Equal(c.shard[0]) {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (c *Cell) IsCmCandidateLeader() bool {
@@ -231,9 +249,32 @@ func (c *Cell) GetLeader() *Worker {
 	}
 }
 
+func (c *Cell) GetBackup() *Worker {
+	if c.NodeType == sc.NodeCommittee {
+		if len(c.cm.member) > 1 {
+			return c.cm.member[1]
+		} else {
+			return nil
+		}
+	} else if c.NodeType == sc.NodeShard {
+		if len(c.shard) > 1 {
+			return c.shard[0]
+		} else {
+			return nil
+		}
+	} else {
+		return nil
+	}
+}
+
 func (c *Cell) addCommitteWorker(worker *Worker) {
 	log.Debug("add commit worker key ", worker.Pubkey, " address ", worker.Address, " port ", worker.Port)
-	c.cm.addMember(worker)
+	backup := c.GetBackup()
+	if backup != nil && backup.Equal(worker) {
+		c.cm.popLeader()
+	} else {
+		c.cm.addMember(worker)
+	}
 }
 
 func (c *Cell) saveShardsInfoFromCMBlock(cmb *block.CMBlock) {

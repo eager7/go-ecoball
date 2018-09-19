@@ -12,34 +12,48 @@ import (
 )
 
 type finalBlockCsi struct {
-	block *block.FinalBlock
+	bk    *block.FinalBlock
 	cache *block.FinalBlock
 }
 
 func newFinalBlockCsi(bk *block.FinalBlock) *finalBlockCsi {
-	return &finalBlockCsi{block: bk}
+	return &finalBlockCsi{bk: bk}
 }
 
 func (b *finalBlockCsi) GetCsView() *sc.CsView {
-	return &sc.CsView{EpochNo: b.block.CMEpochNo, FinalHeight: b.block.Height}
+	return &sc.CsView{EpochNo: b.bk.CMEpochNo, FinalHeight: b.bk.Height}
 }
 
-func (b *finalBlockCsi) CacheBlock(bl interface{}) *sc.CsView {
-	b.cache = bl.(*block.FinalBlock)
+func (b *finalBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
+	update := bl.(*block.FinalBlock)
+	if b.bk.Height != update.Height || b.bk.CMEpochNo != update.CMEpochNo {
+		log.Error("view error current ", b.bk.CMEpochNo, " ", b.bk.Height, " packet view ", update.CMEpochNo, " ", update.Height)
+		return false
+	}
 
-	return &sc.CsView{EpochNo: b.cache.CMEpochNo, FinalHeight: b.cache.Height}
+	if !sc.Same(b.bk.ProposalPubKey, update.ProposalPubKey) {
+		log.Error("proposal not same")
+		return false
+	}
+
+	if bLeader {
+		b.cache = update
+	} else {
+		b.bk = update
+	}
+	return true
 }
 
-func (b *finalBlockCsi) MakeCsPacket(step uint16) *sc.CsPacket {
-	csp := &sc.CsPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_FINAL_BLOCK, Step: step}
+func (b *finalBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
+	csp := &sc.NetPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_FINAL_BLOCK, Step: step}
 
 	/*missing_func should fill in signature and bit map*/
 	if step == consensus.StepPrePare {
 		log.Debug("make final prepare block")
-		b.block.Step1 = 1
+		b.bk.Step1 = 1
 	} else if step == consensus.StepPreCommit {
 		log.Debug("make final precommit block")
-		b.block.Step2 = 1
+		b.bk.Step2 = 1
 	} else if step == consensus.StepCommit {
 		log.Debug("make final commit block")
 	} else {
@@ -47,7 +61,7 @@ func (b *finalBlockCsi) MakeCsPacket(step uint16) *sc.CsPacket {
 		return nil
 	}
 
-	data, err := json.Marshal(b.block)
+	data, err := json.Marshal(b.bk)
 	if err != nil {
 		log.Error("final block marshal error ", err)
 		return nil
@@ -59,28 +73,27 @@ func (b *finalBlockCsi) MakeCsPacket(step uint16) *sc.CsPacket {
 }
 
 func (b *finalBlockCsi) GetCsBlock() interface{} {
-	return b.block
+	return b.bk
 }
 
 func (b *finalBlockCsi) PrepareRsp() uint16 {
 	if b.cache.Step1 == 1 {
-		b.block.Step1++
+		b.bk.Step1++
 	}
 
-	return b.block.Step1
+	return b.bk.Step1
 }
 
 func (b *finalBlockCsi) PrecommitRsp() uint16 {
 	if b.cache.Step2 == 1 {
-		b.block.Step2++
+		b.bk.Step2++
 	}
 
-	return b.block.Step2
+	return b.bk.Step2
 }
 
-func (b *finalBlockCsi) UpdateBlock(*sc.CsPacket) {
-	b.block = b.cache
-	b.cache = nil
+func (b *finalBlockCsi) GetCandidate() *block.NodeInfo {
+	return nil
 }
 
 func (c *committee) createFinalBlock() *block.FinalBlock {
@@ -122,22 +135,50 @@ func (c *committee) productFinalBlock(msg interface{}) {
 	c.stateTimer.Reset(sc.DefaultProductFinalBlockTimer * time.Second)
 }
 
+func (c *committee) recheckFinalPacket(p interface{}) bool {
+
+	/*recheck block*/
+	csp := p.(*sc.CsPacket)
+	if csp.BlockType != sc.SD_FINAL_BLOCK {
+		log.Error("it is not final block, drop it")
+		return false
+	}
+
+	final := csp.Packet.(*block.FinalBlock)
+	last := c.ns.GetLastFinalBlock()
+	if last != nil && final.Height <= last.Height {
+		log.Error("old final block, drop it")
+		return false
+	}
+
+	return true
+
+}
+
 func (c *committee) processConsensusFinalPacket(p interface{}) {
 	log.Debug("process final consensus block")
+
+	if !c.recheckFinalPacket(p) {
+		return
+	}
 
 	c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
-func (c *committee) processWMBStateChange(p interface{}) {
+func (c *committee) processConsensBlockOnWaitStatus(p interface{}) bool {
 	log.Debug("process final consensus packet on waiting status")
+	if c.ns.IsLeader() {
+		log.Error("we are leader of committee, drop packet")
+		return false
+	}
 
-	if c.ns.IsCmLeader() {
-		log.Error("we are leader of commit, drop packet")
-		return
+	if !c.recheckFinalPacket(p) {
+		return false
 	}
 
 	c.productFinalBlock(nil)
-	c.cs.ProcessPacket(p.(*sc.CsPacket))
+
+	return c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
 func (c *committee) recvCommitFinalBlock(bl *block.FinalBlock) {

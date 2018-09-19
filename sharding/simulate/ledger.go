@@ -45,11 +45,12 @@ func GetSyncStatus() bool {
 }
 
 func GetCandidate() []NodeConfig {
-	if !configLoad {
-		LoadConfig()
-	}
-
-	return candidate
+	//if !configLoad {
+	//	LoadConfig()
+	//}
+	//
+	//return candidate
+	return nil
 }
 
 func TellBlock(bl interface{}) {

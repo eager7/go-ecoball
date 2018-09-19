@@ -16,6 +16,11 @@ func (a *Worker) Equal(b *Worker) bool {
 	return a.Pubkey == b.Pubkey
 }
 
+func (a *Worker) EqualNode(b *block.NodeInfo) bool {
+	bkey := string(b.PublicKey)
+	return a.Pubkey == bkey
+}
+
 func (a *Worker) InitWork(b *block.NodeInfo) {
 	a.Pubkey = string(b.PublicKey)
 	a.Address = b.Address
@@ -57,6 +62,15 @@ func (s *workerSet) addMember(w *Worker) *Worker {
 	} else {
 		panic("wrong set len")
 	}
+}
+
+func (s *workerSet) popLeader() {
+	leader := s.member[0]
+	result := make([]*Worker, 0, s.max)
+	result = append(result, s.member[1:]...)
+	result = append(result, leader)
+
+	s.member = result
 }
 
 func (s *workerSet) isLeader(self *Worker) bool {
