@@ -6,24 +6,20 @@ import (
 )
 
 type ApplyContext struct {
-	Tc 			*TranscationContext
-	Action		*types.Action
+	Tc 				*TranscationContext
+	Action			*types.Action
 	InlineAction	[]types.Action
-	St 			*state.State
-	TimeStamp 	int64
-	CpuLimit 	float64
-	NetLimit 	float64
+	St 				*state.State
+	RecurseDepth	int32
 }
 
-func NewApplyContext(s *state.State, tc *TranscationContext, action	*types.Action, cpuLimit, netLimit float64, timeStamp int64) (*ApplyContext, error){
+func NewApplyContext(s *state.State, tc *TranscationContext, action	*types.Action, recurseDepth int32) (*ApplyContext, error){
 	context := &ApplyContext{
-		Tc:			tc,
-		Action:		action,
+		Tc:				tc,
+		Action:			action,
 		InlineAction:	nil,
-		St:			s,
-		TimeStamp:	timeStamp,
-		CpuLimit:	cpuLimit,
-		NetLimit:	netLimit,
+		St:				s,
+		RecurseDepth:	recurseDepth,
 	}
 
 	return context, nil

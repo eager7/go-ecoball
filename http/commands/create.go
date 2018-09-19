@@ -68,19 +68,19 @@ func Get_required_keys(params []interface{}) *common.Response {
 		key_datas := strings.Split(required_keys, "\n")
 		Transaction := new(types.Transaction)
 		if err := Transaction.Deserialize(innercommon.FromHex(transaction_data)); err != nil {
-			return common.NewResponse(common.INTERNAL_ERROR, err)
+			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 		}
 		//signTransaction, err := wallet.SignTransaction(inner.FromHex(transaction_data), datas)
 		hash := new(innercommon.Hash)
 		chainids := hash.FormHexString(chainId)
 		data, err := ledger.L.FindPermission(chainids, Transaction.From, permission)
 		if err != nil{
-			return common.NewResponse(common.INTERNAL_ERROR, err)
+			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 		}
 
 		permission_datas := []state.Permission{}
 		if err := json.Unmarshal([]byte(data), &permission_datas); err != nil {
-			return common.NewResponse(common.INTERNAL_ERROR, err)
+			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
 		}
 
 		public_address := []innercommon.Address{}

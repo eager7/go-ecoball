@@ -34,9 +34,9 @@ type Block struct {
 	CountTxs     uint32
 	Transactions []*Transaction
 	//Cm Block Data
-	Shards []Shard
+	//Shards []Shard
 	//Final Block Data
-	MinorBlocks []MinorBlockHeader
+	//MinorBlocks []MinorBlockHeader
 }
 
 func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, consensusData ConsensusData, txs []*Transaction, cpu, net float64, timeStamp int64) (*Block, error) {
@@ -88,7 +88,7 @@ func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, co
 		Header:       header,
 		CountTxs:     uint32(len(txs)),
 		Transactions: txs,
-		Shards:       nil,
+		//Shards:       nil,
 	}
 	return &block, nil
 }
