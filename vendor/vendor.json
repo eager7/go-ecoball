@@ -135,8 +135,32 @@
 			"revisionTime": "2018-01-10T05:33:47Z"
 		},
 		{
+			"checksumSHA1": "BhMowD2DIKSd9qq8Pzh7Y3mh2/w=",
+			"path": "github.com/gin-contrib/sse",
+			"revision": "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae",
+			"revisionTime": "2017-01-09T09:34:21Z"
+		},
+		{
 			"checksumSHA1": "k0iN/r1ZV5HTG8Sll2ojgvmSfBQ=",
 			"path": "github.com/gin-gonic/gin",
+			"revision": "c00f21ff239822d013b80e54bd403fbc08a0b5ff",
+			"revisionTime": "2018-06-26T10:56:43Z"
+		},
+		{
+			"checksumSHA1": "RpOzvbtNRBVl/4oH+l3zpR1+An0=",
+			"path": "github.com/gin-gonic/gin/binding",
+			"revision": "c00f21ff239822d013b80e54bd403fbc08a0b5ff",
+			"revisionTime": "2018-06-26T10:56:43Z"
+		},
+		{
+			"checksumSHA1": "ZrBlc4nW5joRSLLRThHlxU+bWtg=",
+			"path": "github.com/gin-gonic/gin/json",
+			"revision": "c00f21ff239822d013b80e54bd403fbc08a0b5ff",
+			"revisionTime": "2018-06-26T10:56:43Z"
+		},
+		{
+			"checksumSHA1": "04QfyzytHF4KelLmwjW/hY/qdTo=",
+			"path": "github.com/gin-gonic/gin/render",
 			"revision": "c00f21ff239822d013b80e54bd403fbc08a0b5ff",
 			"revisionTime": "2018-06-26T10:56:43Z"
 		},
@@ -763,6 +787,12 @@
 			"path": "github.com/magiconair/properties",
 			"revision": "2c9e9502788518c97fe44e8955cd069417ee89df",
 			"revisionTime": "2018-02-17T13:45:45Z"
+		},
+		{
+			"checksumSHA1": "kum8izZy1+pVfDiApW5hT2HoH1w=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c",
+			"revisionTime": "2017-11-07T05:05:31Z"
 		},
 		{
 			"checksumSHA1": "KGCifxxR5cm2gz94i2iha+RIZlk=",
