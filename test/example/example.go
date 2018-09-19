@@ -558,7 +558,8 @@ func InvokeContract(ledger ledger.Ledger) {
 	}
 
 	//transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": "-100"}`)
-	create := []byte(`{"creator": "worker1", "max_supply": "800", "token_id": "xyx"}`)
+	//create := []byte(`{"creator": "worker1", "max_supply": "800", "token_id": "xyx"}`)
+	create := []byte(`["worker1", "800", "xyx"]`)
 
 	argbyte, err := abi.CheckParam(abiDef, "create", create)
 	if err != nil {

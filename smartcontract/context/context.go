@@ -10,17 +10,19 @@ type ApplyContext struct {
 	Action		*types.Action
 	InlineAction	[]types.Action
 	St 			*state.State
+	RecurseDepth	int32
 	TimeStamp 	int64
 	CpuLimit 	float64
 	NetLimit 	float64
 }
 
-func NewApplyContext(s *state.State, tc *TranscationContext, action	*types.Action, cpuLimit, netLimit float64, timeStamp int64) (*ApplyContext, error){
+func NewApplyContext(s *state.State, tc *TranscationContext, action	*types.Action, recurseDepth int32, cpuLimit, netLimit float64, timeStamp int64) (*ApplyContext, error){
 	context := &ApplyContext{
 		Tc:			tc,
 		Action:		action,
 		InlineAction:	nil,
 		St:			s,
+		RecurseDepth:	recurseDepth,
 		TimeStamp:	timeStamp,
 		CpuLimit:	cpuLimit,
 		NetLimit:	netLimit,

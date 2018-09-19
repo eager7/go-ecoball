@@ -563,7 +563,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		//}
 		actionNew, _ := types.NewAction(tx)
 		trxContext, _ := context.NewTranscationContext(s, tx, cpuLimit, netLimit, timeStamp)
-		ret, err = smartcontract.DispatchAction(trxContext, actionNew)
+		ret, err = smartcontract.DispatchAction(trxContext, actionNew, 0)
 		if err != nil {
 			return nil, 0, 0, err
 		}
