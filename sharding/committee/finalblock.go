@@ -3,7 +3,7 @@ package committee
 import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/etime"
-	"github.com/ecoball/go-ecoball/core/types/block"
+	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
@@ -12,11 +12,11 @@ import (
 )
 
 type finalBlockCsi struct {
-	bk    *block.FinalBlock
-	cache *block.FinalBlock
+	bk    *types.FinalBlock
+	cache *types.FinalBlock
 }
 
-func newFinalBlockCsi(bk *block.FinalBlock) *finalBlockCsi {
+func newFinalBlockCsi(bk *types.FinalBlock) *finalBlockCsi {
 	return &finalBlockCsi{bk: bk}
 }
 
@@ -25,7 +25,7 @@ func (b *finalBlockCsi) GetCsView() *sc.CsView {
 }
 
 func (b *finalBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
-	update := bl.(*block.FinalBlock)
+	update := bl.(*types.FinalBlock)
 	if b.bk.Height != update.Height || b.bk.CMEpochNo != update.CMEpochNo {
 		log.Error("view error current ", b.bk.CMEpochNo, " ", b.bk.Height, " packet view ", update.CMEpochNo, " ", update.Height)
 		return false
@@ -92,11 +92,11 @@ func (b *finalBlockCsi) PrecommitRsp() uint16 {
 	return b.bk.Step2
 }
 
-func (b *finalBlockCsi) GetCandidate() *block.NodeInfo {
+func (b *finalBlockCsi) GetCandidate() *types.NodeInfo {
 	return nil
 }
 
-func (c *committee) createFinalBlock() *block.FinalBlock {
+func (c *committee) createFinalBlock() *types.FinalBlock {
 
 	lastcm := c.ns.GetLastCMBlock()
 	if lastcm == nil {
@@ -112,8 +112,11 @@ func (c *committee) createFinalBlock() *block.FinalBlock {
 		height = lastfinal.Height + 1
 	}
 
+	final := &types.FinalBlock{}
+	final.Height = height
+	final.CMEpochNo = lastcm.Height
+
 	log.Debug("create final block epoch ", lastcm.Height, " height ", height)
-	final := block.NewFinalBlock(lastcm.Height, height)
 
 	return final
 
@@ -144,7 +147,7 @@ func (c *committee) recheckFinalPacket(p interface{}) bool {
 		return false
 	}
 
-	final := csp.Packet.(*block.FinalBlock)
+	final := csp.Packet.(*types.FinalBlock)
 	last := c.ns.GetLastFinalBlock()
 	if last != nil && final.Height <= last.Height {
 		log.Error("old final block, drop it")
@@ -181,7 +184,7 @@ func (c *committee) processConsensBlockOnWaitStatus(p interface{}) bool {
 	return c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
-func (c *committee) recvCommitFinalBlock(bl *block.FinalBlock) {
+func (c *committee) recvCommitFinalBlock(bl *types.FinalBlock) {
 	log.Debug("recv consensus final block height ", bl.Height)
 	simulate.TellBlock(bl)
 

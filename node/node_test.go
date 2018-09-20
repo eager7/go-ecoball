@@ -98,7 +98,7 @@ func TestRunNode(t *testing.T) {
 		//go example.AutoGenerateTransaction(ledger.L)
 		//go example.VotingProducer(ledger.L)
 		go example.InvokeContract(ledger.L)
-		go example.QueryContractData(ledger.L)
+		//go example.QueryContractData(ledger.L)
 	}
 
 	wait()

@@ -19,12 +19,13 @@ type MinorBlockHeader struct {
 	StateDeltaHash    common.Hash
 	CMBlockHash       common.Hash
 	ProposalPublicKey []byte
-	ConsData          ConsensusData
+	//ConsData          ConsensusData
 	ShardId           uint32
 	CMEpochNo         uint64
 
 	Receipt BlockReceipt
 	hash    common.Hash
+	*COSign
 }
 
 func (h *MinorBlockHeader) ComputeHash() error {
@@ -40,13 +41,13 @@ func (h *MinorBlockHeader) ComputeHash() error {
 }
 
 func (h *MinorBlockHeader) proto() (*pb.MinorBlockHeader, error) {
-	if h.ConsData.Payload == nil {
+	/*if h.ConsData.Payload == nil {
 		return nil, errors.New(log, "the minor block header's consensus data is nil")
 	}
 	pbCon, err := h.ConsData.ProtoBuf()
 	if err != nil {
 		return nil, err
-	}
+	}*/
 	pbHeader := &pb.MinorBlockHeader{
 		ChainID:           h.ChainID.Bytes(),
 		Version:           h.Version,
@@ -57,7 +58,7 @@ func (h *MinorBlockHeader) proto() (*pb.MinorBlockHeader, error) {
 		StateDeltaHash:    h.StateDeltaHash.Bytes(),
 		CMBlockHash:       h.CMBlockHash.Bytes(),
 		ProposalPublicKey: h.ProposalPublicKey,
-		ConsData:          pbCon,
+		//ConsData:          pbCon,
 		ShardId:           h.ShardId,
 		CMEpochNo:         h.CMEpochNo,
 		Receipt: &pb.BlockReceipt{
@@ -65,6 +66,10 @@ func (h *MinorBlockHeader) proto() (*pb.MinorBlockHeader, error) {
 			BlockNet: h.Receipt.BlockNet,
 		},
 		Hash: h.hash.Bytes(),
+		COSign: &pb.COSign{
+			Step1: h.COSign.Step1,
+			Step2: h.COSign.Step2,
+		},
 	}
 	return pbHeader, nil
 }
@@ -110,19 +115,22 @@ func (h *MinorBlockHeader) Deserialize(data []byte) error {
 	h.StateDeltaHash = common.NewHash(pbHeader.StateDeltaHash)
 	h.CMBlockHash = common.NewHash(pbHeader.CMBlockHash)
 	h.ProposalPublicKey = common.CopyBytes(pbHeader.ProposalPublicKey)
-	h.ConsData = ConsensusData{}
+	//h.ConsData = ConsensusData{}
 	h.ShardId = pbHeader.ShardId
 	h.CMEpochNo = pbHeader.CMEpochNo
 	h.hash = common.NewHash(pbHeader.Hash)
 	h.Receipt = BlockReceipt{BlockCpu: pbHeader.Receipt.BlockCpu, BlockNet: pbHeader.Receipt.BlockNet}
-
-	dataCon, err := pbHeader.ConsData.Marshal()
+	h.COSign = &COSign{
+		Step1: pbHeader.COSign.Step1,
+		Step2: pbHeader.COSign.Step2,
+	}
+	/*dataCon, err := pbHeader.ConsData.Marshal()
 	if err != nil {
 		return err
 	}
 	if err := h.ConsData.Deserialize(dataCon); err != nil {
 		return err
-	}
+	}*/
 
 	return nil
 }
@@ -180,7 +188,22 @@ type MinorBlock struct {
 	StateDelta   []*AccountMinor
 }
 
-func (b *MinorBlock) SetReceipt(prevHeader *Header, txs []*Transaction, cpu, net float64) error {
+func NewMinorBlock(header MinorBlockHeader, prevHeader *Header, txs []*Transaction, cpu, net float64, sDelta []*AccountMinor) (*MinorBlock, error) {
+	if err := header.ComputeHash(); err != nil {
+		return nil, err
+	}
+	block := &MinorBlock{
+		MinorBlockHeader: header,
+		Transactions:     txs,
+		StateDelta:       sDelta,
+	}
+	if err := block.SetReceipt(prevHeader, cpu, net); err != nil {
+		return nil, err
+	}
+	return block, nil
+}
+
+func (b *MinorBlock) SetReceipt(prevHeader *Header, cpu, net float64) error {
 	var cpuLimit, netLimit float64
 	if cpu < (BlockCpuLimit / 10) {
 		cpuLimit = prevHeader.Receipt.BlockCpu * 1.01

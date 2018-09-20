@@ -90,6 +90,9 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			if consensus == "solo" {
 				msg := &message.RegChain{ChainID: hash, TxHash: ns.tx.Hash, Address: addr}
 				event.Send(event.ActorNil, event.ActorConsensusSolo, msg)
+			} else if consensus == "ababft" {
+				msg := &message.RegChain{ChainID: hash, TxHash: ns.tx.Hash, Address: addr}
+				event.Send(event.ActorNil, event.ActorConsensus, msg)
 			} else {
 				log.Warn("not support now")
 			}

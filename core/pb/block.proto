@@ -337,6 +337,7 @@ message MinorBlockHeader {
 
     BlockReceipt Receipt            = 13;
     bytes       Hash                = 14;
+    COSign  COSign              = 16;
 }
 message AccountMinor {
     bytes Balance = 1;
@@ -349,7 +350,9 @@ message MinorBlock {
 }
 
 message NodeInfo {
-    bytes   PublicKey = 1;
+    bytes   PublicKey   = 1;
+    string  Address     = 2;
+    string  Port        = 3;
 }
 
 message CMBlockHeader {
@@ -364,6 +367,7 @@ message CMBlockHeader {
     NodeInfo        Candidate       = 10;
     bytes           ShardsHash      = 11;
     bytes           Hash            = 12;
+    COSign  COSign              = 16;
 }
 
 message NodeAddr {
@@ -390,7 +394,7 @@ message FinalBlockHeader {
     int64   Timestamp           = 5;
     uint32  TrxCount            = 6;
     bytes   ProposalPubKey      = 7;
-    uint64  CMEpochNo           = 8;
+    uint64  EpochNo             = 8;
     bytes   CMBlockHash         = 9;
     bytes   TrxRootHash         = 10;
     bytes   StateDeltaRootHash  = 11;
@@ -399,9 +403,15 @@ message FinalBlockHeader {
     ConsensusData   ConsData    = 14;
 
     bytes   Hash                = 15;
+    COSign  COSign              = 16;
 }
 
 message FinalBlock {
     FinalBlockHeader            Header      = 1;
     repeated MinorBlockHeader MinorBlocks   = 2;
+}
+
+message COSign {
+    uint32 Step1 = 1;
+    uint32 Step2 = 2;
 }

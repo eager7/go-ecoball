@@ -47,4 +47,9 @@ type Ledger interface {
 	GetChainTx(chainID common.Hash) ChainInterface
 
 	GetTransaction(chainID, transactionId common.Hash) (*types.Transaction, error)
+
+	SaveShardBlock(chainID common.Hash, block types.BlockInterface) (err error)
+	GetShardBlockByHash(chainID common.Hash, typ types.HeaderType, hash common.Hash) (types.BlockInterface, error)
+	GetShardBlockByHeight(chainID common.Hash, typ types.HeaderType, height uint64) (types.BlockInterface, error)
+	GetLastShardBlock(chainID common.Hash, typ types.HeaderType) (types.BlockInterface, error)
 }

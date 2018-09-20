@@ -1,10 +1,14 @@
 package main
 
-import "github.com/ecoball/go-ecoball/sharding"
+import (
+	"github.com/ecoball/go-ecoball/sharding"
+	"github.com/ecoball/go-ecoball/test/example"
+)
 
 func main() {
-	instance := sharding.MakeSharding()
-	instance.Start()
+	L := example.Ledger("./sharding")
+
+	sharding.NewShardingActor(L)
 
 	select {}
 }

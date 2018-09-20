@@ -331,3 +331,35 @@ func (l *LedgerImpl) ResetStateDB(chainID common.Hash, header *types.Header) err
 	}
 	return chain.Geneses.TimeStamp
 }*/
+
+func (l *LedgerImpl) SaveShardBlock(chainID common.Hash, block types.BlockInterface) (err error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.SaveShardBlock(block)
+}
+
+func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ types.HeaderType, hash common.Hash) (types.BlockInterface, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.GetShardBlockByHash(typ, hash)
+}
+
+func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ types.HeaderType, height uint64) (types.BlockInterface, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.GetShardBlockByHeight(typ, height)
+}
+
+func (l *LedgerImpl) GetLastShardBlock(chainID common.Hash, typ types.HeaderType) (types.BlockInterface, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.GetLastShardBlock(typ)
+}

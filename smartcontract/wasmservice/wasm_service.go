@@ -48,7 +48,6 @@ type ParamTV struct {
 
 type WasmService struct {
 	state     state.InterfaceState
-	//Tx        *types.Transaction
 	action	  *types.Action
 	context   *context.ApplyContext
 	Code      []byte
@@ -57,7 +56,7 @@ type WasmService struct {
 	timeStamp int64
 }
 
-func NewWasmService(s state.InterfaceState, tx *types.Transaction, action *types.Action, context *context.ApplyContext, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
+func NewWasmService(s state.InterfaceState, action *types.Action, context *context.ApplyContext, contract *types.DeployInfo, invoke *types.InvokeInfo, timeStamp int64) (*WasmService, error) {
 	if contract == nil {
 		return nil, errors.New("contract is nil")
 	}
@@ -79,7 +78,6 @@ func NewWasmService(s state.InterfaceState, tx *types.Transaction, action *types
 
 	ws := &WasmService{
 		state:     s,
-		//Tx:		   tx,
 		action:    action,
 		context:	context,
 		Code:      contract.Code,

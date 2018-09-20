@@ -40,6 +40,11 @@ if not exist %BUILD_PATH% (
     md %BUILD_PATH%
 )
 
+rem check action
+if "%1" equ "clean" goto CLEAN
+if "%1" equ "ecowallet" goto CHECK_ECOWALLET
+if "%1" equ "ecoball" goto CHECK_ECOBALL
+
 rem Determine if ecoclient.exe exists
 if not exist %BUILD_PATH%ecoclient.exe (
     goto ECOCLIENT
@@ -61,6 +66,7 @@ echo Build ecoclient.exe success!!!!
 
 rem Determine if ecowallet.exe exists
 :CHECK_ECOWALLET
+if "%1" equ "ecoclient" goto FAILED
 if not exist %BUILD_PATH%ecowallet.exe (
     goto ECOWALLET
 )
@@ -81,6 +87,7 @@ echo Build ecowallet.exe success!!!!
 
 rem Determine if build ecoball.exe exists
 :CHECK_ECOBALL
+if "%1" equ "ecowallet" goto FAILED
 if not exist %BUILD_PATH%ecoball.exe (
     goto ECOBALL
 ) 
@@ -101,6 +108,15 @@ if %ERRORLEVEL% neq 0 (
 move node.exe ..\build\ecoball.exe > nul
 cd ../
 echo Build ecoball.exe success!!!!
+goto FAILED
+
+:CLEAN
+cd %BUILD_PATH%
+del /s /q /f *.* > nul
+for /d %%i in (*) do rd /s /q "%%i" > nul
+cd ../
+rd %BUILD_PATH%
+echo clean success!!!!
 
 :FAILED
 pause>nul
