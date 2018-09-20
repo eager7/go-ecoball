@@ -2,6 +2,7 @@ package sharding
 
 import (
 	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"reflect"
 )
@@ -20,6 +21,8 @@ func NewShardingActor() (pid *actor.PID, err error) {
 	if err == nil {
 		shardingActor.instance = MakeSharding()
 		shardingActor.instance.Start()
+
+		event.RegisterActor(event.ActorSharding, pid)
 
 		return pid, nil
 	} else {

@@ -6,7 +6,7 @@ import (
 )
 
 func (c *Consensus) isVoteEnough(counter uint16) bool {
-	if counter > c.ns.GetWorksCounter()*common.DefaultThresholdOfConsensus/1000+1 {
+	if counter >= c.ns.GetWorksCounter()*common.DefaultThresholdOfConsensus/1000+1 {
 		return true
 	} else {
 		return false
