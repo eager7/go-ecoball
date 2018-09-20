@@ -30,6 +30,7 @@ import (
 	"math/big"
 	"testing"
 	"time"
+	"github.com/ecoball/go-ecoball/common/event"
 )
 
 var root = common.NameToIndex("root")
@@ -63,6 +64,7 @@ func TestLedgerImpl_ResetStateDB(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	newBlock.SetSignature(&config.Root)
 	errors.CheckEqualPanic(currentBlock.JsonString(false) == newBlock.JsonString(false))
+	event.EventStop()
 }
 
 func CreateAccountBlock(ledger ledger.Ledger) *types.Block {
@@ -113,4 +115,44 @@ func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
 	txs = append(txs, transfer)
 
 	return example.SaveBlock(ledger, txs, config.ChainHash)
+}
+
+func TestInterface(t *testing.T) {
+	l := example.Ledger("/tmp/interface")
+	header := types.CMBlockHeader{
+		ChainID:      config.ChainHash,
+		Version:      0,
+		Height:       10,
+		Timestamp:    2340,
+		PrevHash:     common.Hash{},
+		ConsData:     example.ConsensusData(),
+		LeaderPubKey: []byte("12345678909876554432"),
+		Nonce:        23450,
+		Candidate: types.NodeInfo{
+			PublicKey: config.Root.PublicKey,
+		},
+		ShardsHash: config.ChainHash,
+	}
+	errors.CheckErrorPanic(header.ComputeHash())
+	block := types.CMBlock{
+		CMBlockHeader: header,
+		Shards: []types.Shard{types.Shard{
+			Id: 10,
+			Member: []types.NodeInfo{
+				{PublicKey: nil},
+			},
+			MemberAddr: []types.NodeAddr{{
+				Address: "1234",
+				Port:    "5678",
+			}},
+		}},
+	}
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, &block))
+	blockGet, err := l.GetShardBlockByHash(config.ChainHash, types.HeCmBlock, block.Hash())
+	errors.CheckErrorPanic(err)
+	errors.CheckEqualPanic(block.JsonString() == blockGet.JsonString())
+
+	blockLast, err := l.GetLastShardBlock(config.ChainHash, types.HeCmBlock)
+	errors.CheckErrorPanic(err)
+	errors.CheckEqualPanic(block.JsonString() == blockLast.JsonString())
 }
