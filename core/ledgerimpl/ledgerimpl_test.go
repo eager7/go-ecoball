@@ -125,11 +125,13 @@ func TestInterface(t *testing.T) {
 		Height:       10,
 		Timestamp:    2340,
 		PrevHash:     common.Hash{},
-		ConsData:     example.ConsensusData(),
+		//ConsData:     example.ConsensusData(),
 		LeaderPubKey: []byte("12345678909876554432"),
 		Nonce:        23450,
 		Candidate: types.NodeInfo{
 			PublicKey: config.Root.PublicKey,
+			Address:   "1234",
+			Port:      "5678",
 		},
 		ShardsHash: config.ChainHash,
 	}
@@ -139,7 +141,11 @@ func TestInterface(t *testing.T) {
 		Shards: []types.Shard{types.Shard{
 			Id: 10,
 			Member: []types.NodeInfo{
-				{PublicKey: nil},
+				{
+					PublicKey: []byte("0987654321"),
+					Address:   "1234",
+					Port:      "5678",
+				},
 			},
 			MemberAddr: []types.NodeAddr{{
 				Address: "1234",

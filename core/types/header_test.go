@@ -24,7 +24,7 @@ func TestMinorBlockHeader(t *testing.T) {
 		StateDeltaHash:    common.Hash{},
 		CMBlockHash:       common.Hash{},
 		ProposalPublicKey: []byte("1234567890"),
-		ConsData:          example.ConsensusData(),
+		//ConsData:          example.ConsensusData(),
 		ShardId:           1,
 		CMEpochNo:         2,
 		Receipt:           types.BlockReceipt{},
@@ -58,11 +58,13 @@ func TestCmBlockHeader(t *testing.T) {
 		Height:       10,
 		Timestamp:    2340,
 		PrevHash:     common.Hash{},
-		ConsData:     example.ConsensusData(),
+		//ConsData:     example.ConsensusData(),
 		LeaderPubKey: []byte("12345678909876554432"),
 		Nonce:        23450,
 		Candidate: types.NodeInfo{
 			PublicKey: config.Root.PublicKey,
+			Address:   "1234",
+			Port:      "5678",
 		},
 		ShardsHash: config.ChainHash,
 	}
@@ -72,6 +74,8 @@ func TestCmBlockHeader(t *testing.T) {
 
 	headerNew := types.CMBlockHeader{}
 	errors.CheckErrorPanic(headerNew.Deserialize(data))
+	elog.Log.Debug(header.JsonString())
+	elog.Log.Info(headerNew.JsonString())
 	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
 
 	block := types.CMBlock{
@@ -79,7 +83,11 @@ func TestCmBlockHeader(t *testing.T) {
 		Shards: []types.Shard{types.Shard{
 			Id: 10,
 			Member: []types.NodeInfo{
-				{PublicKey: nil},
+				{
+					PublicKey: []byte("12340987"),
+					Address:   "ew62",
+					Port:      "34523532",
+				},
 			},
 			MemberAddr: []types.NodeAddr{{
 				Address: "1234",
@@ -104,7 +112,7 @@ func TestFinalBlockHeader(t *testing.T) {
 		Timestamp:          3450,
 		TrxCount:           670,
 		PrevHash:           config.ChainHash,
-		ConsData:           example.ConsensusData(),
+		//ConsData:           example.ConsensusData(),
 		ProposalPubKey:     []byte("123678435634w453226435"),
 		CMEpochNo:          570,
 		CMBlockHash:        config.ChainHash,
@@ -131,7 +139,7 @@ func TestFinalBlockHeader(t *testing.T) {
 		StateDeltaHash:    common.Hash{},
 		CMBlockHash:       common.Hash{},
 		ProposalPublicKey: []byte("1234567890"),
-		ConsData:          example.ConsensusData(),
+		//ConsData:          example.ConsensusData(),
 		ShardId:           1,
 		CMEpochNo:         2,
 		Receipt:           types.BlockReceipt{},

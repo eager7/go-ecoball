@@ -15,7 +15,7 @@ type FinalBlockHeader struct {
 	Timestamp          int64
 	TrxCount           uint32
 	PrevHash           common.Hash
-	ConsData           ConsensusData
+	//ConsData           ConsensusData
 	ProposalPubKey     []byte
 	CMEpochNo          uint64
 	CMBlockHash        common.Hash
@@ -41,13 +41,13 @@ func (h *FinalBlockHeader) ComputeHash() error {
 }
 
 func (h *FinalBlockHeader) proto() (*pb.FinalBlockHeader, error) {
-	if h.ConsData.Payload == nil {
+	/*if h.ConsData.Payload == nil {
 		return nil, errors.New(log, "the minor block header's consensus data is nil")
 	}
 	pbCon, err := h.ConsData.ProtoBuf()
 	if err != nil {
 		return nil, err
-	}
+	}*/
 	pbHeader := &pb.FinalBlockHeader{
 		ChainID:            h.ChainID.Bytes(),
 		Version:            h.Version,
@@ -62,7 +62,7 @@ func (h *FinalBlockHeader) proto() (*pb.FinalBlockHeader, error) {
 		StateDeltaRootHash: h.StateDeltaRootHash.Bytes(),
 		MinorBlocksHash:    h.MinorBlocksHash.Bytes(),
 		StateHashRoot:      h.StateHashRoot.Bytes(),
-		ConsData:           pbCon,
+		//ConsData:           pbCon,
 		Hash:               h.hash.Bytes(),
 	}
 	return pbHeader, nil
@@ -109,19 +109,19 @@ func (h *FinalBlockHeader) Deserialize(data []byte) error {
 	h.CMEpochNo = pbHeader.CMEpochNo
 	h.CMBlockHash = common.NewHash(pbHeader.CMBlockHash)
 	h.TrxRootHash = common.NewHash(pbHeader.TrxRootHash)
-	h.ConsData = ConsensusData{}
+	//h.ConsData = ConsensusData{}
 	h.StateDeltaRootHash = common.NewHash(pbHeader.StateDeltaRootHash)
 	h.MinorBlocksHash = common.NewHash(pbHeader.MinorBlocksHash)
 	h.StateHashRoot = common.NewHash(pbHeader.StateHashRoot)
 	h.hash = common.NewHash(pbHeader.Hash)
 
-	dataCon, err := pbHeader.ConsData.Marshal()
+	/*dataCon, err := pbHeader.ConsData.Marshal()
 	if err != nil {
 		return err
 	}
 	if err := h.ConsData.Deserialize(dataCon); err != nil {
 		return err
-	}
+	}*/
 
 	return nil
 }

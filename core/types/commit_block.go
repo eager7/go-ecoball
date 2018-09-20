@@ -20,7 +20,7 @@ type CMBlockHeader struct {
 	Height    uint64
 	Timestamp int64
 	PrevHash  common.Hash
-	ConsData  ConsensusData
+	//ConsData  ConsensusData
 
 	LeaderPubKey []byte
 	Nonce        uint32
@@ -44,24 +44,26 @@ func (h *CMBlockHeader) ComputeHash() error {
 }
 
 func (h *CMBlockHeader) proto() (*pb.CMBlockHeader, error) {
-	if h.ConsData.Payload == nil {
-		return nil, errors.New(log, "the cm block header's consensus data is nil")
-	}
-	pbCon, err := h.ConsData.ProtoBuf()
-	if err != nil {
-		return nil, err
-	}
+	//if h.ConsData.Payload == nil {
+	//	return nil, errors.New(log, "the cm block header's consensus data is nil")
+	//}
+	//pbCon, err := h.ConsData.ProtoBuf()
+	//if err != nil {
+	//	return nil, err
+	//}
 	return &pb.CMBlockHeader{
 		ChainID:      h.ChainID.Bytes(),
 		Version:      h.Version,
 		Height:       h.Height,
 		Timestamp:    h.Timestamp,
 		PrevHash:     h.PrevHash.Bytes(),
-		ConsData:     pbCon,
+		//ConsData:     pbCon,
 		LeaderPubKey: common.CopyBytes(h.LeaderPubKey),
 		Nonce:        h.Nonce,
 		Candidate: &pb.NodeInfo{
 			PublicKey: h.Candidate.PublicKey,
+			Address:   h.Candidate.Address,
+			Port:      h.Candidate.Port,
 		},
 		ShardsHash: h.ShardsHash.Bytes(),
 		Hash:       h.hash.Bytes(),
@@ -105,16 +107,20 @@ func (h *CMBlockHeader) Deserialize(data []byte) error {
 	h.PrevHash = common.NewHash(pbHeader.PrevHash)
 	h.LeaderPubKey = common.CopyBytes(pbHeader.LeaderPubKey)
 	h.Nonce = pbHeader.Nonce
-	h.Candidate = NodeInfo{PublicKey: common.CopyBytes(pbHeader.Candidate.PublicKey)}
+	h.Candidate = NodeInfo{
+		PublicKey: common.CopyBytes(pbHeader.Candidate.PublicKey),
+		Address:   pbHeader.Candidate.Address,
+		Port:      pbHeader.Candidate.Port,
+	}
 	h.ShardsHash = common.NewHash(pbHeader.ShardsHash)
 	h.hash = common.NewHash(pbHeader.Hash)
-	dataCon, err := pbHeader.ConsData.Marshal()
-	if err != nil {
-		return err
-	}
-	if err := h.ConsData.Deserialize(dataCon); err != nil {
-		return err
-	}
+	//dataCon, err := pbHeader.ConsData.Marshal()
+	//if err != nil {
+	//	return err
+	//}
+	//if err := h.ConsData.Deserialize(dataCon); err != nil {
+	//	return err
+	//}
 	return nil
 }
 
@@ -166,6 +172,8 @@ func (s *Shard) proto() *pb.Shard {
 	for _, n := range s.Member {
 		pbNodeInfo := pb.NodeInfo{
 			PublicKey: n.PublicKey,
+			Address:   n.Address,
+			Port:      n.Port,
 		}
 		pbShard.Member = append(pbShard.Member, &pbNodeInfo)
 	}
@@ -188,6 +196,8 @@ func (s *Shard) Deserialize(data []byte) error {
 	for _, v := range pbShard.Member {
 		nodeInfo := NodeInfo{
 			PublicKey: common.CopyBytes(v.PublicKey),
+			Address:   v.Address,
+			Port:      v.Port,
 		}
 		s.Member = append(s.Member, nodeInfo)
 	}

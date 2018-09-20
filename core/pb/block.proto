@@ -349,7 +349,9 @@ message MinorBlock {
 }
 
 message NodeInfo {
-    bytes   PublicKey = 1;
+    bytes   PublicKey   = 1;
+    string  Address     = 2;
+    string  Port        = 3;
 }
 
 message CMBlockHeader {
