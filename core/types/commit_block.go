@@ -10,6 +10,8 @@ import (
 
 type NodeInfo struct {
 	PublicKey []byte
+	Address   string
+	Port      string
 }
 
 type CMBlockHeader struct {
@@ -26,6 +28,7 @@ type CMBlockHeader struct {
 	ShardsHash   common.Hash
 
 	hash common.Hash
+	*COSign
 }
 
 func (h *CMBlockHeader) ComputeHash() error {

@@ -25,6 +25,7 @@ type MinorBlockHeader struct {
 
 	Receipt BlockReceipt
 	hash    common.Hash
+	*COSign
 }
 
 func (h *MinorBlockHeader) ComputeHash() error {

@@ -25,6 +25,7 @@ type FinalBlockHeader struct {
 	StateHashRoot      common.Hash
 
 	hash common.Hash
+	*COSign
 }
 
 func (h *FinalBlockHeader) ComputeHash() error {
@@ -147,6 +148,7 @@ func (h *FinalBlockHeader) GetHeight() uint64 {
 func (h *FinalBlockHeader) GetChainID() common.Hash {
 	return h.ChainID
 }
+
 type FinalBlock struct {
 	FinalBlockHeader
 	MinorBlocks []*MinorBlockHeader
