@@ -12,6 +12,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"strconv"
 	"github.com/ecoball/go-ecoball/dsn"
+	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
 )
 
 var log = elog.NewLogger("native", elog.NoticeLog)
@@ -126,11 +127,11 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := ns.state.CancelDelegate(from, to, cpu, net, ns.cpuLimit, ns.netLimit); err != nil {
 			return nil, err
 		}
-	case "reg_proof":
+	case dsnComm.FcMethodProof:
 		dsn.HandleStorageProof(ns.params[0], ns.state)
-	case "reg_store":
+	case dsnComm.FcMethodAn:
 		dsn.HandleStoreAnn(ns.params[0], ns.state)
-	case "reg_file":
+	case dsnComm.FcMethodFile:
 		dsn.HandleFileContract(ns.params[0], ns.state)
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", ns.method))

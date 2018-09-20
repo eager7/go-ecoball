@@ -4,6 +4,10 @@ import (
 	"time"
 	"errors"
 	"math/big"
+	"context"
+	"math/rand"
+	"io/ioutil"
+	"crypto/sha256"
 	"github.com/ecoball/go-ecoball/dsn/crypto"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
@@ -12,16 +16,12 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	innerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
-	"context"
-	"math/rand"
 	dproof "github.com/ecoball/go-ecoball/dsn/proof"
 	"github.com/ecoball/go-ecoball/dsn/host/pb"
-	"encoding/binary"
 	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
-	"io/ioutil"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
-	"crypto/sha256"
+	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
 )
 
 var (
@@ -46,8 +46,6 @@ type HostAncContract struct {
 	PublicKey     []byte
 	TotalStorage  uint64
 	StartAt       uint64
-	//Collateral    big.Int
-	//MaxCollateral big.Int
 	Collateral    []byte
 	MaxCollateral []byte
 	AccountName   string
@@ -62,13 +60,6 @@ type StorageProof struct {
 	HashSet       []crypto.Hash
 	AtHeight      uint64
 	AccountName   string
-}
-
-
-type StorageHoster interface {
-	Announce() error
-	TotalStorage() uint64
-	ProvideStorageProof() error
 }
 
 type StorageHost struct {
@@ -147,6 +138,7 @@ func (h *StorageHost) getBlockSyncState(chainId common.Hash) bool {
 // Announce creates a storage host announcement transaction
 func (h *StorageHost) Announce() error {
 	chainId := common.HexToHash(h.conf.ChainId)
+
 	//TODO do block syncing and coll checking
 	//syncState := h.getBlockSyncState(chainId)
 	//if !syncState {
@@ -156,14 +148,15 @@ func (h *StorageHost) Announce() error {
 	//if !colState {
 	//	return errCheckCol
 	//}
+
 	announcement, err := h.createAnnouncement()
 	if err != nil {
 		return errCreateAnnouncement
 	}
 	timeNow := time.Now().UnixNano()
 	transaction, err := types.NewInvokeContract(common.NameToIndex(h.conf.AccountName),
-		innerCommon.NameToIndex("root"), chainId,
-		"owner", "reg_store", []string{string(announcement)}, 0, timeNow)
+		innerCommon.NameToIndex(dsnComm.RootAccount), chainId,
+		"owner", dsnComm.FcMethodAn, []string{string(announcement)}, 0, timeNow)
 	if err != nil {
 		return err
 	}
@@ -201,15 +194,7 @@ func (h *StorageHost) createAnnouncement() ([]byte, error) {
 	}
 	afc.MaxCollateral, _ = bcv.GobEncode()
 	afc.AccountName = h.conf.AccountName
-	//annBytes, err := afc.Serialize()
-	//if err != nil {
-	//	return nil, err
-	//}
 	annBytes := encoding.Marshal(afc)
-	//annHash := crypto.HashBytes(annBytes)
-	//var sk crypto.SecretKey
-	//copy(sk[:], h.account.PrivateKey)
-	//sig := crypto.SignHash(annHash, sk)
 	annHash := sha256.Sum256(annBytes)
 	sig, err := h.account.Sign(annHash[:])
 	if err !=  nil {
@@ -256,10 +241,6 @@ func (h *StorageHost)createStorageProof() ([]byte, error) {
 	copy(proof.Segment[:], base)
 	proof.AccountName = h.conf.AccountName
 	proofBytes := encoding.Marshal(proof)
-	//proofHash := crypto.HashBytes(proofBytes)
-	//var sk crypto.SecretKey
-	//copy(sk[:], h.account.PrivateKey)
-	//sig := crypto.SignHash(proofHash, sk)
 	annHash := sha256.Sum256(proofBytes)
 	sig, err := h.account.Sign(annHash[:])
 	if err !=  nil {
@@ -274,14 +255,15 @@ func (h *StorageHost) ProvideStorageProof() error {
 	//if !syncState {
 	//	return errGetBlockSyncState
 	//}
+
 	proof, err := h.createStorageProof()
 	if err != nil {
 		return errCreateStorageProof
 	}
 	timeNow := time.Now().UnixNano()
 	transaction, err := types.NewInvokeContract(common.NameToIndex(h.conf.AccountName),
-		innerCommon.NameToIndex("root"), common.HexToHash(h.conf.ChainId),
-		"owner", "reg_proof", []string{string(proof)}, 0, timeNow)
+		innerCommon.NameToIndex(dsnComm.RootAccount), common.HexToHash(h.conf.ChainId),
+		"owner", dsnComm.FcMethodProof, []string{string(proof)}, 0, timeNow)
 	if err != nil {
 		return err
 	}
@@ -337,19 +319,6 @@ func (an *HostAncContract) Deserialize(data []byte) error {
 	return nil
 }
 
-func (an *HostAncContract) SeriStateStore() []byte {
-	log.Debug("Host announce contract, totalstorage: ", an.TotalStorage, "start at: ", an.StartAt)
-	b1 := make([]byte, 8)
-	binary.BigEndian.PutUint64(b1, an.TotalStorage)
-	b2 := make([]byte, 8)
-	binary.BigEndian.PutUint64(b2, an.StartAt)
-	buff := make([]byte, 16)
-	var offset int = 0
-	copy(buff, b1)
-	offset = offset + 8
-	copy(buff[offset:], b2)
-	return buff
-}
 func (st *StorageProof) Serialize() ([]byte, error) {
 	var sp pb.Proof
 	sp.PublicKey = st.PublicKey
