@@ -18,7 +18,7 @@ package commands
 import (
 	"errors"
 	"fmt"
-	"os"
+	"net/url"
 	//"strings"
 
 	//"github.com/ecoball/go-ecoball/account"
@@ -26,7 +26,6 @@ import (
 	"github.com/ecoball/go-ecoball/client/rpc"
 	outerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/types"
-	innerCommon "github.com/ecoball/go-ecoball/http/common"
 	"github.com/urfave/cli"
 )
 
@@ -202,14 +201,12 @@ func attachWallet(c *cli.Context) error {
 	}
 
 	//rpc call
-	resp, err := rpc.WalletCall("attach", []interface{}{common.RpcAddress()})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
+	var result common.SimpleResult
+	err := rpc.WalletGet("/wallet/attach", &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-
-	//result
-	return rpc.EchoResult(resp)
+	return err
 }
 
 func createWallet(c *cli.Context) error {
@@ -231,32 +228,25 @@ func createWallet(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	resp, err := rpc.WalletCall("createWallet", []interface{}{name, passwd})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
-	}
+	var result common.SimpleResult
+	values := url.Values{}
+	values.Set("name", name)
+	values.Set("password", passwd)
+	err := rpc.WalletPost("/wallet/create", values.Encode(), &result)
 
-	//result
-	rpc.EchoResult(resp)
-	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
-		fmt.Println("wallet file path:", name)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-	return nil
+	return err
 }
 
 func GetPublicKeys() (string, error) {
-	resp, err := rpc.WalletCall("GetPublicKeys", []interface{}{})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return "", err
+	var result common.SimpleResult
+	err := rpc.WalletGet("/wallet/getPublicKeys", &result)
+	if nil == err {
+		return result.Result, nil
 	}
-	if nil != resp["result"] {
-		data := resp["result"].(string)
-		//datas := strings.Split(data, "\n")
-		return data, nil
-	}
-	return "", nil
+	return "", err
 }
 
 func sign_transaction(chainId outerCommon.Hash, required_keys string, trx *types.Transaction) error {
@@ -264,16 +254,15 @@ func sign_transaction(chainId outerCommon.Hash, required_keys string, trx *types
 	if err != nil {
 		return err
 	}
-	resp, errcode := rpc.WalletCall("sign_transaction", []interface{}{chainId.HexString(), required_keys, outerCommon.ToHex(data)})
-	if errcode != nil {
-		fmt.Fprintln(os.Stderr, errcode)
-		return err
+	var result common.SimpleResult
+	values := url.Values{}
+	values.Set("keys", required_keys)
+	values.Set("data", outerCommon.ToHex(data))
+	err = rpc.WalletPost("/wallet/signTransaction", values.Encode(), &result)
+	if nil == err {
+		trx.Deserialize(outerCommon.FromHex(result.Result))
 	}
-	if nil != resp["result"] {
-		data = outerCommon.FromHex(resp["result"].(string))
-		trx.Deserialize(data)
-	}
-	return nil
+	return err
 }
 
 func createKey(c *cli.Context) error {
@@ -289,14 +278,14 @@ func createKey(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	resp, err := rpc.WalletCall("createKey", []interface{}{name})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
+	var result common.SimpleResult
+	values := url.Values{}
+	values.Set("name", name)
+	err := rpc.WalletPost("/wallet/createKey", values.Encode(), &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-
-	rpc.EchoResult(resp)
-	return nil
+	return err
 }
 
 func openWallet(c *cli.Context) error {
@@ -318,17 +307,15 @@ func openWallet(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	resp, err := rpc.WalletCall("openWallet", []interface{}{name, passwd})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
+	var result common.SimpleResult
+	values := url.Values{}
+	values.Set("name", name)
+	values.Set("password", passwd)
+	err := rpc.WalletPost("/wallet/openWallet", values.Encode(), &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-
-	rpc.EchoResult(resp)
-	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
-		fmt.Println("open wallet success, wallet file path:", name)
-	}
-	return nil
+	return err
 }
 
 func lockWallet(c *cli.Context) error {
@@ -344,14 +331,14 @@ func lockWallet(c *cli.Context) error {
 		return errors.New("Invalid wallet name")
 	}
 
-	resp, err := rpc.WalletCall("lockWallet", []interface{}{name})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
+	var result common.SimpleResult
+	values := url.Values{}
+	values.Set("name", name)
+	err := rpc.WalletPost("/wallet/lockWallet", values.Encode(), &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-
-	rpc.EchoResult(resp)
-	return nil
+	return err
 }
 
 func unlockWallet(c *cli.Context) error {
@@ -373,14 +360,15 @@ func unlockWallet(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	resp, err := rpc.WalletCall("unlockWallet", []interface{}{name, passwd})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
+	var result common.SimpleResult
+	values := url.Values{}
+	values.Set("name", name)
+	values.Set("password", passwd)
+	err := rpc.WalletPost("/wallet/unlockWallet", values.Encode(), &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-
-	rpc.EchoResult(resp)
-	return nil
+	return err
 }
 
 func importKey(c *cli.Context) error {
@@ -402,14 +390,15 @@ func importKey(c *cli.Context) error {
 		return errors.New("Invalid private key")
 	}
 
-	resp, err := rpc.WalletCall("importKey", []interface{}{name, privateKey})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
+	var result common.SimpleResult
+	values := url.Values{}
+	values.Set("name", name)
+	values.Set("privateKey", privateKey)
+	err := rpc.WalletPost("/wallet/importKey", values.Encode(), &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-
-	rpc.EchoResult(resp)
-	return nil
+	return err
 }
 
 func removeKey(c *cli.Context) error {
@@ -437,14 +426,16 @@ func removeKey(c *cli.Context) error {
 		return errors.New("Invalid private key")
 	}
 
-	resp, err := rpc.WalletCall("removeKey", []interface{}{name, password, publicKey})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
+	var result common.SimpleResult
+	values := url.Values{}
+	values.Set("name", name)
+	values.Set("password", password)
+	values.Set("publickey", publicKey)
+	err := rpc.WalletPost("/wallet/removeKey", values.Encode(), &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-
-	rpc.EchoResult(resp)
-	return nil
+	return err
 }
 
 func listAccount(c *cli.Context) error {
@@ -466,23 +457,22 @@ func listAccount(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	resp, err := rpc.WalletCall("list_keys", []interface{}{name, passwd})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
+	var result common.SimpleResult
+	values := url.Values{}
+	values.Set("name", name)
+	values.Set("password", passwd)
+	err := rpc.WalletPost("/wallet/listKey", values.Encode(), &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-
-	rpc.EchoResult(resp)
-	return nil
+	return err
 }
 
 func listWallets(c *cli.Context) error {
-	resp, err := rpc.WalletCall("list_wallets", []interface{}{})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
+	var result common.SimpleResult
+	err := rpc.WalletGet("/wallet/listWallets", &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-
-	rpc.EchoResult(resp)
-	return nil
+	return err
 }

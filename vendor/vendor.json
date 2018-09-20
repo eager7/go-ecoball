@@ -135,6 +135,36 @@
 			"revisionTime": "2018-01-10T05:33:47Z"
 		},
 		{
+			"checksumSHA1": "BhMowD2DIKSd9qq8Pzh7Y3mh2/w=",
+			"path": "github.com/gin-contrib/sse",
+			"revision": "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae",
+			"revisionTime": "2017-01-09T09:34:21Z"
+		},
+		{
+			"checksumSHA1": "k0iN/r1ZV5HTG8Sll2ojgvmSfBQ=",
+			"path": "github.com/gin-gonic/gin",
+			"revision": "c00f21ff239822d013b80e54bd403fbc08a0b5ff",
+			"revisionTime": "2018-06-26T10:56:43Z"
+		},
+		{
+			"checksumSHA1": "RpOzvbtNRBVl/4oH+l3zpR1+An0=",
+			"path": "github.com/gin-gonic/gin/binding",
+			"revision": "c00f21ff239822d013b80e54bd403fbc08a0b5ff",
+			"revisionTime": "2018-06-26T10:56:43Z"
+		},
+		{
+			"checksumSHA1": "ZrBlc4nW5joRSLLRThHlxU+bWtg=",
+			"path": "github.com/gin-gonic/gin/json",
+			"revision": "c00f21ff239822d013b80e54bd403fbc08a0b5ff",
+			"revisionTime": "2018-06-26T10:56:43Z"
+		},
+		{
+			"checksumSHA1": "04QfyzytHF4KelLmwjW/hY/qdTo=",
+			"path": "github.com/gin-gonic/gin/render",
+			"revision": "c00f21ff239822d013b80e54bd403fbc08a0b5ff",
+			"revisionTime": "2018-06-26T10:56:43Z"
+		},
+		{
 			"checksumSHA1": "Tg3j1xT2A1GaCKMNuOIJln97kVY=",
 			"path": "github.com/go-interpreter/wagon/disasm",
 			"revision": "d4bc452fd57e99224c6db45f22b01518d3478b3f",
@@ -759,6 +789,12 @@
 			"revisionTime": "2018-02-17T13:45:45Z"
 		},
 		{
+			"checksumSHA1": "kum8izZy1+pVfDiApW5hT2HoH1w=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c",
+			"revisionTime": "2017-11-07T05:05:31Z"
+		},
+		{
 			"checksumSHA1": "KGCifxxR5cm2gz94i2iha+RIZlk=",
 			"path": "github.com/mattn/go-runewidth",
 			"revision": "ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb",
@@ -1023,6 +1059,12 @@
 			"revisionTime": "2018-03-31T01:49:30Z"
 		},
 		{
+			"checksumSHA1": "FLlqiE6ZAnbeMTtJeWuc+sRbEyg=",
+			"path": "github.com/ugorji/go/codec",
+			"revision": "edc8f1f6bad21cca2dcbc2f4d4ced265111ccea6",
+			"revisionTime": "2018-06-26T13:29:13Z"
+		},
+		{
 			"checksumSHA1": "9/2qvuFPQxW7ZXzQSOYwqZb5cNg=",
 			"path": "github.com/urfave/cli",
 			"revision": "8e01ec4cd3e2d84ab2fe90d8210528ffbb06d8ff",
@@ -1185,6 +1227,12 @@
 			"path": "google.golang.org/genproto/protobuf/field_mask",
 			"revision": "51d0944304c3cbce4afe9e5247e21100037bff78",
 			"revisionTime": "2018-04-09T22:20:37Z"
+		},
+		{
+			"checksumSHA1": "q190bL03wQok3wVwYmMub2XhOiU=",
+			"path": "gopkg.in/go-playground/validator.v8",
+			"revision": "5f1438d3fca68893a817e4a66806cea46a9e4ebf",
+			"revisionTime": "2017-07-30T05:02:35Z"
 		},
 		{
 			"checksumSHA1": "ZSWoOPUNRr5+3dhkLK3C4cZAQPk=",
