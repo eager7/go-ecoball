@@ -16,7 +16,7 @@ const (
 	DefaultEpochFinalBlockNumber = 100
 
 	DefaultThresholdOfMinorBlock = 80  /*Percent*/
-	DefaultThresholdOfConsensus  = 400 /*thousandth*/
+	DefaultThresholdOfConsensus  = 667 /*thousandth*/
 
 	/*timer of fsm state .second*/
 	DefaultSyncBlockTimer = 10 //180
