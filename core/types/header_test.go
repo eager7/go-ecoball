@@ -24,10 +24,13 @@ func TestMinorBlockHeader(t *testing.T) {
 		StateDeltaHash:    common.Hash{},
 		CMBlockHash:       common.Hash{},
 		ProposalPublicKey: []byte("1234567890"),
-		//ConsData:          example.ConsensusData(),
 		ShardId:           1,
 		CMEpochNo:         2,
 		Receipt:           types.BlockReceipt{},
+		COSign:            &types.COSign{
+			Step1: 10,
+			Step2: 20,
+		},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
 	data, err := header.Serialize()
@@ -67,6 +70,10 @@ func TestCmBlockHeader(t *testing.T) {
 			Port:      "5678",
 		},
 		ShardsHash: config.ChainHash,
+		COSign:            &types.COSign{
+			Step1: 10,
+			Step2: 20,
+		},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
 	data, err := header.Serialize()
@@ -114,12 +121,16 @@ func TestFinalBlockHeader(t *testing.T) {
 		PrevHash:           config.ChainHash,
 		//ConsData:           example.ConsensusData(),
 		ProposalPubKey:     []byte("123678435634w453226435"),
-		CMEpochNo:          570,
+		EpochNo:            570,
 		CMBlockHash:        config.ChainHash,
 		TrxRootHash:        config.ChainHash,
 		StateDeltaRootHash: config.ChainHash,
 		MinorBlocksHash:    config.ChainHash,
 		StateHashRoot:      config.ChainHash,
+		COSign:            &types.COSign{
+			Step1: 10,
+			Step2: 20,
+		},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
 	data, err := header.Serialize()
@@ -143,6 +154,10 @@ func TestFinalBlockHeader(t *testing.T) {
 		ShardId:           1,
 		CMEpochNo:         2,
 		Receipt:           types.BlockReceipt{},
+		COSign:            &types.COSign{
+			Step1: 10,
+			Step2: 20,
+		},
 	}
 	block := types.FinalBlock{
 		FinalBlockHeader: header,

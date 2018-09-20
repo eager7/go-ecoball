@@ -24,6 +24,6 @@ package types
 //}
 
 type COSign struct {
-	Step1 uint16
-	Step2 uint16
+	Step1 uint32
+	Step2 uint32
 }

@@ -66,6 +66,10 @@ func (h *MinorBlockHeader) proto() (*pb.MinorBlockHeader, error) {
 			BlockNet: h.Receipt.BlockNet,
 		},
 		Hash: h.hash.Bytes(),
+		COSign: &pb.COSign{
+			Step1: h.COSign.Step1,
+			Step2: h.COSign.Step2,
+		},
 	}
 	return pbHeader, nil
 }
@@ -116,7 +120,10 @@ func (h *MinorBlockHeader) Deserialize(data []byte) error {
 	h.CMEpochNo = pbHeader.CMEpochNo
 	h.hash = common.NewHash(pbHeader.Hash)
 	h.Receipt = BlockReceipt{BlockCpu: pbHeader.Receipt.BlockCpu, BlockNet: pbHeader.Receipt.BlockNet}
-
+	h.COSign = &COSign{
+		Step1: pbHeader.COSign.Step1,
+		Step2: pbHeader.COSign.Step2,
+	}
 	/*dataCon, err := pbHeader.ConsData.Marshal()
 	if err != nil {
 		return err

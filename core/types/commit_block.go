@@ -52,11 +52,11 @@ func (h *CMBlockHeader) proto() (*pb.CMBlockHeader, error) {
 	//	return nil, err
 	//}
 	return &pb.CMBlockHeader{
-		ChainID:      h.ChainID.Bytes(),
-		Version:      h.Version,
-		Height:       h.Height,
-		Timestamp:    h.Timestamp,
-		PrevHash:     h.PrevHash.Bytes(),
+		ChainID:   h.ChainID.Bytes(),
+		Version:   h.Version,
+		Height:    h.Height,
+		Timestamp: h.Timestamp,
+		PrevHash:  h.PrevHash.Bytes(),
 		//ConsData:     pbCon,
 		LeaderPubKey: common.CopyBytes(h.LeaderPubKey),
 		Nonce:        h.Nonce,
@@ -67,6 +67,10 @@ func (h *CMBlockHeader) proto() (*pb.CMBlockHeader, error) {
 		},
 		ShardsHash: h.ShardsHash.Bytes(),
 		Hash:       h.hash.Bytes(),
+		COSign: &pb.COSign{
+			Step1: h.COSign.Step1,
+			Step2: h.COSign.Step2,
+		},
 	}, nil
 }
 
@@ -114,6 +118,10 @@ func (h *CMBlockHeader) Deserialize(data []byte) error {
 	}
 	h.ShardsHash = common.NewHash(pbHeader.ShardsHash)
 	h.hash = common.NewHash(pbHeader.Hash)
+	h.COSign = &COSign{
+		Step1: pbHeader.COSign.Step1,
+		Step2: pbHeader.COSign.Step2,
+	}
 	//dataCon, err := pbHeader.ConsData.Marshal()
 	//if err != nil {
 	//	return err
