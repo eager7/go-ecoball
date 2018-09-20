@@ -3,7 +3,7 @@ package committee
 import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/etime"
-	"github.com/ecoball/go-ecoball/core/types/block"
+	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
@@ -12,11 +12,11 @@ import (
 )
 
 type vcBlockCsi struct {
-	bk    *block.ViewChangeBlock
-	cache *block.ViewChangeBlock
+	bk    *types.ViewChangeBlock
+	cache *types.ViewChangeBlock
 }
 
-func newVcBlockCsi(block *block.ViewChangeBlock) *vcBlockCsi {
+func newVcBlockCsi(block *types.ViewChangeBlock) *vcBlockCsi {
 	return &vcBlockCsi{bk: block}
 }
 
@@ -25,7 +25,7 @@ func (b *vcBlockCsi) GetCsView() *sc.CsView {
 }
 
 func (b *vcBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
-	update := bl.(*block.ViewChangeBlock)
+	update := bl.(*types.ViewChangeBlock)
 
 	if b.bk.CMEpochNo != update.CMEpochNo || b.bk.FinalBlockHeight != update.FinalBlockHeight || b.bk.Round != update.Round {
 		log.Error("view error current ", b.bk.CMEpochNo, " ", b.bk.FinalBlockHeight, " ", b.bk.Round, " packet view ", update.CMEpochNo, " ", update.FinalBlockHeight, " ", update.Round)
@@ -104,11 +104,11 @@ func (b *vcBlockCsi) PrecommitRsp() uint16 {
 	return b.bk.Step2
 }
 
-func (b *vcBlockCsi) GetCandidate() *block.NodeInfo {
+func (b *vcBlockCsi) GetCandidate() *types.NodeInfo {
 	return &b.bk.Candidate
 }
 
-func (c *committee) createVcBlock() (*block.ViewChangeBlock, bool) {
+func (c *committee) createVcBlock() (*types.ViewChangeBlock, bool) {
 	lastcm := c.ns.GetLastCMBlock()
 	lastfinal := c.ns.GetLastFinalBlock()
 	lastvc := c.ns.GetLastViewchangeBlock()
@@ -145,10 +145,10 @@ func (c *committee) createVcBlock() (*block.ViewChangeBlock, bool) {
 	}
 
 	log.Debug("create vc block epoch ", epoch, " height ", height, " round ", round)
-	vc := block.NewVcBlock(epoch, height, round)
-	if vc == nil {
-		return nil, false
-	}
+	vc := &types.ViewChangeBlock{}
+	vc.CMEpochNo = epoch
+	vc.FinalBlockHeight = height
+	vc.Round = round
 
 	works = works[1:]
 	length--
@@ -204,7 +204,7 @@ func (c *committee) processViewchangeConsensusPacket(p interface{}) {
 	c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
-func (c *committee) recvCommitViewchangeBlock(bl *block.ViewChangeBlock) {
+func (c *committee) recvCommitViewchangeBlock(bl *types.ViewChangeBlock) {
 	log.Debug("recv consensus view change block epoch ", bl.CMEpochNo, " height ", bl.FinalBlockHeight, " round  ", bl.Round)
 	simulate.TellBlock(bl)
 

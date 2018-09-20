@@ -2,8 +2,9 @@ package committee
 
 import (
 	"encoding/json"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/etime"
-	"github.com/ecoball/go-ecoball/core/types/block"
+	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
@@ -12,11 +13,11 @@ import (
 )
 
 type cmBlockCsi struct {
-	bk    *block.CMBlock
-	cache *block.CMBlock
+	bk    *types.CMBlock
+	cache *types.CMBlock
 }
 
-func newCmBlockCsi(bk *block.CMBlock) *cmBlockCsi {
+func newCmBlockCsi(bk *types.CMBlock) *cmBlockCsi {
 	return &cmBlockCsi{bk: bk}
 }
 
@@ -25,7 +26,7 @@ func (b *cmBlockCsi) GetCsView() *sc.CsView {
 }
 
 func (b *cmBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
-	update := bl.(*block.CMBlock)
+	update := bl.(*types.CMBlock)
 
 	if !sc.Same(b.bk.Candidate.PublicKey, update.Candidate.PublicKey) {
 		log.Error("candidate public key not same")
@@ -109,11 +110,11 @@ func (b *cmBlockCsi) PrecommitRsp() uint16 {
 	return b.bk.Step2
 }
 
-func (b *cmBlockCsi) GetCandidate() *block.NodeInfo {
+func (b *cmBlockCsi) GetCandidate() *types.NodeInfo {
 	return nil
 }
 
-func (c *committee) createCommitteeBlock() *block.CMBlock {
+func (c *committee) createCommitteeBlock() *types.CMBlock {
 	last := c.ns.GetLastCMBlock()
 	var height uint64
 	if last == nil {
@@ -124,13 +125,16 @@ func (c *committee) createCommitteeBlock() *block.CMBlock {
 
 	log.Debug("create cm block height ", height)
 
-	cm := block.NewCMBlock(height)
+	cm := &types.CMBlock{}
+	cm.Height = height
 
-	candidate := simulate.GetCandidate()
-	if candidate != nil && len(candidate) > 0 {
-		cm.Candidate.PublicKey = []byte(candidate[0].Pubkey)
-		cm.Candidate.Address = candidate[0].Address
-		cm.Candidate.Port = candidate[0].Port
+	candidate, err := c.ns.Ledger.GetProducerList(config.ChainHash)
+	if err == nil && candidate != nil && len(candidate) > 0 {
+		panic("missing_func")
+		/*missing_func need get account info*/
+		//cm.Candidate.PublicKey = []byte(candidate[0].Pubkey)
+		//cm.Candidate.Address = candidate[0].Address
+		//cm.Candidate.Port = candidate[0].Port
 	} else {
 		/*missing_func there is no candidate maybe we can select new leader by vrf*/
 		backup := c.ns.GetBackup()
@@ -165,7 +169,7 @@ func (c *committee) recheckCmPacket(p interface{}) bool {
 		return false
 	}
 
-	cm := csp.Packet.(*block.CMBlock)
+	cm := csp.Packet.(*types.CMBlock)
 	last := c.ns.GetLastCMBlock()
 	if last != nil && cm.Height <= last.Height {
 		log.Error("old cm block, drop it")
@@ -185,7 +189,7 @@ func (c *committee) processConsensusCmPacket(p interface{}) {
 	c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
-func (c *committee) recvCommitCmBlock(bl *block.CMBlock) {
+func (c *committee) recvCommitCmBlock(bl *types.CMBlock) {
 	log.Debug("recv consensus cm block height ", bl.Height)
 	simulate.TellBlock(bl)
 

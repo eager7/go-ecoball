@@ -3,7 +3,7 @@ package cell
 import (
 	"container/list"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/types/block"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type Worker struct {
@@ -16,12 +16,12 @@ func (a *Worker) Equal(b *Worker) bool {
 	return a.Pubkey == b.Pubkey
 }
 
-func (a *Worker) EqualNode(b *block.NodeInfo) bool {
+func (a *Worker) EqualNode(b *types.NodeInfo) bool {
 	bkey := string(b.PublicKey)
 	return a.Pubkey == bkey
 }
 
-func (a *Worker) InitWork(b *block.NodeInfo) {
+func (a *Worker) InitWork(b *types.NodeInfo) {
 	a.Pubkey = string(b.PublicKey)
 	a.Address = b.Address
 	a.Port = b.Port

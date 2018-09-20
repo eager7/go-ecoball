@@ -3,19 +3,19 @@ package committee
 import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/etime"
-	"github.com/ecoball/go-ecoball/core/types/block"
+	"github.com/ecoball/go-ecoball/core/types"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"time"
 )
 
 func (c *committee) consensusCb(bl interface{}) {
 	switch blockType := bl.(type) {
-	case *block.CMBlock:
-		c.recvCommitCmBlock(bl.(*block.CMBlock))
-	case *block.FinalBlock:
-		c.recvCommitFinalBlock(bl.(*block.FinalBlock))
-	case *block.ViewChangeBlock:
-		c.recvCommitViewchangeBlock(bl.(*block.ViewChangeBlock))
+	case *types.CMBlock:
+		c.recvCommitCmBlock(bl.(*types.CMBlock))
+	case *types.FinalBlock:
+		c.recvCommitFinalBlock(bl.(*types.FinalBlock))
+	case *types.ViewChangeBlock:
+		c.recvCommitViewchangeBlock(bl.(*types.ViewChangeBlock))
 	default:
 		log.Error("consensus call back wrong packet type ", blockType)
 	}
@@ -36,7 +36,7 @@ func (c *committee) verifyPacket(csp *sc.NetPacket) {
 }
 
 func (c *committee) verifyCmPacket(p *sc.NetPacket) {
-	var cm block.CMBlock
+	var cm types.CMBlock
 	err := json.Unmarshal(p.Packet, &cm)
 	if err != nil {
 		log.Error("cm block unmarshal error ", err)
@@ -61,7 +61,7 @@ func (c *committee) verifyCmPacket(p *sc.NetPacket) {
 }
 
 func (c *committee) verifyFinalPacket(p *sc.NetPacket) {
-	var final block.FinalBlock
+	var final types.FinalBlock
 	err := json.Unmarshal(p.Packet, &final)
 	if err != nil {
 		log.Error("final block unmarshal error ", err)
@@ -86,7 +86,7 @@ func (c *committee) verifyFinalPacket(p *sc.NetPacket) {
 }
 
 func (c *committee) verifyViewChangePacket(p *sc.NetPacket) {
-	var vc block.ViewChangeBlock
+	var vc types.ViewChangeBlock
 	err := json.Unmarshal(p.Packet, &vc)
 	if err != nil {
 		log.Error("cm block unmarshal error ", err)

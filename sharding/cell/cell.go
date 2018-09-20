@@ -3,10 +3,11 @@ package cell
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/core/types/block"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/core/types"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
-	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -29,13 +30,16 @@ type Cell struct {
 	/*last chain data*/
 	chain          *chainData
 	minorBlockPool *minorBlockSet
+
+	Ledger ledger.Ledger
 }
 
-func MakeCell() *Cell {
+func MakeCell(l ledger.Ledger) *Cell {
 	return &Cell{
 		cm:             makeWorkerSet(sc.DefaultCommitteMaxMember),
 		chain:          makeChainData(),
 		minorBlockPool: makeMinorBlockSet(),
+		Ledger:         l,
 	}
 }
 
@@ -45,7 +49,7 @@ type NodeConfig struct {
 	Port    string
 }
 
-type config struct {
+type sconfig struct {
 	Pubkey    string
 	Address   string
 	Port      string
@@ -53,7 +57,7 @@ type config struct {
 	Shard     []NodeConfig
 }
 
-func (c *Cell) readConfigFile(filename string) *config {
+func (c *Cell) readConfigFile(filename string) *sconfig {
 	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		log.Info("read config file error")
@@ -62,7 +66,7 @@ func (c *Cell) readConfigFile(filename string) *config {
 
 	str := string(bytes)
 
-	var cfg config
+	var cfg sconfig
 	if err := json.Unmarshal([]byte(str), &cfg); err != nil {
 		log.Info("json unmarshal error")
 		return nil
@@ -107,7 +111,7 @@ func (c *Cell) LoadConfig() {
 	c.NodeType = nodeType
 }
 
-func (c *Cell) SetLastCMBlock(bk *block.CMBlock) {
+func (c *Cell) SetLastCMBlock(bk *types.CMBlock) {
 	c.chain.setCMBlock(bk)
 
 	worker := &Worker{}
@@ -123,20 +127,20 @@ func (c *Cell) SetLastCMBlock(bk *block.CMBlock) {
 	c.minorBlockPool.resize(len(bk.Shards))
 }
 
-func (c *Cell) GetLastCMBlock() *block.CMBlock {
+func (c *Cell) GetLastCMBlock() *types.CMBlock {
 	return c.chain.getCMBlock()
 }
 
-func (c *Cell) SetLastFinalBlock(bk *block.FinalBlock) {
+func (c *Cell) SetLastFinalBlock(bk *types.FinalBlock) {
 	c.chain.setFinalBlock(bk)
 	c.minorBlockPool.clean()
 }
 
-func (c *Cell) GetLastFinalBlock() *block.FinalBlock {
+func (c *Cell) GetLastFinalBlock() *types.FinalBlock {
 	return c.chain.getFinalBlock()
 }
 
-func (c *Cell) SetLastViewchangeBlock(bk *block.ViewChangeBlock) {
+func (c *Cell) SetLastViewchangeBlock(bk *types.ViewChangeBlock) {
 	leader := &Worker{}
 	leader.InitWork(&bk.Candidate)
 
@@ -144,11 +148,11 @@ func (c *Cell) SetLastViewchangeBlock(bk *block.ViewChangeBlock) {
 	c.chain.setViewchangeBlock(bk)
 }
 
-func (c *Cell) GetLastViewchangeBlock() *block.ViewChangeBlock {
+func (c *Cell) GetLastViewchangeBlock() *types.ViewChangeBlock {
 	return c.chain.getViewchangeBlock()
 }
 
-func (c *Cell) SyncCmBlockComplete(lastCmblock *block.CMBlock) {
+func (c *Cell) SyncCmBlockComplete(lastCmblock *types.CMBlock) {
 	curBlock := c.chain.getCMBlock()
 
 	var i uint64
@@ -164,11 +168,18 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *block.CMBlock) {
 	}
 
 	for ; i < lastCmblock.Height; i++ {
-		cmb := simulate.GetCMBlockByNumber(i)
+		block, err := c.Ledger.GetShardBlockByHeight(config.ChainHash, types.HeCmBlock, i)
+		if err != nil {
+			log.Error("get block error ", err)
+			return
+		}
+
+		cm := block.GetObject().(types.CMBlock)
+
 		var worker Worker
-		worker.Pubkey = string(cmb.Candidate.PublicKey)
-		worker.Address = cmb.Candidate.Address
-		worker.Port = cmb.Candidate.Port
+		worker.Pubkey = string(cm.Candidate.PublicKey)
+		worker.Address = cm.Candidate.Address
+		worker.Port = cm.Candidate.Port
 
 		c.addCommitteWorker(&worker)
 	}
@@ -176,11 +187,11 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *block.CMBlock) {
 	c.SetLastCMBlock(lastCmblock)
 }
 
-func (c *Cell) SetMinorBlockToPool(minor *block.MinorBlock) {
+func (c *Cell) SetMinorBlockToPool(minor *types.MinorBlock) {
 	c.minorBlockPool.setMinorBlock(minor)
 }
 
-func (c *Cell) SyncMinorsBlockToPool(minors []*block.MinorBlock) {
+func (c *Cell) SyncMinorsBlockToPool(minors []*types.MinorBlock) {
 	c.minorBlockPool.syncMinorBlocks(minors)
 }
 
@@ -277,7 +288,7 @@ func (c *Cell) addCommitteWorker(worker *Worker) {
 	}
 }
 
-func (c *Cell) saveShardsInfoFromCMBlock(cmb *block.CMBlock) {
+func (c *Cell) saveShardsInfoFromCMBlock(cmb *types.CMBlock) {
 	c.NodeType = sc.NodeCandidate
 	c.shard = c.shard[:0]
 
