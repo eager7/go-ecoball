@@ -1,8 +1,0 @@
-=============== Sep 20, 2018 (CST) ===============
-17:09:14.138931 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
-17:09:14.183169 syncDir: sync DataBase/block/0x154d0278fa40688a247a1c4b34ec49f1b1e6cb91da55eaef54f4deecaaddb42a/Transaction/Block: invalid argument
-17:09:14.183188 CURRENT: sync DataBase/block/0x154d0278fa40688a247a1c4b34ec49f1b1e6cb91da55eaef54f4deecaaddb42a/Transaction/Block: invalid argument
-=============== Sep 20, 2018 (CST) ===============
-17:12:05.467602 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
-17:12:05.604726 syncDir: sync DataBase/block/0x154d0278fa40688a247a1c4b34ec49f1b1e6cb91da55eaef54f4deecaaddb42a/Transaction/Block: invalid argument
-17:12:05.604750 CURRENT: sync DataBase/block/0x154d0278fa40688a247a1c4b34ec49f1b1e6cb91da55eaef54f4deecaaddb42a/Transaction/Block: invalid argument
