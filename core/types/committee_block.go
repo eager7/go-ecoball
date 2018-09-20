@@ -224,6 +224,16 @@ type CMBlock struct {
 	Shards []Shard
 }
 
+func NewCmBlock(header CMBlockHeader, shards []Shard) (*CMBlock, error) {
+	if err := header.ComputeHash(); err != nil {
+		return nil, err
+	}
+	return &CMBlock{
+		CMBlockHeader: header,
+		Shards:        shards,
+	}, nil
+}
+
 func (b *CMBlock) proto() (block *pb.CMBlock, err error) {
 	var pbBlock pb.CMBlock
 	pbBlock.Header, err = b.CMBlockHeader.proto()

@@ -188,7 +188,22 @@ type MinorBlock struct {
 	StateDelta   []*AccountMinor
 }
 
-func (b *MinorBlock) SetReceipt(prevHeader *Header, txs []*Transaction, cpu, net float64) error {
+func NewMinorBlock(header MinorBlockHeader, prevHeader *Header, txs []*Transaction, cpu, net float64, sDelta []*AccountMinor) (*MinorBlock, error) {
+	if err := header.ComputeHash(); err != nil {
+		return nil, err
+	}
+	block := &MinorBlock{
+		MinorBlockHeader: header,
+		Transactions:     txs,
+		StateDelta:       sDelta,
+	}
+	if err := block.SetReceipt(prevHeader, cpu, net); err != nil {
+		return nil, err
+	}
+	return block, nil
+}
+
+func (b *MinorBlock) SetReceipt(prevHeader *Header, cpu, net float64) error {
 	var cpuLimit, netLimit float64
 	if cpu < (BlockCpuLimit / 10) {
 		cpuLimit = prevHeader.Receipt.BlockCpu * 1.01

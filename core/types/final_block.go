@@ -161,6 +161,16 @@ type FinalBlock struct {
 	MinorBlocks []*MinorBlockHeader
 }
 
+func NewFinalBlock(header FinalBlockHeader, minorBlocks []*MinorBlockHeader) (*FinalBlock, error) {
+	if err := header.ComputeHash(); err != nil {
+		return nil, err
+	}
+	return &FinalBlock{
+		FinalBlockHeader: header,
+		MinorBlocks:      minorBlocks,
+	}, nil
+}
+
 func (b *FinalBlock) proto() (block *pb.FinalBlock, err error) {
 	var pbBlock pb.FinalBlock
 	pbBlock.Header, err = b.FinalBlockHeader.proto()
