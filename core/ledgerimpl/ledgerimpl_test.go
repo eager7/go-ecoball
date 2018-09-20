@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -30,7 +31,6 @@ import (
 	"math/big"
 	"testing"
 	"time"
-	"github.com/ecoball/go-ecoball/common/event"
 )
 
 var root = common.NameToIndex("root")
@@ -120,11 +120,11 @@ func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
 func TestInterface(t *testing.T) {
 	l := example.Ledger("/tmp/interface")
 	header := types.CMBlockHeader{
-		ChainID:      config.ChainHash,
-		Version:      0,
-		Height:       10,
-		Timestamp:    2340,
-		PrevHash:     common.Hash{},
+		ChainID:   config.ChainHash,
+		Version:   0,
+		Height:    10,
+		Timestamp: 2340,
+		PrevHash:  common.Hash{},
 		//ConsData:     example.ConsensusData(),
 		LeaderPubKey: []byte("12345678909876554432"),
 		Nonce:        23450,
@@ -134,6 +134,7 @@ func TestInterface(t *testing.T) {
 			Port:      "5678",
 		},
 		ShardsHash: config.ChainHash,
+		COSign:     &types.COSign{},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
 	block := types.CMBlock{
