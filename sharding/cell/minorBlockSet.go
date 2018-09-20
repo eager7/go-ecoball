@@ -1,15 +1,15 @@
 package cell
 
 import (
-	"github.com/ecoball/go-ecoball/core/types/block"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type minorBlockSet struct {
-	blocks []*block.MinorBlock
+	blocks []*types.MinorBlock
 }
 
 func makeMinorBlockSet() *minorBlockSet {
-	return &minorBlockSet{blocks: make([]*block.MinorBlock, 0, 10)}
+	return &minorBlockSet{blocks: make([]*types.MinorBlock, 0, 10)}
 }
 
 func (m *minorBlockSet) resize(size int) {
@@ -23,7 +23,7 @@ func (m *minorBlockSet) clean() {
 	}
 }
 
-func (m *minorBlockSet) setMinorBlock(minor *block.MinorBlock) {
+func (m *minorBlockSet) setMinorBlock(minor *types.MinorBlock) {
 	shardid := minor.ShardId
 	if int(shardid) > len(m.blocks) || shardid < 1 {
 		log.Error("set minorBlock error shardid ", shardid)
@@ -33,7 +33,7 @@ func (m *minorBlockSet) setMinorBlock(minor *block.MinorBlock) {
 	m.blocks[shardid-1] = minor
 }
 
-func (m *minorBlockSet) syncMinorBlocks(minors []*block.MinorBlock) {
+func (m *minorBlockSet) syncMinorBlocks(minors []*types.MinorBlock) {
 	if len(m.blocks) != len(minors) {
 		panic("sync minor block length error")
 		log.Panic("sync minor block error len ", len(m.blocks), "  sync blocks len ", len(minors))
@@ -45,7 +45,7 @@ func (m *minorBlockSet) syncMinorBlocks(minors []*block.MinorBlock) {
 	}
 }
 
-func (m *minorBlockSet) getMinorBlock(shardid uint16) *block.MinorBlock {
+func (m *minorBlockSet) getMinorBlock(shardid uint16) *types.MinorBlock {
 	if int(shardid) > len(m.blocks) || shardid < 1 {
 		log.Error("get minorBlock error shardid ", shardid)
 		return nil

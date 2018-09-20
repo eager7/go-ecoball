@@ -1,7 +1,9 @@
 package committee
 
 import (
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/etime"
+	"github.com/ecoball/go-ecoball/core/types"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -17,32 +19,34 @@ func (c *committee) processConsensusPacket(packet *sc.CsPacket) {
 }
 
 func (c *committee) processSyncComplete(msg interface{}) {
-	lastCmBlock := simulate.GetLastCMBlock()
-	if lastCmBlock == nil {
+	lastCmBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeCmBlock)
+	if err != nil || lastCmBlock == nil {
 		c.fsm.Execute(ActProductCommitteeBlock, msg)
 		return
 	}
 
-	c.ns.SyncCmBlockComplete(lastCmBlock)
+	cm := lastCmBlock.GetObject().(*types.CMBlock)
+	c.ns.SyncCmBlockComplete(cm)
 
-	lastFinalBlock := simulate.GetLastFinalBlock()
-	if lastFinalBlock == nil {
+	lastFinalBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeFinalBlock)
+	if err != nil || lastFinalBlock == nil {
 		c.fsm.Execute(ActWaitMinorBlock, msg)
 		return
 	}
 
-	c.ns.SetLastFinalBlock(lastFinalBlock)
+	final := lastFinalBlock.GetObject().(*types.FinalBlock)
+	c.ns.SetLastFinalBlock(final)
 
-	if lastCmBlock.Height > lastFinalBlock.CMEpochNo {
+	if cm.Height > final.CMEpochNo {
 		c.fsm.Execute(ActWaitMinorBlock, msg)
 		return
-	} else if lastCmBlock.Height < lastFinalBlock.CMEpochNo {
+	} else if cm.Height < final.CMEpochNo {
 		panic("wrong sync status")
-		log.Panic("wrong sync status, cm block height ", lastCmBlock.Height, " final block number ", lastFinalBlock.CMEpochNo)
+		log.Panic("wrong sync status, cm block height ", cm.Height, " final block number ", final.CMEpochNo)
 		return
 	}
 
-	if lastFinalBlock.Height%sc.DefaultEpochFinalBlockNumber == 0 {
+	if final.Height%sc.DefaultEpochFinalBlockNumber == 0 {
 		c.fsm.Execute(ActProductCommitteeBlock, msg)
 		return
 	}
@@ -52,7 +56,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 
 	/*haven't collect enough shard's minor block, the wait time will be longer than default configure when we enter
 	  WaitMinorBlock status, maybe we can recalculate the left time by check the minor block's timestamps */
-	if c.ns.GetMinorBlockPoolCount() < uint16(len(lastCmBlock.Shards)*sc.DefaultThresholdOfMinorBlock/100) {
+	if c.ns.GetMinorBlockPoolCount() < uint16(len(cm.Shards)*sc.DefaultThresholdOfMinorBlock/100) {
 		c.fsm.Execute(ActWaitMinorBlock, msg)
 		return
 	} else {

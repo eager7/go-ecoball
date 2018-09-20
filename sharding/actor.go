@@ -4,6 +4,7 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"reflect"
 )
 
@@ -11,7 +12,7 @@ type ShardingActor struct {
 	instance ShardingInstance
 }
 
-func NewShardingActor() (pid *actor.PID, err error) {
+func NewShardingActor(l ledger.Ledger) (pid *actor.PID, err error) {
 
 	shardingActor := &ShardingActor{}
 
@@ -19,7 +20,7 @@ func NewShardingActor() (pid *actor.PID, err error) {
 
 	pid, err = actor.SpawnNamed(props, "ShardingActor")
 	if err == nil {
-		shardingActor.instance = MakeSharding()
+		shardingActor.instance = MakeSharding(l)
 		shardingActor.instance.Start()
 
 		event.RegisterActor(event.ActorSharding, pid)
