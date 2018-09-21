@@ -7,7 +7,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 )
 
-func ApplyExecOne(ac *context.ApplyContext) (err error){
+func ApplyExecOne(ac *context.ApplyContext) (ret []byte, err error){
+	//start := time.Now().UnixNano()
 	s := ac.St
 	tc := ac.Tc
 	action := ac.Action
@@ -17,38 +18,42 @@ func ApplyExecOne(ac *context.ApplyContext) (err error){
 
 	service, err := NewContractService(s, tc.Trx, action, ac, cpuLimit, netLimit, timeStamp)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = service.Execute()
+	ret, err = service.Execute()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	//elapsed := time.Now().UnixNano() - start
+
+	return ret, nil
 }
 
-func ApplyExec(ac *context.ApplyContext) (err error){
-	err = ApplyExecOne(ac)
+func ApplyExec(ac *context.ApplyContext) (ret []byte, err error){
+	ret, err = ApplyExecOne(ac)
 
 	if ac.RecurseDepth > 4 {
-		return errors.New(elog.Log, "inline action recurse depth is out of range")
+		return nil, errors.New(elog.Log, "inline action recurse depth is out of range")
 	}
 
 	for _, act := range ac.InlineAction {
 		DispatchAction(ac.Tc, &act, ac.RecurseDepth + 1)
 	}
 
-	return err
+	return ret, err
 }
 
 
-func DispatchAction(tc *context.TranscationContext, action *types.Action, recurseDepth int32) (err error){
+func DispatchAction(tc *context.TranscationContext, action *types.Action, recurseDepth int32) (ret []byte, err error){
 	apply, _ := context.NewApplyContext(tc.St, tc, action, recurseDepth)
-	err = ApplyExec(apply)
+	tc.Trace = append(tc.Trace, *action)
+	ret, err = ApplyExec(apply)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return ret,nil
 }
+

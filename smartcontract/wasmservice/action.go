@@ -8,6 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/http/common/abi"
 )
 
+// C API: inline_action(char *account, char *action, int32 actionData)
 func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionData int32) int32{
 	//fmt.Println("wasm inline action")
 	contract_msg, err := proc.VMGetData(int(account))

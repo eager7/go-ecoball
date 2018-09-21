@@ -27,6 +27,7 @@ import (
 	"github.com/ecoball/go-ecoball/http/common"
 	"fmt"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"time"
 )
 
 var log = elog.NewLogger("commands", elog.DebugLog)
@@ -109,9 +110,11 @@ func InvokeContract(params []interface{}) *common.Response {
 
 	switch {
 	case len(params) == 1:
-		if errCode := handleInvokeContract(params); errCode != common.SUCCESS {
+		if errCode, result := handleInvokeContract(params); errCode != common.SUCCESS {
 			log.Error(errCode.Info())
 			return common.NewResponse(errCode, nil)
+		} else {
+			return common.NewResponse(common.SUCCESS, result)
 		}
 
 	default:
@@ -175,7 +178,7 @@ func StoreGet(params []interface{}) *common.Response {
 	}
 }
 
-func handleInvokeContract(params []interface{}) common.Errcode {
+func handleInvokeContract(params []interface{}) (common.Errcode, string) {
 	transaction := new(types.Transaction)
 
 	var invalid bool
@@ -188,19 +191,23 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	}
 
 	if invalid {
-		return common.INVALID_PARAMS
+		return common.INVALID_PARAMS, ""
 	}
 
 	if err := transaction.Deserialize(innerCommon.FromHex(name)); err != nil {
 		fmt.Println(err)
-		return common.INVALID_PARAMS
+		return common.INVALID_PARAMS, ""
 	}
 
 	//send to txpool
-	err := event.Send(event.ActorNil, event.ActorTxPool, transaction)
+	//err := event.Send(event.ActorNil, event.ActorTxPool, transaction)
+	res, err := event.SendSync(event.ActorTxPool, transaction, 5*time.Second)
 	if nil != err {
-		return common.INTERNAL_ERROR
+		return common.INTERNAL_ERROR, ""
 	}
 
-	return common.SUCCESS
+	result := res.(string)
+	fmt.Println("result: ", result)
+
+	return common.SUCCESS, result
 }

@@ -25,10 +25,10 @@ func NewApplyContext(s *state.State, tc *TranscationContext, action	*types.Actio
 	return context, nil
 }
 
-
 type TranscationContext struct {
 	Trx 		*types.Transaction
 	St 			*state.State
+	Trace		[]types.Action
 	TimeStamp 	int64
 	CpuLimit 	float64
 	NetLimit 	float64
