@@ -2,16 +2,12 @@ package cell
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"io/ioutil"
-	"os"
-	"path/filepath"
-	"runtime"
 )
 
 var (
@@ -77,21 +73,7 @@ func (c *Cell) readConfigFile(filename string) *sconfig {
 }
 
 func (c *Cell) LoadConfig() {
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(dir)
-
-	var cfg *sconfig
-	if runtime.GOOS == "windows" {
-		cfg = c.readConfigFile(dir + "\\config.json")
-	} else {
-		cfg = c.readConfigFile(dir + "/config.json")
-	}
-	if cfg == nil {
-		return
-	}
+	cfg := c.readConfigFile("config.json")
 
 	c.Self.Pubkey = cfg.Pubkey
 	c.Self.Address = cfg.Address
