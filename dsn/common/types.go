@@ -25,6 +25,11 @@ import (
 
 const (
 //SegmentSize = 64
+	SigSize = 65
+	RootAccount = "root"
+	FcMethodAn = "reg_store"
+	FcMethodProof = "reg_proof"
+	FcMethodFile = "reg_file"
 )
 func int64ToBytes(n int64) []byte {
 	var buf bytes.Buffer
