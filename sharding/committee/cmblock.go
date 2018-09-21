@@ -10,6 +10,7 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 type cmBlockCsi struct {
@@ -125,7 +126,21 @@ func (c *committee) createCommitteeBlock() *types.CMBlock {
 
 	log.Debug("create cm block height ", height)
 
-	cm := &types.CMBlock{}
+	cm := &types.CMBlock{
+		CMBlockHeader: types.CMBlockHeader{
+			ChainID:      config.ChainHash,
+			Version:      0,
+			Height:       0,
+			Timestamp:    time.Now().UnixNano(),
+			PrevHash:     common.Hash{},
+			LeaderPubKey: nil,
+			Nonce:        0,
+			Candidate:    types.NodeInfo{},
+			ShardsHash:   common.Hash{},
+			COSign:       nil,
+		},
+		Shards:        nil,
+	}
 	cm.Height = height
 
 	cosign := &types.COSign{}
@@ -133,6 +148,7 @@ func (c *committee) createCommitteeBlock() *types.CMBlock {
 	cosign.Step2 = 0
 
 	cm.COSign = cosign
+	cm.ComputeHash()
 
 	candidate, err := c.ns.Ledger.GetProducerList(config.ChainHash)
 	if err == nil && candidate != nil && len(candidate) > 0 {

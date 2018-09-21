@@ -9,6 +9,8 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 type finalBlockCsi struct {
@@ -111,8 +113,25 @@ func (c *committee) createFinalBlock() *types.FinalBlock {
 	} else {
 		height = lastfinal.Height + 1
 	}
-
-	final := &types.FinalBlock{}
+	final := &types.FinalBlock{
+		FinalBlockHeader: types.FinalBlockHeader{
+			ChainID:            config.ChainHash,
+			Version:            0,
+			Height:             0,
+			Timestamp:          time.Now().UnixNano(),
+			TrxCount:           0,
+			PrevHash:           common.Hash{},
+			ProposalPubKey:     nil,
+			EpochNo:            0,
+			CMBlockHash:        common.Hash{},
+			TrxRootHash:        common.Hash{},
+			StateDeltaRootHash: common.Hash{},
+			MinorBlocksHash:    common.Hash{},
+			StateHashRoot:      common.Hash{},
+			COSign:             nil,
+		},
+		MinorBlocks:      nil,
+	}
 	final.Height = height
 	final.EpochNo = lastcm.Height
 
@@ -121,6 +140,7 @@ func (c *committee) createFinalBlock() *types.FinalBlock {
 	cosign.Step2 = 0
 
 	final.COSign = cosign
+	final.ComputeHash()
 
 	log.Debug("create final block epoch ", lastcm.Height, " height ", height)
 
