@@ -17,11 +17,11 @@
 package event
 
 import (
+	"errors"
 	"fmt"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"sync"
 	"time"
-	"errors"
 )
 
 type ActorIndex int
@@ -33,6 +33,7 @@ const (
 	ActorConsensusSolo
 	ActorConsensus
 	ActorLedger
+	ActorSharding
 	maxActorNumber
 )
 

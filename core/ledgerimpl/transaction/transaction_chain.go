@@ -706,12 +706,19 @@ func (c *ChainTx) GetShardBlockByHeight(typ types.HeaderType, height uint64) (ty
 func (c *ChainTx) GetLastShardBlock(typ types.HeaderType) (types.BlockInterface, error) {
 	switch typ {
 	case types.HeFinalBlock:
-		return c.GetShardBlockByHash(typ, c.LastHeader.FinalHeader.Hash())
+		if c.LastHeader.FinalHeader != nil {
+			return c.GetShardBlockByHash(typ, c.LastHeader.FinalHeader.Hash())
+		}
 	case types.HeMinorBlock:
-		return c.GetShardBlockByHash(typ, c.LastHeader.MinorHeader.Hash())
+		if c.LastHeader.MinorHeader != nil {
+			return c.GetShardBlockByHash(typ, c.LastHeader.MinorHeader.Hash())
+		}
 	case types.HeCmBlock:
-		return c.GetShardBlockByHash(typ, c.LastHeader.CmHeader.Hash())
+		if c.LastHeader.CmHeader != nil {
+			return c.GetShardBlockByHash(typ, c.LastHeader.CmHeader.Hash())
+		}
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown block type:%d", typ))
 	}
+	return nil, nil
 }

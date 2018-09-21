@@ -22,14 +22,14 @@ type config struct {
 	Shard     []NodeConfig
 }
 
-func readConfigFile(filename string) *config {
+func readConfigFile() *config {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(dir)
 
-	file := dir + "\\config.json"
+	file := "config.json"
 
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -52,7 +52,7 @@ var configLoad = false
 var candidate []NodeConfig
 
 func LoadConfig() {
-	c := readConfigFile("config.json")
+	c := readConfigFile()
 	if c == nil {
 		return
 	}

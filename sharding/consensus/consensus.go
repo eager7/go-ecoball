@@ -95,6 +95,11 @@ func (c *Consensus) ProcessRetransPacket() {
 	if c.instance == nil {
 		return
 	}
-	log.Debug("resend packet  step ", c.step)
-	c.sendCsPacket()
+
+	if c.ns.GetWorksCounter() == 1 {
+		c.sendCommit()
+	} else {
+		log.Debug("resend packet  step ", c.step)
+		c.sendCsPacket()
+	}
 }

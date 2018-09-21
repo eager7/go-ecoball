@@ -225,8 +225,8 @@ func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, er
 	if err != nil {
 		return nil, err
 	}
-	acc.mutex.RLock()
-	defer acc.mutex.RUnlock()
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	return acc.StoreGet(s.path, key)
 }
 

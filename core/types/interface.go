@@ -42,7 +42,10 @@ type HeaderInterface interface {
 }
 
 type BlockInterface interface {
-	HeaderInterface
+	Payload
+	Hash() common.Hash
+	GetChainID() common.Hash
+	GetHeight() uint64
 }
 
 func BlockDeserialize(data []byte, typ HeaderType) (BlockInterface, error) {

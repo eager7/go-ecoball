@@ -1,11 +1,11 @@
 package cell
 
-import "github.com/ecoball/go-ecoball/core/types/block"
+import "github.com/ecoball/go-ecoball/core/types"
 
 type chainData struct {
-	cmBlock         *block.CMBlock
-	finalBlock      *block.FinalBlock
-	viewchangeBlock *block.ViewChangeBlock
+	cmBlock         *types.CMBlock
+	finalBlock      *types.FinalBlock
+	viewchangeBlock *types.ViewChangeBlock
 	//minorBlocks *minorBlockSet
 }
 
@@ -13,27 +13,27 @@ func makeChainData() *chainData {
 	return &chainData{}
 }
 
-func (c *chainData) setCMBlock(cm *block.CMBlock) {
+func (c *chainData) setCMBlock(cm *types.CMBlock) {
 	c.cmBlock = cm
 
 }
 
-func (c *chainData) setFinalBlock(final *block.FinalBlock) {
+func (c *chainData) setFinalBlock(final *types.FinalBlock) {
 	c.finalBlock = final
 }
 
-func (c *chainData) setViewchangeBlock(vc *block.ViewChangeBlock) {
+func (c *chainData) setViewchangeBlock(vc *types.ViewChangeBlock) {
 	c.viewchangeBlock = vc
 }
 
-func (c *chainData) getCMBlock() *block.CMBlock {
+func (c *chainData) getCMBlock() *types.CMBlock {
 	return c.cmBlock
 }
 
-func (c *chainData) getFinalBlock() *block.FinalBlock {
+func (c *chainData) getFinalBlock() *types.FinalBlock {
 	return c.finalBlock
 }
 
-func (c *chainData) getViewchangeBlock() *block.ViewChangeBlock {
+func (c *chainData) getViewchangeBlock() *types.ViewChangeBlock {
 	return c.viewchangeBlock
 }

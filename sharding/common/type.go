@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/ecoball/go-ecoball/core/types/block"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type NodeInstance interface {
@@ -54,7 +54,7 @@ type ConsensusInstance interface {
 	MakeNetPacket(round uint16) *NetPacket
 	GetCsBlock() interface{}
 	CheckBlock(bl interface{}, bLeader bool) bool
-	PrepareRsp() uint16
-	PrecommitRsp() uint16
-	GetCandidate() *block.NodeInfo
+	PrepareRsp() uint32
+	PrecommitRsp() uint32
+	GetCandidate() *types.NodeInfo
 }

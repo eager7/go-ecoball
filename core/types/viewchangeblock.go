@@ -14,28 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball library. If not, see <http://www.gnu.org/licenses/>.
 
-package block
+package types
 
-import (
-	"github.com/ecoball/go-ecoball/common"
-)
-
-type Shard struct {
-	Id     uint32
-	Member []NodeInfo
-}
-
-type CMBlockHeader struct {
-	PrevHash     common.Hash
-	Height       uint64
-	LeaderPubKey []byte
-	Candidate    NodeInfo
-	ShardsHash   common.Hash
-	Timestamp    uint64
+type ViewChangeBlockHeader struct {
+	CMEpochNo        uint64
+	FinalBlockHeight uint64
+	Round            uint16
+	Candidate        NodeInfo
+	Timestamp        uint64
 	*COSign
 }
 
-type CMBlock struct {
-	*CMBlockHeader
-	Shards []Shard
+type ViewChangeBlock struct {
+	*ViewChangeBlockHeader
 }

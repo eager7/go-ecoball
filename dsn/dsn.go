@@ -9,6 +9,8 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 type DsnConf struct {
@@ -52,7 +54,7 @@ func StartDsn(ctx context.Context, l ledger.Ledger) error {
 	go h.Start()
 	r := renter.NewRenter(ctx, l, ra, conf.rConf)
 	//go r.Start()
-	s := settlement.NewStorageSettler(ctx, l)
+	s, _ := settlement.NewStorageSettler(ctx, l, common.ToHex(config.ChainHash[:]))
 	//go s.Start()
 
 	dsn.h = h
@@ -63,7 +65,6 @@ func StartDsn(ctx context.Context, l ledger.Ledger) error {
 }
 
 func AddFile(file string, era int8) (string, error) {
-	//TODO file pin
 	return dsn.r.AddFile(file, era)
 }
 
