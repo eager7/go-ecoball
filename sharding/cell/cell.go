@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 var (
@@ -82,7 +83,12 @@ func (c *Cell) LoadConfig() {
 	}
 	fmt.Println(dir)
 
-	cfg := c.readConfigFile(dir + "\\config.json")
+	var cfg *sconfig
+	if runtime.GOOS == "windows" {
+		cfg = c.readConfigFile(dir + "\\config.json")
+	} else {
+		cfg = c.readConfigFile(dir + "/config.json")
+	}
 	if cfg == nil {
 		return
 	}

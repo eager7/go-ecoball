@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	L := example.Ledger("./sharding")
+	L := example.Ledger("sharding")
 
 	sharding.NewShardingActor(L)
 
