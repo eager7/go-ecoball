@@ -162,4 +162,8 @@ func TestInterface(t *testing.T) {
 	blockLast, err := l.GetLastShardBlock(config.ChainHash, types.HeCmBlock)
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(block.JsonString() == blockLast.JsonString())
+
+	list, err := l.GetProducerList(config.ChainHash)
+	errors.CheckErrorPanic(err)
+	fmt.Println(list)
 }

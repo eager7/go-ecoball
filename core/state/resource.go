@@ -583,9 +583,9 @@ func (s *State) RequireVotingInfo() bool {
 }
 
 func (s *State) GetProducerList() ([]common.AccountName, error) {
-	if !s.RequireVotingInfo() {
-		return nil, errors.New(log, "the main network has not been started")
-	}
+	//if !s.RequireVotingInfo() {
+	//	return nil, errors.New(log, "the main network has not been started")
+	//}
 	if err := s.initProducersList(); err != nil {
 		return nil, err
 	}
