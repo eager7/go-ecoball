@@ -3,25 +3,10 @@
     "address":"192.168.8.242",
 	"port":"4560",
     "committee":[
-		{
-        "pubkey":"1399ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be45",
-        "address":"192.168.11.1",
-        "port":"4563"
-      },
-		{
-            "pubkey":"1299ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be45",
-            "address":"192.168.11.1",
-			"port":"4562"
-        },
       {
         "pubkey":"1099ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be45",
         "address":"192.168.8.242",
         "port":"4560"
-      },
-	  {
-            "pubkey":"1199ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be45",
-            "address":"192.168.11.1",
-			"port":"4561"
       }
     ],
   "shard":[{

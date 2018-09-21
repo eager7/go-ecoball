@@ -5,8 +5,8 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/common"
 )
 
-func (c *Consensus) isVoteEnough(counter uint16) bool {
-	if counter > c.ns.GetWorksCounter()*common.DefaultThresholdOfConsensus/1000+1 {
+func (c *Consensus) isVoteEnough(counter uint32) bool {
+	if counter >= c.ns.GetWorksCounter()*common.DefaultThresholdOfConsensus/1000+1 {
 		return true
 	} else {
 		return false

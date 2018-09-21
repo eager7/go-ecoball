@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"os"
 	"bytes"
-	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
+	//"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
 )
 
@@ -46,7 +46,15 @@ func IpfsBlockGet(ctx context.Context, p string) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	return dsnIpfsApi.Block().Get(ctx, path)
+	return dsnIpfsApi.Object().Data(ctx, path)
+}
+
+func IpfsBlockDel(ctx context.Context, p string) error {
+	path, err := coreiface.ParsePath(p)
+	if err != nil {
+		return err
+	}
+	return dsnIpfsApi.Block().Rm(ctx, path)
 }
 
 func IpfsAddEraFile(ctx context.Context, fpath string, era uint8) (string, error) {
@@ -71,7 +79,8 @@ func IpfsAddEraFile(ctx context.Context, fpath string, era uint8) (string, error
 
 func IpfsAbaBlkPut(ctx context.Context, blk []byte) (string, error) {
 	r := bytes.NewReader(blk)
-	rp, err := dsnIpfsApi.Dag().Put(ctx, r, opt.Dag.InputEnc("raw"), opt.Dag.Codec(cid.EcoballRawData))
+	//rp, err := dsnIpfsApi.Dag().Put(ctx, r, opt.Dag.InputEnc("raw"), opt.Dag.Codec(cid.EcoballRawData))
+	rp, err := dsnIpfsApi.Object().Put(ctx, r, opt.Object.InputEnc("protobuf"))
 	if err != nil {
 		return "", err
 	}

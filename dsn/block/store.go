@@ -1,40 +1,44 @@
 package block
 
 import (
-	"github.com/go-redis/redis"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
-	"github.com/ecoball/go-ecoball/dsn/common"
 	"context"
 	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
 	"io/ioutil"
+	"github.com/ecoball/go-ecoball/core/store"
 )
 
 type DsnStore struct {
-	rClient  *redis.Client
+	ldb		 store.Storage
 	ctx      context.Context
 }
 
-func NewDsnStore(ctx context.Context) *DsnStore {
-	return &DsnStore{
-		rClient:common.InitRedis(common.DefaultRedisConf()),
-		ctx:ctx,
+func NewDsnStore(ctx context.Context, path string) (store.Storage, error) {
+	db, err := store.NewBlockStore(path)
+	if err != nil {
+		return nil, err
 	}
+	return &DsnStore{
+		ldb: db,
+		ctx:ctx,
+	}, nil
 }
 
 func (ds *DsnStore) Put(key, value []byte) error  {
-	skey := string(key)
 	cid, err := api.IpfsAbaBlkPut(ds.ctx, value)
 	if err != nil {
 		return err
 	}
-	ret := ds.rClient.Set(skey, cid, -1)
-	return ret.Err()
+	return ds.ldb.Put(key, []byte(cid))
 }
 
 func (ds *DsnStore) Get(key []byte) ([]byte, error)  {
-	skey := string(key)
-	cid := ds.rClient.Get(skey).String()
-	blk, err := api.IpfsBlockGet(ds.ctx, cid)
+	cid, err := ds.ldb.Get(key)
+	if err != nil {
+		return nil, err
+	}
+	scid := string(cid)
+	blk, err := api.IpfsBlockGet(ds.ctx, scid)
 	if err != nil {
 		return nil, nil
 	}
@@ -42,37 +46,46 @@ func (ds *DsnStore) Get(key []byte) ([]byte, error)  {
 }
 
 func (ds *DsnStore) Has(key []byte) (bool, error) {
-	skey := string(key)
-	ret := ds.rClient.Exists(skey)
-	retInt, _ := ret.Result()
-	if retInt == 1 {
-		return true, nil
-	}
-	return false, ret.Err()
+	return  ds.ldb.Has(key)
 }
 
 func (ds *DsnStore) Delete(key []byte) error {
-	skey := string(key)
-	ret := ds.rClient.Del(skey)
-	return ret.Err()
+	ds.ldb.Delete(key)
+	return api.IpfsBlockDel(ds.ctx, string(key))
 }
 
 func (ds *DsnStore) BatchPut(key, value []byte) {
-
+	cid, _ := api.IpfsAbaBlkPut(ds.ctx, value)
+	ds.ldb.BatchPut(key, []byte(cid))
 }
 
 func (ds *DsnStore) BatchCommit() error {
-	return nil
+	return ds.ldb.BatchCommit()
 }
 
 func (ds *DsnStore) SearchAll() (result map[string]string, err error) {
-	return nil, nil
+	ret := make(map[string]string, 0)
+	keys, err := ds.ldb.SearchAll()
+	for k, v := range keys {
+		r, err := api.IpfsBlockGet(ds.ctx, string(v))
+		if err != nil {
+			ret[string(k)] = ""
+		} else {
+			data, _ := ioutil.ReadAll(r)
+			ret[string(k)] = string(data)
+		}
+	}
+	return ret, nil
 }
 
 func (ds *DsnStore) DeleteAll() error {
-	return nil
+	keys, _ := ds.ldb.SearchAll()
+	for _, v := range keys {
+		api.IpfsBlockDel(ds.ctx, string(v))
+	}
+	return ds.ldb.DeleteAll()
 }
 
 func (ds *DsnStore) NewIterator() iterator.Iterator {
-	return nil
+	return ds.ldb.NewIterator()
 }

@@ -18,6 +18,7 @@ package sharding
 
 import (
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	"github.com/ecoball/go-ecoball/sharding/committee"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
@@ -38,8 +39,8 @@ type Sharding struct {
 	instance sc.NodeInstance
 }
 
-func MakeSharding() ShardingInstance {
-	return &Sharding{ns: cell.MakeCell()}
+func MakeSharding(l ledger.Ledger) ShardingInstance {
+	return &Sharding{ns: cell.MakeCell(l)}
 }
 
 func (s *Sharding) MsgDispatch(msg interface{}) {

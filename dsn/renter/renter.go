@@ -1,24 +1,25 @@
 package renter
 
 import (
+	"os"
 	"math/big"
+	"time"
+	"errors"
+	"context"
+	"crypto/sha256"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/core/store"
-	"os"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
-	"time"
-	"errors"
 	"github.com/ecoball/go-ecoball/core/types"
 	innerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
-	"context"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/dsn/renter/pb"
 	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
-	"crypto/sha256"
+	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
 )
 
 var (
@@ -42,10 +43,10 @@ type FileContract struct {
 	LocalPath   string
 	FileSize    uint64
 	Redundancy  uint8
-	//Funds       big.Int
 	Funds       []byte
 	StartAt     uint64
 	Expiration  uint64
+	AccountName   string
 }
 
 type RenterConf struct {
@@ -55,6 +56,7 @@ type RenterConf struct {
 	Collateral    string
 	MaxCollateral string
 	ChainId       string
+	StorePath     string
 }
 
 type fileInfo struct {
@@ -85,6 +87,7 @@ func InitDefaultConf() RenterConf {
 		Collateral: "10000",
 		MaxCollateral: "20000",
 		ChainId: common.ToHex(chainId[:]),
+		StorePath: "/tmp/storage/rent",
 	}
 }
 
@@ -96,8 +99,7 @@ func NewRenter(ctx context.Context,l ledger.Ledger ,ac account.Account, conf Ren
 		files: make(map[string]fileInfo, 64),
 		ctx: ctx,
 	}
-	//TODO init db
-
+	r.db, _ = store.NewBlockStore(conf.StorePath)
 	return &r
 }
 
@@ -145,11 +147,8 @@ func (r *Renter)createFileContract(fname string, cid string) ([]byte, error) {
 	fee := r.estimateFee(fname, r.conf)
 	fc.Funds, _ = fee.GobEncode()
 	fc.Redundancy = r.conf.Redundancy
+	fc.AccountName = r.conf.AccountName
 	fcBytes := encoding.Marshal(fc)
-	//fcHash := crypto.HashBytes(fcBytes)
-	//var sk crypto.SecretKey
-	//copy(sk[:], r.account.PrivateKey)
-	//sig := crypto.SignHash(fcHash, sk)
 	annHash := sha256.Sum256(fcBytes)
 	sig, err := r.account.Sign(annHash[:])
 	if err !=  nil {
@@ -158,6 +157,20 @@ func (r *Renter)createFileContract(fname string, cid string) ([]byte, error) {
 	return append(fcBytes, sig[:]...), nil
 }
 
+func (r *Renter) payForFile(fc fileInfo) error {
+	timeNow := time.Now().UnixNano()
+	tran, err := types.NewTransfer(common.NameToIndex(r.conf.AccountName),
+		innerCommon.NameToIndex(dsnComm.RootAccount), common.HexToHash(r.conf.ChainId), "owner", &fc.fee, 0, timeNow)
+	if err != nil {
+		return err
+	}
+	tran.SetSignature(&r.account)
+	err = event.Send(event.ActorNil, event.ActorTxPool, tran)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func (r *Renter) InvokeFileContract(fname, cid string) error {
 	if !r.isSynced {
 		return errUnSyncedStat
@@ -168,8 +181,8 @@ func (r *Renter) InvokeFileContract(fname, cid string) error {
 	}
 	timeNow := time.Now().UnixNano()
 	transaction, err := types.NewInvokeContract(common.NameToIndex(r.conf.AccountName),
-		innerCommon.NameToIndex("root"), common.HexToHash(r.conf.ChainId),
-		"owner", "reg_file", []string{string(fc)}, 0, timeNow)
+		innerCommon.NameToIndex(dsnComm.RootAccount), common.HexToHash(r.conf.ChainId),
+		"owner", dsnComm.FcMethodFile, []string{string(fc)}, 0, timeNow)
 	if err != nil {
 		return err
 	}
@@ -192,6 +205,7 @@ func (r *Renter) InvokeFileContract(fname, cid string) error {
 	f.fee = *r.estimateFee(fname, r.conf)
 	r.files[cid] = f
 
+	r.payForFile(f)
 	r.persistFileInfo(f)
 
 	return nil
@@ -218,6 +232,7 @@ func (r *Renter) AddFile(fpath string, era int8) (string, error) {
 	//if !colState {
 	//	return "", errCheckColFailed
 	//}
+
 	var redundancy uint8
 	if era == -1 {
 		redundancy = r.conf.Redundancy
