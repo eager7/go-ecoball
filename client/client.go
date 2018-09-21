@@ -37,7 +37,7 @@ const STORAGE = "storage"
 
 var (
 	historyFilePath = filepath.Join(os.TempDir(), ".ecoclient_history")
-	commandName     = []string{"contract", "transfer", "wallet", "query", "attach", STORAGE}
+	commandName     = []string{"contract", "transfer", "wallet", "get", "attach", STORAGE}
 )
 
 func newClientApp() *cli.App {
