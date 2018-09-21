@@ -240,11 +240,11 @@ func (c *Cell) GetWorks() []*Worker {
 	}
 }
 
-func (c *Cell) GetWorksCounter() uint16 {
+func (c *Cell) GetWorksCounter() uint32 {
 	if c.NodeType == sc.NodeCommittee {
-		return uint16(len(c.cm.member))
+		return uint32(len(c.cm.member))
 	} else if c.NodeType == sc.NodeShard {
-		return uint16(len(c.shard))
+		return uint32(len(c.shard))
 	} else {
 		return 0
 	}

@@ -54,7 +54,7 @@ type ConsensusInstance interface {
 	MakeNetPacket(round uint16) *NetPacket
 	GetCsBlock() interface{}
 	CheckBlock(bl interface{}, bLeader bool) bool
-	PrepareRsp() uint16
-	PrecommitRsp() uint16
+	PrepareRsp() uint32
+	PrecommitRsp() uint32
 	GetCandidate() *types.NodeInfo
 }

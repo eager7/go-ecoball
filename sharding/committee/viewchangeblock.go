@@ -88,7 +88,7 @@ func (b *vcBlockCsi) GetCsBlock() interface{} {
 	return b.bk
 }
 
-func (b *vcBlockCsi) PrepareRsp() uint16 {
+func (b *vcBlockCsi) PrepareRsp() uint32 {
 	if b.cache.Step1 == 1 {
 		b.bk.Step1++
 	}
@@ -96,7 +96,7 @@ func (b *vcBlockCsi) PrepareRsp() uint16 {
 	return b.bk.Step1
 }
 
-func (b *vcBlockCsi) PrecommitRsp() uint16 {
+func (b *vcBlockCsi) PrecommitRsp() uint32 {
 	if b.cache.Step2 == 1 {
 		b.bk.Step2++
 	}
@@ -158,6 +158,10 @@ func (c *committee) createVcBlock() (*types.ViewChangeBlock, bool) {
 	vc.Candidate.PublicKey = []byte(candi.Pubkey)
 	vc.Candidate.Address = candi.Address
 	vc.Candidate.Port = candi.Port
+
+	cosign := &types.COSign{}
+	cosign.Step1 = 1
+	cosign.Step2 = 0
 
 	log.Debug("candidate address ", candi.Address, " port ", candi.Port)
 

@@ -37,12 +37,12 @@ func (c *committee) processSyncComplete(msg interface{}) {
 	final := lastFinalBlock.GetObject().(*types.FinalBlock)
 	c.ns.SetLastFinalBlock(final)
 
-	if cm.Height > final.CMEpochNo {
+	if cm.Height > final.EpochNo {
 		c.fsm.Execute(ActWaitMinorBlock, msg)
 		return
-	} else if cm.Height < final.CMEpochNo {
+	} else if cm.Height < final.EpochNo {
 		panic("wrong sync status")
-		log.Panic("wrong sync status, cm block height ", cm.Height, " final block number ", final.CMEpochNo)
+		log.Panic("wrong sync status, cm block height ", cm.Height, " final block number ", final.EpochNo)
 		return
 	}
 

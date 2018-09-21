@@ -21,13 +21,13 @@ func newFinalBlockCsi(bk *types.FinalBlock) *finalBlockCsi {
 }
 
 func (b *finalBlockCsi) GetCsView() *sc.CsView {
-	return &sc.CsView{EpochNo: b.bk.CMEpochNo, FinalHeight: b.bk.Height}
+	return &sc.CsView{EpochNo: b.bk.EpochNo, FinalHeight: b.bk.Height}
 }
 
 func (b *finalBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 	update := bl.(*types.FinalBlock)
-	if b.bk.Height != update.Height || b.bk.CMEpochNo != update.CMEpochNo {
-		log.Error("view error current ", b.bk.CMEpochNo, " ", b.bk.Height, " packet view ", update.CMEpochNo, " ", update.Height)
+	if b.bk.Height != update.Height || b.bk.EpochNo != update.EpochNo {
+		log.Error("view error current ", b.bk.EpochNo, " ", b.bk.Height, " packet view ", update.EpochNo, " ", update.Height)
 		return false
 	}
 
@@ -76,7 +76,7 @@ func (b *finalBlockCsi) GetCsBlock() interface{} {
 	return b.bk
 }
 
-func (b *finalBlockCsi) PrepareRsp() uint16 {
+func (b *finalBlockCsi) PrepareRsp() uint32 {
 	if b.cache.Step1 == 1 {
 		b.bk.Step1++
 	}
@@ -84,7 +84,7 @@ func (b *finalBlockCsi) PrepareRsp() uint16 {
 	return b.bk.Step1
 }
 
-func (b *finalBlockCsi) PrecommitRsp() uint16 {
+func (b *finalBlockCsi) PrecommitRsp() uint32 {
 	if b.cache.Step2 == 1 {
 		b.bk.Step2++
 	}
@@ -114,7 +114,13 @@ func (c *committee) createFinalBlock() *types.FinalBlock {
 
 	final := &types.FinalBlock{}
 	final.Height = height
-	final.CMEpochNo = lastcm.Height
+	final.EpochNo = lastcm.Height
+
+	cosign := &types.COSign{}
+	cosign.Step1 = 1
+	cosign.Step2 = 0
+
+	final.COSign = cosign
 
 	log.Debug("create final block epoch ", lastcm.Height, " height ", height)
 

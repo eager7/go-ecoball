@@ -94,7 +94,7 @@ func (b *cmBlockCsi) GetCsBlock() interface{} {
 	return b.bk
 }
 
-func (b *cmBlockCsi) PrepareRsp() uint16 {
+func (b *cmBlockCsi) PrepareRsp() uint32 {
 	if b.cache.Step1 == 1 {
 		b.bk.Step1++
 	}
@@ -102,7 +102,7 @@ func (b *cmBlockCsi) PrepareRsp() uint16 {
 	return b.bk.Step1
 }
 
-func (b *cmBlockCsi) PrecommitRsp() uint16 {
+func (b *cmBlockCsi) PrecommitRsp() uint32 {
 	if b.cache.Step2 == 1 {
 		b.bk.Step2++
 	}
@@ -127,6 +127,12 @@ func (c *committee) createCommitteeBlock() *types.CMBlock {
 
 	cm := &types.CMBlock{}
 	cm.Height = height
+
+	cosign := &types.COSign{}
+	cosign.Step1 = 1
+	cosign.Step2 = 0
+
+	cm.COSign = cosign
 
 	candidate, err := c.ns.Ledger.GetProducerList(config.ChainHash)
 	if err == nil && candidate != nil && len(candidate) > 0 {
