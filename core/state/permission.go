@@ -105,6 +105,25 @@ func (p *Permission) checkPermission(state *State, signatures []common.Signature
 }
 
 /**
+ *  @brief check that the signatures meets the permission requirement
+ *  @param state - the mpt trie, used to search account
+ */
+func (p *Permission) checkAccountPermission(state *State, guest string, permission string) error {
+	var weightAcc uint32
+	if a, ok := p.Accounts[guest]; ok {
+		weightAcc += a.Weight
+		if _, err := state.GetAccountByName(a.Actor); err != nil {
+			return err
+		}
+	}
+	if weightAcc >= p.Threshold {
+		return nil
+	}
+
+	return errors.New(log, fmt.Sprintf("weight is not enough, accounts weight:%d", weightAcc))
+}
+
+/**
  *  @brief add a permission object into account, then update to mpt trie
  *  @param perm - the permission object
  */
@@ -143,6 +162,23 @@ func (s *State) CheckPermission(index common.AccountName, name string, hash comm
 		}
 	}
 	return acc.checkPermission(s, name, sig)
+}
+
+/**
+ *  @brief check the permission's validity, this method will not modified mpt trie
+ *  @param index - the account index
+ *  @param state - the world state tree
+ *  @param name - the permission names
+ *  @param signatures - the signatures list
+ */
+func (s *State) CheckAccountPermission(host common.AccountName, guest common.AccountName, permission string) error {
+	acc, err := s.GetAccountByName(host)
+	if err != nil {
+		return err
+	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
+	return acc.checkAccountPermission(s, guest.String(), permission)
 }
 
 /**
@@ -188,6 +224,29 @@ func (a *Account) checkPermission(state *State, name string, signatures []common
 			}
 		}
 		if err := perm.checkPermission(state, signatures); err != nil {
+			log.Error(fmt.Sprintf("account:%s", a.JsonString(false)))
+			return err
+		}
+	}
+	return nil
+}
+
+/**
+ *  @brief check that the signatures meets the permission requirement
+ *  @param state - the mpt trie, used to search account
+ *  @param name - the permission name
+ *  @param signatures - the transaction's signatures list
+ */
+func (a *Account) checkAccountPermission(state *State, guest string, permission string) error {
+	if perm, ok := a.Permissions[permission]; !ok {
+		return errors.New(log, fmt.Sprintf("account %s has not %s permission of account:%s", guest, permission, a.Index.String()))
+	} else {
+		//if "" != perm.Parent {
+		//	if err := a.checkAccountPermission(state, perm.Parent); err == nil {
+		//		return nil
+		//	}
+		//}
+		if err := perm.checkAccountPermission(state, guest, permission); err != nil {
 			log.Error(fmt.Sprintf("account:%s", a.JsonString(false)))
 			return err
 		}

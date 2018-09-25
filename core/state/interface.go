@@ -12,6 +12,7 @@ type InterfaceState interface {
 	GetChainList() ([]Chain, error)
 	AddPermission(index common.AccountName, perm Permission) error
 	CheckPermission(index common.AccountName, name string, hash common.Hash, signatures []common.Signature) error
+	CheckAccountPermission(host common.AccountName, guest common.AccountName, permission string) error
 	FindPermission(index common.AccountName, name string) (string, error)
 	SetResourceLimits(from, to common.AccountName, cpuStaked, netStaked uint64, cpuLimit, netLimit float64) error
 	SubResources(index common.AccountName, cpu, net float64, cpuLimit, netLimit float64) error

@@ -1,5 +1,9 @@
+#include <module.h>
+#include <print.h>
+#include <store.h>
+
 //create token
-void create(char *creator,int max_supply,char *token_id){
+int create(char *creator,int max_supply,char *token_id){
     char *supply_str,*max_supply_str;
     char *str_supply = "supply";
 	char *str_max_supply = "max_supply";
@@ -10,13 +14,13 @@ void create(char *creator,int max_supply,char *token_id){
     result = ABA_account_contain(creator);
     if(result != 1) {
       ABA_prints("The creator account does not exist");
-      return;
+      return -1;
     }
 	
 	result = ABA_db_get(str_token);
     if(result != -1) {
       ABA_prints("Token had been created! Only support one token!");
-      return;
+      return -2;
     }
 	
     //if the token has created
@@ -36,7 +40,7 @@ void create(char *creator,int max_supply,char *token_id){
     ABA_db_put(str_max_supply,max_supply_str);
 	ABA_db_put(str_supply,supply_str);
 	
-    return ;
+    return 1;
 }
 //issue token
 void issue(char *to,int amount,char *token_id){
@@ -94,7 +98,7 @@ void issue(char *to,int amount,char *token_id){
     ABA_db_put(to,balance_str);
     ABA_db_put(str,supply_str);
 	
-	inline_action("worker", "issue", "[\"worker1\", \"15\", \"xyx\"]");
+	inline_action("worker2", "transfer", "[\"worker1\", \"worker\", \"15\", \"xxx\"]", "active");
 	
     return ;
 }
@@ -149,7 +153,7 @@ void transfer(char *from,char *to,int amount,char *token_id){
 }
 
 // contract invoke entry
-int apply(char *method){
+export int apply(char *method){
     //create(char issue_name[],int max_supply,char token_id[])
     if(ABA_strcmp(method,"create") == 0){
         char *token_id,*token_issue;
