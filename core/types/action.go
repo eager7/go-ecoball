@@ -2,6 +2,7 @@ package types
 
 import (
 	"github.com/ecoball/go-ecoball/common"
+	"fmt"
 )
 
 type Action struct {
@@ -25,4 +26,17 @@ func NewSimpleAction(contract string, payload Payload) (*Action, error){
 	}
 
 	return action, nil
+}
+
+func (act *Action)Print() {
+	fmt.Println("account: ", act.ContractAccount)
+
+	invoke, ok := act.Payload.GetObject().(InvokeInfo)
+	if !ok {
+		fmt.Println("transaction type error[invoke]")
+		return
+	}
+
+	fmt.Println("action: ", string(invoke.Method))
+	fmt.Println("param: ", invoke.Param)
 }

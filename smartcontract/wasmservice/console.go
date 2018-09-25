@@ -56,3 +56,18 @@ func (ws *WasmService) printdf(proc *exec.Process, v float64) uint32{
 	fmt.Printf("%f\n",v)
 	return 0
 }
+
+//C API: void aba_assert(bool yes, , errMsg int32)
+func (ws *WasmService) aba_assert(proc *exec.Process, yes bool, errMsg int32) ([]byte, error){
+	//bYes, err := proc.VMGetData(int(yes))
+	//if err != nil{
+	//	return
+	//}
+	//
+	//bErrMsg, err := proc.VMGetData(int(errMsg))
+	//if err != nil{
+	//	return
+	//}
+
+	return nil, nil
+}
