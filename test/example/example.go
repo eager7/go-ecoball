@@ -437,6 +437,17 @@ func InvokeContract(ledger ledger.Ledger) {
 
 	time.Sleep(time.Second * 2)
 
+	//perm := state.NewPermission(state.Active, state.Owner, 1, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker"), Weight: 1, Permission: "active"}})
+	//param, err := json.Marshal(perm)
+	//errors.CheckErrorPanic(err)
+	//invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), root, config.ChainHash, state.Owner, "set_account", []string{"worker2", string(param)}, 0, time.Now().UnixNano())
+	//invoke.SetSignature(&config.Worker2)
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//time.Sleep(interval)
+	//
+	//time.Sleep(time.Second * 2)
+
+
 	log.Warn("Start Invoke contract")
 
 	path := os.Getenv("GOPATH")

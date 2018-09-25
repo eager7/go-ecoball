@@ -9,7 +9,7 @@ import (
 )
 
 // C API: inline_action(char *account, char *action, int32 actionData)
-func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionData int32) int32{
+func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionData, perm int32) int32{
 	//fmt.Println("wasm inline action")
 	contract_msg, err := proc.VMGetData(int(account))
 	if err != nil{
@@ -23,11 +23,15 @@ func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionD
 	if err != nil{
 		return -1
 	}
-	if(len(contract_msg) == 0 || len(action_msg) == 0 || len(data) == 0){
+	permission, err := proc.VMGetData(int(perm))
+	if err != nil{
+		return -1
+	}
+	if(len(contract_msg) == 0 || len(action_msg) == 0 || len(data) == 0 || len(permission) == 0){
 		return -1
 	}
 
-	fmt.Println("wasm inline action ", contract_msg, " ", action_msg, " ", data)
+	fmt.Println("wasm inline action ", string(contract_msg), " ", string(action_msg), " ", string(data), " ", string(permission))
 
 	contractLen := len(contract_msg)
 	var contractSlice []byte = contract_msg[:contractLen - 1]
@@ -45,6 +49,18 @@ func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionD
 	var dataSlice []byte = data[:dataLen - 1]
 	if data[dataLen - 1] != 0 {
 		dataSlice = append(dataSlice, data[dataLen - 1])
+	}
+
+	permLen := len(permission)
+	var permSlice []byte = permission[:permLen - 1]
+	if permission[permLen - 1] != 0 {
+		permSlice = append(permSlice, permission[permLen - 1])
+	}
+
+	if ws.action.ContractAccount != common.NameToIndex(string(contractSlice)) {
+		if err = ws.state.CheckAccountPermission(common.NameToIndex(string(contractSlice)), ws.action.ContractAccount, string(permSlice)); err != nil {
+			return -5
+		}
 	}
 
 	contractGet, err := ws.state.GetContract(common.NameToIndex(string(contractSlice)))
