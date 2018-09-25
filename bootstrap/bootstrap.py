@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import argparse
 import subprocess
 import sys
@@ -49,17 +50,17 @@ def importKeys():
             if len(keys) >= args.max_user_keys:
                 break
             keys[key] = True
-            run((args.ecoclient + ' wallet import --name=default --private=' + key)
+            run(args.ecoclient + ' wallet import --name=default --private=' + key)
     for i in range(firstProducer, firstProducer + numProducers):
         a = accounts[i]
         key = a['private']
         if not key in keys:
             keys[key] = True
-            run((args.ecoclient + ' wallet import --name=default --private=' + key)
+            run(args.ecoclient + ' wallet import --name=default --private=' + key)
 
 def stepStartEcowallet():
     runWallet()
-    importkeys()
+    importKeys()
 
 #step start ecoball
 def runNode():
@@ -78,6 +79,15 @@ def stepCreateSystemAccounts():
 def stepInstallSystemContracts():
     print("install system contract")
 
+#commands
+commands = [
+    ('k', 'kill',           stepKillAll,                True,    "Kill all ecoball and ecowallet processes"),
+    ('w', 'ecowallet',      stepStartEcowallet,         True,    "Start ecowallet, create wallet, fill with keys"),
+    ('b', 'ecoball',        stepStartEcoball,           True,    "Start ecoball node"),
+    ('a', 'account',        stepCreateSystemAccounts,   True,    "Create system accounts"),
+    ('c', 'contracts',      stepInstallSystemContracts, True,    "Install system contracts"),
+]
+
 # Command Line Arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--public-key', metavar='', help="root Public Key", default='0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c', dest="public_key")
@@ -90,11 +100,12 @@ parser.add_argument('--producer-limit', metavar='', help="Maximum number of prod
 parser.add_argument('--max-user-keys', metavar='', help="Maximum user keys to import into wallet", type=int, default=10, dest='max_user_keys')
 parser.add_argument('--ecoball', metavar='', help="Path to ecoball binary", default='../build/ecoball')
 parser.add_argument('-a', '--all', action='store_true', help="Do everything marked with (*)")
-
 for (flag, command, function, inAll, help) in commands:
     prefix = ''
-    if inAll: prefix += '*'
-    if prefix: help = '(' + prefix + ') ' + help
+    if inAll: 
+        prefix += '*'
+    if prefix: 
+        help = '(' + prefix + ') ' + help
     if flag:
         parser.add_argument('-' + flag, '--' + command, action='store_true', help=help, dest=command)
     else:
@@ -114,15 +125,6 @@ with open('accounts.json') as f:
     numProducers = len(a['producers'])
     accounts = a['users'] + a['producers']
 
-#commands
-commands = [
-    ('k', 'kill',           stepKillAll,                True,    "Kill all ecoball and ecowallet processes"),
-    ('w', 'ecowallet',      stepStartEcowallet,         True,    "Start ecowallet, create wallet, fill with keys"),
-    ('b', 'ecoball',        stepStartEcoball,           True,    "Start ecoball node"),
-    ('a', 'account',        stepCreateSystemAccounts,   True,    "Create system accounts"),
-    ('c', 'contracts',      stepInstallSystemContracts, True,    "Install system contracts"),
-]
-
 #run commands
 haveCommand = False
 for (flag, command, function, inAll, help) in commands:
@@ -130,7 +132,6 @@ for (flag, command, function, inAll, help) in commands:
         if function:
             haveCommand = True
             function()
-
 #error           
 if not haveCommand:
     print('bootstrap.py: Tell me what to do. -a does almost everything. -h shows options.')
