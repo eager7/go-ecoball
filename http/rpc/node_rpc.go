@@ -90,6 +90,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	} else {
 		//if the function does not exist
 		rpcLog.Warn("HTTP JSON RPC Handle - No function to call for ", request["method"])
+		rpcLog.Warn("HTTP JSON RPC Handle - No function to call for ", request["method"])
 		data, err := json.Marshal(map[string]interface{}{
 			"errorCode": int64(-32601),
 			"desc":      "The called method was not found on the server",
@@ -115,6 +116,9 @@ func StartRPCServer() (err error) {
 	//add attach
 	httpServer.AddHandleFunc("attach", commands.Attach)
 
+	//query
+//	httpServer.AddHandleFunc("query", commands.Query)
+
 	//set contract
 	httpServer.AddHandleFunc("setContract", commands.SetContract)
 
@@ -131,11 +135,12 @@ func StartRPCServer() (err error) {
 	httpServer.AddHandleFunc("Get_ChainList", commands.Get_ChainList)
 	httpServer.AddHandleFunc("GetContract", commands.GetContract)
 	httpServer.AddHandleFunc("getBlock", commands.GetBlock)
-	httpServer.AddHandleFunc("getTransaction", commands.GetTransaction)
-	httpServer.AddHandleFunc("StoreGet", commands.StoreGet)
 
 	httpServer.AddHandleFunc("netlistmyid", nrpc.CliServerListMyId)
 	httpServer.AddHandleFunc("netlistmypeer", nrpc.CliServerListMyPeers)
+	
+	//dsn服务
+	httpServer.AddHandleFunc("DsnAddFile", commands.DsnAddFile)
 
 	//listen port
 	err = http.ListenAndServe(":"+config.HttpLocalPort, nil)

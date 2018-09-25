@@ -65,6 +65,7 @@ func StartDsn(ctx context.Context, l ledger.Ledger) error {
 }
 
 func AddFile(file string, era int8) (string, error) {
+	era = 2
 	return dsn.r.AddFile(file, era)
 }
 

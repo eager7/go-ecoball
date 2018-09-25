@@ -72,6 +72,7 @@ func newClientApp() *cli.App {
 		commands.CreateCommands,
 		commands.NetworkCommand,
 		commands.StorageCommands,
+		commands.DsnStorageCommands,
 	}
 
 	//set default action
