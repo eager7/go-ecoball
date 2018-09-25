@@ -16,15 +16,14 @@
 package wallet
 
 import (
+	"crypto/sha512"
 	"errors"
 	"fmt"
-	"crypto/sha512"
-	//"os"
-	//"path/filepath"
+	"os"
 
 	"github.com/ecoball/go-ecoball/client/common"
-	"github.com/ecoball/go-ecoball/core/types"
 	inner "github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 /*var (
@@ -61,18 +60,28 @@ type WalletApi interface {
 	FileExten string
 }*/
 var (
-	Wallets = make(map[string]WalletApi) // 后台存储所有钱包
+	wallets = make(map[string]WalletApi) // 后台存储所有钱包
+	dir     string
 )
 
+func init() {
+	dir = "./wallet/"
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			fmt.Println("could not create directory:", dir, err)
+		}
+	}
+}
 
-func Create(path string, password []byte) error {
+func Create(name string, password []byte) error {
 	//whether the wallet file exists
-	if common.FileExisted(path) {
+	filename := dir + name
+	if common.FileExisted(filename) {
 		return errors.New("The file already exists")
 	}
 
 	newWallet := &WalletImpl{
-		path:     path,
+		path:     filename,
 		lockflag: unlock,
 		KeyData: KeyData{
 			Checksum: sha512.Sum512(password),
@@ -99,7 +108,7 @@ func Create(path string, password []byte) error {
 	}
 
 	newWallet.lockflag = unlock
-	Wallets[path] = newWallet
+	wallets[name] = newWallet
 
 	return nil
 }
@@ -107,9 +116,10 @@ func Create(path string, password []byte) error {
 /**
 打开钱包
 */
-func Open(path string, password []byte) error {
+func Open(name string, password []byte) error {
+	filename := dir + name
 	newWallet := &WalletImpl{
-		path:     path,
+		path:     filename,
 		lockflag: unlock,
 		KeyData: KeyData{
 			//Accounts: []Account{},
@@ -129,26 +139,26 @@ func Open(path string, password []byte) error {
 	}
 	newWallet.lockflag = unlock
 
-	_, ok := Wallets [ path ]
-	
+	_, ok := wallets[name]
+
 	if ok {
-		fmt.Println("exist:", path)
-        delete(Wallets, path)
+		fmt.Println("exist:", filename)
+		delete(wallets, name)
 	}
-	
-	Wallets[path] = newWallet
+
+	wallets[name] = newWallet
 
 	return nil
 }
 
-func ImportKey(name string, privateKey string)([]byte, error) {
-	wallet, ok := Wallets [ name ]
-	
+func ImportKey(name string, privateKey string) ([]byte, error) {
+	wallet, ok := wallets[name]
+
 	if !ok {
 		return nil, errors.New("wallet is not exist")
 	}
 
-	if wallet.CheckLocked(){
+	if wallet.CheckLocked() {
 		return nil, errors.New("wallet is locked")
 	}
 
@@ -156,13 +166,13 @@ func ImportKey(name string, privateKey string)([]byte, error) {
 }
 
 func RemoveKey(name string, password []byte, publickey string) error {
-	wallet, ok := Wallets [ name ]
-	
+	wallet, ok := wallets[name]
+
 	if !ok {
 		return errors.New("wallet is not exist")
 	}
 
-	if wallet.CheckLocked(){
+	if wallet.CheckLocked() {
 		return errors.New("wallet is locked")
 	}
 
@@ -173,33 +183,33 @@ func RemoveKey(name string, password []byte, publickey string) error {
 	return wallet.RemoveKey(password, publickey)
 }
 
-func CreateKey(name string)([]byte, []byte, error) {
-	wallet, ok := Wallets [ name ]
-	
+func CreateKey(name string) ([]byte, []byte, error) {
+	wallet, ok := wallets[name]
+
 	if !ok {
 		return nil, nil, errors.New("wallet is not exist")
 	}
 
-	if wallet.CheckLocked(){
+	if wallet.CheckLocked() {
 		return nil, nil, errors.New("wallet is locked")
 	}
 
 	return wallet.CreateKey()
 }
 
-func Lock(name string) (error) {
-	wallet, ok := Wallets [ name ]
-	
+func Lock(name string) error {
+	wallet, ok := wallets[name]
+
 	if !ok {
 		return errors.New("wallet is not exist")
 	}
 
-	if wallet.CheckLocked(){
+	if wallet.CheckLocked() {
 		return errors.New("wallet is locked")
 	}
 
 	wallet.SetLockedState()
-	if err := wallet.Lock() ; err != nil{
+	if err := wallet.Lock(); err != nil {
 		wallet.SetUnLockedState()
 		return err
 	}
@@ -207,13 +217,13 @@ func Lock(name string) (error) {
 }
 
 func Unlock(name string, password []byte) error {
-	wallet, ok := Wallets [ name ]
-	
+	wallet, ok := wallets[name]
+
 	if !ok {
 		return errors.New("wallet is not exist")
 	}
 
-	if !wallet.CheckLocked(){
+	if !wallet.CheckLocked() {
 		return errors.New("wallet is unlocked")
 	}
 
@@ -222,7 +232,7 @@ func Unlock(name string, password []byte) error {
 	}
 
 	wallet.SetUnLockedState()
-	if err := wallet.Unlock(password); err != nil{
+	if err := wallet.Unlock(password); err != nil {
 		wallet.SetLockedState()
 		return err
 	}
@@ -230,13 +240,13 @@ func Unlock(name string, password []byte) error {
 }
 
 func ListKeys(name string, password []byte) (map[string]string, error) {
-	wallet, ok := Wallets [ name ]
-	
+	wallet, ok := wallets[name]
+
 	if !ok {
 		return nil, errors.New("wallet is not exist")
 	}
 
-	if wallet.CheckLocked(){
+	if wallet.CheckLocked() {
 		return nil, errors.New("wallet is unlocked")
 	}
 
@@ -248,13 +258,13 @@ func ListKeys(name string, password []byte) (map[string]string, error) {
 }
 
 func GetPublicKeys() ([]string, error) {
-	if len(Wallets) == 0 {
+	if len(wallets) == 0 {
 		return nil, errors.New("You don't have any wallet!")
 	}
 
 	keys := []string{}
 	allLocked := true
-	for _, wallet := range Wallets {
+	for _, wallet := range wallets {
 		if wallet.CheckLocked() {
 			continue
 		}
@@ -273,13 +283,13 @@ func GetPublicKeys() ([]string, error) {
 	return keys, nil
 }
 
-func List_wallets()([]string, error) {
-	if len(Wallets) == 0 {
+func List_wallets() ([]string, error) {
+	if len(wallets) == 0 {
 		return nil, errors.New("You don't have any wallet!")
 	}
 
 	keys := []string{}
-	for name, wallet := range Wallets {
+	for name, wallet := range wallets {
 		if !wallet.CheckLocked() {
 			name += "*"
 		}
@@ -289,16 +299,15 @@ func List_wallets()([]string, error) {
 	return keys, nil
 }
 
-
 func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
 	Transaction := new(types.Transaction)
-	if err := Transaction.Deserialize(transaction); err != nil{
+	if err := Transaction.Deserialize(transaction); err != nil {
 		return nil, err
 	}
 
 	for _, publicKey := range publicKeys {
 		bFound := false
-		for _, wallet := range Wallets {
+		for _, wallet := range wallets {
 			if !wallet.CheckLocked() {
 				if signData, bHave := wallet.TrySignDigest(Transaction.Hash.Bytes(), publicKey); bHave {
 					/*flag, err := Verify(Transaction.Hash.Bytes(), inner.FromHex(publicKey), signData); if !flag || err != nil {
@@ -312,7 +321,7 @@ func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
 					if !bFound {
 						bFound = true
 					}
-					break;
+					break
 				}
 			}
 		}
@@ -333,7 +342,7 @@ func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
 func SignDigest(data []byte, publicKey string) ([]byte, error) {
 	bFound := false
 	result := []byte{}
-	for _, wallet := range Wallets {
+	for _, wallet := range wallets {
 		if !wallet.CheckLocked() {
 			if signData, bHave := wallet.TrySignDigest(data, publicKey); bHave {
 				if !bFound {

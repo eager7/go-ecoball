@@ -116,6 +116,7 @@ func (mm *Memmanage) SetBlock(val interface{}) (int, error) {
 	switch reflect.TypeOf(val).Kind() {
 	case reflect.String:
 		b := []byte(val.(string))
+		b = append(b,0)
 		return mm.Load2Mem(b, DString)
 	case reflect.Slice:
 		switch val.(type) {
