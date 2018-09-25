@@ -13,6 +13,8 @@ import json
 #step 3: Deploy the system contracts
 
 systemAccounts = []
+ecoballLogFile = 'ecoball.log'
+ecowalletLogFile = 'ecowallet.log'
 #execute shell command
 def run(shell_command):
     print('bootstrap.py:', shell_command)
@@ -37,7 +39,7 @@ def stepKillAll():
 #step start ecowallet
 def runWallet():
     run('rm -rf ' + os.path.abspath(args.wallet_dir))
-    background(args.ecowallet)
+    background(args.ecowallet + ' > ' + ecowalletLogFile)
     sleep(0.4)
     run(args.ecoclient + ' wallet create --name=default --password=default')
 
@@ -64,7 +66,7 @@ def stepStartEcowallet():
 
 #step start ecoball
 def runNode():
-    background(args.ecoball + " run")
+    background(args.ecoball + " run" + ' > ' + ecoballLogFile)
 
 def stepStartEcoball():
     runNode()
