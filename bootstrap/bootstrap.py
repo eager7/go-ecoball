@@ -84,7 +84,7 @@ commands = [
     ('k', 'kill',           stepKillAll,                True,    "Kill all ecoball and ecowallet processes"),
     ('w', 'ecowallet',      stepStartEcowallet,         True,    "Start ecowallet, create wallet, fill with keys"),
     ('b', 'ecoball',        stepStartEcoball,           True,    "Start ecoball node"),
-    ('a', 'account',        stepCreateSystemAccounts,   True,    "Create system accounts"),
+    ('s', 'account',        stepCreateSystemAccounts,   True,    "Create system accounts"),
     ('c', 'contracts',      stepInstallSystemContracts, True,    "Install system contracts"),
 ]
 
