@@ -89,6 +89,16 @@ parser.add_argument('--user-limit', metavar='', help="Max number of users. (0 = 
 parser.add_argument('--producer-limit', metavar='', help="Maximum number of producers. (0 = no limit)", type=int, default=0, dest='producer_limit')
 parser.add_argument('--max-user-keys', metavar='', help="Maximum user keys to import into wallet", type=int, default=10, dest='max_user_keys')
 parser.add_argument('--ecoball', metavar='', help="Path to ecoball binary", default='../build/ecoball')
+parser.add_argument('-a', '--all', action='store_true', help="Do everything marked with (*)")
+
+for (flag, command, function, inAll, help) in commands:
+    prefix = ''
+    if inAll: prefix += '*'
+    if prefix: help = '(' + prefix + ') ' + help
+    if flag:
+        parser.add_argument('-' + flag, '--' + command, action='store_true', help=help, dest=command)
+    else:
+        parser.add_argument('--' + command, action='store_true', help=help, dest=command)
 
 #parse Arguments
 args = parser.parse_args()
