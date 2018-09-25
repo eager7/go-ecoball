@@ -232,7 +232,6 @@ func (r *Renter) AddFile(fpath string, era int8) (string, error) {
 	//if !colState {
 	//	return "", errCheckColFailed
 	//}
-
 	var redundancy uint8
 	if era == -1 {
 		redundancy = r.conf.Redundancy

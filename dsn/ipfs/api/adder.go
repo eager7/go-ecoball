@@ -560,6 +560,7 @@ func (adder *EcoAdder)erasureCoding(node ipld.Node, file files.File) (ipld.Node,
 		dataPieces = int(size / int(chunker.DefaultBlockSize) + 1)
 	}
 	parityPieces := dataPieces * int(adder.redundancy)
+	log.Info("datapiece: ", dataPieces, "paritypiece: ", parityPieces)
 	erCoder, err := erasure.NewRSCode(dataPieces, parityPieces)
 	if err != nil {
 		return node, err
@@ -577,6 +578,7 @@ func (adder *EcoAdder)erasureCoding(node ipld.Node, file files.File) (ipld.Node,
 		}
 	}
 	erReader := bytes.NewReader(p)
+	log.Debug("after era, len: ", erReader.Size())
 	nd, err := importer.BuildDagFromReader(adder.dagService, chunker.DefaultSplitter(erReader))
 	if err != nil {
 		return node, err
