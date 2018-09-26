@@ -29,9 +29,11 @@ import (
 	"bytes"
 	"github.com/ecoball/go-ecoball/dsn/erasure"
 	importer "gx/ipfs/QmSaz8Qg77gGqvDvLKeSAY7ivDEnramSWF6T7TcRwFpHtP/go-unixfs/importer"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
 
 var log = logging.Logger("coreunix")
+var ecolog  = elog.NewLogger("dsn-api", elog.DebugLog)
 
 // how many bytes of progress to wait before sending a progress update message
 const progressReaderIncrement = 1024 * 256
@@ -552,6 +554,7 @@ func (adder *EcoAdder)erasureCoding(node ipld.Node, file files.File) (ipld.Node,
 	if err != nil {
 		return node, err
 	}
+	ecolog.Debug("add file: ", file.FullPath(), "size: ", len(b))
 	var dataPieces int
 	size := len(b)
 	if size % int(chunker.DefaultBlockSize) == 0 {
@@ -560,7 +563,7 @@ func (adder *EcoAdder)erasureCoding(node ipld.Node, file files.File) (ipld.Node,
 		dataPieces = int(size / int(chunker.DefaultBlockSize) + 1)
 	}
 	parityPieces := dataPieces * int(adder.redundancy)
-	log.Info("datapiece: ", dataPieces, "paritypiece: ", parityPieces)
+	ecolog.Info("datapiece: ", dataPieces, "paritypiece: ", parityPieces)
 	erCoder, err := erasure.NewRSCode(dataPieces, parityPieces)
 	if err != nil {
 		return node, err
@@ -569,7 +572,8 @@ func (adder *EcoAdder)erasureCoding(node ipld.Node, file files.File) (ipld.Node,
 	if err != nil {
 		return node, err
 	}
-	p := make([]byte, (dataPieces + parityPieces) * int(chunker.DefaultBlockSize))
+	ecolog.Debug("shard: ", len(shards), "per shard len", len(shards[0]))
+	p := make([]byte, len(shards) * len(shards[0]))
 	k := 0
 	for i := 0; i < dataPieces + parityPieces; i++ {
 		for _, v := range shards[i] {
@@ -578,13 +582,15 @@ func (adder *EcoAdder)erasureCoding(node ipld.Node, file files.File) (ipld.Node,
 		}
 	}
 	erReader := bytes.NewReader(p)
-	log.Debug("after era, len: ", erReader.Size())
+	ecolog.Debug("after era, len: ",len(p))
 	nd, err := importer.BuildDagFromReader(adder.dagService, chunker.DefaultSplitter(erReader))
 	if err != nil {
 		return node, err
 	}
 	pnode := node.(*dag.ProtoNode)
+	ecolog.Debug("old node: ", pnode.Cid().String(), "era node: ", nd.Cid().String())
 	pnode.AddNodeLink("erasure", nd)
+	ecolog.Debug("new node cid: ", pnode.Cid().String())
 	return pnode, nil
 }
 
