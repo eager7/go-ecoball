@@ -6,15 +6,15 @@ import sys
 import time
 import os
 import json
+import datetime
 
 #step 0: Kill all ecowallet ecoball processes
 #step 1: Start the wallet, import the private key of root, import the private key of the producers and users
-#step 2: Create system accounts
-#step 3: Deploy the system contracts
+#step 2: Start the ecoball
+#step 3: Create system accounts
+#step 4: Deploy the system contracts
 
 systemAccounts = []
-ecoballLogFile = 'ecoball.log'
-ecowalletLogFile = 'ecowallet.log'
 #execute shell command
 def run(shell_command):
     print('bootstrap.py:', shell_command)
@@ -39,7 +39,7 @@ def stepKillAll():
 #step start ecowallet
 def runWallet():
     run('rm -rf ' + os.path.abspath(args.wallet_dir))
-    background(args.ecowallet + ' > ' + ecowalletLogFile)
+    background(args.ecowallet + ' > ' + args.log_path + 'ecowallet' + datetime.datetime.now().strftime('%Y-%m-%d/%H:%M:%S') + '.log')
     sleep(0.4)
     run(args.ecoclient + ' wallet create --name=default --password=default')
 
@@ -66,7 +66,7 @@ def stepStartEcowallet():
 
 #step start ecoball
 def runNode():
-    background(args.ecoball + " run" + ' > ' + ecoballLogFile)
+    background(args.ecoball + " run" + ' > ' + args.log_path + 'ecoball' + datetime.datetime.now().strftime('%Y-%m-%d/%H:%M:%S') + '.log')
 
 def stepStartEcoball():
     runNode()
@@ -102,6 +102,7 @@ parser.add_argument('--producer-limit', metavar='', help="Maximum number of prod
 parser.add_argument('--max-user-keys', metavar='', help="Maximum user keys to import into wallet", type=int, default=10, dest='max_user_keys')
 parser.add_argument('--ecoball', metavar='', help="Path to ecoball binary", default='../build/ecoball')
 parser.add_argument('-a', '--all', action='store_true', help="Do everything marked with (*)")
+parser.add_argument('--log-dir', metavar='', help="Directory to log file", default='../build/log/', dest='log_dir')
 
 for (flag, command, function, inAll, help) in commands:
     prefix = ''
