@@ -98,7 +98,7 @@ void issue(char *to,int amount,char *token_id){
     ABA_db_put(to,balance_str);
     ABA_db_put(str,supply_str);
 	
-	inline_action("worker2", "transfer", "[\"worker1\", \"worker\", \"15\", \"xxx\"]", "active");
+	inline_action("worker2", "transfer", "[\"worker1\", \"worker\", \"15\", \"xxx\"]", "worker1", "active");
 	
     return ;
 }
@@ -118,6 +118,8 @@ void transfer(char *from,char *to,int amount,char *token_id){
       ABA_prints("The receiving account does not exist");
       return;
     }
+
+    require_auth(from);
 
     //get the account balance
     balance1_str = ABA_db_get(from);
