@@ -201,7 +201,7 @@ func setContract(c *cli.Context) error {
 	}
 
 	time := time.Now().UnixNano()
-	transaction, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex(contractName), chainId, "owner", types.VmWasm, description, data, abibyte, 0, time)
+	transaction, err := types.NewDeployContract(common.NameToIndex(contractName), common.NameToIndex(contractName), chainId, "owner", types.VmWasm, description, data, abibyte, 0, time)
 	if nil != err {
 		return err
 	}
