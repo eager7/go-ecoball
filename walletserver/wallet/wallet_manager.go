@@ -20,6 +20,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/ecoball/go-ecoball/client/common"
 	inner "github.com/ecoball/go-ecoball/common"
@@ -65,7 +68,9 @@ var (
 )
 
 func init() {
-	dir = "./wallet/"
+	rootDir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+	rootDir = strings.Replace(rootDir, "\\", "/", -1)
+	dir = path.Join(rootDir, "wallet/")
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dir, 0700); err != nil {
 			fmt.Println("could not create directory:", dir, err)
@@ -75,7 +80,7 @@ func init() {
 
 func Create(name string, password []byte) error {
 	//whether the wallet file exists
-	filename := dir + name
+	filename := path.Join(dir, name)
 	if common.FileExisted(filename) {
 		return errors.New("The file already exists")
 	}
@@ -117,7 +122,7 @@ func Create(name string, password []byte) error {
 打开钱包
 */
 func Open(name string, password []byte) error {
-	filename := dir + name
+	filename := path.Join(dir, name)
 	newWallet := &WalletImpl{
 		path:     filename,
 		lockflag: unlock,
