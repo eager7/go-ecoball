@@ -88,7 +88,7 @@ func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionD
 
 	invoke := &types.InvokeInfo{Method: actionSlice, Param: issueParameters}
 
-	actionNew, _ := types.NewSimpleAction(string(contractSlice), invoke)
+	actionNew, _ := types.NewSimpleAction(string(contractSlice), types.PermissionLevel{ws.action.ContractAccount, string(permSlice)}, invoke)
 
 	ws.context.InlineAction = append(ws.context.InlineAction, *actionNew)
 

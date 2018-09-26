@@ -237,5 +237,6 @@ func (ws *WasmService) RegisterApi() {
 	functions.Register("ABA_rand",ws.rand)
 	//inline action
 	functions.Register("inline_action", ws.inline_action)
-
+	// authorization
+	functions.Register("require_auth", ws.require_auth)
 }
