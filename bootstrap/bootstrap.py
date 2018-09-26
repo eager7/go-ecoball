@@ -116,6 +116,9 @@ for (flag, command, function, inAll, help) in commands:
 #parse Arguments
 args = parser.parse_args()
 
+if not os.path.exists(args.log_dir):
+    os.makedirs(args.log_dir)
+
 #load account
 with open('accounts.json') as f:
     a = json.load(f)
