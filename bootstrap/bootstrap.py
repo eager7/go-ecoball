@@ -39,7 +39,7 @@ def stepKillAll():
 #step start ecowallet
 def runWallet():
     run('rm -rf ' + os.path.abspath(args.wallet_dir))
-    background(args.ecowallet + ' > ' + args.log_dir + 'ecowallet' + datetime.datetime.now().strftime('%Y-%m-%d/%H:%M:%S') + '.log')
+    background(args.ecowallet + ' > ' + args.log_dir + 'ecowallet_' + datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S') + '.log')
     sleep(0.4)
     run(args.ecoclient + ' wallet create --name=default --password=default')
 
@@ -66,7 +66,7 @@ def stepStartEcowallet():
 
 #step start ecoball
 def runNode():
-    background(args.ecoball + " run" + ' > ' + args.log_dir + 'ecoball' + datetime.datetime.now().strftime('%Y-%m-%d/%H:%M:%S') + '.log')
+    background(args.ecoball + " run" + ' > ' + args.log_dir + 'ecoball_' + datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S') + '.log')
 
 def stepStartEcoball():
     runNode()
