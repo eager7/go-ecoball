@@ -40,7 +40,7 @@ func DsnGetFile(params []interface{})  *common.Response {
 	}
 
 
-	byteStr, err := dsn.GetFile(params[3].(string))
+	byteStr, err := dsn.CatFile(params[3].(string))
 	if err != nil {
 		return common.NewResponse(common.INVALID_PARAMS, "DsnGetFile faild")
 	}

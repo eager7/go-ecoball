@@ -12,6 +12,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common"
 	"io"
+	"io/ioutil"
+	"os"
 )
 
 type DsnConf struct {
@@ -71,8 +73,15 @@ func AddFile(file string, era int8) (string, error) {
 }
 
 func CatFile(cid string) (io.Reader, error) {
-	dsn.r.CatFile(cid)
-	return nil, nil
+	r,err := dsn.r.CatFile(cid)
+	if err != nil {
+		log.Error("cat ", cid, " failed")
+		return nil, nil
+	}
+
+	//d, err := ioutil.ReadAll(r)
+	//ioutil.WriteFile("/root/ecoball/t.toml", d, os.ModePerm)
+	return r, err
 }
 
 func PinToServer(cid string) error {
