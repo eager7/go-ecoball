@@ -256,31 +256,10 @@ func (nn *NetNode) broadcastLoop() {
 				log.Debug("broadCastCh receive msg:", message.MessageToStr[msg.Type()])
 				//TODO cache check
 				//node.netMsgCache.Add(msg.DataSum, msg.Size)
-				nn.broadcastMessage(msg)
+				nn.network.BroadcastMessage(msg)
 			}
 		}
 	}()
-}
-
-func (nn *NetNode) broadcastMessage(msg message.EcoBallNetMsg) {
-	// In case of network sharding, should send the message to the shard internal peers
-	peers := nn.connectedPeerIds()
-
-	err := nn.network.SendMsg2PeersWithId(peers, msg)
-	if err != nil {
-		log.Error("failed to send msg to network,", err)
-	}
-}
-
-func (nn *NetNode) connectedPeerIds() []peer.ID {
-	peers := []peer.ID{}
-	host := nn.network.Host()
-	conns := host.Network().Conns()
-	for _, c := range conns {
-		pid := c.RemotePeer()
-		peers = append(peers, pid)
-	}
-	return peers
 }
 
 func (nn *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {

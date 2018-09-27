@@ -12,8 +12,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common"
 	"io"
-	"io/ioutil"
-	"os"
 )
 
 type DsnConf struct {
