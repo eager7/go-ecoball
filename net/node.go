@@ -213,9 +213,9 @@ func New(parent context.Context) (*NetNode, error) {
 	return netNode, nil
 }
 
-func (node *NetNode) Start() error {
-	multiaddrs := make([]ma.Multiaddr, len(node.listen))
-	for idx, v := range node.listen {
+func (nn *NetNode) Start() error {
+	multiaddrs := make([]ma.Multiaddr, len(nn.listen))
+	for idx, v := range nn.listen {
 		addr, err := ma.NewMultiaddr(v)
 		if err != nil {
 			return err
@@ -224,7 +224,7 @@ func (node *NetNode) Start() error {
 		multiaddrs[idx] = addr
 	}
 
-	host := node.network.Host()
+	host := nn.network.Host()
 	if err := host.Network().Listen(multiaddrs...); err != nil {
 		host.Close()
 		return fmt.Errorf("error for listening,",err)
@@ -237,44 +237,44 @@ func (node *NetNode) Start() error {
 
 	log.Info("netnode listening on:", addrs)
 
-	node.network.Start()
+	nn.network.Start()
 
-	node.broadcastLoop()
+	nn.broadcastLoop()
 
 	return nil
 }
 
-func (node *NetNode) SendBroadcastMsg(msg message.EcoBallNetMsg) {
-	node.broadCastCh <- msg
+func (nn *NetNode) SendBroadcastMsg(msg message.EcoBallNetMsg) {
+	nn.broadCastCh <- msg
 }
 
-func (node *NetNode) broadcastLoop() {
+func (nn *NetNode) broadcastLoop() {
 	go func() {
 		for {
 			select {
-			case msg := <-node.broadCastCh:
+			case msg := <-nn.broadCastCh:
 				log.Debug("broadCastCh receive msg:", message.MessageToStr[msg.Type()])
 				//TODO cache check
 				//node.netMsgCache.Add(msg.DataSum, msg.Size)
-				node.broadcastMessage(msg)
+				nn.broadcastMessage(msg)
 			}
 		}
 	}()
 }
 
-func (node *NetNode) broadcastMessage(msg message.EcoBallNetMsg) {
+func (nn *NetNode) broadcastMessage(msg message.EcoBallNetMsg) {
 	// In case of network sharding, should send the message to the shard internal peers
-	peers := node.connectedPeerIds()
+	peers := nn.connectedPeerIds()
 
-	err := p2p.SendMsg2PeersWithId(peers, msg)
+	err := nn.network.SendMsg2PeersWithId(peers, msg)
 	if err != nil {
 		log.Error("failed to send msg to network,", err)
 	}
 }
 
-func (node *NetNode) connectedPeerIds() []peer.ID {
+func (nn *NetNode) connectedPeerIds() []peer.ID {
 	peers := []peer.ID{}
-	host := node.network.Host()
+	host := nn.network.Host()
 	conns := host.Network().Conns()
 	for _, c := range conns {
 		pid := c.RemotePeer()
@@ -283,14 +283,14 @@ func (node *NetNode) connectedPeerIds() []peer.ID {
 	return peers
 }
 
-func (bs *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
+func (nn *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
 	log.Debug("receive msg:", message.MessageToStr[incoming.Type()], "from ", p.Pretty())
 	if incoming.Type() > message.APP_MSG_MAX {
 		log.Error("receive a invalid message ", message.MessageToStr[incoming.Type()])
 		return
 	}
 
-	handler, ok := bs.handlers[incoming.Type()]
+	handler, ok := nn.handlers[incoming.Type()]
 	if ok {
 		err := handler(incoming.Data())
 		if err != nil {
@@ -307,31 +307,31 @@ func (bs *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming messa
 	}
 }
 
-func (bs *NetNode) ReceiveError(err error) {
+func (nn *NetNode) ReceiveError(err error) {
 	// TODO log the network error
 	// TODO bubble the network error up to the parent context/error logger
 }
 
-func (bs *NetNode) PeerConnected(p peer.ID) {
+func (nn *NetNode) PeerConnected(p peer.ID) {
 	// TOD
 }
 
-func (bs *NetNode) PeerDisconnected(p peer.ID) {
+func (nn *NetNode) PeerDisconnected(p peer.ID) {
 	// TOD
 }
 
-func (node *NetNode) SelfId() string {
-	return node.self.Pretty()
+func (nn *NetNode) SelfId() string {
+	return nn.self.Pretty()
 }
 
-func (node *NetNode) SelfRawId() peer.ID {
-	return node.self
+func (nn *NetNode) SelfRawId() peer.ID {
+	return nn.self
 }
 
-func (node *NetNode) Nbrs() []string {
+func (nn *NetNode) Nbrs() []string {
 	peers := []string{}
 
-	host := node.network.Host()
+	host := nn.network.Host()
 	conns := host.Network().Conns()
 	for _, c := range conns {
 		pid := c.RemotePeer()
@@ -340,12 +340,12 @@ func (node *NetNode) Nbrs() []string {
 	return peers
 }
 
-func (node *NetNode) SetActorPid(pid *actor.PID) {
-	node.actorId = pid
+func (nn *NetNode) SetActorPid(pid *actor.PID) {
+	nn.actorId = pid
 }
 
-func (node *NetNode) GetActorPid() *actor.PID {
-	return node.actorId
+func (nn *NetNode) GetActorPid() *actor.PID {
+	return nn.actorId
 }
 
 func SetChainId(id uint32) {

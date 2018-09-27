@@ -18,11 +18,11 @@ package p2p
 
 import (
 	"context"
-	pmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/QmZ383TySJVeZWzGnWui6pRcKyYZk9VkKTuW7tmKRWk5au/go-libp2p-routing"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
-	"gx/ipfs/QmXuucFcuvAWYAJfhHV2h4BYreHEAsLSsiquosiXeuduTN/go-libp2p-interface-connmgr"
+	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 )
 
 type EcoballNetwork interface {
@@ -31,22 +31,21 @@ type EcoballNetwork interface {
 	// SetDelegate registers the Reciver to handle messages received from the network.
 	SetDelegate(Receiver)
 
-	ConnectTo(context.Context, peer.ID) error
+	ClosePeer(peer.ID) error
 
 	Start()
 	Stop()
 
-	NewMessageSender(context.Context, peer.ID) (MessageSender, error)
-
-	ConnectionManager() ifconnmgr.ConnManager
-
+	CommAPI
 	routing.PeerRouting
 }
 
-type MessageSender interface {
-	SendMsg(context.Context, pmsg.EcoBallNetMsg) error
-	Close() error
-	Reset() error
+type CommAPI interface {
+	SendMsg2Peer(peerstore.PeerInfo, message.EcoBallNetMsg) error
+	SendMsgToPeers([]*peerstore.PeerInfo, message.EcoBallNetMsg) error
+	SendMsg2PeerWithId(peer.ID, message.EcoBallNetMsg) error
+	SendMsg2PeersWithId([]peer.ID, message.EcoBallNetMsg) error
+	BroadcastMessage(message.EcoBallNetMsg) error
 }
 
 // Implement Receiver to receive messages from the EcoBallNetwork
@@ -54,7 +53,7 @@ type Receiver interface {
 	ReceiveMessage(
 		ctx context.Context,
 		sender peer.ID,
-		incoming pmsg.EcoBallNetMsg)
+		incoming message.EcoBallNetMsg)
 
 	ReceiveError(error)
 
