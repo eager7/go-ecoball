@@ -30,6 +30,7 @@ const (
 	FcMethodAn = "reg_store"
 	FcMethodProof = "reg_proof"
 	FcMethodFile = "reg_file"
+	EraDataPiece = 10
 )
 func int64ToBytes(n int64) []byte {
 	var buf bytes.Buffer
