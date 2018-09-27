@@ -141,7 +141,8 @@ func StartRPCServer() (err error) {
 	
 	//dsn服务
 	httpServer.AddHandleFunc("DsnAddFile", commands.DsnAddFile)
-
+	httpServer.AddHandleFunc("DsnGetFile", commands.DsnGetFile)
+	
 	//listen port
 	err = http.ListenAndServe(":"+config.HttpLocalPort, nil)
 	if err != nil {
