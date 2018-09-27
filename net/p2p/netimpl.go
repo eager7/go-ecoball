@@ -62,7 +62,6 @@ func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
 	}
 	netImpl = &NetImpl{
 		ctx:          ctx,
-		shardID:      -1,
 		host:         host,
 		strmap:       make(map[peer.ID]*messageSender),
 		quitsendJb:   make(chan bool, 1),
@@ -103,7 +102,6 @@ func initRoutingTable(host host.Host) (table *kb.RoutingTable) {
 // NetMessage objects, into the ecoball network interface.
 type NetImpl struct {
 	ctx          context.Context
-	shardID      int32
 	host         host.Host
 
 	// inbound messages from the network are forwarded to the receiver
@@ -177,31 +175,8 @@ func (net *NetImpl) messageSenderToPeer(p pstore.PeerInfo) (*messageSender, erro
 	return ms, nil
 }
 
-func (net *NetImpl) SetShardID(sid int32) {
-	net.shardID = sid
-}
-
 func (net *NetImpl) SetDelegate(r Receiver) {
 	net.receiver = r
-}
-
-func (net *NetImpl) ClosePeer(p peer.ID) error {
-	conns := net.host.Network().ConnsToPeer(p)
-
-	var streams []inet.Stream
-	for _, conn := range conns {
-		streams = append(streams, conn.GetStreams()...)
-	}
-
-	net.strmlk.Lock()
-	defer  net.strmlk.Unlock()
-
-	for _, stream := range streams {
-		stream.Close()
-	}
-
-	delete(net.strmap, p)
-	return net.host.Network().ClosePeer(p)
 }
 
 func (net *NetImpl) FindPeer(ctx context.Context, id peer.ID) (pstore.PeerInfo, error) {
