@@ -17,15 +17,24 @@ var (
 				Name:   "dsnadd",
 				Usage:  "dsnadd file",
 				Action: dsnAddFile,
-				// Flags: []cli.Flag{
-				// 	cli.StringFlag{
-				// 		Name:  "creator, c",
-				// 		Usage: "creator name",
-				// 	},
+				Flags: []cli.Flag{
 				
-				// },
+					cli.StringFlag{
+						Name:  "add_-1, 1",
+						Usage: "add -1",
+						Value: "-1",
+					},
+				},
+
+			},
+			{
+				Name:   "dsnget",
+				Usage:  "dsnget file",
+				Action: dsnGetFile,
+	
 			},
 		},
+		
 		
 	}
 )
