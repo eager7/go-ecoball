@@ -120,7 +120,7 @@ func (p *Permission) checkAccountPermission(state *State, guest string, permissi
 		return nil
 	}
 
-	return errors.New(log, fmt.Sprintf("weight is not enough, accounts weight:%d", weightAcc))
+	return errors.New(log, fmt.Sprintf("%s@%s  weight is not enough, accounts weight:%d", guest, permission, weightAcc))
 }
 
 /**
@@ -241,11 +241,11 @@ func (a *Account) checkAccountPermission(state *State, guest string, permission 
 	if perm, ok := a.Permissions[permission]; !ok {
 		return errors.New(log, fmt.Sprintf("account %s has not %s permission of account:%s", guest, permission, a.Index.String()))
 	} else {
-		//if "" != perm.Parent {
-		//	if err := a.checkAccountPermission(state, perm.Parent); err == nil {
-		//		return nil
-		//	}
-		//}
+		if "" != perm.Parent {
+			if err := a.checkAccountPermission(state, guest, perm.Parent); err == nil {
+				return nil
+			}
+		}
 		if err := perm.checkAccountPermission(state, guest, permission); err != nil {
 			log.Error(fmt.Sprintf("account:%s", a.JsonString(false)))
 			return err

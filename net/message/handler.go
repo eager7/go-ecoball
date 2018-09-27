@@ -44,27 +44,6 @@ func HdBlkMsg(data []byte) error {
 	return nil
 }
 
-func HdGossipBlkReqMsg(data []byte) error {
-	blkReq := new(types.BlkReqMsg)
-	blkReq.Deserialize(data)
-	eactor.Send(0, eactor.ActorP2P, blkReq)
-	return nil
-}
-
-func HdGossipBlkAckMsg(data []byte) error {
-	blkAck := new(types.BlkAckMsg)
-	blkAck.Deserialize(data)
-	eactor.Send(0, eactor.ActorP2P, blkAck)
-	return nil
-}
-
-func HdGossipBlkAck2Msg(data []byte) error {
-	blkAck2 := new(types.BlkAck2Msg)
-	blkAck2.Deserialize(data)
-	eactor.Send(0, eactor.ActorP2P, blkAck2)
-	return nil
-}
-
 func HdSignPreMsg(data []byte) error {
 	signpre_receive := ababft.SignaturePreBlock{}
 	err := signpre_receive.Deserialize(data)

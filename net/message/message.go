@@ -28,9 +28,6 @@ import (
 const (
 	APP_MSG_TRN uint32 = iota
 	APP_MSG_BLK
-	APP_MSG_GOSSIP_PULL_BLK_REQ
-	APP_MSG_GOSSIP_PULL_BLK_ACK
-	APP_MSG_GOSSIP_PUSH_BLKS
 	APP_MSG_SIGNPRE
 	APP_MSG_BLKF
 	APP_MSG_SIGNBLKF
@@ -39,7 +36,6 @@ const (
 	APP_MSG_REQSYNSOLO
 	APP_MSG_BLKSYN
 	APP_MSG_TIMEOUT
-	APP_MSG_STORE_STAT
 
 	APP_MSG_SHARDING_PACKET
 	APP_MSG_CONSENSUS_PACKET
@@ -49,20 +45,12 @@ const (
 
 // Messages maps the name of a message to its type
 var Messages = map[string]uint32{
-	"gossip-pull-blk-req": APP_MSG_GOSSIP_PULL_BLK_REQ,
-	"gossip-pull-blk-ack": APP_MSG_GOSSIP_PULL_BLK_ACK,
-	"gossip-push-blk":     APP_MSG_GOSSIP_PUSH_BLKS,
-	"store-stat":          APP_MSG_STORE_STAT,
 	"block":               APP_MSG_BLKS,
 	"transaction":         APP_MSG_TRN,
 }
 
 // MessageToStr maps the numeric message type to its name
 var MessageToStr = map[uint32]string{
-	APP_MSG_GOSSIP_PULL_BLK_REQ: "gossip-pull-blk-req",
-	APP_MSG_GOSSIP_PULL_BLK_ACK: "gossip-pull-blk-ack",
-	APP_MSG_GOSSIP_PUSH_BLKS:    "gossip-push-blk",
-	APP_MSG_STORE_STAT:          "store-stat",
 	APP_MSG_BLKS:                "block",
 	APP_MSG_TRN:                 "transaction",
 }

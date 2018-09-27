@@ -437,15 +437,15 @@ func InvokeContract(ledger ledger.Ledger) {
 
 	time.Sleep(time.Second * 2)
 
-	//perm := state.NewPermission(state.Active, state.Owner, 1, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker"), Weight: 1, Permission: "active"}})
-	//param, err := json.Marshal(perm)
-	//errors.CheckErrorPanic(err)
-	//invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), root, config.ChainHash, state.Owner, "set_account", []string{"worker2", string(param)}, 0, time.Now().UnixNano())
-	//invoke.SetSignature(&config.Worker2)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	//time.Sleep(interval)
-	//
-	//time.Sleep(time.Second * 2)
+	perm := state.NewPermission(state.Active, state.Owner, 1, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker"), Weight: 1, Permission: "active"}})
+	param, err := json.Marshal(perm)
+	errors.CheckErrorPanic(err)
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), root, config.ChainHash, state.Owner, "set_account", []string{"worker1", string(param)}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
 
 
 	log.Warn("Start Invoke contract")
@@ -453,7 +453,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	path := os.Getenv("GOPATH")
 
 	// contract file1 data
-	file, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/inline_action.wasm", os.O_RDONLY, 0666)
+	file, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/contract/testToken/inline_action.wasm", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file inline_action.wasm failed")
 		return
@@ -467,7 +467,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	}
 
 	// abi file, common for contract file1 and file2
-	abifile, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/simple_token.abi", os.O_RDONLY, 0666)
+	abifile, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/contract/testToken/simple_token.abi", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file simple_token.abi failed")
 		return
@@ -481,7 +481,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	}
 
 	//contract file2 data
-	file2, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/abaToken/inline_action2.wasm", os.O_RDONLY, 0666)
+	file2, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/contract/testToken/inline_action2.wasm", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file inline_action2.wasm failed")
 		return

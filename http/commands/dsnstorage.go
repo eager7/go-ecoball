@@ -32,3 +32,19 @@ func DsnAddFile(params []interface{})  *common.Response {
 
 	return common.NewResponse(common.SUCCESS, str)
 }
+
+func DsnGetFile(params []interface{})  *common.Response {
+
+	if len(params) < 1 {
+		log.Error("invalid arguments")
+	}
+
+
+	byteStr, err := dsn.GetFile(params[3].(string))
+	if err != nil {
+		return common.NewResponse(common.INVALID_PARAMS, "DsnGetFile faild")
+	}
+	return common.NewResponse(common.SUCCESS, byteStr)
+
+
+}
