@@ -33,7 +33,7 @@ func DsnAddFile(params []interface{})  *common.Response {
 	return common.NewResponse(common.SUCCESS, str)
 }
 
-func DsnGetFile(params []interface{})  *common.Response {
+func DsnCatFile(params []interface{})  *common.Response {
 
 	if len(params) < 1 {
 		log.Error("invalid arguments")

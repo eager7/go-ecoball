@@ -28,8 +28,8 @@ var (
 
 			},
 			{
-				Name:   "dsnget",
-				Usage:  "dsnget file",
+				Name:   "dsncat",
+				Usage:  "dsncat file",
 				Action: dsnGetFile,
 	
 			},
@@ -59,7 +59,7 @@ func dsnAddFile(ctx *cli.Context) error {
 func dsnGetFile(ctx *cli.Context) error {
 	
 	//dsn.AddFile(os.Args[3],0)
-	resp, err := rpc.NodeCall("DsnGetFile", []interface{}{os.Args[0],os.Args[1],os.Args[2],os.Args[3]})
+	resp, err := rpc.NodeCall("DsnCatFile", []interface{}{os.Args[0],os.Args[1],os.Args[2],os.Args[3]})
 	if nil != resp["result"] {
 		switch resp["result"].(type) {
 		case string:
