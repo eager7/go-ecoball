@@ -118,7 +118,7 @@ func IpfsAddEraFile(ctx context.Context, fpath string, era uint8) (string, error
 
 func IpfsCatErafile(ctx context.Context, cid string) (io.Reader, error) {
 	cater := NewEraCater(ctx)
-	return cater.EraDecoding(cid)
+	return cater.CatFile(cid)
 }
 
 func IpfsAbaBlkPut(ctx context.Context, blk []byte) (string, error) {

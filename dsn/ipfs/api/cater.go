@@ -37,10 +37,10 @@ func (cat *EraCater) CatFile(cid string) (io.Reader, error) {
 		return r, nil
 	}
 
-	return cat.EraDecoding(cid)
+	return cat.eraDecoding(cid)
 }
 
-func (cat *EraCater)EraDecoding(cid string) (io.Reader, error) {
+func (cat *EraCater)eraDecoding(cid string) (io.Reader, error) {
 	meta, err := Metadata(cat.ctx, cid)
 	if err != nil {
 		return nil, err
