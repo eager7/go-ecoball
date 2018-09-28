@@ -20,6 +20,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
+	"io"
 )
 
 var (
@@ -246,9 +247,8 @@ func (r *Renter) AddFile(fpath string, era int8) (string, error) {
 	return cid, nil
 }
 
-func (r *Renter) GetFile(cid string) error {
-	//TODO
-	return nil
+func (r *Renter) CatFile(cid string) (io.Reader, error) {
+	return api.IpfsCatErafile(r.ctx, cid)
 }
 
 func (r *Renter) Files() []fileInfo {

@@ -18,11 +18,10 @@ package p2p
 
 import (
 	"context"
-	pmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/QmZ383TySJVeZWzGnWui6pRcKyYZk9VkKTuW7tmKRWk5au/go-libp2p-routing"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
-	"gx/ipfs/QmXuucFcuvAWYAJfhHV2h4BYreHEAsLSsiquosiXeuduTN/go-libp2p-interface-connmgr"
 )
 
 type EcoballNetwork interface {
@@ -31,22 +30,29 @@ type EcoballNetwork interface {
 	// SetDelegate registers the Reciver to handle messages received from the network.
 	SetDelegate(Receiver)
 
-	ConnectTo(context.Context, peer.ID) error
-
 	Start()
 	Stop()
 
-	NewMessageSender(context.Context, peer.ID) (MessageSender, error)
-
-	ConnectionManager() ifconnmgr.ConnManager
-
+	CommAPI
 	routing.PeerRouting
 }
 
-type MessageSender interface {
-	SendMsg(context.Context, pmsg.EcoBallNetMsg) error
-	Close() error
-	Reset() error
+type CommAPI interface {
+	//addrInfo example: ipv4:"/ip4/192.168.1.2/tcp/1234", ipv6:"/ip6/::/tcp/1234"
+	ConnectToPeer(addrInfo string, pubKey []byte, isPermanent bool) error
+	ClosePeer(pubKey []byte) error
+
+	//Send a message to the peer with the ip/port/pubkey info
+	//addrInfo example: ipv4:"/ip4/192.168.1.2/tcp/1234", ipv6:"/ip6/::/tcp/1234"
+	SendMsgToPeer(addrInfo string, pubKey []byte, msg message.EcoBallNetMsg) error
+
+	/*Send a message to a connected peer*/
+	SendMsgToPeerWithId(peer.ID, message.EcoBallNetMsg) error
+	/*Send a message to some connected peers*/
+	SendMsgToPeersWithId([]peer.ID, message.EcoBallNetMsg) error
+
+	/*Broadcast message to the connected peers*/
+	BroadcastMessage(message.EcoBallNetMsg) error
 }
 
 // Implement Receiver to receive messages from the EcoBallNetwork
@@ -54,7 +60,7 @@ type Receiver interface {
 	ReceiveMessage(
 		ctx context.Context,
 		sender peer.ID,
-		incoming pmsg.EcoBallNetMsg)
+		incoming message.EcoBallNetMsg)
 
 	ReceiveError(error)
 
