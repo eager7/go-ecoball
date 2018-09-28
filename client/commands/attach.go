@@ -32,12 +32,12 @@ var (
 		Category: "Attach",
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:  "ip",
+				Name:  "ip, i",
 				Usage: "node's ip address",
 				Value: "localhost",
 			},
 			cli.StringFlag{
-				Name:  "port",
+				Name:  "port, p",
 				Usage: "node's RPC port",
 				Value: "20678",
 			},
