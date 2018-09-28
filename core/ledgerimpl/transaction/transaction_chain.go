@@ -36,6 +36,7 @@ import (
 	"time"
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
+	dsnstore "github.com/ecoball/go-ecoball/dsn/block"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -73,7 +74,11 @@ type ChainTx struct {
 
 func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {
 	c = &ChainTx{BlockMap: make(map[common.Hash]BlockCache, 1), ledger: ledger}
-	c.BlockStore, err = store.NewLevelDBStore(path+config.StringBlock, 0, 0)
+	if config.DsnStorage {
+		c.BlockStore, err = dsnstore.NewDsnStore(path+config.StringBlock)
+	} else {
+		c.BlockStore, err = store.NewLevelDBStore(path+config.StringBlock, 0, 0)
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -13,11 +13,12 @@ type DsnStore struct {
 	ctx      context.Context
 }
 
-func NewDsnStore(ctx context.Context, path string) (store.Storage, error) {
+func NewDsnStore(path string) (store.Storage, error) {
 	db, err := store.NewBlockStore(path)
 	if err != nil {
 		return nil, err
 	}
+	ctx := context.Background()
 	return &DsnStore{
 		ldb: db,
 		ctx:ctx,

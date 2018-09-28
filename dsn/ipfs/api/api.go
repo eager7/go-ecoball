@@ -81,7 +81,6 @@ func IpfsAddEraFile(ctx context.Context, fpath string, era uint8) (string, error
 	if err != nil {
 		return "", err
 	}
-
 	var fm EraMetaData
 	if era > 0 {
 		if stat.Size() < common.EraDataPiece * chunker.DefaultBlockSize {
@@ -89,31 +88,48 @@ func IpfsAddEraFile(ctx context.Context, fpath string, era uint8) (string, error
 		} else {
 			fm.PieceSize = uint64(chunker.DefaultBlockSize)
 		}
-	}
-	if stat.Size() < common.EraDataPiece * chunker.DefaultBlockSize {
-		adder.Chunker = fmt.Sprintf("size-%d", fm.PieceSize)
+		if stat.Size() < common.EraDataPiece * chunker.DefaultBlockSize {
+			adder.Chunker = fmt.Sprintf("size-%d", fm.PieceSize)
+		}
 	}
 	af, err := files.NewSerialFile(path.Base(fpath), fpath, false, stat)
 	if err != nil {
 		return "", err
 	}
-
-	adder.AddFile(af)
-	fileRoot, err := adder.Finalize()
-	adder.PinRoot()
-
-	fm.FileSize = uint64(stat.Size())
-	fileSize := int(fm.FileSize)
-	if fileSize % int(fm.PieceSize) == 0 {
-		fm.DataPiece = uint64(fileSize / int(fm.PieceSize))
-	} else {
-		fm.DataPiece = uint64(fileSize / int(fm.PieceSize) + 1)
+	err = adder.AddFile(af)
+	if err != nil {
+		ecolog.Error(err.Error())
+		return "", nil
 	}
-	fm.ParityPiece = fm.DataPiece * uint64(era)
+	fileRoot, err := adder.Finalize()
+	if err != nil {
+		ecolog.Error(err.Error())
+		return "", nil
+	}
+	err = adder.PinRoot()
+	if err != nil {
+		ecolog.Error(err.Error())
+		return "", nil
+	}
 
-	eraRoot, err := adder.EraEnCoding(af, fm)
-
-	return AddMetadataTo(ctx, fileRoot, eraRoot, &fm)
+	if era >0 {
+		fm.FileSize = uint64(stat.Size())
+		fileSize := int(fm.FileSize)
+		if fileSize % int(fm.PieceSize) == 0 {
+			fm.DataPiece = uint64(fileSize / int(fm.PieceSize))
+		} else {
+			fm.DataPiece = uint64(fileSize / int(fm.PieceSize) + 1)
+		}
+		fm.ParityPiece = fm.DataPiece * uint64(era)
+		ecolog.Debug("adder chunker ", adder.Chunker, "era ", era)
+		eraRoot, err := adder.EraEnCoding(af, fm)
+		if err != nil {
+			ecolog.Error(err.Error())
+			return "", nil
+		}
+		return AddMetadataTo(ctx, fileRoot, eraRoot, &fm)
+	}
+	return fileRoot.Cid().String(), nil
 }
 
 func IpfsCatErafile(ctx context.Context, cid string) (io.Reader, error) {
