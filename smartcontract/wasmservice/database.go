@@ -4,39 +4,41 @@ import(
 	"github.com/ecoball/go-ecoball/vm/wasmvm/exec"
 )
 
-//for c api: int db_put(char* key, char *value)
-func(ws *WasmService)db_put(proc *exec.Process, key int32, value int32 )int32{
-	k_msg, err := proc.VMGetData(int(key))
+//for c api: int db_put(char* key, uint32 k_len, char *value, uint32 v_len)
+func(ws *WasmService)db_put(proc *exec.Process, key, k_len, value, v_len int)int32{
+	var k_msg, v_msg []byte
+	err := proc.ReadAt(k_msg, key, k_len)
 	if err != nil{
 		return -1
 	}
-	v_msg, err := proc.VMGetData(int(value))
+	err = proc.ReadAt(v_msg, value, v_len)
 	if err != nil{
 		return -1
 	}
-	if(len(k_msg) == 0 || len(v_msg) == 0){
+	err = ws.state.StoreSet(ws.action.ContractAccount,k_msg,v_msg)
+	if err != nil{
 		return -1
 	}
-	ws.state.StoreSet(ws.action.ContractAccount,k_msg,v_msg)
 	return 0
 }
 
-//for c api:char *db_get(char *key)
-func(ws *WasmService)db_get(proc *exec.Process, key int32)int32{
-	k_msg, err := proc.VMGetData(int(key))
+//for c api:char *db_get(char* key, uint32 k_len, char *value, uint32 v_len)
+func(ws *WasmService)db_get(proc *exec.Process, key, k_len, value, v_len int)int32{
+	var k_msg []byte
+	err := proc.ReadAt(k_msg, key, k_len)
 	if err != nil{
 		return -1
 	}
-	value,err := ws.state.StoreGet(ws.action.ContractAccount,k_msg)
+	v_msg,err := ws.state.StoreGet(ws.action.ContractAccount,k_msg)
 	if err != nil{
 		return -1
 	}
-	if(len(value) == 0){
-		return -1
+	if v_len > len(v_msg){
+		v_len = len(v_msg)
 	}
-	addr,err := proc.VMSetBlock(value)
+	err = proc.WriteAt(v_msg[:], value, v_len)
 	if err != nil{
 		return -1
 	}
-	return int32(addr)
+	return 0
 }

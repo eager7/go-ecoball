@@ -9,16 +9,13 @@ import(
 
 //C API :int sha256(char *data, uint32 len, char *hash )
 func (ws *WasmService) sha256(proc *exec.Process, data int32, length int32, hash int32) int32{
-	msg, err := proc.VMGetData(int(data))
+	var msg []byte
+	err := proc.ReadAt(msg,int(data), int(length))
 	if err != nil{
 		return -1
 	}
-	msglen := len(msg)
-	if length > int32(msglen){
-		length = int32(msglen)
-	}
-	temp := sha256.Sum256(msg[:length])
-	_, err = proc.VMSetData(int(hash), temp[:])
+	temp := sha256.Sum256(msg)
+	err = proc.WriteAt(temp[:], int(hash), 32)
 	if err != nil{
 		return -1
 	}
@@ -27,16 +24,13 @@ func (ws *WasmService) sha256(proc *exec.Process, data int32, length int32, hash
 
 //C API :int sha512(char *data, uint32 len, char *hash )
 func (ws *WasmService) sha512(proc *exec.Process, data int32, length int32, hash int32) int32{
-	msg, err := proc.VMGetData(int(data))
+	var msg []byte
+	err := proc.ReadAt(msg,int(data), int(length))
 	if err != nil{
 		return -1
 	}
-	msglen := len(msg)
-	if length > int32(msglen){
-		length = int32(msglen)
-	}
-	temp := sha512.Sum512(msg[:length])
-	_, err = proc.VMSetData(int(hash), temp[:])
+	temp := sha512.Sum512(msg)
+	err = proc.WriteAt(temp[:], int(hash), 64)
 	if err != nil{
 		return -1
 	}
@@ -48,3 +42,4 @@ func (ws *WasmService) ripemd160(proc *exec.Process, p int32) int32 {
 
 	return 0
 }
+
