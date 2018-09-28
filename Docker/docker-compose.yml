@@ -1,19 +1,21 @@
-version: "1"
+version: "3"
 
 services:
   builder:
     build:
        context: ./
-    dockerfile: Dockerfile
+       dockerfile: Dockerfile
 
   ecoball:
     build:
       context: ./
-    dockerfile: Dockerfile
+      dockerfile: Dockerfile
     command: /root/go/src/github.com/ecoball/go-ecoball/ecoball run
     hostname: ecoball
 
   ecowallet:
-    image: eosio/eos
+    build:
+      context: ./
+      dockerfile: Dockerfile
     command: /root/go/src/github.com/ecoball/go-ecoball/ecowallet
     hostname: ecowallet
