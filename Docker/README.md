@@ -89,3 +89,9 @@ docker rm 容器id
 ```
 docker rmi 镜像id (先删除依赖这个镜像的所有容器)
 ```
+
+
+##docker-compose
+```
+sudo docker-compose up
+```
