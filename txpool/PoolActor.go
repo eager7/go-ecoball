@@ -26,6 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"sync"
 	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
 
@@ -33,18 +34,22 @@ type PoolActor struct {
 	txPool *TxPool
 
 	wg     sync.WaitGroup
-	worker map[string]Worker
+	//worker map[string]Worker
+	worker *Worker
 }
 
 func NewTxPoolActor(pool *TxPool, n uint8) (pid *actor.PID, err error) {
+	worker := NewWorker(0, ledger.L)
 	props := actor.FromProducer(func() actor.Actor {
-		return &PoolActor{txPool: pool}
+		return &PoolActor{txPool: pool, worker: worker}
 	})
 
 	if pid, err = actor.SpawnNamed(props, "TxPoolActor"); nil != err {
 		return nil, err
 	}
 	event.RegisterActor(event.ActorTxPool, pid)
+
+	//go worker.Start()
 	return
 }
 
@@ -92,6 +97,8 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
 		log.Warn("broadcast transaction failed:" + tx.Hash.HexString())
 	}
+
+	//ctx.Sender().Request(cpu, ctx.Self())
 
 	return nil
 }

@@ -40,7 +40,8 @@ const (
 
 var (
 	historyFilePath = filepath.Join(os.TempDir(), ".ecoclient_history")
-	commandName     = []string{"contract", "transfer", "wallet", "get", "attach", "storage"}
+	commandName     = []string{"storage"}
+	commandMap      = make(map[string][]string)
 )
 
 func newClientApp() *cli.App {
@@ -93,6 +94,17 @@ func main() {
 	//client
 	app := newClientApp()
 
+	//Collect command
+	for _, command := range app.Commands {
+		commandName = append(commandName, command.Name)
+		commandMap[command.Name] = []string{}
+		if nil != command.Subcommands && 0 != len(command.Subcommands) {
+			for _, subCommand := range command.Subcommands {
+				commandMap[command.Name] = append(commandMap[command.Name], subCommand.Name)
+			}
+		}
+	}
+
 	//console
 	app.After = func(c *cli.Context) error {
 		var err error
@@ -133,6 +145,29 @@ func newConsole() error {
 				c = append(c, n)
 			}
 		}
+
+		subLineTemp := strings.Fields(line)
+		subLine := make([]string, 0, len(subLineTemp))
+		for _, oneTemp := range subLineTemp {
+			one := strings.Trim(oneTemp, " ")
+			if "" != one {
+				subLine = append(subLine, one)
+			}
+		}
+		if 2 == len(subLine) {
+			for command, subCommand := range commandMap {
+				if strings.ToLower(subLine[0]) == command {
+					for _, onecommand := range subCommand {
+						if strings.HasPrefix(onecommand, strings.ToLower(subLine[1])) {
+							subLine[1] = onecommand
+							realLine := strings.Join(subLine, " ")
+							c = append(c, realLine)
+						}
+					}
+				}
+			}
+		}
+
 		return
 	})
 

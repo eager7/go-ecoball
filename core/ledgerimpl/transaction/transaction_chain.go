@@ -36,6 +36,7 @@ import (
 	"time"
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
+	"encoding/json"
 	dsnstore "github.com/ecoball/go-ecoball/dsn/block"
 )
 
@@ -564,6 +565,8 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		if err != nil {
 			return nil, 0, 0, err
 		}
+		js, _ := json.Marshal(trxContext.Trace)
+		fmt.Println("json format: ", string(js))
 	default:
 		return nil, 0, 0, errors.New(log, "the transaction's type error")
 	}
