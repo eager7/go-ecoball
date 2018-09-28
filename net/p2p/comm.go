@@ -23,18 +23,62 @@ import (
 	"github.com/ecoball/go-ecoball/net/message"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 )
 
 const (
 	networkError = "network is not ready"
 )
 
-func SendMsg2Peer(peer peerstore.PeerInfo, msg message.EcoBallNetMsg) error {
-	if netImpl == nil {
-		return fmt.Errorf(networkError)
+func (net *NetImpl)ConnectToPeer(addrInfo string, pubKey []byte, isPermanent bool) error {
+	pi, err := net.constructPeerInfo(addrInfo, pubKey)
+	if err != nil {
+		return err
 	}
 
-	if addr := netImpl.host.Peerstore().Addrs(peer.ID); len(addr) == 0 {
+	if isPermanent {
+		net.host.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.PermanentAddrTTL)
+	}
+
+	if err := net.host.Connect(net.ctx, pi); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (net *NetImpl)ClosePeer(pubKey []byte) error {
+	id, err := peer.IDFromBytes(pubKey)
+	if err != nil {
+		return err
+	}
+
+	conns := net.host.Network().ConnsToPeer(id)
+
+	var streams []inet.Stream
+	for _, conn := range conns {
+		streams = append(streams, conn.GetStreams()...)
+	}
+
+	net.strmlk.Lock()
+	defer  net.strmlk.Unlock()
+
+	for _, stream := range streams {
+		stream.Close()
+	}
+
+	delete(net.strmap, id)
+	return net.host.Network().ClosePeer(id)
+}
+
+func (net *NetImpl)SendMsgToPeer(addrInfo string, pubKey []byte, msg message.EcoBallNetMsg) error {
+	peer, err := net.constructPeerInfo(addrInfo, pubKey)
+	if err != nil {
+		return err
+	}
+
+	if addr := net.host.Peerstore().Addrs(peer.ID); len(addr) == 0 {
 		return fmt.Errorf("connection have not created for %s", peer.ID.Pretty())
 	}
 
@@ -42,31 +86,13 @@ func SendMsg2Peer(peer peerstore.PeerInfo, msg message.EcoBallNetMsg) error {
 		[]*peerstore.PeerInfo{&peer},
 		msg,
 	}
-	netImpl.SendMsgJob(sendJob)
+	net.SendMsgJob(sendJob)
 
 	return nil
 }
 
-func SendMsgToPeers (peers []*peerstore.PeerInfo, msg message.EcoBallNetMsg) error {
-	if netImpl == nil {
-		return fmt.Errorf(networkError)
-	}
-
-	sendJob := &message.SendMsgJob{
-		peers,
-		msg,
-	}
-	netImpl.SendMsgJob(sendJob)
-
-	return nil
-}
-
-
-func SendMsg2RandomPeers(peerCounts int, msg message.EcoBallNetMsg) error {
-	if netImpl == nil {
-		return fmt.Errorf(networkError)
-	}
-	peers := netImpl.selectRandomPeers(peerCounts)
+func (net *NetImpl)sendMsgToRandomPeers(peerCounts int, msg message.EcoBallNetMsg) error {
+	peers := net.selectRandomPeers(peerCounts)
 	if len(peers) == 0 {
 		return errors.New(log,"failed to select random peers")
 	}
@@ -78,30 +104,23 @@ func SendMsg2RandomPeers(peerCounts int, msg message.EcoBallNetMsg) error {
 		peerInfo,
 		msg,
 	}
-	netImpl.SendMsgJob(sendJob)
+	net.SendMsgJob(sendJob)
 
 	return nil
 }
 
-func SendMsg2PeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
-	if netImpl == nil {
-		return fmt.Errorf(networkError)
-	}
-
+func (net *NetImpl)SendMsgToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
 	peer := &peerstore.PeerInfo{ID:id}
 	sendJob := &message.SendMsgJob{
 		[]*peerstore.PeerInfo{peer},
 		msg,
 	}
-	netImpl.SendMsgJob(sendJob)
+	net.SendMsgJob(sendJob)
 
 	return nil
 }
 
-func SendMsg2PeersWithId (pid []peer.ID, msg message.EcoBallNetMsg) error {
-	if netImpl == nil {
-		return fmt.Errorf(networkError)
-	}
+func (net *NetImpl)SendMsgToPeersWithId(pid []peer.ID, msg message.EcoBallNetMsg) error {
 	peers := []*peerstore.PeerInfo{}
 	for _, id := range pid {
 		peers = append(peers, &peerstore.PeerInfo{ID:id})
@@ -111,18 +130,14 @@ func SendMsg2PeersWithId (pid []peer.ID, msg message.EcoBallNetMsg) error {
 		peers,
 		msg,
 	}
-	netImpl.SendMsgJob(sendJob)
+	net.SendMsgJob(sendJob)
 
 	return nil
 }
 
-func BroadcastMessage(msg message.EcoBallNetMsg) error {
-	if netImpl == nil {
-		return fmt.Errorf(networkError)
-	}
-
+func (net *NetImpl)BroadcastMessage(msg message.EcoBallNetMsg) error {
 	peers := []*peerstore.PeerInfo{}
-	conns := netImpl.host.Network().Conns()
+	conns := net.host.Network().Conns()
 	for _, c := range conns {
 		pid := c.RemotePeer()
 		peers = append(peers, &peerstore.PeerInfo{ID:pid})
@@ -132,7 +147,22 @@ func BroadcastMessage(msg message.EcoBallNetMsg) error {
 		peers,
 		msg,
 	}
-	netImpl.SendMsgJob(sendJob)
+	net.SendMsgJob(sendJob)
 
 	return nil
+}
+
+func (net *NetImpl)constructPeerInfo(addrInfo string, pubKey []byte) (peerstore.PeerInfo, error) {
+	pma, err := ma.NewMultiaddr(addrInfo)
+	if err != nil {
+		return peerstore.PeerInfo{}, err
+	}
+	id, err := peer.IDFromBytes(pubKey)
+	if err != nil {
+		return peerstore.PeerInfo{}, err
+	}
+
+	peer := peerstore.PeerInfo{id, []ma.Multiaddr{pma}}
+
+	return peer, nil
 }

@@ -211,30 +211,19 @@ func (ws *WasmService) RegisterApi() {
 	functions.Register("ABA_printsf", ws.printsf)
 	functions.Register("ABA_printdf", ws.printdf)
 	//blockchain
-	functions.Register("ABA_account_contain",ws.account_contain)
+	functions.Register("ABA_is_account",ws.is_account)
 	functions.Register("ABA_block_GetTime",ws.block_GetTime)
-	//memory
-	functions.Register("ABA_malloc", ws.malloc)
-	functions.Register("ABA_len",    ws.len)
-	functions.Register("ABA_strlen", ws.strlen)
-	functions.Register("ABA_strcmp", ws.strcmp)
-	functions.Register("ABA_memcpy", ws.memcpy)
-	functions.Register("ABA_memset", ws.memset)
 	//crypto
 	functions.Register("ABA_sha256", ws.sha256)
 	functions.Register("ABA_sha512", ws.sha512)
+	//system
+	functions.Register("ABA_assert", ws.assert)
+	functions.Register("ABA_exit", ws.exit)
 	//runtime
 	functions.Register("ABA_read_param", ws.read_param)
 	//db
 	functions.Register("ABA_db_put",ws.db_put)
 	functions.Register("ABA_db_get",ws.db_get)
-	//encode
-	functions.Register("ABA_atoi",  ws.atoi)
-	functions.Register("ABA_atoi64",ws.atoi64)
-	functions.Register("ABA_itoa",  ws.itoa)
-	functions.Register("ABA_i64toa",ws.i64toa)
-	//rand
-	functions.Register("ABA_rand",ws.rand)
 	//inline action
 	functions.Register("inline_action", ws.inline_action)
 	// authorization

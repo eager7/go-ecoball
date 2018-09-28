@@ -28,10 +28,10 @@ import (
 
 )
 
-type netNotifiee impl
+type netNotifiee NetImpl
 
-func (nn *netNotifiee) impl() *impl {
-	return (*impl)(nn)
+func (nn *netNotifiee) impl() *NetImpl {
+	return (*NetImpl)(nn)
 }
 
 func (nn *netNotifiee) Connected(n inet.Network, v inet.Conn) {

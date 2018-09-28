@@ -42,7 +42,7 @@ const (
 	bootStrapTimeOut   = bootStrapInterval / 3
 )
 
-func (bsnet *impl)Bootstrap(bsAddress []string) (io.Closer){
+func (net *NetImpl)bootstrap(bsAddress []string) (io.Closer){
 	bsPeers, err := cfg.ParseBootstrapPeers(bsAddress)
 	if err != nil {
 		log.Error("failed to parse bootstrap address", err)
@@ -53,7 +53,7 @@ func (bsnet *impl)Bootstrap(bsAddress []string) (io.Closer){
 		return nil
 	}
 
-	connected := bsnet.host.Network().Peers()
+	connected := net.host.Network().Peers()
 	if len(connected) >= minPeerThreshold {
 		log.Debug("connected to the network,bootstrap skipped")
 		return nil
@@ -64,8 +64,8 @@ func (bsnet *impl)Bootstrap(bsAddress []string) (io.Closer){
 	periodic := func(worker goprocess.Process) {
 		ctx := procctx.OnClosingContext(worker)
 
-		if err := bsnet.bootstrapConnect(ctx, bsPeers, numToDial); err != nil {
-			log.Error(fmt.Sprintf("%s bootstrap error: %s", bsnet.host.ID(), err))
+		if err := net.bootstrapConnect(ctx, bsPeers, numToDial); err != nil {
+			log.Error(fmt.Sprintf("%s bootstrap error: %s", net.host.ID(), err))
 		}
 		<-doneWithRound
 	}
@@ -79,13 +79,13 @@ func (bsnet *impl)Bootstrap(bsAddress []string) (io.Closer){
 	return proc
 }
 
-func (bsnet *impl)bootstrapConnect(ctx context.Context, bsPeers []cfg.BootstrapPeer, numToDial int) error {
+func (net *NetImpl)bootstrapConnect(ctx context.Context, bsPeers []cfg.BootstrapPeer, numToDial int) error {
 	ctx, cancel := context.WithTimeout(ctx, bootStrapTimeOut)
 	defer cancel()
 
 	var notConnected []pstore.PeerInfo
 	for _, p := range bsPeers {
-		if bsnet.host.Network().Connectedness(p.ID()) != inet.Connected {
+		if net.host.Network().Connectedness(p.ID()) != inet.Connected {
 			protoNum := len(p.Multiaddr().Protocols())
 			sep := "/" + p.Multiaddr().Protocols()[protoNum-1].Name
 			addr, _ := ma.NewMultiaddr(strings.Split(p.String(), sep)[0])
@@ -106,10 +106,10 @@ func (bsnet *impl)bootstrapConnect(ctx context.Context, bsPeers []cfg.BootstrapP
 		wg.Add(1)
 		go func(p pstore.PeerInfo) {
 			defer wg.Done()
-			log.Debug(fmt.Sprintf("%s bootstrapping to %s", bsnet.host.ID(), p.ID))
+			log.Debug(fmt.Sprintf("%s bootstrapping to %s", net.host.ID(), p.ID))
 
 			//bsnet.host.Peerstore().AddAddrs(p.ID, p.Addrs, pstore.PermanentAddrTTL)
-			if err := bsnet.host.Connect(netImpl.ctx, p); err != nil {
+			if err := net.host.Connect(net.ctx, p); err != nil {
 				log.Error(fmt.Sprintf("failed to bootstrap with %v: %s", p.ID, err))
 				errs <- err
 				return

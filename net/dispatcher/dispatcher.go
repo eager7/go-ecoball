@@ -18,6 +18,7 @@ package dispatcher
 
 import (
 	"fmt"
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/message"
 	"gx/ipfs/QmdbxjQWogRCHRaxhhGnYdT1oQJzL9GdqSKzCdqWr85AP2/pubsub"
 )
@@ -28,6 +29,7 @@ const (
 )
 
 var (
+	log = elog.NewLogger("disp", elog.DebugLog)
 	dispatcher *Dispatcher
 )
 
@@ -44,12 +46,20 @@ type Dispatcher struct {
 }
 
 func (ds *Dispatcher) publish(msg message.EcoBallNetMsg) {
+	if message.MessageToStr[msg.Type()] == "" {
+		log.Error("failed to find message type ", msg.Type())
+		return
+	}
 	ds.ps.Pub(msg, message.MessageToStr[msg.Type()])
 }
 
 func (ds *Dispatcher) subscribe(msgs ...uint32) <-chan interface{} {
 	var msgstr []string
 	for _, msg := range msgs {
+		if message.MessageToStr[msg] == "" {
+			log.Error("failed to find message type ", msg)
+			continue
+		}
 		msgstr = append(msgstr, message.MessageToStr[msg])
 	}
 	if len(msgstr) > 0 {
@@ -62,6 +72,10 @@ func (ds *Dispatcher) subscribe(msgs ...uint32) <-chan interface{} {
 func (ds *Dispatcher) unsubscribe(chn chan interface{}, msgType ...uint32) {
 	var msgstr []string
 	for _, msg := range msgType {
+		if message.MessageToStr[msg] == "" {
+			log.Error("failed to find message type ", msg)
+			continue
+		}
 		msgstr = append(msgstr, message.MessageToStr[msg])
 	}
 

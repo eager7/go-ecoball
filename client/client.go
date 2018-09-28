@@ -33,11 +33,15 @@ import (
 	"github.com/urfave/cli"
 )
 
-const STORAGE = "storage"
+const (
+	SUCCESS = 0
+	FAILED  = 1
+)
 
 var (
 	historyFilePath = filepath.Join(os.TempDir(), ".ecoclient_history")
-	commandName     = []string{"contract", "transfer", "wallet", "get", "attach", STORAGE}
+	commandName     = []string{"storage"}
+	commandMap      = make(map[string][]string)
 )
 
 func newClientApp() *cli.App {
@@ -52,8 +56,8 @@ func newClientApp() *cli.App {
 	app.Copyright = "2018 ecoball. All rights reserved"
 	app.Author = "ecoball"
 	app.Email = "service@ecoball.org"
-	app.HideHelp = true
-	app.HideVersion = true
+	app.HideHelp = false
+	app.HideVersion = false
 
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
@@ -90,27 +94,39 @@ func main() {
 	//client
 	app := newClientApp()
 
+	//Collect command
+	for _, command := range app.Commands {
+		commandName = append(commandName, command.Name)
+		commandMap[command.Name] = []string{}
+		if nil != command.Subcommands && 0 != len(command.Subcommands) {
+			for _, subCommand := range command.Subcommands {
+				commandMap[command.Name] = append(commandMap[command.Name], subCommand.Name)
+			}
+		}
+	}
+
 	//console
 	app.After = func(c *cli.Context) error {
+		var err error
 		if c.Bool("console") {
-			newConsole()
+			err = newConsole()
 		}
-		return nil
+		return err
 	}
 
 	//run
 	var result int
 	if err := appRun(app); nil != err {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
-		result = 1
+		result = FAILED
 	} else {
-		result = 0
+		result = SUCCESS
 	}
 
 	os.Exit(result)
 }
 
-func newConsole() {
+func newConsole() error {
 	state := liner.NewLiner()
 	defer func() {
 		state.Close()
@@ -129,71 +145,61 @@ func newConsole() {
 				c = append(c, n)
 			}
 		}
+
+		subLineTemp := strings.Fields(line)
+		subLine := make([]string, 0, len(subLineTemp))
+		for _, oneTemp := range subLineTemp {
+			one := strings.Trim(oneTemp, " ")
+			if "" != one {
+				subLine = append(subLine, one)
+			}
+		}
+		if 2 == len(subLine) {
+			for command, subCommand := range commandMap {
+				if strings.ToLower(subLine[0]) == command {
+					for _, onecommand := range subCommand {
+						if strings.HasPrefix(onecommand, strings.ToLower(subLine[1])) {
+							subLine[1] = onecommand
+							realLine := strings.Join(subLine, " ")
+							c = append(c, realLine)
+						}
+					}
+				}
+			}
+		}
+
 		return
 	})
 
 	//read history info
-	var historyFile *os.File
-	var err error
-	if common.FileExisted(historyFilePath) {
-		historyFile, err = os.Open(historyFilePath)
-		_, err = state.ReadHistory(historyFile)
-	} else {
-		historyFile, err = os.Create(historyFilePath)
-	}
-
-	if nil != err {
-		fmt.Println(err)
-		os.Exit(1)
+	if historyFile, err := os.Open(historyFilePath); nil == err {
+		state.ReadHistory(historyFile)
+		historyFile.Close()
 	}
 
 	defer func() {
-		state.WriteHistory(historyFile)
-		historyFile.Close()
-	}()
-
-	//new console
-	scheduler := make(chan string)
-
-	go func() {
-		for {
-			info := <-scheduler
-			line, errLine := state.Prompt(info)
-			if errLine == nil {
-				state.AppendHistory(line)
-				scheduler <- line
-			} else if errLine == liner.ErrPromptAborted {
-				fmt.Println("Aborted")
-				close(scheduler)
-				return
-			} else {
-				fmt.Println("Error reading line: ", errLine)
-				close(scheduler)
-				return
-			}
+		if historyFile, err := os.Create(historyFilePath); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing history file: %s\n", err.Error())
+		} else {
+			state.WriteHistory(historyFile)
+			historyFile.Close()
 		}
 	}()
 
-	//single abort
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-
-	scheduler <- "ecoclient: \\>"
+	//console
+	prompt := "ecoclient: \\>"
 	for {
-		select {
-		case <-sig:
-			fmt.Println("exit signal")
-			return
-		case line, ok := <-scheduler:
-			if ok {
-				if "exit" == line {
-					return
-				} else {
-					if err := handleLine(line); nil != err {
-						fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
-					}
+		line, errLine := state.Prompt(prompt)
+		if nil != errLine {
+			return errLine
+		} else {
+			state.AppendHistory(line)
+			if line != "exit" {
+				if err := handleLine(line); nil != err {
+					fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
 				}
-				scheduler <- "ecoclient: \\>"
+			} else {
+				return nil
 			}
 		}
 	}
@@ -210,7 +216,7 @@ func handleLine(line string) error {
 }
 
 func appRun(app *cli.App) (err error) {
-	if len(os.Args) >= 2 && os.Args[1] == STORAGE {
+	if len(os.Args) >= 2 && os.Args[1] == "storage" {
 		temp := make([]string, 0, len(os.Args))
 		temp = append(temp, os.Args[0])
 		temp = append(temp, os.Args[2:]...)
