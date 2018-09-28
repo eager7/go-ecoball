@@ -376,63 +376,82 @@ func InvokeContract(ledger ledger.Ledger) {
 
 	invoke, err := types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"worker", common.AddressFromPubKey(config.Worker.PublicKey).HexString()}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	ret, err := event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
+	errors.CheckErrorPanic(err)
+	fmt.Println("InvokeContract Ret: ", ret)
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
 
 	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
+	errors.CheckErrorPanic(err)
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
 
 	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
+	errors.CheckErrorPanic(err)
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
 
-	log.Info("-----------------------------TokenTransferBlock")
-	transfer, err := types.NewTransfer(root, common.NameToIndex("worker"), config.ChainHash, "active", new(big.Int).SetUint64(1000), 101, time.Now().UnixNano())
-	errors.CheckErrorPanic(err)
-	transfer.SetSignature(&config.Root)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
-	time.Sleep(interval)
-
-	transfer, err = types.NewTransfer(root, common.NameToIndex("worker1"), config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
-	errors.CheckErrorPanic(err)
-	transfer.SetSignature(&config.Root)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
-	time.Sleep(interval)
-
-	transfer, err = types.NewTransfer(root, common.NameToIndex("worker2"), config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
-	errors.CheckErrorPanic(err)
-	transfer.SetSignature(&config.Root)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
-	time.Sleep(interval)
-
-	time.Sleep(time.Second * 5)
+	//log.Info("-----------------------------TokenTransferBlock")
+	//transfer, err := types.NewTransfer(root, common.NameToIndex("worker"), config.ChainHash, "active", new(big.Int).SetUint64(1000), 101, time.Now().UnixNano())
+	//errors.CheckErrorPanic(err)
+	//transfer.SetSignature(&config.Root)
+	////errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	//_, err = event.SendSync(event.ActorTxPool, transfer, 5*time.Second)
+	//errors.CheckErrorPanic(err)
+	//time.Sleep(interval)
+	//
+	//transfer, err = types.NewTransfer(root, common.NameToIndex("worker1"), config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	//errors.CheckErrorPanic(err)
+	//transfer.SetSignature(&config.Root)
+	////errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	//_, err = event.SendSync(event.ActorTxPool, transfer, 5*time.Second)
+	//errors.CheckErrorPanic(err)
+	//time.Sleep(interval)
+	//
+	//transfer, err = types.NewTransfer(root, common.NameToIndex("worker2"), config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	//errors.CheckErrorPanic(err)
+	//transfer.SetSignature(&config.Root)
+	////errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	//_, err = event.SendSync(event.ActorTxPool, transfer, 5*time.Second)
+	//errors.CheckErrorPanic(err)
+	//time.Sleep(interval)
+	//
+	//time.Sleep(time.Second * 5)
 
 	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker", "100", "100"}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
+	errors.CheckErrorPanic(err)
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
 
 	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker1", "100", "100"}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
+	errors.CheckErrorPanic(err)
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
 
 	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker2", "100", "100"}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
+	errors.CheckErrorPanic(err)
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
@@ -442,7 +461,9 @@ func InvokeContract(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), root, config.ChainHash, state.Owner, "set_account", []string{"worker1", string(param)}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Worker1)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
+	errors.CheckErrorPanic(err)
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
@@ -512,7 +533,9 @@ func InvokeContract(ledger ledger.Ledger) {
 	contract, err := types.NewDeployContract(common.NameToIndex("worker"), common.NameToIndex("worker"), config.ChainHash, state.Owner, types.VmWasm, "test", data, abibyte, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Worker))
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	_, err = event.SendSync(event.ActorTxPool, contract, 5*time.Second)
+	errors.CheckErrorPanic(err)
 	time.Sleep(time.Millisecond * 1500)
 
 
@@ -520,7 +543,9 @@ func InvokeContract(ledger ledger.Ledger) {
 	contract, err = types.NewDeployContract(common.NameToIndex("worker2"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, types.VmWasm, "test", data2, abibyte, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Worker2))
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	_, err = event.SendSync(event.ActorTxPool, contract, 5*time.Second)
+	errors.CheckErrorPanic(err)
 	time.Sleep(time.Millisecond * 1500)
 
 
@@ -555,7 +580,9 @@ func InvokeContract(ledger ledger.Ledger) {
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "create", parameters, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
+	errors.CheckErrorPanic(err)
 	time.Sleep(time.Millisecond * 2500)
 
 
@@ -575,7 +602,9 @@ func InvokeContract(ledger ledger.Ledger) {
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, "create", parameters2, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
+	errors.CheckErrorPanic(err)
 	time.Sleep(time.Millisecond * 2500)
 
 	// second contract issue
@@ -594,7 +623,9 @@ func InvokeContract(ledger ledger.Ledger) {
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, "issue", issueParameters2, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
+	errors.CheckErrorPanic(err)
 	time.Sleep(time.Millisecond * 2500)
 
 
@@ -614,7 +645,9 @@ func InvokeContract(ledger ledger.Ledger) {
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "issue", issueParameters, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
+	errors.CheckErrorPanic(err)
 	time.Sleep(time.Millisecond * 2500)
 
 

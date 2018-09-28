@@ -97,8 +97,12 @@ func TestRunNode(t *testing.T) {
 	if config.StartNode {
 		//go example.AutoGenerateTransaction(ledger.L)
 		//go example.VotingProducer(ledger.L)
-		go example.InvokeContract(ledger.L)
+		//go example.InvokeContract(ledger.L)
 		//go example.QueryContractData(ledger.L)
+		go example.Main(ledger.L)
+		go example.ParallelInvokeContract1(ledger.L)
+		go example.ParallelInvokeContract2(ledger.L)
+		go example.ParallelInvokeContract3(ledger.L)
 	}
 
 	wait()

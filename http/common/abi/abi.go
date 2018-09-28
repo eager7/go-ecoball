@@ -121,7 +121,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 	}
 
 	args := make([]Param, len(fields))
-	if(arg[0] == '{') {
+	if(arg[0] == '{') {		// Key-Value structure
 		var f interface{}
 
 		if err := json.Unmarshal(arg, &f); err != nil {
@@ -251,7 +251,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 			}
 
 		}
-	} else {
+	} else {		// Only Value structure
 		var f []string
 
 		if err := json.Unmarshal(arg, &f); err != nil {
