@@ -17,37 +17,37 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
-	"errors"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/state"
-	"github.com/urfave/cli"
 	"github.com/ecoball/go-ecoball/core/types"
 	innerCommon "github.com/ecoball/go-ecoball/http/common"
+	"github.com/urfave/cli"
 )
 
 var (
 	QueryCommands = cli.Command{
-		Name:     "get",
-		Usage:    "operations for query state",
-		Category: "Get",
+		Name:     "query",
+		Usage:    "operations for query info",
+		Category: "query",
 		Action:   clientCommon.DefaultAction,
 		Subcommands: []cli.Command{
 			{
-				Name:   "listchain",
+				Name:   "chain",
 				Usage:  "get all chain id",
 				Action: GetChainList,
-				Flags: []cli.Flag{},
+				Flags:  []cli.Flag{},
 			},
 			{
 				Name:   "account",
 				Usage:  "get account's info",
-				Action: queryAccount,
+				Action: getAccount,
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "account_name, n",
@@ -66,7 +66,7 @@ var (
 				Action: getBlock,
 				Flags: []cli.Flag{
 					cli.Int64Flag{
-						Name:  "height, he",
+						Name:  "height, t",
 						Usage: "block height",
 						Value: 1,
 					},
@@ -95,7 +95,7 @@ func GetChainList(c *cli.Context) error {
 	}
 
 	rpc.EchoErrInfo(resp)
-	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)){
+	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
 		if nil != resp["result"] {
 			switch resp["result"].(type) {
 			case string:
@@ -126,7 +126,7 @@ func get_account(chainId common.Hash, name string) (*state.Account, error) {
 		return nil, err
 	}
 
-	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)){
+	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
 		if nil != resp["result"] {
 			switch resp["result"].(type) {
 			case string:
@@ -143,7 +143,7 @@ func get_account(chainId common.Hash, name string) (*state.Account, error) {
 	return nil, nil
 }
 
-func queryAccount(c *cli.Context) error {
+func getAccount(c *cli.Context) error {
 	//Check the number of flags
 	if c.NumFlags() == 0 {
 		cli.ShowSubcommandHelp(c)
@@ -186,7 +186,7 @@ func getBlockInfoById(height int64) (*types.Block, error) {
 		return nil, err
 	}
 
-	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)){
+	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
 		if nil != resp["result"] {
 			switch resp["result"].(type) {
 			case string:
