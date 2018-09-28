@@ -40,7 +40,7 @@ const (
 
 var (
 	historyFilePath = filepath.Join(os.TempDir(), ".ecoclient_history")
-	commandName     = []string{}
+	commandName     = []string{"storage"}
 	commandMap      = make(map[string][]string)
 )
 
