@@ -6,8 +6,8 @@ import (
 )
 
 type PermissionLevel struct {
-	Actor 		common.AccountName
-	Permission  string
+	Actor 		common.AccountName		`json:"actor"`
+	Permission  string					`json:"permission"`
 }
 
 type Action struct {
