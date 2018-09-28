@@ -42,7 +42,7 @@ func dsnAddFile(ctx *cli.Context) error {
 
 	
 	//dsn.AddFile(os.Args[3],0)
-	resp, err := rpc.NodeCall("DsnAddFile", []interface{}{os.Args[0],os.Args[1],os.Args[2],os.Args[3]})
+	resp, err := rpc.NodeCall("DsnAddFile", []interface{}{os.Args[0],os.Args[1],os.Args[2],os.Args[3],os.Args[4]})
 	if nil != resp["result"] {
 		switch resp["result"].(type) {
 		case string:

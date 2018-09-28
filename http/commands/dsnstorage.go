@@ -11,6 +11,7 @@ import (
 	// "github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/http/common"
 	"github.com/ecoball/go-ecoball/dsn"
+	"strconv"
 	//"github.com/ecoball/go-ecoball/core/store"
 	//"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
 	//"github.com/ecoball/go-ecoball/core/ledgerimpl/Ledger"
@@ -25,12 +26,18 @@ func DsnAddFile(params []interface{})  *common.Response {
 		log.Error("invalid arguments")
 	}
 
-	str, err := dsn.AddFile(params[3].(string),0)
-	if err != nil {
-		return common.NewResponse(common.INVALID_PARAMS, "DsnAddFile faild")
+	//era := params[4].(string)
+	ear,ok := params[4].(string)
+	i, _ := strconv.Atoi(ear)
+	if ok{
+		str, err := dsn.AddFile(params[3].(string),int8(i))
+		if err != nil {
+			return common.NewResponse(common.INVALID_PARAMS, "DsnAddFile faild")
+		}
+		return common.NewResponse(common.SUCCESS, str)
 	}
 
-	return common.NewResponse(common.SUCCESS, str)
+	return common.NewResponse(common.INVALID_PARAMS, "type not ok")
 }
 
 func DsnCatFile(params []interface{})  *common.Response {
