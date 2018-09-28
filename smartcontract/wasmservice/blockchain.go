@@ -15,14 +15,9 @@ func(ws *WasmService)get_active_producer(proc *exec.Process)int32 {
 	return 0
 }
 
-//for c api: int32 account_contain(char *s)
-func(ws *WasmService)account_contain(proc *exec.Process, s int32)int32 {
-	k_msg, err := proc.VMGetData(int(s))
-	if err != nil{
-		return -1
-	}
-	account := common.NameToIndex(string(k_msg))
-	_, err = ws.state.GetAccountByName(account)
+//for c api: int is_account(acount_name name)
+func(ws *WasmService)is_account(proc *exec.Process, account uint64)int32 {
+	_, err := ws.state.GetAccountByName(common.AccountName(account))
 	if err != nil{
 		return 0
 	}

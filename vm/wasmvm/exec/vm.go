@@ -477,30 +477,24 @@ func (proc *Process) LoadAt(off int)(out []byte) {
 // the content of memory at offset off.
 func (proc *Process) ReadAt(p []byte, off int, length int) (error) {
 	mem := proc.vm.Memory()
-	var err error
 	if len(mem) < length +off {
-		err = errors.New("too long")
+		err := errors.New("too long")
 		return err
 	}
 	copy(p, mem[off:off+length])
-
-	return  err
+	return  nil
 }
 
 // WriteAt implements the WriterAt interface: it writes the content of p
 // into the VM memory at offset off.
 func (proc *Process) WriteAt(p []byte, off int, length int) (error) {
 	mem := proc.vm.Memory()
-
-	var err error
 	if len(mem) < length +off {
-		err = errors.New("too long")
+		err := errors.New("too long")
 		return err
 	}
-
 	copy(mem[off:], p[:length])
-
-	return err
+	return nil
 }
 
 // Terminate stops the execution of the current module.
