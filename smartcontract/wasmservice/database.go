@@ -6,7 +6,8 @@ import(
 
 //for c api: int db_put(char* key, uint32 k_len, char *value, uint32 v_len)
 func(ws *WasmService)db_put(proc *exec.Process, key, k_len, value, v_len int32)int32{
-	var k_msg, v_msg []byte
+	k_msg := make([]byte, k_len)
+	v_msg := make([]byte, v_len)
 	err := proc.ReadAt(k_msg, int(key), int(k_len))
 	if err != nil{
 		return -1
@@ -24,7 +25,7 @@ func(ws *WasmService)db_put(proc *exec.Process, key, k_len, value, v_len int32)i
 
 //for c api: int db_get(char* key, uint32 k_len, char *value, uint32 v_len)
 func(ws *WasmService)db_get(proc *exec.Process, key, k_len, value, v_len int32)int32{
-	var k_msg []byte
+	k_msg := make([]byte, k_len)
 	err := proc.ReadAt(k_msg, int(key), int(k_len))
 	if err != nil{
 		return -1

@@ -17,7 +17,7 @@ func(ws *WasmService)get_active_producer(proc *exec.Process)int32 {
 
 //for c api: int is_account(char *name, uint32 len)
 func(ws *WasmService)is_account(proc *exec.Process, p, length uint32)int32 {
-	var name []byte
+	name := make([]byte, length)
 	err := proc.ReadAt(name,int(p), int(length))
 	if err != nil{
 		return -1

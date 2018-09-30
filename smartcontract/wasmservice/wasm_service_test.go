@@ -11,7 +11,7 @@ func TestApi(t *testing.T) {
 
 	paras := make([]wasmservice.ParamTV,2)
 	paras[0] = wasmservice.ParamTV{Ptype:"int32",Pval:"007"}
-	paras[1] = wasmservice.ParamTV{Ptype:"string",Pval:"Iron Man"}
+	paras[1] = wasmservice.ParamTV{Ptype:"string",Pval:"IronMan"}
 
 	arg := wasmservice.Param{
 		Arg:  paras,

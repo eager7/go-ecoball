@@ -16,7 +16,7 @@ func (ws *WasmService) prints(proc *exec.Process, p uint32) int32{
 
 //C API :void prints_l(char *p, uint32 len)
 func (ws *WasmService) prints_l(proc *exec.Process, p uint32, length uint32) int32{
-	var msg []byte
+	msg := make([]byte, length)
 	proc.ReadAt(msg,int(p), int(length))
 	fmt.Printf("%s\n",msg)
 	return 0

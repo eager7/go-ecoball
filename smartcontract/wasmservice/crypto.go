@@ -9,7 +9,7 @@ import(
 
 //C API :int sha256(char *data, uint32 len, char *hash )
 func (ws *WasmService) sha256(proc *exec.Process, data int32, length int32, hash int32) int32{
-	var msg []byte
+	msg := make([]byte, length)
 	err := proc.ReadAt(msg,int(data), int(length))
 	if err != nil{
 		return -1
@@ -24,7 +24,7 @@ func (ws *WasmService) sha256(proc *exec.Process, data int32, length int32, hash
 
 //C API :int sha512(char *data, uint32 len, char *hash )
 func (ws *WasmService) sha512(proc *exec.Process, data int32, length int32, hash int32) int32{
-	var msg []byte
+	msg := make([]byte, length)
 	err := proc.ReadAt(msg,int(data), int(length))
 	if err != nil{
 		return -1
