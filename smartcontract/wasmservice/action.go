@@ -6,36 +6,38 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/http/common/abi"
+	"bytes"
 )
 
 // C API: inline_action(char *account, char *action, char *actionData, char *actor, char *perm)
 func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionData, actor, perm int32) int32{
-	//fmt.Println("wasm inline action")
-	contract_msg, err := proc.VMGetData(int(account))
-	if err != nil{
-		return -1
-	}
-	action_msg, err := proc.VMGetData(int(action))
-	if err != nil{
-		return -1
-	}
-	data, err := proc.VMGetData(int(actionData))
-	if err != nil{
-		return -1
-	}
-	actor_msg, err := proc.VMGetData(int(actor))
-	if err != nil{
-		return -1
-	}
-	permission, err := proc.VMGetData(int(perm))
-	if err != nil{
-		return -1
-	}
-	if(len(contract_msg) == 0 || len(action_msg) == 0 || len(data) == 0 || len(permission) == 0 || len(actor_msg) == 0){
+	data := proc.LoadAt(int(account))
+	length := bytes.IndexByte(data,0)
+	contract_msg := data[:length]
+
+	data = proc.LoadAt(int(action))
+	length = bytes.IndexByte(data,0)
+	action_msg := data[:length]
+
+	data = proc.LoadAt(int(actionData))
+	length = bytes.IndexByte(data,0)
+	actionData_msg := data[:length]
+
+	data = proc.LoadAt(int(actor))
+	length = bytes.IndexByte(data,0)
+	actor_msg := data[:length]
+
+	data = proc.LoadAt(int(perm))
+	length = bytes.IndexByte(data,0)
+	permission := data[:length]
+
+
+	if(len(contract_msg) == 0 || len(action_msg) == 0 || len(actionData_msg) == 0 || len(permission) == 0 || len(actor_msg) == 0) {
+		fmt.Println("error, can not read param")
 		return -1
 	}
 
-	fmt.Println("wasm inline action ", string(contract_msg), " ", string(action_msg), " ", string(data), " ", string(actor_msg), "", string(permission))
+	fmt.Println("wasm inline action ", string(contract_msg), " ", string(action_msg), " ", string(actionData_msg), " ", string(actor_msg), "", string(permission))
 
 	contractLen := len(contract_msg)
 	var contractSlice []byte = contract_msg[:contractLen - 1]
@@ -49,10 +51,10 @@ func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionD
 		actionSlice = append(actionSlice, action_msg[actionLen - 1])
 	}
 
-	dataLen := len(data)
-	var dataSlice []byte = data[:dataLen - 1]
-	if data[dataLen - 1] != 0 {
-		dataSlice = append(dataSlice, data[dataLen - 1])
+	dataLen := len(actionData_msg)
+	var dataSlice []byte = actionData_msg[:dataLen - 1]
+	if actionData_msg[dataLen - 1] != 0 {
+		dataSlice = append(dataSlice, actionData_msg[dataLen - 1])
 	}
 
 	actorLen := len(actor_msg)
@@ -68,7 +70,7 @@ func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionD
 	}
 
 	if ws.action.ContractAccount != common.NameToIndex(string(contractSlice)) {
-		if err = ws.state.CheckAccountPermission(common.NameToIndex(string(actorSlice)), ws.action.ContractAccount, string(permSlice)); err != nil {
+		if err := ws.state.CheckAccountPermission(common.NameToIndex(string(actorSlice)), ws.action.ContractAccount, string(permSlice)); err != nil {
 			return -5
 		}
 	}

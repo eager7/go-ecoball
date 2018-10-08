@@ -376,28 +376,21 @@ func InvokeContract(ledger ledger.Ledger) {
 
 	invoke, err := types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"worker", common.AddressFromPubKey(config.Worker.PublicKey).HexString()}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	ret, err := event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
-	errors.CheckErrorPanic(err)
-	fmt.Println("InvokeContract Ret: ", ret)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
 
 	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
-	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
 
 	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
-	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
@@ -429,29 +422,23 @@ func InvokeContract(ledger ledger.Ledger) {
 	//
 	//time.Sleep(time.Second * 5)
 
-	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker", "100", "100"}, 0, time.Now().UnixNano())
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker", "1000", "1000"}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
-	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
 
 	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker1", "100", "100"}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
-	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
 
 	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker2", "100", "100"}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
-	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
@@ -461,9 +448,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), root, config.ChainHash, state.Owner, "set_account", []string{"worker1", string(param)}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Worker1)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
-	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
@@ -533,9 +518,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	contract, err := types.NewDeployContract(common.NameToIndex("worker"), common.NameToIndex("worker"), config.ChainHash, state.Owner, types.VmWasm, "test", data, abibyte, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Worker))
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
-	_, err = event.SendSync(event.ActorTxPool, contract, 5*time.Second)
-	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 1500)
 
 
@@ -543,9 +526,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	contract, err = types.NewDeployContract(common.NameToIndex("worker2"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, types.VmWasm, "test", data2, abibyte, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Worker2))
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
-	_, err = event.SendSync(event.ActorTxPool, contract, 5*time.Second)
-	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 1500)
 
 
@@ -565,7 +546,7 @@ func InvokeContract(ledger ledger.Ledger) {
 	//transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": "-100"}`)
 	//create := []byte(`{"creator": "worker1", "max_supply": "800", "token_id": "xyx"}`)
 	// first contract create
-	create := []byte(`["worker1", "800", "xyx"]`)
+	create := []byte(`["worker", "800", "XYX"]`)
 
 	argbyte, err := abi.CheckParam(abiDef, "create", create)
 	if err != nil {
@@ -577,17 +558,14 @@ func InvokeContract(ledger ledger.Ledger) {
 
 	parameters = append(parameters, string(argbyte[:]))
 
-	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "create", parameters, 0, time.Now().UnixNano())
-	errors.CheckErrorPanic(err)
-	invoke.SetSignature(&config.Worker1)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
-	errors.CheckErrorPanic(err)
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "create", parameters, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Worker)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
 
 
 	// second contract create
-	create = []byte(`["worker1", "800", "xxx"]`)
+	create = []byte(`["worker2", "800", "XXX"]`)
 
 	argbyte, err = abi.CheckParam(abiDef, "create", create)
 	if err != nil {
@@ -599,16 +577,14 @@ func InvokeContract(ledger ledger.Ledger) {
 
 	parameters2 = append(parameters2, string(argbyte[:]))
 
-	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, "create", parameters2, 0, time.Now().UnixNano())
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, "create", parameters2, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
-	invoke.SetSignature(&config.Worker1)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
-	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker2)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
 
 	// second contract issue
-	issue := []byte(`{"to": "worker1", "amount": "100", "token_id": "xxx"}`)
+	issue := []byte(`{"to": "worker1", "amount": "100", "token_id": "XXX"}`)
 
 	argbyte, err = abi.CheckParam(abiDef, "issue", issue)
 	if err != nil {
@@ -623,14 +599,12 @@ func InvokeContract(ledger ledger.Ledger) {
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, "issue", issueParameters2, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
-	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
 
 
 	// first contract issue, inline call second contract "transfer"
-	issue = []byte(`{"to": "worker1", "amount": "100", "token_id": "xyx"}`)
+	issue = []byte(`{"to": "worker2", "amount": "100", "token_id": "XYX"}`)
 
 	argbyte, err = abi.CheckParam(abiDef, "issue", issue)
 	if err != nil {
@@ -645,29 +619,27 @@ func InvokeContract(ledger ledger.Ledger) {
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "issue", issueParameters, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	_, err = event.SendSync(event.ActorTxPool, invoke, 5*time.Second)
-	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
 
 
-	//trans := []byte(`{"from": "worker1", "to": "worker2", "amount": "20", "token_id": "xyx"}`)
-	//
-	//argbyte, err = abi.CheckParam(abiDef, "transfer", trans)
-	//if err != nil {
-	//	fmt.Errorf("can not find UnmarshalBinary abi file")
-	//	return
-	//}
-	//
-	//var transferParameters []string
-	//
-	//transferParameters = append(transferParameters, string(argbyte[:]))
-	//
-	//invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "transfer", transferParameters, 0, time.Now().UnixNano())
-	//errors.CheckErrorPanic(err)
-	//invoke.SetSignature(&config.Worker1)
-	//errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	//time.Sleep(time.Millisecond * 2500)
+	trans := []byte(`{"from": "worker1", "to": "worker2", "amount": "20", "token_id": "XYX"}`)
+
+	argbyte, err = abi.CheckParam(abiDef, "transfer", trans)
+	if err != nil {
+		fmt.Errorf("can not find UnmarshalBinary abi file")
+		return
+	}
+
+	var transferParameters []string
+
+	transferParameters = append(transferParameters, string(argbyte[:]))
+
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "transfer", transferParameters, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 2500)
 
 }
 

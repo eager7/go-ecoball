@@ -1,7 +1,7 @@
 package wasmservice
 import (
 	"github.com/ecoball/go-ecoball/vm/wasmvm/exec"
-	)
+)
 
 //for c api: int32 read_param(int32 index)
 func(ws *WasmService)read_param(proc *exec.Process, index int32) int32{

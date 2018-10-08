@@ -26,7 +26,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"sync"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
 
@@ -34,14 +33,12 @@ type PoolActor struct {
 	txPool *TxPool
 
 	wg     sync.WaitGroup
-	//worker map[string]Worker
-	worker *Worker
+	worker map[string]Worker
 }
 
 func NewTxPoolActor(pool *TxPool, n uint8) (pid *actor.PID, err error) {
-	worker := NewWorker(0, ledger.L)
 	props := actor.FromProducer(func() actor.Actor {
-		return &PoolActor{txPool: pool, worker: worker}
+		return &PoolActor{txPool: pool}
 	})
 
 	if pid, err = actor.SpawnNamed(props, "TxPoolActor"); nil != err {
@@ -49,7 +46,6 @@ func NewTxPoolActor(pool *TxPool, n uint8) (pid *actor.PID, err error) {
 	}
 	event.RegisterActor(event.ActorTxPool, pid)
 
-	//go worker.Start()
 	return
 }
 

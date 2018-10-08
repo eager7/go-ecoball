@@ -132,7 +132,7 @@ func (a *Account) StoreSet(path string, key, value []byte) (err error) {
 		return err
 	}
 	defer a.diskDb.Close()
-	log.Debug("StoreSet key:", string(key), "value:", string(value))
+	log.Debug("StoreSet key:", string(key), "value:", value)
 	if err := a.trie.TryUpdate(key, value); err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	//log.Debug(path, a.Index.String(), "StoreGet key:", string(key), "value:", string(value))
+	log.Debug("StoreGet key:", string(key), "value:", value)
 	return value, nil
 }
 
