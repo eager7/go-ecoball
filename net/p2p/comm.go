@@ -27,10 +27,6 @@ import (
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 )
 
-const (
-	networkError = "network is not ready"
-)
-
 func (net *NetImpl)ConnectToPeer(addrInfo string, pubKey []byte, isPermanent bool) error {
 	pi, err := net.constructPeerInfo(addrInfo, pubKey)
 	if err != nil {
