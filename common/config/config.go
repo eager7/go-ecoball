@@ -29,6 +29,8 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/utils"
+	"path/filepath"
+	"strings"
 )
 
 // peer list
@@ -127,6 +129,7 @@ var (
 	HttpLocalPort      string
 	WalletHttpPort     string
 	EcoVersion         string
+	RootDir            string
 	LogDir             string
 	OutputToTerminal   bool
 	LogLevel           int
@@ -198,19 +201,17 @@ func init() {
 	if flag.Lookup("test.v") == nil {
 		fmt.Println("normal run")
 		IpfsDir = "/tmp/storage"
-		if err := SetConfig("."); err != nil {
-			fmt.Println("init config failed: ", err)
-			os.Exit(-1)
-		}
+		RootDir, _ = filepath.Abs(filepath.Dir(os.Args[0]))
+		RootDir = strings.Replace(RootDir, "\\", "/", -1)
 	} else {
 		fmt.Println("run under go test")
 		IpfsDir = "/tmp/storage"
-		if err := SetConfig("/tmp/"); err != nil {
-			fmt.Println("init config failed: ", err)
-			os.Exit(-1)
-		}
+		RootDir = "/tmp/"
 	}
-
+	if err := SetConfig(RootDir); err != nil {
+		fmt.Println("init config failed: ", err)
+		os.Exit(-1)
+	}
 	initVariable()
 }
 

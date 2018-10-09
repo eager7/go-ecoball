@@ -133,7 +133,7 @@ func runNode(c *cli.Context) error {
 
 	log.Info("Build Geneses Block")
 	var err error
-	ledger.L, err = ledgerimpl.NewLedger(store.PathBlock, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
+	ledger.L, err = ledgerimpl.NewLedger(config.RootDir+store.PathBlock, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	if err != nil {
 		log.Fatal(err)
 	}
