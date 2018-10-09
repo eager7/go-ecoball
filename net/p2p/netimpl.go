@@ -324,20 +324,21 @@ func (net *NetImpl) startLocalDiscovery() (discovery.Service, error) {
 }
 
 // Start network
-func (bsnet *NetImpl) Start() {
+func (net *NetImpl) Start() {
 	// it is up to the requirement of network sharding,
 	if config.EnableLocalDiscovery {
 		var err error
-		bsnet.mdnsService, err = bsnet.startLocalDiscovery()
+		net.mdnsService, err = net.startLocalDiscovery()
 		if err != nil {
-			log.Error(err)
+			log.Error("start p2p local discovery",err)
+		} else {
+			log.Debug("start p2p local discovery")
 		}
-		log.Debug("start p2p local discovery")
 	}
 
-	bsnet.bootstrapper = bsnet.bootstrap(config.SwarmConfig.BootStrapAddr)
+	net.bootstrapper = net.bootstrap(config.SwarmConfig.BootStrapAddr)
 
-	bsnet.handleSendJob()
+	net.handleSendJob()
 }
 
 // Stop network

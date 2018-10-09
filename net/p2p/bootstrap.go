@@ -96,7 +96,6 @@ func (net *NetImpl)bootstrapConnect(ctx context.Context, bsPeers []cfg.Bootstrap
 
 	if len(notConnected) < 1 {
 		log.Error("not enough bootstrap peers to bootstrap")
-
 	}
 
 	peers := randomSubsetOfPeers(notConnected, numToDial)
@@ -127,7 +126,7 @@ func (net *NetImpl)bootstrapConnect(ctx context.Context, bsPeers []cfg.Bootstrap
 			count++
 		}
 	}
-	if count == len(peers) {
+	if len(peers) >0 && count == len(peers) {
 		return fmt.Errorf("failed to bootstrap. %s", err)
 	}
 
