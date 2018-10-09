@@ -85,7 +85,7 @@ func (s *workerSet) isLeader(self *Worker) bool {
 	}
 }
 
-func (s *workerSet) isCandidateLeader(self *Worker) bool {
+func (s *workerSet) isBackup(self *Worker) bool {
 	if len(s.member) <= 1 {
 		return false
 	}

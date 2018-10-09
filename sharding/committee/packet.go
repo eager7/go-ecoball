@@ -1,129 +1,63 @@
 package committee
 
 import (
-	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/etime"
 	"github.com/ecoball/go-ecoball/core/types"
+	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"time"
 )
 
-func (c *committee) consensusCb(bl interface{}) {
-	switch blockType := bl.(type) {
-	case *types.CMBlock:
-		c.recvCommitCmBlock(bl.(*types.CMBlock))
-	case *types.FinalBlock:
-		c.recvCommitFinalBlock(bl.(*types.FinalBlock))
-	case *types.ViewChangeBlock:
-		c.recvCommitViewchangeBlock(bl.(*types.ViewChangeBlock))
-	default:
-		log.Error("consensus call back wrong packet type ", blockType)
+func (c *committee) verifyPacket(p *sc.NetPacket) {
+	log.Debug("verify packet ", p.BlockType)
+	if p.PacketType == netmsg.APP_MSG_CONSENSUS_PACKET {
+		c.verifyConsensusPacket(p)
+	} else if p.PacketType == netmsg.APP_MSG_SHARDING_PACKET {
+		c.verifyShardingPacket(p)
+	} else {
+		log.Error("wrong packet type")
+		return
 	}
 }
 
-func (c *committee) verifyPacket(csp *sc.NetPacket) {
-	log.Debug("verify packet ", csp.BlockType)
-	if csp.BlockType == sc.SD_CM_BLOCK {
-		c.verifyCmPacket(csp)
-	} else if csp.BlockType == sc.SD_FINAL_BLOCK {
-		c.verifyFinalPacket(csp)
-	} else if csp.BlockType == sc.SD_VIEWCHANGE_BLOCK {
-		c.verifyViewChangePacket(csp)
+func (c *committee) verifyConsensusPacket(p *sc.NetPacket) {
+	if p.Step >= consensus.StepNIL || p.Step < consensus.StepPrePare {
+		log.Error("wrong step ", p.Step)
+		return
+	}
+
+	var csp *sc.CsPacket
+
+	if p.BlockType == sc.SD_CM_BLOCK {
+		csp = c.ns.VerifyCmPacket(p)
+	} else if p.BlockType == sc.SD_FINAL_BLOCK {
+		csp = c.ns.VerifyFinalPacket(p)
+	} else if p.BlockType == sc.SD_VIEWCHANGE_BLOCK {
+		csp = c.ns.VerifyViewChangePacket(p)
 	} else {
 		log.Error("wrong block type")
 		return
 	}
+
+	if csp != nil {
+		c.ppc <- csp
+	}
 }
 
-func (c *committee) verifyCmPacket(p *sc.NetPacket) {
-	var cm types.CMBlock
-	err := json.Unmarshal(p.Packet, &cm)
-	if err != nil {
-		log.Error("cm block unmarshal error ", err)
+func (c *committee) verifyShardingPacket(p *sc.NetPacket) {
+	var csp *sc.CsPacket
+
+	if p.BlockType == sc.SD_MINOR_BLOCK {
+		csp = c.ns.VerifyMinorPacket(p)
+	} else {
+		log.Error("wrong block type")
 		return
 	}
 
-	last := c.ns.GetLastCMBlock()
-	if last != nil {
-		if last.Height >= cm.Height {
-			log.Debug("old cm packet")
-			return
-		}
+	if csp != nil {
+		c.ppc <- csp
 	}
-
-	/*missing_func need verify signature here*/
-
-	var csp sc.CsPacket
-	(&csp).Copyhead(p)
-	(&csp).Packet = &cm
-
-	c.ppc <- &csp
-}
-
-func (c *committee) verifyFinalPacket(p *sc.NetPacket) {
-	var final types.FinalBlock
-	err := json.Unmarshal(p.Packet, &final)
-	if err != nil {
-		log.Error("final block unmarshal error ", err)
-		return
-	}
-
-	last := c.ns.GetLastFinalBlock()
-	if last != nil {
-		if last.Height >= final.Height {
-			log.Debug("old final packet")
-			return
-		}
-	}
-
-	/*missing_func need verify signature here*/
-
-	var csp sc.CsPacket
-	csp.Copyhead(p)
-	csp.Packet = &final
-
-	c.ppc <- &csp
-}
-
-func (c *committee) verifyViewChangePacket(p *sc.NetPacket) {
-	var vc types.ViewChangeBlock
-	err := json.Unmarshal(p.Packet, &vc)
-	if err != nil {
-		log.Error("cm block unmarshal error ", err)
-		return
-	}
-
-	cm := c.ns.GetLastCMBlock()
-	if cm != nil {
-		if cm.Height > vc.CMEpochNo {
-			log.Error("vc block epoch error")
-			return
-		}
-	}
-
-	final := c.ns.GetLastFinalBlock()
-	if final != nil {
-		if final.Height > vc.FinalBlockHeight {
-			log.Error("vc block final block height error")
-			return
-		}
-	}
-
-	last := c.ns.GetLastViewchangeBlock()
-	if last != nil {
-		if last.Round >= vc.Round {
-			log.Error("vc block round error")
-			return
-		}
-	}
-
-	/*missing_func need verify signature here*/
-
-	var csp sc.CsPacket
-	csp.Copyhead(p)
-	csp.Packet = &vc
-
-	c.ppc <- &csp
 }
 
 func (c *committee) dropPacket(packet interface{}) {
@@ -141,4 +75,31 @@ func (c *committee) setRetransTimer(bStart bool) {
 
 func (c *committee) processRetransTimeout() {
 	c.cs.ProcessRetransPacket()
+}
+
+func (c *committee) consensusCb(bl interface{}) {
+	switch blockType := bl.(type) {
+	case *types.CMBlock:
+		c.recvCommitCmBlock(bl.(*types.CMBlock))
+	case *types.FinalBlock:
+		c.recvCommitFinalBlock(bl.(*types.FinalBlock))
+	case *types.ViewChangeBlock:
+		c.recvCommitViewchangeBlock(bl.(*types.ViewChangeBlock))
+	default:
+		log.Error("consensus call back wrong packet type ", blockType)
+	}
+}
+
+func (c *committee) processShardingPacket(p *sc.CsPacket) {
+	if p.BlockType != sc.SD_MINOR_BLOCK {
+		log.Error("block type error ", p.BlockType)
+		return
+	}
+
+	minor := p.Packet.(*types.MinorBlock)
+	c.ns.SaveMinorBlockToPool(minor)
+
+	if c.ns.IsMinorBlockEnoughInPool() {
+		c.fsm.Execute(ActProductFinalBlock, nil)
+	}
 }

@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	log = elog.NewLogger("sdnode", elog.DebugLog)
+	log = elog.NewLogger("sdcell", elog.DebugLog)
 )
 
 type Cell struct {
@@ -99,7 +99,7 @@ func (c *Cell) LoadConfig() {
 	c.NodeType = nodeType
 }
 
-func (c *Cell) SetLastCMBlock(bk *types.CMBlock) {
+func (c *Cell) SaveLastCMBlock(bk *types.CMBlock) {
 	c.chain.setCMBlock(bk)
 
 	worker := &Worker{}
@@ -119,7 +119,7 @@ func (c *Cell) GetLastCMBlock() *types.CMBlock {
 	return c.chain.getCMBlock()
 }
 
-func (c *Cell) SetLastFinalBlock(bk *types.FinalBlock) {
+func (c *Cell) SaveLastFinalBlock(bk *types.FinalBlock) {
 	c.chain.setFinalBlock(bk)
 	c.minorBlockPool.clean()
 }
@@ -128,7 +128,7 @@ func (c *Cell) GetLastFinalBlock() *types.FinalBlock {
 	return c.chain.getFinalBlock()
 }
 
-func (c *Cell) SetLastViewchangeBlock(bk *types.ViewChangeBlock) {
+func (c *Cell) SaveLastViewchangeBlock(bk *types.ViewChangeBlock) {
 	leader := &Worker{}
 	leader.InitWork(&bk.Candidate)
 
@@ -140,6 +140,22 @@ func (c *Cell) GetLastViewchangeBlock() *types.ViewChangeBlock {
 	return c.chain.getViewchangeBlock()
 }
 
+func (c *Cell) SaveLastMinorBlock(bk *types.MinorBlock) {
+	c.chain.setMinorBlock(bk)
+}
+
+func (c *Cell) GetLastMinorBlock() *types.MinorBlock {
+	return c.chain.getMinorBlock()
+}
+
+func (c *Cell) SavePreMinorBlock(bk *types.MinorBlock) {
+	c.chain.setPreMinorBlock(bk)
+}
+
+func (c *Cell) GetPreMinorBlock() *types.MinorBlock {
+	return c.chain.getPreMinorBlock()
+}
+
 func (c *Cell) SyncCmBlockComplete(lastCmblock *types.CMBlock) {
 	curBlock := c.chain.getCMBlock()
 
@@ -147,7 +163,7 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *types.CMBlock) {
 	if curBlock == nil {
 		i = 1
 	} else if curBlock.Height >= lastCmblock.Height {
-		log.Error("sync cm block error")
+		log.Debug("cm block is already sync")
 		return
 	} else if curBlock.Height+sc.DefaultCommitteMaxMember >= lastCmblock.Height {
 		i = curBlock.Height + 1
@@ -172,11 +188,11 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *types.CMBlock) {
 		c.addCommitteWorker(&worker)
 	}
 
-	c.SetLastCMBlock(lastCmblock)
+	c.SaveLastCMBlock(lastCmblock)
 }
 
-func (c *Cell) SetMinorBlockToPool(minor *types.MinorBlock) {
-	c.minorBlockPool.setMinorBlock(minor)
+func (c *Cell) SaveMinorBlockToPool(minor *types.MinorBlock) {
+	c.minorBlockPool.saveMinorBlock(minor)
 }
 
 func (c *Cell) SyncMinorsBlockToPool(minors []*types.MinorBlock) {
@@ -187,8 +203,17 @@ func (c *Cell) GetMinorBlockFromPool() *minorBlockSet {
 	return c.minorBlockPool
 }
 
-func (c *Cell) GetMinorBlockPoolCount() uint16 {
-	return c.minorBlockPool.count()
+func (c *Cell) IsMinorBlockEnoughInPool() bool {
+	cm := c.chain.cmBlock
+	if cm == nil {
+		return true
+	}
+
+	if c.minorBlockPool.count() >= uint16(len(cm.Shards)*sc.DefaultThresholdOfMinorBlock/100) {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (c *Cell) IsLeader() bool {
@@ -213,9 +238,30 @@ func (c *Cell) isShardLeader() bool {
 	}
 }
 
-func (c *Cell) IsCmCandidateLeader() bool {
-	/*should do vrf by cmblock*/
-	return c.cm.isCandidateLeader(&c.Self)
+func (c *Cell) IsBackup() bool {
+	if c.NodeType == sc.NodeCommittee {
+		return c.cm.isBackup(&c.Self)
+	} else if c.NodeType == sc.NodeShard {
+		return c.isShardBackup()
+	} else {
+		return false
+	}
+}
+
+func (c *Cell) isShardBackup() bool {
+	if len(c.shard) <= 1 {
+		return false
+	}
+
+	if (&c.Self).Equal(c.shard[1]) {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (c *Cell) GetCmWorks() []*Worker {
+	return c.cm.member
 }
 
 func (c *Cell) GetWorks() []*Worker {

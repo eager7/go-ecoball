@@ -23,10 +23,10 @@ func (m *minorBlockSet) clean() {
 	}
 }
 
-func (m *minorBlockSet) setMinorBlock(minor *types.MinorBlock) {
+func (m *minorBlockSet) saveMinorBlock(minor *types.MinorBlock) {
 	shardid := minor.ShardId
 	if int(shardid) > len(m.blocks) || shardid < 1 {
-		log.Error("set minorBlock error shardid ", shardid)
+		log.Error("save minorBlock error shardid ", shardid)
 		return
 	}
 

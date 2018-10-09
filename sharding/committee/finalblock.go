@@ -2,6 +2,7 @@ package committee
 
 import (
 	"encoding/json"
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/etime"
 	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
@@ -9,8 +10,6 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
-	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 type finalBlockCsi struct {
@@ -113,12 +112,13 @@ func (c *committee) createFinalBlock() *types.FinalBlock {
 	} else {
 		height = lastfinal.Height + 1
 	}
+
 	final := &types.FinalBlock{
 		FinalBlockHeader: types.FinalBlockHeader{
-			ChainID:            config.ChainHash,
+			ChainID:            common.Hash{},
 			Version:            0,
 			Height:             0,
-			Timestamp:          time.Now().UnixNano(),
+			Timestamp:          0,
 			TrxCount:           0,
 			PrevHash:           common.Hash{},
 			ProposalPubKey:     nil,
@@ -130,7 +130,7 @@ func (c *committee) createFinalBlock() *types.FinalBlock {
 			StateHashRoot:      common.Hash{},
 			COSign:             nil,
 		},
-		MinorBlocks:      nil,
+		MinorBlocks: nil,
 	}
 	final.Height = height
 	final.EpochNo = lastcm.Height
@@ -140,7 +140,6 @@ func (c *committee) createFinalBlock() *types.FinalBlock {
 	cosign.Step2 = 0
 
 	final.COSign = cosign
-	final.ComputeHash()
 
 	log.Debug("create final block epoch ", lastcm.Height, " height ", height)
 
@@ -157,9 +156,9 @@ func (c *committee) productFinalBlock(msg interface{}) {
 		return
 	}
 
-	cms := newFinalBlockCsi(final)
+	csi := newFinalBlockCsi(final)
 
-	c.cs.StartConsensus(cms)
+	c.cs.StartConsensus(csi)
 
 	c.stateTimer.Reset(sc.DefaultProductFinalBlockTimer * time.Second)
 }
@@ -214,7 +213,7 @@ func (c *committee) recvCommitFinalBlock(bl *types.FinalBlock) {
 	log.Debug("recv consensus final block height ", bl.Height)
 	simulate.TellBlock(bl)
 
-	c.ns.SetLastFinalBlock(bl)
+	c.ns.SaveLastFinalBlock(bl)
 	if bl.Height%sc.DefaultEpochFinalBlockNumber == 0 {
 		c.fsm.Execute(ActProductCommitteeBlock, nil)
 	} else {

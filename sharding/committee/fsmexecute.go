@@ -28,6 +28,13 @@ func (c *committee) processSyncComplete(msg interface{}) {
 	cm := lastCmBlock.GetObject().(*types.CMBlock)
 	c.ns.SyncCmBlockComplete(cm)
 
+	/* missing_func vc block */
+	//lastVcBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeViewChangeBlock)
+	//if err == nil && lastVcBlock != nil {
+	//	vc := lastVcBlock.GetObject().(*types.ViewChangeBlock)
+	//
+	//}
+
 	lastFinalBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
 		c.fsm.Execute(ActWaitMinorBlock, msg)
@@ -35,7 +42,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 	}
 
 	final := lastFinalBlock.GetObject().(*types.FinalBlock)
-	c.ns.SetLastFinalBlock(final)
+	c.ns.SaveLastFinalBlock(final)
 
 	if cm.Height > final.EpochNo {
 		c.fsm.Execute(ActWaitMinorBlock, msg)
@@ -56,11 +63,11 @@ func (c *committee) processSyncComplete(msg interface{}) {
 
 	/*haven't collect enough shard's minor block, the wait time will be longer than default configure when we enter
 	  WaitMinorBlock status, maybe we can recalculate the left time by check the minor block's timestamps */
-	if c.ns.GetMinorBlockPoolCount() < uint16(len(cm.Shards)*sc.DefaultThresholdOfMinorBlock/100) {
-		c.fsm.Execute(ActWaitMinorBlock, msg)
+	if c.ns.IsMinorBlockEnoughInPool() {
+		c.fsm.Execute(ActProductFinalBlock, msg)
 		return
 	} else {
-		c.fsm.Execute(ActProductFinalBlock, msg)
+		c.fsm.Execute(ActWaitMinorBlock, msg)
 		return
 	}
 }

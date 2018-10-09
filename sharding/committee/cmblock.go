@@ -2,6 +2,7 @@ package committee
 
 import (
 	"encoding/json"
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/etime"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -10,7 +11,6 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
-	"github.com/ecoball/go-ecoball/common"
 )
 
 type cmBlockCsi struct {
@@ -128,10 +128,10 @@ func (c *committee) createCommitteeBlock() *types.CMBlock {
 
 	cm := &types.CMBlock{
 		CMBlockHeader: types.CMBlockHeader{
-			ChainID:      config.ChainHash,
+			ChainID:      common.Hash{},
 			Version:      0,
 			Height:       0,
-			Timestamp:    time.Now().UnixNano(),
+			Timestamp:    0,
 			PrevHash:     common.Hash{},
 			LeaderPubKey: nil,
 			Nonce:        0,
@@ -139,8 +139,9 @@ func (c *committee) createCommitteeBlock() *types.CMBlock {
 			ShardsHash:   common.Hash{},
 			COSign:       nil,
 		},
-		Shards:        nil,
+		Shards: nil,
 	}
+
 	cm.Height = height
 
 	cosign := &types.COSign{}
@@ -148,7 +149,6 @@ func (c *committee) createCommitteeBlock() *types.CMBlock {
 	cosign.Step2 = 0
 
 	cm.COSign = cosign
-	cm.ComputeHash()
 
 	candidate, err := c.ns.Ledger.GetProducerList(config.ChainHash)
 	if err == nil && candidate != nil && len(candidate) > 0 {
@@ -215,6 +215,6 @@ func (c *committee) recvCommitCmBlock(bl *types.CMBlock) {
 	log.Debug("recv consensus cm block height ", bl.Height)
 	simulate.TellBlock(bl)
 
-	c.ns.SetLastCMBlock(bl)
+	c.ns.SaveLastCMBlock(bl)
 	c.fsm.Execute(ActWaitMinorBlock, nil)
 }

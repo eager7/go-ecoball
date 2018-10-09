@@ -1,38 +1,123 @@
 package shard
 
 import (
+	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/etime"
+	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
-	"log"
+	"time"
+)
+
+var (
+	log = elog.NewLogger("sdshard", elog.DebugLog)
+)
+
+const (
+	blockSync = iota + 1
+	waitBlock
+	productMinoBlock
+	stateEnd
+)
+
+const (
+	ActProductMinorBlock = iota + 1
+	ActWaitBlock
+	ActRecvConsensusPacket
+	ActChainNotSync
 )
 
 type shard struct {
-	ns *cell.Cell
+	ns     *cell.Cell
+	fsm    *sc.Fsm
+	actorc chan interface{}
+	ppc    chan *sc.CsPacket
+	pvc    <-chan *sc.NetPacket
 
-	msgc chan interface{}
-	ppc  <-chan *sc.CsPacket
-	pvc  <-chan *sc.NetPacket
+	retransTimer *time.Timer
+	cs           *consensus.Consensus
 }
 
 func MakeShard(ns *cell.Cell) sc.NodeInstance {
-	return &shard{ns: ns,
-		msgc: make(chan interface{}),
-		ppc:  make(chan *sc.CsPacket, sc.DefaultShardMaxMember),
+	s := &shard{ns: ns,
+		actorc: make(chan interface{}),
+		ppc:    make(chan *sc.CsPacket, sc.DefaultShardMaxMember),
 	}
+
+	s.cs = consensus.MakeConsensus(s.ns, s.setRetransTimer, s.consensusCb)
+
+	s.fsm = sc.NewFsm(blockSync,
+		[]sc.FsmElem{
+			{blockSync, ActWaitBlock, nil, nil, nil, waitBlock},
+			{blockSync, ActProductMinorBlock, nil, s.productMinorBlock, nil, productMinoBlock},
+
+			{waitBlock, ActProductMinorBlock, nil, s.productMinorBlock, nil, productMinoBlock},
+			{waitBlock, ActChainNotSync, nil, nil, nil, blockSync},
+
+			{productMinoBlock, ActRecvConsensusPacket, nil, s.processConsensusMinorPacket, nil, sc.StateNil},
+		})
+
+	return s
 }
 
-func (c *shard) MsgDispatch(msg interface{}) {
-	c.msgc <- msg
+func (s *shard) MsgDispatch(msg interface{}) {
+	s.actorc <- msg
 }
 
-func (c *shard) Start() {
-	recvc, err := simulate.Subscribe(c.ns.Self.Port, sc.DefaultShardMaxMember)
+func (s *shard) Start() {
+	recvc, err := simulate.Subscribe(s.ns.Self.Port, sc.DefaultShardMaxMember)
 	if err != nil {
 		log.Panic("simulate error ", err)
 		return
 	}
 
-	c.pvc = recvc
+	s.pvc = recvc
+	go s.sRoutine()
+	s.pvcRoutine()
+}
 
+func (s *shard) sRoutine() {
+	log.Debug("start shard routine")
+	s.retransTimer = time.NewTimer(sc.DefaultRetransTimer * time.Millisecond)
+
+	for {
+		select {
+		case msg := <-s.actorc:
+			s.processActorMsg(msg)
+		case packet := <-s.ppc:
+			s.processPacket(packet)
+		case <-s.retransTimer.C:
+			s.processRetransTimeout()
+		}
+	}
+}
+
+func (s *shard) pvcRoutine() {
+	for i := 0; i < sc.DefaultShardMaxMember; i++ {
+		go func() {
+			for {
+				packet := <-s.pvc
+				s.verifyPacket(packet)
+			}
+		}()
+	}
+}
+
+func (s *shard) processActorMsg(msg interface{}) {
+	switch msg.(type) {
+	case message.SyncComplete:
+		s.processSyncComplete()
+	default:
+		log.Error("wrong actor message")
+	}
+}
+
+func (s *shard) setRetransTimer(bStart bool) {
+	etime.StopTime(s.retransTimer)
+
+	if bStart {
+		s.retransTimer.Reset(sc.DefaultRetransTimer * time.Second)
+	}
 }

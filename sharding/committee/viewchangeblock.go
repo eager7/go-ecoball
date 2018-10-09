@@ -145,7 +145,17 @@ func (c *committee) createVcBlock() (*types.ViewChangeBlock, bool) {
 	}
 
 	log.Debug("create vc block epoch ", epoch, " height ", height, " round ", round)
-	vc := &types.ViewChangeBlock{}
+	vc := &types.ViewChangeBlock{
+		ViewChangeBlockHeader: types.ViewChangeBlockHeader{
+			CMEpochNo:        0,
+			FinalBlockHeight: 0,
+			Round:            0,
+			Candidate:        types.NodeInfo{},
+			Timestamp:        0,
+			COSign:           nil,
+		},
+	}
+
 	vc.CMEpochNo = epoch
 	vc.FinalBlockHeight = height
 	vc.Round = round
@@ -212,7 +222,7 @@ func (c *committee) recvCommitViewchangeBlock(bl *types.ViewChangeBlock) {
 	log.Debug("recv consensus view change block epoch ", bl.CMEpochNo, " height ", bl.FinalBlockHeight, " round  ", bl.Round)
 	simulate.TellBlock(bl)
 
-	c.ns.SetLastViewchangeBlock(bl)
+	c.ns.SaveLastViewchangeBlock(bl)
 	c.resetVcCounter(nil)
 
 	lastcm := c.ns.GetLastCMBlock()

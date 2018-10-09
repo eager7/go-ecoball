@@ -11,10 +11,19 @@ func TellBlock(bl interface{}) {
 	}
 }
 
+func TellMinorBlock(bl interface{}) {
+	log.Error("tell ledger minor block")
+}
+
 func GetSyncStatus() bool {
 	return true
 }
 
 func GetMinorBlockPool() []*types.MinorBlock {
+	return nil
+}
+
+/*minor block to be packed by committee*/
+func GetPreproductionMinorBlock() *types.MinorBlock {
 	return nil
 }
