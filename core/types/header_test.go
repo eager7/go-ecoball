@@ -8,7 +8,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/test/example"
-	"math/big"
 	"testing"
 	"time"
 )
@@ -40,17 +39,13 @@ func TestMinorBlockHeader(t *testing.T) {
 	errors.CheckErrorPanic(headerNew.Deserialize(data))
 	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
 
-	block := types.MinorBlock{
-		MinorBlockHeader: header,
-		Transactions:     []*types.Transaction{example.TestTransfer()},
-		StateDelta: []*types.AccountMinor{{
-			Balance: new(big.Int).SetUint64(100),
-			Nonce:   new(big.Int).SetUint64(2),
-		}}}
+	block, err := types.NewMinorBlock(header, nil, []*types.Transaction{example.TestTransfer()}, 0, 0)
 	data, err = block.Serialize()
 	errors.CheckErrorPanic(err)
 	blockNew := types.MinorBlock{}
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
+	elog.Log.Debug(block.JsonString())
+	elog.Log.Info(blockNew.JsonString())
 	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
 }
 
@@ -86,7 +81,6 @@ func TestCmBlockHeader(t *testing.T) {
 	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
 
 	Shards := []types.Shard{types.Shard{
-		Id: 10,
 		Member: []types.NodeInfo{
 			{
 				PublicKey: []byte("12340987"),

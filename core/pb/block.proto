@@ -340,8 +340,9 @@ message MinorBlockHeader {
     COSign  COSign              = 16;
 }
 message AccountMinor {
-    bytes Balance = 1;
-    bytes Nonce   = 2;
+    uint64 Account = 3;
+    bytes  Balance = 1;
+    uint64 Nonce   = 2;
 }
 message MinorBlock {
     MinorBlockHeader Header = 1;

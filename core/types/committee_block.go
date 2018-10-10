@@ -166,14 +166,14 @@ type NodeAddr struct {
 }
 
 type Shard struct {
-	Id         uint32
+	//Id         uint32
 	Member     []NodeInfo
 	MemberAddr []NodeAddr
 }
 
 func (s *Shard) proto() *pb.Shard {
 	pbShard := pb.Shard{
-		Id:         s.Id,
+		//Id:         s.Id,
 		Member:     nil,
 		MemberAddr: nil,
 	}
@@ -200,7 +200,7 @@ func (s *Shard) Deserialize(data []byte) error {
 	if err := pbShard.Unmarshal(data); err != nil {
 		return err
 	}
-	s.Id = pbShard.Id
+	//s.Id = pbShard.Id
 	for _, v := range pbShard.Member {
 		nodeInfo := NodeInfo{
 			PublicKey: common.CopyBytes(v.PublicKey),

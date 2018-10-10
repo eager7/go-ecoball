@@ -140,7 +140,6 @@ func TestInterface(t *testing.T) {
 	block := types.CMBlock{
 		CMBlockHeader: header,
 		Shards: []types.Shard{types.Shard{
-			Id: 10,
 			Member: []types.NodeInfo{
 				{
 					PublicKey: []byte("0987654321"),

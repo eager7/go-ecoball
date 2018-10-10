@@ -163,8 +163,9 @@ func (h *MinorBlockHeader) GetChainID() common.Hash {
 }
 
 type AccountMinor struct {
+	Account common.AccountName
 	Balance *big.Int
-	Nonce   *big.Int
+	Nonce   uint64
 }
 
 func (a *AccountMinor) proto() (*pb.AccountMinor, error) {
@@ -172,13 +173,11 @@ func (a *AccountMinor) proto() (*pb.AccountMinor, error) {
 	if err != nil {
 		return nil, err
 	}
-	nonce, err := a.Nonce.GobEncode()
-	if err != nil {
-		return nil, err
-	}
+
 	return &pb.AccountMinor{
+		Account: uint64(a.Account),
 		Balance: balance,
-		Nonce:   nonce,
+		Nonce:   a.Nonce,
 	}, nil
 }
 
@@ -188,15 +187,32 @@ type MinorBlock struct {
 	StateDelta   []*AccountMinor
 }
 
-func NewMinorBlock(header MinorBlockHeader, prevHeader *Header, txs []*Transaction, cpu, net float64, sDelta []*AccountMinor) (*MinorBlock, error) {
+func NewMinorBlock(header MinorBlockHeader, prevHeader *Header, txs []*Transaction, cpu, net float64) (*MinorBlock, error) {
 	if err := header.ComputeHash(); err != nil {
 		return nil, err
+	}
+	var sDelta []*AccountMinor
+	for _, tx := range txs {
+		transfer, ok := tx.Payload.GetObject().(TransferInfo)
+		if ok {
+			sDelta = append(sDelta, &AccountMinor{
+				Account: tx.From,
+				Balance: new(big.Int).Sub(new(big.Int).SetUint64(0), transfer.Value),
+				Nonce:   tx.Nonce,
+			})
+			sDelta = append(sDelta, &AccountMinor{
+				Account: tx.Addr,
+				Balance: transfer.Value,
+				Nonce:   tx.Nonce,
+			})
+		}
 	}
 	block := &MinorBlock{
 		MinorBlockHeader: header,
 		Transactions:     txs,
 		StateDelta:       sDelta,
 	}
+	fmt.Println("block.StateDelta:",block.StateDelta)
 	if err := block.SetReceipt(prevHeader, cpu, net); err != nil {
 		return nil, err
 	}
@@ -204,6 +220,9 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *Header, txs []*Transacti
 }
 
 func (b *MinorBlock) SetReceipt(prevHeader *Header, cpu, net float64) error {
+	if prevHeader == nil {
+		return nil
+	}
 	var cpuLimit, netLimit float64
 	if cpu < (BlockCpuLimit / 10) {
 		cpuLimit = prevHeader.Receipt.BlockCpu * 1.01
@@ -303,11 +322,11 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 		if err := balance.GobDecode(acc.Balance); err != nil {
 			return err
 		}
-		nonce := new(big.Int)
-		if err := nonce.GobDecode(acc.Nonce); err != nil {
-			return err
+		state := AccountMinor{
+			Account: common.AccountName(acc.Account),
+			Balance: balance,
+			Nonce:   acc.Nonce,
 		}
-		state := AccountMinor{Nonce: nonce, Balance: balance}
 		b.StateDelta = append(b.StateDelta, &state)
 	}
 	return nil
