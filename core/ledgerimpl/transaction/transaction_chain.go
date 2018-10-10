@@ -605,6 +605,32 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 }
 
 //ShardBlock
+func (c *ChainTx) NewShardBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+	s, err := c.StateDB.FinalDB.CopyState()
+	if err != nil {
+		return nil, err
+	}
+	s.Type = state.CopyType
+	var cpu, net float64
+	for i := 0; i < len(txs); i++ {
+		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
+		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+			log.Warn(txs[i].JsonString())
+			//c.ResetStateDB(c.CurrentHeader)
+			return nil, err
+		} else {
+			cpu += cp
+			net += n
+		}
+	}
+	block, err := types.NewBlock(c.CurrentHeader.ChainID, c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	if err != nil {
+		//c.ResetStateDB(c.CurrentHeader)
+		return nil, err
+	}
+	return block, nil
+}
+
 func (c *ChainTx) SaveShardBlock(block types.BlockInterface) (err error) {
 	if block == nil {
 		return errors.New(log, "the block is nil")

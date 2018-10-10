@@ -85,23 +85,23 @@ func TestCmBlockHeader(t *testing.T) {
 	elog.Log.Info(headerNew.JsonString())
 	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
 
-	block := types.CMBlock{
-		CMBlockHeader: header,
-		Shards: []types.Shard{types.Shard{
-			Id: 10,
-			Member: []types.NodeInfo{
-				{
-					PublicKey: []byte("12340987"),
-					Address:   "ew62",
-					Port:      "34523532",
-				},
+	Shards := []types.Shard{types.Shard{
+		Id: 10,
+		Member: []types.NodeInfo{
+			{
+				PublicKey: []byte("12340987"),
+				Address:   "ew62",
+				Port:      "34523532",
 			},
-			MemberAddr: []types.NodeAddr{{
-				Address: "1234",
-				Port:    "5678",
-			}},
+		},
+		MemberAddr: []types.NodeAddr{{
+			Address: "1234",
+			Port:    "5678",
 		}},
-	}
+	}}
+
+	block, err := types.NewCmBlock(header, Shards)
+	errors.CheckErrorPanic(err)
 	data, err = block.Serialize()
 	errors.CheckErrorPanic(err)
 	blockNew := types.CMBlock{}
