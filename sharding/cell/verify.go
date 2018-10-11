@@ -25,7 +25,7 @@ func (c *Cell) VerifyCmPacket(p *sc.NetPacket) *sc.CsPacket {
 	/*missing_func need verify signature here*/
 
 	var csp sc.CsPacket
-	(&csp).Copyhead(p)
+	(&csp).CopyHeader(p)
 	(&csp).Packet = &cm
 
 	return &csp
@@ -50,7 +50,7 @@ func (c *Cell) VerifyFinalPacket(p *sc.NetPacket) *sc.CsPacket {
 	/*missing_func need verify signature here*/
 
 	var csp sc.CsPacket
-	csp.Copyhead(p)
+	csp.CopyHeader(p)
 	csp.Packet = &final
 
 	return &csp
@@ -91,7 +91,7 @@ func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
 	/*missing_func need verify signature here*/
 
 	var csp sc.CsPacket
-	csp.Copyhead(p)
+	csp.CopyHeader(p)
 	csp.Packet = &vc
 
 	return &csp
@@ -111,16 +111,14 @@ func (c *Cell) VerifyMinorPacket(p *sc.NetPacket) *sc.CsPacket {
 		return nil
 	}
 
-	if cm != nil {
-		if cm.Height != minor.CMEpochNo {
-			log.Error("minor block epoch error ", minor.CMEpochNo, " current epoch ", cm.Height)
-			return nil
-		}
+	if cm.Height != minor.CMEpochNo {
+		log.Error("minor block epoch error ", minor.CMEpochNo, " current epoch ", cm.Height)
+		return nil
 	}
 
 	/*missing_func need verify signature here*/
 	var csp sc.CsPacket
-	csp.Copyhead(p)
+	csp.CopyHeader(p)
 	csp.Packet = &minor
 
 	return &csp

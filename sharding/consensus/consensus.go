@@ -100,6 +100,7 @@ func (c *Consensus) ProcessRetransPacket() {
 		c.sendCommit()
 	} else {
 		log.Debug("resend packet  step ", c.step)
-		c.sendCsPacket()
+		packet := c.instance.MakeNetPacket(c.step)
+		c.sendCsPacket(packet)
 	}
 }

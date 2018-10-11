@@ -32,10 +32,23 @@ type CsPacket struct {
 	Packet     interface{}
 }
 
-func (c *CsPacket) Copyhead(p *NetPacket) {
+func (c *CsPacket) CopyHeader(p *NetPacket) {
 	c.PacketType = p.PacketType
 	c.BlockType = p.BlockType
 	c.Step = p.Step
+}
+
+func (p *NetPacket) CopyHeader(c *CsPacket) {
+	p.PacketType = c.PacketType
+	p.BlockType = c.BlockType
+	p.Step = c.Step
+}
+
+func (p1 *NetPacket) DupHeader(p2 *NetPacket) {
+	p1.ChainId = p2.ChainId
+	p1.PacketType = p2.PacketType
+	p1.BlockType = p2.BlockType
+	p1.Step = p2.Step
 }
 
 type CsView struct {

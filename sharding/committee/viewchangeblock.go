@@ -146,14 +146,7 @@ func (c *committee) createVcBlock() (*types.ViewChangeBlock, bool) {
 
 	log.Debug("create vc block epoch ", epoch, " height ", height, " round ", round)
 	vc := &types.ViewChangeBlock{
-		ViewChangeBlockHeader: types.ViewChangeBlockHeader{
-			CMEpochNo:        0,
-			FinalBlockHeight: 0,
-			Round:            0,
-			Candidate:        types.NodeInfo{},
-			Timestamp:        0,
-			COSign:           nil,
-		},
+		ViewChangeBlockHeader: nil,
 	}
 
 	vc.CMEpochNo = epoch
@@ -172,6 +165,8 @@ func (c *committee) createVcBlock() (*types.ViewChangeBlock, bool) {
 	cosign := &types.COSign{}
 	cosign.Step1 = 1
 	cosign.Step2 = 0
+
+	vc.COSign = cosign
 
 	log.Debug("candidate address ", candi.Address, " port ", candi.Port)
 
@@ -197,8 +192,8 @@ func (c *committee) productViewChangeBlock(msg interface{}) {
 	c.stateTimer.Reset(time.Duration(sc.DefaultProductViewChangeBlockTimer*(c.vccount+1)) * time.Second)
 }
 
-func (c *committee) recheckVcPacket(p interface{}) bool {
-	/*recheck block*/
+func (c *committee) checkVcPacket(p interface{}) bool {
+	/*check block*/
 	csp := p.(*sc.CsPacket)
 	if csp.BlockType != sc.SD_VIEWCHANGE_BLOCK {
 		log.Error("it is not vc block, drop it")
@@ -211,7 +206,7 @@ func (c *committee) recheckVcPacket(p interface{}) bool {
 func (c *committee) processViewchangeConsensusPacket(p interface{}) {
 	log.Debug("process view change consensus block")
 
-	if !c.recheckVcPacket(p) {
+	if !c.checkVcPacket(p) {
 		return
 	}
 

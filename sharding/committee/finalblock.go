@@ -163,7 +163,7 @@ func (c *committee) productFinalBlock(msg interface{}) {
 	c.stateTimer.Reset(sc.DefaultProductFinalBlockTimer * time.Second)
 }
 
-func (c *committee) recheckFinalPacket(p interface{}) bool {
+func (c *committee) checkFinalPacket(p interface{}) bool {
 
 	/*recheck block*/
 	csp := p.(*sc.CsPacket)
@@ -186,7 +186,7 @@ func (c *committee) recheckFinalPacket(p interface{}) bool {
 func (c *committee) processConsensusFinalPacket(p interface{}) {
 	log.Debug("process final consensus block")
 
-	if !c.recheckFinalPacket(p) {
+	if !c.checkFinalPacket(p) {
 		return
 	}
 
@@ -200,7 +200,7 @@ func (c *committee) processConsensBlockOnWaitStatus(p interface{}) bool {
 		return false
 	}
 
-	if !c.recheckFinalPacket(p) {
+	if !c.checkFinalPacket(p) {
 		return false
 	}
 
