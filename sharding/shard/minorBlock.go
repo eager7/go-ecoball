@@ -141,6 +141,12 @@ func (s *shard) createMinorBlock() *types.MinorBlock {
 	minor.CMEpochNo = lastcm.Height
 	minor.ShardId = uint32(s.ns.Shardid)
 
+	cosign := &types.COSign{}
+	cosign.Step1 = 1
+	cosign.Step2 = 0
+
+	minor.COSign = cosign
+
 	return minor
 }
 
@@ -162,8 +168,8 @@ func (s *shard) recvCommitMinorBlock(bl *types.MinorBlock) {
 	s.fsm.Execute(ActWaitBlock, nil)
 }
 
-func (s *shard) recheckMinorPacket(p interface{}) bool {
-	/*recheck block*/
+func (s *shard) checkMinorPacket(p interface{}) bool {
+	/*check block*/
 	csp := p.(*sc.CsPacket)
 	if csp.BlockType != sc.SD_MINOR_BLOCK {
 		log.Error("it is not minor block, drop it")
@@ -183,7 +189,7 @@ func (s *shard) recheckMinorPacket(p interface{}) bool {
 func (s *shard) processConsensusMinorPacket(p interface{}) {
 	log.Debug("process minor consensus packet")
 
-	if !s.recheckMinorPacket(p) {
+	if !s.checkMinorPacket(p) {
 		return
 	}
 

@@ -14,12 +14,10 @@ func (c *Consensus) isVoteEnough(counter uint32) bool {
 	}
 }
 
-func (c *Consensus) sendCsPacket() {
-	packet := c.instance.MakeNetPacket(c.step)
-
+func (c *Consensus) sendCsPacket(packet *sc.NetPacket) {
 	net.Np.BroadcastBlock(packet)
 
-	if c.step == StepCommit {
+	if c.step == StepNIL {
 		if c.ns.NodeType == sc.NodeCommittee {
 			net.Np.SendBlockToShards(packet)
 		} else if c.ns.NodeType == sc.NodeShard {

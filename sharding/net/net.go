@@ -128,10 +128,8 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 	}
 
 	sp := &sc.NetPacket{}
+	sp.DupHeader(packet)
 	sp.PacketType = netmsg.APP_MSG_SHARDING_PACKET
-	sp.BlockType = packet.BlockType
-	sp.ChainId = packet.ChainId
-	sp.Step = packet.Step
 	sp.Packet = packet.Packet
 
 	cm := n.ns.GetLastCMBlock()
@@ -144,6 +142,7 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 			}
 		}
 	}
+
 }
 
 func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
@@ -155,10 +154,8 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 	}
 
 	sp := &sc.NetPacket{}
+	sp.DupHeader(packet)
 	sp.PacketType = netmsg.APP_MSG_SHARDING_PACKET
-	sp.BlockType = packet.BlockType
-	sp.ChainId = packet.ChainId
-	sp.Step = packet.Step
 	sp.Packet = packet.Packet
 
 	cm := n.ns.GetCmWorks()

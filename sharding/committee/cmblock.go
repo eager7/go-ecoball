@@ -3,7 +3,6 @@ package committee
 import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/etime"
 	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
@@ -115,6 +114,40 @@ func (b *cmBlockCsi) GetCandidate() *types.NodeInfo {
 	return nil
 }
 
+func (c *committee) reshardWorker() (candidate *types.NodeInfo, shards []types.Shard) {
+	/*missing_func need get deposit account info*/
+	//candidate, err := c.ns.Ledger.GetProducerList(config.ChainHash)
+
+	var can types.NodeInfo
+	backup := c.ns.GetBackup()
+	if backup != nil {
+		can.PublicKey = []byte(backup.Pubkey)
+		can.Address = backup.Address
+		can.Port = backup.Port
+
+		candidate = &can
+	} else {
+		candidate = nil
+	}
+
+	ss := simulate.GetShards()
+	var shard types.Shard
+	for _, member := range ss {
+		var worker types.NodeInfo
+		worker.PublicKey = []byte(member.Pubkey)
+		worker.Address = member.Address
+		worker.Port = member.Port
+
+		shard.Member = append(shard.Member, worker)
+	}
+
+	if len(ss) > 0 {
+		shards = append(shards, shard)
+	}
+
+	return
+}
+
 func (c *committee) createCommitteeBlock() *types.CMBlock {
 	last := c.ns.GetLastCMBlock()
 	var height uint64
@@ -126,48 +159,50 @@ func (c *committee) createCommitteeBlock() *types.CMBlock {
 
 	log.Debug("create cm block height ", height)
 
-	cm := &types.CMBlock{
-		CMBlockHeader: types.CMBlockHeader{
-			ChainID:      common.Hash{},
-			Version:      0,
-			Height:       0,
-			Timestamp:    0,
-			PrevHash:     common.Hash{},
-			LeaderPubKey: nil,
-			Nonce:        0,
-			Candidate:    types.NodeInfo{},
-			ShardsHash:   common.Hash{},
-			COSign:       nil,
-		},
-		Shards: nil,
-	}
-
-	cm.Height = height
-
 	cosign := &types.COSign{}
 	cosign.Step1 = 1
 	cosign.Step2 = 0
 
-	cm.COSign = cosign
+	header := types.CMBlockHeader{
+		ChainID:      common.Hash{},
+		Version:      0,
+		Height:       0,
+		Timestamp:    0,
+		PrevHash:     common.Hash{},
+		LeaderPubKey: nil,
+		Nonce:        0,
+		Candidate:    types.NodeInfo{},
+		ShardsHash:   common.Hash{},
+		COSign:       nil,
+	}
+	header.Height = height
+	header.COSign = cosign
 
-	candidate, err := c.ns.Ledger.GetProducerList(config.ChainHash)
-	if err == nil && candidate != nil && len(candidate) > 0 {
-		panic("missing_func")
-		/*missing_func need get account info*/
-		//cm.Candidate.PublicKey = []byte(candidate[0].Pubkey)
-		//cm.Candidate.Address = candidate[0].Address
-		//cm.Candidate.Port = candidate[0].Port
-	} else {
-		/*missing_func there is no candidate maybe we can select new leader by vrf*/
-		backup := c.ns.GetBackup()
-		if backup != nil {
-			cm.Candidate.PublicKey = []byte(backup.Pubkey)
-			cm.Candidate.Address = backup.Address
-			cm.Candidate.Port = backup.Port
-		}
+	candidate, shards := c.reshardWorker()
+	if candidate != nil {
+		header.Candidate.PublicKey = candidate.PublicKey
+		header.Candidate.Address = candidate.Address
+		header.Candidate.Port = candidate.Port
 	}
 
-	return cm
+	cmb := &types.CMBlock{
+		CMBlockHeader: header,
+		Shards:        make([]types.Shard, len(shards)),
+	}
+
+	copy(cmb.Shards, shards)
+
+	//for i, shard := range shards {
+	//	cmb.Shards[i].Id = shard.Id
+	//	cmb.Shards[i].Member = make([]types.NodeInfo, len(shard.Member))
+	//	for j, node := range shard.Member {
+	//		cmb.Shards[i].Member[j].PublicKey = node.PublicKey
+	//		cmb.Shards[i].Member[j].Port = node.Port
+	//		cmb.Shards[i].Member[j].Address = node.Address
+	//	}
+	//}
+
+	return cmb
 
 }
 
@@ -183,8 +218,8 @@ func (c *committee) productCommitteeBlock(msg interface{}) {
 	c.stateTimer.Reset(sc.DefaultProductCmBlockTimer * time.Second)
 }
 
-func (c *committee) recheckCmPacket(p interface{}) bool {
-	/*recheck block*/
+func (c *committee) checkCmPacket(p interface{}) bool {
+	/*check block*/
 	csp := p.(*sc.CsPacket)
 	if csp.BlockType != sc.SD_CM_BLOCK {
 		log.Error("it is not cm block, drop it")
@@ -204,7 +239,7 @@ func (c *committee) recheckCmPacket(p interface{}) bool {
 func (c *committee) processConsensusCmPacket(p interface{}) {
 	log.Debug("process cm consensus packet")
 
-	if !c.recheckCmPacket(p) {
+	if !c.checkCmPacket(p) {
 		return
 	}
 

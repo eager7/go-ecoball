@@ -1,10 +1,12 @@
 package shard
 
 import (
-	"encoding/json"
 	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"github.com/ecoball/go-ecoball/sharding/consensus"
+	"github.com/ecoball/go-ecoball/sharding/net"
+	"github.com/gin-gonic/gin/json"
 )
 
 func (s *shard) verifyPacket(p *sc.NetPacket) {
@@ -20,6 +22,11 @@ func (s *shard) verifyPacket(p *sc.NetPacket) {
 }
 
 func (s *shard) verifyConsensusPacket(p *sc.NetPacket) {
+	if p.Step >= consensus.StepNIL || p.Step < consensus.StepPrePare {
+		log.Error("wrong step ", p.Step)
+		return
+	}
+
 	var csp *sc.CsPacket
 
 	if p.BlockType == sc.SD_MINOR_BLOCK {
@@ -35,53 +42,22 @@ func (s *shard) verifyConsensusPacket(p *sc.NetPacket) {
 }
 
 func (s *shard) verifyShardingPacket(p *sc.NetPacket) {
+	var csp *sc.CsPacket
+
 	if p.BlockType == sc.SD_CM_BLOCK {
-		s.verifyCmBlock(p)
+		csp = s.ns.VerifyCmPacket(p)
 	} else if p.BlockType == sc.SD_FINAL_BLOCK {
-		s.verifyFinalBlock(p)
+		csp = s.ns.VerifyFinalPacket(p)
 	} else if p.BlockType == sc.SD_VIEWCHANGE_BLOCK {
-		s.verifyViewChangeBlock(p)
+		csp = s.ns.VerifyViewChangePacket(p)
 	} else {
 		log.Error("wrong block type")
 		return
 	}
-}
 
-func (s *shard) verifyMinorBlock(p *sc.NetPacket) {
-	var minor types.MinorBlock
-	err := json.Unmarshal(p.Packet, &minor)
-	if err != nil {
-		log.Error("minor block unmarshal error ", err)
-		return
+	if csp != nil {
+		s.ppc <- csp
 	}
-
-	last := s.ns.GetLastCMBlock()
-	if last == nil {
-		log.Debug("wait cm packet")
-		return
-	}
-
-	if last.Height != minor.CMEpochNo {
-		log.Debug("old cm packet")
-		return
-	}
-
-	/*missing_func need verify signature here*/
-
-	var csp sc.CsPacket
-	(&csp).Copyhead(p)
-	(&csp).Packet = &minor
-
-	s.ppc <- &csp
-}
-
-func (s *shard) verifyCmBlock(p *sc.NetPacket) {
-}
-
-func (s *shard) verifyFinalBlock(p *sc.NetPacket) {
-}
-
-func (s *shard) verifyViewChangeBlock(p *sc.NetPacket) {
 }
 
 func (s *shard) consensusCb(bl interface{}) {
@@ -90,17 +66,6 @@ func (s *shard) consensusCb(bl interface{}) {
 		s.recvCommitMinorBlock(bl.(*types.MinorBlock))
 	default:
 		log.Error("consensus call back wrong packet type ", blockType)
-	}
-}
-
-func (s *shard) processPacket(packet *sc.CsPacket) {
-	switch packet.PacketType {
-	case netmsg.APP_MSG_CONSENSUS_PACKET:
-		s.processConsensusPacket(packet)
-	case netmsg.APP_MSG_SHARDING_PACKET:
-		s.processShardingPacket(packet)
-	default:
-		log.Error("wrong packet")
 	}
 }
 
@@ -117,18 +82,36 @@ func (s *shard) processShardingPacket(p *sc.CsPacket) {
 	case sc.SD_CM_BLOCK:
 		cm := p.Packet.(*types.CMBlock)
 		s.ns.SaveLastCMBlock(cm)
+		s.broadcastShardingPacket(p)
+
 		s.fsm.Execute(ActProductMinorBlock, nil)
 	case sc.SD_FINAL_BLOCK:
 		final := p.Packet.(*types.FinalBlock)
 		s.ns.SaveLastFinalBlock(final)
+		s.broadcastShardingPacket(p)
+
 		if final.Height%sc.DefaultEpochFinalBlockNumber != 0 {
 			s.fsm.Execute(ActProductMinorBlock, nil)
 		}
 	case sc.SD_VIEWCHANGE_BLOCK:
 		vc := p.Packet.(*types.ViewChangeBlock)
 		s.ns.SaveLastViewchangeBlock(vc)
+		s.broadcastShardingPacket(p)
 	default:
 		log.Error("block type error ", p.BlockType)
 		return
+	}
+
+}
+
+func (s *shard) broadcastShardingPacket(p *sc.CsPacket) {
+	sp := &sc.NetPacket{}
+	sp.CopyHeader(p)
+	block, err := json.Marshal(p.Packet)
+	if err == nil {
+		sp.Packet = block
+		net.Np.BroadcastBlock(sp)
+	} else {
+		log.Error("broadcast sharding packet mashal error ", err)
 	}
 }

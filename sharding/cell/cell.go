@@ -1,13 +1,12 @@
 package cell
 
 import (
-	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
-	"io/ioutil"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 )
 
 var (
@@ -40,47 +39,14 @@ func MakeCell(l ledger.Ledger) *Cell {
 	}
 }
 
-type NodeConfig struct {
-	Pubkey  string
-	Address string
-	Port    string
-}
-
-type sconfig struct {
-	Pubkey    string
-	Address   string
-	Port      string
-	Committee []NodeConfig
-	Shard     []NodeConfig
-}
-
-func (c *Cell) readConfigFile(filename string) *sconfig {
-	bytes, err := ioutil.ReadFile(filename)
-	if err != nil {
-		log.Info("read config file error")
-		return nil
-	}
-
-	str := string(bytes)
-
-	var cfg sconfig
-	if err := json.Unmarshal([]byte(str), &cfg); err != nil {
-		log.Info("json unmarshal error")
-		return nil
-	}
-
-	return &cfg
-}
-
 func (c *Cell) LoadConfig() {
-	cfg := c.readConfigFile("config.json")
+	self := simulate.GetNodeInfo()
+	(&c.Self).Copy(&self)
 
-	c.Self.Pubkey = cfg.Pubkey
-	c.Self.Address = cfg.Address
-	c.Self.Port = cfg.Port
+	cmt := simulate.GetCommittee()
 
 	nodeType := sc.NodeNil
-	for _, member := range cfg.Committee {
+	for _, member := range cmt {
 		var worker Worker
 		worker.Pubkey = member.Pubkey
 		worker.Address = member.Address
@@ -93,7 +59,7 @@ func (c *Cell) LoadConfig() {
 	}
 
 	if nodeType == sc.NodeNil {
-		nodeType = sc.NodeCandidate
+		nodeType = sc.NodeShard
 	}
 
 	c.NodeType = nodeType
@@ -326,8 +292,8 @@ func (c *Cell) saveShardsInfoFromCMBlock(cmb *types.CMBlock) {
 	c.NodeType = sc.NodeCandidate
 	c.shard = c.shard[:0]
 
-	for i, shard := range cmb.Shards {
-		for _, member := range shard.Member {
+	for _, shard := range cmb.Shards {
+		for i, member := range shard.Member {
 			var worker Worker
 			worker.Pubkey = string(member.PublicKey)
 			worker.Address = member.Address
@@ -335,7 +301,7 @@ func (c *Cell) saveShardsInfoFromCMBlock(cmb *types.CMBlock) {
 
 			if c.Self.Equal(&worker) {
 				c.NodeType = sc.NodeShard
-				c.Shardid = uint16(i + 1)
+				c.Shardid = uint16(i)
 				break
 			}
 		}

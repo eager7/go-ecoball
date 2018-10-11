@@ -4,9 +4,11 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/etime"
 	"github.com/ecoball/go-ecoball/common/message"
+	netmsg "github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
+	"github.com/ecoball/go-ecoball/sharding/net"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 )
@@ -27,6 +29,7 @@ const (
 	ActWaitBlock
 	ActRecvConsensusPacket
 	ActChainNotSync
+	ActStateTimeout
 )
 
 type shard struct {
@@ -36,6 +39,7 @@ type shard struct {
 	ppc    chan *sc.CsPacket
 	pvc    <-chan *sc.NetPacket
 
+	stateTimer   *time.Timer
 	retransTimer *time.Timer
 	cs           *consensus.Consensus
 }
@@ -52,12 +56,16 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 		[]sc.FsmElem{
 			{blockSync, ActWaitBlock, nil, nil, nil, waitBlock},
 			{blockSync, ActProductMinorBlock, nil, s.productMinorBlock, nil, productMinoBlock},
+			{blockSync, ActStateTimeout, nil, s.processBlockSyncTimeout, nil, sc.StateNil},
 
 			{waitBlock, ActProductMinorBlock, nil, s.productMinorBlock, nil, productMinoBlock},
 			{waitBlock, ActChainNotSync, nil, nil, nil, blockSync},
 
 			{productMinoBlock, ActRecvConsensusPacket, nil, s.processConsensusMinorPacket, nil, sc.StateNil},
+			{productMinoBlock, ActWaitBlock, nil, nil, nil, waitBlock},
 		})
+
+	net.MakeNet(ns)
 
 	return s
 }
@@ -80,6 +88,7 @@ func (s *shard) Start() {
 
 func (s *shard) sRoutine() {
 	log.Debug("start shard routine")
+	s.stateTimer = time.NewTimer(sc.DefaultSyncBlockTimer * time.Second)
 	s.retransTimer = time.NewTimer(sc.DefaultRetransTimer * time.Millisecond)
 
 	for {
@@ -88,6 +97,8 @@ func (s *shard) sRoutine() {
 			s.processActorMsg(msg)
 		case packet := <-s.ppc:
 			s.processPacket(packet)
+		case <-s.stateTimer.C:
+			s.processStateTimeout()
 		case <-s.retransTimer.C:
 			s.processRetransTimeout()
 		}
@@ -119,5 +130,16 @@ func (s *shard) setRetransTimer(bStart bool) {
 
 	if bStart {
 		s.retransTimer.Reset(sc.DefaultRetransTimer * time.Second)
+	}
+}
+
+func (s *shard) processPacket(packet *sc.CsPacket) {
+	switch packet.PacketType {
+	case netmsg.APP_MSG_CONSENSUS_PACKET:
+		s.processConsensusPacket(packet)
+	case netmsg.APP_MSG_SHARDING_PACKET:
+		s.processShardingPacket(packet)
+	default:
+		log.Error("wrong packet")
 	}
 }

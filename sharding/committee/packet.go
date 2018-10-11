@@ -6,6 +6,8 @@ import (
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
+	"github.com/ecoball/go-ecoball/sharding/net"
+	"github.com/gin-gonic/gin/json"
 	"time"
 )
 
@@ -98,6 +100,16 @@ func (c *committee) processShardingPacket(p *sc.CsPacket) {
 
 	minor := p.Packet.(*types.MinorBlock)
 	c.ns.SaveMinorBlockToPool(minor)
+
+	sp := &sc.NetPacket{}
+	sp.CopyHeader(p)
+	block, err := json.Marshal(p.Packet)
+	if err == nil {
+		sp.Packet = block
+		net.Np.BroadcastBlock(sp)
+	} else {
+		log.Error("broadcast sharding packet mashal error ", err)
+	}
 
 	if c.ns.IsMinorBlockEnoughInPool() {
 		c.fsm.Execute(ActProductFinalBlock, nil)

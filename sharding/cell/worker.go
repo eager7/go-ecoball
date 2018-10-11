@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 )
 
 type Worker struct {
@@ -19,6 +20,12 @@ func (a *Worker) Equal(b *Worker) bool {
 func (a *Worker) EqualNode(b *types.NodeInfo) bool {
 	bkey := string(b.PublicKey)
 	return a.Pubkey == bkey
+}
+
+func (a *Worker) Copy(b *simulate.NodeConfig) {
+	a.Pubkey = b.Pubkey
+	a.Address = b.Address
+	a.Port = b.Port
 }
 
 func (a *Worker) InitWork(b *types.NodeInfo) {
