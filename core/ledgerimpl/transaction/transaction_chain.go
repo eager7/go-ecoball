@@ -605,31 +605,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 }
 
 //ShardBlock
-func (c *ChainTx) NewShardBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
-	s, err := c.StateDB.FinalDB.CopyState()
-	if err != nil {
-		return nil, err
-	}
-	s.Type = state.CopyType
-	var cpu, net float64
-	for i := 0; i < len(txs); i++ {
-		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
-		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
-			log.Warn(txs[i].JsonString())
-			//c.ResetStateDB(c.CurrentHeader)
-			return nil, err
-		} else {
-			cpu += cp
-			net += n
-		}
-	}
-	block, err := types.NewBlock(c.CurrentHeader.ChainID, c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
-	if err != nil {
-		//c.ResetStateDB(c.CurrentHeader)
-		return nil, err
-	}
-	return block, nil
-}
+//func (c *ChainTx) NewShardBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {}
 
 func (c *ChainTx) SaveShardBlock(block types.BlockInterface) (err error) {
 	if block == nil {
@@ -683,6 +659,7 @@ func (c *ChainTx) SaveShardBlock(block types.BlockInterface) (err error) {
 		}
 		heKey = Block.MinorBlockHeader.Hash().Bytes()
 		c.LastHeader.MinorHeader = &Block.MinorBlockHeader
+		c.BlockStore.Put(common.Uint32ToBytes(Block.ShardId), Block.Hash().Bytes())
 	case types.HeFinalBlock:
 		Block, ok := block.GetObject().(types.FinalBlock)
 		if !ok {
@@ -755,4 +732,12 @@ func (c *ChainTx) GetLastShardBlock(typ types.HeaderType) (types.BlockInterface,
 		return nil, errors.New(log, fmt.Sprintf("unknown block type:%d", typ))
 	}
 	return nil, nil
+}
+
+func (c *ChainTx) GetLastShardBlockById(shardId uint32) (types.BlockInterface, error) {
+	if data, err := c.BlockStore.Get(common.Uint32ToBytes(shardId)); err != nil {
+		hash := common.NewHash(data)
+		return c.GetShardBlockByHash(types.HeMinorBlock, hash)
+	}
+	return nil, errors.New(log, fmt.Sprintf("can't find this shard id block:%d", shardId))
 }

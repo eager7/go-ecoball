@@ -363,3 +363,11 @@ func (l *LedgerImpl) GetLastShardBlock(chainID common.Hash, typ types.HeaderType
 	}
 	return chain.GetLastShardBlock(typ)
 }
+
+func (l *LedgerImpl) GetLastShardBlockById(chainID common.Hash, shardId uint32) (types.BlockInterface, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.GetLastShardBlockById(shardId)
+}

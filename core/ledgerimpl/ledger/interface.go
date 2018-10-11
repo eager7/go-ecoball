@@ -52,4 +52,5 @@ type Ledger interface {
 	GetShardBlockByHash(chainID common.Hash, typ types.HeaderType, hash common.Hash) (types.BlockInterface, error)
 	GetShardBlockByHeight(chainID common.Hash, typ types.HeaderType, height uint64) (types.BlockInterface, error)
 	GetLastShardBlock(chainID common.Hash, typ types.HeaderType) (types.BlockInterface, error)
+	GetLastShardBlockById(chainID common.Hash, shardId uint32) (types.BlockInterface, error)
 }
