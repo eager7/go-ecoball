@@ -82,11 +82,11 @@ func (c *committee) processRetransTimeout() {
 func (c *committee) consensusCb(bl interface{}) {
 	switch blockType := bl.(type) {
 	case *types.CMBlock:
-		c.recvCommitCmBlock(bl.(*types.CMBlock))
+		c.commitCmBlock(bl.(*types.CMBlock))
 	case *types.FinalBlock:
-		c.recvCommitFinalBlock(bl.(*types.FinalBlock))
+		c.commitFinalBlock(bl.(*types.FinalBlock))
 	case *types.ViewChangeBlock:
-		c.recvCommitViewchangeBlock(bl.(*types.ViewChangeBlock))
+		c.commitViewchangeBlock(bl.(*types.ViewChangeBlock))
 	default:
 		log.Error("consensus call back wrong packet type ", blockType)
 	}

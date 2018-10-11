@@ -63,7 +63,7 @@ func (s *shard) verifyShardingPacket(p *sc.NetPacket) {
 func (s *shard) consensusCb(bl interface{}) {
 	switch blockType := bl.(type) {
 	case *types.MinorBlock:
-		s.recvCommitMinorBlock(bl.(*types.MinorBlock))
+		s.commitMinorBlock(bl.(*types.MinorBlock))
 	default:
 		log.Error("consensus call back wrong packet type ", blockType)
 	}

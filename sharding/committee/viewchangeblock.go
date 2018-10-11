@@ -213,7 +213,7 @@ func (c *committee) processViewchangeConsensusPacket(p interface{}) {
 	c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
-func (c *committee) recvCommitViewchangeBlock(bl *types.ViewChangeBlock) {
+func (c *committee) commitViewchangeBlock(bl *types.ViewChangeBlock) {
 	log.Debug("recv consensus view change block epoch ", bl.CMEpochNo, " height ", bl.FinalBlockHeight, " round  ", bl.Round)
 	simulate.TellBlock(bl)
 

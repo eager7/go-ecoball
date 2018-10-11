@@ -37,7 +37,7 @@ func (b *minorBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 	}
 
 	if update.ShardId != b.bk.ShardId {
-		log.Error("candidate address not same")
+		log.Error("shardid not same")
 		return false
 	}
 
@@ -158,8 +158,13 @@ func (s *shard) productMinorBlock(msg interface{}) {
 	s.cs.StartConsensus(csi)
 }
 
-func (s *shard) recvCommitMinorBlock(bl *types.MinorBlock) {
-	log.Debug("recv consensus minor block height ", bl.Height)
+func (s *shard) reproductMinorBlock(msg interface{}) {
+	s.cs.Reset()
+	s.productMinorBlock(msg)
+}
+
+func (s *shard) commitMinorBlock(bl *types.MinorBlock) {
+	log.Debug("consensus minor block height ", bl.Height)
 
 	simulate.TellMinorBlock(bl)
 

@@ -27,7 +27,7 @@ const (
 	DefaultProductCmBlockTimer = 20
 	DefaultCmBlockWindow       = 10
 
-	DefaultWaitMinorBlockTimer    = 20
+	DefaultWaitMinorBlockTimer    = 180
 	DefaultProductFinalBlockTimer = 20
 	DefaultFinalBlockWindow       = 10
 

@@ -118,12 +118,12 @@ func (c *committee) reshardWorker() (candidate *types.NodeInfo, shards []types.S
 	/*missing_func need get deposit account info*/
 	//candidate, err := c.ns.Ledger.GetProducerList(config.ChainHash)
 
-	var can types.NodeInfo
-	backup := c.ns.GetBackup()
-	if backup != nil {
-		can.PublicKey = []byte(backup.Pubkey)
-		can.Address = backup.Address
-		can.Port = backup.Port
+	cw := simulate.GetCandidateList()
+	if len(cw) > 0 {
+		var can types.NodeInfo
+		can.PublicKey = []byte(cw[0].Pubkey)
+		can.Address = cw[0].Address
+		can.Port = cw[0].Port
 
 		candidate = &can
 	} else {
@@ -246,7 +246,7 @@ func (c *committee) processConsensusCmPacket(p interface{}) {
 	c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
-func (c *committee) recvCommitCmBlock(bl *types.CMBlock) {
+func (c *committee) commitCmBlock(bl *types.CMBlock) {
 	log.Debug("recv consensus cm block height ", bl.Height)
 	simulate.TellBlock(bl)
 

@@ -74,11 +74,17 @@ func (c *Cell) SaveLastCMBlock(bk *types.CMBlock) {
 		c.addCommitteWorker(worker)
 	}
 
-	if c.NodeType == sc.NodeShard {
+	if c.IsCommitteeMember() {
+		c.NodeType = sc.NodeCommittee
+		c.minorBlockPool.resize(len(bk.Shards))
+	} else {
+		if c.NodeType == sc.NodeCommittee {
+			log.Error("we are not in committee now, restart ")
+			panic("we are not in committee now, restart ")
+		}
 		c.saveShardsInfoFromCMBlock(bk)
 	}
 
-	c.minorBlockPool.resize(len(bk.Shards))
 }
 
 func (c *Cell) GetLastCMBlock() *types.CMBlock {
@@ -226,6 +232,10 @@ func (c *Cell) isShardBackup() bool {
 	}
 }
 
+func (c *Cell) IsCommitteeMember() bool {
+	return c.cm.isMember(&c.Self)
+}
+
 func (c *Cell) GetCmWorks() []*Worker {
 	return c.cm.member
 }
@@ -292,8 +302,8 @@ func (c *Cell) saveShardsInfoFromCMBlock(cmb *types.CMBlock) {
 	c.NodeType = sc.NodeCandidate
 	c.shard = c.shard[:0]
 
-	for _, shard := range cmb.Shards {
-		for i, member := range shard.Member {
+	for i, shard := range cmb.Shards {
+		for _, member := range shard.Member {
 			var worker Worker
 			worker.Pubkey = string(member.PublicKey)
 			worker.Address = member.Address
@@ -301,7 +311,8 @@ func (c *Cell) saveShardsInfoFromCMBlock(cmb *types.CMBlock) {
 
 			if c.Self.Equal(&worker) {
 				c.NodeType = sc.NodeShard
-				c.Shardid = uint16(i)
+				c.Shardid = uint16(i) + 1
+				log.Debug("our shardid is ", c.Shardid)
 				break
 			}
 		}

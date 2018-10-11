@@ -27,3 +27,7 @@ func GetMinorBlockPool() []*types.MinorBlock {
 func GetPreproductionMinorBlock() *types.MinorBlock {
 	return nil
 }
+
+func GetCandidateList() (workers []NodeConfig) {
+	return
+}

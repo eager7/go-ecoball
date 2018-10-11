@@ -104,6 +104,16 @@ func (s *workerSet) isBackup(self *Worker) bool {
 	}
 }
 
+func (s *workerSet) isMember(self *Worker) bool {
+	for _, work := range s.member {
+		if work.Equal(self) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (s *workerSet) resetNewLeader(leader *Worker) {
 	for i, work := range s.member {
 		if work.Equal(leader) {

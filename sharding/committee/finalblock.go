@@ -209,7 +209,7 @@ func (c *committee) processConsensBlockOnWaitStatus(p interface{}) bool {
 	return c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
-func (c *committee) recvCommitFinalBlock(bl *types.FinalBlock) {
+func (c *committee) commitFinalBlock(bl *types.FinalBlock) {
 	log.Debug("recv consensus final block height ", bl.Height)
 	simulate.TellBlock(bl)
 

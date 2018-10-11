@@ -41,7 +41,7 @@ func (c *Consensus) sendCsRspPacket() {
 
 }
 
-func (c *Consensus) reset() {
+func (c *Consensus) Reset() {
 	c.step = StepNIL
 	c.instance = nil
 	c.view = nil
@@ -49,6 +49,6 @@ func (c *Consensus) reset() {
 
 func (c *Consensus) csComplete() {
 	bl := c.instance.GetCsBlock()
-	c.reset()
+	c.Reset()
 	c.ccb(bl)
 }
