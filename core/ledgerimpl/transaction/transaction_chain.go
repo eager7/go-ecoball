@@ -659,7 +659,9 @@ func (c *ChainTx) SaveShardBlock(block types.BlockInterface) (err error) {
 		}
 		heKey = Block.MinorBlockHeader.Hash().Bytes()
 		c.LastHeader.MinorHeader = &Block.MinorBlockHeader
-		c.BlockStore.Put(common.Uint32ToBytes(Block.ShardId), Block.Hash().Bytes())
+		if err := c.BlockStore.Put(common.Uint32ToBytes(Block.ShardId), Block.Hash().Bytes()); err != nil {
+			return err
+		}
 	case types.HeFinalBlock:
 		Block, ok := block.GetObject().(types.FinalBlock)
 		if !ok {
@@ -735,9 +737,10 @@ func (c *ChainTx) GetLastShardBlock(typ types.HeaderType) (types.BlockInterface,
 }
 
 func (c *ChainTx) GetLastShardBlockById(shardId uint32) (types.BlockInterface, error) {
-	if data, err := c.BlockStore.Get(common.Uint32ToBytes(shardId)); err != nil {
-		hash := common.NewHash(data)
-		return c.GetShardBlockByHash(types.HeMinorBlock, hash)
+	data, err := c.BlockStore.Get(common.Uint32ToBytes(shardId))
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New(log, fmt.Sprintf("can't find this shard id block:%d", shardId))
+	hash := common.NewHash(data)
+	return c.GetShardBlockByHash(types.HeMinorBlock, hash)
 }

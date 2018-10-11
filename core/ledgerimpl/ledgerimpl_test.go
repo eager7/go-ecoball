@@ -137,23 +137,21 @@ func TestInterface(t *testing.T) {
 		COSign:     &types.COSign{},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
-	block := types.CMBlock{
-		CMBlockHeader: header,
-		Shards: []types.Shard{types.Shard{
-			Member: []types.NodeInfo{
-				{
-					PublicKey: []byte("0987654321"),
-					Address:   "1234",
-					Port:      "5678",
-				},
+	Shards := []types.Shard{types.Shard{
+		Member: []types.NodeInfo{
+			{
+				PublicKey: []byte("0987654321"),
+				Address:   "1234",
+				Port:      "5678",
 			},
-			MemberAddr: []types.NodeAddr{{
-				Address: "1234",
-				Port:    "5678",
-			}},
+		},
+		MemberAddr: []types.NodeAddr{{
+			Address: "1234",
+			Port:    "5678",
 		}},
-	}
-	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, &block))
+	}}
+	block, err := types.NewCmBlock(header, Shards)
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, block))
 	blockGet, err := l.GetShardBlockByHash(config.ChainHash, types.HeCmBlock, block.Hash())
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(block.JsonString() == blockGet.JsonString())
@@ -165,4 +163,28 @@ func TestInterface(t *testing.T) {
 	list, err := l.GetProducerList(config.ChainHash)
 	errors.CheckErrorPanic(err)
 	fmt.Println(list)
+
+	headerMinor := types.MinorBlockHeader{
+		ChainID:           config.ChainHash,
+		Version:           1,
+		Height:            1,
+		Timestamp:         time.Now().UnixNano(),
+		PrevHash:          common.Hash{},
+		TrxHashRoot:       common.Hash{},
+		StateDeltaHash:    common.Hash{},
+		CMBlockHash:       common.Hash{},
+		ProposalPublicKey: []byte("1234567890"),
+		ShardId:           1,
+		CMEpochNo:         2,
+		Receipt:           types.BlockReceipt{},
+		COSign:            &types.COSign{
+			Step1: 10,
+			Step2: 20,
+		},
+	}
+	blockMinor, err := types.NewMinorBlock(headerMinor, nil, []*types.Transaction{example.TestTransfer()}, 0, 0)
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockMinor))
+	blockLastMinor, err := l.GetLastShardBlockById(config.ChainHash, 1)
+	errors.CheckErrorPanic(err)
+	errors.CheckEqualPanic(blockMinor.JsonString() == blockLastMinor.JsonString())
 }
