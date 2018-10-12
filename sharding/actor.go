@@ -5,9 +5,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"reflect"
 	"github.com/ecoball/go-ecoball/sharding/cell"
-	"github.com/ecoball/go-ecoball/common/errors"
+	"reflect"
 )
 
 type ShardingActor struct {
@@ -23,7 +22,7 @@ func NewShardingActor(l ledger.Ledger) (*ShardingActor, error) {
 	pid, err := actor.SpawnNamed(props, "ShardingActor")
 	if err == nil {
 		shardingActor.instance = MakeSharding(l)
-		//shardingActor.instance.Start()
+		shardingActor.instance.Start()
 
 		event.RegisterActor(event.ActorSharding, pid)
 
@@ -62,15 +61,7 @@ func (s *ShardingActor) Receive(ctx actor.Context) {
 }
 
 func (s *ShardingActor) GetCell() (*cell.Cell, error) {
-	shard, ok := s.instance.(*Sharding)
-	if !ok {
-		return nil, errors.New(log, "failed to get sharding cell")
-	}
-	return shard.GetCell(), nil
-}
-
-func (s *ShardingActor) Start() {
-	s.instance.Start()
+	return s.instance.GetCell(), nil
 }
 
 func SetActor() {
