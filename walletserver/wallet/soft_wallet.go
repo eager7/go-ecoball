@@ -160,7 +160,7 @@ func (wi *WalletImpl) Unlock(password []byte) error {
 	}
 	if err := json.Unmarshal(aeskeys, &wi.KeyData); nil != err {
 		*wi = wallet
-		return err
+		return errors.New("Unmarshal faild ! maybe the password is wrong")
 	}
 
 	//check password
