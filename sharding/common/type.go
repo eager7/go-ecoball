@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/ecoball/go-ecoball/core/types"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 )
 
 type NodeInstance interface {
@@ -69,5 +69,5 @@ type ConsensusInstance interface {
 	CheckBlock(bl interface{}, bLeader bool) bool
 	PrepareRsp() uint32
 	PrecommitRsp() uint32
-	GetCandidate() *types.NodeInfo
+	GetCandidate() *cs.NodeInfo
 }

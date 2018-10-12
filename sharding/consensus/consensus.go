@@ -69,7 +69,6 @@ func (c *Consensus) ProcessPacket(csp *sc.CsPacket) bool {
 				log.Error("check packet error")
 				return false
 			}
-
 			c.processPacketByVoter(csp)
 		}
 	} else {
@@ -84,7 +83,6 @@ func (c *Consensus) ProcessPacket(csp *sc.CsPacket) bool {
 				log.Error("check packet error")
 				return false
 			}
-
 			c.processPacketByVoter(csp)
 		}
 	}

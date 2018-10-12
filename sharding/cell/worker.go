@@ -3,7 +3,7 @@ package cell
 import (
 	"container/list"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/types"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 )
 
@@ -17,7 +17,7 @@ func (a *Worker) Equal(b *Worker) bool {
 	return a.Pubkey == b.Pubkey
 }
 
-func (a *Worker) EqualNode(b *types.NodeInfo) bool {
+func (a *Worker) EqualNode(b *cs.NodeInfo) bool {
 	bkey := string(b.PublicKey)
 	return a.Pubkey == bkey
 }
@@ -28,7 +28,7 @@ func (a *Worker) Copy(b *simulate.NodeConfig) {
 	a.Port = b.Port
 }
 
-func (a *Worker) InitWork(b *types.NodeInfo) {
+func (a *Worker) InitWork(b *cs.NodeInfo) {
 	a.Pubkey = string(b.PublicKey)
 	a.Address = b.Address
 	a.Port = b.Port

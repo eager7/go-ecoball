@@ -1,6 +1,7 @@
 package net
 
 import (
+	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/elog"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/sharding/cell"
@@ -174,4 +175,25 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 		}
 	}
 
+}
+
+func (n *net) TransitBlock(p *sc.CsPacket) {
+	log.Debug("transit block")
+
+	leader := n.ns.IsLeader()
+	bakcup := n.ns.IsBackup()
+	if !leader && !bakcup {
+		return
+	}
+
+	sp := &sc.NetPacket{}
+	sp.CopyHeader(p)
+	block, err := json.Marshal(p.Packet)
+	if err == nil {
+		log.Error("broadcast sharding packet mashal error ", err)
+		return
+	}
+
+	sp.Packet = block
+	n.BroadcastBlock(sp)
 }

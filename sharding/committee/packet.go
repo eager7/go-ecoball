@@ -2,12 +2,11 @@ package committee
 
 import (
 	"github.com/ecoball/go-ecoball/common/etime"
-	"github.com/ecoball/go-ecoball/core/types"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/net"
-	"github.com/gin-gonic/gin/json"
 	"time"
 )
 
@@ -81,12 +80,12 @@ func (c *committee) processRetransTimeout() {
 
 func (c *committee) consensusCb(bl interface{}) {
 	switch blockType := bl.(type) {
-	case *types.CMBlock:
-		c.commitCmBlock(bl.(*types.CMBlock))
-	case *types.FinalBlock:
-		c.commitFinalBlock(bl.(*types.FinalBlock))
-	case *types.ViewChangeBlock:
-		c.commitViewchangeBlock(bl.(*types.ViewChangeBlock))
+	case *cs.CMBlock:
+		c.commitCmBlock(bl.(*cs.CMBlock))
+	case *cs.FinalBlock:
+		c.commitFinalBlock(bl.(*cs.FinalBlock))
+	case *cs.ViewChangeBlock:
+		c.commitViewchangeBlock(bl.(*cs.ViewChangeBlock))
 	default:
 		log.Error("consensus call back wrong packet type ", blockType)
 	}
@@ -98,18 +97,10 @@ func (c *committee) processShardingPacket(p *sc.CsPacket) {
 		return
 	}
 
-	minor := p.Packet.(*types.MinorBlock)
+	minor := p.Packet.(*cs.MinorBlock)
 	c.ns.SaveMinorBlockToPool(minor)
 
-	sp := &sc.NetPacket{}
-	sp.CopyHeader(p)
-	block, err := json.Marshal(p.Packet)
-	if err == nil {
-		sp.Packet = block
-		net.Np.BroadcastBlock(sp)
-	} else {
-		log.Error("broadcast sharding packet mashal error ", err)
-	}
+	net.Np.TransitBlock(p)
 
 	if c.ns.IsMinorBlockEnoughInPool() {
 		c.fsm.Execute(ActProductFinalBlock, nil)

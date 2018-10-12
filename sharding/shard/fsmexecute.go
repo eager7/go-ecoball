@@ -2,7 +2,7 @@ package shard
 
 import (
 	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/core/types"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -24,24 +24,24 @@ func (s *shard) processBlockSyncTimeout(msg interface{}) {
 }
 
 func (s *shard) processSyncComplete() {
-	lastCmBlock, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeCmBlock)
+	lastCmBlock, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 	if err != nil || lastCmBlock == nil {
 		s.fsm.Execute(ActWaitBlock, nil)
 		return
 	}
 
-	cm := lastCmBlock.GetObject().(*types.CMBlock)
+	cm := lastCmBlock.GetObject().(*cs.CMBlock)
 	s.ns.SyncCmBlockComplete(cm)
 
 	/* missing_func vc block */
 
-	lastFinalBlock, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeFinalBlock)
+	lastFinalBlock, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
 		s.fsm.Execute(ActProductMinorBlock, nil)
 		return
 	}
 
-	final := lastFinalBlock.GetObject().(*types.FinalBlock)
+	final := lastFinalBlock.GetObject().(*cs.FinalBlock)
 	s.ns.SaveLastFinalBlock(final)
 
 	//lastMinor, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeMinorBlock)
