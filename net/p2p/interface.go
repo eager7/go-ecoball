@@ -46,6 +46,9 @@ type CommAPI interface {
 	//addrInfo example: ipv4:"/ip4/192.168.1.2/tcp/1234", ipv6:"/ip6/::/tcp/1234"
 	SendMsgToPeer(addrInfo string, pubKey []byte, msg message.EcoBallNetMsg) error
 
+	//Gossip a message to random peers
+	GossipMsg(msg message.EcoBallNetMsg) error
+
 	/*Send a message to a connected peer*/
 	SendMsgToPeerWithId(peer.ID, message.EcoBallNetMsg) error
 	/*Send a message to some connected peers*/
@@ -63,6 +66,8 @@ type Receiver interface {
 		incoming message.EcoBallNetMsg)
 
 	ReceiveError(error)
+
+	IsValidRemotePeer(peer.ID) bool
 
 	// Connected/Disconnected warns net about peer connections
 	PeerConnected(peer.ID)

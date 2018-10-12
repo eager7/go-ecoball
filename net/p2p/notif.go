@@ -35,11 +35,16 @@ func (nn *netNotifiee) impl() *NetImpl {
 }
 
 func (nn *netNotifiee) Connected(n inet.Network, v inet.Conn) {
-	nn.impl().receiver.PeerConnected(v.RemotePeer())
-
 	p := v.RemotePeer()
-	if nn.impl().host.Network().Connectedness(p) == inet.Connected {
-		nn.impl().update(p)
+	if nn.impl().receiver.IsValidRemotePeer(p) {
+		nn.impl().receiver.PeerConnected(v.RemotePeer())
+
+		if nn.impl().host.Network().Connectedness(p) == inet.Connected {
+			nn.impl().update(p)
+		}
+	} else {
+		// invalid connection, close it...
+		v.Close()
 	}
 }
 

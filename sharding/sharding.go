@@ -43,6 +43,10 @@ func MakeSharding(l ledger.Ledger) ShardingInstance {
 	return &Sharding{ns: cell.MakeCell(l)}
 }
 
+func (s *Sharding) GetCell() (*cell.Cell) {
+	return s.ns
+}
+
 func (s *Sharding) MsgDispatch(msg interface{}) {
 	s.instance.MsgDispatch(msg)
 }

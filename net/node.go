@@ -26,6 +26,10 @@ import (
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/p2p"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/sharding"
+	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
@@ -39,6 +43,7 @@ import (
 	mafilter "gx/ipfs/QmSW4uNHbvQia8iZDXzbwjiyHQtnyo9aFqfQAMasj3TJ6Y/go-maddr-filter"
 	mamask "gx/ipfs/QmSMZwvs3n4GBikZ7hKzT17c3bk65FmyZo2JqtJ16swqCv/multiaddr-filter"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
+	"github.com/ecoball/go-ecoball/sharding/cell"
 )
 
 var (
@@ -57,6 +62,7 @@ type NetNode struct {
 	handlers    map[uint32]message.HandlerFunc
 	actorId     *actor.PID
 	listen      []string
+	sa          *sharding.ShardingActor
 	//pubSub      *floodsub.PubSub
 }
 
@@ -241,7 +247,44 @@ func (nn *NetNode) Start() error {
 
 	nn.broadcastLoop()
 
+	nn.connectToShardingPeers()
+
 	return nil
+}
+
+func (nn *NetNode) connectToShardingPeers() {
+	works := nn.getShardingWorks()
+
+	// IPV6 ??? TOD
+	go func(wks []*cell.Worker) {
+		for _, w := range wks {
+			ai := fmt.Sprintf("/ip4/%s/tcp/%s", w.Address, w.Port)
+			err := nn.network.ConnectToPeer(ai, []byte(w.Pubkey), true)
+			if err != nil {
+				log.Error("failed to connect to ", ai, err)
+			}
+		}
+	}(works)
+}
+
+func (nn *NetNode) getShardingWorks() []*cell.Worker {
+	// network sharding was disabled
+	if nn.sa == nil {
+		return []*cell.Worker{}
+	}
+	// ignore the err due the the actor was initialized with cell
+	cl, _ := nn.sa.GetCell()
+	var works []*cell.Worker
+	if cl.NodeType == sc.NodeCommittee {
+		works = cl.GetCmWorks()
+	} else if cl.NodeType == sc.NodeShard {
+		works = cl.GetWorks()
+	} else {
+		log.Error("invalid sharding node type ", cl.NodeType)
+		works = []*cell.Worker{}
+	}
+
+	return works
 }
 
 func (nn *NetNode) SendBroadcastMsg(msg message.EcoBallNetMsg) {
@@ -291,6 +334,30 @@ func (nn *NetNode) ReceiveError(err error) {
 	// TODO bubble the network error up to the parent context/error logger
 }
 
+func (nn *NetNode) IsValidRemotePeer(p peer.ID) bool {
+	// network sharding was disabled
+	if nn.sa == nil {
+		return true
+	}
+
+	pk, err := p.ExtractPublicKey()
+	if err != nil {
+		log.Error("error for extracting public key from id ", p.Pretty())
+		return false
+	}
+	pkBytes, _ := pk.Bytes()
+	works := nn.getShardingWorks()
+
+	// ohh, slow....., hash map will be better
+	for _, w := range works {
+		if w.Pubkey == string(pkBytes) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (nn *NetNode) PeerConnected(p peer.ID) {
 	// TOD
 }
@@ -327,6 +394,11 @@ func (nn *NetNode) GetActorPid() *actor.PID {
 	return nn.actorId
 }
 
+// AttachShardingCell attach the sharding cell to the netnode
+func (nn *NetNode) AttachShardingActor(sa *sharding.ShardingActor) {
+	nn.sa = sa
+}
+
 func SetChainId(id uint32) {
 	ecoballChainId = id
 }
@@ -346,14 +418,25 @@ func InitNetWork(ctx context.Context) {
 	log.Info("i am ", netNode.SelfId())
 }
 
-func StartNetWork() {
+func StartNetWork(l ledger.Ledger) {
 	netActor := NewNetActor(netNode)
 	actorId, _ := netActor.Start()
 	netNode.SetActorPid(actorId)
+
+	if !config.DisableSharding {
+		sa, err := sharding.NewShardingActor(l)
+		if err != nil {
+			log.Error("error for creating sharding actor,", err)
+			os.Exit(1)
+		}
+		netNode.AttachShardingActor(sa)
+		netNode.sa.Start()
+	}
 
 	if err := netNode.Start(); err != nil {
 		log.Error("error for starting netnode,", err)
 		os.Exit(1)
 	}
+
 	log.Info(netNode.SelfId(), " is running.")
 }

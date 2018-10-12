@@ -200,7 +200,7 @@ func runNode(c *cli.Context) error {
 		return nil
 	})
 
-	net.StartNetWork()
+	net.StartNetWork(ledger.L)
 
 	dsn.StartDsn(ctx, ledger.L)
 
