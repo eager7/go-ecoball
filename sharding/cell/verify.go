@@ -2,12 +2,12 @@ package cell
 
 import (
 	"encoding/json"
-	"github.com/ecoball/go-ecoball/core/types"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 )
 
 func (c *Cell) VerifyCmPacket(p *sc.NetPacket) *sc.CsPacket {
-	var cm types.CMBlock
+	var cm cs.CMBlock
 	err := json.Unmarshal(p.Packet, &cm)
 	if err != nil {
 		log.Error("cm block unmarshal error ", err)
@@ -32,7 +32,7 @@ func (c *Cell) VerifyCmPacket(p *sc.NetPacket) *sc.CsPacket {
 }
 
 func (c *Cell) VerifyFinalPacket(p *sc.NetPacket) *sc.CsPacket {
-	var final types.FinalBlock
+	var final cs.FinalBlock
 	err := json.Unmarshal(p.Packet, &final)
 	if err != nil {
 		log.Error("final block unmarshal error ", err)
@@ -57,7 +57,7 @@ func (c *Cell) VerifyFinalPacket(p *sc.NetPacket) *sc.CsPacket {
 }
 
 func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
-	var vc types.ViewChangeBlock
+	var vc cs.ViewChangeBlock
 	err := json.Unmarshal(p.Packet, &vc)
 	if err != nil {
 		log.Error("vc block unmarshal error ", err)
@@ -98,7 +98,7 @@ func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
 }
 
 func (c *Cell) VerifyMinorPacket(p *sc.NetPacket) *sc.CsPacket {
-	var minor types.MinorBlock
+	var minor cs.MinorBlock
 	err := json.Unmarshal(p.Packet, &minor)
 	if err != nil {
 		log.Error("minor block unmarshal error ", err)

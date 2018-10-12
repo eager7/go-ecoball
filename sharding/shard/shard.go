@@ -60,9 +60,11 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 
 			{waitBlock, ActProductMinorBlock, nil, s.productMinorBlock, nil, productMinoBlock},
 			{waitBlock, ActChainNotSync, nil, nil, nil, blockSync},
+			{waitBlock, ActRecvConsensusPacket, nil, nil, nil, sc.StateNil},
 
 			{productMinoBlock, ActRecvConsensusPacket, nil, s.processConsensusMinorPacket, nil, sc.StateNil},
 			{productMinoBlock, ActWaitBlock, nil, nil, nil, waitBlock},
+			{productMinoBlock, ActProductMinorBlock, nil, s.reproductMinorBlock, nil, sc.StateNil},
 		})
 
 	net.MakeNet(ns)

@@ -5,6 +5,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/sharding/cell"
 	"reflect"
 )
 
@@ -12,20 +13,20 @@ type ShardingActor struct {
 	instance ShardingInstance
 }
 
-func NewShardingActor(l ledger.Ledger) (pid *actor.PID, err error) {
+func NewShardingActor(l ledger.Ledger) (*ShardingActor, error) {
 
 	shardingActor := &ShardingActor{}
 
 	props := actor.FromProducer(func() actor.Actor { return shardingActor })
 
-	pid, err = actor.SpawnNamed(props, "ShardingActor")
+	pid, err := actor.SpawnNamed(props, "ShardingActor")
 	if err == nil {
 		shardingActor.instance = MakeSharding(l)
 		shardingActor.instance.Start()
 
 		event.RegisterActor(event.ActorSharding, pid)
 
-		return pid, nil
+		return shardingActor, nil
 	} else {
 		return nil, err
 	}
@@ -57,6 +58,10 @@ func (s *ShardingActor) Receive(ctx actor.Context) {
 	default:
 		log.Warn("ShardingActor received unknown type message ", msg, " type ", reflect.TypeOf(msg))
 	}
+}
+
+func (s *ShardingActor) GetCell() (*cell.Cell, error) {
+	return s.instance.GetCell(), nil
 }
 
 func SetActor() {

@@ -1,6 +1,7 @@
 package net
 
 import (
+	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/elog"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/sharding/cell"
@@ -36,6 +37,7 @@ func (n *net) SendToPeer(packet *sc.NetPacket, worker *cell.Worker) {
 }
 
 func (n *net) GossipBlock(packet *sc.NetPacket) {
+	log.Debug("gossip block")
 	works := n.ns.GetWorks()
 	if works == nil {
 		log.Error("works is nil")
@@ -104,6 +106,8 @@ func (n *net) GossipBlock(packet *sc.NetPacket) {
 }
 
 func (n *net) BroadcastBlock(packet *sc.NetPacket) {
+	log.Debug("broadcast block")
+
 	works := n.ns.GetWorks()
 	if works == nil {
 		log.Error("works is nil")
@@ -120,6 +124,8 @@ func (n *net) BroadcastBlock(packet *sc.NetPacket) {
 }
 
 func (n *net) SendBlockToShards(packet *sc.NetPacket) {
+	log.Debug("send block to shard")
+
 	/*only leader and backup send*/
 	leader := n.ns.IsLeader()
 	bakcup := n.ns.IsBackup()
@@ -146,6 +152,8 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 }
 
 func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
+	log.Debug("send block to committee")
+
 	/*only leader and backup send*/
 	leader := n.ns.IsLeader()
 	bakcup := n.ns.IsBackup()
@@ -167,4 +175,25 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 		}
 	}
 
+}
+
+func (n *net) TransitBlock(p *sc.CsPacket) {
+	log.Debug("transit block")
+
+	leader := n.ns.IsLeader()
+	bakcup := n.ns.IsBackup()
+	if !leader && !bakcup {
+		return
+	}
+
+	sp := &sc.NetPacket{}
+	sp.CopyHeader(p)
+	block, err := json.Marshal(p.Packet)
+	if err == nil {
+		log.Error("broadcast sharding packet mashal error ", err)
+		return
+	}
+
+	sp.Packet = block
+	n.BroadcastBlock(sp)
 }

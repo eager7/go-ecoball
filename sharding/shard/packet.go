@@ -1,12 +1,11 @@
 package shard
 
 import (
-	"github.com/ecoball/go-ecoball/core/types"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/net"
-	"github.com/gin-gonic/gin/json"
 )
 
 func (s *shard) verifyPacket(p *sc.NetPacket) {
@@ -62,8 +61,8 @@ func (s *shard) verifyShardingPacket(p *sc.NetPacket) {
 
 func (s *shard) consensusCb(bl interface{}) {
 	switch blockType := bl.(type) {
-	case *types.MinorBlock:
-		s.recvCommitMinorBlock(bl.(*types.MinorBlock))
+	case *cs.MinorBlock:
+		s.commitMinorBlock(bl.(*cs.MinorBlock))
 	default:
 		log.Error("consensus call back wrong packet type ", blockType)
 	}
@@ -80,13 +79,13 @@ func (s *shard) processConsensusPacket(packet *sc.CsPacket) {
 func (s *shard) processShardingPacket(p *sc.CsPacket) {
 	switch p.BlockType {
 	case sc.SD_CM_BLOCK:
-		cm := p.Packet.(*types.CMBlock)
+		cm := p.Packet.(*cs.CMBlock)
 		s.ns.SaveLastCMBlock(cm)
 		s.broadcastShardingPacket(p)
 
 		s.fsm.Execute(ActProductMinorBlock, nil)
 	case sc.SD_FINAL_BLOCK:
-		final := p.Packet.(*types.FinalBlock)
+		final := p.Packet.(*cs.FinalBlock)
 		s.ns.SaveLastFinalBlock(final)
 		s.broadcastShardingPacket(p)
 
@@ -94,7 +93,7 @@ func (s *shard) processShardingPacket(p *sc.CsPacket) {
 			s.fsm.Execute(ActProductMinorBlock, nil)
 		}
 	case sc.SD_VIEWCHANGE_BLOCK:
-		vc := p.Packet.(*types.ViewChangeBlock)
+		vc := p.Packet.(*cs.ViewChangeBlock)
 		s.ns.SaveLastViewchangeBlock(vc)
 		s.broadcastShardingPacket(p)
 	default:
@@ -105,13 +104,5 @@ func (s *shard) processShardingPacket(p *sc.CsPacket) {
 }
 
 func (s *shard) broadcastShardingPacket(p *sc.CsPacket) {
-	sp := &sc.NetPacket{}
-	sp.CopyHeader(p)
-	block, err := json.Marshal(p.Packet)
-	if err == nil {
-		sp.Packet = block
-		net.Np.BroadcastBlock(sp)
-	} else {
-		log.Error("broadcast sharding packet mashal error ", err)
-	}
+	net.Np.TransitBlock(p)
 }

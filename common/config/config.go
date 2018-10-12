@@ -103,11 +103,14 @@ conn_mgr_highwater   = 900
 conn_mgr_graceperiod = 20
 
 #p2p local discovery config info
-enable_local_discovery = true
+enable_local_discovery = false
 disable_localdis_log   = true
 
 #dsn config
 dsn_storage = false
+
+#sharding config info
+disable_sharding  = true
 `
 
 type SwarmConfigInfo struct {
@@ -147,6 +150,7 @@ var (
 	EnableLocalDiscovery  bool
 	DisableLocalDisLog    bool
 	DsnStorage            bool
+	DisableSharding       bool
 )
 
 func SetConfig(filePath string) error {
@@ -253,4 +257,6 @@ func initVariable() {
 	EnableLocalDiscovery = viper.GetBool("enable_local_discovery")
 	DisableLocalDisLog = viper.GetBool("disable_localdis_log")
 	DsnStorage = viper.GetBool("dsn_storage")
+
+	DisableSharding = viper.GetBool("disable_sharding")
 }

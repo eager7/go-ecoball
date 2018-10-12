@@ -36,7 +36,7 @@ func TestRunMain(t *testing.T) {
 	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)
 	errors.CheckErrorPanic(err)
-	net.StartNetWork()
+	net.StartNetWork(ledger.L)
 
 	//start consensus
 	switch config.ConsensusAlgorithm {
@@ -73,7 +73,7 @@ func TestRunNode(t *testing.T) {
 	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)
 	errors.CheckErrorPanic(err)
-	net.StartNetWork()
+	net.StartNetWork(ledger.L)
 
 	//start consensus
 	switch config.ConsensusAlgorithm {

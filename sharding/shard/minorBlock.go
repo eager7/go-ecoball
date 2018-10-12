@@ -3,6 +3,7 @@ package shard
 import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
@@ -11,11 +12,11 @@ import (
 )
 
 type minorBlockCsi struct {
-	bk    *types.MinorBlock
-	cache *types.MinorBlock
+	bk    *cs.MinorBlock
+	cache *cs.MinorBlock
 }
 
-func newMinorBlockCsi(block *types.MinorBlock) *minorBlockCsi {
+func newMinorBlockCsi(block *cs.MinorBlock) *minorBlockCsi {
 	return &minorBlockCsi{bk: block}
 }
 
@@ -24,7 +25,7 @@ func (b *minorBlockCsi) GetCsView() *sc.CsView {
 }
 
 func (b *minorBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
-	update := bl.(*types.MinorBlock)
+	update := bl.(*cs.MinorBlock)
 
 	if b.bk.CMEpochNo != update.CMEpochNo || b.bk.Height != update.Height {
 		log.Error("view error current ", b.bk.CMEpochNo, " ", b.bk.Height, " packet view ", update.CMEpochNo, " ", update.Height)
@@ -37,7 +38,7 @@ func (b *minorBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 	}
 
 	if update.ShardId != b.bk.ShardId {
-		log.Error("candidate address not same")
+		log.Error("shardid not same")
 		return false
 	}
 
@@ -98,11 +99,11 @@ func (b *minorBlockCsi) PrecommitRsp() uint32 {
 	return b.bk.Step2
 }
 
-func (b *minorBlockCsi) GetCandidate() *types.NodeInfo {
+func (b *minorBlockCsi) GetCandidate() *cs.NodeInfo {
 	return nil
 }
 
-func (s *shard) createMinorBlock() *types.MinorBlock {
+func (s *shard) createMinorBlock() *cs.MinorBlock {
 	lastcm := s.ns.GetLastCMBlock()
 	if lastcm == nil {
 		panic("cm block not exist")
@@ -117,8 +118,8 @@ func (s *shard) createMinorBlock() *types.MinorBlock {
 		height = lastMinor.Height + 1
 	}
 
-	minor := &types.MinorBlock{
-		MinorBlockHeader: types.MinorBlockHeader{
+	minor := &cs.MinorBlock{
+		MinorBlockHeader: cs.MinorBlockHeader{
 			ChainID:           common.Hash{},
 			Version:           0,
 			Height:            0,
@@ -158,8 +159,13 @@ func (s *shard) productMinorBlock(msg interface{}) {
 	s.cs.StartConsensus(csi)
 }
 
-func (s *shard) recvCommitMinorBlock(bl *types.MinorBlock) {
-	log.Debug("recv consensus minor block height ", bl.Height)
+func (s *shard) reproductMinorBlock(msg interface{}) {
+	s.cs.Reset()
+	s.productMinorBlock(msg)
+}
+
+func (s *shard) commitMinorBlock(bl *cs.MinorBlock) {
+	log.Debug("consensus minor block height ", bl.Height)
 
 	simulate.TellMinorBlock(bl)
 
@@ -176,7 +182,7 @@ func (s *shard) checkMinorPacket(p interface{}) bool {
 		return false
 	}
 
-	minor := csp.Packet.(*types.MinorBlock)
+	minor := csp.Packet.(*cs.MinorBlock)
 	last := s.ns.GetLastMinorBlock()
 	if last != nil && minor.Height <= last.Height {
 		log.Error("old minor block, drop it")

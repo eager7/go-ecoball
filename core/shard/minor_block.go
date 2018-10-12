@@ -1,4 +1,4 @@
-package types
+package shard
 
 import (
 	"encoding/json"
@@ -7,7 +7,12 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"math/big"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/core/state"
 )
+
+var log = elog.NewLogger("sharding", elog.NoticeLog)
 
 type MinorBlockHeader struct {
 	ChainID           common.Hash
@@ -23,9 +28,9 @@ type MinorBlockHeader struct {
 	ShardId           uint32
 	CMEpochNo         uint64
 
-	Receipt BlockReceipt
+	Receipt types.BlockReceipt
 	hash    common.Hash
-	*COSign
+	*types.COSign
 }
 
 func (h *MinorBlockHeader) ComputeHash() error {
@@ -119,8 +124,8 @@ func (h *MinorBlockHeader) Deserialize(data []byte) error {
 	h.ShardId = pbHeader.ShardId
 	h.CMEpochNo = pbHeader.CMEpochNo
 	h.hash = common.NewHash(pbHeader.Hash)
-	h.Receipt = BlockReceipt{BlockCpu: pbHeader.Receipt.BlockCpu, BlockNet: pbHeader.Receipt.BlockNet}
-	h.COSign = &COSign{
+	h.Receipt = types.BlockReceipt{BlockCpu: pbHeader.Receipt.BlockCpu, BlockNet: pbHeader.Receipt.BlockNet}
+	h.COSign = &types.COSign{
 		Step1: pbHeader.COSign.Step1,
 		Step2: pbHeader.COSign.Step2,
 	}
@@ -163,6 +168,7 @@ func (h *MinorBlockHeader) GetChainID() common.Hash {
 }
 
 type AccountMinor struct {
+	Accounts state.Account
 	Account common.AccountName
 	Balance *big.Int
 	Nonce   uint64
@@ -183,17 +189,17 @@ func (a *AccountMinor) proto() (*pb.AccountMinor, error) {
 
 type MinorBlock struct {
 	MinorBlockHeader
-	Transactions []*Transaction
+	Transactions []*types.Transaction
 	StateDelta   []*AccountMinor
 }
 
-func NewMinorBlock(header MinorBlockHeader, prevHeader *Header, txs []*Transaction, cpu, net float64) (*MinorBlock, error) {
+func NewMinorBlock(header MinorBlockHeader, prevHeader *types.Header, txs []*types.Transaction, cpu, net float64) (*MinorBlock, error) {
 	if err := header.ComputeHash(); err != nil {
 		return nil, err
 	}
 	var sDelta []*AccountMinor
 	for _, tx := range txs {
-		transfer, ok := tx.Payload.GetObject().(TransferInfo)
+		transfer, ok := tx.Payload.GetObject().(types.TransferInfo)
 		if ok {
 			sDelta = append(sDelta, &AccountMinor{
 				Account: tx.From,
@@ -219,31 +225,31 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *Header, txs []*Transacti
 	return block, nil
 }
 
-func (b *MinorBlock) SetReceipt(prevHeader *Header, cpu, net float64) error {
+func (b *MinorBlock) SetReceipt(prevHeader *types.Header, cpu, net float64) error {
 	if prevHeader == nil {
 		return nil
 	}
 	var cpuLimit, netLimit float64
-	if cpu < (BlockCpuLimit / 10) {
+	if cpu < (types.BlockCpuLimit / 10) {
 		cpuLimit = prevHeader.Receipt.BlockCpu * 1.01
-		if cpuLimit > VirtualBlockCpuLimit {
-			cpuLimit = VirtualBlockCpuLimit
+		if cpuLimit > types.VirtualBlockCpuLimit {
+			cpuLimit = types.VirtualBlockCpuLimit
 		}
 	} else {
 		cpuLimit = prevHeader.Receipt.BlockCpu * 0.99
-		if cpuLimit < BlockCpuLimit {
-			cpuLimit = BlockCpuLimit
+		if cpuLimit < types.BlockCpuLimit {
+			cpuLimit = types.BlockCpuLimit
 		}
 	}
-	if net < (BlockNetLimit / 10) {
+	if net < (types.BlockNetLimit / 10) {
 		netLimit = prevHeader.Receipt.BlockNet * 1.01
-		if netLimit > VirtualBlockNetLimit {
-			netLimit = VirtualBlockNetLimit
+		if netLimit > types.VirtualBlockNetLimit {
+			netLimit = types.VirtualBlockNetLimit
 		}
 	} else {
 		netLimit = prevHeader.Receipt.BlockNet * 0.99
-		if netLimit < BlockNetLimit {
-			netLimit = BlockNetLimit
+		if netLimit < types.BlockNetLimit {
+			netLimit = types.BlockNetLimit
 		}
 	}
 	b.MinorBlockHeader.Receipt.BlockCpu = cpuLimit
@@ -259,7 +265,7 @@ func (b *MinorBlock) proto() (block *pb.MinorBlock, err error) {
 	}
 
 	for _, tx := range b.Transactions {
-		pbTx, err := tx.protoBuf()
+		pbTx, err := tx.ProtoBuf()
 		if err != nil {
 			return nil, err
 		}
@@ -309,7 +315,7 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 		if bytes, err := tx.Marshal(); err != nil {
 			return err
 		} else {
-			t := new(Transaction)
+			t := new(types.Transaction)
 			if err := t.Deserialize(bytes); err != nil {
 				return err
 			}

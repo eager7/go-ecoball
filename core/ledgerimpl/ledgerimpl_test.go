@@ -31,6 +31,7 @@ import (
 	"math/big"
 	"testing"
 	"time"
+	"github.com/ecoball/go-ecoball/core/shard"
 )
 
 var root = common.NameToIndex("root")
@@ -119,7 +120,7 @@ func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
 
 func TestInterface(t *testing.T) {
 	l := example.Ledger("/tmp/interface")
-	header := types.CMBlockHeader{
+	header := shard.CMBlockHeader{
 		ChainID:   config.ChainHash,
 		Version:   0,
 		Height:    10,
@@ -128,7 +129,7 @@ func TestInterface(t *testing.T) {
 		//ConsData:     example.ConsensusData(),
 		LeaderPubKey: []byte("12345678909876554432"),
 		Nonce:        23450,
-		Candidate: types.NodeInfo{
+		Candidate: shard.NodeInfo{
 			PublicKey: config.Root.PublicKey,
 			Address:   "1234",
 			Port:      "5678",
@@ -137,26 +138,26 @@ func TestInterface(t *testing.T) {
 		COSign:     &types.COSign{},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
-	Shards := []types.Shard{types.Shard{
-		Member: []types.NodeInfo{
+	Shards := []shard.Shard{shard.Shard{
+		Member: []shard.NodeInfo{
 			{
 				PublicKey: []byte("0987654321"),
 				Address:   "1234",
 				Port:      "5678",
 			},
 		},
-		MemberAddr: []types.NodeAddr{{
+		MemberAddr: []shard.NodeAddr{{
 			Address: "1234",
 			Port:    "5678",
 		}},
 	}}
-	block, err := types.NewCmBlock(header, Shards)
+	block, err := shard.NewCmBlock(header, Shards)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, block))
-	blockGet, err := l.GetShardBlockByHash(config.ChainHash, types.HeCmBlock, block.Hash())
+	blockGet, err := l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, block.Hash())
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(block.JsonString() == blockGet.JsonString())
 
-	blockLast, err := l.GetLastShardBlock(config.ChainHash, types.HeCmBlock)
+	blockLast, err := l.GetLastShardBlock(config.ChainHash, shard.HeCmBlock)
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(block.JsonString() == blockLast.JsonString())
 
@@ -164,7 +165,7 @@ func TestInterface(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	fmt.Println(list)
 
-	headerMinor := types.MinorBlockHeader{
+	headerMinor := shard.MinorBlockHeader{
 		ChainID:           config.ChainHash,
 		Version:           1,
 		Height:            1,
@@ -182,7 +183,7 @@ func TestInterface(t *testing.T) {
 			Step2: 20,
 		},
 	}
-	blockMinor, err := types.NewMinorBlock(headerMinor, nil, []*types.Transaction{example.TestTransfer()}, 0, 0)
+	blockMinor, err := shard.NewMinorBlock(headerMinor, nil, []*types.Transaction{example.TestTransfer()}, 0, 0)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockMinor))
 	blockLastMinor, err := l.GetLastShardBlockById(config.ChainHash, 1)
 	errors.CheckErrorPanic(err)

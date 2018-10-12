@@ -1,4 +1,4 @@
-package types
+package shard
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type FinalBlockHeader struct {
@@ -25,7 +26,7 @@ type FinalBlockHeader struct {
 	StateHashRoot      common.Hash
 
 	hash common.Hash
-	*COSign
+	*types.COSign
 }
 
 func (h *FinalBlockHeader) ComputeHash() error {
@@ -118,7 +119,7 @@ func (h *FinalBlockHeader) Deserialize(data []byte) error {
 	h.MinorBlocksHash = common.NewHash(pbHeader.MinorBlocksHash)
 	h.StateHashRoot = common.NewHash(pbHeader.StateHashRoot)
 	h.hash = common.NewHash(pbHeader.Hash)
-	h.COSign = &COSign{
+	h.COSign = &types.COSign{
 		Step1: pbHeader.COSign.Step1,
 		Step2: pbHeader.COSign.Step2,
 	}

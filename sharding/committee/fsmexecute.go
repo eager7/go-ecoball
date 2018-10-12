@@ -3,7 +3,7 @@ package committee
 import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/etime"
-	"github.com/ecoball/go-ecoball/core/types"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -19,13 +19,13 @@ func (c *committee) processConsensusPacket(packet *sc.CsPacket) {
 }
 
 func (c *committee) processSyncComplete(msg interface{}) {
-	lastCmBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeCmBlock)
+	lastCmBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 	if err != nil || lastCmBlock == nil {
 		c.fsm.Execute(ActProductCommitteeBlock, msg)
 		return
 	}
 
-	cm := lastCmBlock.GetObject().(*types.CMBlock)
+	cm := lastCmBlock.GetObject().(*cs.CMBlock)
 	c.ns.SyncCmBlockComplete(cm)
 
 	/* missing_func vc block */
@@ -35,13 +35,13 @@ func (c *committee) processSyncComplete(msg interface{}) {
 	//
 	//}
 
-	lastFinalBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeFinalBlock)
+	lastFinalBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
 		c.fsm.Execute(ActWaitMinorBlock, msg)
 		return
 	}
 
-	final := lastFinalBlock.GetObject().(*types.FinalBlock)
+	final := lastFinalBlock.GetObject().(*cs.FinalBlock)
 	c.ns.SaveLastFinalBlock(final)
 
 	if cm.Height > final.EpochNo {

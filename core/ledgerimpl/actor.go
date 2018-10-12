@@ -26,6 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
+	"github.com/ecoball/go-ecoball/core/shard"
 )
 
 type LedActor struct {
@@ -70,7 +71,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		}
 		end := time.Now().UnixNano()
 		log.Info("save block["+msg.ChainID.HexString()+"block hash:"+msg.Hash.HexString()+"]:", (end-begin)/1000, "us")
-	case types.BlockInterface:
+	case shard.BlockInterface:
 		chain, ok := l.ledger.ChainTxs[msg.GetChainID()]
 		if !ok {
 			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.GetChainID().HexString()))

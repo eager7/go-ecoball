@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/etime"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
@@ -13,11 +14,11 @@ import (
 )
 
 type cmBlockCsi struct {
-	bk    *types.CMBlock
-	cache *types.CMBlock
+	bk    *cs.CMBlock
+	cache *cs.CMBlock
 }
 
-func newCmBlockCsi(bk *types.CMBlock) *cmBlockCsi {
+func newCmBlockCsi(bk *cs.CMBlock) *cmBlockCsi {
 	return &cmBlockCsi{bk: bk}
 }
 
@@ -26,7 +27,7 @@ func (b *cmBlockCsi) GetCsView() *sc.CsView {
 }
 
 func (b *cmBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
-	update := bl.(*types.CMBlock)
+	update := bl.(*cs.CMBlock)
 
 	if !sc.Same(b.bk.Candidate.PublicKey, update.Candidate.PublicKey) {
 		log.Error("candidate public key not same")
@@ -110,20 +111,20 @@ func (b *cmBlockCsi) PrecommitRsp() uint32 {
 	return b.bk.Step2
 }
 
-func (b *cmBlockCsi) GetCandidate() *types.NodeInfo {
+func (b *cmBlockCsi) GetCandidate() *cs.NodeInfo {
 	return nil
 }
 
-func (c *committee) reshardWorker() (candidate *types.NodeInfo, shards []types.Shard) {
+func (c *committee) reshardWorker() (candidate *cs.NodeInfo, shards []cs.Shard) {
 	/*missing_func need get deposit account info*/
 	//candidate, err := c.ns.Ledger.GetProducerList(config.ChainHash)
 
-	var can types.NodeInfo
-	backup := c.ns.GetBackup()
-	if backup != nil {
-		can.PublicKey = []byte(backup.Pubkey)
-		can.Address = backup.Address
-		can.Port = backup.Port
+	cw := simulate.GetCandidateList()
+	if len(cw) > 0 {
+		var can cs.NodeInfo
+		can.PublicKey = []byte(cw[0].Pubkey)
+		can.Address = cw[0].Address
+		can.Port = cw[0].Port
 
 		candidate = &can
 	} else {
@@ -131,9 +132,9 @@ func (c *committee) reshardWorker() (candidate *types.NodeInfo, shards []types.S
 	}
 
 	ss := simulate.GetShards()
-	var shard types.Shard
+	var shard cs.Shard
 	for _, member := range ss {
-		var worker types.NodeInfo
+		var worker cs.NodeInfo
 		worker.PublicKey = []byte(member.Pubkey)
 		worker.Address = member.Address
 		worker.Port = member.Port
@@ -148,7 +149,7 @@ func (c *committee) reshardWorker() (candidate *types.NodeInfo, shards []types.S
 	return
 }
 
-func (c *committee) createCommitteeBlock() *types.CMBlock {
+func (c *committee) createCommitteeBlock() *cs.CMBlock {
 	last := c.ns.GetLastCMBlock()
 	var height uint64
 	if last == nil {
@@ -163,7 +164,7 @@ func (c *committee) createCommitteeBlock() *types.CMBlock {
 	cosign.Step1 = 1
 	cosign.Step2 = 0
 
-	header := types.CMBlockHeader{
+	header := cs.CMBlockHeader{
 		ChainID:      common.Hash{},
 		Version:      0,
 		Height:       0,
@@ -171,7 +172,7 @@ func (c *committee) createCommitteeBlock() *types.CMBlock {
 		PrevHash:     common.Hash{},
 		LeaderPubKey: nil,
 		Nonce:        0,
-		Candidate:    types.NodeInfo{},
+		Candidate:    cs.NodeInfo{},
 		ShardsHash:   common.Hash{},
 		COSign:       nil,
 	}
@@ -185,9 +186,9 @@ func (c *committee) createCommitteeBlock() *types.CMBlock {
 		header.Candidate.Port = candidate.Port
 	}
 
-	cmb := &types.CMBlock{
+	cmb := &cs.CMBlock{
 		CMBlockHeader: header,
-		Shards:        make([]types.Shard, len(shards)),
+		Shards:        make([]cs.Shard, len(shards)),
 	}
 
 	copy(cmb.Shards, shards)
@@ -226,7 +227,7 @@ func (c *committee) checkCmPacket(p interface{}) bool {
 		return false
 	}
 
-	cm := csp.Packet.(*types.CMBlock)
+	cm := csp.Packet.(*cs.CMBlock)
 	last := c.ns.GetLastCMBlock()
 	if last != nil && cm.Height <= last.Height {
 		log.Error("old cm block, drop it")
@@ -246,7 +247,7 @@ func (c *committee) processConsensusCmPacket(p interface{}) {
 	c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
-func (c *committee) recvCommitCmBlock(bl *types.CMBlock) {
+func (c *committee) commitCmBlock(bl *cs.CMBlock) {
 	log.Debug("recv consensus cm block height ", bl.Height)
 	simulate.TellBlock(bl)
 

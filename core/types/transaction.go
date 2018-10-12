@@ -148,7 +148,7 @@ func (t *Transaction) unSignatureData() ([]byte, error) {
 	return b, nil
 }
 
-func (t *Transaction) protoBuf() (*pb.Transaction, error) {
+func (t *Transaction) ProtoBuf() (*pb.Transaction, error) {
 	payload, err := t.Payload.Serialize()
 	if err != nil {
 		return nil, err
@@ -197,7 +197,7 @@ func (t *Transaction) protoBuf() (*pb.Transaction, error) {
  *  @return []byte - a sequence of characters
  */
 func (t *Transaction) Serialize() ([]byte, error) {
-	p, err := t.protoBuf()
+	p, err := t.ProtoBuf()
 	if err != nil {
 		return nil, err
 	}
