@@ -82,6 +82,8 @@ def stepInstallSystemContracts():
     print("install system contract")
 
 #commands
+root_dir = os.path.split(os.path.realpath(__file__))[0]
+
 commands = [
     ('k', 'kill',           stepKillAll,                True,    "Kill all ecoball and ecowallet processes"),
     ('w', 'wallet',         stepStartEcowallet,         True,    "Start ecowallet, create wallet, fill with keys"),
@@ -94,15 +96,15 @@ commands = [
 parser = argparse.ArgumentParser()
 parser.add_argument('--public-key', metavar='', help="root Public Key", default='0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c', dest="public_key")
 parser.add_argument('--private-Key', metavar='', help="root Private Key", default='0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6', dest="private_key")
-parser.add_argument('--wallet-dir', metavar='', help="Path to wallet directory", default='../build/wallet/', dest="wallet_dir")
-parser.add_argument('--ecowallet', metavar='', help="Path to ecowallet binary", default='../build/ecowallet')
-parser.add_argument('--ecoclient', metavar='', help="ecoclient command", default='../build/ecoclient')
+parser.add_argument('--wallet-dir', metavar='', help="Path to wallet directory", default=os.path.join(root_dir, '../build/wallet/'), dest="wallet_dir")
+parser.add_argument('--ecowallet', metavar='', help="Path to ecowallet binary", default=os.path.join(root_dir, '../build/ecowallet'))
+parser.add_argument('--ecoclient', metavar='', help="ecoclient command", default=os.path.join(root_dir, '../build/ecoclient'))
 parser.add_argument('--user-limit', metavar='', help="Max number of users. (0 = no limit)", type=int, default=3000, dest='user_limit')
 parser.add_argument('--producer-limit', metavar='', help="Maximum number of producers. (0 = no limit)", type=int, default=0, dest='producer_limit')
 parser.add_argument('--max-user-keys', metavar='', help="Maximum user keys to import into wallet", type=int, default=10, dest='max_user_keys')
-parser.add_argument('--ecoball', metavar='', help="Path to ecoball binary", default='../build/ecoball')
+parser.add_argument('--ecoball', metavar='', help="Path to ecoball binary", default=os.path.join(root_dir, '../build/ecoball'))
 parser.add_argument('-a', '--all', action='store_true', help="Do everything marked with (*)")
-parser.add_argument('--log-dir', metavar='', help="Directory to log file", default='../build/log/', dest='log_dir')
+parser.add_argument('--log-dir', metavar='', help="Directory to log file", default=os.path.join(root_dir, '../build/log/'), dest='log_dir')
 
 for (flag, command, function, inAll, help) in commands:
     prefix = ''
@@ -120,7 +122,7 @@ if not os.path.exists(args.log_dir):
     os.makedirs(args.log_dir)
 
 #load account
-with open('accounts.json') as f:
+with open(os.path.join(root_dir, 'accounts.json')) as f:
     a = json.load(f)
     if args.user_limit:
         del a['users'][args.user_limit:]
