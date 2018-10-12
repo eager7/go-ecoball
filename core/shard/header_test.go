@@ -1,4 +1,4 @@
-package types_test
+package shard_test
 
 import (
 	"github.com/ecoball/go-ecoball/common"
@@ -6,14 +6,15 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/bloom"
-	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/test/example"
 	"testing"
 	"time"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 func TestMinorBlockHeader(t *testing.T) {
-	header := types.MinorBlockHeader{
+	header := shard.MinorBlockHeader{
 		ChainID:           config.ChainHash,
 		Version:           1,
 		Height:            1,
@@ -35,14 +36,14 @@ func TestMinorBlockHeader(t *testing.T) {
 	data, err := header.Serialize()
 	errors.CheckErrorPanic(err)
 
-	headerNew := types.MinorBlockHeader{}
+	headerNew := shard.MinorBlockHeader{}
 	errors.CheckErrorPanic(headerNew.Deserialize(data))
 	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
 
-	block, err := types.NewMinorBlock(header, nil, []*types.Transaction{example.TestTransfer()}, 0, 0)
+	block, err := shard.NewMinorBlock(header, nil, []*types.Transaction{example.TestTransfer()}, 0, 0)
 	data, err = block.Serialize()
 	errors.CheckErrorPanic(err)
-	blockNew := types.MinorBlock{}
+	blockNew := shard.MinorBlock{}
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
 	elog.Log.Debug(block.JsonString())
 	elog.Log.Info(blockNew.JsonString())
@@ -50,7 +51,7 @@ func TestMinorBlockHeader(t *testing.T) {
 }
 
 func TestCmBlockHeader(t *testing.T) {
-	header := types.CMBlockHeader{
+	header := shard.CMBlockHeader{
 		ChainID:      config.ChainHash,
 		Version:      0,
 		Height:       10,
@@ -59,7 +60,7 @@ func TestCmBlockHeader(t *testing.T) {
 		//ConsData:     example.ConsensusData(),
 		LeaderPubKey: []byte("12345678909876554432"),
 		Nonce:        23450,
-		Candidate: types.NodeInfo{
+		Candidate: shard.NodeInfo{
 			PublicKey: config.Root.PublicKey,
 			Address:   "1234",
 			Port:      "5678",
@@ -74,31 +75,31 @@ func TestCmBlockHeader(t *testing.T) {
 	data, err := header.Serialize()
 	errors.CheckErrorPanic(err)
 
-	headerNew := types.CMBlockHeader{}
+	headerNew := shard.CMBlockHeader{}
 	errors.CheckErrorPanic(headerNew.Deserialize(data))
 	elog.Log.Debug(header.JsonString())
 	elog.Log.Info(headerNew.JsonString())
 	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
 
-	Shards := []types.Shard{types.Shard{
-		Member: []types.NodeInfo{
+	Shards := []shard.Shard{shard.Shard{
+		Member: []shard.NodeInfo{
 			{
 				PublicKey: []byte("12340987"),
 				Address:   "ew62",
 				Port:      "34523532",
 			},
 		},
-		MemberAddr: []types.NodeAddr{{
+		MemberAddr: []shard.NodeAddr{{
 			Address: "1234",
 			Port:    "5678",
 		}},
 	}}
 
-	block, err := types.NewCmBlock(header, Shards)
+	block, err := shard.NewCmBlock(header, Shards)
 	errors.CheckErrorPanic(err)
 	data, err = block.Serialize()
 	errors.CheckErrorPanic(err)
-	blockNew := types.CMBlock{}
+	blockNew := shard.CMBlock{}
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
 	elog.Log.Notice(block.JsonString())
 	elog.Log.Debug(blockNew.JsonString())
@@ -106,7 +107,7 @@ func TestCmBlockHeader(t *testing.T) {
 }
 
 func TestFinalBlockHeader(t *testing.T) {
-	header := types.FinalBlockHeader{
+	header := shard.FinalBlockHeader{
 		ChainID:            config.ChainHash,
 		Version:            10,
 		Height:             120,
@@ -130,11 +131,11 @@ func TestFinalBlockHeader(t *testing.T) {
 	data, err := header.Serialize()
 	errors.CheckErrorPanic(err)
 
-	headerNew := types.FinalBlockHeader{}
+	headerNew := shard.FinalBlockHeader{}
 	errors.CheckErrorPanic(headerNew.Deserialize(data))
 	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
 
-	headerMinor := types.MinorBlockHeader{
+	headerMinor := shard.MinorBlockHeader{
 		ChainID:           config.ChainHash,
 		Version:           1,
 		Height:            1,
@@ -153,13 +154,13 @@ func TestFinalBlockHeader(t *testing.T) {
 			Step2: 20,
 		},
 	}
-	block := types.FinalBlock{
+	block := shard.FinalBlock{
 		FinalBlockHeader: header,
-		MinorBlocks:      []*types.MinorBlockHeader{&headerMinor},
+		MinorBlocks:      []*shard.MinorBlockHeader{&headerMinor},
 	}
 	data, err = block.Serialize()
 	errors.CheckErrorPanic(err)
-	blockNew := types.FinalBlock{}
+	blockNew := shard.FinalBlock{}
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
 	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
 }

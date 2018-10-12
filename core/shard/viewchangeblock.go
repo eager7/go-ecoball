@@ -14,7 +14,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball library. If not, see <http://www.gnu.org/licenses/>.
 
-package types
+package shard
+
+import "github.com/ecoball/go-ecoball/core/types"
 
 type ViewChangeBlockHeader struct {
 	CMEpochNo        uint64
@@ -22,7 +24,7 @@ type ViewChangeBlockHeader struct {
 	Round            uint16
 	Candidate        NodeInfo
 	Timestamp        uint64
-	*COSign
+	*types.COSign
 }
 
 type ViewChangeBlock struct {

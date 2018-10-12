@@ -1,4 +1,4 @@
-package types
+package shard
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type NodeInfo struct {
@@ -28,7 +29,7 @@ type CMBlockHeader struct {
 	ShardsHash   common.Hash
 
 	hash common.Hash
-	*COSign
+	*types.COSign
 }
 
 func (h *CMBlockHeader) ComputeHash() error {
@@ -118,7 +119,7 @@ func (h *CMBlockHeader) Deserialize(data []byte) error {
 	}
 	h.ShardsHash = common.NewHash(pbHeader.ShardsHash)
 	h.hash = common.NewHash(pbHeader.Hash)
-	h.COSign = &COSign{
+	h.COSign = &types.COSign{
 		Step1: pbHeader.COSign.Step1,
 		Step2: pbHeader.COSign.Step2,
 	}
