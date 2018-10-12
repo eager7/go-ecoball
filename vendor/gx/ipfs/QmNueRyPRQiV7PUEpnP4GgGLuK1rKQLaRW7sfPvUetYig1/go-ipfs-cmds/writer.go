@@ -111,7 +111,7 @@ type WriterResponseEmitter struct {
 	enc Encoder
 	req *Request
 
-	length *uint64
+	length uint64
 	err    *cmdkit.Error
 
 	emitted bool
@@ -133,7 +133,7 @@ func (re *WriterResponseEmitter) SetLength(length uint64) {
 		return
 	}
 
-	*re.length = length
+	re.length = length
 }
 
 func (re *WriterResponseEmitter) Close() error {
@@ -142,7 +142,7 @@ func (re *WriterResponseEmitter) Close() error {
 
 func (re *WriterResponseEmitter) Head() Head {
 	return Head{
-		Len: *re.length,
+		Len: re.length,
 		Err: re.err,
 	}
 }

@@ -71,7 +71,6 @@ func Copy(re ResponseEmitter, res Response) error {
 		default:
 			return err
 		}
-
 		err = re.Emit(v)
 		if err != nil {
 			return err
