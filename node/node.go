@@ -244,6 +244,8 @@ func runNode(c *cli.Context) error {
 		return nil
 	})
 
+	go rpc.StartHttpServer()
+
 	//capture single
 	go wait(shutdown)
 

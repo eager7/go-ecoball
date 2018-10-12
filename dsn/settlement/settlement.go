@@ -222,6 +222,7 @@ func updateStateHostAnn(an *host.HostAncContract, st state.InterfaceState) error
 		du.TotalCapacity = du.TotalCapacity - hc.TotalStorage + an.TotalStorage
 	} else {
 		du.TotalCapacity = du.TotalCapacity + an.TotalStorage
+		du.Hosts = append(du.Hosts, an.AccountName)
 	}
 	newDbuff := encoding.Marshal(du)
 	st.StoreSet(ecommon.NameToIndex(dsnComm.RootAccount), dkey, newDbuff)

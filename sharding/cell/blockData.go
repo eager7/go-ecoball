@@ -1,56 +1,58 @@
 package cell
 
-import "github.com/ecoball/go-ecoball/core/types"
+import (
+	cs "github.com/ecoball/go-ecoball/core/shard"
+)
 
 type chainData struct {
-	cmBlock         *types.CMBlock
-	finalBlock      *types.FinalBlock
-	viewchangeBlock *types.ViewChangeBlock
-	minorBlock      *types.MinorBlock
-	preMinorBlock   *types.MinorBlock
+	cmBlock         *cs.CMBlock
+	finalBlock      *cs.FinalBlock
+	viewchangeBlock *cs.ViewChangeBlock
+	minorBlock      *cs.MinorBlock
+	preMinorBlock   *cs.MinorBlock
 }
 
 func makeChainData() *chainData {
 	return &chainData{}
 }
 
-func (c *chainData) setCMBlock(cm *types.CMBlock) {
+func (c *chainData) setCMBlock(cm *cs.CMBlock) {
 	c.cmBlock = cm
 
 }
 
-func (c *chainData) getCMBlock() *types.CMBlock {
+func (c *chainData) getCMBlock() *cs.CMBlock {
 	return c.cmBlock
 }
 
-func (c *chainData) setFinalBlock(final *types.FinalBlock) {
+func (c *chainData) setFinalBlock(final *cs.FinalBlock) {
 	c.finalBlock = final
 }
 
-func (c *chainData) getFinalBlock() *types.FinalBlock {
+func (c *chainData) getFinalBlock() *cs.FinalBlock {
 	return c.finalBlock
 }
 
-func (c *chainData) setViewchangeBlock(vc *types.ViewChangeBlock) {
+func (c *chainData) setViewchangeBlock(vc *cs.ViewChangeBlock) {
 	c.viewchangeBlock = vc
 }
 
-func (c *chainData) getViewchangeBlock() *types.ViewChangeBlock {
+func (c *chainData) getViewchangeBlock() *cs.ViewChangeBlock {
 	return c.viewchangeBlock
 }
 
-func (c *chainData) setMinorBlock(minor *types.MinorBlock) {
+func (c *chainData) setMinorBlock(minor *cs.MinorBlock) {
 	c.minorBlock = minor
 }
 
-func (c *chainData) getMinorBlock() *types.MinorBlock {
+func (c *chainData) getMinorBlock() *cs.MinorBlock {
 	return c.minorBlock
 }
 
-func (c *chainData) setPreMinorBlock(minor *types.MinorBlock) {
+func (c *chainData) setPreMinorBlock(minor *cs.MinorBlock) {
 	c.minorBlock = minor
 }
 
-func (c *chainData) getPreMinorBlock() *types.MinorBlock {
+func (c *chainData) getPreMinorBlock() *cs.MinorBlock {
 	return c.minorBlock
 }

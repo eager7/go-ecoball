@@ -21,6 +21,8 @@ import (
 
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/gin-gonic/gin"
+	innercommon "github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
 func StartHttpServer() (err error) {
@@ -30,8 +32,22 @@ func StartHttpServer() (err error) {
 	//register handle
 	router.GET("/transfer", transfer)
 
-	http.ListenAndServe(":"+config.HttpLocalPort, router)
+	router.POST("/getAccountInfo", getAccountInfo)
+
+	http.ListenAndServe(":20681", router)
 	return nil
 }
 
 func transfer(c *gin.Context) {}
+
+func getAccountInfo(c *gin.Context) {
+	name := c.PostForm("name")
+
+	data, err := ledger.L.AccountGet(config.ChainHash, innercommon.NameToIndex(name))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"account": data})
+}

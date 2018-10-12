@@ -430,7 +430,6 @@ func StartNetWork(l ledger.Ledger) {
 			os.Exit(1)
 		}
 		netNode.AttachShardingActor(sa)
-		netNode.sa.Start()
 	}
 
 	if err := netNode.Start(); err != nil {

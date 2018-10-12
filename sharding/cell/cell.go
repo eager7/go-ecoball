@@ -4,7 +4,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/core/types"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 )
@@ -65,7 +65,7 @@ func (c *Cell) LoadConfig() {
 	c.NodeType = nodeType
 }
 
-func (c *Cell) SaveLastCMBlock(bk *types.CMBlock) {
+func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 	c.chain.setCMBlock(bk)
 
 	worker := &Worker{}
@@ -87,20 +87,20 @@ func (c *Cell) SaveLastCMBlock(bk *types.CMBlock) {
 
 }
 
-func (c *Cell) GetLastCMBlock() *types.CMBlock {
+func (c *Cell) GetLastCMBlock() *cs.CMBlock {
 	return c.chain.getCMBlock()
 }
 
-func (c *Cell) SaveLastFinalBlock(bk *types.FinalBlock) {
+func (c *Cell) SaveLastFinalBlock(bk *cs.FinalBlock) {
 	c.chain.setFinalBlock(bk)
 	c.minorBlockPool.clean()
 }
 
-func (c *Cell) GetLastFinalBlock() *types.FinalBlock {
+func (c *Cell) GetLastFinalBlock() *cs.FinalBlock {
 	return c.chain.getFinalBlock()
 }
 
-func (c *Cell) SaveLastViewchangeBlock(bk *types.ViewChangeBlock) {
+func (c *Cell) SaveLastViewchangeBlock(bk *cs.ViewChangeBlock) {
 	leader := &Worker{}
 	leader.InitWork(&bk.Candidate)
 
@@ -108,27 +108,27 @@ func (c *Cell) SaveLastViewchangeBlock(bk *types.ViewChangeBlock) {
 	c.chain.setViewchangeBlock(bk)
 }
 
-func (c *Cell) GetLastViewchangeBlock() *types.ViewChangeBlock {
+func (c *Cell) GetLastViewchangeBlock() *cs.ViewChangeBlock {
 	return c.chain.getViewchangeBlock()
 }
 
-func (c *Cell) SaveLastMinorBlock(bk *types.MinorBlock) {
+func (c *Cell) SaveLastMinorBlock(bk *cs.MinorBlock) {
 	c.chain.setMinorBlock(bk)
 }
 
-func (c *Cell) GetLastMinorBlock() *types.MinorBlock {
+func (c *Cell) GetLastMinorBlock() *cs.MinorBlock {
 	return c.chain.getMinorBlock()
 }
 
-func (c *Cell) SavePreMinorBlock(bk *types.MinorBlock) {
+func (c *Cell) SavePreMinorBlock(bk *cs.MinorBlock) {
 	c.chain.setPreMinorBlock(bk)
 }
 
-func (c *Cell) GetPreMinorBlock() *types.MinorBlock {
+func (c *Cell) GetPreMinorBlock() *cs.MinorBlock {
 	return c.chain.getPreMinorBlock()
 }
 
-func (c *Cell) SyncCmBlockComplete(lastCmblock *types.CMBlock) {
+func (c *Cell) SyncCmBlockComplete(lastCmblock *cs.CMBlock) {
 	curBlock := c.chain.getCMBlock()
 
 	var i uint64
@@ -144,13 +144,13 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *types.CMBlock) {
 	}
 
 	for ; i < lastCmblock.Height; i++ {
-		block, err := c.Ledger.GetShardBlockByHeight(config.ChainHash, types.HeCmBlock, i)
+		block, err := c.Ledger.GetShardBlockByHeight(config.ChainHash, cs.HeCmBlock, i)
 		if err != nil {
 			log.Error("get block error ", err)
 			return
 		}
 
-		cm := block.GetObject().(types.CMBlock)
+		cm := block.GetObject().(cs.CMBlock)
 
 		var worker Worker
 		worker.Pubkey = string(cm.Candidate.PublicKey)
@@ -163,11 +163,11 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *types.CMBlock) {
 	c.SaveLastCMBlock(lastCmblock)
 }
 
-func (c *Cell) SaveMinorBlockToPool(minor *types.MinorBlock) {
+func (c *Cell) SaveMinorBlockToPool(minor *cs.MinorBlock) {
 	c.minorBlockPool.saveMinorBlock(minor)
 }
 
-func (c *Cell) SyncMinorsBlockToPool(minors []*types.MinorBlock) {
+func (c *Cell) SyncMinorsBlockToPool(minors []*cs.MinorBlock) {
 	c.minorBlockPool.syncMinorBlocks(minors)
 }
 
@@ -298,7 +298,7 @@ func (c *Cell) addCommitteWorker(worker *Worker) {
 	}
 }
 
-func (c *Cell) saveShardsInfoFromCMBlock(cmb *types.CMBlock) {
+func (c *Cell) saveShardsInfoFromCMBlock(cmb *cs.CMBlock) {
 	c.NodeType = sc.NodeCandidate
 	c.shard = c.shard[:0]
 

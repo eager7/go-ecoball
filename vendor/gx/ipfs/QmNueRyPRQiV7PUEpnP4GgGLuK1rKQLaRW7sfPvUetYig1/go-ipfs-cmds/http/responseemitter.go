@@ -81,7 +81,6 @@ func (re *responseEmitter) Emit(value interface{}) error {
 		}
 		return nil
 	}
-
 	var err error
 
 	re.once.Do(func() { re.preamble(value) })

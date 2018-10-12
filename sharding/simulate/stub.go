@@ -2,7 +2,7 @@ package simulate
 
 import (
 	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/core/types"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 )
 
 func TellBlock(bl interface{}) {
@@ -19,12 +19,12 @@ func GetSyncStatus() bool {
 	return true
 }
 
-func GetMinorBlockPool() []*types.MinorBlock {
+func GetMinorBlockPool() []*cs.MinorBlock {
 	return nil
 }
 
 /*minor block to be packed by committee*/
-func GetPreproductionMinorBlock() *types.MinorBlock {
+func GetPreproductionMinorBlock() *cs.MinorBlock {
 	return nil
 }
 
