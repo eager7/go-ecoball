@@ -105,8 +105,10 @@ func (p *Permission) checkPermission(state *State, signatures []common.Signature
 }
 
 /**
- *  @brief check that the signatures meets the permission requirement
+ *  @brief check if guest has host permission, this method will not modified mpt trie
  *  @param state - the mpt trie, used to search account
+ *  @param guest - the guest account
+ *  @param permission - the permission names
  */
 func (p *Permission) checkAccountPermission(state *State, guest string, permission string) error {
 	var weightAcc uint32
@@ -165,11 +167,10 @@ func (s *State) CheckPermission(index common.AccountName, name string, hash comm
 }
 
 /**
- *  @brief check the permission's validity, this method will not modified mpt trie
- *  @param index - the account index
- *  @param state - the world state tree
- *  @param name - the permission names
- *  @param signatures - the signatures list
+ *  @brief check if guest has host permission, this method will not modified mpt trie
+ *  @param host - the host account
+ *  @param guest - the guest account
+ *  @param permission - the permission names
  */
 func (s *State) CheckAccountPermission(host common.AccountName, guest common.AccountName, permission string) error {
 	acc, err := s.GetAccountByName(host)
@@ -232,10 +233,10 @@ func (a *Account) checkPermission(state *State, name string, signatures []common
 }
 
 /**
- *  @brief check that the signatures meets the permission requirement
+ *  @brief check if guest has host permission, this method will not modified mpt trie
  *  @param state - the mpt trie, used to search account
- *  @param name - the permission name
- *  @param signatures - the transaction's signatures list
+ *  @param guest - the guest account
+ *  @param permission - the permission names
  */
 func (a *Account) checkAccountPermission(state *State, guest string, permission string) error {
 	if perm, ok := a.Permissions[permission]; !ok {

@@ -22,7 +22,6 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-	"math/big"
 )
 
 /*
@@ -70,9 +69,15 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 	} else {
 		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
 	}
-	if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(90000)); err != nil {
-		return err
-	}
+
+	s.CreateToken(state.AbaToken, state.AbaTotal, 0, root)
+
+	//if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(90000)); err != nil {
+	//	return err
+	//}
+
+	s.IssueToken(root, 90000, state.AbaToken)
+
 	fmt.Println("set root account's resource to [cpu:100, net:100]")
 	if err := s.SetResourceLimits(root, root, 10000, 10000, types.BlockCpuLimit, types.BlockNetLimit); err != nil {
 		fmt.Println(err)

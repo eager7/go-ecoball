@@ -5,13 +5,64 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"math/big"
+	"github.com/ecoball/go-ecoball/core/pb"
+	"strings"
 )
 
-const abaTotal = 100000
+const AbaTotal = 100000
+
+type TokenInfo struct {
+	Symbol 		 string					`json:"symbol"`
+	MaxSupply 	 int32					`json:"max_supply"`
+	Supply		 int32 					`json:"supply"`
+	Issuer       common.AccountName     `json:"issuer"`
+}
 
 type Token struct {
 	Name    string   `json:"index"`
 	Balance *big.Int `json:"balance, omitempty"`
+}
+
+func NewToken(symbol string, maxSupply int32, supply int32, issuer common.AccountName) (*TokenInfo, error){
+	stat := &TokenInfo{
+		Symbol: 	symbol,
+		MaxSupply:	maxSupply,
+		Supply:		supply,
+		Issuer:		issuer,
+	}
+
+	return stat, nil
+}
+
+func (stat *TokenInfo) Serialize() ([]byte, error) {
+	p := &pb.TokenInfo{
+		Symbol:		stat.Symbol,
+		MaxSupply:	stat.MaxSupply,
+		Supply:		stat.Supply,
+		Issuer:		uint64(stat.Issuer),
+	}
+	b, err := p.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+func (stat *TokenInfo) Deserialize(data []byte) (error) {
+	if len(data) == 0 {
+		return errors.New(log, "input data's length is zero")
+	}
+	var status pb.TokenInfo
+	if err := status.Unmarshal(data); err != nil {
+		return err
+	}
+
+	stat.Symbol = status.Symbol
+	stat.MaxSupply = status.MaxSupply
+	stat.Supply = status.Supply
+	stat.Issuer = common.AccountName(status.Issuer)
+
+	return nil
 }
 
 func (s *State) AccountGetBalance(index common.AccountName, token string) (*big.Int, error) {
@@ -50,9 +101,12 @@ func (s *State) AccountAddBalance(index common.AccountName, token string, value 
 	if err != nil {
 		return err
 	}
+	if !s.TokenExisted(token) {
+		return errors.New(log, fmt.Sprintf("%s token is not existed", token))
+	}
 	acc.mutex.Lock()
 	defer acc.mutex.Unlock()
-	if err := acc.AddBalance(AbaToken, value); err != nil {
+	if err := acc.AddBalance(token, value); err != nil {
 		return err
 	}
 	if err := s.commitAccount(acc); err != nil {
@@ -63,6 +117,13 @@ func (s *State) AccountAddBalance(index common.AccountName, token string, value 
 }
 
 func (s *State) TokenExisted(name string) bool {
+	s.tokenMutex.RLock()
+	defer s.tokenMutex.RUnlock()
+	_, ok := s.Tokens[name]
+	if ok {
+		return true
+	}
+
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	data, err := s.trie.TryGet([]byte(name))
@@ -70,7 +131,110 @@ func (s *State) TokenExisted(name string) bool {
 		log.Error(err)
 		return false
 	}
-	return string(data) == name
+
+	if data == nil {
+		return false
+	}
+
+	token := &TokenInfo{}
+	if err = token.Deserialize(data); err != nil {
+		return false
+	}
+
+	return token.Symbol == name
+}
+
+func (s *State) GetTokenInfo(name string) (*TokenInfo, error) {
+	symbol := strings.ToUpper(name)
+	s.tokenMutex.RLock()
+	defer s.tokenMutex.RUnlock()
+	token, ok := s.Tokens[symbol]
+	if ok {
+		return token, nil
+	}
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	data, err := s.trie.TryGet([]byte(symbol))
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	if data == nil {
+		return nil, errors.New(log, fmt.Sprintf("no this account named:%s", symbol))
+	}
+
+	token = &TokenInfo{}
+	if err = token.Deserialize(data); err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+/**
+ *  @brief update the account's information into trie
+ *  @param acc - account object
+ */
+func (s *State) CommitToken(token *TokenInfo) error {
+	if token == nil {
+		return errors.New(log, "param acc is nil")
+	}
+	d, err := token.Serialize()
+	if err != nil {
+		return err
+	}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	if err := s.trie.TryUpdate([]byte(token.Symbol), d); err != nil {
+		return err
+	}
+	s.tokenMutex.Lock()
+	defer s.tokenMutex.Unlock()
+	s.Tokens[token.Symbol] = token
+	return nil
+}
+
+func (s *State) CreateToken(symbol string, maxSupply int32, supply int32, issuer common.AccountName) (*TokenInfo, error) {
+	name := strings.ToUpper(symbol)
+	if s.TokenExisted(name) {
+		return nil, errors.New(log, fmt.Sprintf("%s token had created", symbol))
+	}
+
+	token, err := NewToken(name, maxSupply, supply, issuer)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.CommitToken(token); err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
+
+func (s *State) IssueToken(to common.AccountName, amount int32, symbol string) error{
+	token, err := s.GetTokenInfo(symbol)
+	if err != nil {
+		return err
+	}
+
+	if token.Issuer != to {
+		if err := s.CheckAccountPermission(token.Issuer, to, Active); err != nil {
+			return errors.New(log, fmt.Sprintf("account %s has not %s@%s permisson", to.String(), token.Issuer.String(), Active))
+		}
+	}
+
+	if amount > token.MaxSupply - token.Supply {
+		return errors.New(log, fmt.Sprintf("issue amount %d > issue balance %d", amount, token.MaxSupply - token.Supply))
+	}
+
+	if err = s.AccountAddBalance(to, symbol, big.NewInt(int64(amount))); err != nil {
+		return err
+	}
+
+	token.Supply += amount
+
+	return nil
 }
 
 /**

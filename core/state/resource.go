@@ -436,7 +436,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	if err := s.commitParam(votingAmount, votingSum+acc.Resource.Votes.Staked); err != nil {
 		return err
 	}
-	if votingSum+acc.Resource.Votes.Staked > abaTotal*0.15 && flag == false {
+	if votingSum+acc.Resource.Votes.Staked > AbaTotal*0.15 && flag == false {
 		flag = true
 		log.Warn("Start Process ##################################################################################")
 		producers, err := s.GetProducerList()
@@ -575,8 +575,8 @@ func (s *State) RequireVotingInfo() bool {
 	if err != nil {
 		return false
 	}
-	log.Debug("abaTotal", abaTotal, "votingSum", votingSum, "Percentage", 100*float32(votingSum)/float32(abaTotal), "%")
-	if float32(votingSum)/float32(abaTotal) >= 0.15 {
+	log.Debug("abaTotal", AbaTotal, "votingSum", votingSum, "Percentage", 100*float32(votingSum)/float32(AbaTotal), "%")
+	if float32(votingSum)/float32(AbaTotal) >= 0.15 {
 		return true
 	}
 	return false

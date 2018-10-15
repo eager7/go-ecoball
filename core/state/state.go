@@ -44,6 +44,9 @@ type State struct {
 	db     Database
 	diskDb *store.LevelDBStore
 
+	tokenMutex sync.RWMutex
+	Tokens	map[string]*TokenInfo
+
 	accMutex sync.RWMutex
 	Accounts map[string]*Account
 
@@ -77,6 +80,7 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	if err != nil {
 		st.trie, _ = st.db.OpenTrie(common.Hash{})
 	}
+	st.Tokens = make(map[string]*TokenInfo, 1)
 	st.Accounts = make(map[string]*Account, 1)
 	st.Params = make(map[string]uint64, 1)
 	st.Producers = make(map[common.AccountName]uint64, 1)
@@ -95,6 +99,7 @@ func (s *State) CopyState() (*State, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	params := make(map[string]uint64, 1)
+	tokens := make(map[string]*TokenInfo, 1)
 	accounts := make(map[string]*Account, 1)
 	prods := make(map[common.AccountName]uint64, 1)
 	chains := make(map[common.Hash]Chain, 1)
@@ -126,9 +131,19 @@ func (s *State) CopyState() (*State, error) {
 		accounts[acc.Index.String()] = acc
 	}
 
+	s.tokenMutex.RLock()
+	defer s.tokenMutex.RUnlock()
+	for _, v := range s.Tokens {
+		data, _ := v.Serialize()
+		token := new(TokenInfo)
+		token.Deserialize(data)
+		tokens[token.Symbol] = token
+	}
+
 	return &State{
 		path:      s.path,
 		trie:      s.db.CopyTrie(s.trie),
+		Tokens: 	tokens,
 		Accounts:  accounts,
 		Params:    params,
 		Producers: prods,
@@ -422,10 +437,17 @@ func (s *State) Reset(hash common.Hash) error {
 	for k := range s.Accounts {
 		delete(s.Accounts, k)
 	}
+	s.prodMutex.Lock()
+	defer s.prodMutex.Unlock()
 	for k := range s.Producers {
 		delete(s.Producers, k)
 	}
-	s.paraMutex.Lock()
+	s.tokenMutex.Lock()
+	defer s.tokenMutex.Unlock()
+	for t := range s.Tokens {
+		delete(s.Tokens, t)
+	}
+		s.paraMutex.Lock()
 	defer s.paraMutex.Unlock()
 	for k := range s.Params {
 		delete(s.Params, k)

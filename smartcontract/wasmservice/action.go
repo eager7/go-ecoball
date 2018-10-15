@@ -106,3 +106,4 @@ func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionD
 
 	return 0
 }
+

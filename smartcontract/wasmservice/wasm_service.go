@@ -224,8 +224,12 @@ func (ws *WasmService) RegisterApi() {
 	//db
 	functions.Register("ABA_db_put",ws.db_put)
 	functions.Register("ABA_db_get",ws.db_get)
-	//inline action
+	// inline action
 	functions.Register("inline_action", ws.inline_action)
 	// authorization
 	functions.Register("require_auth", ws.require_auth)
+	// token
+	functions.Register("ABA_createToken", ws.createToken)
+	functions.Register("ABA_issueToken", ws.issueToken)
+	functions.Register("ABA_transfer", ws.transfer)
 }

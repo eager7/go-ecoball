@@ -199,6 +199,17 @@ message Account {
 
     bytes       Hash                    = 6;
 }
+
+/**
+** Tokens Info
+*/
+message TokenInfo {
+    string      Symbol      = 1;
+    int32       MaxSupply   = 2;
+    int32       Supply      = 3;
+    uint64      Issuer      = 4;
+}
+
 /**
 ** Account Info
 */

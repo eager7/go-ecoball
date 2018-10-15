@@ -398,6 +398,19 @@ func GetContractTable(contractName string, accountName string, abiDef ABI, table
 		return nil, errors.New(log, "can not find struct of table  " + tableName)
 	}
 
+	type TokenStat struct {
+		Supply 		int 		`json:"supply"`
+		MaxSupply 	int 		`json:"max_supply"`
+		Issuer 		[16]byte	`json:"issuer"`
+		Token 		[8]byte		`json:"token"`
+	}
+
+	type Account struct {
+		Balance 	int			`json:"balance"`
+		Acc			[16]byte	`json:"account"`
+		Token 		[8]byte		`json:"token"`
+	}
+
 	table := make(map[string]string, len(fields))
 
 	for i, _ := range fields {
@@ -411,6 +424,7 @@ func GetContractTable(contractName string, accountName string, abiDef ABI, table
 		if err != nil {
 			return nil, errors.New(log, "can not get store " + fields[i].Name)
 		}
+
 		fmt.Println(fields[i].Name + ": " + string(storage))
 		table[fields[i].Name] = string(storage)
 	}

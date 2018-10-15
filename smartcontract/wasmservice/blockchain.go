@@ -25,8 +25,8 @@ func(ws *WasmService)is_account(proc *exec.Process, p, length uint32)int32 {
 	account := common.NameToIndex(string(name))
 	_, err = ws.state.GetAccountByName(account)
 	if err != nil{
-		return 0
+		return -2
 	}
-	return 1
+	return 0
 }
 
