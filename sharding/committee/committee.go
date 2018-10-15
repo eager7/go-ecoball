@@ -19,7 +19,7 @@ var (
 const (
 	blockSync = iota + 1
 	productCommitteBlock
-	waitMinorBlock
+	collectMinorBlock
 	productFinalBlock
 	productViewChangeBlock
 	stateEnd
@@ -27,10 +27,11 @@ const (
 
 const (
 	ActProductCommitteeBlock = iota + 1
-	ActWaitMinorBlock
+	ActCollectMinorBlock
 	ActProductFinalBlock
 	ActChainNotSync
 	ActRecvConsensusPacket
+	ActRecvShardPacket
 	ActStateTimeout
 )
 
@@ -43,16 +44,18 @@ type committee struct {
 	stateTimer   *time.Timer
 	retransTimer *time.Timer
 	vccount      uint16
+	cs           *consensus.Consensus
 
-	cs *consensus.Consensus
+	bCollectMinorBlock bool
 }
 
 func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 	cm := &committee{
-		ns:      ns,
-		actorc:  make(chan interface{}),
-		ppc:     make(chan *sc.CsPacket, sc.DefaultCommitteMaxMember),
-		vccount: 0,
+		ns:                 ns,
+		actorc:             make(chan interface{}),
+		ppc:                make(chan *sc.CsPacket, sc.DefaultCommitteMaxMember),
+		vccount:            0,
+		bCollectMinorBlock: false,
 	}
 
 	cm.cs = consensus.MakeConsensus(cm.ns, cm.setRetransTimer, cm.consensusCb)
@@ -60,27 +63,28 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 	cm.fsm = sc.NewFsm(blockSync,
 		[]sc.FsmElem{
 			{blockSync, ActProductCommitteeBlock, nil, cm.productCommitteeBlock, nil, productCommitteBlock},
-			{blockSync, ActWaitMinorBlock, nil, cm.waitMinorBlock, nil, waitMinorBlock},
+			{blockSync, ActCollectMinorBlock, nil, cm.collectMinorBlock, nil, collectMinorBlock},
 			{blockSync, ActProductFinalBlock, nil, cm.productFinalBlock, nil, productFinalBlock},
 			{blockSync, ActStateTimeout, nil, cm.processBlockSyncTimeout, nil, sc.StateNil},
 			{blockSync, ActRecvConsensusPacket, nil, cm.dropPacket, nil, sc.StateNil},
 
 			{productCommitteBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
 			{productCommitteBlock, ActRecvConsensusPacket, nil, cm.processConsensusCmPacket, nil, sc.StateNil},
-			{productCommitteBlock, ActWaitMinorBlock, nil, cm.waitMinorBlock, nil, waitMinorBlock},
+			{productCommitteBlock, ActCollectMinorBlock, nil, cm.collectMinorBlock, nil, collectMinorBlock},
 			{productCommitteBlock, ActStateTimeout, cm.resetVcCounter, cm.productViewChangeBlock, nil, productViewChangeBlock},
 
 			/*missing_func consensus fail or timeout*/
 			/*{ProductCommitteBlock, ActConsensusFail, , },
 			{ProductCommitteBlock, ActProductTimeout, , },*/
 
-			{waitMinorBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
-			{waitMinorBlock, ActProductFinalBlock, nil, cm.productFinalBlock, nil, productFinalBlock},
-			{waitMinorBlock, ActStateTimeout, nil, cm.productFinalBlock, nil, productFinalBlock},
-			{waitMinorBlock, ActRecvConsensusPacket, cm.processConsensBlockOnWaitStatus, nil, nil, productFinalBlock},
+			{collectMinorBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
+			{collectMinorBlock, ActProductFinalBlock, nil, cm.productFinalBlock, nil, productFinalBlock},
+			{collectMinorBlock, ActStateTimeout, nil, cm.productFinalBlock, nil, productFinalBlock},
+			{collectMinorBlock, ActRecvConsensusPacket, cm.processConsensBlockOnWaitStatus, nil, nil, productFinalBlock},
+			{collectMinorBlock, ActRecvShardPacket, nil, cm.processShardBlockOnWaitStatus, nil, sc.StateNil},
 
 			{productFinalBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
-			{productFinalBlock, ActWaitMinorBlock, nil, cm.waitMinorBlock, nil, waitMinorBlock},
+			{productFinalBlock, ActCollectMinorBlock, nil, cm.collectMinorBlock, nil, collectMinorBlock},
 			{productFinalBlock, ActProductCommitteeBlock, nil, cm.productCommitteeBlock, nil, productCommitteBlock},
 			{productFinalBlock, ActRecvConsensusPacket, nil, cm.processConsensusFinalPacket, nil, sc.StateNil},
 			{productFinalBlock, ActStateTimeout, cm.resetVcCounter, cm.productViewChangeBlock, nil, productViewChangeBlock},
@@ -158,9 +162,9 @@ func (c *committee) processActorMsg(msg interface{}) {
 func (c *committee) processPacket(packet *sc.CsPacket) {
 	switch packet.PacketType {
 	case netmsg.APP_MSG_CONSENSUS_PACKET:
-		c.processConsensusPacket(packet)
+		c.recvConsensusPacket(packet)
 	case netmsg.APP_MSG_SHARDING_PACKET:
-		c.processShardingPacket(packet)
+		c.recvShardPacket(packet)
 	default:
 		log.Error("wrong packet")
 	}

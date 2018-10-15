@@ -72,22 +72,27 @@ func (s *shard) processRetransTimeout() {
 	s.cs.ProcessRetransPacket()
 }
 
-func (s *shard) processConsensusPacket(packet *sc.CsPacket) {
+func (s *shard) recvConsensusPacket(packet *sc.CsPacket) {
 	s.fsm.Execute(ActRecvConsensusPacket, packet)
 }
 
-func (s *shard) processShardingPacket(p *sc.CsPacket) {
+func (s *shard) recvCommitteePacket(packet *sc.CsPacket) {
+	s.fsm.Execute(ActRecvCommitteePacket, packet)
+}
+
+func (s *shard) processCommitteePacket(csp interface{}) {
+	p := csp.(*sc.CsPacket)
 	switch p.BlockType {
 	case sc.SD_CM_BLOCK:
 		cm := p.Packet.(*cs.CMBlock)
 		s.ns.SaveLastCMBlock(cm)
-		s.broadcastShardingPacket(p)
+		s.broadcastCommitteePacket(p)
 
 		s.fsm.Execute(ActProductMinorBlock, nil)
 	case sc.SD_FINAL_BLOCK:
 		final := p.Packet.(*cs.FinalBlock)
 		s.ns.SaveLastFinalBlock(final)
-		s.broadcastShardingPacket(p)
+		s.broadcastCommitteePacket(p)
 
 		if final.Height%sc.DefaultEpochFinalBlockNumber != 0 {
 			s.fsm.Execute(ActProductMinorBlock, nil)
@@ -95,7 +100,7 @@ func (s *shard) processShardingPacket(p *sc.CsPacket) {
 	case sc.SD_VIEWCHANGE_BLOCK:
 		vc := p.Packet.(*cs.ViewChangeBlock)
 		s.ns.SaveLastViewchangeBlock(vc)
-		s.broadcastShardingPacket(p)
+		s.broadcastCommitteePacket(p)
 	default:
 		log.Error("block type error ", p.BlockType)
 		return
@@ -103,6 +108,6 @@ func (s *shard) processShardingPacket(p *sc.CsPacket) {
 
 }
 
-func (s *shard) broadcastShardingPacket(p *sc.CsPacket) {
+func (s *shard) broadcastCommitteePacket(p *sc.CsPacket) {
 	net.Np.TransitBlock(p)
 }

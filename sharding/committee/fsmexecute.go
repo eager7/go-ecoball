@@ -14,8 +14,12 @@ func (c *committee) processStateTimeout() {
 	c.fsm.Execute(ActStateTimeout, nil)
 }
 
-func (c *committee) processConsensusPacket(packet *sc.CsPacket) {
+func (c *committee) recvConsensusPacket(packet *sc.CsPacket) {
 	c.fsm.Execute(ActRecvConsensusPacket, packet)
+}
+
+func (c *committee) recvShardPacket(packet *sc.CsPacket) {
+	c.fsm.Execute(ActRecvShardPacket, packet)
 }
 
 func (c *committee) processSyncComplete(msg interface{}) {
@@ -37,7 +41,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 
 	lastFinalBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
-		c.fsm.Execute(ActWaitMinorBlock, msg)
+		c.fsm.Execute(ActCollectMinorBlock, msg)
 		return
 	}
 
@@ -45,7 +49,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 	c.ns.SaveLastFinalBlock(final)
 
 	if cm.Height > final.EpochNo {
-		c.fsm.Execute(ActWaitMinorBlock, msg)
+		c.fsm.Execute(ActCollectMinorBlock, msg)
 		return
 	} else if cm.Height < final.EpochNo {
 		panic("wrong sync status")
@@ -67,7 +71,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 		c.fsm.Execute(ActProductFinalBlock, msg)
 		return
 	} else {
-		c.fsm.Execute(ActWaitMinorBlock, msg)
+		c.fsm.Execute(ActCollectMinorBlock, msg)
 		return
 	}
 }
@@ -88,7 +92,7 @@ func (c *committee) processBlockSyncTimeout(msg interface{}) {
 	}
 }
 
-func (c *committee) waitMinorBlock(msg interface{}) {
+func (c *committee) collectMinorBlock(msg interface{}) {
 	etime.StopTime(c.stateTimer)
 	c.stateTimer.Reset(sc.DefaultWaitMinorBlockTimer * time.Second)
 }

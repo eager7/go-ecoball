@@ -64,8 +64,7 @@ func (f *Fsm) Execute(action int, msg interface{}) {
 		}
 	}
 
-	log.Panic("wrong fsm state ", f.state, "action  ", action)
-	panic("wrong fsm")
+	log.Error("wrong fsm state ", f.state, "action  ", action)
 }
 
 func (f *Fsm) getState() int {

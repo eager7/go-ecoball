@@ -189,7 +189,7 @@ func (n *net) TransitBlock(p *sc.CsPacket) {
 	sp := &sc.NetPacket{}
 	sp.CopyHeader(p)
 	block, err := json.Marshal(p.Packet)
-	if err == nil {
+	if err != nil {
 		log.Error("broadcast sharding packet mashal error ", err)
 		return
 	}

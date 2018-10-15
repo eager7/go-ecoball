@@ -23,14 +23,20 @@ func (m *minorBlockSet) clean() {
 	}
 }
 
-func (m *minorBlockSet) saveMinorBlock(minor *cs.MinorBlock) {
+func (m *minorBlockSet) saveMinorBlock(minor *cs.MinorBlock) bool {
 	shardid := minor.ShardId
 	if int(shardid) > len(m.blocks) || shardid < 1 {
 		log.Error("save minorBlock error shardid ", shardid)
-		return
+		return false
+	}
+
+	if m.blocks[shardid-1] != nil {
+		log.Debug("minorBlock already exist")
+		return false
 	}
 
 	m.blocks[shardid-1] = minor
+	return true
 }
 
 func (m *minorBlockSet) syncMinorBlocks(minors []*cs.MinorBlock) {
