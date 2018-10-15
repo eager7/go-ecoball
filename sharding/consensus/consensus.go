@@ -22,9 +22,9 @@ type Consensus struct {
 	step uint16
 	view *sc.CsView
 
-	instance     sc.ConsensusInstance
-	retransTimer retransCb
-	completeCb   csCompleteCb
+	instance sc.ConsensusInstance
+	rcb      retransCb
+	ccb      csCompleteCb
 }
 
 type csCompleteCb func(bl interface{})
@@ -32,10 +32,10 @@ type retransCb func(bStart bool)
 
 func MakeConsensus(ns *cell.Cell, rcb retransCb, ccb csCompleteCb) *Consensus {
 	return &Consensus{
-		step:         StepNIL,
-		ns:           ns,
-		retransTimer: rcb,
-		completeCb:   ccb,
+		step: StepNIL,
+		ns:   ns,
+		rcb:  rcb,
+		ccb:  ccb,
 	}
 }
 
@@ -69,7 +69,6 @@ func (c *Consensus) ProcessPacket(csp *sc.CsPacket) bool {
 				log.Error("check packet error")
 				return false
 			}
-
 			c.processPacketByVoter(csp)
 		}
 	} else {
@@ -84,7 +83,6 @@ func (c *Consensus) ProcessPacket(csp *sc.CsPacket) bool {
 				log.Error("check packet error")
 				return false
 			}
-
 			c.processPacketByVoter(csp)
 		}
 	}
@@ -100,6 +98,7 @@ func (c *Consensus) ProcessRetransPacket() {
 		c.sendCommit()
 	} else {
 		log.Debug("resend packet  step ", c.step)
-		c.sendCsPacket()
+		packet := c.instance.MakeNetPacket(c.step)
+		c.sendCsPacket(packet)
 	}
 }

@@ -133,7 +133,7 @@ func runNode(c *cli.Context) error {
 
 	log.Info("Build Geneses Block")
 	var err error
-	ledger.L, err = ledgerimpl.NewLedger(store.PathBlock, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
+	ledger.L, err = ledgerimpl.NewLedger(config.RootDir+store.PathBlock, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -200,7 +200,7 @@ func runNode(c *cli.Context) error {
 		return nil
 	})
 
-	net.StartNetWork()
+	net.StartNetWork(ledger.L)
 
 	dsn.StartDsn(ctx, ledger.L)
 
@@ -243,6 +243,8 @@ func runNode(c *cli.Context) error {
 
 		return nil
 	})
+
+	go rpc.StartHttpServer()
 
 	//capture single
 	go wait(shutdown)

@@ -125,7 +125,7 @@ func (net *NetImpl)GetPeerID() (peer.ID, error) {
 }
 
 func (net *NetImpl)GetRandomPeers(k int) []peer.ID {
-	return net.selectRandomPeers(k)
+	return net.selectRandomPeers(k, []peer.ID{})
 }
 
 func (net *NetImpl) Host() host.Host {
@@ -210,15 +210,27 @@ func (net *NetImpl) findLocal(id peer.ID) pstore.PeerInfo {
 }
 
 // select randomly k peers from remote peers and returns them.
-func (net *NetImpl) selectRandomPeers(k int) []peer.ID {
+func (net *NetImpl) selectRandomPeers(k int, filtPeers [] peer.ID) []peer.ID {
+	var p peer.ID
+	filtedConns := []inet.Conn{}
 	conns := net.host.Network().Conns()
-	if len(conns) < k {
-		k = len(conns)
+	for _, conn := range conns {
+		for _, p = range filtPeers {
+			if p == conn.RemotePeer() {
+				break
+			}
+		}
+		if p == "" {
+			filtedConns = append(filtedConns, conn)
+		}
 	}
-	indices := util.GetRandomIndices(k, len(conns)-1)
+	if len(filtedConns) < k {
+		k = len(filtedConns)
+	}
+	indices := util.GetRandomIndices(k, len(filtedConns)-1)
 	peers := make([]peer.ID, len(indices))
 	for i, j := range indices {
-		pid := conns[j].RemotePeer()
+		pid := filtedConns[j].RemotePeer()
 		peers[i] = pid
 	}
 
@@ -269,7 +281,17 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 		ctx := context.Background()
 		log.Debug("p2p net handleNewStream from ", s.Conn().RemotePeer())
 		net.update(p)
-		net.receiver.ReceiveMessage(ctx, p, received)
+		if received.Type() == message.APP_MSG_GOSSIP {
+			net.ForwardMsg(received, []peer.ID{p})
+			msg, err := net.unwarpGossipMsg(received)
+			if err != nil {
+				log.Error(err)
+			} else {
+				net.receiver.ReceiveMessage(ctx, p, msg)
+			}
+		} else {
+			net.receiver.ReceiveMessage(ctx, p, received)
+		}
 	}
 }
 
@@ -324,20 +346,21 @@ func (net *NetImpl) startLocalDiscovery() (discovery.Service, error) {
 }
 
 // Start network
-func (bsnet *NetImpl) Start() {
+func (net *NetImpl) Start() {
 	// it is up to the requirement of network sharding,
 	if config.EnableLocalDiscovery {
 		var err error
-		bsnet.mdnsService, err = bsnet.startLocalDiscovery()
+		net.mdnsService, err = net.startLocalDiscovery()
 		if err != nil {
-			log.Error(err)
+			log.Error("start p2p local discovery",err)
+		} else {
+			log.Debug("start p2p local discovery")
 		}
-		log.Debug("start p2p local discovery")
 	}
 
-	bsnet.bootstrapper = bsnet.bootstrap(config.SwarmConfig.BootStrapAddr)
+	net.bootstrapper = net.bootstrap(config.SwarmConfig.BootStrapAddr)
 
-	bsnet.handleSendJob()
+	net.handleSendJob()
 }
 
 // Stop network

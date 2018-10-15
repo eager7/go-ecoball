@@ -3,7 +3,7 @@ package committee
 import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/etime"
-	"github.com/ecoball/go-ecoball/core/types"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -19,23 +19,30 @@ func (c *committee) processConsensusPacket(packet *sc.CsPacket) {
 }
 
 func (c *committee) processSyncComplete(msg interface{}) {
-	lastCmBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeCmBlock)
+	lastCmBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 	if err != nil || lastCmBlock == nil {
 		c.fsm.Execute(ActProductCommitteeBlock, msg)
 		return
 	}
 
-	cm := lastCmBlock.GetObject().(*types.CMBlock)
+	cm := lastCmBlock.GetObject().(*cs.CMBlock)
 	c.ns.SyncCmBlockComplete(cm)
 
-	lastFinalBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeFinalBlock)
+	/* missing_func vc block */
+	//lastVcBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeViewChangeBlock)
+	//if err == nil && lastVcBlock != nil {
+	//	vc := lastVcBlock.GetObject().(*types.ViewChangeBlock)
+	//
+	//}
+
+	lastFinalBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
 		c.fsm.Execute(ActWaitMinorBlock, msg)
 		return
 	}
 
-	final := lastFinalBlock.GetObject().(*types.FinalBlock)
-	c.ns.SetLastFinalBlock(final)
+	final := lastFinalBlock.GetObject().(*cs.FinalBlock)
+	c.ns.SaveLastFinalBlock(final)
 
 	if cm.Height > final.EpochNo {
 		c.fsm.Execute(ActWaitMinorBlock, msg)
@@ -56,11 +63,11 @@ func (c *committee) processSyncComplete(msg interface{}) {
 
 	/*haven't collect enough shard's minor block, the wait time will be longer than default configure when we enter
 	  WaitMinorBlock status, maybe we can recalculate the left time by check the minor block's timestamps */
-	if c.ns.GetMinorBlockPoolCount() < uint16(len(cm.Shards)*sc.DefaultThresholdOfMinorBlock/100) {
-		c.fsm.Execute(ActWaitMinorBlock, msg)
+	if c.ns.IsMinorBlockEnoughInPool() {
+		c.fsm.Execute(ActProductFinalBlock, msg)
 		return
 	} else {
-		c.fsm.Execute(ActProductFinalBlock, msg)
+		c.fsm.Execute(ActWaitMinorBlock, msg)
 		return
 	}
 }

@@ -48,17 +48,28 @@ func readConfigFile() *config {
 	return &c
 }
 
-var configLoad = false
-var candidate []NodeConfig
+var cfg *config
 
 func LoadConfig() {
-	c := readConfigFile()
-	if c == nil {
+	cfg = readConfigFile()
+	if cfg == nil {
+		panic("read config error")
 		return
 	}
+}
 
-	for _, member := range c.Shard {
-		candidate = append(candidate, member)
-	}
+func GetNodeInfo() (self NodeConfig) {
+	self.Pubkey = cfg.Pubkey
+	self.Address = cfg.Address
+	self.Port = cfg.Port
 
+	return
+}
+
+func GetCommittee() []NodeConfig {
+	return cfg.Committee
+}
+
+func GetShards() []NodeConfig {
+	return cfg.Shard
 }

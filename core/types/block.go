@@ -133,7 +133,7 @@ func (b *Block) protoBuf() (*pb.BlockTx, error) {
 	}
 	var pbTxs []*pb.Transaction
 	for _, tx := range b.Transactions {
-		pbTx, err := tx.protoBuf()
+		pbTx, err := tx.ProtoBuf()
 		if err != nil {
 			return nil, err
 		}

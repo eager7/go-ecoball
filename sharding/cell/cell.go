@@ -1,17 +1,16 @@
 package cell
 
 import (
-	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/core/types"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
-	"io/ioutil"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 )
 
 var (
-	log = elog.NewLogger("sdnode", elog.DebugLog)
+	log = elog.NewLogger("sdcell", elog.DebugLog)
 )
 
 type Cell struct {
@@ -40,47 +39,14 @@ func MakeCell(l ledger.Ledger) *Cell {
 	}
 }
 
-type NodeConfig struct {
-	Pubkey  string
-	Address string
-	Port    string
-}
-
-type sconfig struct {
-	Pubkey    string
-	Address   string
-	Port      string
-	Committee []NodeConfig
-	Shard     []NodeConfig
-}
-
-func (c *Cell) readConfigFile(filename string) *sconfig {
-	bytes, err := ioutil.ReadFile(filename)
-	if err != nil {
-		log.Info("read config file error")
-		return nil
-	}
-
-	str := string(bytes)
-
-	var cfg sconfig
-	if err := json.Unmarshal([]byte(str), &cfg); err != nil {
-		log.Info("json unmarshal error")
-		return nil
-	}
-
-	return &cfg
-}
-
 func (c *Cell) LoadConfig() {
-	cfg := c.readConfigFile("config.json")
+	self := simulate.GetNodeInfo()
+	(&c.Self).Copy(&self)
 
-	c.Self.Pubkey = cfg.Pubkey
-	c.Self.Address = cfg.Address
-	c.Self.Port = cfg.Port
+	cmt := simulate.GetCommittee()
 
 	nodeType := sc.NodeNil
-	for _, member := range cfg.Committee {
+	for _, member := range cmt {
 		var worker Worker
 		worker.Pubkey = member.Pubkey
 		worker.Address = member.Address
@@ -93,13 +59,13 @@ func (c *Cell) LoadConfig() {
 	}
 
 	if nodeType == sc.NodeNil {
-		nodeType = sc.NodeCandidate
+		nodeType = sc.NodeShard
 	}
 
 	c.NodeType = nodeType
 }
 
-func (c *Cell) SetLastCMBlock(bk *types.CMBlock) {
+func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 	c.chain.setCMBlock(bk)
 
 	worker := &Worker{}
@@ -108,27 +74,33 @@ func (c *Cell) SetLastCMBlock(bk *types.CMBlock) {
 		c.addCommitteWorker(worker)
 	}
 
-	if c.NodeType == sc.NodeShard {
+	if c.IsCommitteeMember() {
+		c.NodeType = sc.NodeCommittee
+		c.minorBlockPool.resize(len(bk.Shards))
+	} else {
+		if c.NodeType == sc.NodeCommittee {
+			log.Error("we are not in committee now, restart ")
+			panic("we are not in committee now, restart ")
+		}
 		c.saveShardsInfoFromCMBlock(bk)
 	}
 
-	c.minorBlockPool.resize(len(bk.Shards))
 }
 
-func (c *Cell) GetLastCMBlock() *types.CMBlock {
+func (c *Cell) GetLastCMBlock() *cs.CMBlock {
 	return c.chain.getCMBlock()
 }
 
-func (c *Cell) SetLastFinalBlock(bk *types.FinalBlock) {
+func (c *Cell) SaveLastFinalBlock(bk *cs.FinalBlock) {
 	c.chain.setFinalBlock(bk)
 	c.minorBlockPool.clean()
 }
 
-func (c *Cell) GetLastFinalBlock() *types.FinalBlock {
+func (c *Cell) GetLastFinalBlock() *cs.FinalBlock {
 	return c.chain.getFinalBlock()
 }
 
-func (c *Cell) SetLastViewchangeBlock(bk *types.ViewChangeBlock) {
+func (c *Cell) SaveLastViewchangeBlock(bk *cs.ViewChangeBlock) {
 	leader := &Worker{}
 	leader.InitWork(&bk.Candidate)
 
@@ -136,18 +108,34 @@ func (c *Cell) SetLastViewchangeBlock(bk *types.ViewChangeBlock) {
 	c.chain.setViewchangeBlock(bk)
 }
 
-func (c *Cell) GetLastViewchangeBlock() *types.ViewChangeBlock {
+func (c *Cell) GetLastViewchangeBlock() *cs.ViewChangeBlock {
 	return c.chain.getViewchangeBlock()
 }
 
-func (c *Cell) SyncCmBlockComplete(lastCmblock *types.CMBlock) {
+func (c *Cell) SaveLastMinorBlock(bk *cs.MinorBlock) {
+	c.chain.setMinorBlock(bk)
+}
+
+func (c *Cell) GetLastMinorBlock() *cs.MinorBlock {
+	return c.chain.getMinorBlock()
+}
+
+func (c *Cell) SavePreMinorBlock(bk *cs.MinorBlock) {
+	c.chain.setPreMinorBlock(bk)
+}
+
+func (c *Cell) GetPreMinorBlock() *cs.MinorBlock {
+	return c.chain.getPreMinorBlock()
+}
+
+func (c *Cell) SyncCmBlockComplete(lastCmblock *cs.CMBlock) {
 	curBlock := c.chain.getCMBlock()
 
 	var i uint64
 	if curBlock == nil {
 		i = 1
 	} else if curBlock.Height >= lastCmblock.Height {
-		log.Error("sync cm block error")
+		log.Debug("cm block is already sync")
 		return
 	} else if curBlock.Height+sc.DefaultCommitteMaxMember >= lastCmblock.Height {
 		i = curBlock.Height + 1
@@ -156,13 +144,13 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *types.CMBlock) {
 	}
 
 	for ; i < lastCmblock.Height; i++ {
-		block, err := c.Ledger.GetShardBlockByHeight(config.ChainHash, types.HeCmBlock, i)
+		block, err := c.Ledger.GetShardBlockByHeight(config.ChainHash, cs.HeCmBlock, i)
 		if err != nil {
 			log.Error("get block error ", err)
 			return
 		}
 
-		cm := block.GetObject().(types.CMBlock)
+		cm := block.GetObject().(cs.CMBlock)
 
 		var worker Worker
 		worker.Pubkey = string(cm.Candidate.PublicKey)
@@ -172,14 +160,14 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *types.CMBlock) {
 		c.addCommitteWorker(&worker)
 	}
 
-	c.SetLastCMBlock(lastCmblock)
+	c.SaveLastCMBlock(lastCmblock)
 }
 
-func (c *Cell) SetMinorBlockToPool(minor *types.MinorBlock) {
-	c.minorBlockPool.setMinorBlock(minor)
+func (c *Cell) SaveMinorBlockToPool(minor *cs.MinorBlock) {
+	c.minorBlockPool.saveMinorBlock(minor)
 }
 
-func (c *Cell) SyncMinorsBlockToPool(minors []*types.MinorBlock) {
+func (c *Cell) SyncMinorsBlockToPool(minors []*cs.MinorBlock) {
 	c.minorBlockPool.syncMinorBlocks(minors)
 }
 
@@ -187,8 +175,17 @@ func (c *Cell) GetMinorBlockFromPool() *minorBlockSet {
 	return c.minorBlockPool
 }
 
-func (c *Cell) GetMinorBlockPoolCount() uint16 {
-	return c.minorBlockPool.count()
+func (c *Cell) IsMinorBlockEnoughInPool() bool {
+	cm := c.chain.cmBlock
+	if cm == nil {
+		return true
+	}
+
+	if c.minorBlockPool.count() >= uint16(len(cm.Shards)*sc.DefaultThresholdOfMinorBlock/100) {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (c *Cell) IsLeader() bool {
@@ -213,9 +210,34 @@ func (c *Cell) isShardLeader() bool {
 	}
 }
 
-func (c *Cell) IsCmCandidateLeader() bool {
-	/*should do vrf by cmblock*/
-	return c.cm.isCandidateLeader(&c.Self)
+func (c *Cell) IsBackup() bool {
+	if c.NodeType == sc.NodeCommittee {
+		return c.cm.isBackup(&c.Self)
+	} else if c.NodeType == sc.NodeShard {
+		return c.isShardBackup()
+	} else {
+		return false
+	}
+}
+
+func (c *Cell) isShardBackup() bool {
+	if len(c.shard) <= 1 {
+		return false
+	}
+
+	if (&c.Self).Equal(c.shard[1]) {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (c *Cell) IsCommitteeMember() bool {
+	return c.cm.isMember(&c.Self)
+}
+
+func (c *Cell) GetCmWorks() []*Worker {
+	return c.cm.member
 }
 
 func (c *Cell) GetWorks() []*Worker {
@@ -276,7 +298,7 @@ func (c *Cell) addCommitteWorker(worker *Worker) {
 	}
 }
 
-func (c *Cell) saveShardsInfoFromCMBlock(cmb *types.CMBlock) {
+func (c *Cell) saveShardsInfoFromCMBlock(cmb *cs.CMBlock) {
 	c.NodeType = sc.NodeCandidate
 	c.shard = c.shard[:0]
 
@@ -289,7 +311,8 @@ func (c *Cell) saveShardsInfoFromCMBlock(cmb *types.CMBlock) {
 
 			if c.Self.Equal(&worker) {
 				c.NodeType = sc.NodeShard
-				c.Shardid = uint16(i + 1)
+				c.Shardid = uint16(i) + 1
+				log.Debug("our shardid is ", c.Shardid)
 				break
 			}
 		}

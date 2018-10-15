@@ -22,14 +22,13 @@ const (
 	DefaultSyncBlockTimer = 10 //180
 	DefaultRetransTimer   = 1  //180
 
-	DefaultBlockWindow = 2
-
-	DefaultProductCmBlockTimer = 20
+	DefaultProductCmBlockTimer = 60
 	DefaultCmBlockWindow       = 10
 
-	DefaultWaitMinorBlockTimer    = 1
-	DefaultProductFinalBlockTimer = 20
+	DefaultProductFinalBlockTimer = 60
 	DefaultFinalBlockWindow       = 10
 
-	DefaultProductViewChangeBlockTimer = 40
+	DefaultProductViewChangeBlockTimer = 60
+
+	DefaultWaitMinorBlockTimer = 180
 )

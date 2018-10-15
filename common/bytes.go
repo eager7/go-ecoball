@@ -147,6 +147,17 @@ func Uint64SetBytes(data []byte) uint64 {
 	return index
 }
 
+func Uint32ToBytes(value uint32) []byte {
+	b := make([]byte, 4)
+	binary.BigEndian.PutUint32(b, value)
+	return b
+}
+
+func Uint32SetBytes(data []byte) uint32 {
+	index := binary.BigEndian.Uint32(data)
+	return index
+}
+
 func JsonString(v interface{}, format bool) string {
 	if format {
 		data, err := json.MarshalIndent(v, "", "    ")

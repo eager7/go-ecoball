@@ -15,8 +15,9 @@ func (c *Consensus) startBlockConsensusLeader(instance sc.ConsensusInstance) {
 func (c *Consensus) sendPrepare() {
 	log.Debug("send prepare")
 	c.step = StepPrePare
-	c.sendCsPacket()
-	c.retransTimer(true)
+	packet := c.instance.MakeNetPacket(c.step)
+	c.sendCsPacket(packet)
+	c.rcb(true)
 }
 
 func (c *Consensus) prepareRsp(csp *sc.CsPacket) {
@@ -30,15 +31,16 @@ func (c *Consensus) prepareRsp(csp *sc.CsPacket) {
 func (c *Consensus) sendPreCommit() {
 	log.Debug("send precommit")
 	c.step = StepPreCommit
-	c.sendCsPacket()
-	c.retransTimer(true)
+	packet := c.instance.MakeNetPacket(c.step)
+	c.sendCsPacket(packet)
+	c.rcb(true)
 }
 
 func (c *Consensus) precommitRsp(csp *sc.CsPacket) {
 	log.Debug("precommit response")
 	counter := c.instance.PrecommitRsp()
 	if c.isVoteEnough(counter) {
-		c.retransTimer(false)
+		c.rcb(false)
 		c.sendCommit()
 	}
 }
@@ -46,9 +48,10 @@ func (c *Consensus) precommitRsp(csp *sc.CsPacket) {
 func (c *Consensus) sendCommit() {
 	log.Debug("send commit")
 	c.step = StepCommit
-	c.sendCsPacket()
+	packet := c.instance.MakeNetPacket(c.step)
 
 	c.csComplete()
+	c.sendCsPacket(packet)
 }
 
 func (c *Consensus) processPacketByLeader(csp *sc.CsPacket) {

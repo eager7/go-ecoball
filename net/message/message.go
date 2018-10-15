@@ -40,6 +40,8 @@ const (
 	APP_MSG_SHARDING_PACKET
 	APP_MSG_CONSENSUS_PACKET
 
+	APP_MSG_GOSSIP
+
 	APP_MSG_MAX
 )
 
@@ -94,7 +96,7 @@ func newMsg(msgType uint32, data []byte) *impl {
 	}
 }
 
-func newMessageFromProto(pbm pb.Message) (EcoBallNetMsg, error) {
+func NewMessageFromProto(pbm pb.Message) (EcoBallNetMsg, error) {
 	m := newMsg(pbm.Type, pbm.Data)
 	return m, nil
 }
@@ -134,5 +136,5 @@ func FromPBReader(pbr ggio.Reader) (EcoBallNetMsg, error) {
 	if err := pbr.ReadMsg(pb); err != nil {
 		return nil, err
 	}
-	return newMessageFromProto(*pb)
+	return NewMessageFromProto(*pb)
 }

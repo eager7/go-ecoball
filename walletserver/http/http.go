@@ -57,6 +57,7 @@ func createWallet(c *gin.Context) {
 	password := c.PostForm("password")
 	if err := wallet.Create(name, []byte(password)); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return 
 	}
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }
@@ -66,6 +67,7 @@ func createKey(c *gin.Context) {
 	pub, pri, err := wallet.CreateKey(name)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"result": "publickey:" + inner.ToHex(pub) + "\n" + "privatekey:" + inner.ToHex(pri)})
 }
@@ -75,6 +77,7 @@ func openWallet(c *gin.Context) {
 	password := c.PostForm("password")
 	if err := wallet.Open(name, []byte(password)); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }
@@ -83,6 +86,7 @@ func lockWallet(c *gin.Context) {
 	name := c.PostForm("name")
 	if err := wallet.Lock(name); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }
@@ -92,6 +96,7 @@ func unlockWallet(c *gin.Context) {
 	password := c.PostForm("password")
 	if err := wallet.Unlock(name, []byte(password)); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }
@@ -102,6 +107,7 @@ func importKey(c *gin.Context) {
 	publickey, err := wallet.ImportKey(name, privateKey)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"result": "publickey:" + inner.ToHex(publickey)})
 }
@@ -113,6 +119,7 @@ func removeKey(c *gin.Context) {
 	err := wallet.RemoveKey(name, []byte(password), publickey)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }
@@ -123,6 +130,7 @@ func listKey(c *gin.Context) {
 	accounts, err := wallet.ListKeys(name, []byte(password))
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	var key_str string
 	for k, v := range accounts {
@@ -138,6 +146,7 @@ func listWallets(c *gin.Context) {
 	wallets, err := wallet.List_wallets()
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	var walletsList string
 	for _, k := range wallets {
@@ -152,6 +161,7 @@ func getPublicKeys(c *gin.Context) {
 	data, err := wallet.GetPublicKeys()
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	var publickeys string
 	for _, k := range data {
@@ -169,6 +179,7 @@ func signTransaction(c *gin.Context) {
 	signData, err := wallet.SignTransaction(inner.FromHex(data), key)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"result": inner.ToHex(signData)})
 }

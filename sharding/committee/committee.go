@@ -7,6 +7,7 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
+	"github.com/ecoball/go-ecoball/sharding/net"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 )
@@ -94,6 +95,8 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 			{productViewChangeBlock, ActRecvConsensusPacket, nil, cm.processViewchangeConsensusPacket, nil, sc.StateNil},
 		})
 
+	net.MakeNet(ns)
+
 	return cm
 }
 
@@ -156,6 +159,8 @@ func (c *committee) processPacket(packet *sc.CsPacket) {
 	switch packet.PacketType {
 	case netmsg.APP_MSG_CONSENSUS_PACKET:
 		c.processConsensusPacket(packet)
+	case netmsg.APP_MSG_SHARDING_PACKET:
+		c.processShardingPacket(packet)
 	default:
 		log.Error("wrong packet")
 	}

@@ -2,23 +2,23 @@ package committee
 
 import (
 	"encoding/json"
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/etime"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
-	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 type finalBlockCsi struct {
-	bk    *types.FinalBlock
-	cache *types.FinalBlock
+	bk    *cs.FinalBlock
+	cache *cs.FinalBlock
 }
 
-func newFinalBlockCsi(bk *types.FinalBlock) *finalBlockCsi {
+func newFinalBlockCsi(bk *cs.FinalBlock) *finalBlockCsi {
 	return &finalBlockCsi{bk: bk}
 }
 
@@ -27,7 +27,7 @@ func (b *finalBlockCsi) GetCsView() *sc.CsView {
 }
 
 func (b *finalBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
-	update := bl.(*types.FinalBlock)
+	update := bl.(*cs.FinalBlock)
 	if b.bk.Height != update.Height || b.bk.EpochNo != update.EpochNo {
 		log.Error("view error current ", b.bk.EpochNo, " ", b.bk.Height, " packet view ", update.EpochNo, " ", update.Height)
 		return false
@@ -94,11 +94,11 @@ func (b *finalBlockCsi) PrecommitRsp() uint32 {
 	return b.bk.Step2
 }
 
-func (b *finalBlockCsi) GetCandidate() *types.NodeInfo {
+func (b *finalBlockCsi) GetCandidate() *cs.NodeInfo {
 	return nil
 }
 
-func (c *committee) createFinalBlock() *types.FinalBlock {
+func (c *committee) createFinalBlock() *cs.FinalBlock {
 
 	lastcm := c.ns.GetLastCMBlock()
 	if lastcm == nil {
@@ -113,12 +113,13 @@ func (c *committee) createFinalBlock() *types.FinalBlock {
 	} else {
 		height = lastfinal.Height + 1
 	}
-	final := &types.FinalBlock{
-		FinalBlockHeader: types.FinalBlockHeader{
-			ChainID:            config.ChainHash,
+
+	final := &cs.FinalBlock{
+		FinalBlockHeader: cs.FinalBlockHeader{
+			ChainID:            common.Hash{},
 			Version:            0,
 			Height:             0,
-			Timestamp:          time.Now().UnixNano(),
+			Timestamp:          0,
 			TrxCount:           0,
 			PrevHash:           common.Hash{},
 			ProposalPubKey:     nil,
@@ -130,7 +131,7 @@ func (c *committee) createFinalBlock() *types.FinalBlock {
 			StateHashRoot:      common.Hash{},
 			COSign:             nil,
 		},
-		MinorBlocks:      nil,
+		MinorBlocks: nil,
 	}
 	final.Height = height
 	final.EpochNo = lastcm.Height
@@ -140,7 +141,6 @@ func (c *committee) createFinalBlock() *types.FinalBlock {
 	cosign.Step2 = 0
 
 	final.COSign = cosign
-	final.ComputeHash()
 
 	log.Debug("create final block epoch ", lastcm.Height, " height ", height)
 
@@ -157,14 +157,14 @@ func (c *committee) productFinalBlock(msg interface{}) {
 		return
 	}
 
-	cms := newFinalBlockCsi(final)
+	csi := newFinalBlockCsi(final)
 
-	c.cs.StartConsensus(cms)
+	c.cs.StartConsensus(csi)
 
 	c.stateTimer.Reset(sc.DefaultProductFinalBlockTimer * time.Second)
 }
 
-func (c *committee) recheckFinalPacket(p interface{}) bool {
+func (c *committee) checkFinalPacket(p interface{}) bool {
 
 	/*recheck block*/
 	csp := p.(*sc.CsPacket)
@@ -173,7 +173,7 @@ func (c *committee) recheckFinalPacket(p interface{}) bool {
 		return false
 	}
 
-	final := csp.Packet.(*types.FinalBlock)
+	final := csp.Packet.(*cs.FinalBlock)
 	last := c.ns.GetLastFinalBlock()
 	if last != nil && final.Height <= last.Height {
 		log.Error("old final block, drop it")
@@ -187,7 +187,7 @@ func (c *committee) recheckFinalPacket(p interface{}) bool {
 func (c *committee) processConsensusFinalPacket(p interface{}) {
 	log.Debug("process final consensus block")
 
-	if !c.recheckFinalPacket(p) {
+	if !c.checkFinalPacket(p) {
 		return
 	}
 
@@ -201,7 +201,7 @@ func (c *committee) processConsensBlockOnWaitStatus(p interface{}) bool {
 		return false
 	}
 
-	if !c.recheckFinalPacket(p) {
+	if !c.checkFinalPacket(p) {
 		return false
 	}
 
@@ -210,11 +210,11 @@ func (c *committee) processConsensBlockOnWaitStatus(p interface{}) bool {
 	return c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
-func (c *committee) recvCommitFinalBlock(bl *types.FinalBlock) {
+func (c *committee) commitFinalBlock(bl *cs.FinalBlock) {
 	log.Debug("recv consensus final block height ", bl.Height)
 	simulate.TellBlock(bl)
 
-	c.ns.SetLastFinalBlock(bl)
+	c.ns.SaveLastFinalBlock(bl)
 	if bl.Height%sc.DefaultEpochFinalBlockNumber == 0 {
 		c.fsm.Execute(ActProductCommitteeBlock, nil)
 	} else {

@@ -29,6 +29,8 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/utils"
+	"path/filepath"
+	"strings"
 )
 
 // peer list
@@ -101,11 +103,14 @@ conn_mgr_highwater   = 900
 conn_mgr_graceperiod = 20
 
 #p2p local discovery config info
-enable_local_discovery = true
+enable_local_discovery = false
 disable_localdis_log   = true
 
 #dsn config
 dsn_storage = false
+
+#sharding config info
+disable_sharding  = true
 `
 
 type SwarmConfigInfo struct {
@@ -127,6 +132,7 @@ var (
 	HttpLocalPort      string
 	WalletHttpPort     string
 	EcoVersion         string
+	RootDir            string
 	LogDir             string
 	OutputToTerminal   bool
 	LogLevel           int
@@ -144,6 +150,7 @@ var (
 	EnableLocalDiscovery  bool
 	DisableLocalDisLog    bool
 	DsnStorage            bool
+	DisableSharding       bool
 )
 
 func SetConfig(filePath string) error {
@@ -198,19 +205,17 @@ func init() {
 	if flag.Lookup("test.v") == nil {
 		fmt.Println("normal run")
 		IpfsDir = "/tmp/storage"
-		if err := SetConfig("."); err != nil {
-			fmt.Println("init config failed: ", err)
-			os.Exit(-1)
-		}
+		RootDir, _ = filepath.Abs(filepath.Dir(os.Args[0]))
+		RootDir = strings.Replace(RootDir, "\\", "/", -1)
 	} else {
 		fmt.Println("run under go test")
 		IpfsDir = "/tmp/storage"
-		if err := SetConfig("/tmp/"); err != nil {
-			fmt.Println("init config failed: ", err)
-			os.Exit(-1)
-		}
+		RootDir = "/tmp/"
 	}
-
+	if err := SetConfig(RootDir); err != nil {
+		fmt.Println("init config failed: ", err)
+		os.Exit(-1)
+	}
 	initVariable()
 }
 
@@ -252,4 +257,6 @@ func initVariable() {
 	EnableLocalDiscovery = viper.GetBool("enable_local_discovery")
 	DisableLocalDisLog = viper.GetBool("disable_localdis_log")
 	DsnStorage = viper.GetBool("dsn_storage")
+
+	DisableSharding = viper.GetBool("disable_sharding")
 }

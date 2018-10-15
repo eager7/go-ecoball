@@ -72,7 +72,7 @@ func TestDeploy(code []byte) *types.Transaction {
 
 func TestTransfer() *types.Transaction {
 	indexFrom := common.NameToIndex("root")
-	indexAddr := common.NameToIndex("delegate")
+	indexAddr := common.NameToIndex("root")
 	value := big.NewInt(100)
 	tx, err := types.NewTransfer(indexFrom, indexAddr, config.ChainHash, "", value, 0, time.Now().UnixNano())
 	if err != nil {

@@ -2,6 +2,7 @@ package consensus
 
 import (
 	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"github.com/ecoball/go-ecoball/sharding/net"
 )
 
 func (c *Consensus) startBlockConsensusVoter(instance sc.ConsensusInstance) {
@@ -65,5 +66,10 @@ func (c *Consensus) processCommit(csp *sc.CsPacket) {
 	c.step = StepCommit
 	packet := c.instance.MakeNetPacket(c.step)
 	c.csComplete()
-	c.GossipBlock(packet)
+	net.Np.GossipBlock(packet)
+	if c.ns.NodeType == sc.NodeCommittee {
+		net.Np.SendBlockToShards(packet)
+	} else if c.ns.NodeType == sc.NodeShard {
+		net.Np.SendBlockToCommittee(packet)
+	}
 }

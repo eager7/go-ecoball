@@ -27,6 +27,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
 	"sync"
+	"github.com/ecoball/go-ecoball/core/shard"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.NoticeLog)
@@ -332,7 +333,7 @@ func (l *LedgerImpl) ResetStateDB(chainID common.Hash, header *types.Header) err
 	return chain.Geneses.TimeStamp
 }*/
 
-func (l *LedgerImpl) SaveShardBlock(chainID common.Hash, block types.BlockInterface) (err error) {
+func (l *LedgerImpl) SaveShardBlock(chainID common.Hash, block shard.BlockInterface) (err error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
@@ -340,7 +341,7 @@ func (l *LedgerImpl) SaveShardBlock(chainID common.Hash, block types.BlockInterf
 	return chain.SaveShardBlock(block)
 }
 
-func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ types.HeaderType, hash common.Hash) (types.BlockInterface, error) {
+func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ shard.HeaderType, hash common.Hash) (shard.BlockInterface, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
@@ -348,7 +349,7 @@ func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ types.HeaderTy
 	return chain.GetShardBlockByHash(typ, hash)
 }
 
-func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ types.HeaderType, height uint64) (types.BlockInterface, error) {
+func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64) (shard.BlockInterface, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
@@ -356,10 +357,18 @@ func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ types.Header
 	return chain.GetShardBlockByHeight(typ, height)
 }
 
-func (l *LedgerImpl) GetLastShardBlock(chainID common.Hash, typ types.HeaderType) (types.BlockInterface, error) {
+func (l *LedgerImpl) GetLastShardBlock(chainID common.Hash, typ shard.HeaderType) (shard.BlockInterface, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
 	return chain.GetLastShardBlock(typ)
+}
+
+func (l *LedgerImpl) GetLastShardBlockById(chainID common.Hash, shardId uint32) (shard.BlockInterface, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.GetLastShardBlockById(shardId)
 }

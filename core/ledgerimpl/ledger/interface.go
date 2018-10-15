@@ -4,6 +4,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/core/shard"
 )
 
 var L Ledger
@@ -48,8 +49,9 @@ type Ledger interface {
 
 	GetTransaction(chainID, transactionId common.Hash) (*types.Transaction, error)
 
-	SaveShardBlock(chainID common.Hash, block types.BlockInterface) (err error)
-	GetShardBlockByHash(chainID common.Hash, typ types.HeaderType, hash common.Hash) (types.BlockInterface, error)
-	GetShardBlockByHeight(chainID common.Hash, typ types.HeaderType, height uint64) (types.BlockInterface, error)
-	GetLastShardBlock(chainID common.Hash, typ types.HeaderType) (types.BlockInterface, error)
+	SaveShardBlock(chainID common.Hash, block shard.BlockInterface) (err error)
+	GetShardBlockByHash(chainID common.Hash, typ shard.HeaderType, hash common.Hash) (shard.BlockInterface, error)
+	GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64) (shard.BlockInterface, error)
+	GetLastShardBlock(chainID common.Hash, typ shard.HeaderType) (shard.BlockInterface, error)
+	GetLastShardBlockById(chainID common.Hash, shardId uint32) (shard.BlockInterface, error)
 }

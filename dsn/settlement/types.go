@@ -30,10 +30,11 @@ type RenterFee struct {
 }
 
 type DiskResource struct{
-	TotalCapacity uint64
-	UsedCapacity  uint64
-	TotalFileSize uint64
+	TotalCapacity  uint64
+	UsedCapacity   uint64
+	TotalFileSize  uint64
 	TotalFileCount uint64
+	Hosts          []string
 }
 
 type ProofInfo struct {
