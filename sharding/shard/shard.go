@@ -29,6 +29,7 @@ const (
 	ActWaitBlock
 	ActRecvConsensusPacket
 	ActChainNotSync
+	ActRecvCommitteePacket
 	ActStateTimeout
 )
 
@@ -60,7 +61,7 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 
 			{waitBlock, ActProductMinorBlock, nil, s.productMinorBlock, nil, productMinoBlock},
 			{waitBlock, ActChainNotSync, nil, nil, nil, blockSync},
-			{waitBlock, ActRecvConsensusPacket, nil, nil, nil, sc.StateNil},
+			{waitBlock, ActRecvCommitteePacket, nil, s.processCommitteePacket, nil, sc.StateNil},
 
 			{productMinoBlock, ActRecvConsensusPacket, nil, s.processConsensusMinorPacket, nil, sc.StateNil},
 			{productMinoBlock, ActWaitBlock, nil, nil, nil, waitBlock},
@@ -138,9 +139,9 @@ func (s *shard) setRetransTimer(bStart bool) {
 func (s *shard) processPacket(packet *sc.CsPacket) {
 	switch packet.PacketType {
 	case netmsg.APP_MSG_CONSENSUS_PACKET:
-		s.processConsensusPacket(packet)
+		s.recvConsensusPacket(packet)
 	case netmsg.APP_MSG_SHARDING_PACKET:
-		s.processShardingPacket(packet)
+		s.recvCommitteePacket(packet)
 	default:
 		log.Error("wrong packet")
 	}

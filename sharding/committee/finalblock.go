@@ -218,7 +218,7 @@ func (c *committee) commitFinalBlock(bl *cs.FinalBlock) {
 	if bl.Height%sc.DefaultEpochFinalBlockNumber == 0 {
 		c.fsm.Execute(ActProductCommitteeBlock, nil)
 	} else {
-		c.fsm.Execute(ActWaitMinorBlock, nil)
+		c.fsm.Execute(ActCollectMinorBlock, nil)
 	}
 
 }

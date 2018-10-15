@@ -17,7 +17,7 @@ func (c *committee) verifyPacket(p *sc.NetPacket) {
 	} else if p.PacketType == netmsg.APP_MSG_SHARDING_PACKET {
 		c.verifyShardingPacket(p)
 	} else {
-		log.Error("wrong packet type")
+		log.Error("wrong packet type ", p.PacketType)
 		return
 	}
 }
@@ -91,16 +91,20 @@ func (c *committee) consensusCb(bl interface{}) {
 	}
 }
 
-func (c *committee) processShardingPacket(p *sc.CsPacket) {
-	if p.BlockType != sc.SD_MINOR_BLOCK {
-		log.Error("block type error ", p.BlockType)
+func (c *committee) processShardBlockOnWaitStatus(p interface{}) {
+	csp := p.(*sc.CsPacket)
+
+	if csp.BlockType != sc.SD_MINOR_BLOCK {
+		log.Error("block type error ", csp.BlockType)
 		return
 	}
 
-	minor := p.Packet.(*cs.MinorBlock)
-	c.ns.SaveMinorBlockToPool(minor)
+	minor := csp.Packet.(*cs.MinorBlock)
+	if !c.ns.SaveMinorBlockToPool(minor) {
+		return
+	}
 
-	net.Np.TransitBlock(p)
+	net.Np.TransitBlock(csp)
 
 	if c.ns.IsMinorBlockEnoughInPool() {
 		c.fsm.Execute(ActProductFinalBlock, nil)

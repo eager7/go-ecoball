@@ -252,5 +252,5 @@ func (c *committee) commitCmBlock(bl *cs.CMBlock) {
 	simulate.TellBlock(bl)
 
 	c.ns.SaveLastCMBlock(bl)
-	c.fsm.Execute(ActWaitMinorBlock, nil)
+	c.fsm.Execute(ActCollectMinorBlock, nil)
 }
