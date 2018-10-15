@@ -41,6 +41,7 @@ func TestStateNew(t *testing.T) {
 	addr := common.AddressFromPubKey(config.Root.PublicKey)
 	_, err = s.AddAccount(indexAcc, addr, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
+	s.CreateToken(state.AbaToken, state.AbaTotal, 0, indexAcc)
 	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetUint64(90000)))
 
 	balance, err := s.AccountGetBalance(indexAcc, state.AbaToken)
@@ -71,6 +72,7 @@ func TestStateRoot(t *testing.T) {
 	if _, err := s.AddAccount(indexAcc, addr, time.Now().UnixNano()); err != nil {
 		t.Fatal(err)
 	}
+	s.CreateToken(state.AbaToken, state.AbaTotal, 0, indexAcc)
 	if err := s.AccountAddBalance(indexAcc, indexToken, new(big.Int).SetInt64(100)); err != nil {
 		t.Fatal(err)
 	}
@@ -178,6 +180,7 @@ func TestStateDBCopy(t *testing.T) {
 	if _, err := s.AddAccount(indexAcc, addr, time.Now().UnixNano()); err != nil {
 		t.Fatal(err)
 	}
+	s.CreateToken(state.AbaToken, state.AbaTotal, 0, indexAcc)
 	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetInt64(100)))
 	errors.CheckErrorPanic(s.SetResourceLimits(indexAcc, indexAcc, 10, 10, types.BlockCpuLimit, types.BlockNetLimit))
 	s.CommitToDB()
@@ -212,6 +215,7 @@ func TestStateDBReset(t *testing.T) {
 	_, err = s.AddAccount(indexAcc, addr, timeStamp)
 	errors.CheckErrorPanic(err)
 
+	s.CreateToken(state.AbaToken, state.AbaTotal, 0, indexAcc)
 	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetInt64(100)))
 	s.CommitToDB()
 
