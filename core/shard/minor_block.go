@@ -198,21 +198,21 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *types.Header, txs []*typ
 		return nil, err
 	}
 	var sDelta []*AccountMinor
-	for _, tx := range txs {
+	/*for _, tx := range txs {
 		transfer, ok := tx.Payload.GetObject().(types.TransferInfo)
 		if ok {
-			sDelta = append(sDelta, &AccountMinor{
+			sDelta = append(sDelta, &state.Account{
 				Account: tx.From,
 				Balance: new(big.Int).Sub(new(big.Int).SetUint64(0), transfer.Value),
 				Nonce:   tx.Nonce,
 			})
-			sDelta = append(sDelta, &AccountMinor{
+			sDelta = append(sDelta, &state.Account{
 				Account: tx.Addr,
 				Balance: transfer.Value,
 				Nonce:   tx.Nonce,
 			})
 		}
-	}
+	}*/
 	block := &MinorBlock{
 		MinorBlockHeader: header,
 		Transactions:     txs,
