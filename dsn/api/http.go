@@ -9,6 +9,8 @@ import (
 	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
 	stm "github.com/ecoball/go-ecoball/dsn/settlement"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
+	rbd "github.com/ecoball/go-ecoball/dsn/renter/backend"
+	rtypes "github.com/ecoball/go-ecoball/dsn/renter"
 )
 
 func DsnHttpServ()  {
@@ -36,9 +38,12 @@ func totalHandler(c *gin.Context)  {
 }
 
 func eraCoding(c *gin.Context)  {
-
+	//TODO
+	req := rtypes.RscReq{}
+	rbd.EraCoding(&req)
 }
 
 func eraDecoding(c *gin.Context)  {
-
+	//TODO
+	rbd.EraDecoding()
 }

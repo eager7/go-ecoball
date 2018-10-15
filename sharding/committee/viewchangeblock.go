@@ -145,9 +145,11 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 		return nil, false
 	}
 
+	vch := &cs.ViewChangeBlockHeader{}
+
 	log.Debug("create vc block epoch ", epoch, " height ", height, " round ", round)
 	vc := &cs.ViewChangeBlock{
-		ViewChangeBlockHeader: nil,
+		ViewChangeBlockHeader: vch,
 	}
 
 	vc.CMEpochNo = epoch
@@ -169,7 +171,7 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 
 	vc.COSign = cosign
 
-	log.Debug("candidate address ", candi.Address, " port ", candi.Port)
+	log.Debug(" create view change block epoch ", vc.CMEpochNo, " height ", vc.FinalBlockHeight, " round ", vc.Round, " candidate address ", candi.Address, " port ", candi.Port)
 
 	if c.ns.Self.Equal(candi) {
 		return vc, true

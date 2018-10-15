@@ -203,6 +203,8 @@ func (c *committee) createCommitteeBlock() *cs.CMBlock {
 	//	}
 	//}
 
+	log.Debug("create cm block height ", cmb.Height)
+
 	return cmb
 
 }
@@ -252,5 +254,5 @@ func (c *committee) commitCmBlock(bl *cs.CMBlock) {
 	simulate.TellBlock(bl)
 
 	c.ns.SaveLastCMBlock(bl)
-	c.fsm.Execute(ActWaitMinorBlock, nil)
+	c.fsm.Execute(ActCollectMinorBlock, nil)
 }

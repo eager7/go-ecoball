@@ -148,6 +148,8 @@ func (s *shard) createMinorBlock() *cs.MinorBlock {
 
 	minor.COSign = cosign
 
+	log.Debug(" create minor block epoch ", minor.CMEpochNo, " height ", minor.Height)
+
 	return minor
 }
 

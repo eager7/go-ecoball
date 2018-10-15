@@ -66,6 +66,8 @@ func (c *Cell) LoadConfig() {
 }
 
 func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
+	log.Debug("save cm block epoch ", bk.Height)
+
 	c.chain.setCMBlock(bk)
 
 	worker := &Worker{}
@@ -92,6 +94,8 @@ func (c *Cell) GetLastCMBlock() *cs.CMBlock {
 }
 
 func (c *Cell) SaveLastFinalBlock(bk *cs.FinalBlock) {
+	log.Debug("save final block epoch ", bk.EpochNo, " height ", bk.Height)
+
 	c.chain.setFinalBlock(bk)
 	c.minorBlockPool.clean()
 }
@@ -101,10 +105,12 @@ func (c *Cell) GetLastFinalBlock() *cs.FinalBlock {
 }
 
 func (c *Cell) SaveLastViewchangeBlock(bk *cs.ViewChangeBlock) {
+	log.Debug("save view change block epoch ", bk.CMEpochNo, " height ", bk.FinalBlockHeight, " round ", bk.Round)
 	leader := &Worker{}
 	leader.InitWork(&bk.Candidate)
+	log.Debug("new leader ", leader.Address, " ", leader.Port)
 
-	c.cm.resetNewLeader(leader)
+	c.cm.changeLeader(leader)
 	c.chain.setViewchangeBlock(bk)
 }
 
@@ -163,8 +169,8 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *cs.CMBlock) {
 	c.SaveLastCMBlock(lastCmblock)
 }
 
-func (c *Cell) SaveMinorBlockToPool(minor *cs.MinorBlock) {
-	c.minorBlockPool.saveMinorBlock(minor)
+func (c *Cell) SaveMinorBlockToPool(minor *cs.MinorBlock) bool {
+	return c.minorBlockPool.saveMinorBlock(minor)
 }
 
 func (c *Cell) SyncMinorsBlockToPool(minors []*cs.MinorBlock) {

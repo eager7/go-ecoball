@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"context"
@@ -16,6 +16,12 @@ import (
 	//"bytes"
 	"github.com/ipfs/go-ipfs/core/coreunix"
 	//"github.com/ontio/ontology/p2pserver/actor/req"
+	"github.com/ecoball/go-ecoball/dsn/renter"
+	"path/filepath"
+	//"gx/ipfs/QmZooytqEoUwQjv7KzH4d3xyJnyvD3AWJaCDMYt5pbCtua/chunker"
+	//"gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds/examples/adder"
+	"github.com/ecoball/go-ecoball/dsn/common"
+	chunker "gx/ipfs/QmVDjhUMtkRskBFAVNwyXuLSKbeAya7JKPnzAxMKDaK4x4/go-ipfs-chunker"
 )
 
 // ExitError is the error used when a specific exit code needs to be returned.
@@ -32,20 +38,20 @@ type Closer interface {
 
 func addRun(ctx context.Context, root *cmds.Command,
 	cmdline []string, stdin, stdout, stderr *os.File,
-	buildEnv cmds.MakeEnvironment, makeExecutor cmds.MakeExecutor) error {
+	buildEnv cmds.MakeEnvironment, makeExecutor cmds.MakeExecutor) (*renter.RscReq, error) {
 
 	printErr := func(err error) {
 		fmt.Fprintf(stderr, "Error: %s\n", err)
 	}
 
-	req, errParse := ipfscli.Parse(ctx, cmdline[1:], stdin, root)
+	req, errParse := ipfscli.Parse(ctx, cmdline[2:], stdin, root)
 
 	// Handle the timeout up front.
 	var cancel func()
 	if timeoutStr, ok := req.Options[cmds.TimeoutOpt]; ok {
 		timeout, err := time.ParseDuration(timeoutStr.(string))
 		if err != nil {
-			return err
+			return nil, err
 		}
 		req.Context, cancel = context.WithTimeout(req.Context, timeout)
 	} else {
@@ -80,9 +86,9 @@ func addRun(ctx context.Context, root *cmds.Command,
 	// AND the user requested help, print it out and exit
 	err := ipfscli.HandleHelp(cmdline[0], req, stdout)
 	if err == nil {
-		return nil
+		return nil, nil
 	} else if err != ipfscli.ErrNoHelpRequested {
-		return err
+		return nil, err
 	}
 	// no help requested, continue.
 
@@ -97,7 +103,7 @@ func addRun(ctx context.Context, root *cmds.Command,
 			printHelp(false, stderr)
 		}
 
-		return err
+		return nil, err
 	}
 
 	// here we handle the cases where
@@ -105,7 +111,7 @@ func addRun(ctx context.Context, root *cmds.Command,
 	// - the main command is invoked.
 	if req == nil || req.Command == nil || req.Command.Run == nil {
 		printHelp(false, stdout)
-		return nil
+		return nil, nil
 	}
 
 	cmd := req.Command
@@ -113,7 +119,7 @@ func addRun(ctx context.Context, root *cmds.Command,
 	env, err := buildEnv(req.Context, req)
 	if err != nil {
 		printErr(err)
-		return err
+		return nil, err
 	}
 	if c, ok := env.(Closer); ok {
 		defer c.Close()
@@ -122,7 +128,7 @@ func addRun(ctx context.Context, root *cmds.Command,
 	exctr, err := makeExecutor(req, env)
 	if err != nil {
 		printErr(err)
-		return err
+		return nil, err
 	}
 
 	//var (
@@ -158,6 +164,22 @@ func addRun(ctx context.Context, root *cmds.Command,
 
 	//rres := cmds.NewReaderResponse(buf, cmds.JSON, req)
 
+	fpath := req.Files.FullPath()
+	fpath = filepath.ToSlash(filepath.Clean(fpath))
+	stat, err := os.Lstat(fpath)
+	if err != nil {
+		return nil, err
+	}
+	var PieceSize uint64
+	if stat.Size() < common.EraDataPiece * chunker.DefaultBlockSize {
+		PieceSize = uint64(stat.Size() / common.EraDataPiece)
+	} else {
+		PieceSize = uint64(chunker.DefaultBlockSize)
+	}
+	if stat.Size() < common.EraDataPiece * chunker.DefaultBlockSize {
+		req.Options["chunker"] = fmt.Sprintf("size-%d", PieceSize)
+	}
+
 	cre, reponse := cmds.NewChanResponsePair(req)
 	errCh := make(chan error, 1)
 	go func() {
@@ -169,7 +191,7 @@ func addRun(ctx context.Context, root *cmds.Command,
 	/*v, err := reponse.RawNext()
 	object := v.(*coreunix.AddedObject)
 	fmt.Println(object)*/
-
+	var object *coreunix.AddedObject
 	for {
 		v, err := reponse.RawNext()
 		switch err {
@@ -177,17 +199,24 @@ func addRun(ctx context.Context, root *cmds.Command,
 			// all good, go on
 		case io.EOF:
 			cre.Close()
-			return nil
+			return nil, nil
 		default:
-			return err
+			return nil, err
 		}
 		fmt.Println("***********")
-		object := v.(*coreunix.AddedObject)
+		object = v.(*coreunix.AddedObject)
 		fmt.Println(object)
 	}
 
 	fmt.Println(req.Files.FullPath())
 
-	return nil
+	eraReq := renter.RscReq{
+		Cid: object.Hash,
+		Redundency: 2,
+		IsDir: false,
+		Chunk: PieceSize,
+	}
+
+	return &eraReq, nil
 }
 

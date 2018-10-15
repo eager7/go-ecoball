@@ -526,15 +526,6 @@ func (s *Shell) ObjectPut(obj *IpfsObject) (string, error) {
 		Exec(context.Background(), &out)
 }
 
-func (s *Shell) PubSubSubscribe(topic string) (*PubSubSubscription, error) {
-	// connect
-	resp, err := s.Request("pubsub/sub", topic).Send(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	return newPubSubSubscription(resp), nil
-}
-
 func (s *Shell) PubSubPublish(topic, data string) (err error) {
 	resp, err := s.Request("pubsub/pub", topic, data).Send(context.Background())
 	if err != nil {
