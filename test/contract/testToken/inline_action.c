@@ -20,10 +20,11 @@ struct Stat{
 
 struct Account{
     int balance;
-    char account[ACCOUNT_SIZE];
+    char name[ACCOUNT_SIZE];
     char token_id[TOKEN_ID_SIZE];
 };
 
+// token must be all upper because it may be same with account name
 int isTokenString(char *token_id) {
     int i = 0;
     for(; i < strlen(token_id); i++) {
@@ -35,7 +36,7 @@ int isTokenString(char *token_id) {
 }
 
 // create token
-void create(char *issuer, int max_supply, char *token_id){
+int create(char *issuer, int max_supply, char *token_id){
 
     ABA_assert( max_supply < 0, "max_supply can not be negative!" );
     ABA_assert( isTokenString(token_id),  "token id must be all upper character");
@@ -49,7 +50,7 @@ void create(char *issuer, int max_supply, char *token_id){
     ABA_assert( strcmp(token_id, stat.token_id) == 0, "The token had existed" );
 
     // if the creator account exists
-    ABA_assert( ABA_is_account(issuer, strlen(issuer)) != 1, "The issuer account does not exist" );
+    ABA_assert( ABA_is_account(issuer, strlen(issuer)) != 0, "The issuer account does not exist" );
 
     stat.supply = 0;
     stat.max_supply = max_supply;
@@ -57,19 +58,19 @@ void create(char *issuer, int max_supply, char *token_id){
     strcpy(stat.token_id, token_id);
 
     aIssuer.balance = max_supply;
-    strcpy(aIssuer.account, issuer);
+    strcpy(aIssuer.name, issuer);
     strcpy(aIssuer.token_id, token_id);
 
     // update database
     ABA_db_put(token_id, strlen(token_id), &stat, sizeof(stat));
     ABA_db_put(issuer, strlen(issuer), &aIssuer, sizeof(aIssuer));
 
-    return ;
+    return 0;
 }
 
 
 // issue token
-void issue(char *to, int amount, char *token_id){
+int issue(char *to, int amount, char *token_id){
     struct Stat stat;
     struct Account aIssuer, aTo;
     int result;
@@ -78,7 +79,7 @@ void issue(char *to, int amount, char *token_id){
     ABA_assert( isTokenString(token_id),  "token id must be all upper character");
 
     // if the creator account exists
-    ABA_assert( ABA_is_account(to, strlen(to)) != 1, "The receiving account does not exist" );
+    ABA_assert( ABA_is_account(to, strlen(to)) != 0, "The receiving account does not exist" );
 
     // get issuer of token
     result = ABA_db_get(token_id, strlen(token_id), &stat, sizeof(stat));
@@ -86,6 +87,8 @@ void issue(char *to, int amount, char *token_id){
 
     // can not issue to issuer
     ABA_assert(strcmp(stat.issuer, to) == 0, "can not transfer to self");
+
+    require_auth(stat.issuer, strlen(stat.issuer));
 
     // get balance of the transfer account
     result = ABA_db_get(stat.issuer, strlen(stat.issuer), &aIssuer, sizeof(aIssuer));
@@ -108,13 +111,13 @@ void issue(char *to, int amount, char *token_id){
     ABA_db_put(stat.issuer, strlen(stat.issuer), &aIssuer, sizeof(aIssuer));
     ABA_db_put(to, strlen(to), &aTo, sizeof(aTo));
 
-    inline_action("worker2", "transfer", "[\"worker1\", \"worker\", \"15\", \"XXX\"]", "worker1", "active");
+    // inline_action("worker2", "transfer", "[\"worker1\", \"worker2\", \"15\", \"XXX\"]", "worker1", "active");
 
-    return ;
+    return 0;
 }
 
 // transfer token
-void transfer(char *from, char *to, int amount, char *token_id){
+int transfer(char *from, char *to, int amount, char *token_id){
     struct Account aFrom, aTo;
     int result;
   
@@ -123,8 +126,10 @@ void transfer(char *from, char *to, int amount, char *token_id){
     ABA_assert( isTokenString(token_id),  "token id must be all upper character");
 
     // if the creator account exists
-    ABA_assert( ABA_is_account(from,strlen(from)) != 1, "The transfer account does not exist" );
-    ABA_assert( ABA_is_account(to,strlen(to)) != 1, "The receiving account does not exist" );
+    ABA_assert( ABA_is_account(from,strlen(from)) != 0, "The transfer account does not exist" );
+    ABA_assert( ABA_is_account(to,strlen(to)) != 0, "The receiving account does not exist" );
+
+    require_auth(from, strlen(from));
 
     // get balance of the transfer account
     result = ABA_db_get(from, strlen(from), &aFrom, sizeof(aFrom));
@@ -145,7 +150,9 @@ void transfer(char *from, char *to, int amount, char *token_id){
     ABA_db_put(from, strlen(from), &aFrom, sizeof(aFrom));
     ABA_db_put(to, strlen(to), &aTo, sizeof(aTo));
 
-    return ;
+    // ABA_transfer(from, to, amount, "active");
+
+    return 0;
 }
 
 

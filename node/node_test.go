@@ -67,8 +67,11 @@ func TestRunMain(t *testing.T) {
 func TestRunNode(t *testing.T) {
 	_, ctx := errgroup.WithContext(context.Background())
 	net.InitNetWork(ctx)
-	ledger.L = example.Ledger("/tmp/run_test")
+	os.RemoveAll("/tmp/node_test")
+	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
+	errors.CheckErrorPanic(err)
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
+	ledger.L = L
 
 	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)
@@ -79,6 +82,7 @@ func TestRunNode(t *testing.T) {
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
 		solo.NewSoloConsensusServer(ledger.L, txPool, config.User)
+		//event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, Address: common.AddressFromPubKey(config.Root.PublicKey)})
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
 	case "ABABFT":
@@ -86,23 +90,16 @@ func TestRunNode(t *testing.T) {
 		s, _ := ababft.ServiceABABFTGen(ledger.L, txPool, &config.Root)
 		s.Start()
 		elog.Log.Info("send the start message to ababft")
-		event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{})
+		event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{config.ChainHash})
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
-
-	//start explorer
 	go rpc.StartRPCServer()
+	//start explorer
 	go spectator.Bystander(ledger.L)
 	if config.StartNode {
-		//go example.AutoGenerateTransaction(ledger.L)
 		//go example.VotingProducer(ledger.L)
 		go example.InvokeContract(ledger.L)
-		//go example.QueryContractData(ledger.L)
-		//go example.Main(ledger.L)
-		//go example.ParallelInvokeContract1(ledger.L)
-		//go example.ParallelInvokeContract2(ledger.L)
-		//go example.ParallelInvokeContract3(ledger.L)
 	}
 
 	wait()

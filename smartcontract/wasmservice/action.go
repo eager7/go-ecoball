@@ -6,67 +6,77 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/http/common/abi"
-	"bytes"
 )
 
-// C API: inline_action(char *account, char *action, char *actionData, char *actor, char *perm)
-func (ws *WasmService)inline_action(proc *exec.Process, account, action, actionData, actor, perm int32) int32{
-	data := proc.LoadAt(int(account))
-	length := bytes.IndexByte(data,0)
-	contract_msg := data[:length]
+// C API: inline_action(char *account, int32 accountLen, char *action, int32 actionLen, char *actionData, int32 actionDataLen, char *actor, actorLen, char *perm, int32 permLen)
+func (ws *WasmService)inline_action(proc *exec.Process, contract, contractLen, action, actionLen, actionData, actionDataLen, actor, actorLen, perm, permLen int32) int32{
+	contract_msg := make([]byte, contractLen)
+	err := proc.ReadAt(contract_msg, int(contract), int(contractLen))
+	if err != nil{
+		return -1
+	}
 
-	data = proc.LoadAt(int(action))
-	length = bytes.IndexByte(data,0)
-	action_msg := data[:length]
+	action_msg := make([]byte, actionLen)
+	err = proc.ReadAt(action_msg, int(action), int(actionLen))
+	if err != nil{
+		return -1
+	}
 
-	data = proc.LoadAt(int(actionData))
-	length = bytes.IndexByte(data,0)
-	actionData_msg := data[:length]
+	actionData_msg := make([]byte, actionDataLen)
+	err = proc.ReadAt(actionData_msg, int(actionData), int(actionDataLen))
+	if err != nil{
+		return -1
+	}
 
-	data = proc.LoadAt(int(actor))
-	length = bytes.IndexByte(data,0)
-	actor_msg := data[:length]
+	actor_msg := make([]byte, actorLen)
+	err = proc.ReadAt(actor_msg, int(actor), int(actorLen))
+	if err != nil{
+		return -1
+	}
 
-	data = proc.LoadAt(int(perm))
-	length = bytes.IndexByte(data,0)
-	permission := data[:length]
+	perm_msg := make([]byte, permLen)
+	err = proc.ReadAt(perm_msg, int(perm), int(permLen))
+	if err != nil{
+		return -1
+	}
 
 
-	if(len(contract_msg) == 0 || len(action_msg) == 0 || len(actionData_msg) == 0 || len(permission) == 0 || len(actor_msg) == 0) {
+	if(len(contract_msg) == 0 || len(action_msg) == 0 || len(actionData_msg) == 0 || len(actor_msg) == 0 || len(perm_msg) == 0) {
 		fmt.Println("error, can not read param")
 		return -1
 	}
 
-	fmt.Println("wasm inline action ", string(contract_msg), " ", string(action_msg), " ", string(actionData_msg), " ", string(actor_msg), "", string(permission))
+	fmt.Println("wasm inline action ", string(contract_msg), " ", string(action_msg), " ", string(actionData_msg), " ", string(actor_msg), "", string(perm_msg))
 
-	contractLen := len(contract_msg)
-	var contractSlice []byte = contract_msg[:contractLen - 1]
-	if contract_msg[contractLen - 1] != 0 {
-		contractSlice = append(contractSlice, contract_msg[contractLen - 1])
+	// C string end with '\0', but Go not. So delete '\0'
+	Length := len(contract_msg)
+	var contractSlice []byte = contract_msg[:Length - 1]
+	if contract_msg[Length - 1] != 0 {
+		contractSlice = append(contractSlice, contract_msg[Length - 1])
 	}
 
-	actionLen := len(action_msg)
-	var actionSlice []byte = action_msg[:actionLen - 1]
-	if action_msg[actionLen - 1] != 0 {
-		actionSlice = append(actionSlice, action_msg[actionLen - 1])
+	Length = len(action_msg)
+	var actionSlice []byte = action_msg[:Length - 1]
+	if action_msg[Length - 1] != 0 {
+		actionSlice = append(actionSlice, action_msg[Length - 1])
 	}
 
-	dataLen := len(actionData_msg)
-	var dataSlice []byte = actionData_msg[:dataLen - 1]
-	if actionData_msg[dataLen - 1] != 0 {
-		dataSlice = append(dataSlice, actionData_msg[dataLen - 1])
+	Length = len(actionData_msg)
+	var dataSlice []byte = actionData_msg[:Length - 1]
+	if actionData_msg[Length - 1] != 0 {
+		dataSlice = append(dataSlice, actionData_msg[Length - 1])
 	}
 
-	actorLen := len(actor_msg)
-	var actorSlice []byte = actor_msg[:actorLen - 1]
-	if actor_msg[actorLen - 1] != 0 {
-		actorSlice = append(actorSlice, actor_msg[actorLen - 1])
+	Length = len(actor_msg)
+	var actorSlice []byte = actor_msg[:Length - 1]
+	if actor_msg[Length - 1] != 0 {
+		actorSlice = append(actorSlice, actor_msg[Length - 1])
 	}
 
-	permLen := len(permission)
-	var permSlice []byte = permission[:permLen - 1]
-	if permission[permLen - 1] != 0 {
-		permSlice = append(permSlice, permission[permLen - 1])
+	Length = len(perm_msg)
+	var permSlice []byte = perm_msg[:Length - 1]
+	if perm_msg[Length - 1] != 0 {
+		permSlice = append(permSlice, perm_msg[Length - 1])
 	}
 
 	if ws.action.ContractAccount != common.NameToIndex(string(contractSlice)) {

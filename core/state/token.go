@@ -88,7 +88,7 @@ func (s *State) AccountSubBalance(index common.AccountName, token string, value 
 	if balance.Cmp(value) == -1 {
 		return errors.New(log, "no enough balance")
 	}
-	if err := acc.SubBalance(AbaToken, value); err != nil {
+	if err := acc.SubBalance(token, value); err != nil {
 		return err
 	}
 	if err := s.commitAccount(acc); err != nil {

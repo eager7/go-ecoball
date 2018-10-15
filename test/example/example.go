@@ -656,11 +656,10 @@ func InvokeContract(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
 
-	//time.Sleep(time.Millisecond * 2500)
-	//balance, _ = ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("worker1"), state.AbaToken)
-	//fmt.Println("worker1 account balance: ", balance)
-	//balance, _ = ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("worker2"), state.AbaToken)
-	//fmt.Println("worker2 account balance: ", balance)
+	balance, _ = ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("worker1"), "XYX")
+	fmt.Println("worker1 account balance: ", balance)
+	balance, _ = ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("worker2"), "XYX")
+	fmt.Println("worker2 account balance: ", balance)
 }
 
 func QueryContractData(ledger ledger.Ledger) {

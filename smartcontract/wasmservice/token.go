@@ -3,10 +3,10 @@ package wasmservice
 import (
 	"github.com/ecoball/go-ecoball/vm/wasmvm/exec"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/state"
 	"math/big"
 )
 
+// C API: issueToken(char *name, int32 nameLen, int32 maxSupply, int32 supply,  char *issuer, int32 issuerLen)
 func (ws *WasmService) createToken(proc *exec.Process, name, nameLen, maxSupply, supply, issuer, issuerLen int32) int32 {
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
@@ -14,13 +14,28 @@ func (ws *WasmService) createToken(proc *exec.Process, name, nameLen, maxSupply,
 		return -1
 	}
 
+	// C string end with '\0', but Go not. So delete '\0'
+	Length := len(name_msg)
+	var nameSlice []byte = name_msg[:Length - 1]
+	if name_msg[Length - 1] != 0 {
+		nameSlice = append(nameSlice, name_msg[Length - 1])
+	}
+
+
 	issuer_msg := make([]byte, issuerLen)
 	err = proc.ReadAt(issuer_msg, int(issuer), int(issuerLen))
 	if err != nil{
 		return -1
 	}
 
-	_, err = ws.state.CreateToken(string(name_msg), maxSupply, supply, common.NameToIndex(string(issuer_msg)))
+	// C string end with '\0', but Go not. So delete '\0'
+	Length = len(issuer_msg)
+	var issuerSlice []byte = issuer_msg[:Length - 1]
+	if issuer_msg[Length - 1] != 0 {
+		issuerSlice = append(issuerSlice, issuer_msg[Length - 1])
+	}
+
+	_, err = ws.state.CreateToken(string(nameSlice), maxSupply, supply, common.NameToIndex(string(issuerSlice)))
 	if err != nil{
 		return -2
 	}
@@ -28,6 +43,7 @@ func (ws *WasmService) createToken(proc *exec.Process, name, nameLen, maxSupply,
 	return 0
 }
 
+// C API: issueToken(char *to, int32 toLen, int32 amount, char *name, int32 nameLen, char *perm, int32 permLen)
 func (ws *WasmService) issueToken(proc *exec.Process, to, toLen, amount, name, nameLen int32) int32{
 	to_msg := make([]byte, toLen)
 	err := proc.ReadAt(to_msg, int(to), int(toLen))
@@ -35,13 +51,28 @@ func (ws *WasmService) issueToken(proc *exec.Process, to, toLen, amount, name, n
 		return -1
 	}
 
+	// C string end with '\0', but Go not. So delete '\0'
+	Length := len(to_msg)
+	var toSlice []byte = to_msg[:Length - 1]
+	if to_msg[Length - 1] != 0 {
+		toSlice = append(toSlice, to_msg[Length - 1])
+	}
+
+
 	name_msg := make([]byte, nameLen)
 	err = proc.ReadAt(name_msg, int(name), int(nameLen))
 	if err != nil{
 		return -1
 	}
 
-	err = ws.state.IssueToken(common.NameToIndex(string(to_msg)), amount, string(name_msg))
+	// C string end with '\0', but Go not. So delete '\0'
+	Length = len(name_msg)
+	var nameSlice []byte = name_msg[:Length - 1]
+	if name_msg[Length - 1] != 0 {
+		nameSlice = append(nameSlice, name_msg[Length - 1])
+	}
+
+	err = ws.state.IssueToken(common.NameToIndex(string(toSlice)), amount, string(nameSlice))
 	if err != nil{
 		return -2
 	}
@@ -49,12 +80,19 @@ func (ws *WasmService) issueToken(proc *exec.Process, to, toLen, amount, name, n
 	return 0
 }
 
-// C API: inline_action(char *from, char *to, int amount, char *perm)
-func (ws *WasmService)transfer(proc *exec.Process, from, fromLen, to, toLen, amount, perm, permLen int32) int32{
+// C API: transfer(char *from, int32 fromLen, char *to, int32 toLen, int32 amount, char *name, int32 nameLen, char *perm, int32 permLen)
+func (ws *WasmService)transfer(proc *exec.Process, from, fromLen, to, toLen, amount, name, nameLen, perm, permLen int32) int32{
 	from_msg := make([]byte, fromLen)
 	err := proc.ReadAt(from_msg, int(from), int(fromLen))
 	if err != nil{
 		return -1
+	}
+
+	// C string end with '\0', but Go not. So delete '\0'
+	Length := len(from_msg)
+	var fromSlice []byte = from_msg[:Length - 1]
+	if from_msg[Length - 1] != 0 {
+		fromSlice = append(fromSlice, from_msg[Length - 1])
 	}
 
 	perm_msg := make([]byte, permLen)
@@ -63,7 +101,14 @@ func (ws *WasmService)transfer(proc *exec.Process, from, fromLen, to, toLen, amo
 		return -1
 	}
 
-	if err := ws.state.CheckAccountPermission(common.NameToIndex(string(from_msg)), ws.action.ContractAccount, string(perm_msg)); err != nil {
+	// C string end with '\0', but Go not. So delete '\0'
+	Length = len(perm_msg)
+	var permSlice []byte = perm_msg[:Length - 1]
+	if perm_msg[Length - 1] != 0 {
+		permSlice = append(permSlice, perm_msg[Length - 1])
+	}
+
+	if err := ws.state.CheckAccountPermission(common.NameToIndex(string(fromSlice)), ws.action.ContractAccount, string(permSlice)); err != nil {
 		return -1
 	}
 
@@ -73,11 +118,30 @@ func (ws *WasmService)transfer(proc *exec.Process, from, fromLen, to, toLen, amo
 		return -1
 	}
 
+	// C string end with '\0', but Go not. So delete '\0'
+	Length = len(to_msg)
+	var toSlice []byte = to_msg[:Length - 1]
+	if to_msg[Length - 1] != 0 {
+		toSlice = append(toSlice, to_msg[Length - 1])
+	}
 
-	if err := ws.state.AccountSubBalance(common.NameToIndex(string(from_msg)), state.AbaToken, big.NewInt(int64(amount))); err != nil {
+	name_msg := make([]byte, nameLen)
+	err = proc.ReadAt(name_msg, int(name), int(nameLen))
+	if err != nil{
+		return -1
+	}
+
+	// C string end with '\0', but Go not. So delete '\0'
+	Length = len(name_msg)
+	var nameSlice []byte = name_msg[:Length - 1]
+	if name_msg[Length - 1] != 0 {
+		nameSlice = append(nameSlice, name_msg[Length - 1])
+	}
+
+	if err := ws.state.AccountSubBalance(common.NameToIndex(string(fromSlice)), string(nameSlice), big.NewInt(int64(amount))); err != nil {
 		return -2
 	}
-	if err := ws.state.AccountAddBalance(common.NameToIndex(string(to_msg)), state.AbaToken, big.NewInt(int64(amount))); err != nil {
+	if err := ws.state.AccountAddBalance(common.NameToIndex(string(toSlice)), string(nameSlice), big.NewInt(int64(amount))); err != nil {
 		return -3
 	}
 

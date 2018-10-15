@@ -3,27 +3,28 @@ package wasmservice
 import (
 	"github.com/ecoball/go-ecoball/vm/wasmvm/exec"
 	"github.com/ecoball/go-ecoball/common"
-	"bytes"
 	"fmt"
 )
 
-// C API: inline_action(char *account, char *action, int32 actionData)
-func (ws *WasmService)require_auth(proc *exec.Process, account int32) int32{
-	data := proc.LoadAt(int(account))
-	length := bytes.IndexByte(data,0)
-	account_msg := data[:length]
-
-	accountLen := len(account_msg)
-	var contractSlice []byte = account_msg[:accountLen - 1]
-	if account_msg[accountLen - 1] != 0 {
-		contractSlice = append(contractSlice, account_msg[accountLen - 1])
+// C API: require_auth(char *account, int32 accountLen)
+func (ws *WasmService)require_auth(proc *exec.Process, account, accountLen int32) int32{
+	account_msg := make([]byte, accountLen)
+	err := proc.ReadAt(account_msg, int(account), int(accountLen))
+	if err != nil{
+		return -1
 	}
 
-	if ws.action.Permission.Actor == common.NameToIndex(string(contractSlice)) {
+	Length := len(account_msg)
+	var accountSlice []byte = account_msg[:Length - 1]
+	if account_msg[Length - 1] != 0 {
+		accountSlice = append(accountSlice, account_msg[Length - 1])
+	}
+
+	if ws.action.Permission.Actor == common.NameToIndex(string(accountSlice)) {
 		return 0
 	}
 
-	fmt.Printf("%s has not %s's active permission\n", ws.action.Permission.Actor.String(), contractSlice)
+	fmt.Printf("%s has not %s active permission\n", ws.action.Permission.Actor.String(), accountSlice)
 	proc.Terminate()
 
 	return -1
