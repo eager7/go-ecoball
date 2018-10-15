@@ -168,22 +168,22 @@ func (h *MinorBlockHeader) GetChainID() common.Hash {
 }
 
 type AccountMinor struct {
-	Accounts state.Account
-	Account common.AccountName
-	Balance *big.Int
-	Nonce   uint64
+	Accounts *state.Account
+	//Account common.AccountName
+	//Balance *big.Int
+	//Nonce   uint64
 }
 
 func (a *AccountMinor) proto() (*pb.AccountMinor, error) {
-	balance, err := a.Balance.GobEncode()
+	data, err := a.Accounts.Serialize()
 	if err != nil {
 		return nil, err
 	}
-
 	return &pb.AccountMinor{
-		Account: uint64(a.Account),
-		Balance: balance,
-		Nonce:   a.Nonce,
+		AccountData: data,
+		Account:     0,
+		Balance:     nil,
+		Nonce:       0,
 	}, nil
 }
 
@@ -328,10 +328,12 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 		if err := balance.GobDecode(acc.Balance); err != nil {
 			return err
 		}
+		account := new(state.Account)
+		if err := account.Deserialize(acc.AccountData); err != nil {
+			return err
+		}
 		state := AccountMinor{
-			Account: common.AccountName(acc.Account),
-			Balance: balance,
-			Nonce:   acc.Nonce,
+			Accounts: account,
 		}
 		b.StateDelta = append(b.StateDelta, &state)
 	}
