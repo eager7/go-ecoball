@@ -203,6 +203,8 @@ func (c *committee) createCommitteeBlock() *cs.CMBlock {
 	//	}
 	//}
 
+	log.Debug("create cm block height ", cmb.Height)
+
 	return cmb
 
 }

@@ -114,10 +114,11 @@ func (s *workerSet) isMember(self *Worker) bool {
 	return false
 }
 
-func (s *workerSet) resetNewLeader(leader *Worker) {
+func (s *workerSet) changeLeader(leader *Worker) {
 	for i, work := range s.member {
 		if work.Equal(leader) {
 			if i == 0 {
+				log.Debug("leader not change")
 				return
 			}
 
@@ -127,9 +128,13 @@ func (s *workerSet) resetNewLeader(leader *Worker) {
 				result = append(result, s.member[j])
 			}
 
+			log.Debug("new leader i ", i)
 			s.member = result
+			return
 		}
 	}
+
+	log.Error("new leader not in committee")
 }
 
 type workerQ struct {

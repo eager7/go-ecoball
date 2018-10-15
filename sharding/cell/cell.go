@@ -108,8 +108,9 @@ func (c *Cell) SaveLastViewchangeBlock(bk *cs.ViewChangeBlock) {
 	log.Debug("save view change block epoch ", bk.CMEpochNo, " height ", bk.FinalBlockHeight, " round ", bk.Round)
 	leader := &Worker{}
 	leader.InitWork(&bk.Candidate)
+	log.Debug("new leader ", leader.Address, " ", leader.Port)
 
-	c.cm.resetNewLeader(leader)
+	c.cm.changeLeader(leader)
 	c.chain.setViewchangeBlock(bk)
 }
 

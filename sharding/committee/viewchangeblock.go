@@ -171,7 +171,7 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 
 	vc.COSign = cosign
 
-	log.Debug("candidate address ", candi.Address, " port ", candi.Port)
+	log.Debug(" create view change block epoch ", vc.CMEpochNo, " height ", vc.FinalBlockHeight, " round ", vc.Round, " candidate address ", candi.Address, " port ", candi.Port)
 
 	if c.ns.Self.Equal(candi) {
 		return vc, true
