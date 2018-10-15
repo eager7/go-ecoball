@@ -20,6 +20,7 @@ import (
 	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	dag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
+	importer "gx/ipfs/QmSaz8Qg77gGqvDvLKeSAY7ivDEnramSWF6T7TcRwFpHtP/go-unixfs/importer"
 )
 
 var dsnIpfsApi coreiface.CoreAPI
@@ -175,4 +176,28 @@ func Metadata(ctx context.Context, skey string) (*EraMetaData, error) {
 	}
 
 	return MetadataFromBytes(pbnd.Data())
+}
+
+func IpfsCatFile(ctx context.Context, cid string) (io.Reader, error) {
+	p, err := coreiface.ParsePath(cid)
+	if err != nil {
+		return nil, err
+	}
+	return dsnIpfsApi.Unixfs().Cat(ctx, p)
+}
+
+func AddDagFromReader(ctx context.Context, r io.Reader, fm *EraMetaData, fc string) (string, error) {
+	p, err := coreiface.ParsePath(fc)
+	if err != nil {
+		return "", err
+	}
+	fileNode, err := dsnIpfsApi.Dag().Get(ctx, p)
+	if err != nil {
+		return "", err
+	}
+	eraNode, err := importer.BuildDagFromReader(dsnIpfsNode.DAG, chunker.NewSizeSplitter(r, int64(fm.PieceSize)))
+	if err != nil {
+		return "", err
+	}
+	return AddMetadataTo(ctx, fileNode, eraNode, fm)
 }

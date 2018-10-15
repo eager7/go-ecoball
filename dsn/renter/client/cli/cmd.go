@@ -1,5 +1,5 @@
 // cmd/ipfs implements the primary CLI binary for ipfs
-package main
+package cli
 
 import (
 	"context"
@@ -31,6 +31,8 @@ import (
 
 	ecoballConfig "github.com/ecoball/go-ecoball/common/config"
 	dsncmd "github.com/ecoball/go-ecoball/dsn/cmd"
+	"github.com/ecoball/go-ecoball/dsn/renter"
+	"github.com/ecoball/go-ecoball/client/rpc"
 )
 
 var errRequestCanceled = errors.New("request canceled")
@@ -141,8 +143,12 @@ func AddFun() error {
 		}, nil
 	}
 
-	err := addRun(ctx, dsncmd.Root, os.Args, os.Stdin, os.Stdout, os.Stderr, buildEnv, makeExecutor)
-	return err
+	eraReq, err := addRun(ctx, dsncmd.Root, os.Args, os.Stdin, os.Stdout, os.Stderr, buildEnv, makeExecutor)
+	if err != nil {
+		return  nil
+	}
+
+	return eraAdd(eraReq)
 }
 
 func makeExecutor(req *cmds.Request, env interface{}) (cmds.Executor, error) {
@@ -331,4 +337,13 @@ func apiClientForAddr(addr ma.Multiaddr) (http.Client, error) {
 	}
 
 	return http.NewClient(host, http.ClientWithAPIPrefix(corehttp.APIPath)), nil
+}
+
+func eraAdd(req *renter.RscReq) error{
+	resp, err := rpc.NodeCall("DsnAddFile", []interface{}{req})
+	if err != nil {
+		return err
+	}
+
+	return rpc.EchoResult(resp)
 }

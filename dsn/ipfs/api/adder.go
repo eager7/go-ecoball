@@ -69,21 +69,18 @@ func (adder *EraAdder)EraEnCoding(file files.File, fm EraMetaData) (ipld.Node, e
 func AddMetadataTo(ctx context.Context, fileNode ipld.Node, eraNode ipld.Node, m *EraMetaData) (string, error) {
 	mdnode := new(dag.ProtoNode)
 	mdata := BytesForMetadata(m)
-
 	mdnode.SetData(mdata)
 	if err := mdnode.AddNodeLink("file", fileNode); err != nil {
 		return "", err
 	}
-
 	if err := mdnode.AddNodeLink("era", eraNode); err != nil {
 		return "", err
 	}
-
 	err := dsnIpfsNode.DAG.Add(ctx, mdnode)
 	if err != nil {
 		return "", err
 	}
-
 	return mdnode.Cid().String(), nil
 }
+
 

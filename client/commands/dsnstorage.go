@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"os"
    "github.com/urfave/cli"
-  // "github.com/ecoball/go-ecoball/dsn"
    "github.com/ecoball/go-ecoball/client/rpc"
-
+   dsncli "github.com/ecoball/go-ecoball/dsn/renter/client/cli"
 )
 var (
 	DsnStorageCommands = cli.Command{
@@ -15,8 +14,8 @@ var (
 		Category: "dsnstorage",
 		Subcommands: []cli.Command{
 			{
-				Name:   "dsnadd",
-				Usage:  "dsnadd file",
+				Name:   "add",
+				Usage:  "add file",
 				Action: dsnAddFile,
 				Flags: []cli.Flag{
 					cli.StringFlag{
@@ -28,8 +27,8 @@ var (
 
 			},
 			{
-				Name:   "dsncat",
-				Usage:  "dsncat file",
+				Name:   "cat",
+				Usage:  "cat file",
 				Action: dsnGetFile,
 	
 			},
@@ -38,7 +37,7 @@ var (
 	}
 	
 )
-func dsnAddFile(ctx *cli.Context) error {
+func dsnAddFile1(ctx *cli.Context) error {
 
 	var resp map[string]interface{}
 	var err error
@@ -66,9 +65,11 @@ func dsnAddFile(ctx *cli.Context) error {
 	
 	return err
 }
+func dsnAddFile(ctx *cli.Context) error {
+	return dsncli.AddFun()
+}
 
 func dsnGetFile(ctx *cli.Context) error {
-	
 	var resp map[string]interface{}
 	var err error
 
