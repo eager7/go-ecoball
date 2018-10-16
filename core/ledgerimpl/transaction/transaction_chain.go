@@ -608,7 +608,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 //ShardBlock
 //func (c *ChainTx) NewShardBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {}
 
-func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
+func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (err error) {
 	if block == nil {
 		return errors.New(log, "the block is nil")
 	}
@@ -647,13 +647,18 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		if !ok {
 			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeMinorBlock.String()))
 		}
-		for i := 0; i < len(Block.Transactions); i++ {
-			log.Notice("Handle Transaction:", Block.Transactions[i].Type.String(), Block.Transactions[i].Hash.HexString(), " in final DB")
-			if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, Block.Transactions[i], Block.MinorBlockHeader.Timestamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
-				log.Warn(Block.Transactions[i].JsonString())
-				return err
+		if shardID == Block.ShardId {
+			for i := 0; i < len(Block.Transactions); i++ {
+				log.Notice("Handle Transaction:", Block.Transactions[i].Type.String(), Block.Transactions[i].Hash.HexString(), " in final DB")
+				if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, Block.Transactions[i], Block.MinorBlockHeader.Timestamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+					log.Warn(Block.Transactions[i].JsonString())
+					return err
+				}
 			}
+		} else {
+			//TODO:Handle StateDelta and Check State Hash
 		}
+
 		heValue, err = Block.MinorBlockHeader.Serialize()
 		if err != nil {
 			return err

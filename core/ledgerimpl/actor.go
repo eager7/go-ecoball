@@ -26,7 +26,6 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
-	"github.com/ecoball/go-ecoball/core/shard"
 )
 
 type LedActor struct {
@@ -71,22 +70,21 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		}
 		end := time.Now().UnixNano()
 		log.Info("save block["+msg.ChainID.HexString()+"block hash:"+msg.Hash.HexString()+"]:", (end-begin)/1000, "us")
-	case shard.BlockInterface:
-		chain, ok := l.ledger.ChainTxs[msg.GetChainID()]
+	case message.BlockMessage:
+		chain, ok := l.ledger.ChainTxs[msg.Block.GetChainID()]
 		if !ok {
-			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.GetChainID().HexString()))
+			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.Block.GetChainID().HexString()))
 			return
 		}
 		begin := time.Now().UnixNano()
-		if err := chain.SaveShardBlock(msg); err != nil {
-			log.Error("save block["+msg.GetChainID().HexString()+"] error:", err)
+		if err := chain.SaveShardBlock(0, msg.Block); err != nil {
+			log.Error("save block["+msg.Block.GetChainID().HexString()+"] error:", err)
 			break
 		}
 		end := time.Now().UnixNano()
-		log.Info("save block["+msg.GetChainID().HexString()+"]:", (end-begin)/1000, "us")
+		log.Info("save block["+msg.Block.GetChainID().HexString()+"]:", (end-begin)/1000, "us")
 	case *dpos.DposBlock:
 		//TODO
-
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {
 			log.Error("send block to tx pool error:", err)
 		}
@@ -95,6 +93,8 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		if err := l.ledger.NewTxChain(msg.ChainID, msg.Address); err != nil {
 			log.Error(err)
 		}
+	case message.ProducerBlock:
+		//block, err := l.ledger.NewTxBlock()
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}

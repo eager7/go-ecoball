@@ -333,12 +333,12 @@ func (l *LedgerImpl) ResetStateDB(chainID common.Hash, header *types.Header) err
 	return chain.Geneses.TimeStamp
 }*/
 
-func (l *LedgerImpl) SaveShardBlock(chainID common.Hash, block shard.BlockInterface) (err error) {
+func (l *LedgerImpl) SaveShardBlock(chainID common.Hash, shardID uint32, block shard.BlockInterface) (err error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
-	return chain.SaveShardBlock(block)
+	return chain.SaveShardBlock(shardID, block)
 }
 
 func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ shard.HeaderType, hash common.Hash) (shard.BlockInterface, error) {
