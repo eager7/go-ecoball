@@ -12,6 +12,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common"
 	"io"
+	//"github.com/ecoball/go-ecoball/dsn/api"
 )
 
 type DsnConf struct {
@@ -62,6 +63,9 @@ func StartDsn(ctx context.Context, l ledger.Ledger) error {
 	dsn.r = r
 	dsn.s = s
 	dsn.ctx = ctx
+
+	//api.DsnHttpServ()
+
 	return nil
 }
 

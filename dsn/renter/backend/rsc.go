@@ -2,20 +2,22 @@ package backend
 
 import (
 	"context"
+	"bytes"
+	"io/ioutil"
 	"github.com/ecoball/go-ecoball/dsn/renter"
 	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
 	"github.com/ecoball/go-ecoball/dsn/erasure"
-	"bytes"
-	"io/ioutil"
-	"fmt"
+	"github.com/ecoball/go-ecoball/common/elog"
+	"io"
 )
 
+var log = elog.NewLogger("dsn-b", elog.DebugLog)
+
 func EraCoding(req *renter.RscReq) (string, error) {
-	fmt.Println("------>era coding.....")
-	fmt.Println(*req)
 	ctx := context.Background()
 	r, err := api.IpfsCatFile(ctx, req.Cid)
 	if err != nil {
+		log.Error(err.Error())
 		return "", err
 	}
 
@@ -25,6 +27,7 @@ func EraCoding(req *renter.RscReq) (string, error) {
 	}
 
 	var fileSize int
+	fileSize = int(req.FileSize)
 	if fileSize % int(fm.PieceSize) == 0 {
 		fm.DataPiece = uint64(fileSize / int(fm.PieceSize))
 	} else {
@@ -34,14 +37,17 @@ func EraCoding(req *renter.RscReq) (string, error) {
 
 	erCoder, err := erasure.NewRSCode(int(fm.DataPiece), int(fm.ParityPiece))
 	if err != nil {
+		log.Error(err.Error())
 		return "", err
 	}
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
+		log.Error(err.Error())
 		return "", err
 	}
 	shards, err := erCoder.Encode(b)
 	if err != nil {
+		log.Error(err.Error())
 		return "", err
 	}
 
@@ -58,6 +64,7 @@ func EraCoding(req *renter.RscReq) (string, error) {
 	return  api.AddDagFromReader(ctx, erReader, &fm, req.Cid)
 }
 
-func EraDecoding()  {
-	
+func EraDecoding(cid string) (io.Reader, error) {
+	ctx := context.Background()
+	return api.IpfsCatErafile(ctx, cid)
 }

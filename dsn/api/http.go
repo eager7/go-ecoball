@@ -18,7 +18,7 @@ func DsnHttpServ()  {
 	router.GET("/dsn/total", totalHandler)
 	router.POST("/dsn/eracode", eraCoding)
 	router.POST("/dsn/eradecode", eraDecoding)
-	router.Run(":8086")
+	router.Run(":18086")
 }
 
 func totalHandler(c *gin.Context)  {
@@ -45,5 +45,6 @@ func eraCoding(c *gin.Context)  {
 
 func eraDecoding(c *gin.Context)  {
 	//TODO
-	rbd.EraDecoding()
+	cid := "QmWsv6xMPXAHbA35uqx9hoVTXmAcap1WeysfAm9KBkaw9b"
+	rbd.EraDecoding(cid)
 }
