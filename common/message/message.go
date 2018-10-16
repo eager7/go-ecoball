@@ -38,4 +38,6 @@ type BlockMessage struct {
 	Block shard.BlockInterface
 }
 
-type ProducerBlock struct {}
+type ProducerBlock struct {
+	Height uint64
+}

@@ -85,7 +85,6 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		log.Info("save block["+msg.Block.GetChainID().HexString()+"]:", (end-begin)/1000, "us")
 	case *dpos.DposBlock:
 		//TODO
-
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {
 			log.Error("send block to tx pool error:", err)
 		}
@@ -95,7 +94,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			log.Error(err)
 		}
 	case message.ProducerBlock:
-
+		//block, err := l.ledger.NewTxBlock()
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}

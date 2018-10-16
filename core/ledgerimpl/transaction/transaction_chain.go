@@ -647,13 +647,18 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 		if !ok {
 			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeMinorBlock.String()))
 		}
-		for i := 0; i < len(Block.Transactions); i++ {
-			log.Notice("Handle Transaction:", Block.Transactions[i].Type.String(), Block.Transactions[i].Hash.HexString(), " in final DB")
-			if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, Block.Transactions[i], Block.MinorBlockHeader.Timestamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
-				log.Warn(Block.Transactions[i].JsonString())
-				return err
+		if shardID == Block.ShardId {
+			for i := 0; i < len(Block.Transactions); i++ {
+				log.Notice("Handle Transaction:", Block.Transactions[i].Type.String(), Block.Transactions[i].Hash.HexString(), " in final DB")
+				if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, Block.Transactions[i], Block.MinorBlockHeader.Timestamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+					log.Warn(Block.Transactions[i].JsonString())
+					return err
+				}
 			}
+		} else {
+			//TODO:Handle StateDelta and Check State Hash
 		}
+
 		heValue, err = Block.MinorBlockHeader.Serialize()
 		if err != nil {
 			return err
