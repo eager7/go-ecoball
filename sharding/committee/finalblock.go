@@ -195,7 +195,7 @@ func (c *committee) processConsensusFinalPacket(p interface{}) {
 }
 
 func (c *committee) processConsensBlockOnWaitStatus(p interface{}) bool {
-	log.Debug("process final consensus packet on waiting status")
+	log.Debug("process consensus packet on waiting status")
 	if c.ns.IsLeader() {
 		log.Error("we are leader of committee, drop packet")
 		return false
