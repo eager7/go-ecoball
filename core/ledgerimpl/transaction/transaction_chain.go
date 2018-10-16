@@ -801,6 +801,23 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (shar
 }
 
 func (c *ChainTx) NewCmBlock(timeStamp int64) (shard.BlockInterface, error) {
+	header := shard.CMBlockHeader{
+		ChainID:      c.LastHeader.CmHeader.ChainID,
+		Version:      c.LastHeader.CmHeader.Version,
+		Height:       c.LastHeader.CmHeader.Height + 1,
+		Timestamp:    timeStamp,
+		PrevHash:     c.LastHeader.CmHeader.Hash(),
+		LeaderPubKey: nil,
+		Nonce:        c.LastHeader.CmHeader.Nonce + 1,
+		Candidate:    shard.NodeInfo{
+			PublicKey: nil,
+			Address:   "",
+			Port:      "",
+		},
+		ShardsHash:   common.Hash{},
+		COSign:       nil,
+	}
+	log.Debug(header)
  	return nil, nil
 }
 
