@@ -40,4 +40,5 @@ type BlockMessage struct {
 
 type ProducerBlock struct {
 	Height uint64
+	Type shard.HeaderType
 }

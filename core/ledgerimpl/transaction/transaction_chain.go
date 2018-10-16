@@ -39,6 +39,7 @@ import (
 	"encoding/json"
 	dsnstore "github.com/ecoball/go-ecoball/dsn/block"
 	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/core/trie"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -749,4 +750,60 @@ func (c *ChainTx) GetLastShardBlockById(shardId uint32) (shard.BlockInterface, e
 	}
 	hash := common.NewHash(data)
 	return c.GetShardBlockByHash(shard.HeMinorBlock, hash)
+}
+
+func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (shard.BlockInterface, error) {
+	s, err := c.StateDB.FinalDB.CopyState()
+	if err != nil {
+		return nil, err
+	}
+	s.Type = state.CopyType
+	var hashes []common.Hash
+	var cpu, net float64
+	for i := 0; i < len(txs); i++ {
+		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
+		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+			log.Warn(txs[i].JsonString())
+			//c.ResetStateDB(c.CurrentHeader)
+			return nil, err
+		} else {
+			hashes = append(hashes, txs[i].Hash)
+			cpu += cp
+			net += n
+		}
+	}
+	merkleHash, err := trie.GetMerkleRoot(hashes)
+	if err != nil {
+		return nil, err
+	}
+
+	header := shard.MinorBlockHeader{
+		ChainID:           c.LastHeader.MinorHeader.ChainID,
+		Version:           c.LastHeader.MinorHeader.Version,
+		Height:            c.LastHeader.MinorHeader.Height + 1,
+		Timestamp:         timeStamp,
+		PrevHash:          c.LastHeader.MinorHeader.Hash(),
+		TrxHashRoot:       merkleHash,
+		StateDeltaHash:    s.GetHashRoot(),
+		CMBlockHash:       c.LastHeader.CmHeader.Hash(),
+		ProposalPublicKey: nil,
+		ShardId:           c.LastHeader.MinorHeader.ShardId,
+		CMEpochNo:         0,
+		Receipt:           types.BlockReceipt{},
+		COSign:            nil,
+	}
+	block, err := shard.NewMinorBlock(header, c.CurrentHeader, txs, cpu, net)
+	if err != nil {
+		return nil, err
+	}
+
+	return block, nil
+}
+
+func (c *ChainTx) NewCmBlock(timeStamp int64) (shard.BlockInterface, error) {
+ 	return nil, nil
+}
+
+func (c *ChainTx) NewFinalBlock(timeStamp int64) (shard.BlockInterface, error) {
+	return nil, nil
 }
