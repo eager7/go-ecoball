@@ -70,7 +70,7 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
 	}
 
-	s.CreateToken(state.AbaToken, state.AbaTotal, 0, root)
+	s.CreateToken(state.AbaToken, state.AbaTotal, root)
 
 	//if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(90000)); err != nil {
 	//	return err

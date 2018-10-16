@@ -6,7 +6,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"math/big"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"strings"
 )
 
 const AbaTotal = 100000
@@ -23,11 +22,11 @@ type Token struct {
 	Balance *big.Int `json:"balance, omitempty"`
 }
 
-func NewToken(symbol string, maxSupply int32, supply int32, issuer common.AccountName) (*TokenInfo, error){
+func NewToken(symbol string, maxSupply int32, issuer common.AccountName) (*TokenInfo, error){
 	stat := &TokenInfo{
 		Symbol: 	symbol,
 		MaxSupply:	maxSupply,
-		Supply:		supply,
+		Supply:		0,
 		Issuer:		issuer,
 	}
 
@@ -144,8 +143,11 @@ func (s *State) TokenExisted(name string) bool {
 	return token.Symbol == name
 }
 
-func (s *State) GetTokenInfo(name string) (*TokenInfo, error) {
-	symbol := strings.ToUpper(name)
+func (s *State) GetTokenInfo(symbol string) (*TokenInfo, error) {
+	if err := common.TokenNameCheck(symbol); err != nil {
+		return nil, err
+	}
+
 	s.tokenMutex.RLock()
 	defer s.tokenMutex.RUnlock()
 	token, ok := s.Tokens[symbol]
@@ -194,13 +196,16 @@ func (s *State) CommitToken(token *TokenInfo) error {
 	return nil
 }
 
-func (s *State) CreateToken(symbol string, maxSupply int32, supply int32, issuer common.AccountName) (*TokenInfo, error) {
-	name := strings.ToUpper(symbol)
-	if s.TokenExisted(name) {
+func (s *State) CreateToken(symbol string, maxSupply int32, issuer common.AccountName) (*TokenInfo, error) {
+	if err := common.TokenNameCheck(symbol); err != nil {
+		return nil, err
+	}
+
+	if s.TokenExisted(symbol) {
 		return nil, errors.New(log, fmt.Sprintf("%s token had created", symbol))
 	}
 
-	token, err := NewToken(name, maxSupply, supply, issuer)
+	token, err := NewToken(symbol, maxSupply, issuer)
 	if err != nil {
 		return nil, err
 	}

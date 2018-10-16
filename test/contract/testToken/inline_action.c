@@ -38,7 +38,7 @@ int isTokenString(char *token_id) {
 // create token
 int create(char *issuer, int max_supply, char *token_id){
 
-    ABA_assert( max_supply < 0, "max_supply can not be negative!" );
+    ABA_assert( max_supply <= 0, "max_supply must be postive!" );
     ABA_assert( isTokenString(token_id),  "token id must be all upper character");
 
     int result;
@@ -75,7 +75,7 @@ int issue(char *to, int amount, char *token_id){
     struct Account aIssuer, aTo;
     int result;
   
-    ABA_assert( amount < 0, "amount can not be negative!" );
+    ABA_assert( amount <= 0, "amount must be postive!" );
     ABA_assert( isTokenString(token_id),  "token id must be all upper character");
 
     // if the creator account exists
@@ -111,7 +111,8 @@ int issue(char *to, int amount, char *token_id){
     ABA_db_put(stat.issuer, strlen(stat.issuer), &aIssuer, sizeof(aIssuer));
     ABA_db_put(to, strlen(to), &aTo, sizeof(aTo));
 
-    // inline_action("worker2", "transfer", "[\"worker1\", \"worker2\", \"15\", \"XXX\"]", "worker1", "active");
+    const char *strActionData = "[\"worker1\", \"worker2\", \"15\", \"XXX\"]";
+    inline_action("worker2", strlen("worker2"), "transfer", strlen("transfer"), strActionData, strlen(strActionData), "worker1", strlen("worker1"), "active", strlen("active"));
 
     return 0;
 }
@@ -121,7 +122,7 @@ int transfer(char *from, char *to, int amount, char *token_id){
     struct Account aFrom, aTo;
     int result;
   
-    ABA_assert( amount < 0, "amount can not be negative!" );
+    ABA_assert( amount <= 0, "amount must be postive!" );
     ABA_assert(strcmp(from, to) == 0, "can not transfer to self");
     ABA_assert( isTokenString(token_id),  "token id must be all upper character");
 
