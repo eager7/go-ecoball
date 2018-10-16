@@ -124,7 +124,7 @@ func TokenNameCheck(name string) error {
 	rgx := regexp.MustCompile(reg)
 	if !rgx.MatchString(name) {
 		e := fmt.Sprintf("Invalid name\n" +
-			" Name should be less than 13 characters and only contains the following symbol 12345abcdefghijklmnopqrstuvwxyz")
+			" Name should be less than 13 characters and only contains the following symbol ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 		return errors.New(e)
 	}
 	return nil

@@ -6,8 +6,12 @@ import (
 	"math/big"
 )
 
-// C API: issueToken(char *name, int32 nameLen, int32 maxSupply, int32 supply,  char *issuer, int32 issuerLen)
-func (ws *WasmService) createToken(proc *exec.Process, name, nameLen, maxSupply, supply, issuer, issuerLen int32) int32 {
+// C API: issueToken(char *name, int32 nameLen, int32 maxSupply, char *issuer, int32 issuerLen)
+func (ws *WasmService) createToken(proc *exec.Process, name, nameLen, maxSupply, issuer, issuerLen int32) int32 {
+	if maxSupply <= 0 {
+		return -1
+	}
+
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
 	if err != nil{
@@ -35,7 +39,7 @@ func (ws *WasmService) createToken(proc *exec.Process, name, nameLen, maxSupply,
 		issuerSlice = append(issuerSlice, issuer_msg[Length - 1])
 	}
 
-	_, err = ws.state.CreateToken(string(nameSlice), maxSupply, supply, common.NameToIndex(string(issuerSlice)))
+	_, err = ws.state.CreateToken(string(nameSlice), maxSupply, common.NameToIndex(string(issuerSlice)))
 	if err != nil{
 		return -2
 	}
@@ -45,6 +49,10 @@ func (ws *WasmService) createToken(proc *exec.Process, name, nameLen, maxSupply,
 
 // C API: issueToken(char *to, int32 toLen, int32 amount, char *name, int32 nameLen, char *perm, int32 permLen)
 func (ws *WasmService) issueToken(proc *exec.Process, to, toLen, amount, name, nameLen int32) int32{
+	if amount <= 0 {
+		return -1
+	}
+
 	to_msg := make([]byte, toLen)
 	err := proc.ReadAt(to_msg, int(to), int(toLen))
 	if err != nil{
@@ -82,6 +90,10 @@ func (ws *WasmService) issueToken(proc *exec.Process, to, toLen, amount, name, n
 
 // C API: transfer(char *from, int32 fromLen, char *to, int32 toLen, int32 amount, char *name, int32 nameLen, char *perm, int32 permLen)
 func (ws *WasmService)transfer(proc *exec.Process, from, fromLen, to, toLen, amount, name, nameLen, perm, permLen int32) int32{
+	if amount <= 0 {
+		return -1
+	}
+
 	from_msg := make([]byte, fromLen)
 	err := proc.ReadAt(from_msg, int(from), int(fromLen))
 	if err != nil{

@@ -16,8 +16,8 @@ func (c *Cell) VerifyCmPacket(p *sc.NetPacket) *sc.CsPacket {
 
 	last := c.GetLastCMBlock()
 	if last != nil {
-		if last.Height >= cm.Height {
-			log.Debug("old cm packet")
+		if last.Height+1 != cm.Height {
+			log.Debug("old cm block last ", last.Height, " block ", cm.Height)
 			return nil
 		}
 	}
@@ -39,10 +39,21 @@ func (c *Cell) VerifyFinalPacket(p *sc.NetPacket) *sc.CsPacket {
 		return nil
 	}
 
+	cm := c.GetLastCMBlock()
+	if cm == nil {
+		log.Error("cm block not exist")
+		return nil
+	}
+
+	if final.EpochNo != cm.Height {
+		log.Error("block epoch error ", cm.Height, " block ", final.EpochNo)
+		return nil
+	}
+
 	last := c.GetLastFinalBlock()
 	if last != nil {
-		if last.Height >= final.Height {
-			log.Debug("old final packet")
+		if last.Height+1 != final.Height {
+			log.Debug("old final block last ", last.Height, " block ", final.Height)
 			return nil
 		}
 	}
@@ -66,25 +77,37 @@ func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
 
 	cm := c.GetLastCMBlock()
 	if cm != nil {
-		if cm.Height > vc.CMEpochNo {
-			log.Error("vc block epoch error")
+		if cm.Height != vc.CMEpochNo {
+			log.Error("vc block epoch error last ", cm.Height, " block ", vc.CMEpochNo)
 			return nil
 		}
 	}
 
 	final := c.GetLastFinalBlock()
 	if final != nil {
-		if final.Height > vc.FinalBlockHeight {
-			log.Error("vc block final block height error")
+		if final.Height != vc.FinalBlockHeight {
+			log.Error("vc block height error last ", final.Height, " block ", vc.FinalBlockHeight)
 			return nil
 		}
 	}
 
 	last := c.GetLastViewchangeBlock()
-	if last != nil {
-		if last.Round >= vc.Round {
-			log.Error("vc block round error")
+	if last == nil {
+		if vc.Round != 1 {
+			log.Error("vc block round error ", vc.Round, "should be 1")
 			return nil
+		}
+	} else {
+		if final != nil && final.Height > vc.FinalBlockHeight {
+			if vc.Round != 1 {
+				log.Error("vc block round error ", vc.Round, "should be 1")
+				return nil
+			}
+		} else {
+			if last.Round+1 != vc.Round {
+				log.Error("vc block round error last ", last.Round, " block ", vc.Round)
+				return nil
+			}
 		}
 	}
 
