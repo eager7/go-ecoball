@@ -152,7 +152,7 @@ func TestInterface(t *testing.T) {
 		}},
 	}}
 	block, err := shard.NewCmBlock(header, Shards)
-	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, block))
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, block))
 	blockGet, err := l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, block.Hash())
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(block.JsonString() == blockGet.JsonString())
@@ -184,7 +184,7 @@ func TestInterface(t *testing.T) {
 		},
 	}
 	blockMinor, err := shard.NewMinorBlock(headerMinor, nil, []*types.Transaction{example.TestTransfer()}, 0, 0)
-	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockMinor))
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, blockMinor))
 	blockLastMinor, err := l.GetLastShardBlockById(config.ChainHash, 1)
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(blockMinor.JsonString() == blockLastMinor.JsonString())

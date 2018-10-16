@@ -608,7 +608,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 //ShardBlock
 //func (c *ChainTx) NewShardBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {}
 
-func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
+func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (err error) {
 	if block == nil {
 		return errors.New(log, "the block is nil")
 	}
