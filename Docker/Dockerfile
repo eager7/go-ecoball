@@ -4,7 +4,7 @@ MAINTAINER Docker ecoball <service@ecoball.org>
 
 #安装git gcc openssl
 RUN apt-get update
-RUN apt-get install -y git gcc make wget golang-go
+RUN apt-get install -y git gcc make wget golang-go python3 psmisc
 
 #设置环境变量
 ENV GOPATH /root/go
@@ -18,4 +18,4 @@ EXPOSE 80
 
 STOPSIGNAL SIGTERM
 
-CMD ["./build/ecoball", "run"]
+CMD ["/root/go/src/github.com/ecoball/go-ecoball/build/ecoball", "run"]
