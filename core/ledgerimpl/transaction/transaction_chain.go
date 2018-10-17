@@ -800,7 +800,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (shar
 	return block, nil
 }
 
-func (c *ChainTx) NewCmBlock(timeStamp int64) (shard.BlockInterface, error) {
+func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (shard.BlockInterface, error) {
 	header := shard.CMBlockHeader{
 		ChainID:      c.LastHeader.CmHeader.ChainID,
 		Version:      c.LastHeader.CmHeader.Version,
@@ -817,10 +817,53 @@ func (c *ChainTx) NewCmBlock(timeStamp int64) (shard.BlockInterface, error) {
 		ShardsHash:   common.Hash{},
 		COSign:       nil,
 	}
-	log.Debug(header)
- 	return nil, nil
+	block, err := shard.NewCmBlock(header, shards)
+	if err != nil {
+		return nil, err
+	}
+ 	return block, nil
 }
 
-func (c *ChainTx) NewFinalBlock(timeStamp int64) (shard.BlockInterface, error) {
-	return nil, nil
+func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlockHeader) (shard.BlockInterface, error) {
+	var hashesTxs []common.Hash
+	var hashesState []common.Hash
+	var hashesMinor []common.Hash
+	for _, m := range minorBlocks {
+		hashesTxs = append(hashesTxs, m.TrxHashRoot)
+		hashesState = append(hashesState, m.StateDeltaHash)
+		hashesMinor = append(hashesMinor, m.Hash())
+	}
+	TrxRootHash, err := trie.GetMerkleRoot(hashesTxs)
+	if err != nil {
+		return nil, err
+	}
+	StateDeltaRootHash, err := trie.GetMerkleRoot(hashesState)
+	if err != nil {
+		return nil, err
+	}
+	MinorBlocksHash, err := trie.GetMerkleRoot(hashesMinor)
+	if err != nil {
+		return nil, err
+	}
+	header := shard.FinalBlockHeader{
+		ChainID:            c.LastHeader.FinalHeader.ChainID,
+		Version:            c.LastHeader.FinalHeader.Version,
+		Height:             c.LastHeader.FinalHeader.Height+1,
+		Timestamp:          timeStamp,
+		TrxCount:           0,
+		PrevHash:           c.LastHeader.FinalHeader.Hash(),
+		ProposalPubKey:     nil,
+		EpochNo:            0,
+		CMBlockHash:        c.LastHeader.CmHeader.Hash(),
+		TrxRootHash:        TrxRootHash,
+		StateDeltaRootHash: StateDeltaRootHash,
+		MinorBlocksHash:    MinorBlocksHash,
+		StateHashRoot:      c.StateDB.FinalDB.GetHashRoot(),
+		COSign:             nil,
+	}
+	block, err := shard.NewFinalBlock(header, minorBlocks)
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
 }
