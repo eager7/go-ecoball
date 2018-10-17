@@ -198,6 +198,7 @@ func TestShard(t *testing.T) {
 	l, err := ledgerimpl.NewLedger("/tmp/shard_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
 	errors.CheckErrorPanic(err)
 	elog.Log.Debug(common.JsonString(l, false))
+
 	Shards := []shard.Shard{shard.Shard{
 		Member: []shard.NodeInfo{
 			{
@@ -218,4 +219,9 @@ func TestShard(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	elog.Log.Info(blockNew.JsonString())
 	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
+
+	block, err = l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, block))
+
 }
