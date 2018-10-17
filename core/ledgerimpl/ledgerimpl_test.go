@@ -32,6 +32,8 @@ import (
 	"testing"
 	"time"
 	"github.com/ecoball/go-ecoball/core/shard"
+	"os"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 )
 
 var root = common.NameToIndex("root")
@@ -188,4 +190,32 @@ func TestInterface(t *testing.T) {
 	blockLastMinor, err := l.GetLastShardBlockById(config.ChainHash, 1)
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(blockMinor.JsonString() == blockLastMinor.JsonString())
+	event.EventStop()
+}
+
+func TestShard(t *testing.T) {
+	os.RemoveAll("/tmp/shard_test")
+	l, err := ledgerimpl.NewLedger("/tmp/shard_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	errors.CheckErrorPanic(err)
+	elog.Log.Debug(common.JsonString(l, false))
+	Shards := []shard.Shard{shard.Shard{
+		Member: []shard.NodeInfo{
+			{
+				PublicKey: []byte("12340987"),
+				Address:   "ew62",
+				Port:      "34523532",
+			},
+		},
+		MemberAddr: []shard.NodeAddr{{
+			Address: "1234",
+			Port:    "5678",
+		}},
+	}}
+	block, err := l.NewCmBlock(config.ChainHash, time.Now().UnixNano(), Shards)
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, block))
+	blockNew, err := l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, block.Hash())
+	errors.CheckErrorPanic(err)
+	elog.Log.Info(blockNew.JsonString())
+	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
 }

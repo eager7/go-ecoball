@@ -90,7 +90,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		}
 	case *message.RegChain:
 		log.Info("add new chain:", msg.ChainID.HexString())
-		if err := l.ledger.NewTxChain(msg.ChainID, msg.Address); err != nil {
+		if err := l.ledger.NewTxChain(msg.ChainID, msg.Address, false); err != nil {
 			log.Error(err)
 		}
 	case message.ProducerBlock:
