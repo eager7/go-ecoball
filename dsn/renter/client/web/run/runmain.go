@@ -82,27 +82,15 @@ func httpPosteraCoding(rscReq rtypes.RscReq) {
 
 //test
 func httpPostForm() {
-resp, err := http.PostForm("http://localhost:8086/dsn/eracode",
-url.Values{"key": {"Value"}, "id": {"123"}})
-if err != nil {
-// handle error
-}
-defer resp.Body.Close()
-body, err := ioutil.ReadAll(resp.Body)
-if err != nil {
-// handle error
-}
-fmt.Println(string(body))
-}
-func httpGet(name string) {
-resp, err := http.Get("http://localhost:8086/")
-if err != nil {
-// handle error
-}
-defer resp.Body.Close()
-body, err := ioutil.ReadAll(resp.Body)
-if err != nil {
-// handle error
-}
-fmt.Println(string(body))
+	resp, err := http.PostForm("http://localhost:8086/dsn/eracode",
+	url.Values{"key": {"Value"}, "id": {"123"}})
+	if err != nil {
+	// handle error
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+	// handle error
+	}
+	fmt.Println(string(body))
 }
