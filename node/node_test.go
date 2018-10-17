@@ -28,7 +28,7 @@ func TestRunMain(t *testing.T) {
 	_, ctx := errgroup.WithContext(context.Background())
 	net.InitNetWork(ctx)
 	os.RemoveAll("/tmp/node_test")
-	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
+	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), false)
 	errors.CheckErrorPanic(err)
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
 	ledger.L = L
@@ -68,7 +68,7 @@ func TestRunNode(t *testing.T) {
 	_, ctx := errgroup.WithContext(context.Background())
 	net.InitNetWork(ctx)
 	os.RemoveAll("/tmp/node_test")
-	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
+	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), false)
 	errors.CheckErrorPanic(err)
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
 	ledger.L = L
