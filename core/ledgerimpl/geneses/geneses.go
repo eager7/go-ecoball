@@ -99,3 +99,7 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 	*/
 	return nil
 }
+
+func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) error {
+	return nil
+}
