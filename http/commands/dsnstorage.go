@@ -29,11 +29,10 @@ func DsnAddFile(params []interface{})  *common.Response {
 }
 
 func DsnCatFile(params []interface{})  *common.Response {
-
 	if len(params) < 1 {
 		log.Error("invalid arguments")
 	}
-	readerResult, err := dsn.CatFile(params[3].(string))
+	readerResult, err := dsn.CatFile(params[0].(string))
 	if err != nil {
 		return common.NewResponse(common.INVALID_PARAMS, "DsnGetFile faild")
 	}

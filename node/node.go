@@ -43,6 +43,7 @@ import (
 	"github.com/ecoball/go-ecoball/dsn/ipfs"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
+	"github.com/ecoball/go-ecoball/dsn/api"
 )
 
 var (
@@ -244,7 +245,8 @@ func runNode(c *cli.Context) error {
 		return nil
 	})
 
-	go rpc.StartHttpServer()
+	//go rpc.StartHttpServer()
+	go api.DsnHttpServ()
 
 	//capture single
 	go wait(shutdown)
