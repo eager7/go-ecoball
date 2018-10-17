@@ -19,6 +19,9 @@
 
 SERVICE=`ps -ef | grep /usr/bin/dockerd | wc -l`
 IMAGE="jatel/internal:ecoball_v1.0"
+NUM=21
+PORT=20677
+TAIL=0
 
 #install docker
 if [ ! -e /usr/bin/docker ]; then
@@ -45,25 +48,53 @@ if [ 1 -eq $IMAGENUM ]; then
     fi
 fi
 
-#run ecoball docker images
-NUM=21
-PORT=20677
-for((i=1;i<=$NUM;i++))
-do   
-    PORT=`expr $PORT + 1`
-    if [ 20679 -eq $PORT ]; then
+case $1 in
+    "start")
+    #run ecoball docker images
+    for((i=1;i<=$NUM;i++))
+    do   
         PORT=`expr $PORT + 1`
-    fi
-    if ! sudo docker run -d -p $PORT:20678 $IMAGE
+        TAIL=`expr $TAIL + 1`
+        if [ 20679 -eq $PORT ]; then
+            PORT=`expr $PORT + 1`
+        fi
+
+        if ! sudo docker run -d --name=ecoball_${TAIL} -p $PORT:20678 $IMAGE
+        then
+            echo  -e "\033[;31m docker run failed!!! \033[0m"
+         exit 1
+        fi
+    done
+
+    #run ecowallet docker images
+    if ! sudo docker run -d --name=ecowallet -p 20679:20679 jatel/internal:ecoball_v1.0 /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet
     then
-        echo  -e "\033[;31m docker run failed!!! \033[0m"
+        echo  -e "\033[;31m docker run start ecowallet failed!!! \033[0m"
         exit 1
     fi
-done
 
-#run ecowallet docker images
-if ! sudo docker run -d -p 20679:20679 jatel/internal:ecoball_v1.0 /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet
-then
-    echo  -e "\033[;31m docker run start ecowallet failed!!! \033[0m"
-    exit 1
-fi
+    echo  -e "\033[47;34m start all ecoball and wallet success!!! \033[0m"
+    ;;
+    
+    "stop")
+    #stop container
+    for i in $(sudo docker ps | sed '1d' | awk '$2=="'"$IMAGE"'"{print $1}')
+    do
+    sudo docker stop $i
+    done
+    echo  -e "\033[47;34m stop all container success!!! \033[0m"
+
+    #remove container
+    for i in $(sudo docker ps -a | sed '1d' | awk '$2=="'"$IMAGE"'"{print $1}')
+    do
+    sudo docker rm $i
+    done
+
+    echo  -e "\033[47;34m remove all container success!!! \033[0m"
+    ;;
+
+    *)
+    echo "please input docker_service start|stop"
+    ;;
+    
+esac

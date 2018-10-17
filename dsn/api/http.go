@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+	"encoding/json"
 	"net/http"
 	"github.com/gin-gonic/gin"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
@@ -39,7 +41,19 @@ func totalHandler(c *gin.Context)  {
 }
 
 func eraCoding(c *gin.Context)  {
-	req := rtypes.RscReq{}
+	
+	var req rtypes.RscReq
+	buf := make([]byte,c.Request.ContentLength)
+    _ , err := c.Request.Body.Read(buf)
+	if err != nil {
+ 
+	}
+	err = json.Unmarshal(buf,&req)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"result": err.Error()})
+	} else {
+			fmt.Println(req)
+		}
 	cid, err := rbd.EraCoding(&req)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"result": err.Error()})
