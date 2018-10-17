@@ -17,8 +17,9 @@ func DsnHttpServ()  {
 	router := gin.Default()
 	router.GET("/dsn/total", totalHandler)
 	router.POST("/dsn/eracode", eraCoding)
-	router.POST("/dsn/eradecode", eraDecoding)
-	router.Run(":18086")
+	router.GET("/dsn/eradecode/:cid", eraDecoding)
+	//TODO listen port need to be moved to config
+	http.ListenAndServe(":9000", router)
 }
 
 func totalHandler(c *gin.Context)  {
@@ -38,13 +39,26 @@ func totalHandler(c *gin.Context)  {
 }
 
 func eraCoding(c *gin.Context)  {
-	//TODO
 	req := rtypes.RscReq{}
-	rbd.EraCoding(&req)
+	cid, err := rbd.EraCoding(&req)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"result": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"result": "success", "cid": cid})
+	}
+
 }
 
 func eraDecoding(c *gin.Context)  {
-	//TODO
-	cid := "QmWsv6xMPXAHbA35uqx9hoVTXmAcap1WeysfAm9KBkaw9b"
-	rbd.EraDecoding(cid)
+	cid, exsited := c.Params.Get("cid")
+	if !exsited {
+		c.JSON(http.StatusOK, gin.H{"result": "param err"})
+	} else {
+		r, err := rbd.EraDecoding(cid)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{"result": err.Error()})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"result": "success", "data": r})
+		}
+	}
 }
