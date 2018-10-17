@@ -17,7 +17,6 @@
 # along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 
-SERVICE=`ps -ef | grep /usr/bin/dockerd | wc -l`
 IMAGE="jatel/internal:ecoball_v1.0"
 NUM=21
 PORT=20677
@@ -30,6 +29,7 @@ if [ ! -e /usr/bin/docker ]; then
 fi
 
 #start docker service
+SERVICE=`ps -ef | grep /usr/bin/dockerd | wc -l`
 if [ 2 -ne $SERVICE ]; then
     if ! sudo service docker start
     then
@@ -39,7 +39,7 @@ if [ 2 -ne $SERVICE ]; then
 fi
 
 #pull docker images
-IMAGENUM=`sudo docker images jatel/internal:ecoball_v1.0 | wc -l`
+IMAGENUM=`sudo docker images $IMAGE | wc -l`
 if [ 1 -eq $IMAGENUM ]; then
     if ! sudo docker pull $IMAGE
     then
@@ -67,7 +67,7 @@ case $1 in
     done
 
     #run ecowallet docker images
-    if ! sudo docker run -d --name=ecowallet -p 20679:20679 jatel/internal:ecoball_v1.0 /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet
+    if ! sudo docker run -d --name=ecowallet -p 20679:20679 $IMAGE /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet
     then
         echo  -e "\033[;31m docker run start ecowallet failed!!! \033[0m"
         exit 1
