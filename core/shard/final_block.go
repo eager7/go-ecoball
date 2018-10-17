@@ -79,6 +79,7 @@ func (h *FinalBlockHeader) unSignatureData() ([]byte, error) {
 		return nil, err
 	}
 	pbHeader.Hash = nil
+	pbHeader.COSign = nil
 	data, err := pbHeader.Marshal()
 	if err != nil {
 		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
