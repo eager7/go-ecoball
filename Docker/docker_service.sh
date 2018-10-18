@@ -18,8 +18,8 @@
 ############################################################################
 
 IMAGE="jatel/internal:ecoball_v1.0"
-NUM=21
-PORT=20677
+NUM=20
+PORT=20680
 TAIL=0
 
 #install docker
@@ -55,18 +55,22 @@ case $1 in
     do   
         PORT=`expr $PORT + 1`
         TAIL=`expr $TAIL + 1`
-        if [ 20679 -eq $PORT ]; then
-            PORT=`expr $PORT + 1`
-        fi
 
         if ! sudo docker run -d --name=ecoball_${TAIL} -p $PORT:20678 $IMAGE
         then
-            echo  -e "\033[;31m docker run failed!!! \033[0m"
-         exit 1
+            echo  -e "\033[;31m docker run start ecoball_${TAIL} failed!!! \033[0m"
+            exit 1
         fi
     done
 
-    #run ecowallet docker images
+    #start main ecoball container 
+    if ! sudo docker run -d --name=ecoball -p 20678:20678 $IMAGE 
+    then
+        echo  -e "\033[;31m docker run start main ecoball failed!!! \033[0m"
+        exit 1
+    fi
+
+    #start ecowallet container
     if ! sudo docker run -d --name=ecowallet -p 20679:20679 $IMAGE /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet
     then
         echo  -e "\033[;31m docker run start ecowallet failed!!! \033[0m"
@@ -75,7 +79,14 @@ case $1 in
 
     echo  -e "\033[47;34m start all ecoball and wallet success!!! \033[0m"
     ;;
-    
+
+    #start eballscan container
+    if ! sudo docker run -d --name=eballscan --link=ecoball:ecoball_alias -p 20680:20680 $IMAGE /root/go/src/github.com/ecoball/eballscan/eballscan_service.sh
+    then
+        echo  -e "\033[;31m docker run start eballscan failed!!! \033[0m"
+        exit 1
+    fi
+
     "stop")
     #stop container
     for i in $(sudo docker ps | sed '1d' | awk '$2=="'"$IMAGE"'"{print $1}')
