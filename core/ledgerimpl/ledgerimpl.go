@@ -377,7 +377,7 @@ func (l *LedgerImpl) GetLastShardBlockById(chainID common.Hash, shardId uint32) 
 	return chain.GetLastShardBlockById(shardId)
 }
 
-func (l *LedgerImpl) NewCmBlock(chainID common.Hash, timeStamp int64, shards []shard.Shard) (shard.BlockInterface, error) {
+func (l *LedgerImpl) NewCmBlock(chainID common.Hash, timeStamp int64, shards []shard.Shard) (*shard.CMBlock, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
@@ -385,7 +385,7 @@ func (l *LedgerImpl) NewCmBlock(chainID common.Hash, timeStamp int64, shards []s
 	return chain.NewCmBlock(timeStamp, shards)
 }
 
-func (l *LedgerImpl) NewMinorBlock(chainID common.Hash, txs []*types.Transaction, timeStamp int64) (shard.BlockInterface, error) {
+func (l *LedgerImpl) NewMinorBlock(chainID common.Hash, txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
@@ -394,7 +394,7 @@ func (l *LedgerImpl) NewMinorBlock(chainID common.Hash, txs []*types.Transaction
 }
 
 
-func (l *LedgerImpl) NewFinalBlock(chainID common.Hash, timeStamp int64, minorBlocks []*shard.MinorBlockHeader) (shard.BlockInterface, error) {
+func (l *LedgerImpl) NewFinalBlock(chainID common.Hash, timeStamp int64, minorBlocks []*shard.MinorBlockHeader) (*shard.FinalBlock, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
@@ -402,7 +402,7 @@ func (l *LedgerImpl) NewFinalBlock(chainID common.Hash, timeStamp int64, minorBl
 	return chain.NewFinalBlock(timeStamp, minorBlocks)
 }
 
-func (l *LedgerImpl) CreateFinalBlock(chainID common.Hash, timeStamp int64) (shard.BlockInterface, error) {
+func (l *LedgerImpl) CreateFinalBlock(chainID common.Hash, timeStamp int64) (*shard.FinalBlock, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))

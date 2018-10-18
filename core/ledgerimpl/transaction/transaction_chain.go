@@ -722,8 +722,8 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		ShardId:           0,
 		CMEpochNo:         0,
 		Receipt: types.BlockReceipt{
-			BlockCpu: types.BlockCpuLimit,
-			BlockNet: types.BlockNetLimit,
+			BlockCpu: config.BlockCpuLimit,
+			BlockNet: config.BlockNetLimit,
 		},
 		COSign: &types.COSign{},
 	}
@@ -938,7 +938,7 @@ func (c *ChainTx) GetLastShardBlockById(shardId uint32) (shard.BlockInterface, e
 	return c.GetShardBlockByHash(shard.HeMinorBlock, hash)
 }
 
-func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (shard.BlockInterface, error) {
+func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, error) {
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, err
@@ -986,7 +986,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (shar
 	return block, nil
 }
 
-func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (shard.BlockInterface, error) {
+func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBlock, error) {
 	header := shard.CMBlockHeader{
 		ChainID:      c.LastHeader.CmHeader.ChainID,
 		Version:      c.LastHeader.CmHeader.Version,
@@ -1010,7 +1010,7 @@ func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (shard.Block
 	return block, nil
 }
 
-func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlockHeaders []*shard.MinorBlockHeader) (shard.BlockInterface, error) {
+func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlockHeaders []*shard.MinorBlockHeader) (*shard.FinalBlock, error) {
 	var hashesTxs []common.Hash
 	var hashesState []common.Hash
 	var hashesMinor []common.Hash
@@ -1054,7 +1054,7 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlockHeaders []*shard.Mino
 	return block, nil
 }
 
-func (c *ChainTx) CreateFinalBlock(timeStamp int64) (shard.BlockInterface, error) {
+func (c *ChainTx) CreateFinalBlock(timeStamp int64) (*shard.FinalBlock, error) {
 	lastFinalBlock, err := c.GetLastShardBlock(shard.HeFinalBlock)
 	if err != nil {
 		return nil, err
