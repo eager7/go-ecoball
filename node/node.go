@@ -40,10 +40,8 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/dsn"
-	"github.com/ecoball/go-ecoball/dsn/ipfs"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
-	"github.com/ecoball/go-ecoball/dsn/api"
 )
 
 var (
@@ -174,17 +172,17 @@ func runNode(c *cli.Context) error {
 	}
 
 	//storage
-	ecoballGroup.Go(func() error {
+	/*ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
 			//initialize
-			if err := ipfs.Initialize(c); nil != err {
+			if err := ipfs.Initialize(); nil != err {
 				log.Error("storage initialize failed: ", err)
 				errChan <- err
 			}
 
 			//start starage
-			if err := ipfs.DaemonRun(c); nil != err {
+			if err := ipfs.DaemonRun(); nil != err {
 				log.Error("storage daemon run failed: ", err)
 				errChan <- err
 			}
@@ -199,7 +197,7 @@ func runNode(c *cli.Context) error {
 		}
 
 		return nil
-	})
+	})*/
 
 	net.StartNetWork(ledger.L)
 
@@ -244,10 +242,6 @@ func runNode(c *cli.Context) error {
 
 		return nil
 	})
-
-	//go rpc.StartHttpServer()
-	go api.DsnHttpServ()
-
 	//capture single
 	go wait(shutdown)
 

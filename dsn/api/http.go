@@ -41,7 +41,6 @@ func totalHandler(c *gin.Context)  {
 }
 
 func eraCoding(c *gin.Context)  {
-	
 	var req rtypes.RscReq
 	buf := make([]byte,c.Request.ContentLength)
     _ , err := c.Request.Body.Read(buf)
@@ -60,7 +59,6 @@ func eraCoding(c *gin.Context)  {
 	} else {
 		c.JSON(http.StatusOK, gin.H{"result": "success", "cid": cid})
 	}
-
 }
 
 func eraDecoding(c *gin.Context)  {
