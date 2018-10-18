@@ -16,7 +16,7 @@
 
 // Implement the network notification APIs
 
-package p2p
+package network
 
 import (
 	"context"
@@ -40,7 +40,7 @@ func (nn *netNotifiee) Connected(n inet.Network, v inet.Conn) {
 		nn.impl().receiver.PeerConnected(v.RemotePeer())
 
 		if nn.impl().host.Network().Connectedness(p) == inet.Connected {
-			nn.impl().update(p)
+			nn.impl().routingTable.update(p)
 		}
 	} else {
 		// invalid connection, close it...
@@ -56,20 +56,20 @@ func (nn *netNotifiee) Disconnected(n inet.Network, v inet.Conn) {
 		// We're still connected.
 		return
 	}
-	nn.impl().remove(p)
+	nn.impl().routingTable.remove(p)
 }
 
 func (nn *netNotifiee) HandlePeerFound(p pstore.PeerInfo) {
 	if config.DisableLocalDisLog {
 		log.SetLogLevel(elog.InfoLog)
 	}
-	log.Debug("net:trying peer info: ", p)
+	log.Debug("trying peer info: ", p)
 	ctx, cancel := context.WithTimeout(nn.ctx, discoveryConnTimeout)
 	defer cancel()
 	if err := nn.host.Connect(ctx, p); err != nil {
-		log.Debug("net:Failed to connect to peer found by discovery: ", err)
+		log.Debug("Failed to connect to peer found by discovery: ", err)
 	} else {
-		log.Debug("net:connected to peer ", p)
+		log.Debug("connected to peer ", p)
 	}
 	log.SetLogLevel(elog.DebugLog)
 }

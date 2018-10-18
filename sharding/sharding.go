@@ -29,10 +29,17 @@ var (
 	log = elog.NewLogger("sharding", elog.DebugLog)
 )
 
+// example for sharding subscribe topology
+type SubShardingTopo struct {
+	ShardId       uint16
+	ShardingInfo  [][]cell.Worker  //shardID,shardInfo
+}
+
 type ShardingInstance interface {
 	Start()
 	MsgDispatch(msg interface{})
 	GetCell() *cell.Cell
+	SubscribeShardingTopo() <-chan interface{}
 }
 
 type Sharding struct {
@@ -50,6 +57,11 @@ func (s *Sharding) GetCell() *cell.Cell {
 
 func (s *Sharding) MsgDispatch(msg interface{}) {
 	s.instance.MsgDispatch(msg)
+}
+
+// return a type *SubShardingTopo chan
+func (s *Sharding) SubscribeShardingTopo() <-chan interface{} {
+	return nil
 }
 
 func (s *Sharding) Start() {

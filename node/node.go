@@ -137,6 +137,9 @@ func runNode(c *cli.Context) error {
 		log.Fatal(err)
 	}
 
+	//network depends on sharding
+	net.StartNetWork()
+
 	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)
 	if err != nil {
@@ -198,8 +201,6 @@ func runNode(c *cli.Context) error {
 
 		return nil
 	})*/
-
-	net.StartNetWork(ledger.L)
 
 	dsn.StartDsn(ctx, ledger.L)
 
