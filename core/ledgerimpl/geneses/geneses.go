@@ -100,3 +100,26 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 	*/
 	return nil
 }
+
+func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) error {
+	if s == nil {
+		return errors.New("state is nil")
+	}
+	root := common.NameToIndex("root")
+	fmt.Println("preset insert a root account:", addr.HexString())
+	if root, err := s.AddAccount(root, addr, timeStamp); err != nil {
+		return err
+	} else {
+		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
+	}
+
+	s.CreateToken(state.AbaToken, state.AbaTotal, root)
+	s.IssueToken(root, 90000, state.AbaToken)
+
+	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
+	if err := s.SetResourceLimits(root, root, 10000, 10000, types.BlockCpuLimit, types.BlockNetLimit); err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}

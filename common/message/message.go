@@ -18,6 +18,7 @@ package message
 
 import (
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/shard"
 )
 
 type ABABFTStart struct {
@@ -30,4 +31,15 @@ type RegChain struct {
 	ChainID common.Hash
 	Address common.Address
 	TxHash  common.Hash
+}
+
+type BlockMessage struct {
+	ShardID uint32
+	Block   shard.BlockInterface
+}
+
+type ProducerBlock struct {
+	ChainID common.Hash
+	Height  uint64
+	Type    shard.HeaderType
 }

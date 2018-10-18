@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+	"encoding/json"
 	"net/http"
 	"github.com/gin-gonic/gin"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
@@ -17,8 +19,9 @@ func DsnHttpServ()  {
 	router := gin.Default()
 	router.GET("/dsn/total", totalHandler)
 	router.POST("/dsn/eracode", eraCoding)
-	router.POST("/dsn/eradecode", eraDecoding)
-	router.Run(":8086")
+	router.GET("/dsn/eradecode/:cid", eraDecoding)
+	//TODO listen port need to be moved to config
+	http.ListenAndServe(":9000", router)
 }
 
 func totalHandler(c *gin.Context)  {
@@ -38,12 +41,36 @@ func totalHandler(c *gin.Context)  {
 }
 
 func eraCoding(c *gin.Context)  {
-	//TODO
-	req := rtypes.RscReq{}
-	rbd.EraCoding(&req)
+	var req rtypes.RscReq
+	buf := make([]byte,c.Request.ContentLength)
+    _ , err := c.Request.Body.Read(buf)
+	if err != nil {
+ 
+	}
+	err = json.Unmarshal(buf,&req)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"result": err.Error()})
+	} else {
+			fmt.Println(req)
+		}
+	cid, err := rbd.EraCoding(&req)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"result": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"result": "success", "cid": cid})
+	}
 }
 
 func eraDecoding(c *gin.Context)  {
-	//TODO
-	rbd.EraDecoding()
+	cid, exsited := c.Params.Get("cid")
+	if !exsited {
+		c.JSON(http.StatusOK, gin.H{"result": "param err"})
+	} else {
+		r, err := rbd.EraDecoding(cid)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{"result": err.Error()})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"result": "success", "data": r})
+		}
+	}
 }

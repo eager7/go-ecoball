@@ -63,7 +63,7 @@ sudo docker run -t -i ecoball:v1 /bin/bash  （ecoball:v1位镜像文件名称�
 ```
 go-ecoball位于root/go/src/github.com/ecoball/go-ecoball/路径下，这时候就可以在容器里启动go-ecoball服务
 
-## 守护态运行容器
+## 后台运行容器
 ```
 sudo docker run -t -i -d ecoball:v1 /bin/bash
 ```
@@ -71,7 +71,7 @@ sudo docker run -t -i -d ecoball:v1 /bin/bash
 ```
 docker ps
 ```
-操作守护态容器
+操作后台运行容器
 ```
 sudo docker attach 容器id
 ```

@@ -40,9 +40,9 @@ type LedgerImpl struct {
 	//ChainAc *account.ChainAccount
 }
 
-func NewLedger(path string, chainID common.Hash, addr common.Address) (l ledger.Ledger, err error) {
+func NewLedger(path string, chainID common.Hash, addr common.Address, shard bool) (l ledger.Ledger, err error) {
 	ll := &LedgerImpl{path: path, ChainTxs: make(map[common.Hash]*transaction.ChainTx, 1)}
-	if err := ll.NewTxChain(chainID, addr); err != nil {
+	if err := ll.NewTxChain(chainID, addr, shard); err != nil {
 		return nil, err
 	}
 
@@ -55,19 +55,23 @@ func NewLedger(path string, chainID common.Hash, addr common.Address) (l ledger.
 	return ll, nil
 }
 
-func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address) (err error) {
+func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address, shard bool) (err error) {
 	if _, ok := l.ChainTxs[chainID]; ok {
 		return nil
 	}
-	ChainTx, err := transaction.NewTransactionChain(l.path+"/"+chainID.HexString()+"/Transaction", l)
+	ChainTx, err := transaction.NewTransactionChain(l.path+"/"+chainID.HexString()+"/Transaction", l, shard)
 	if err != nil {
 		return err
 	}
-	//if bytes.Equal(userKey.PublicKey, config.Root.PublicKey) {
-	if err := ChainTx.GenesesBlockInit(chainID, addr); err != nil {
-		return err
+	if shard {
+		if err := ChainTx.GenesesShardBlockInit(chainID, addr); err != nil {
+			return err
+		}
+	} else {
+		if err := ChainTx.GenesesBlockInit(chainID, addr); err != nil {
+			return err
+		}
 	}
-	//}
 
 	ChainTx.StateDB.TempDB, err = ChainTx.StateDB.FinalDB.CopyState()
 	ChainTx.StateDB.TempDB.Type = state.TempType
@@ -333,12 +337,12 @@ func (l *LedgerImpl) ResetStateDB(chainID common.Hash, header *types.Header) err
 	return chain.Geneses.TimeStamp
 }*/
 
-func (l *LedgerImpl) SaveShardBlock(chainID common.Hash, block shard.BlockInterface) (err error) {
+func (l *LedgerImpl) SaveShardBlock(chainID common.Hash, shardID uint32, block shard.BlockInterface) (err error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
-	return chain.SaveShardBlock(block)
+	return chain.SaveShardBlock(shardID, block)
 }
 
 func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ shard.HeaderType, hash common.Hash) (shard.BlockInterface, error) {
@@ -371,4 +375,37 @@ func (l *LedgerImpl) GetLastShardBlockById(chainID common.Hash, shardId uint32) 
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
 	return chain.GetLastShardBlockById(shardId)
+}
+
+func (l *LedgerImpl) NewCmBlock(chainID common.Hash, timeStamp int64, shards []shard.Shard) (shard.BlockInterface, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.NewCmBlock(timeStamp, shards)
+}
+
+func (l *LedgerImpl) NewMinorBlock(chainID common.Hash, txs []*types.Transaction, timeStamp int64) (shard.BlockInterface, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.NewMinorBlock(txs, timeStamp)
+}
+
+
+func (l *LedgerImpl) NewFinalBlock(chainID common.Hash, timeStamp int64, minorBlocks []*shard.MinorBlockHeader) (shard.BlockInterface, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.NewFinalBlock(timeStamp, minorBlocks)
+}
+
+func (l *LedgerImpl) CreateFinalBlock(chainID common.Hash, timeStamp int64) (shard.BlockInterface, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.CreateFinalBlock(timeStamp)
 }

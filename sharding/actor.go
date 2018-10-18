@@ -5,7 +5,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/sharding/cell"
 	"reflect"
 )
 
@@ -60,8 +59,8 @@ func (s *ShardingActor) Receive(ctx actor.Context) {
 	}
 }
 
-func (s *ShardingActor) GetCell() (*cell.Cell, error) {
-	return s.instance.GetCell(), nil
+func GetShardingInst() (ShardingInstance) {
+	return nil
 }
 
 func SetActor() {

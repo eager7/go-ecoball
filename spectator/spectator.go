@@ -33,7 +33,7 @@ var (
 
 func Bystander(l ledger.Ledger) error {
 	notify.CoreLedger = l
-	listener, err := net.Listen("tcp", "127.0.0.1:9000")
+	listener, err := net.Listen("tcp", "127.0.0.1:9001")
 	if nil != err {
 		log.Error("explorer server net.Listen error: ", err)
 		return errors.New("explorer server net.Listen error: " + fmt.Sprintf("%v", err))

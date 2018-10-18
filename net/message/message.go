@@ -22,7 +22,6 @@ import (
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
-	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 )
 
 const (
@@ -41,6 +40,8 @@ const (
 	APP_MSG_CONSENSUS_PACKET
 
 	APP_MSG_GOSSIP
+	APP_MSG_P2PRTSYN
+	APP_MSG_P2PRTSYNACK
 
 	APP_MSG_MAX
 )
@@ -49,22 +50,21 @@ const (
 var Messages = map[string]uint32{
 	"block":               APP_MSG_BLKS,
 	"transaction":         APP_MSG_TRN,
+	"routingsync":         APP_MSG_P2PRTSYN,
+	"routingsyncack":      APP_MSG_P2PRTSYNACK,
 }
 
 // MessageToStr maps the numeric message type to its name
 var MessageToStr = map[uint32]string{
 	APP_MSG_BLKS:                "block",
 	APP_MSG_TRN:                 "transaction",
+	APP_MSG_P2PRTSYN:            "routingsync",
+	APP_MSG_P2PRTSYNACK:         "routingsyncack",
 }
 
 var log = elog.NewLogger("message", elog.DebugLog)
 
 type HandlerFunc func(data []byte) (err error)
-
-type SendMsgJob struct {
-	Peers    []*peerstore.PeerInfo
-	Msg      EcoBallNetMsg
-}
 
 type EcoBallNetMsg interface {
 	ChainID() uint32

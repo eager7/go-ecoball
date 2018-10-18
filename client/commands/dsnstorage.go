@@ -29,7 +29,7 @@ var (
 			{
 				Name:   "cat",
 				Usage:  "cat file",
-				Action: dsnGetFile,
+				Action: dsnCatFile,
 	
 			},
 		},
@@ -93,4 +93,8 @@ func dsnGetFile(ctx *cli.Context) error {
 	
 	return err
 
+}
+
+func dsnCatFile (ctx *cli.Context)  {
+	dsncli.CatFun()
 }

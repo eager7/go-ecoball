@@ -24,7 +24,7 @@ import (
 	"github.com/ipfs/go-ipfs/core"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	"github.com/ipfs/go-ipfs/plugin/loader"
-	"github.com/urfave/cli"
+	//"github.com/urfave/cli"
 	ecoballConfig "github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/dsn/cmd"
 )
@@ -63,7 +63,7 @@ func printSwarmAddrs(node *core.IpfsNode) {
 	}
 }
 //initialize
-func Initialize(c *cli.Context) error {
+func Initialize() error {
 	if fsrepo.IsInitialized(ecoballConfig.IpfsDir) {
 		return nil
 	}
@@ -73,7 +73,7 @@ func Initialize(c *cli.Context) error {
 }
 
 //start storage
-func DaemonRun(c *cli.Context) error {
+func DaemonRun() error {
 	cmd.Root.Subcommands["daemon"] = daemonCmd
 	os.Args[1] = "daemon"
 	return cmd.StorageFun()

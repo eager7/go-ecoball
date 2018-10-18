@@ -27,6 +27,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
 	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 type LedActor struct {
@@ -71,29 +72,44 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		}
 		end := time.Now().UnixNano()
 		log.Info("save block["+msg.ChainID.HexString()+"block hash:"+msg.Hash.HexString()+"]:", (end-begin)/1000, "us")
-	case shard.BlockInterface:
-		chain, ok := l.ledger.ChainTxs[msg.GetChainID()]
+	case message.BlockMessage:
+		chain, ok := l.ledger.ChainTxs[msg.Block.GetChainID()]
 		if !ok {
-			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.GetChainID().HexString()))
+			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.Block.GetChainID().HexString()))
 			return
 		}
 		begin := time.Now().UnixNano()
-		if err := chain.SaveShardBlock(msg); err != nil {
-			log.Error("save block["+msg.GetChainID().HexString()+"] error:", err)
+		if err := chain.SaveShardBlock(0, msg.Block); err != nil {
+			log.Error("save block["+msg.Block.GetChainID().HexString()+"] error:", err)
 			break
 		}
 		end := time.Now().UnixNano()
-		log.Info("save block["+msg.GetChainID().HexString()+"]:", (end-begin)/1000, "us")
+		log.Info("save block["+msg.Block.GetChainID().HexString()+"]:", (end-begin)/1000, "us")
 	case *dpos.DposBlock:
 		//TODO
-
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {
 			log.Error("send block to tx pool error:", err)
 		}
 	case *message.RegChain:
 		log.Info("add new chain:", msg.ChainID.HexString())
-		if err := l.ledger.NewTxChain(msg.ChainID, msg.Address); err != nil {
+		if err := l.ledger.NewTxChain(msg.ChainID, msg.Address, false); err != nil {
 			log.Error(err)
+		}
+	case message.ProducerBlock:
+		//block, err := l.ledger.NewTxBlock()
+		switch msg.Type {
+		case shard.HeMinorBlock:
+
+		case shard.HeCmBlock:
+			log.Warn("the minor block nonsupport create by actor")
+		case shard.HeFinalBlock:
+			block, err := l.ledger.CreateFinalBlock(msg.ChainID, time.Now().UnixNano())
+			if err != nil {
+				ctx.Sender().Tell(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
+			}
+			ctx.Sender().Tell(block)
+		default:
+			log.Error("unknown type:", msg.Type.String())
 		}
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
