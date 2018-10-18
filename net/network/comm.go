@@ -15,23 +15,19 @@
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
 // Implement the network communication APIs
-package p2p
+package network
 
 import (
-	"fmt"
-	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/net/message/pb"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
+	ic "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
 )
 
-const defGossipPeerCount = 5
-
 func (net *NetImpl)ConnectToPeer(addrInfo string, pubKey []byte, isPermanent bool) error {
-	pi, err := net.constructPeerInfo(addrInfo, pubKey)
+	pi, err := constructPeerInfo(addrInfo, pubKey)
 	if err != nil {
 		return err
 	}
@@ -48,7 +44,7 @@ func (net *NetImpl)ConnectToPeer(addrInfo string, pubKey []byte, isPermanent boo
 }
 
 func (net *NetImpl)ClosePeer(pubKey []byte) error {
-	id, err := peer.IDFromBytes(pubKey)
+	id, err := idFromProtoserPublickKey(pubKey)
 	if err != nil {
 		return err
 	}
@@ -72,7 +68,7 @@ func (net *NetImpl)ClosePeer(pubKey []byte) error {
 }
 
 func (net *NetImpl)SendMsgToPeer(addrInfo string, pubKey []byte, msg message.EcoBallNetMsg) error {
-	peer, err := net.constructPeerInfo(addrInfo, pubKey)
+	peer, err := constructPeerInfo(addrInfo, pubKey)
 	if err != nil {
 		return err
 	}
@@ -81,92 +77,22 @@ func (net *NetImpl)SendMsgToPeer(addrInfo string, pubKey []byte, msg message.Eco
 		return fmt.Errorf("connection have not created for %s", peer.ID.Pretty())
 	}
 */
-	sendJob := &message.SendMsgJob{
+	sendJob := &SendMsgJob{
 		[]*peerstore.PeerInfo{&peer},
 		msg,
 	}
-	net.SendMsgJob(sendJob)
-
-	return nil
-}
-
-func (net *NetImpl)GossipMsg(msg message.EcoBallNetMsg) error {
-	// wrap the message by the gossip msg type
-	gossipMsg, err := net.warpMsgByGossip(msg)
-	if err != nil {
-		return err
-	}
-	return net.sendMsgToRandomPeers(defGossipPeerCount, gossipMsg)
-}
-
-func (net *NetImpl)ForwardMsg(msg message.EcoBallNetMsg, filtPeers[]peer.ID) error {
-	peers := net.selectRandomPeers(defGossipPeerCount, filtPeers)
-	if len(peers) == 0 {
-		return errors.New(log,"failed to select random peers")
-	}
-	peerInfo := []*peerstore.PeerInfo{}
-	for _, id := range peers {
-		peerInfo = append(peerInfo, &peerstore.PeerInfo{ID:id})
-	}
-	sendJob := &message.SendMsgJob{
-		peerInfo,
-		msg,
-	}
-	net.SendMsgJob(sendJob)
-
-	return nil
-}
-
-func (net *NetImpl) warpMsgByGossip(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
-	pbMsg := msg.ToProtoV1()
-	wrapData, err := pbMsg.Marshal()
-	if err != nil {
-		return nil, err
-	}
-	// wrap the message by the gossip msg type
-	gossipMsg := message.New(message.APP_MSG_GOSSIP, wrapData)
-	return gossipMsg, nil
-}
-
-func (net *NetImpl)unwarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
-	if msg.Type() != message.APP_MSG_GOSSIP {
-		return nil, fmt.Errorf("unwrap an invalid gossip message")
-	}
-	oriPbMsg := pb.Message{}
-	err := oriPbMsg.Unmarshal(msg.Data())
-	if err != nil {
-		return nil, fmt.Errorf("error for unmarshal a gossip message data")
-	} else {
-		msg, _ := message.NewMessageFromProto(oriPbMsg)
-		return msg, nil
-	}
-}
-
-func (net *NetImpl)sendMsgToRandomPeers(peerCounts int, msg message.EcoBallNetMsg) error {
-	peers := net.selectRandomPeers(peerCounts, []peer.ID{})
-	if len(peers) == 0 {
-		return errors.New(log,"failed to select random peers")
-	}
-	peerInfo := []*peerstore.PeerInfo{}
-	for _, id := range peers {
-		peerInfo = append(peerInfo, &peerstore.PeerInfo{ID:id})
-	}
-	sendJob := &message.SendMsgJob{
-		peerInfo,
-		msg,
-	}
-	net.SendMsgJob(sendJob)
+	net.AddMsgJob(sendJob)
 
 	return nil
 }
 
 func (net *NetImpl)SendMsgToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
 	peer := &peerstore.PeerInfo{ID:id}
-	sendJob := &message.SendMsgJob{
+	sendJob := &SendMsgJob{
 		[]*peerstore.PeerInfo{peer},
 		msg,
 	}
-	net.SendMsgJob(sendJob)
+	net.AddMsgJob(sendJob)
 
 	return nil
 }
@@ -177,11 +103,11 @@ func (net *NetImpl)SendMsgToPeersWithId(pid []peer.ID, msg message.EcoBallNetMsg
 		peers = append(peers, &peerstore.PeerInfo{ID:id})
 	}
 
-	sendJob := &message.SendMsgJob{
+	sendJob := &SendMsgJob{
 		peers,
 		msg,
 	}
-	net.SendMsgJob(sendJob)
+	net.AddMsgJob(sendJob)
 
 	return nil
 }
@@ -191,24 +117,29 @@ func (net *NetImpl)BroadcastMessage(msg message.EcoBallNetMsg) error {
 	conns := net.host.Network().Conns()
 	for _, c := range conns {
 		pid := c.RemotePeer()
-		peers = append(peers, &peerstore.PeerInfo{ID:pid})
+		if !net.receiver.IsNotMyShard(pid) {
+			peers = append(peers, &peerstore.PeerInfo{ID:pid})
+		}
 	}
 
-	sendJob := &message.SendMsgJob{
-		peers,
-		msg,
+	if len(peers) > 0 {
+		sendJob := &SendMsgJob{
+			peers,
+			msg,
+		}
+		net.AddMsgJob(sendJob)
 	}
-	net.SendMsgJob(sendJob)
 
 	return nil
 }
 
-func (net *NetImpl)constructPeerInfo(addrInfo string, pubKey []byte) (peerstore.PeerInfo, error) {
+func constructPeerInfo(addrInfo string, pubKey []byte) (peerstore.PeerInfo, error) {
 	pma, err := ma.NewMultiaddr(addrInfo)
 	if err != nil {
 		return peerstore.PeerInfo{}, err
 	}
-	id, err := peer.IDFromBytes(pubKey)
+
+	id, err := idFromProtoserPublickKey(pubKey)
 	if err != nil {
 		return peerstore.PeerInfo{}, err
 	}
@@ -216,4 +147,18 @@ func (net *NetImpl)constructPeerInfo(addrInfo string, pubKey []byte) (peerstore.
 	peer := peerstore.PeerInfo{id, []ma.Multiaddr{pma}}
 
 	return peer, nil
+}
+
+func idFromProtoserPublickKey(pubKey []byte) (peer.ID, error) {
+	pk, err := ic.UnmarshalPublicKey(pubKey)
+	if err != nil {
+		return "", err
+	}
+
+	id, err := peer.IDFromPublicKey(pk)
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
 }

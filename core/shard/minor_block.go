@@ -10,6 +10,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var log = elog.NewLogger("sharding", elog.NoticeLog)
@@ -231,26 +232,26 @@ func (b *MinorBlock) SetReceipt(prevHeader *types.Header, cpu, net float64) erro
 		return nil
 	}
 	var cpuLimit, netLimit float64
-	if cpu < (types.BlockCpuLimit / 10) {
+	if cpu < (config.BlockCpuLimit / 10) {
 		cpuLimit = prevHeader.Receipt.BlockCpu * 1.01
-		if cpuLimit > types.VirtualBlockCpuLimit {
-			cpuLimit = types.VirtualBlockCpuLimit
+		if cpuLimit > config.VirtualBlockCpuLimit {
+			cpuLimit = config.VirtualBlockCpuLimit
 		}
 	} else {
 		cpuLimit = prevHeader.Receipt.BlockCpu * 0.99
-		if cpuLimit < types.BlockCpuLimit {
-			cpuLimit = types.BlockCpuLimit
+		if cpuLimit < config.BlockCpuLimit {
+			cpuLimit = config.BlockCpuLimit
 		}
 	}
-	if net < (types.BlockNetLimit / 10) {
+	if net < (config.BlockNetLimit / 10) {
 		netLimit = prevHeader.Receipt.BlockNet * 1.01
-		if netLimit > types.VirtualBlockNetLimit {
-			netLimit = types.VirtualBlockNetLimit
+		if netLimit > config.VirtualBlockNetLimit {
+			netLimit = config.VirtualBlockNetLimit
 		}
 	} else {
 		netLimit = prevHeader.Receipt.BlockNet * 0.99
-		if netLimit < types.BlockNetLimit {
-			netLimit = types.BlockNetLimit
+		if netLimit < config.BlockNetLimit {
+			netLimit = config.BlockNetLimit
 		}
 	}
 	b.MinorBlockHeader.Receipt.BlockCpu = cpuLimit

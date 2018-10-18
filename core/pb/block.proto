@@ -428,3 +428,17 @@ message COSign {
     uint32 Step1 = 1;
     uint32 Step2 = 2;
 }
+
+message P2PRtSyncMsg {
+    bytes  req   = 1;
+}
+
+message PeerInfo {
+    bytes  id     = 1;
+    string ipport = 2;
+}
+
+message P2PRtSyncAckMsg {
+    bytes              resp  = 1;
+    repeated PeerInfo  peers = 2;
+}

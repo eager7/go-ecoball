@@ -22,8 +22,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/store"
-	"github.com/ecoball/go-ecoball/core/types"
 	"sync"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 var log = elog.NewLogger("state", elog.NoticeLog)
@@ -45,10 +45,10 @@ type State struct {
 	diskDb *store.LevelDBStore
 
 	tokenMutex sync.RWMutex
-	Tokens	map[string]*TokenInfo
+	Tokens	map[string]*TokenInfo	//map[token name]TokenInfo
 
 	accMutex sync.RWMutex
-	Accounts map[string]*Account
+	Accounts map[string]*Account	// map[account name]*Account
 
 	paraMutex sync.RWMutex
 	Params    map[string]uint64
@@ -197,7 +197,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
  *  @param code - the code of contract
  *  @param abi  - the abi of contract
  */
-func (s *State) SetContract(index common.AccountName, t types.VmType, des, code []byte, abi []byte) error {
+func (s *State) SetContract(index common.AccountName, t types.VmType, des, code, abi []byte) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err

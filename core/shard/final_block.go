@@ -16,7 +16,6 @@ type FinalBlockHeader struct {
 	Timestamp          int64
 	TrxCount           uint32
 	PrevHash           common.Hash
-	//ConsData           ConsensusData
 	ProposalPubKey     []byte
 	EpochNo            uint64
 	CMBlockHash        common.Hash
@@ -27,6 +26,7 @@ type FinalBlockHeader struct {
 
 	hash common.Hash
 	*types.COSign
+	//ConsData           ConsensusData
 }
 
 func (h *FinalBlockHeader) ComputeHash() error {
@@ -57,14 +57,14 @@ func (h *FinalBlockHeader) proto() (*pb.FinalBlockHeader, error) {
 		Timestamp:          h.Timestamp,
 		TrxCount:           h.TrxCount,
 		ProposalPubKey:     common.CopyBytes(h.ProposalPubKey),
-		EpochNo:          h.EpochNo,
+		EpochNo:            h.EpochNo,
 		CMBlockHash:        h.CMBlockHash.Bytes(),
 		TrxRootHash:        h.TrxRootHash.Bytes(),
 		StateDeltaRootHash: h.StateDeltaRootHash.Bytes(),
 		MinorBlocksHash:    h.MinorBlocksHash.Bytes(),
 		StateHashRoot:      h.StateHashRoot.Bytes(),
 		//ConsData:           pbCon,
-		Hash:               h.hash.Bytes(),
+		Hash: h.hash.Bytes(),
 		COSign: &pb.COSign{
 			Step1: h.COSign.Step1,
 			Step2: h.COSign.Step2,

@@ -16,7 +16,7 @@
 
 // Implement a simple bootstrap function
 
-package p2p
+package network
 
 import (
 	"io"
@@ -33,7 +33,7 @@ import (
 	"gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
 	procctx "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/context"
 	"gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/periodic"
-	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"	
+	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 )
 
 const (
@@ -42,7 +42,12 @@ const (
 	bootStrapTimeOut   = bootStrapInterval / 3
 )
 
-func (net *NetImpl)bootstrap(bsAddress []string) (io.Closer){
+type BootStrapper struct {
+	closer   io.Closer
+	bspeers  []cfg.BootstrapPeer
+}
+
+func (net *NetImpl)bootstrap(bsAddress []string) (*BootStrapper){
 	bsPeers, err := cfg.ParseBootstrapPeers(bsAddress)
 	if err != nil {
 		log.Error("failed to parse bootstrap address", err)
@@ -76,7 +81,7 @@ func (net *NetImpl)bootstrap(bsAddress []string) (io.Closer){
 	doneWithRound <- struct{}{}
 	close(doneWithRound) // it no longer blocks periodic
 
-	return proc
+	return &BootStrapper{proc, bsPeers}
 }
 
 func (net *NetImpl)bootstrapConnect(ctx context.Context, bsPeers []cfg.BootstrapPeer, numToDial int) error {

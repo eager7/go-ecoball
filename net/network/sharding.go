@@ -14,8 +14,32 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package net
+// Implement the message API between committee and shard nodes
 
+package network
 
+import (
+	"github.com/ecoball/go-ecoball/net/message"
+)
 
+func (net *NetImpl)SendBlockToShards(blkmsg message.EcoBallNetMsg) {
+	if !net.receiver.IsLeaderOrBackup() {
+		log.Error("I am not a committee leader or backup")
+		return
+	}
 
+	shardMembers := net.receiver.GetShardMemebersToReceiveCBlock()
+	for _, shard := range shardMembers {
+		net.SendMsgToPeersWithId(shard, blkmsg)
+	}
+}
+
+func (net *NetImpl)SendBlockToCommittee(blkmsg message.EcoBallNetMsg) {
+	if !net.receiver.IsLeaderOrBackup() {
+		log.Error("I am not a shard leader or backup")
+		return
+	}
+
+	cmMembers := net.receiver.GetCMMemebersToReceiveSBlock()
+	net.SendMsgToPeersWithId(cmMembers, blkmsg)
+}

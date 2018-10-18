@@ -22,6 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 /*
@@ -79,7 +80,7 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 	s.IssueToken(root, 90000, state.AbaToken)
 
 	fmt.Println("set root account's resource to [cpu:100, net:100]")
-	if err := s.SetResourceLimits(root, root, 10000, 10000, types.BlockCpuLimit, types.BlockNetLimit); err != nil {
+	if err := s.SetResourceLimits(root, root, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
 		fmt.Println(err)
 		return err
 	}

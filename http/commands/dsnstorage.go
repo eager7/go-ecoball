@@ -5,7 +5,6 @@ import (
 	"github.com/ecoball/go-ecoball/http/common"
 	"github.com/ecoball/go-ecoball/dsn"
 	"github.com/ecoball/go-ecoball/dsn/renter"
-	"github.com/ecoball/go-ecoball/dsn/renter/backend"
 	"fmt"
 	//"encoding/json"
 	"encoding/json"
@@ -20,7 +19,7 @@ func DsnAddFile(params []interface{})  *common.Response {
 	b := []byte(streq)
 	var req renter.RscReq
 	json.Unmarshal(b, &req)
-	cid, err := backend.EraCoding(&req)
+	cid, err := dsn.AddFile(&req)
 	if err != nil {
 		return common.NewResponse(common.INVALID_PARAMS, "DsnAddFile faild")
 	}

@@ -14,13 +14,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package p2p
+package network
 
 import (
 	"context"
 	"github.com/ecoball/go-ecoball/net/message"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
-	"gx/ipfs/QmZ383TySJVeZWzGnWui6pRcKyYZk9VkKTuW7tmKRWk5au/go-libp2p-routing"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 )
 
@@ -34,7 +33,7 @@ type EcoballNetwork interface {
 	Stop()
 
 	CommAPI
-	routing.PeerRouting
+	ShardingMsgAPI
 }
 
 type CommAPI interface {
@@ -58,6 +57,11 @@ type CommAPI interface {
 	BroadcastMessage(message.EcoBallNetMsg) error
 }
 
+type ShardingMsgAPI interface {
+	SendBlockToShards(message.EcoBallNetMsg)
+	SendBlockToCommittee(message.EcoBallNetMsg)
+}
+
 // Implement Receiver to receive messages from the EcoBallNetwork
 type Receiver interface {
 	ReceiveMessage(
@@ -65,11 +69,14 @@ type Receiver interface {
 		sender peer.ID,
 		incoming message.EcoBallNetMsg)
 
-	ReceiveError(error)
-
 	IsValidRemotePeer(peer.ID) bool
+	IsNotMyShard(p peer.ID) bool
+	IsLeaderOrBackup() bool
+	GetShardMemebersToReceiveCBlock() [][]peer.ID
+	GetCMMemebersToReceiveSBlock() []peer.ID
 
-	// Connected/Disconnected warns net about peer connections
+
+	ReceiveError(error)
 	PeerConnected(peer.ID)
 	PeerDisconnected(peer.ID)
 }

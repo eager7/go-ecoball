@@ -21,15 +21,15 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"sync"
+	"strings"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/net/p2p"
+	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/sharding"
-	sc "github.com/ecoball/go-ecoball/sharding/common"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-
+	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
@@ -42,8 +42,14 @@ import (
 	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	mafilter "gx/ipfs/QmSW4uNHbvQia8iZDXzbwjiyHQtnyo9aFqfQAMasj3TJ6Y/go-maddr-filter"
 	mamask "gx/ipfs/QmSMZwvs3n4GBikZ7hKzT17c3bk65FmyZo2JqtJ16swqCv/multiaddr-filter"
-	"github.com/ipfs/go-ipfs/repo/fsrepo"
-	"github.com/ecoball/go-ecoball/sharding/cell"
+)
+
+const (
+	OtherMember = iota
+	CommitteeLeader
+	CommitteeBackup
+	ShardLeader
+	ShardBackup
 )
 
 var (
@@ -54,16 +60,27 @@ var (
 	netNode  *NetNode
 )
 
+type ShardingInfo struct {
+	shardId             uint16
+	role                int
+	peersInfo           [][]peer.ID
+	info                map[uint16]map[peer.ID]ma.Multiaddr  // to accelerate the finding speed
+	rwlck               sync.RWMutex
+}
+
 type NetNode struct {
-	ctx         context.Context
-	self        peer.ID
-	network     p2p.EcoballNetwork
-	broadCastCh chan message.EcoBallNetMsg
-	handlers    map[uint32]message.HandlerFunc
-	actorId     *actor.PID
-	listen      []string
-	sa          *sharding.ShardingActor
+	ctx          context.Context
+	self         peer.ID
+	network      network.EcoballNetwork
+	broadCastCh  chan message.EcoBallNetMsg
+	handlers     map[uint32]message.HandlerFunc
+	actorId      *actor.PID
+	listen       []string
+	shardingSubCh   <-chan interface{}
+	shardingInfo *ShardingInfo
 	//pubSub      *floodsub.PubSub
+
+	network.Receiver
 }
 
 func constructPeerHost(ctx context.Context, id peer.ID, ps peerstore.Peerstore, options ...libp2p.Option) (host.Host, error) {
@@ -159,12 +176,13 @@ func New(parent context.Context) (*NetNode, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error for getting id from key,", err)
 	}
-
 	netNode := &NetNode{
 		ctx:         parent,
 		self:        id,
 		broadCastCh: make(chan message.EcoBallNetMsg, 4*1024), //TODO move to config
 		handlers:    message.MakeHandlers(),
+		shardingInfo:new(ShardingInfo),
+		shardingSubCh:make(<-chan interface{}, 1),
 		//pubSub:      ipfs.Floodsub,
 	}
 
@@ -208,7 +226,7 @@ func New(parent context.Context) (*NetNode, error) {
 		return nil, fmt.Errorf("error for constructing host,", err)
 	}
 
-	network := p2p.NewNetwork(parent, h)
+	network := network.NewNetwork(parent, h)
 	network.SetDelegate(netNode)
 
 	netNode.network = network
@@ -245,60 +263,93 @@ func (nn *NetNode) Start() error {
 
 	nn.network.Start()
 
-	nn.broadcastLoop()
-
-	nn.connectToShardingPeers()
+	nn.nativeMessageLoop()
 
 	return nil
 }
 
 func (nn *NetNode) connectToShardingPeers() {
-	works := nn.getShardingWorks()
-
-	// IPV6 ??? TOD
-	go func(wks []*cell.Worker) {
-		for _, w := range wks {
-			ai := fmt.Sprintf("/ip4/%s/tcp/%s", w.Address, w.Port)
-			err := nn.network.ConnectToPeer(ai, []byte(w.Pubkey), true)
-			if err != nil {
-				log.Error("failed to connect to ", ai, err)
+	nn.shardingInfo.rwlck.RLock()
+	defer nn.shardingInfo.rwlck.RUnlock()
+	works := nn.shardingInfo.info[nn.shardingInfo.shardId]
+	host := nn.network.Host()
+	var wg sync.WaitGroup
+	for id, w := range works {
+		wg.Add(1)
+		go func(p peer.ID, addr ma.Multiaddr) {
+			defer wg.Done()
+			host.Peerstore().AddAddrs(p, []ma.Multiaddr{addr}, peerstore.PermanentAddrTTL)
+			pi := peerstore.PeerInfo{p, []ma.Multiaddr{addr}}
+			if err := host.Connect(nn.ctx, pi); err != nil {
+				log.Error("failed to connetct peer,", pi)
 			}
-		}
-	}(works)
+		}(id, w)
+	}
+	wg.Wait()
+	log.Debug("connect to sharding peers exit...")
 }
 
-func (nn *NetNode) getShardingWorks() []*cell.Worker {
-	// network sharding was disabled
-	if nn.sa == nil {
-		return []*cell.Worker{}
-	}
-	// ignore the err due the the actor was initialized with cell
-	cl, _ := nn.sa.GetCell()
-	var works []*cell.Worker
-	if cl.NodeType == sc.NodeCommittee {
-		works = cl.GetCmWorks()
-	} else if cl.NodeType == sc.NodeShard {
-		works = cl.GetWorks()
-	} else {
-		log.Error("invalid sharding node type ", cl.NodeType)
-		works = []*cell.Worker{}
-	}
+func (nn *NetNode) updateShardingInfo(info *sharding.SubShardingTopo) {
+	nn.shardingInfo.rwlck.Lock()
+	nn.shardingInfo.shardId = info.ShardId
+	for sid, shard := range info.ShardingInfo {
+		for i, member := range shard {
+			if sid ==0 && i == 0 {
+				nn.shardingInfo.role = CommitteeLeader
+			} else if sid ==0 && i == 1 {
+				nn.shardingInfo.role = CommitteeBackup
+			} else if sid >0 && i == 0 {
+				nn.shardingInfo.role = ShardLeader
+			} else if sid >0 && i == 1 {
+				nn.shardingInfo.role = ShardBackup
+			}
 
-	return works
+			id, err := peer.IDFromBytes([]byte(member.Pubkey))
+			if err != nil {
+				log.Error("error for getting id from public key")
+				continue
+			}
+			var addr ma.Multiaddr
+			if !strings.Contains(member.Address, ":") {
+				addr, err = ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%s", member.Address, member.Port))
+				if err != nil {
+					log.Error("error for create ip4 addr from member info")
+					continue
+				}
+
+			} else {
+				addr, err = ma.NewMultiaddr(fmt.Sprintf("/ip6/%s/tcp/%s", member.Address, member.Port))
+				if err != nil {
+					log.Error("error for create ip6 addr from member info")
+					continue
+				}
+			}
+			nn.shardingInfo.info[uint16(sid)][id] = addr
+			nn.shardingInfo.peersInfo[sid] = append(nn.shardingInfo.peersInfo[sid], id)
+		}
+	}
+	nn.shardingInfo.rwlck.Unlock()
+	nn.connectToShardingPeers()
 }
 
 func (nn *NetNode) SendBroadcastMsg(msg message.EcoBallNetMsg) {
 	nn.broadCastCh <- msg
 }
 
-func (nn *NetNode) broadcastLoop() {
+func (nn *NetNode) nativeMessageLoop() {
 	go func() {
 		for {
 			select {
+			case info := <-nn.shardingSubCh:
+				sinfo, ok := info.(*sharding.SubShardingTopo)
+				if !ok {
+					log.Error("unsupport info from sharding.")
+					continue
+				}
+				log.Debug("receive a update sharding message")
+				go nn.updateShardingInfo(sinfo)
 			case msg := <-nn.broadCastCh:
 				log.Debug("broadCastCh receive msg:", message.MessageToStr[msg.Type()])
-				//TODO cache check
-				//node.netMsgCache.Add(msg.DataSum, msg.Size)
 				nn.network.BroadcastMessage(msg)
 			}
 		}
@@ -306,8 +357,8 @@ func (nn *NetNode) broadcastLoop() {
 }
 
 func (nn *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
-	log.Debug("receive msg:", message.MessageToStr[incoming.Type()], "from ", p.Pretty())
-	if incoming.Type() > message.APP_MSG_MAX {
+	log.Debug(fmt.Sprintf("receive msg(id=%d) from peer %s", incoming.Type(), p.Pretty()))
+	if incoming.Type() >= message.APP_MSG_MAX {
 		log.Error("receive a invalid message ", message.MessageToStr[incoming.Type()])
 		return
 	}
@@ -324,38 +375,88 @@ func (nn *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming messa
 		}
 	} else {
 		dispatcher.Publish(incoming)
-		log.Debug("publish msg ", incoming.Type())
 		return
 	}
 }
 
 func (nn *NetNode) ReceiveError(err error) {
-	// TODO log the network error
-	// TODO bubble the network error up to the parent context/error logger
+	//TOD
 }
 
 func (nn *NetNode) IsValidRemotePeer(p peer.ID) bool {
-	// network sharding was disabled
-	if nn.sa == nil {
+	if !config.DisableSharding {
+		nn.shardingInfo.rwlck.RLock()
+		defer nn.shardingInfo.rwlck.RUnlock()
+
+		if nn.shardingInfo.info[nn.shardingInfo.shardId][p] == nil && nn.shardingInfo.info[0][p] == nil {
+			return false
+		}
 		return true
 	}
 
-	pk, err := p.ExtractPublicKey()
-	if err != nil {
-		log.Error("error for extracting public key from id ", p.Pretty())
-		return false
-	}
-	pkBytes, _ := pk.Bytes()
-	works := nn.getShardingWorks()
+	return true
+}
 
-	// ohh, slow....., hash map will be better
-	for _, w := range works {
-		if w.Pubkey == string(pkBytes) {
+func (nn *NetNode) IsNotMyShard(p peer.ID) bool {
+	if !config.DisableSharding {
+		nn.shardingInfo.rwlck.RLock()
+		defer nn.shardingInfo.rwlck.RUnlock()
+
+		if nn.shardingInfo.info[nn.shardingInfo.shardId][p] == nil {
 			return true
 		}
 	}
 
 	return false
+}
+
+func (nn *NetNode) IsLeaderOrBackup() bool {
+	nn.shardingInfo.rwlck.RLock()
+	defer nn.shardingInfo.rwlck.RUnlock()
+
+	if nn.shardingInfo.role != OtherMember {
+		return true
+	}
+
+	return false
+}
+
+func (nn *NetNode) GetShardMemebersToReceiveCBlock() [][]peer.ID {
+	nn.shardingInfo.rwlck.RLock()
+	defer nn.shardingInfo.rwlck.RUnlock()
+
+	if len(nn.shardingInfo.peersInfo) <= 1 {
+		return [][]peer.ID{}
+	}
+
+	var peers = make([][]peer.ID, len(nn.shardingInfo.peersInfo)-1)
+	// the algo may be changed according to the requirement
+	for id, shard := range nn.shardingInfo.peersInfo[1:] {
+		if nn.shardingInfo.role == CommitteeLeader {
+			peers[id] = append(peers[id], shard[0])
+		} else if nn.shardingInfo.role == CommitteeBackup {
+			if len(shard) > 1 {
+				peers[id] = append(peers[id], shard[1])
+			}
+		}
+	}
+	return peers
+}
+
+func (nn *NetNode) GetCMMemebersToReceiveSBlock() []peer.ID {
+	nn.shardingInfo.rwlck.RLock()
+	defer nn.shardingInfo.rwlck.RUnlock()
+
+	var peers = []peer.ID{}
+	if nn.shardingInfo.role == ShardLeader {
+		peers = append(peers, nn.shardingInfo.peersInfo[0][0])
+	} else if nn.shardingInfo.role == ShardBackup {
+		if len(nn.shardingInfo.peersInfo[0]) > 1 {
+			peers = append(peers, nn.shardingInfo.peersInfo[0][1])
+		}
+	}
+
+	return peers
 }
 
 func (nn *NetNode) PeerConnected(p peer.ID) {
@@ -394,9 +495,8 @@ func (nn *NetNode) GetActorPid() *actor.PID {
 	return nn.actorId
 }
 
-// AttachShardingCell attach the sharding cell to the netnode
-func (nn *NetNode) AttachShardingActor(sa *sharding.ShardingActor) {
-	nn.sa = sa
+func (nn *NetNode) SetShardingSubCh(ch <-chan interface{}) {
+	nn.shardingSubCh = ch
 }
 
 func SetChainId(id uint32) {
@@ -414,22 +514,19 @@ func InitNetWork(ctx context.Context) {
 		log.Error(err)
 		os.Exit(1)
 	}
-
-	log.Info("i am ", netNode.SelfId())
 }
 
-func StartNetWork(l ledger.Ledger) {
+func StartNetWork() {
 	netActor := NewNetActor(netNode)
 	actorId, _ := netActor.Start()
 	netNode.SetActorPid(actorId)
 
 	if !config.DisableSharding {
-		sa, err := sharding.NewShardingActor(l)
-		if err != nil {
-			log.Error("error for creating sharding actor,", err)
-			os.Exit(1)
+		inst := sharding.GetShardingInst()
+		if inst != nil {
+			ch := inst.SubscribeShardingTopo()
+			netNode.SetShardingSubCh(ch)
 		}
-		netNode.AttachShardingActor(sa)
 	}
 
 	if err := netNode.Start(); err != nil {
@@ -437,5 +534,5 @@ func StartNetWork(l ledger.Ledger) {
 		os.Exit(1)
 	}
 
-	log.Info(netNode.SelfId(), " is running.")
+	log.Info(fmt.Sprintf("peer(self) %s is running", netNode.SelfId()))
 }

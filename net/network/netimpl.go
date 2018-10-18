@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
-package p2p
+package network
 
 import (
 	"time"
@@ -23,25 +23,19 @@ import (
 	"sync"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ecoball/go-ecoball/common/config"
-	kb "gx/ipfs/QmesQqwonP618R7cJZoFfA4ioYhhMKnDmtUxcAvvxEEGnw/go-libp2p-kbucket"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
 	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
-	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/discovery"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
+	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/discovery"
 )
 
 const (
-	// K is the maximum number of requests to perform before returning failure.
-	KValue                 = 20
-	// Alpha is the concurrency factor for asynchronous requests.
-	AlphaValue             = 3
+	sendWorkerCount        = 4
 
-	sendMessageChanBuff    = 1024
 	sendMessageTimeout     = time.Minute * 10
 
 	discoveryConnTimeout   = time.Second * 30
@@ -52,7 +46,7 @@ const (
 )
 
 var (
-	log = elog.NewLogger("p2p", elog.DebugLog)
+	log = elog.NewLogger("network", elog.DebugLog)
 	netImpl *NetImpl
 )
 
@@ -63,39 +57,21 @@ func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
 	netImpl = &NetImpl{
 		ctx:          ctx,
 		host:         host,
+		engine:       NewMsgEngine(ctx, host.ID()),
 		strmap:       make(map[peer.ID]*messageSender),
 		quitsendJb:   make(chan bool, 1),
-		sendJbQueue:  make(chan interface{}, sendMessageChanBuff),
 	}
-	netImpl.routingTable = initRoutingTable(host)
+
+	netImpl.routingTable = NewRouteTable(netImpl)
 
 	host.SetStreamHandler(ProtocolP2pV1, netImpl.handleNewStream)
 	host.Network().Notify((*netNotifiee)(netImpl))
-	// TODO: StopNotify.
+
 	return netImpl
 }
 
 func GetNetInstance() EcoballNetwork {
 	return netImpl
-}
-
-func initRoutingTable(host host.Host) (table *kb.RoutingTable) {
-	peerID := kb.ConvertPeerID(host.ID())
-
-	rt := kb.NewRoutingTable(
-		KValue,
-		peerID,
-		time.Minute,   //TOD, should come from config file
-		host.Peerstore())
-	cmgr := host.ConnManager()
-	rt.PeerAdded = func(p peer.ID) {
-		cmgr.TagPeer(p, "kbucket", 5)
-	}
-	rt.PeerRemoved = func(p peer.ID) {
-		cmgr.UntagPeer(p, "kbucket")
-	}
-
-	return rt
 }
 
 // impl transforms the network interface, which sends and receives
@@ -106,30 +82,28 @@ type NetImpl struct {
 
 	// inbound messages from the network are forwarded to the receiver
 	receiver     Receiver
-
-	sendJbQueue  chan interface{}
-	quitsendJb   chan bool
-
-	routingTable *kb.RoutingTable
-	rtLock       sync.Mutex
-
+	// outbound message engine
+	engine       *MsgEngine
+	quitsendJb   chan bool	
 	strmap       map[peer.ID]*messageSender
 	strmlk       sync.Mutex
 
 	mdnsService  discovery.Service
-	bootstrapper io.Closer
+	bootstrapper *BootStrapper
+
+	routingTable *NetRouteTable
 }
 
 func (net *NetImpl)GetPeerID() (peer.ID, error) {
 	return net.host.ID(), nil
 }
 
-func (net *NetImpl)GetRandomPeers(k int) []peer.ID {
-	return net.selectRandomPeers(k, []peer.ID{})
-}
-
 func (net *NetImpl) Host() host.Host {
 	return net.host
+}
+
+func (net *NetImpl) SetDelegate(r Receiver) {
+	net.receiver = r
 }
 
 func (net *NetImpl) sendMessage(p pstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
@@ -175,85 +149,6 @@ func (net *NetImpl) messageSenderToPeer(p pstore.PeerInfo) (*messageSender, erro
 	return ms, nil
 }
 
-func (net *NetImpl) SetDelegate(r Receiver) {
-	net.receiver = r
-}
-
-func (net *NetImpl) FindPeer(ctx context.Context, id peer.ID) (pstore.PeerInfo, error) {
-	// Check if were already connected to them
-	if pi := net.findLocal(id); pi.ID != "" {
-		return pi, nil
-	}
-
-	peers := net.routingTable.NearestPeers(kb.ConvertPeerID(id), AlphaValue)
-	if len(peers) == 0 {
-		return pstore.PeerInfo{}, kb.ErrLookupFailure
-	}
-
-	for _, p := range peers {
-		if p == id {
-			log.Debug("found target peer in list of closest peers...")
-			return net.host.Peerstore().PeerInfo(p), nil
-		}
-	}
-
-	return pstore.PeerInfo{}, kb.ErrLookupFailure
-}
-
-func (net *NetImpl) findLocal(id peer.ID) pstore.PeerInfo {
-	switch net.host.Network().Connectedness(id) {
-	case inet.Connected, inet.CanConnect:
-		return net.host.Peerstore().PeerInfo(id)
-	default:
-		return pstore.PeerInfo{}
-	}
-}
-
-// select randomly k peers from remote peers and returns them.
-func (net *NetImpl) selectRandomPeers(k int, filtPeers [] peer.ID) []peer.ID {
-	var p peer.ID
-	filtedConns := []inet.Conn{}
-	conns := net.host.Network().Conns()
-	for _, conn := range conns {
-		for _, p = range filtPeers {
-			if p == conn.RemotePeer() {
-				break
-			}
-		}
-		if p == "" {
-			filtedConns = append(filtedConns, conn)
-		}
-	}
-	if len(filtedConns) < k {
-		k = len(filtedConns)
-	}
-	indices := util.GetRandomIndices(k, len(filtedConns)-1)
-	peers := make([]peer.ID, len(indices))
-	for i, j := range indices {
-		pid := filtedConns[j].RemotePeer()
-		peers[i] = pid
-	}
-
-	return peers
-}
-
-func (net *NetImpl) update(p peer.ID) {
-	net.rtLock.Lock()
-	defer net.rtLock.Unlock()
-	net.routingTable.Update(p)
-}
-
-func (net *NetImpl) remove(p peer.ID) {
-	net.rtLock.Lock()
-	defer net.rtLock.Unlock()
-	net.routingTable.Remove(p)
-}
-
-func (net *NetImpl) nearestPeersToQuery(id peer.ID, count int) []peer.ID {
-	closer := net.routingTable.NearestPeers(kb.ConvertKey(id.String()), count)
-	return closer
-}
-
 func (net *NetImpl) handleNewStream(s inet.Stream) {
 	go net.handleNewStreamMsg(s)
 }
@@ -272,17 +167,16 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 			if err != io.EOF {
 				s.Reset()
 				go net.receiver.ReceiveError(err)
-				log.Error(fmt.Sprintf("p2p net from %s %s", s.Conn().RemotePeer(), err))
+				log.Error(fmt.Sprintf("error from %s, %s", s.Conn().RemotePeer(), err))
 			}
 			return
 		}
 
 		p := s.Conn().RemotePeer()
 		ctx := context.Background()
-		log.Debug("p2p net handleNewStream from ", s.Conn().RemotePeer())
-		net.update(p)
+		net.routingTable.update(p)
 		if received.Type() == message.APP_MSG_GOSSIP {
-			net.ForwardMsg(received, []peer.ID{p})
+			net.preHandleGossipMsg(received, p)
 			msg, err := net.unwarpGossipMsg(received)
 			if err != nil {
 				log.Error(err)
@@ -295,47 +189,56 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 	}
 }
 
-func (net *NetImpl) SendMsgJob(job *message.SendMsgJob) {
-	net.sendJbQueue <- job
-}
+func (net *NetImpl) preHandleGossipMsg(gmsg message.EcoBallNetMsg, sender peer.ID) {
+	log.Debug(fmt.Sprintf("receive a gossip msg(id=%d) from peer %s", gmsg.Type(), sender.Pretty()))
+	peers := net.getRandomPeers(GossipPeerCount, net.receiver.IsNotMyShard)
 
-func (net *NetImpl) handleSendJob() {
-	go func() {
-		for {
-			select {
-			case <-net.quitsendJb:
-				return
-			case job, ok := <- net.sendJbQueue:
-				if !ok {
-					log.Error("chan for sending job queue was closed")
-					return
-				}
-				sendJb, ok := job.(*message.SendMsgJob)
-				if ok {
-					for _, pi := range sendJb.Peers {
-						if pi.ID == net.host.ID() {
-							continue
-						}
-/*
-						addr := net.host.Peerstore().Addrs(pi.ID)
-						if len(addr) == 0 && len(pi.Addrs) >0 {
-							if err := net.host.Connect(net.ctx, *pi); err != nil {
-								log.Error(err)
-								continue
-							}
-						}
-*/
-						if err:= net.sendMessage(*pi, sendJb.Msg); err != nil {
-							log.Error("send message to ", pi.ID.Pretty(), err)
-						}
-					}
-				}
-			}
+	var fwPeers []peer.ID
+	for _, peer := range peers {
+		if peer != sender {
+			fwPeers = append(fwPeers, peer)
 		}
-	}()
+	}
+
+	net.forwardMsg(gmsg, fwPeers)
 }
 
-func (net *NetImpl) startLocalDiscovery() (discovery.Service, error) {
+func (net *NetImpl) AddMsgJob(job *SendMsgJob) {
+	net.engine.PushJob(job)
+}
+
+func (net *NetImpl) startSendWorkers() {
+	for i:=0; i<sendWorkerCount; i++ {
+		i := i
+		go net.sendWorker(i)
+	}
+}
+
+func (net *NetImpl) sendWorker(id int) {
+	//log.Debug("network send message worker ", id, " start.")
+	defer log.Debug("network send message worker ", id, " shutting down.")
+	for {
+		select {
+		case nextWrapper := <-net.engine.Outbox():
+			select {
+			case wriapper, ok := <-nextWrapper:
+				if !ok {
+					continue
+				}
+				//log.Debug(fmt.Sprintf("worker %d is going to send a message to %s", id, wriapper.pi.ID.Pretty()))
+				if err:= net.sendMessage(wriapper.pi, wriapper.emsg); err != nil {
+					log.Error("send message to ", wriapper.pi.ID.Pretty(), err)
+				}
+			case <-net.ctx.Done():
+				return
+			}
+		case <-net.ctx.Done():
+			return
+		}
+	}
+}
+
+func (net *NetImpl) StartLocalDiscovery() (discovery.Service, error) {
 	service, err := discovery.NewMdnsService(net.ctx, net.host, 10*time.Second, ServiceTag)
 	if err != nil {
 		return nil, fmt.Errorf("net discovery error,", err)
@@ -347,33 +250,43 @@ func (net *NetImpl) startLocalDiscovery() (discovery.Service, error) {
 
 // Start network
 func (net *NetImpl) Start() {
-	// it is up to the requirement of network sharding,
-	if config.EnableLocalDiscovery {
-		var err error
-		net.mdnsService, err = net.startLocalDiscovery()
-		if err != nil {
-			log.Error("start p2p local discovery",err)
-		} else {
-			log.Debug("start p2p local discovery")
+	if config.DisableSharding {
+		net.routingTable.Start()
+
+		if config.EnableLocalDiscovery {
+			var err error
+			net.mdnsService, err = net.StartLocalDiscovery()
+			if err != nil {
+				log.Error("start p2p local discovery",err)
+			} else {
+				log.Debug("start p2p local discovery")
+			}
 		}
 	}
 
 	net.bootstrapper = net.bootstrap(config.SwarmConfig.BootStrapAddr)
 
-	net.handleSendJob()
+	net.startSendWorkers()
 }
 
 // Stop network
 func (net *NetImpl) Stop() {
-	if net.mdnsService != nil  {
-		net.mdnsService.Close()
+	if config.DisableSharding {
+		net.routingTable.Stop()
+
+		if net.mdnsService != nil  {
+			net.mdnsService.Close()
+		}
 	}
 
+
 	if net.bootstrap != nil {
-		net.bootstrapper.Close()
+		net.bootstrapper.closer.Close()
 	}
 
 	net.host.Network().StopNotify((*netNotifiee)(net))
+
+	net.engine.Stop()
 
 	net.quitsendJb <- true
 }

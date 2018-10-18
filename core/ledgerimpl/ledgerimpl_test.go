@@ -199,6 +199,8 @@ func TestShard(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	elog.Log.Debug(common.JsonString(l, false))
 
+	blockNew, err := l.GetLastShardBlock(config.ChainHash, shard.HeCmBlock)
+	errors.CheckErrorPanic(err)
 	Shards := []shard.Shard{shard.Shard{
 		Member: []shard.NodeInfo{
 			{
@@ -215,13 +217,45 @@ func TestShard(t *testing.T) {
 	block, err := l.NewCmBlock(config.ChainHash, time.Now().UnixNano(), Shards)
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, block))
-	blockNew, err := l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, block.Hash())
+	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, block.Hash())
 	errors.CheckErrorPanic(err)
 	elog.Log.Info(blockNew.JsonString())
 	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
 
-	block, err = l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
+	//MinorBlock
+	blockNew, err = l.GetLastShardBlock(config.ChainHash, shard.HeMinorBlock)
+	errors.CheckErrorPanic(err)
+	blockMinor, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, blockMinor))
+	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeMinorBlock, blockMinor.Hash())
+	errors.CheckErrorPanic(err)
+	elog.Log.Info(blockNew.JsonString())
+	errors.CheckEqualPanic(blockMinor.JsonString() == blockNew.JsonString())
+
+
+	//FinalBlock
+	blockNew, err = l.GetLastShardBlock(config.ChainHash, shard.HeFinalBlock)
+	errors.CheckErrorPanic(err)
+	block, err = l.CreateFinalBlock(config.ChainHash, time.Now().UnixNano())
+	m := blockMinor.GetObject().(shard.MinorBlock)
+	block, err = l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []*shard.MinorBlockHeader{&m.MinorBlockHeader})
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, block))
+	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeFinalBlock, block.Hash())
+	errors.CheckErrorPanic(err)
+	elog.Log.Info(blockNew.JsonString())
+	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
+	event.EventStop()
+}
 
+func TestExample(t *testing.T) {
+	os.RemoveAll("/tmp/shard_example")
+	l, err := ledgerimpl.NewLedger("/tmp/shard_example", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	errors.CheckErrorPanic(err)
+
+	block, err := l.GetLastShardBlock(config.ChainHash, shard.HeFinalBlock)
+	errors.CheckErrorPanic(err)
+	elog.Log.Debug(block.JsonString())
+	event.EventStop()
 }
