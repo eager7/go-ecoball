@@ -24,7 +24,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/store"
-	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
 	"os"
 	"testing"

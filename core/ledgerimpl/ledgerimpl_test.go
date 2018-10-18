@@ -214,13 +214,13 @@ func TestShard(t *testing.T) {
 			Port:    "5678",
 		}},
 	}}
-	block, err := l.NewCmBlock(config.ChainHash, time.Now().UnixNano(), Shards)
+	blockCM, err := l.NewCmBlock(config.ChainHash, time.Now().UnixNano(), Shards)
 	errors.CheckErrorPanic(err)
-	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, block))
-	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, block.Hash())
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, blockCM))
+	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, blockCM.Hash())
 	errors.CheckErrorPanic(err)
 	elog.Log.Info(blockNew.JsonString())
-	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
+	errors.CheckEqualPanic(blockCM.JsonString() == blockNew.JsonString())
 
 	//MinorBlock
 	blockNew, err = l.GetLastShardBlock(config.ChainHash, shard.HeMinorBlock)
@@ -237,15 +237,14 @@ func TestShard(t *testing.T) {
 	//FinalBlock
 	blockNew, err = l.GetLastShardBlock(config.ChainHash, shard.HeFinalBlock)
 	errors.CheckErrorPanic(err)
-	block, err = l.CreateFinalBlock(config.ChainHash, time.Now().UnixNano())
-	m := blockMinor.GetObject().(shard.MinorBlock)
-	block, err = l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []*shard.MinorBlockHeader{&m.MinorBlockHeader})
+	blockFinal, err := l.CreateFinalBlock(config.ChainHash, time.Now().UnixNano())
+	//blockFinal, err = l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []*shard.MinorBlockHeader{&blockMinor.MinorBlockHeader})
 	errors.CheckErrorPanic(err)
-	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, block))
-	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeFinalBlock, block.Hash())
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, blockFinal))
+	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeFinalBlock, blockFinal.Hash())
 	errors.CheckErrorPanic(err)
 	elog.Log.Info(blockNew.JsonString())
-	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
+	errors.CheckEqualPanic(blockFinal.JsonString() == blockNew.JsonString())
 	event.EventStop()
 }
 

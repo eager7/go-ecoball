@@ -29,6 +29,7 @@ import (
 	"math/big"
 	"testing"
 	"time"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
 
 func TestBlockCreate(t *testing.T) {
@@ -66,8 +67,8 @@ func TestBlockCreate(t *testing.T) {
 
 	blockNew := new(types.Block)
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
-	//fmt.Println(block.JsonString(false))
-	//fmt.Println(blockNew.JsonString(false))
+	elog.Log.Debug(block.JsonString(false))
+	elog.Log.Info(blockNew.JsonString(false))
 	errors.CheckEqualPanic(block.JsonString(false) == blockNew.JsonString(false))
 
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(config.ChainHash, block))
