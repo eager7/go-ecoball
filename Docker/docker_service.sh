@@ -48,23 +48,19 @@ if [ 1 -eq $IMAGENUM ]; then
     fi
 fi
 
+#create ecoball log directory
+if [ ! -e "./ecoball_log" ]; then
+    if ! mkdir ecoball_log
+    then
+        echo  -e "\033[;31m create ecoball log directory failed!!! \033[0m"
+        exit 1
+    fi
+fi
+
 case $1 in
     "start")
-    #run ecoball docker images
-    for((i=1;i<=$NUM;i++))
-    do   
-        PORT=`expr $PORT + 1`
-        TAIL=`expr $TAIL + 1`
-
-        if ! sudo docker run -d --name=ecoball_${TAIL} -p $PORT:20678 $IMAGE
-        then
-            echo  -e "\033[;31m docker run start ecoball_${TAIL} failed!!! \033[0m"
-            exit 1
-        fi
-    done
-
     #start main ecoball container 
-    if ! sudo docker run -d --name=ecoball -p 20678:20678 $IMAGE 
+    if ! sudo docker run -d --name=ecoball -p 20678:20678 -v ./ecoball_log:/var/ecoball_log -v ./ecoball.toml:/root/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml $IMAGE 
     then
         echo  -e "\033[;31m docker run start main ecoball failed!!! \033[0m"
         exit 1
@@ -77,15 +73,28 @@ case $1 in
         exit 1
     fi
 
-    echo  -e "\033[47;34m start all ecoball and wallet success!!! \033[0m"
-    ;;
-
     #start eballscan container
     if ! sudo docker run -d --name=eballscan --link=ecoball:ecoball_alias -p 20680:20680 $IMAGE /root/go/src/github.com/ecoball/eballscan/eballscan_service.sh
     then
         echo  -e "\033[;31m docker run start eballscan failed!!! \033[0m"
         exit 1
     fi
+
+    #run ecoball docker images
+    for((i=1;i<=$NUM;i++))
+    do   
+        PORT=`expr $PORT + 1`
+        TAIL=`expr $TAIL + 1`
+
+        if ! sudo docker run -d --name=ecoball_${TAIL} -p $PORT:20678 --volumes-from ecoball $IMAGE
+        then
+            echo  -e "\033[;31m docker run start ecoball_${TAIL} failed!!! \033[0m"
+            exit 1
+        fi
+    done
+
+    echo  -e "\033[47;34m start all ecoball and wallet and eballscan success!!! \033[0m"
+    ;;
 
     "stop")
     #stop container
