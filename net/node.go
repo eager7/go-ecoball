@@ -304,7 +304,7 @@ func (nn *NetNode) updateShardingInfo(info *sharding.SubShardingTopo) {
 				nn.shardingInfo.role = ShardBackup
 			}
 
-			id, err := peer.IDFromBytes([]byte(member.Pubkey))
+			id, err := network.IdFromProtoserPublickKey([]byte(member.Pubkey))
 			if err != nil {
 				log.Error("error for getting id from public key")
 				continue
