@@ -318,7 +318,7 @@ func (c *ChainTx) GenesesBlockInit(chainID common.Hash, addr common.Address) err
 	}
 
 	header, err := types.NewHeader(types.VersionHeader, chainID, 1, chainID, hash,
-		c.StateDB.FinalDB.GetHashRoot(), *conData, bloom.Bloom{}, types.BlockCpuLimit, types.BlockNetLimit, timeStamp)
+		c.StateDB.FinalDB.GetHashRoot(), *conData, bloom.Bloom{}, config.BlockCpuLimit, config.BlockNetLimit, timeStamp)
 	if err != nil {
 		return err
 	}

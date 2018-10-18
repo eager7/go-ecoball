@@ -26,6 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/trie"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 type Block struct {
@@ -57,26 +58,26 @@ func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, co
 	}
 
 	var cpuLimit, netLimit float64
-	if cpu < (BlockCpuLimit / 10) {
+	if cpu < (config.BlockCpuLimit / 10) {
 		cpuLimit = prevHeader.Receipt.BlockCpu * 1.01
-		if cpuLimit > VirtualBlockCpuLimit {
-			cpuLimit = VirtualBlockCpuLimit
+		if cpuLimit > config.VirtualBlockCpuLimit {
+			cpuLimit = config.VirtualBlockCpuLimit
 		}
 	} else {
 		cpuLimit = prevHeader.Receipt.BlockCpu * 0.99
-		if cpuLimit < BlockCpuLimit {
-			cpuLimit = BlockCpuLimit
+		if cpuLimit < config.BlockCpuLimit {
+			cpuLimit = config.BlockCpuLimit
 		}
 	}
-	if net < (BlockNetLimit / 10) {
+	if net < (config.BlockNetLimit / 10) {
 		netLimit = prevHeader.Receipt.BlockNet * 1.01
-		if netLimit > VirtualBlockNetLimit {
-			netLimit = VirtualBlockNetLimit
+		if netLimit > config.VirtualBlockNetLimit {
+			netLimit = config.VirtualBlockNetLimit
 		}
 	} else {
 		netLimit = prevHeader.Receipt.BlockNet * 0.99
-		if netLimit < BlockNetLimit {
-			netLimit = BlockNetLimit
+		if netLimit < config.BlockNetLimit {
+			netLimit = config.BlockNetLimit
 		}
 	}
 

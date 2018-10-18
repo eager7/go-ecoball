@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"github.com/ecoball/go-ecoball/dsn"
 	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
+	"math/big"
 )
 
 var log = elog.NewLogger("native", elog.NoticeLog)
@@ -55,9 +56,16 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 	case "new_account":
 		index := common.NameToIndex(ns.params[0])
 		addr := common.AddressFormHexString(ns.params[1])
-		if _, err := ns.state.AddAccount(index, addr, ns.timeStamp); err != nil {
+		acc, err := ns.state.AddAccount(index, addr, ns.timeStamp)
+		if err != nil {
 			return nil, err
 		}
+
+		ns.tx.Receipt.Account[0], err = acc.Serialize()
+		if err != nil {
+			ns.tx.Receipt.Account[0] = nil
+		}
+		ns.tx.Receipt.Account[1] = nil
 	case "set_account":
 		index := common.NameToIndex(ns.params[0])
 		perm := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
@@ -68,6 +76,19 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := ns.state.AddPermission(index, perm); err != nil {
 			return nil, err
 		}
+
+		acc := state.Account{
+			Index:			index,
+			Permissions: make(map[string]state.Permission, 1),
+		}
+		acc.Permissions[perm.PermName] = perm
+
+		var err error
+		ns.tx.Receipt.Account[0], err = acc.Serialize()
+		if err != nil {
+			ns.tx.Receipt.Account[0] = nil
+		}
+		ns.tx.Receipt.Account[1] = nil
 	case "reg_prod":
 		index := common.NameToIndex(ns.params[0])
 		ns.state.RegisterProducer(index)
@@ -114,7 +135,24 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := ns.state.SetResourceLimits(from, to, cpu, net, ns.cpuLimit, ns.netLimit); err != nil {
 			return nil, err
 		}
-		return nil, nil
+
+		fromAccount := state.Account{
+			Tokens:			make(map[string]state.Token),
+			Index:			from,
+		}
+		balance := state.Token{
+			Name:		state.AbaToken,
+			Balance:	big.NewInt(int64(cpu + net)),
+		}
+		fromAccount.Tokens[state.AbaToken] = balance
+
+		if from == to {
+			fromAccount.Cpu.Staked = cpu
+			fromAccount.Net.Staked = net
+		} else {
+
+		}
+
 	case "cancel_pledge":
 		from := common.NameToIndex(ns.params[0])
 		to := common.NameToIndex(ns.params[1])
