@@ -44,7 +44,7 @@ func (net *NetImpl)ConnectToPeer(addrInfo string, pubKey []byte, isPermanent boo
 }
 
 func (net *NetImpl)ClosePeer(pubKey []byte) error {
-	id, err := idFromProtoserPublickKey(pubKey)
+	id, err := IdFromProtoserPublickKey(pubKey)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func constructPeerInfo(addrInfo string, pubKey []byte) (peerstore.PeerInfo, erro
 		return peerstore.PeerInfo{}, err
 	}
 
-	id, err := idFromProtoserPublickKey(pubKey)
+	id, err := IdFromProtoserPublickKey(pubKey)
 	if err != nil {
 		return peerstore.PeerInfo{}, err
 	}
@@ -149,7 +149,7 @@ func constructPeerInfo(addrInfo string, pubKey []byte) (peerstore.PeerInfo, erro
 	return peer, nil
 }
 
-func idFromProtoserPublickKey(pubKey []byte) (peer.ID, error) {
+func IdFromProtoserPublickKey(pubKey []byte) (peer.ID, error) {
 	pk, err := ic.UnmarshalPublicKey(pubKey)
 	if err != nil {
 		return "", err

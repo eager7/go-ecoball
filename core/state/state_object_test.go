@@ -5,11 +5,11 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/state"
-	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
 	"os"
 	"testing"
 	"time"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 func TestStateObject(t *testing.T) {
@@ -23,7 +23,7 @@ func TestStateObject(t *testing.T) {
 	perm := state.NewPermission(state.Active, state.Owner, 2, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker2"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker3"), Weight: 1, Permission: "active"}})
 	acc.AddPermission(perm)
 	//set cpu net
-	acc.AddResourceLimits(true, 100, 100, 200, 200, types.BlockCpuLimit, types.BlockNetLimit)
+	acc.AddResourceLimits(true, 100, 100, 200, 200, config.BlockCpuLimit, config.BlockNetLimit)
 
 	data, err := acc.Serialize()
 	errors.CheckErrorPanic(err)
@@ -41,16 +41,16 @@ func TestResourceRecover(t *testing.T) {
 	acc, err := state.NewAccount("/tmp/acc", indexAcc, addr, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(acc.AddBalance(state.AbaToken, new(big.Int).SetUint64(1000)))
-	acc.AddResourceLimits(true, 100, 100, 100, 100, types.BlockCpuLimit, types.BlockNetLimit)
+	acc.AddResourceLimits(true, 100, 100, 100, 100, config.BlockCpuLimit, config.BlockNetLimit)
 	elog.Log.Debug(common.JsonString(acc.Resource, false))
 
-	acc.SubResourceLimits(1.0, 1.0, 100, 100, types.BlockCpuLimit, types.BlockNetLimit)
+	acc.SubResourceLimits(1.0, 1.0, 100, 100, config.BlockCpuLimit, config.BlockNetLimit)
 	available := acc.Net.Available
 	elog.Log.Debug(common.JsonString(acc.Resource, false))
 
 	time.Sleep(time.Microsecond * 100)
 	ti := time.Now().UnixNano()
-	errors.CheckErrorPanic(acc.RecoverResources(100, 100, ti, types.BlockCpuLimit, types.BlockNetLimit))
+	errors.CheckErrorPanic(acc.RecoverResources(100, 100, ti, config.BlockCpuLimit, config.BlockNetLimit))
 	elog.Log.Debug(common.JsonString(acc.Resource, false))
 	if acc.Net.Available < available {
 		elog.Log.Error(acc.Net.Available, available)
@@ -63,5 +63,5 @@ func TestResourceRecover(t *testing.T) {
 	errors.CheckErrorPanic(accNew.Deserialize(data))
 	errors.CheckEqualPanic(acc.JsonString(false) == accNew.JsonString(false))
 
-	errors.CheckErrorPanic(acc.SubResourceLimits(1, 1, 100, 100, types.BlockCpuLimit, types.BlockNetLimit))
+	errors.CheckErrorPanic(acc.SubResourceLimits(1, 1, 100, 100, config.BlockCpuLimit, config.BlockNetLimit))
 }
