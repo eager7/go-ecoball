@@ -1,20 +1,29 @@
-#基于Ubuntu18.04
+#Base on Ubuntu18.04
 FROM ubuntu:18.04
 MAINTAINER Docker ecoball <service@ecoball.org>
 
-#安装git gcc openssl
+#Install dependencies
 RUN apt-get update
 RUN apt-get install -y git gcc make wget golang-go python3 psmisc
 
-#设置环境变量
+#Setting environment variables
 ENV GOPATH /root/go
 ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$GOPATH/bin
 
-#下载代码打包生成执行文件
+#download eballscan source code and build
 RUN git clone http://wanghengtao:caijing321@gitlab.quachain.net/ecoball/go-ecoball/  $GOPATH/src/github.com/ecoball/go-ecoball/
 RUN cd $GOPATH/src/github.com/ecoball/go-ecoball/ && make
 
-EXPOSE 80
+#download eballscan source code and build
+RUN git clone https://github.com/ecoball/eballscan  $GOPATH/src/github.com/ecoball/eballscan
+RUN cd $GOPATH/src/github.com/ecoball/eballscan && ./eballscan_build.sh
+
+EXPOSE 20678
+EXPOSE 20679
+EXPOSE 20680
+EXPOSE 9000
+EXPOSE 8081
+EXPOSE 26257
 
 STOPSIGNAL SIGTERM
 
