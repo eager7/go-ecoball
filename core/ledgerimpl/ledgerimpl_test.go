@@ -220,8 +220,22 @@ func TestShard(t *testing.T) {
 	elog.Log.Info(blockNew.JsonString())
 	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
 
-	block, err = l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
+	//MinorBlock
+	blockMinor, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, blockMinor))
+	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeMinorBlock, blockMinor.Hash())
+	errors.CheckErrorPanic(err)
+	elog.Log.Info(blockNew.JsonString())
+	errors.CheckEqualPanic(blockMinor.JsonString() == blockNew.JsonString())
+
+	//FinalBlock
+	m := blockMinor.GetObject().(shard.MinorBlock)
+	block, err = l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []*shard.MinorBlockHeader{&m.MinorBlockHeader})
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, block))
-
+	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeFinalBlock, block.Hash())
+	errors.CheckErrorPanic(err)
+	elog.Log.Info(blockNew.JsonString())
+	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
 }

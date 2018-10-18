@@ -679,6 +679,8 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		return err
 	}
 	prevHash := common.NewHash([]byte("EcoBall Geneses Block"))
+
+	//Init Committee Block
 	header := shard.CMBlockHeader{
 		ChainID:      chainID,
 		Version:      types.VersionHeader,
@@ -706,6 +708,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 	}
 	c.LastHeader.CmHeader = &block.CMBlockHeader
 
+	//Init Minor Block
 	headerMinor := shard.MinorBlockHeader{
 		ChainID:           chainID,
 		Version:           types.VersionHeader,
@@ -735,6 +738,33 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		return err
 	}
 	c.LastHeader.MinorHeader = &blockMinor.MinorBlockHeader
+
+	//Init Final Block
+	headerFinal := shard.FinalBlockHeader{
+		ChainID:            chainID,
+		Version:            types.VersionHeader,
+		Height:             1,
+		Timestamp:          timeStamp,
+		TrxCount:           0,
+		PrevHash:           prevHash,
+		ProposalPubKey:     nil,
+		EpochNo:            0,
+		CMBlockHash:        common.Hash{},
+		TrxRootHash:        common.Hash{},
+		StateDeltaRootHash: common.Hash{},
+		MinorBlocksHash:    common.Hash{},
+		StateHashRoot:      common.Hash{},
+		COSign:             &types.COSign{},
+	}
+	blockFinal := shard.FinalBlock{
+		FinalBlockHeader: headerFinal,
+		MinorBlocks:      nil,
+	}
+	if err := c.SaveShardBlock(0, &blockFinal); err != nil {
+		log.Error("Save geneses block error:", err)
+		return err
+	}
+	c.LastHeader.FinalHeader = &headerFinal
 	return nil
 }
 
@@ -1007,7 +1037,7 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 		StateDeltaRootHash: StateDeltaRootHash,
 		MinorBlocksHash:    MinorBlocksHash,
 		StateHashRoot:      c.StateDB.FinalDB.GetHashRoot(),
-		COSign:             nil,
+		COSign:             &types.COSign{},
 	}
 	block, err := shard.NewFinalBlock(header, minorBlocks)
 	if err != nil {
