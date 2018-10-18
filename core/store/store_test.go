@@ -28,8 +28,8 @@ func TestStore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, _ := s.SearchAll()
-	fmt.Println(len(r))
+	fmt.Println(s.SearchAll())
+	fmt.Println(s.Get([]byte("test")))
 	//存储
 	s.Put([]byte("key1"), []byte("value1"))
 	s.Put([]byte("key2"), []byte("value2"))

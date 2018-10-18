@@ -26,7 +26,7 @@ import (
 )
 
 func TestBlockAdd(t *testing.T) {
-	c, err := transaction.NewTransactionChain("/tmp/quaker/Tx", nil)
+	c, err := transaction.NewTransactionChain("/tmp/quaker/Tx", nil, false)
 	errors.CheckErrorPanic(err)
 
 	re, err := c.BlockStore.SearchAll()

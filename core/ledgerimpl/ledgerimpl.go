@@ -40,9 +40,9 @@ type LedgerImpl struct {
 	//ChainAc *account.ChainAccount
 }
 
-func NewLedger(path string, chainID common.Hash, addr common.Address) (l ledger.Ledger, err error) {
+func NewLedger(path string, chainID common.Hash, addr common.Address, shard bool) (l ledger.Ledger, err error) {
 	ll := &LedgerImpl{path: path, ChainTxs: make(map[common.Hash]*transaction.ChainTx, 1)}
-	if err := ll.NewTxChain(chainID, addr); err != nil {
+	if err := ll.NewTxChain(chainID, addr, shard); err != nil {
 		return nil, err
 	}
 
@@ -55,19 +55,23 @@ func NewLedger(path string, chainID common.Hash, addr common.Address) (l ledger.
 	return ll, nil
 }
 
-func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address) (err error) {
+func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address, shard bool) (err error) {
 	if _, ok := l.ChainTxs[chainID]; ok {
 		return nil
 	}
-	ChainTx, err := transaction.NewTransactionChain(l.path+"/"+chainID.HexString()+"/Transaction", l)
+	ChainTx, err := transaction.NewTransactionChain(l.path+"/"+chainID.HexString()+"/Transaction", l, shard)
 	if err != nil {
 		return err
 	}
-	//if bytes.Equal(userKey.PublicKey, config.Root.PublicKey) {
-	if err := ChainTx.GenesesBlockInit(chainID, addr); err != nil {
-		return err
+	if shard {
+		if err := ChainTx.GenesesShardBlockInit(chainID, addr); err != nil {
+			return err
+		}
+	} else {
+		if err := ChainTx.GenesesBlockInit(chainID, addr); err != nil {
+			return err
+		}
 	}
-	//}
 
 	ChainTx.StateDB.TempDB, err = ChainTx.StateDB.FinalDB.CopyState()
 	ChainTx.StateDB.TempDB.Type = state.TempType
