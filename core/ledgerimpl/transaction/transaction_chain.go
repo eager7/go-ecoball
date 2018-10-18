@@ -663,7 +663,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 
 //ShardBlock
 func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address) error {
-	if c.LastHeader.CmHeader != nil {
+	if c.LastHeader.CmHeader != nil || c.LastHeader.MinorHeader != nil || c.LastHeader.FinalHeader != nil {
 		log.Debug("geneses shard block is existed:", c.CurrentHeader.Height)
 		return nil
 	}
@@ -674,11 +674,10 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 	}
 	timeStamp := tm.UnixNano()
 
-	var shards []shard.Shard
+	prevHash := common.NewHash([]byte("EcoBall Geneses Block"))
 	if err := geneses.PresetShardContract(c.StateDB.FinalDB, timeStamp, addr); err != nil {
 		return err
 	}
-	prevHash := common.NewHash([]byte("EcoBall Geneses Block"))
 
 	//Init Committee Block
 	header := shard.CMBlockHeader{
@@ -700,6 +699,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 			Step2: 0,
 		},
 	}
+	var shards []shard.Shard
 	block, err := shard.NewCmBlock(header, shards)
 
 	if err := c.SaveShardBlock(0, block); err != nil {
@@ -727,12 +727,14 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		},
 		COSign: &types.COSign{},
 	}
+	if err := headerMinor.ComputeHash(); err != nil {
+		return err
+	}
 	blockMinor := &shard.MinorBlock{
 		MinorBlockHeader: headerMinor,
 		Transactions:     nil,
 		StateDelta:       nil,
 	}
-
 	if err := c.SaveShardBlock(0, blockMinor); err != nil {
 		log.Error("Save geneses block error:", err)
 		return err
@@ -746,7 +748,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		Height:             1,
 		Timestamp:          timeStamp,
 		TrxCount:           0,
-		PrevHash:           prevHash,
+		PrevHash:           common.Hash{},
 		ProposalPubKey:     nil,
 		EpochNo:            0,
 		CMBlockHash:        common.Hash{},
@@ -756,15 +758,15 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		StateHashRoot:      c.StateDB.FinalDB.GetHashRoot(),
 		COSign:             &types.COSign{},
 	}
-	blockFinal := shard.FinalBlock{
-		FinalBlockHeader: headerFinal,
-		MinorBlocks:      nil,
+	blockFinal, err := shard.NewFinalBlock(headerFinal, nil)
+	if err != nil {
+		return err
 	}
-	if err := c.SaveShardBlock(0, &blockFinal); err != nil {
+	if err := c.SaveShardBlock(0, blockFinal); err != nil {
 		log.Error("Save geneses block error:", err)
 		return err
 	}
-	c.LastHeader.FinalHeader = &headerFinal
+	c.LastHeader.FinalHeader = &blockFinal.FinalBlockHeader
 	return nil
 }
 
@@ -904,7 +906,7 @@ func (c *ChainTx) GetShardBlockByHeight(typ shard.HeaderType, height uint64) (sh
 			return c.GetShardBlockByHash(typ, k)
 		}
 	}
-	return nil, errors.New(log, fmt.Sprintf("can't find this block:[type]%d, [height]%d", typ, height))
+	return nil, errors.New(log, fmt.Sprintf("can't find this block:[type]%s, [height]%d", typ.String(), height))
 }
 
 func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface, error) {
@@ -1008,11 +1010,11 @@ func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (shard.Block
 	return block, nil
 }
 
-func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlockHeader) (shard.BlockInterface, error) {
+func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlockHeaders []*shard.MinorBlockHeader) (shard.BlockInterface, error) {
 	var hashesTxs []common.Hash
 	var hashesState []common.Hash
 	var hashesMinor []common.Hash
-	for _, m := range minorBlocks {
+	for _, m := range minorBlockHeaders {
 		hashesTxs = append(hashesTxs, m.TrxHashRoot)
 		hashesState = append(hashesState, m.StateDeltaHash)
 		hashesMinor = append(hashesMinor, m.Hash())
@@ -1045,9 +1047,39 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 		StateHashRoot:      c.StateDB.FinalDB.GetHashRoot(),
 		COSign:             &types.COSign{},
 	}
-	block, err := shard.NewFinalBlock(header, minorBlocks)
+	block, err := shard.NewFinalBlock(header, minorBlockHeaders)
 	if err != nil {
 		return nil, err
 	}
 	return block, nil
+}
+
+func (c *ChainTx) CreateFinalBlock(timeStamp int64) (shard.BlockInterface, error) {
+	lastFinalBlock, err := c.GetLastShardBlock(shard.HeFinalBlock)
+	if err != nil {
+		return nil, err
+	}
+	block, ok := lastFinalBlock.GetObject().(shard.FinalBlock)
+	if !ok {
+		return nil, errors.New(log, "the type is error")
+	}
+	var lastHeight uint64
+	for _, h := range block.MinorBlocks {
+		if lastHeight < h.Height {
+			lastHeight = h.Height
+		}
+	}
+	var minorHeaders []*shard.MinorBlockHeader
+	for i := lastHeight + 1; i < c.LastHeader.MinorHeader.Height; i++ {
+		if b, err := c.GetShardBlockByHeight(shard.HeMinorBlock, i); err != nil {
+			return nil, err
+		} else {
+			if B, ok := b.GetObject().(shard.MinorBlock); ok {
+				minorHeaders = append(minorHeaders, &B.MinorBlockHeader)
+			} else {
+				return nil, errors.New(log, "the type is error")
+			}
+		}
+	}
+	return c.NewFinalBlock(timeStamp, minorHeaders)
 }

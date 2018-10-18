@@ -35,10 +35,11 @@ type RegChain struct {
 
 type BlockMessage struct {
 	ShardID uint32
-	Block shard.BlockInterface
+	Block   shard.BlockInterface
 }
 
 type ProducerBlock struct {
-	Height uint64
-	Type shard.HeaderType
+	ChainID common.Hash
+	Height  uint64
+	Type    shard.HeaderType
 }

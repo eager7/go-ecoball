@@ -26,6 +26,8 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
+	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 type LedActor struct {
@@ -95,6 +97,20 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		}
 	case message.ProducerBlock:
 		//block, err := l.ledger.NewTxBlock()
+		switch msg.Type {
+		case shard.HeMinorBlock:
+
+		case shard.HeCmBlock:
+			log.Warn("the minor block nonsupport create by actor")
+		case shard.HeFinalBlock:
+			block, err := l.ledger.CreateFinalBlock(msg.ChainID, time.Now().UnixNano())
+			if err != nil {
+				ctx.Sender().Tell(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
+			}
+			ctx.Sender().Tell(block)
+		default:
+			log.Error("unknown type:", msg.Type.String())
+		}
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}
