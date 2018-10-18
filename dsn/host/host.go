@@ -22,6 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
+	"github.com/ecoball/go-ecoball/dsn/ipfs"
 )
 
 var (
@@ -93,12 +94,17 @@ func NewStorageHost(ctx context.Context, l ledger.Ledger,acc account.Account ,co
 }
 
 func (h *StorageHost) Start() error {
-	err := h.Announce()
-	if err != nil {
+	if err := ipfs.Initialize(); err != nil {
 		return err
 	}
-	err = h.proofLoop()
-	if err != nil {
+	if err := ipfs.DaemonRun(); err != nil {
+		return err
+	}
+	if err := h.Announce(); err != nil {
+		return err
+	}
+
+	if err := h.proofLoop(); err != nil {
 		return err
 	}
 	return nil
