@@ -716,7 +716,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		Timestamp:         timeStamp,
 		PrevHash:          prevHash,
 		TrxHashRoot:       common.Hash{},
-		StateDeltaHash:    common.Hash{},
+		StateDeltaHash:    c.StateDB.FinalDB.GetHashRoot(),
 		CMBlockHash:       common.Hash{},
 		ProposalPublicKey: nil,
 		ShardId:           0,
@@ -753,7 +753,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		TrxRootHash:        common.Hash{},
 		StateDeltaRootHash: common.Hash{},
 		MinorBlocksHash:    common.Hash{},
-		StateHashRoot:      common.Hash{},
+		StateHashRoot:      c.StateDB.FinalDB.GetHashRoot(),
 		COSign:             &types.COSign{},
 	}
 	blockFinal := shard.FinalBlock{
@@ -822,6 +822,9 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 					return err
 				}
 			}
+			if c.StateDB.FinalDB.GetHashRoot() != Block.StateDeltaHash {
+				return errors.New(log, fmt.Sprintf("the minor hash root is not eqaul, receive:%s, local:%s", Block.StateDeltaHash.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
+			}
 		} else {
 			//TODO:Handle StateDelta and Check State Hash
 		}
@@ -847,6 +850,9 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeFinalBlock.String()))
 		}
 		//TODO:Handle Minor Headers
+		if Block.StateHashRoot != c.StateDB.FinalDB.GetHashRoot() {
+			return errors.New(log, fmt.Sprintf("the minor hash root is not eqaul, receive:%s, local:%s", Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
+		}
 		//heValue = append(heValue, byte(shard.HeFinalBlock))
 		data, err := Block.FinalBlockHeader.Serialize()
 		if err != nil {
