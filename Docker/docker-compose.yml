@@ -1,21 +1,32 @@
 version: "3"
 
 services:
-  builder:
-    build:
-       context: ./
-       dockerfile: Dockerfile
-
   ecoball:
-    build:
-      context: ./
-      dockerfile: Dockerfile
-    command: /root/go/src/github.com/ecoball/go-ecoball/ecoball run
-    hostname: ecoball
+    image: jatel/internal:ecoball_v1.0 
+    ports:
+      - "20678:20678"
+    volumes:
+      - ./ecoball_log:/var/ecoball_log
+    container_name: ecoball
+    command: /root/go/src/github.com/ecoball/go-ecoball/build/ecoball run
 
   ecowallet:
-    build:
-      context: ./
-      dockerfile: Dockerfile
-    command: /root/go/src/github.com/ecoball/go-ecoball/ecowallet
-    hostname: ecowallet
+    image: jatel/internal:ecoball_v1.0 
+    ports:
+      - "20679:20679"
+    volumes:
+      - ./ecoball_log:/var/ecoball_log
+    container_name: ecowallet
+    command: /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet
+
+  eballscan:
+    image: jatel/internal:ecoball_v1.0 
+    depends_on:
+      - ecoball
+    ports:
+      - "20680:20680"
+    links:
+      - ecoball:ecoball_alias
+    container_name: eballscan
+    command: /root/go/src/github.com/ecoball/eballscan/eballscan_service.sh ecoball
+    
