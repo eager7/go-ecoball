@@ -84,6 +84,7 @@ func (c *committee) consensusCb(bl interface{}) {
 	default:
 		log.Error("consensus call back wrong packet type ", blockType)
 	}
+
 }
 
 func (c *committee) processShardBlockOnWaitStatus(p interface{}) {

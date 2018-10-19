@@ -2,13 +2,14 @@ package simulate
 
 import (
 	"github.com/ecoball/go-ecoball/common"
+	cc "github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
-func TellBlock(bl interface{}) {
+func TellBlock(bl cs.BlockInterface) {
 	log.Error("tell ledger block")
 	if err := event.Send(event.ActorSharding, event.ActorLedger, bl); err != nil {
 		log.Fatal(err)
@@ -18,13 +19,13 @@ func TellBlock(bl interface{}) {
 func TellLedgerProductFinalBlock(epoch uint64, height uint64) {
 	log.Error("tell ledger product final block")
 
-	pb := &message.ProducerBlock{
-		ChainID: common.Hash{},
+	pb := message.ProducerBlock{
+		ChainID: cc.ChainHash,
 		Height:  height,
 		Type:    cs.HeFinalBlock,
 	}
 
-	if err := event.Send(event.ActorLedger, event.ActorSharding, pb); err != nil {
+	if err := event.Send(event.ActorSharding, event.ActorLedger, pb); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -46,11 +47,11 @@ func CheckFinalBlock(f *cs.FinalBlock) bool {
 //		log.Fatal(err)
 //	}
 //}
-
-func CheckMinorBlock(b *cs.MinorBlock) bool {
-	log.Error("ledger check minor block")
-	return true
-}
+//
+//func CheckMinorBlock(b *cs.MinorBlock) bool {
+//	log.Error("ledger check minor block")
+//	return true
+//}
 
 func GetSyncStatus() bool {
 	return true
