@@ -28,9 +28,20 @@ import (
 
 func TestTransfer(t *testing.T) {
 	tx := example.TestTransfer()
-	tx.Receipt.Hash = tx.Hash
-	tx.Receipt.From = types.AccountReceipt{Balance: new(big.Int).SetUint64(1000)}
-	tx.Receipt.To = types.AccountReceipt{Balance: new(big.Int).SetUint64(1000)}
+	receipt := types.TransactionReceipt{
+		From:    types.AccountReceipt{
+			Balance: new(big.Int).SetUint64(1000),
+		},
+		To:      types.AccountReceipt{
+			Balance: new(big.Int).SetUint64(1000),
+		},
+		Hash:    tx.Hash,
+		Cpu:     10,
+		Net:     20,
+		Account: [2][]byte{},
+		Result:  []byte("ret"),
+	}
+	tx.Receipt = receipt
 	result, err := tx.VerifySignature()
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(result)

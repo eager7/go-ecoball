@@ -274,7 +274,7 @@ func (t *Transaction) Deserialize(data []byte) error {
 }
 
 func (t *Transaction) JsonString() string {
-	data, _ := json.Marshal(struct {
+	/*data, _ := json.Marshal(struct {
 		Version    uint32 `json:"version"`
 		ChainID    string
 		Type       string             `json:"type"`
@@ -290,8 +290,8 @@ func (t *Transaction) JsonString() string {
 	}{Version: t.Version, ChainID: t.ChainID.HexString(), Type: t.Type.String(), From: t.From.String(),
 		Permission: t.Permission, Addr: t.Addr.String(), Nonce: t.Nonce,
 		TimeStamp: t.TimeStamp, Payload: t.Payload.JsonString(), Signatures: t.Signatures,
-		Hash: t.Hash.HexString(), Receipt: t.Receipt})
-	//data, _ = json.Marshal(t)
+		Hash: t.Hash.HexString(), Receipt: t.Receipt})*/
+	data, _ := json.Marshal(t)
 	return string(data)
 }
 
