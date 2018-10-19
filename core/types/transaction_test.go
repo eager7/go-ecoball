@@ -35,7 +35,7 @@ func TestTransfer(t *testing.T) {
 		Hash:      tx.Hash,
 		Cpu:       10,
 		Net:       20,
-		Account:   [][]byte{[]byte("12345"), []byte("67890")},
+		Accounts:  make(map[int][]byte, 1),
 		Result:    []byte("result"),
 	}
 	tx.Receipt = receipt
