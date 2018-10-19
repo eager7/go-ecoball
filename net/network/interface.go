@@ -58,8 +58,9 @@ type CommAPI interface {
 }
 
 type ShardingMsgAPI interface {
-	SendBlockToShards(message.EcoBallNetMsg)
-	SendBlockToCommittee(message.EcoBallNetMsg)
+	SendMsgDataToShard(shardId uint16, msgId uint32, data []byte) error
+	SendMsgToShards(message.EcoBallNetMsg) error
+	SendMsgToCommittee(message.EcoBallNetMsg) error
 }
 
 // Implement Receiver to receive messages from the EcoBallNetwork
@@ -72,6 +73,7 @@ type Receiver interface {
 	IsValidRemotePeer(peer.ID) bool
 	IsNotMyShard(p peer.ID) bool
 	IsLeaderOrBackup() bool
+	GetShardLeader(shardId uint16) (peer.ID, error)
 	GetShardMemebersToReceiveCBlock() [][]peer.ID
 	GetCMMemebersToReceiveSBlock() []peer.ID
 
