@@ -102,6 +102,8 @@ message TransactionReceipt {
     bytes       Result      = 4;
     bytes       From        = 5;
     bytes       To          = 6;
+    string      TokenName   = 7;
+    repeated bytes Account     = 8;
 }
 message BlockReceipt {
     double BlockCpu = 1;

@@ -686,6 +686,13 @@ func (a *Account) SubResourceLimits(cpu, net float64, cpuStakedSum, netStakedSum
 	return nil
 }
 func (a *Account) SetDelegateInfo(index common.AccountName, cpuStaked, netStaked uint64) {
+	for i, d := range a.Delegates {
+		if d.Index == index {
+			a.Delegates[i].CpuStaked += cpuStaked
+			a.Delegates[i].NetStaked += netStaked
+			return
+		}
+	}
 	d := Delegate{Index: index, CpuStaked: cpuStaked, NetStaked: netStaked}
 	a.Delegates = append(a.Delegates, d)
 }

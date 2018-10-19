@@ -1001,6 +1001,38 @@ func QueryContractData(ledger ledger.Ledger) {
 	//abi.GetContractTable("root", "worker2", abiDef, "accounts")
 }
 
+func RecepitTest(ledger ledger.Ledger) {
+
+	acc, err := ledger.StateDB(config.ChainHash).GetAccountByName(common.NameToIndex("root"))
+	errors.CheckErrorPanic(err)
+	account, err := acc.Serialize()
+	errors.CheckErrorPanic(err)
+	var accounts [][]byte
+	accounts = append(accounts, account)
+	accounts = append(accounts, account)
+
+	receipt := types.TransactionReceipt{
+		TokenName:	"ABA",
+		From:		big.NewInt(100),
+		To:			big.NewInt(50),
+		Hash:		common.NewHash(account),
+		Cpu:		10.0,
+		Net:		20.5,
+		Account:	accounts,
+		Result:		account,
+	}
+
+	data, err := receipt.Serialize()
+	errors.CheckErrorPanic(err)
+	newReceipt := types.TransactionReceipt{}
+	err = newReceipt.Deserialize(data)
+	errors.CheckErrorPanic(err)
+
+	accstate := state.Account{}
+	err = accstate.Deserialize(newReceipt.Account[0])
+	errors.CheckErrorPanic(err)
+}
+
 func Wait() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)

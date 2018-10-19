@@ -77,15 +77,12 @@ func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash
 		Signatures: nil,
 		Hash:       common.Hash{},
 		Receipt: TransactionReceipt{
-			From: AccountReceipt{
-				Balance: new(big.Int).SetUint64(0),
-			},
-			To: AccountReceipt{
-				Balance: new(big.Int).SetUint64(0),
-			},
+			From: new(big.Int).SetUint64(0),
+			To: new(big.Int).SetUint64(0),
 			Hash:   common.Hash{},
 			Cpu:    0,
 			Net:    0,
+			Account: nil,
 			Result: nil,
 		},
 	}
@@ -158,11 +155,11 @@ func (t *Transaction) ProtoBuf() (*pb.Transaction, error) {
 		s := &pb.Signature{PubKey: t.Signatures[i].PubKey, SigData: t.Signatures[i].SigData}
 		sig = append(sig, s)
 	}
-	from, err := t.Receipt.From.Balance.GobEncode()
+	from, err := t.Receipt.From.GobEncode()
 	if err != nil {
 		return nil, err
 	}
-	to, err := t.Receipt.To.Balance.GobEncode()
+	to, err := t.Receipt.To.GobEncode()
 	if err != nil {
 		return nil, err
 	}
@@ -239,8 +236,8 @@ func (t *Transaction) Deserialize(data []byte) error {
 		return errors.New(log, fmt.Sprintf("GobDecode err:%s", err.Error()))
 	}
 	t.Receipt = TransactionReceipt{
-		From:   AccountReceipt{Balance: from},
-		To:     AccountReceipt{Balance: to},
+		From:   from,
+		To:     to,
 		Hash:   common.NewHash(txPb.Receipt.Hash),
 		Cpu:    txPb.Receipt.Cpu,
 		Net:    txPb.Receipt.Net,
