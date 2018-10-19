@@ -1007,9 +1007,10 @@ func RecepitTest(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 	account, err := acc.Serialize()
 	errors.CheckErrorPanic(err)
-	var accounts [][]byte
-	accounts = append(accounts, account)
-	accounts = append(accounts, account)
+
+	accounts := make(map[int][]byte)
+	accounts[0] = account
+	accounts[1] = account
 
 	receipt := types.TransactionReceipt{
 		TokenName:	"ABA",
@@ -1018,7 +1019,7 @@ func RecepitTest(ledger ledger.Ledger) {
 		Hash:		common.NewHash(account),
 		Cpu:		10.0,
 		Net:		20.5,
-		Account:	accounts,
+		Accounts:	accounts,
 		Result:		account,
 	}
 
@@ -1033,7 +1034,7 @@ func RecepitTest(ledger ledger.Ledger) {
 	errors.CheckEqualPanic(common.JsonString(receipt, false) == common.JsonString(newReceipt, false))
 
 	accstate := state.Account{}
-	err = accstate.Deserialize(newReceipt.Account[0])
+	err = accstate.Deserialize(newReceipt.Accounts[0])
 	errors.CheckErrorPanic(err)
 }
 

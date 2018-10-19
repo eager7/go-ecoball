@@ -66,7 +66,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			return nil, err
 		}
 
-		ns.tx.Receipt.Account = append(ns.tx.Receipt.Account, data)
+		ns.tx.Receipt.Accounts[0] = data
 	case "set_account":
 		index := common.NameToIndex(ns.params[0])
 		perm := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
@@ -89,7 +89,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		ns.tx.Receipt.Account = append(ns.tx.Receipt.Account, data)
+		ns.tx.Receipt.Accounts[0] = data
 
 	case "reg_prod":
 		index := common.NameToIndex(ns.params[0])
@@ -166,7 +166,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			ns.tx.Receipt.Account = append(ns.tx.Receipt.Account, data)
+			ns.tx.Receipt.Accounts[0] = data
 
 		} else {
 			fromAccount.Delegates = accFrom.Delegates
@@ -175,16 +175,15 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 
 			data, err := fromAccount.Serialize()
 			if err != nil {
-				ns.tx.Receipt.Account[1] = nil
 				return nil, err
 			}
-			ns.tx.Receipt.Account = append(ns.tx.Receipt.Account, data)
+			ns.tx.Receipt.Accounts[0] = data
 
 			data1, err := toAccount.Serialize()
 			if err != nil {
 				return nil, err
 			}
-			ns.tx.Receipt.Account = append(ns.tx.Receipt.Account, data1)
+			ns.tx.Receipt.Accounts[1] = data1
 		}
 
 	case "cancel_pledge":
@@ -227,25 +226,27 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			fromAccount.Cpu.Staked = 0 - cpu
 			fromAccount.Net.Staked = 0 - net
 
-			ns.tx.Receipt.Account[1] = nil
-			ns.tx.Receipt.Account[0], err = fromAccount.Serialize()
+			data, err := fromAccount.Serialize()
 			if err != nil {
 				return nil, err
 			}
+			ns.tx.Receipt.Accounts[0] = data
 		} else {
 			fromAccount.Delegates = accFrom.Delegates
 			toAccount.Cpu.Delegated = 0 - cpu
 			toAccount.Net.Delegated = 0 - net
 
-			ns.tx.Receipt.Account[0], err = fromAccount.Serialize()
-			if err != nil {
-				ns.tx.Receipt.Account[1] = nil
-				return nil, err
-			}
-			ns.tx.Receipt.Account[1], err = toAccount.Serialize()
+			data, err := fromAccount.Serialize()
 			if err != nil {
 				return nil, err
 			}
+			ns.tx.Receipt.Accounts[0] = data
+
+			data1, err := toAccount.Serialize()
+			if err != nil {
+				return nil, err
+			}
+			ns.tx.Receipt.Accounts[1] = data1
 		}
 
 	case dsnComm.FcMethodProof:

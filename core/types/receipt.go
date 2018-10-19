@@ -6,6 +6,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/pb"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"sort"
 )
 
 type TransactionReceipt struct {
@@ -15,7 +16,7 @@ type TransactionReceipt struct {
 	Hash   		common.Hash
 	Cpu    		float64
 	Net    		float64
-	Account 	[][]byte
+	Accounts 	map[int][]byte
 	Result 		[]byte
 }
 
@@ -34,9 +35,15 @@ func (r *TransactionReceipt) Serialize() ([]byte, error) {
 		return nil, err
 	}
 
+	var keysAcc []int
+	for k := range r.Accounts {
+		keysAcc = append(keysAcc, k)
+	}
+	sort.Ints(keysAcc)
+
 	var accounts [][]byte
-	for _, v := range r.Account {
-		accounts = append(accounts, v)
+	for _, k := range keysAcc {
+		accounts = append(accounts, r.Accounts[k])
 	}
 	p := &pb.TransactionReceipt{
 		TokenName:	r.TokenName,
@@ -45,7 +52,7 @@ func (r *TransactionReceipt) Serialize() ([]byte, error) {
 		Hash: 		r.Hash.Bytes(),
 		Cpu: 		r.Cpu,
 		Net: 		r.Net,
-		Account:	accounts,
+		Accounts:	accounts,
 		Result: 	common.CopyBytes(r.Result),
 	}
 	b, err := p.Marshal()
@@ -79,8 +86,9 @@ func (r *TransactionReceipt) Deserialize(data []byte) (error) {
 	r.Cpu = receipt.Cpu
 	r.Net = receipt.Net
 	r.Hash = common.NewHash(receipt.Hash)
-	for _, v := range receipt.Account {
-		r.Account = append(r.Account, v)
+	r.Accounts = make(map[int][]byte)
+	for k, v := range receipt.Accounts {
+		r.Accounts[k] = v
 	}
 	r.Result = common.CopyBytes(receipt.Result)
 
