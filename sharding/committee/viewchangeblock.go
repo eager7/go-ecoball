@@ -8,7 +8,6 @@ import (
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
-	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 )
 
@@ -145,7 +144,14 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 		return nil, false
 	}
 
-	vch := &cs.ViewChangeBlockHeader{}
+	vch := &cs.ViewChangeBlockHeader{
+		CMEpochNo:        0,
+		FinalBlockHeight: 0,
+		Round:            0,
+		Candidate:        cs.NodeInfo{},
+		Timestamp:        0,
+		COSign:           nil,
+	}
 
 	log.Debug("create vc block epoch ", epoch, " height ", height, " round ", round)
 	vc := &cs.ViewChangeBlock{
@@ -192,7 +198,7 @@ func (c *committee) productViewChangeBlock(msg interface{}) {
 
 	c.cs.StartVcConsensus(vci, bCandidate)
 
-	c.stateTimer.Reset(time.Duration(sc.DefaultProductViewChangeBlockTimer*(c.vccount+1)) * time.Second)
+	c.stateTimer.Reset(time.Duration(sc.DefaultProductViewChangeBlockTimer*(c.vccount+1)*(c.vccount+1)) * time.Second)
 }
 
 func (c *committee) checkVcPacket(p interface{}) bool {
@@ -218,12 +224,18 @@ func (c *committee) processViewchangeConsensusPacket(p interface{}) {
 
 func (c *committee) commitViewchangeBlock(bl *cs.ViewChangeBlock) {
 	log.Debug("recv consensus view change block epoch ", bl.CMEpochNo, " height ", bl.FinalBlockHeight, " round  ", bl.Round)
-	simulate.TellBlock(bl)
+	//simulate.TellBlock(bl)
+	panic("view change block")
 
 	c.ns.SaveLastViewchangeBlock(bl)
 	c.resetVcCounter(nil)
 
 	lastcm := c.ns.GetLastCMBlock()
+	if lastcm == nil {
+		c.fsm.Execute(ActProductCommitteeBlock, nil)
+		return
+	}
+
 	if lastcm.Height > bl.CMEpochNo {
 		c.fsm.Execute(ActProductFinalBlock, nil)
 	} else {

@@ -17,6 +17,7 @@
 package transaction
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
@@ -73,6 +74,7 @@ type ChainTx struct {
 	ledger        ledger.Ledger
 
 	LastHeader LastHeaders
+	shardId    uint32
 }
 
 func NewTransactionChain(path string, ledger ledger.Ledger, shard bool) (c *ChainTx, err error) {
@@ -941,7 +943,7 @@ func (c *ChainTx) GetLastShardBlockById(shardId uint32) (shard.BlockInterface, e
 	return c.GetShardBlockByHash(shard.HeMinorBlock, hash)
 }
 
-func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (shard.BlockInterface, error) {
+func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, error) {
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, err
@@ -989,7 +991,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (shar
 	return block, nil
 }
 
-func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (shard.BlockInterface, error) {
+func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBlock, error) {
 	header := shard.CMBlockHeader{
 		ChainID:      c.LastHeader.CmHeader.ChainID,
 		Version:      c.LastHeader.CmHeader.Version,
@@ -1013,7 +1015,7 @@ func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (shard.Block
 	return block, nil
 }
 
-func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlockHeaders []*shard.MinorBlockHeader) (shard.BlockInterface, error) {
+func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlockHeaders []*shard.MinorBlockHeader) (*shard.FinalBlock, error) {
 	var hashesTxs []common.Hash
 	var hashesState []common.Hash
 	var hashesMinor []common.Hash
@@ -1057,7 +1059,7 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlockHeaders []*shard.Mino
 	return block, nil
 }
 
-func (c *ChainTx) CreateFinalBlock(timeStamp int64) (shard.BlockInterface, error) {
+func (c *ChainTx) CreateFinalBlock(timeStamp int64) (*shard.FinalBlock, error) {
 	lastFinalBlock, err := c.GetLastShardBlock(shard.HeFinalBlock)
 	if err != nil {
 		return nil, err
@@ -1085,4 +1087,32 @@ func (c *ChainTx) CreateFinalBlock(timeStamp int64) (shard.BlockInterface, error
 		}
 	}
 	return c.NewFinalBlock(timeStamp, minorHeaders)
+}
+
+func (c *ChainTx) getShardId() (uint32, error) {
+	cm, err := c.GetLastShardBlock(shard.HeCmBlock)
+	if err != nil {
+		return 0, err
+	}
+	block, ok := cm.GetObject().(shard.CMBlock)
+	if !ok {
+		return 0, errors.New(log, "type error")
+	}
+	for index, s := range block.Shards {
+		for _, node := range s.Member {
+			if bytes.Equal(config.Root.PublicKey, node.PublicKey) {
+				c.shardId = uint32(index)
+				return uint32(index), nil
+			}
+		}
+	}
+	return 0, errors.New(log, "not found shard id")
+}
+
+func (c *ChainTx) GetShardId() (uint32, error) {
+	if c.shardId != 0 {
+		return c.getShardId()
+	} else {
+		return c.shardId, nil
+	}
 }

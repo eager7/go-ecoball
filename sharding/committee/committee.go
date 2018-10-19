@@ -3,6 +3,7 @@ package committee
 import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/message"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
@@ -32,6 +33,7 @@ const (
 	ActChainNotSync
 	ActRecvConsensusPacket
 	ActRecvShardPacket
+	ActLedgerBlockMsg
 	ActStateTimeout
 )
 
@@ -45,17 +47,14 @@ type committee struct {
 	retransTimer *time.Timer
 	vccount      uint16
 	cs           *consensus.Consensus
-
-	bCollectMinorBlock bool
 }
 
 func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 	cm := &committee{
-		ns:                 ns,
-		actorc:             make(chan interface{}),
-		ppc:                make(chan *sc.CsPacket, sc.DefaultCommitteMaxMember),
-		vccount:            0,
-		bCollectMinorBlock: false,
+		ns:      ns,
+		actorc:  make(chan interface{}),
+		ppc:     make(chan *sc.CsPacket, sc.DefaultCommitteMaxMember),
+		vccount: 0,
 	}
 
 	cm.cs = consensus.MakeConsensus(cm.ns, cm.setRetransTimer, cm.consensusCb)
@@ -66,7 +65,6 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 			{blockSync, ActCollectMinorBlock, nil, cm.collectMinorBlock, nil, collectMinorBlock},
 			{blockSync, ActProductFinalBlock, nil, cm.productFinalBlock, nil, productFinalBlock},
 			{blockSync, ActStateTimeout, nil, cm.processBlockSyncTimeout, nil, sc.StateNil},
-			{blockSync, ActRecvConsensusPacket, nil, cm.dropPacket, nil, sc.StateNil},
 
 			{productCommitteBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
 			{productCommitteBlock, ActRecvConsensusPacket, nil, cm.processConsensusCmPacket, nil, sc.StateNil},
@@ -88,6 +86,7 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 			{productFinalBlock, ActProductCommitteeBlock, nil, cm.productCommitteeBlock, nil, productCommitteBlock},
 			{productFinalBlock, ActRecvConsensusPacket, nil, cm.processConsensusFinalPacket, nil, sc.StateNil},
 			{productFinalBlock, ActStateTimeout, cm.resetVcCounter, cm.productViewChangeBlock, nil, productViewChangeBlock},
+			{productFinalBlock, ActLedgerBlockMsg, nil, cm.processLedgerFinalBlockMsg, nil, sc.StateNil},
 
 			/*missing_func consensus fail or timeout*/
 			/*{ProductCommitteBlock, ActConsensusFail, , },
@@ -154,6 +153,8 @@ func (c *committee) processActorMsg(msg interface{}) {
 	switch msg.(type) {
 	case message.SyncComplete:
 		c.processSyncComplete(msg)
+	case cs.FinalBlock:
+		c.processFinalBlockMsg(msg.(*cs.FinalBlock))
 	default:
 		log.Error("wrong actor message")
 	}

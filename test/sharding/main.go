@@ -11,7 +11,15 @@ func main() {
 
 	simulate.LoadConfig()
 
-	sharding.NewShardingActor(L)
+	actor, _ := sharding.NewShardingActor(L)
+
+	topo := actor.SubscribeShardingTopo()
+
+	go func() {
+		for {
+			<-topo
+		}
+	}()
 
 	select {}
 }

@@ -192,3 +192,8 @@ func (c *workerQ) isCandidateLeader(self *Worker) bool {
 		return false
 	}
 }
+
+type ShardingTopo struct {
+	ShardId      uint16
+	ShardingInfo [][]Worker
+}

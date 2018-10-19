@@ -21,6 +21,8 @@ import (
 	"syscall"
 	"time"
 	"encoding/hex"
+	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/ecoball/go-ecoball/core/shard"
 )
 
 var interval = time.Millisecond * 100
@@ -1037,4 +1039,15 @@ func Wait() {
 	defer signal.Stop(interrupt)
 	sig := <-interrupt
 	log.Info("ecoball received signal:", sig)
+}
+
+func Actor() *actor.PID {
+	props := actor.FromFunc(func(context actor.Context) {
+		switch msg := context.Message().(type) {
+		case shard.BlockInterface:
+			elog.Log.Info(msg.JsonString())
+		}
+	})
+	pid, _ := actor.SpawnNamed(props, "example")
+	return pid
 }
