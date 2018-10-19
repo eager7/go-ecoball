@@ -14,7 +14,7 @@ If your operating system is ubuntu
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
 ./docker_service.sh start
 ```
-You will start 21 ecoball and ecowallet and eballscan
+You will start twenty-one ecoball and one ecowallet and one eballscan
 
 If you want to stop all services
 ```
@@ -33,4 +33,4 @@ start services
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
 sudo docker-compose up -d
 ```
-you will start ecoball and ecowallet and eballscan
+you will start one ecoball and one ecowallet and one eballscan
