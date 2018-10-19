@@ -45,6 +45,7 @@ func NewLedgerActor(l *LedActor) (*actor.PID, error) {
 		return nil, err
 	}
 	event.RegisterActor(event.ActorLedger, pid)
+	log.Debug("start ledger actor:", pid)
 
 	return pid, nil
 }
@@ -72,19 +73,19 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		}
 		end := time.Now().UnixNano()
 		log.Info("save block["+msg.ChainID.HexString()+"block hash:"+msg.Hash.HexString()+"]:", (end-begin)/1000, "us")
-	case message.BlockMessage:
-		chain, ok := l.ledger.ChainTxs[msg.Block.GetChainID()]
+	case shard.BlockInterface:
+		chain, ok := l.ledger.ChainTxs[msg.GetChainID()]
 		if !ok {
-			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.Block.GetChainID().HexString()))
+			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.GetChainID().HexString()))
 			return
 		}
 		begin := time.Now().UnixNano()
-		if err := chain.SaveShardBlock(0, msg.Block); err != nil {
-			log.Error("save block["+msg.Block.GetChainID().HexString()+"] error:", err)
+		if err := chain.SaveShardBlock(0, msg); err != nil {
+			log.Error("save block["+msg.GetChainID().HexString()+"] error:", err)
 			break
 		}
 		end := time.Now().UnixNano()
-		log.Info("save block["+msg.Block.GetChainID().HexString()+"]:", (end-begin)/1000, "us")
+		log.Info("save block["+msg.GetChainID().HexString()+"]:", (end-begin)/1000, "us")
 	case *dpos.DposBlock:
 		//TODO
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {
@@ -95,8 +96,8 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		if err := l.ledger.NewTxChain(msg.ChainID, msg.Address, false); err != nil {
 			log.Error(err)
 		}
-	case message.ProducerBlock:
-		//block, err := l.ledger.NewTxBlock()
+	case *message.ProducerBlock:
+		log.Debug("receive create block request")
 		switch msg.Type {
 		case shard.HeMinorBlock:
 

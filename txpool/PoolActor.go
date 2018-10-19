@@ -93,7 +93,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 			log.Warn(tx.JsonString())
 			return err
 		}
-		log.Debug(ret, cpu, net, err)
+		log.Debug(ret, cpu, net, err) 
 		p.txPool.Push(tx.ChainID, tx)
 	}
 

@@ -34,6 +34,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/shard"
 	"os"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
+	"github.com/ecoball/go-ecoball/common/message"
 )
 
 var root = common.NameToIndex("root")
@@ -250,11 +251,19 @@ func TestShard(t *testing.T) {
 
 func TestExample(t *testing.T) {
 	os.RemoveAll("/tmp/shard_example")
-	l, err := ledgerimpl.NewLedger("/tmp/shard_example", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	_, err := ledgerimpl.NewLedger("/tmp/shard_example", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
 	errors.CheckErrorPanic(err)
 
-	block, err := l.GetLastShardBlock(config.ChainHash, shard.HeFinalBlock)
-	errors.CheckErrorPanic(err)
-	elog.Log.Debug(block.JsonString())
+	pid := example.Actor()
+
+	msg := &message.ProducerBlock{
+		ChainID: config.ChainHash,
+		Height:  2,
+		Type:    shard.HeFinalBlock,
+	}
+	pidL, _ := event.GetActor(event.ActorLedger)
+	pidL.Request(msg, pid)
+
+	time.Sleep(time.Second * 1)
 	event.EventStop()
 }
