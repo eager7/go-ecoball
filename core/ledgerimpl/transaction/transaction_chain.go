@@ -17,6 +17,7 @@
 package transaction
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
@@ -73,6 +74,7 @@ type ChainTx struct {
 	ledger        ledger.Ledger
 
 	LastHeader LastHeaders
+	shardId    uint32
 }
 
 func NewTransactionChain(path string, ledger ledger.Ledger, shard bool) (c *ChainTx, err error) {
@@ -1082,4 +1084,32 @@ func (c *ChainTx) CreateFinalBlock(timeStamp int64) (*shard.FinalBlock, error) {
 		}
 	}
 	return c.NewFinalBlock(timeStamp, minorHeaders)
+}
+
+func (c *ChainTx) getShardId() (uint32, error) {
+	cm, err := c.GetLastShardBlock(shard.HeCmBlock)
+	if err != nil {
+		return 0, err
+	}
+	block, ok := cm.GetObject().(shard.CMBlock)
+	if !ok {
+		return 0, errors.New(log, "type error")
+	}
+	for index, s := range block.Shards {
+		for _, node := range s.Member {
+			if bytes.Equal(config.Root.PublicKey, node.PublicKey) {
+				c.shardId = uint32(index)
+				return uint32(index), nil
+			}
+		}
+	}
+	return 0, errors.New(log, "not found shard id")
+}
+
+func (c *ChainTx) GetShardId() (uint32, error) {
+	if c.shardId != 0 {
+		return c.getShardId()
+	} else {
+		return c.shardId, nil
+	}
 }
