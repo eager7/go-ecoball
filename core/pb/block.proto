@@ -116,7 +116,7 @@ message Transaction {
     TxPayload               payload     = 1;
     repeated    Signature   sign        = 2;
     bytes                   hash        = 3;
-    TransactionReceipt                 Receipt     = 4;
+    bytes                   Receipt     = 4;
 }
 /**
 **

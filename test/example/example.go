@@ -26,7 +26,7 @@ import (
 )
 
 var interval = time.Millisecond * 100
-var log = elog.NewLogger("example", elog.InfoLog)
+var log = elog.NewLogger("example", elog.NoticeLog)
 
 func AddAccount(state *state.State) error {
 	from := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
@@ -1027,6 +1027,10 @@ func RecepitTest(ledger ledger.Ledger) {
 	newReceipt := types.TransactionReceipt{}
 	err = newReceipt.Deserialize(data)
 	errors.CheckErrorPanic(err)
+
+	log.Debug(common.JsonString(receipt, false))
+	log.Info(common.JsonString(newReceipt, false))
+	errors.CheckEqualPanic(common.JsonString(receipt, false) == common.JsonString(newReceipt, false))
 
 	accstate := state.Account{}
 	err = accstate.Deserialize(newReceipt.Account[0])

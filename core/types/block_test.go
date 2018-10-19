@@ -64,11 +64,10 @@ func TestBlockCreate(t *testing.T) {
 	block.SetSignature(&config.Root)
 	data, err := block.Serialize()
 	errors.CheckErrorPanic(err)
+	elog.Log.Warn(data)
 
 	blockNew := new(types.Block)
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
-	elog.Log.Debug(block.JsonString(false))
-	elog.Log.Info(blockNew.JsonString(false))
 	errors.CheckEqualPanic(block.JsonString(false) == blockNew.JsonString(false))
 
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(config.ChainHash, block))
@@ -77,7 +76,11 @@ func TestBlockCreate(t *testing.T) {
 
 	reBlock, err := ledger.GetTxBlock(config.ChainHash, blockNew.Hash)
 	errors.CheckErrorPanic(err)
+	elog.Log.Debug(block.JsonString(false))
+	elog.Log.Info(blockNew.JsonString(false))
 	errors.CheckEqualPanic(blockNew.JsonString(false) == reBlock.JsonString(false))
+
+	event.EventStop()
 }
 
 func xTestBlockNew(t *testing.T) {
@@ -110,4 +113,5 @@ func xTestBlockNew(t *testing.T) {
 	data, err := block.Serialize()
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(utils.FileWrite("/tmp/block.data", data))
+	event.EventStop()
 }

@@ -241,14 +241,18 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if err := c.HeaderStore.Put(block.Header.Hash.Bytes(), payload); err != nil {
 		return err
 	}
-	payload, _ = block.Serialize()
+	payload, err = block.Serialize()
+	if err != nil {
+		return err
+	}
 	c.BlockStore.BatchPut(block.Hash.Bytes(), payload)
 	if err := c.BlockStore.BatchCommit(); err != nil {
 		return err
 	}
 	c.StateDB.FinalDB.CommitToDB()
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
-	log.Notice(block.JsonString(true))
+	log.Notice(block.JsonString(false))
+	log.Warn(payload)
 	c.CurrentHeader = block.Header
 	c.BlockMap[block.Hash] = BlockCache{Height: block.Height}
 
@@ -271,6 +275,7 @@ func (c *ChainTx) GetBlock(hash common.Hash) (*types.Block, error) {
 	if err != nil {
 		return nil, errors.New(log, fmt.Sprintf("GetBlock error:%s", err.Error()))
 	}
+	log.Warn(dataBlock)
 	block := new(types.Block)
 	if err := block.Deserialize(dataBlock); err != nil {
 		return nil, err

@@ -155,11 +155,7 @@ func (t *Transaction) ProtoBuf() (*pb.Transaction, error) {
 		s := &pb.Signature{PubKey: t.Signatures[i].PubKey, SigData: t.Signatures[i].SigData}
 		sig = append(sig, s)
 	}
-	from, err := t.Receipt.From.GobEncode()
-	if err != nil {
-		return nil, err
-	}
-	to, err := t.Receipt.To.GobEncode()
+	receipt, err := t.Receipt.Serialize()
 	if err != nil {
 		return nil, err
 	}
@@ -177,14 +173,7 @@ func (t *Transaction) ProtoBuf() (*pb.Transaction, error) {
 		},
 		Sign: sig,
 		Hash: t.Hash.Bytes(),
-		Receipt: &pb.TransactionReceipt{
-			Hash:   t.Hash.Bytes(),
-			Cpu:    t.Receipt.Cpu,
-			Net:    t.Receipt.Net,
-			Result: common.CopyBytes(t.Receipt.Result),
-			From:   from,
-			To:     to,
-		},
+		Receipt: receipt,
 	}
 	return p, nil
 }
@@ -227,21 +216,10 @@ func (t *Transaction) Deserialize(data []byte) error {
 	t.Addr = common.AccountName(txPb.Payload.Addr)
 	t.Nonce = txPb.Payload.Nonce
 	t.TimeStamp = txPb.Payload.Timestamp
-	from := new(big.Int)
-	if err := from.GobDecode(txPb.Receipt.From); err != nil {
-		return errors.New(log, fmt.Sprintf("GobDecode err:%s", err.Error()))
-	}
-	to := new(big.Int)
-	if err := to.GobDecode(txPb.Receipt.To); err != nil {
-		return errors.New(log, fmt.Sprintf("GobDecode err:%s", err.Error()))
-	}
-	t.Receipt = TransactionReceipt{
-		From:   from,
-		To:     to,
-		Hash:   common.NewHash(txPb.Receipt.Hash),
-		Cpu:    txPb.Receipt.Cpu,
-		Net:    txPb.Receipt.Net,
-		Result: common.CopyBytes(txPb.Receipt.Result),
+
+
+	if err := t.Receipt.Deserialize(txPb.Receipt); err != nil {
+		return err
 	}
 	if t.Payload == nil {
 		switch t.Type {
