@@ -26,6 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"sync"
 	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 
@@ -82,13 +83,19 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	}
 	p.txPool.txsCache.Add(tx.Hash, nil)
 
-	ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
+	shardId, err := p.txPool.ledger.GetShardId(tx.ChainID)
 	if err != nil {
-		log.Warn(tx.JsonString())
 		return err
 	}
-	log.Debug(ret, cpu, net, err)
-	p.txPool.Push(tx.ChainID, tx)
+	if uint64(shardId) == uint64(tx.From)/3 || config.StartNode == false {
+		ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
+		if err != nil {
+			log.Warn(tx.JsonString())
+			return err
+		}
+		log.Debug(ret, cpu, net, err)
+		p.txPool.Push(tx.ChainID, tx)
+	}
 
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
 		log.Warn("broadcast transaction failed:" + tx.Hash.HexString())
