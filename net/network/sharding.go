@@ -19,27 +19,41 @@
 package network
 
 import (
+	"fmt"
 	"github.com/ecoball/go-ecoball/net/message"
 )
 
-func (net *NetImpl)SendBlockToShards(blkmsg message.EcoBallNetMsg) {
+func (net *NetImpl)SendMsgDataToShard(shardId uint16, msgId uint32, data []byte) error {
+	p, err := net.receiver.GetShardLeader(shardId)
+	if err != nil {
+		return err
+	}
+	msg := message.New(msgId, data)
+	net.SendMsgToPeerWithId(p, msg)
+
+	return nil
+}
+
+func (net *NetImpl)SendMsgToShards(msg message.EcoBallNetMsg) error {
 	if !net.receiver.IsLeaderOrBackup() {
-		log.Error("I am not a committee leader or backup")
-		return
+		return fmt.Errorf("sender is not a committee leader or backup")
 	}
 
 	shardMembers := net.receiver.GetShardMemebersToReceiveCBlock()
 	for _, shard := range shardMembers {
-		net.SendMsgToPeersWithId(shard, blkmsg)
+		net.SendMsgToPeersWithId(shard, msg)
 	}
+
+	return nil
 }
 
-func (net *NetImpl)SendBlockToCommittee(blkmsg message.EcoBallNetMsg) {
+func (net *NetImpl)SendMsgToCommittee(msg message.EcoBallNetMsg) error {
 	if !net.receiver.IsLeaderOrBackup() {
-		log.Error("I am not a shard leader or backup")
-		return
+		return fmt.Errorf("sender is not a committee leader or backup")
 	}
 
 	cmMembers := net.receiver.GetCMMemebersToReceiveSBlock()
-	net.SendMsgToPeersWithId(cmMembers, blkmsg)
+	net.SendMsgToPeersWithId(cmMembers, msg)
+
+	return nil
 }

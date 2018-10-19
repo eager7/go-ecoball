@@ -421,6 +421,16 @@ func (nn *NetNode) IsLeaderOrBackup() bool {
 	return false
 }
 
+func (nn *NetNode) GetShardLeader(shardId uint16) (peer.ID, error) {
+	nn.shardingInfo.rwlck.RLock()
+	defer nn.shardingInfo.rwlck.RUnlock()
+
+	if shardId > uint16(len(nn.shardingInfo.peersInfo) -1) {
+		return "", fmt.Errorf("invalid shard id")
+	}
+	return nn.shardingInfo.peersInfo[shardId][0], nil
+}
+
 func (nn *NetNode) GetShardMemebersToReceiveCBlock() [][]peer.ID {
 	nn.shardingInfo.rwlck.RLock()
 	defer nn.shardingInfo.rwlck.RUnlock()

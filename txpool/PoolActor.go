@@ -92,12 +92,12 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		handle = true
 	} else {
 		if tx.Type == types.TxTransfer {
-			if uint64(shardId) == uint64(tx.From)/3{
+			if uint64(shardId) == uint64(tx.From)%3{
 				handle = true
 			}
 		} else {
 			if tx.Addr != common.NameToIndex("root") {
-				if uint64(shardId) == uint64(tx.Addr)/3{
+				if uint64(shardId) == uint64(tx.Addr)%3{
 					handle = true
 				}
 			}

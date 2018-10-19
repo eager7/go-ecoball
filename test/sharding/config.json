@@ -1,11 +1,11 @@
 {
     "pubkey":"1099ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be45",
-    "address":"192.168.8.242",
+    "address":"192.168.8.35",
 	"port":"4560",
     "committee":[
       {
         "pubkey":"1099ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be45",
-        "address":"192.168.8.242",
+        "address":"192.168.8.35",
         "port":"4560"
       }
     ],
