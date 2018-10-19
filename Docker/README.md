@@ -1,97 +1,36 @@
+Ecoball-Docker
+========
 
-## Ubuntu安装docker：
-14.04 版本系统中已经自带了 Docker 包，可以直接安装。
-```
-$ sudo apt-get update
-$ sudo apt-get install -y docker.io
-$ sudo ln -sf /usr/bin/docker.io /usr/local/bin/docker
-$ sudo sed -i '$acomplete -F _docker docker' /etc/bash_completion.d/docker.io
-```
-要安装最新的 Docker 版本，首先需要安装 apt-transport-https 支持，之后通过添加源来安装。
-```
-$ sudo apt-get install apt-transport-https
-$ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
-$ sudo bash -c "echo deb https://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list"
-$ sudo apt-get update
-$ sudo apt-get install lxc-docker
-```
+#Depends
 
-如果是较14.04 之前版本，需要先更新内核。
-```
-$ sudo apt-get update
-$ sudo apt-get install linux-image-generic-lts-raring linux-headers-generic-lts-raring
-$ sudo reboot
-```
-然后重复上面的步骤即可。
-安装之后启动 Docker 服务。
-```
-$ sudo service docker start
-```
+You need install docker and docker-compose
 
-## CentOS 系列安装 Docker
-Docker 支持 CentOS6 及以后的版本。
+#Run
 
-对于 CentOS6，可以使用 EPEL 库安装 Docker，命令如下
-```
-$ sudo yum install http://mirrors.yun-idc.com/epel/6/i386/epel-release-6-8.noarch.rpm
-$ sudo yum install docker-io
-```
-CentOS7 系统 CentOS-Extras 库中已带 Docker，可以直接安装：
-```
-$ sudo yum install docker
-```
-安装之后启动 Docker 服务，并让它随系统启动自动加载。
-```
-$ sudo service docker start
-$ sudo chkconfig docker on
-```
-## 制作Docker镜像
-本处Dockerfile基于Ubuntu 18.04构建镜像，如果是其他版本，请在Dockerfile第二行处修改为对应的版本
+##docker_service.sh start | stop
 
-下载的Dockerfile目录下，执行Dockerfile来构建镜像文件
+If your operating system is ubuntu
 ```
-sudo docker build -t="ecoball:v1" . （双引号里的内容为镜像文件名称，可自行命名）
+cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
+./docker_service.sh start
 ```
-查看构建Docker镜像文件
-```
-docker images
-```
-## 运行容器
-通过镜像文件启动进入容器
-```
-sudo docker run -t -i ecoball:v1 /bin/bash  （ecoball:v1位镜像文件名称）
-```
-go-ecoball位于root/go/src/github.com/ecoball/go-ecoball/路径下，这时候就可以在容器里启动go-ecoball服务
+You will start 21 ecoball and ecowallet and eballscan
 
-## 后台运行容器
+If you want to stop all services
 ```
-sudo docker run -t -i -d ecoball:v1 /bin/bash
+cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
+./docker_service.sh stop
 ```
-查看运行的容器的信息，包括容器id等
-```
-docker ps
-```
-操作后台运行容器
-```
-sudo docker attach 容器id
-```
-
-## 退出容器
-退出
-```
-exit
-```
-删除容器
-```
-docker rm 容器id
-```
-删除镜像文件
-```
-docker rmi 镜像id (先删除依赖这个镜像的所有容器)
-```
-
 
 ##docker-compose
+
+Create the map directory
 ```
-sudo docker-compose up
+mkdir $GOPATH/src/github.com/ecoball/go-ecoball/Docker/ecoball_log
 ```
+start services
+```
+cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
+sudo docker-compose up -d
+```
+you will start ecoball and ecowallet and eballscan
