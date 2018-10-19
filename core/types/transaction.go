@@ -82,7 +82,7 @@ func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash
 			Hash:   common.Hash{},
 			Cpu:    0,
 			Net:    0,
-			Accounts: nil,
+			Accounts: make(map[int][]byte, 1),
 			Result: nil,
 		},
 	}
