@@ -50,9 +50,9 @@ func (c *chainData) getMinorBlock() *cs.MinorBlock {
 }
 
 func (c *chainData) setPreMinorBlock(minor *cs.MinorBlock) {
-	c.minorBlock = minor
+	c.preMinorBlock = minor
 }
 
 func (c *chainData) getPreMinorBlock() *cs.MinorBlock {
-	return c.minorBlock
+	return c.preMinorBlock
 }

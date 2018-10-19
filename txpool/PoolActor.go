@@ -87,7 +87,23 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	if err != nil {
 		return err
 	}
-	if uint64(shardId) == uint64(tx.From)/3 || config.StartNode == false {
+	var handle bool
+	if config.DisableSharding {
+		handle = true
+	} else {
+		if tx.Type == types.TxTransfer {
+			if uint64(shardId) == uint64(tx.From)/3{
+				handle = true
+			}
+		} else {
+			if tx.Addr != common.NameToIndex("root") {
+				if uint64(shardId) == uint64(tx.Addr)/3{
+					handle = true
+				}
+			}
+		}
+	}
+	if handle {
 		ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
 		if err != nil {
 			log.Warn(tx.JsonString())

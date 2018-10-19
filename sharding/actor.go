@@ -5,6 +5,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	"reflect"
 )
 
@@ -54,15 +55,14 @@ func (s *ShardingActor) Receive(ctx actor.Context) {
 	case *message.SyncComplete:
 		s.instance.MsgDispatch(msg)
 
+	case *cs.FinalBlock:
+		s.instance.MsgDispatch(msg)
+
 	default:
 		log.Warn("ShardingActor received unknown type message ", msg, " type ", reflect.TypeOf(msg))
 	}
 }
 
-func GetShardingInst() (ShardingInstance) {
-	return nil
-}
-
-func SetActor() {
-
+func (s *ShardingActor) SubscribeShardingTopo() <-chan interface{} {
+	return s.instance.SubscribeShardingTopo()
 }

@@ -3,12 +3,14 @@ package shard
 import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
+	"time"
 )
 
 type minorBlockCsi struct {
@@ -154,11 +156,38 @@ func (s *shard) createMinorBlock() *cs.MinorBlock {
 }
 
 func (s *shard) productMinorBlock(msg interface{}) {
-	minor := s.createMinorBlock()
+	if s.ns.IsLeader() {
+		lastcm := s.ns.GetLastCMBlock()
+		if lastcm == nil {
+			panic("cm block not exist")
+			return
+		}
 
-	csi := newMinorBlockCsi(minor)
+		//lastMinor := s.ns.GetLastMinorBlock()
+		//var height uint64
+		//if lastMinor == nil {
+		//	height = 1
+		//} else {
+		//	height = lastMinor.Height + 1
+		//}
 
-	s.cs.StartConsensus(csi)
+		//simulate.TellLedgerProductMinorBlock(lastcm.Height, height, uint32(s.ns.Shardid))
+
+		bi, err := s.ns.Ledger.NewMinorBlock(config.ChainHash, nil, time.Now().UnixNano())
+		minor := bi.GetObject().(*cs.MinorBlock)
+
+		if err != nil {
+			return
+		}
+
+		csi := newMinorBlockCsi(minor)
+		s.cs.StartConsensus(csi)
+
+	} else {
+		minor := s.createMinorBlock()
+		csi := newMinorBlockCsi(minor)
+		s.cs.StartConsensus(csi)
+	}
 }
 
 func (s *shard) reproductMinorBlock(msg interface{}) {
@@ -169,7 +198,7 @@ func (s *shard) reproductMinorBlock(msg interface{}) {
 func (s *shard) commitMinorBlock(bl *cs.MinorBlock) {
 	log.Debug("consensus minor block height ", bl.Height)
 
-	simulate.TellMinorBlock(bl)
+	simulate.TellBlock(bl)
 
 	s.ns.SavePreMinorBlock(bl)
 

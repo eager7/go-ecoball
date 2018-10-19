@@ -28,6 +28,7 @@ type Cell struct {
 	minorBlockPool *minorBlockSet
 
 	Ledger ledger.Ledger
+	Topoc  chan interface{}
 }
 
 func MakeCell(l ledger.Ledger) *Cell {
@@ -36,6 +37,7 @@ func MakeCell(l ledger.Ledger) *Cell {
 		chain:          makeChainData(),
 		minorBlockPool: makeMinorBlockSet(),
 		Ledger:         l,
+		Topoc:          make(chan interface{}),
 	}
 }
 
@@ -87,6 +89,36 @@ func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 		c.saveShardsInfoFromCMBlock(bk)
 	}
 
+	c.createShardingTopo()
+}
+
+func (c *Cell) createShardingTopo() {
+	topo := &ShardingTopo{ShardId: c.Shardid}
+
+	lastcm := c.GetLastCMBlock()
+	if lastcm == nil {
+		panic("last cm block is nil")
+		return
+	}
+
+	total := len(lastcm.Shards) + 1
+
+	topo.ShardingInfo = make([][]Worker, total)
+	for _, member := range c.cm.member {
+		var worker Worker
+		worker = *member
+		topo.ShardingInfo[0] = append(topo.ShardingInfo[0], worker)
+	}
+
+	for i, shard := range lastcm.Shards {
+		for _, member := range shard.Member {
+			var worker Worker
+			(&worker).InitWork(&member)
+			topo.ShardingInfo[i+1] = append(topo.ShardingInfo[i+1], worker)
+		}
+	}
+
+	c.Topoc <- topo
 }
 
 func (c *Cell) GetLastCMBlock() *cs.CMBlock {
