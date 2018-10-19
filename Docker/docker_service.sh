@@ -17,7 +17,7 @@
 # along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 
-SOURCE_DIR=$(cd 'dirname $0' && pwd)
+SOURCE_DIR=$(cd `dirname $0` && pwd)
 IMAGE="jatel/internal:ecoball_v1.0"
 NUM=20
 PORT=20680
