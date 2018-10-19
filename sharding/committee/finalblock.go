@@ -28,19 +28,24 @@ func (b *finalBlockCsi) GetCsView() *sc.CsView {
 
 func (b *finalBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 	update := bl.(*cs.FinalBlock)
-	if b.bk.Height != update.Height || b.bk.EpochNo != update.EpochNo {
-		log.Error("view error current ", b.bk.EpochNo, " ", b.bk.Height, " packet view ", update.EpochNo, " ", update.Height)
-		return false
-	}
-
-	if !sc.Same(b.bk.ProposalPubKey, update.ProposalPubKey) {
-		log.Error("proposal not same")
-		return false
-	}
-
 	if bLeader {
 		b.cache = update
 	} else {
+		if b.bk.Height != update.Height || b.bk.EpochNo != update.EpochNo {
+			log.Error("view error current ", b.bk.EpochNo, " ", b.bk.Height, " packet view ", update.EpochNo, " ", update.Height)
+			return false
+		}
+
+		if !sc.Same(b.bk.ProposalPubKey, update.ProposalPubKey) {
+			log.Error("proposal not same")
+			return false
+		}
+
+		if !simulate.CheckFinalBlock(update) {
+			log.Error("final block check failed")
+			return false
+		}
+
 		b.bk = update
 	}
 	return true
@@ -99,7 +104,6 @@ func (b *finalBlockCsi) GetCandidate() *cs.NodeInfo {
 }
 
 func (c *committee) createFinalBlock() *cs.FinalBlock {
-
 	lastcm := c.ns.GetLastCMBlock()
 	if lastcm == nil {
 		panic("cm block not exist")
@@ -152,10 +156,37 @@ func (c *committee) productFinalBlock(msg interface{}) {
 	log.Debug("product final block")
 	etime.StopTime(c.stateTimer)
 
-	final := c.createFinalBlock()
-	if final == nil {
-		return
+	if c.ns.IsLeader() {
+		lastcm := c.ns.GetLastCMBlock()
+		if lastcm == nil {
+			panic("cm block not exist")
+			return
+		}
+
+		lastfinal := c.ns.GetLastFinalBlock()
+		var height uint64
+		if lastfinal == nil {
+			height = 1
+		} else {
+			height = lastfinal.Height + 1
+		}
+
+		simulate.TellLedgerProductFinalBlock(lastcm.Height, height)
+	} else {
+		final := c.createFinalBlock()
+		if final == nil {
+			return
+		}
+		csi := newFinalBlockCsi(final)
+
+		c.cs.StartConsensus(csi)
+
+		c.stateTimer.Reset(sc.DefaultProductFinalBlockTimer * time.Second)
 	}
+}
+
+func (c *committee) processLedgerFinalBlockMsg(p interface{}) {
+	final := p.(*cs.FinalBlock)
 
 	csi := newFinalBlockCsi(final)
 

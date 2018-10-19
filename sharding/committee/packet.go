@@ -61,11 +61,6 @@ func (c *committee) verifyShardingPacket(p *sc.NetPacket) {
 	}
 }
 
-func (c *committee) dropPacket(packet interface{}) {
-	pkt := packet.(*sc.CsPacket)
-	log.Debug("drop packet type ", pkt.PacketType)
-}
-
 func (c *committee) setRetransTimer(bStart bool) {
 	etime.StopTime(c.retransTimer)
 
@@ -89,6 +84,7 @@ func (c *committee) consensusCb(bl interface{}) {
 	default:
 		log.Error("consensus call back wrong packet type ", blockType)
 	}
+
 }
 
 func (c *committee) processShardBlockOnWaitStatus(p interface{}) {
