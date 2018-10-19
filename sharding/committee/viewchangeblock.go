@@ -192,7 +192,7 @@ func (c *committee) productViewChangeBlock(msg interface{}) {
 
 	c.cs.StartVcConsensus(vci, bCandidate)
 
-	c.stateTimer.Reset(time.Duration(sc.DefaultProductViewChangeBlockTimer*(c.vccount+1)) * time.Second)
+	c.stateTimer.Reset(time.Duration(sc.DefaultProductViewChangeBlockTimer*(c.vccount+1)*(c.vccount+1)) * time.Second)
 }
 
 func (c *committee) checkVcPacket(p interface{}) bool {

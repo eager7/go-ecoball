@@ -115,10 +115,9 @@ func (b *cmBlockCsi) GetCandidate() *cs.NodeInfo {
 	return nil
 }
 
-func (c *committee) reshardWorker() (candidate *cs.NodeInfo, shards []cs.Shard) {
+func (c *committee) reshardWorker(height uint64) (candidate *cs.NodeInfo, shards []cs.Shard) {
 	/*missing_func need get deposit account info*/
 	//candidate, err := c.ns.Ledger.GetProducerList(config.ChainHash)
-
 	cw := simulate.GetCandidateList()
 	if len(cw) > 0 {
 		var can cs.NodeInfo
@@ -179,7 +178,7 @@ func (c *committee) createCommitteeBlock() *cs.CMBlock {
 	header.Height = height
 	header.COSign = cosign
 
-	candidate, shards := c.reshardWorker()
+	candidate, shards := c.reshardWorker(height)
 	if candidate != nil {
 		header.Candidate.PublicKey = candidate.PublicKey
 		header.Candidate.Address = candidate.Address
