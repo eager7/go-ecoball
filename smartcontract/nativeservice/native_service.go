@@ -61,11 +61,12 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			return nil, err
 		}
 
-		ns.tx.Receipt.Account[0], err = acc.Serialize()
+		data, err := acc.Serialize()
 		if err != nil {
-			ns.tx.Receipt.Account[0] = nil
+			return nil, err
 		}
-		ns.tx.Receipt.Account[1] = nil
+
+		ns.tx.Receipt.Account = append(ns.tx.Receipt.Account, data)
 	case "set_account":
 		index := common.NameToIndex(ns.params[0])
 		perm := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
@@ -84,11 +85,12 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		acc.Permissions[perm.PermName] = perm
 
 		var err error
-		ns.tx.Receipt.Account[0], err = acc.Serialize()
+		data, err := acc.Serialize()
 		if err != nil {
-			ns.tx.Receipt.Account[0] = nil
+			return nil, err
 		}
-		ns.tx.Receipt.Account[1] = nil
+		ns.tx.Receipt.Account = append(ns.tx.Receipt.Account, data)
+
 	case "reg_prod":
 		index := common.NameToIndex(ns.params[0])
 		ns.state.RegisterProducer(index)
@@ -136,21 +138,53 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			return nil, err
 		}
 
+		accFrom, err := ns.state.GetAccountByName(from)
+		if err != nil {
+			return nil, err
+		}
+
 		fromAccount := state.Account{
 			Tokens:			make(map[string]state.Token),
 			Index:			from,
 		}
+
+		toAccount := state.Account{
+			Index:			to,
+		}
+
 		balance := state.Token{
 			Name:		state.AbaToken,
-			Balance:	big.NewInt(int64(cpu + net)),
+			Balance:	big.NewInt(int64(0 - (cpu + net))),
 		}
 		fromAccount.Tokens[state.AbaToken] = balance
 
 		if from == to {
 			fromAccount.Cpu.Staked = cpu
 			fromAccount.Net.Staked = net
-		} else {
 
+			data, err := fromAccount.Serialize()
+			if err != nil {
+				return nil, err
+			}
+			ns.tx.Receipt.Account = append(ns.tx.Receipt.Account, data)
+
+		} else {
+			fromAccount.Delegates = accFrom.Delegates
+			toAccount.Cpu.Delegated = cpu
+			toAccount.Net.Delegated = net
+
+			data, err := fromAccount.Serialize()
+			if err != nil {
+				ns.tx.Receipt.Account[1] = nil
+				return nil, err
+			}
+			ns.tx.Receipt.Account = append(ns.tx.Receipt.Account, data)
+
+			data1, err := toAccount.Serialize()
+			if err != nil {
+				return nil, err
+			}
+			ns.tx.Receipt.Account = append(ns.tx.Receipt.Account, data1)
 		}
 
 	case "cancel_pledge":
@@ -168,6 +202,52 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := ns.state.CancelDelegate(from, to, cpu, net, ns.cpuLimit, ns.netLimit); err != nil {
 			return nil, err
 		}
+
+		accFrom, err := ns.state.GetAccountByName(from)
+		if err != nil {
+			return nil, err
+		}
+
+		fromAccount := state.Account{
+			Tokens:			make(map[string]state.Token),
+			Index:			from,
+		}
+
+		toAccount := state.Account{
+			Index:			to,
+		}
+
+		balance := state.Token{
+			Name:		state.AbaToken,
+			Balance:	big.NewInt(int64(cpu + net)),
+		}
+		fromAccount.Tokens[state.AbaToken] = balance
+
+		if from == to {
+			fromAccount.Cpu.Staked = 0 - cpu
+			fromAccount.Net.Staked = 0 - net
+
+			ns.tx.Receipt.Account[1] = nil
+			ns.tx.Receipt.Account[0], err = fromAccount.Serialize()
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			fromAccount.Delegates = accFrom.Delegates
+			toAccount.Cpu.Delegated = 0 - cpu
+			toAccount.Net.Delegated = 0 - net
+
+			ns.tx.Receipt.Account[0], err = fromAccount.Serialize()
+			if err != nil {
+				ns.tx.Receipt.Account[1] = nil
+				return nil, err
+			}
+			ns.tx.Receipt.Account[1], err = toAccount.Serialize()
+			if err != nil {
+				return nil, err
+			}
+		}
+
 	case dsnComm.FcMethodProof:
 		dsn.HandleStorageProof(ns.params[0], ns.state)
 	case dsnComm.FcMethodAn:

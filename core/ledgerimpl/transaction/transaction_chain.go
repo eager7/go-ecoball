@@ -602,8 +602,11 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 			return nil, 0, 0, err
 		}
 
-		tx.Receipt.From.Balance, _ = s.AccountGetBalance(tx.From, state.AbaToken)
-		tx.Receipt.To.Balance, _ = s.AccountGetBalance(tx.Addr, state.AbaToken)
+		//tx.Receipt.From.Balance, _ = s.AccountGetBalance(tx.From, state.AbaToken)
+		//tx.Receipt.To.Balance, _ = s.AccountGetBalance(tx.Addr, state.AbaToken)
+		tx.Receipt.TokenName = state.AbaToken
+		tx.Receipt.From = new(big.Int).Sub(big.NewInt(0), payload.Value)
+		tx.Receipt.To = payload.Value
 	case types.TxDeploy:
 		if err := s.CheckPermission(tx.Addr, state.Active, tx.Hash, tx.Signatures); err != nil {
 			return nil, 0, 0, err
@@ -722,8 +725,8 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		ShardId:           0,
 		CMEpochNo:         0,
 		Receipt: types.BlockReceipt{
-			BlockCpu: types.BlockCpuLimit,
-			BlockNet: types.BlockNetLimit,
+			BlockCpu: config.BlockCpuLimit,
+			BlockNet: config.BlockNetLimit,
 		},
 		COSign: &types.COSign{},
 	}

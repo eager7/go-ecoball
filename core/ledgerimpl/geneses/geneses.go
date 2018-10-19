@@ -117,7 +117,7 @@ func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) e
 	s.IssueToken(root, 90000, state.AbaToken)
 
 	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
-	if err := s.SetResourceLimits(root, root, 10000, 10000, types.BlockCpuLimit, types.BlockNetLimit); err != nil {
+	if err := s.SetResourceLimits(root, root, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
 		fmt.Println(err)
 		return err
 	}
