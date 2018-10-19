@@ -17,6 +17,7 @@
 # along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 ############################################################################
 
+SOURCE_DIR=$(cd 'dirname $0' && pwd)
 IMAGE="jatel/internal:ecoball_v1.0"
 NUM=20
 PORT=20680
@@ -49,7 +50,7 @@ if [ 1 -eq $IMAGENUM ]; then
 fi
 
 #create ecoball log directory
-if [ ! -e "./ecoball_log" ]; then
+if [ ! -e "${SOURCE_DIR}/ecoball_log" ]; then
     if ! mkdir ecoball_log
     then
         echo  -e "\033[;31m create ecoball log directory failed!!! \033[0m"
@@ -60,7 +61,7 @@ fi
 case $1 in
     "start")
     #start main ecoball container 
-    if ! sudo docker run -d --name=ecoball -p 20678:20678 -v ./ecoball_log:/var/ecoball_log -v ./ecoball.toml:/root/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml $IMAGE 
+    if ! sudo docker run -d --name=ecoball -p 20678:20678 -v ${SOURCE_DIR}/ecoball_log:/var/ecoball_log $IMAGE 
     then
         echo  -e "\033[;31m docker run start main ecoball failed!!! \033[0m"
         exit 1
