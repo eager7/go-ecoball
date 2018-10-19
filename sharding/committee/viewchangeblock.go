@@ -144,7 +144,14 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 		return nil, false
 	}
 
-	vch := &cs.ViewChangeBlockHeader{}
+	vch := &cs.ViewChangeBlockHeader{
+		CMEpochNo:        0,
+		FinalBlockHeight: 0,
+		Round:            0,
+		Candidate:        cs.NodeInfo{},
+		Timestamp:        0,
+		COSign:           nil,
+	}
 
 	log.Debug("create vc block epoch ", epoch, " height ", height, " round ", round)
 	vc := &cs.ViewChangeBlock{

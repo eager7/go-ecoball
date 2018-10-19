@@ -3,6 +3,7 @@ package committee
 import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/etime"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -164,7 +165,7 @@ func (c *committee) createCommitteeBlock() *cs.CMBlock {
 	cosign.Step2 = 0
 
 	header := cs.CMBlockHeader{
-		ChainID:      common.Hash{},
+		ChainID:      config.ChainHash,
 		Version:      0,
 		Height:       0,
 		Timestamp:    0,
