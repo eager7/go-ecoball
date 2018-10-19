@@ -51,7 +51,7 @@ fi
 
 #create ecoball log directory
 if [ ! -e "${SOURCE_DIR}/ecoball_log" ]; then
-    if ! mkdir ecoball_log
+    if ! mkdir "${SOURCE_DIR}/ecoball_log"
     then
         echo  -e "\033[;31m create ecoball log directory failed!!! \033[0m"
         exit 1
@@ -101,14 +101,14 @@ case $1 in
     #stop container
     for i in $(sudo docker ps | sed '1d' | awk '$2=="'"$IMAGE"'"{print $1}')
     do
-    sudo docker stop $i
+        sudo docker stop $i
     done
     echo  -e "\033[47;34m stop all container success!!! \033[0m"
 
     #remove container
     for i in $(sudo docker ps -a | sed '1d' | awk '$2=="'"$IMAGE"'"{print $1}')
     do
-    sudo docker rm $i
+        sudo docker rm $i
     done
 
     echo  -e "\033[47;34m remove all container success!!! \033[0m"
