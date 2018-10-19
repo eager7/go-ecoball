@@ -2,6 +2,7 @@ Ecoball-Docker
 ========
 
 #Depends
+
 You need install docker and docker-compose
 
 #Run
@@ -30,6 +31,6 @@ mkdir $GOPATH/src/github.com/ecoball/go-ecoball/Docker/ecoball_log
 start services
 ```
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-sudo docker-compose up
+sudo docker-compose up -d
 ```
 you will start ecoball and ecowallet and eballscan
