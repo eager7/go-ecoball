@@ -1,12 +1,12 @@
 Ecoball-Docker
 ========
 
-##Depends
+#Depends
 You need install docker and docker-compose
 
-##Run
+#Run
 
-###docker_service.sh start | stop
+##docker_service.sh start | stop
 
 If your operating system is ubuntu
 ```
@@ -21,7 +21,7 @@ cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
 ./docker_service.sh stop
 ```
 
-###docker-compose
+##docker-compose
 
 Create the map directory
 ```
