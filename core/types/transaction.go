@@ -77,13 +77,14 @@ func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash
 		Signatures: nil,
 		Hash:       common.Hash{},
 		Receipt: TransactionReceipt{
-			From: new(big.Int).SetUint64(0),
-			To: new(big.Int).SetUint64(0),
-			Hash:   common.Hash{},
-			Cpu:    0,
-			Net:    0,
-			Accounts: make(map[int][]byte, 1),
-			Result: nil,
+			TokenName: "",
+			From:      new(big.Int).SetUint64(0),
+			To:        new(big.Int).SetUint64(0),
+			Hash:      common.Hash{},
+			Cpu:       0,
+			Net:       0,
+			Accounts:  make(map[int][]byte, 1),
+			Result:    nil,
 		},
 	}
 	if tx.Permission == "" {
