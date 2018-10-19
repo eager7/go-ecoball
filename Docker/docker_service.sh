@@ -75,7 +75,7 @@ case $1 in
     fi
 
     #start eballscan container
-    if ! sudo docker run -d --name=eballscan --link=ecoball:ecoball_alias -p 20680:20680 $IMAGE /root/go/src/github.com/ecoball/eballscan/eballscan_service.sh
+    if ! sudo docker run -d --name=eballscan --link=ecoball:ecoball_alias -p 20680:20680 $IMAGE /root/go/src/github.com/ecoball/eballscan/eballscan_service.sh ecoball
     then
         echo  -e "\033[;31m docker run start eballscan failed!!! \033[0m"
         exit 1
