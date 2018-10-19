@@ -45,6 +45,7 @@ func NewLedgerActor(l *LedActor) (*actor.PID, error) {
 		return nil, err
 	}
 	event.RegisterActor(event.ActorLedger, pid)
+	log.Debug("start ledger actor:", pid)
 
 	return pid, nil
 }
@@ -95,8 +96,8 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		if err := l.ledger.NewTxChain(msg.ChainID, msg.Address, false); err != nil {
 			log.Error(err)
 		}
-	case message.ProducerBlock:
-		//block, err := l.ledger.NewTxBlock()
+	case *message.ProducerBlock:
+		log.Debug("receive create block request")
 		switch msg.Type {
 		case shard.HeMinorBlock:
 
