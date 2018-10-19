@@ -58,4 +58,5 @@ type Ledger interface {
 	NewMinorBlock(chainID common.Hash, txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, error)
 	NewFinalBlock(chainID common.Hash, timeStamp int64, minorBlocks []*shard.MinorBlockHeader) (*shard.FinalBlock, error)
 	CreateFinalBlock(chainID common.Hash, timeStamp int64) (*shard.FinalBlock, error)
+	GetShardId(chainID common.Hash) (uint32, error)
 }

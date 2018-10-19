@@ -409,3 +409,11 @@ func (l *LedgerImpl) CreateFinalBlock(chainID common.Hash, timeStamp int64) (*sh
 	}
 	return chain.CreateFinalBlock(timeStamp)
 }
+
+func (l *LedgerImpl) GetShardId(chainID common.Hash) (uint32, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return 0, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.GetShardId()
+}
