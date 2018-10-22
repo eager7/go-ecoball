@@ -22,20 +22,24 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/test/example"
-	"math/big"
 	"testing"
+	"github.com/ecoball/go-ecoball/common"
+	"math/big"
 )
 
 func TestTransfer(t *testing.T) {
 	tx := example.TestTransfer()
 	receipt := types.TransactionReceipt{
+		From:      common.NameToIndex("root"),
+		To:        common.NameToIndex("root"),
 		TokenName: "",
-		From:      new(big.Int).SetUint64(1000),
-		To:        new(big.Int).SetUint64(1000),
+		Amount:    new(big.Int).SetUint64(0),
 		Hash:      tx.Hash,
 		Cpu:       10,
 		Net:       20,
+		NewToken:  nil,
 		Accounts:  make(map[int][]byte, 1),
+		Producer:  0,
 		Result:    []byte("result"),
 	}
 	tx.Receipt = receipt
