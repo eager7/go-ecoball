@@ -18,6 +18,8 @@
 package network
 
 import (
+	"fmt"
+	"strings"
 	"github.com/ecoball/go-ecoball/net/message"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
@@ -26,7 +28,8 @@ import (
 	ic "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
 )
 
-func (net *NetImpl)ConnectToPeer(addrInfo string, pubKey []byte, isPermanent bool) error {
+func (net *NetImpl)ConnectToPeer(ip, port string, pubKey []byte, isPermanent bool) error {
+	addrInfo := constructAddrInfo(ip, port)
 	pi, err := constructPeerInfo(addrInfo, pubKey)
 	if err != nil {
 		return err
@@ -67,7 +70,8 @@ func (net *NetImpl)ClosePeer(pubKey []byte) error {
 	return net.host.Network().ClosePeer(id)
 }
 
-func (net *NetImpl)SendMsgToPeer(addrInfo string, pubKey []byte, msg message.EcoBallNetMsg) error {
+func (net *NetImpl)SendMsgToPeer(ip, port string, pubKey []byte, msg message.EcoBallNetMsg) error {
+	addrInfo := constructAddrInfo(ip, port)
 	peer, err := constructPeerInfo(addrInfo, pubKey)
 	if err != nil {
 		return err
@@ -147,6 +151,17 @@ func constructPeerInfo(addrInfo string, pubKey []byte) (peerstore.PeerInfo, erro
 	peer := peerstore.PeerInfo{id, []ma.Multiaddr{pma}}
 
 	return peer, nil
+}
+
+func constructAddrInfo(ip, port string) string {
+	var addrInfo string
+	if strings.Contains(ip, ":") {
+		addrInfo = fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
+	} else {
+		addrInfo = fmt.Sprintf("/ip6/%s/tcp/%s", ip, port)
+	}
+
+	return addrInfo
 }
 
 func IdFromProtoserPublickKey(pubKey []byte) (peer.ID, error) {
