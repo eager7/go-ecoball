@@ -357,9 +357,7 @@ message MinorBlockHeader {
 }
 message AccountMinor {
     bytes  AccountData = 4;
-    uint64 Account = 3;
-    bytes  Balance = 1;
-    uint64 Nonce   = 2;
+    uint64 Type = 3;
 }
 message MinorBlock {
     MinorBlockHeader Header = 1;

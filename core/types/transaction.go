@@ -77,14 +77,16 @@ func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash
 		Signatures: nil,
 		Hash:       common.Hash{},
 		Receipt: TransactionReceipt{
-			TokenName: "",
 			From:      from,
 			To:        addr,
-			Amount:		new(big.Int).SetUint64(0),
+			TokenName: "",
+			Amount:    new(big.Int).SetUint64(0),
 			Hash:      common.Hash{},
 			Cpu:       0,
 			Net:       0,
+			NewToken:  nil,
 			Accounts:  make(map[int][]byte, 1),
+			Producer:  0,
 			Result:    nil,
 		},
 	}

@@ -10,7 +10,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-	"math/big"
 )
 
 var log = elog.NewLogger("core-shard", elog.NoticeLog)
@@ -175,7 +174,14 @@ type AccountMinor struct {
 }
 
 func (a *AccountMinor) proto() (*pb.AccountMinor, error) {
-	return &pb.AccountMinor{}, nil
+	data, err := a.Receipt.Serialize()
+	if err != nil {
+		return nil, err
+	}
+	return &pb.AccountMinor{
+		AccountData: data,
+		Type:        uint64(a.Type),
+	}, nil
 }
 
 type MinorBlock struct {
@@ -316,18 +322,15 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 	}
 
 	for _, acc := range pbBlock.StateDelta {
-		balance := new(big.Int)
-		if err := balance.GobDecode(acc.Balance); err != nil {
+		receipt := new(state.Account)
+		if err := receipt.Deserialize(acc.AccountData); err != nil {
 			return err
 		}
-		account := new(state.Account)
-		if err := account.Deserialize(acc.AccountData); err != nil {
-			return err
+		stateDelta := AccountMinor{
+			Type:    types.TxType(acc.Type),
+			Receipt: types.TransactionReceipt{},
 		}
-		state := AccountMinor{
-			//Accounts: account,
-		}
-		b.StateDelta = append(b.StateDelta, &state)
+		b.StateDelta = append(b.StateDelta, &stateDelta)
 	}
 	return nil
 }

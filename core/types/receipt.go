@@ -77,7 +77,7 @@ func (r *TransactionReceipt) Deserialize(data []byte) (error) {
 	if err := amount.GobDecode(receipt.Amount); err != nil {
 		return errors.New(log, fmt.Sprintf("GobDecode err:%s", err.Error()))
 	}
-
+	r.Amount = amount
 	r.TokenName = receipt.TokenName
 	r.From = common.AccountName(receipt.From)
 	r.To = common.AccountName(receipt.To)
