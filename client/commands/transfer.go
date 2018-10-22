@@ -19,16 +19,17 @@ package commands
 import (
 	"errors"
 	"fmt"
-	"os"
+	"net/url"
+	//"os"
 
 	"github.com/ecoball/go-ecoball/client/rpc"
-
 	"github.com/urfave/cli"
 
 	"time"
 	"github.com/ecoball/go-ecoball/core/types"
 	inner "github.com/ecoball/go-ecoball/common"
 	"math/big"
+	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	//"github.com/ecoball/go-ecoball/common/config"
 )
 
@@ -141,12 +142,20 @@ func transferAction(c *cli.Context) error {
 		return err
 	}
 
-	resp, err := rpc.NodeCall("transfer", []interface{}{inner.ToHex(data)})
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("transfer", inner.ToHex(data))
+	err = rpc.NodePost("/transfer", values.Encode(), &result)
+	fmt.Println(result.Result)
+
+	return err
+
+	/*resp, err := rpc.NodeCall("transfer", []interface{}{inner.ToHex(data)})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
 
 	//result
-	return rpc.EchoResult(resp)
+	return rpc.EchoResult(resp)*/
 }

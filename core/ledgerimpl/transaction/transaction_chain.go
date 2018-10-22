@@ -252,7 +252,6 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	c.StateDB.FinalDB.CommitToDB()
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
 	log.Notice(block.JsonString(false))
-	log.Warn(payload)
 	c.CurrentHeader = block.Header
 	c.BlockMap[block.Hash] = BlockCache{Height: block.Height}
 
@@ -275,7 +274,6 @@ func (c *ChainTx) GetBlock(hash common.Hash) (*types.Block, error) {
 	if err != nil {
 		return nil, errors.New(log, fmt.Sprintf("GetBlock error:%s", err.Error()))
 	}
-	log.Warn(dataBlock)
 	block := new(types.Block)
 	if err := block.Deserialize(dataBlock); err != nil {
 		return nil, err
