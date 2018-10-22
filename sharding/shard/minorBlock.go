@@ -173,10 +173,9 @@ func (s *shard) productMinorBlock(msg interface{}) {
 
 		//simulate.TellLedgerProductMinorBlock(lastcm.Height, height, uint32(s.ns.Shardid))
 
-		bi, err := s.ns.Ledger.NewMinorBlock(config.ChainHash, nil, time.Now().UnixNano())
-		minor := bi.GetObject().(*cs.MinorBlock)
-
+		minor, err := s.ns.Ledger.NewMinorBlock(config.ChainHash, nil, time.Now().UnixNano())
 		if err != nil {
+			log.Error("ledger new minor block error ", err)
 			return
 		}
 
