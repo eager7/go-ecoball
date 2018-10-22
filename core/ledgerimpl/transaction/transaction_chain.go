@@ -622,6 +622,19 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		if err := s.SetContract(tx.Addr, payload.TypeVm, payload.Describe, payload.Code, payload.Abi); err != nil {
 			return nil, 0, 0, err
 		}
+		
+		// generate trx receipt
+		acc := state.Account{
+			Index:			tx.Addr,
+			Contract:		payload,
+		}
+		var err error
+		data, err := acc.Serialize()
+		if err != nil {
+			return nil, 0, 0, err
+		}
+		tx.Receipt.Accounts[0] = data
+
 	case types.TxInvoke:
 		actionNew, _ := types.NewAction(tx)
 		trxContext, _ := context.NewTranscationContext(s, tx, cpuLimit, netLimit, timeStamp)
