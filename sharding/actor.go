@@ -53,9 +53,11 @@ func (s *ShardingActor) Receive(ctx actor.Context) {
 		log.Info("ShardingActor received Stopped msg")
 
 	case *message.SyncComplete:
+		log.Debug("receive sync complete")
 		s.instance.MsgDispatch(msg)
 
 	case *cs.FinalBlock:
+		log.Debug("receive final block")
 		s.instance.MsgDispatch(msg)
 
 	default:

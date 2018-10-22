@@ -151,9 +151,9 @@ func (c *committee) pvcRoutine() {
 
 func (c *committee) processActorMsg(msg interface{}) {
 	switch msg.(type) {
-	case message.SyncComplete:
+	case *message.SyncComplete:
 		c.processSyncComplete(msg)
-	case cs.FinalBlock:
+	case *cs.FinalBlock:
 		c.processFinalBlockMsg(msg.(*cs.FinalBlock))
 	default:
 		log.Error("wrong actor message")

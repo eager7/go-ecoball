@@ -30,8 +30,8 @@ func (s *shard) processSyncComplete() {
 		return
 	}
 
-	cm := lastCmBlock.GetObject().(*cs.CMBlock)
-	s.ns.SyncCmBlockComplete(cm)
+	cm := lastCmBlock.GetObject().(cs.CMBlock)
+	s.ns.SyncCmBlockComplete(&cm)
 
 	/* missing_func vc block */
 
@@ -41,12 +41,12 @@ func (s *shard) processSyncComplete() {
 		return
 	}
 
-	final := lastFinalBlock.GetObject().(*cs.FinalBlock)
-	s.ns.SaveLastFinalBlock(final)
+	final := lastFinalBlock.GetObject().(cs.FinalBlock)
+	s.ns.SaveLastFinalBlock(&final)
 
 	//lastMinor, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeMinorBlock)
-	//minor := lastMinor.GetObject().(*types.MinorBlock)
-	//s.ns.SaveLastMinorBlock(minor)
+	//minor := lastMinor.GetObject().(types.MinorBlock)
+	//s.ns.SaveLastMinorBlock(&minor)
 
 	minor := simulate.GetPreproductionMinorBlock()
 	if minor != nil {
