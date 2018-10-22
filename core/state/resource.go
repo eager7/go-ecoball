@@ -286,7 +286,7 @@ func (s *State) RegisterProducer(index common.AccountName) error {
 	}
 	if err := s.checkAccountCertification(index, VotesLimit); err != nil {
 		s.prodMutex.Unlock()
-		return nil
+		return err
 	}
 	s.Producers[index] = 0
 	s.prodMutex.Unlock()

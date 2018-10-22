@@ -94,13 +94,19 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 
 	case "reg_prod":
 		index := common.NameToIndex(ns.params[0])
-		ns.state.RegisterProducer(index)
+		if err := ns.state.RegisterProducer(index); err != nil {
+			return nil, err
+		}
+		// generate trx receipt
+		ns.tx.Receipt.Producer = uint64(index)
+
 	case "vote":
 		from := common.NameToIndex(ns.params[0])
 		to1 := common.NameToIndex(ns.params[1])
 		to2 := common.NameToIndex(ns.params[2])
 		accounts := []common.AccountName{to1, to2}
 		ns.state.ElectionToVote(from, accounts)
+
 	case "reg_chain":
 		index := common.NameToIndex(ns.params[0])
 		consensus := ns.params[1]
