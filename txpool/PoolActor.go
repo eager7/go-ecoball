@@ -91,15 +91,13 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	if config.DisableSharding {
 		handle = true
 	} else {
-		if tx.Type == types.TxTransfer {
+		if tx.Type == types.TxTransfer || tx.Addr == common.NameToIndex("root") {
 			if uint64(shardId) == uint64(tx.From)%3{
 				handle = true
 			}
 		} else {
-			if tx.Addr != common.NameToIndex("root") {
-				if uint64(shardId) == uint64(tx.Addr)%3{
-					handle = true
-				}
+			if uint64(shardId) == uint64(tx.Addr)%3{
+				handle = true
 			}
 		}
 	}
