@@ -451,8 +451,13 @@ message P2PRtSyncAckMsg {
     repeated PeerInfo  peers = 2;
 }
 
+message curvePointPB {
+	bytes  curvePoint = 1;
+}
+
 message SijPBShareDKG {
-    int32   index    = 1;
-    int32   viewNum  = 2;
-    bytes   Sij      = 3;
+    int64                   index     = 1;
+    int64                   epochNum  = 2;
+    bytes                   Sij       = 3;
+    repeated curvePointPB   PubPolyPB = 4;
 }
