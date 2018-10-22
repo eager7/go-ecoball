@@ -244,6 +244,7 @@ func runNode(c *cli.Context) error {
 		return nil
 	})
 	//capture single
+	go rpc.StartHttpServer()
 	go wait(shutdown)
 
 	//Wait for each sub goroutine to exit
