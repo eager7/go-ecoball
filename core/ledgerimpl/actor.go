@@ -57,7 +57,7 @@ func (l *LedActor) SetLedger(ledger *LedgerImpl) {
 func (l *LedActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
-	case *actor.Stop:
+	case *actor.Stop, *actor.Stopped, *actor.Stopping:
 		l.pid.Stop()
 	case *actor.Restarting:
 	case *types.Block:
