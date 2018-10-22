@@ -121,5 +121,23 @@ func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) e
 		fmt.Println(err)
 		return err
 	}
+
+	tester := common.NameToIndex("tester")
+	addr = common.AddressFromPubKey(config.Worker1.PublicKey)
+	fmt.Println("preset insert a tester account:", addr.HexString())
+	if tester, err := s.AddAccount(root, addr, timeStamp); err != nil {
+		return err
+	} else {
+		tester.SetContract(types.VmNative, []byte("system contract"), nil, nil)
+	}
+
+	s.CreateToken(state.AbaToken, state.AbaTotal, tester)
+	s.IssueToken(tester, 90000, state.AbaToken)
+
+	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
+	if err := s.SetResourceLimits(tester, tester, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
+		fmt.Println(err)
+		return err
+	}
 	return nil
 }
