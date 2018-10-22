@@ -48,6 +48,11 @@ func (c *committee) processSyncComplete(msg interface{}) {
 	final := lastFinalBlock.GetObject().(cs.FinalBlock)
 	c.ns.SaveLastFinalBlock(&final)
 
+	if cm.Height == 1 && final.Height == 1 {
+		c.fsm.Execute(ActProductCommitteeBlock, msg)
+		return
+	}
+
 	if cm.Height > final.EpochNo {
 		c.fsm.Execute(ActCollectMinorBlock, msg)
 		return

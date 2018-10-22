@@ -44,12 +44,19 @@ func (s *shard) processSyncComplete() {
 	final := lastFinalBlock.GetObject().(cs.FinalBlock)
 	s.ns.SaveLastFinalBlock(&final)
 
-	//lastMinor, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeMinorBlock)
-	//minor := lastMinor.GetObject().(types.MinorBlock)
-	//s.ns.SaveLastMinorBlock(&minor)
+	lastMinor, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
+	if err == nil || lastFinalBlock != nil {
+		minor := lastMinor.GetObject().(cs.MinorBlock)
+		s.ns.SaveLastMinorBlock(&minor)
+	}
 
-	minor := simulate.GetPreproductionMinorBlock()
-	if minor != nil {
+	if cm.Height == 1 && final.Height == 1 {
+		s.fsm.Execute(ActWaitBlock, nil)
+		return
+	}
+
+	preMinor := simulate.GetPreproductionMinorBlock()
+	if preMinor != nil {
 		s.fsm.Execute(ActWaitBlock, nil)
 		return
 	} else {

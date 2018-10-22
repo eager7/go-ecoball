@@ -40,7 +40,7 @@ func (m *minorBlockSet) saveMinorBlock(minor *cs.MinorBlock) bool {
 }
 
 func (m *minorBlockSet) syncMinorBlocks(minors []*cs.MinorBlock) {
-	if len(m.blocks) != len(minors) {
+	if len(m.blocks) < len(minors) {
 		panic("sync minor block length error")
 		log.Panic("sync minor block error len ", len(m.blocks), "  sync blocks len ", len(minors))
 		return
