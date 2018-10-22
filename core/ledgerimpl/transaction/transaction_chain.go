@@ -628,13 +628,11 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 			Index:			tx.Addr,
 			Contract:		payload,
 		}
-		var err error
-		data, err := acc.Serialize()
-		if err != nil {
+		if data, err := acc.Serialize(); err != nil {
 			return nil, 0, 0, err
+		} else {
+			tx.Receipt.Accounts[0] = data
 		}
-		tx.Receipt.Accounts[0] = data
-
 	case types.TxInvoke:
 		actionNew, _ := types.NewAction(tx)
 		trxContext, _ := context.NewTranscationContext(s, tx, cpuLimit, netLimit, timeStamp)
@@ -700,7 +698,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 	}
 
 	//Init Committee Block
-	header := shard.CMBlockHeader{
+	headerCM := shard.CMBlockHeader{
 		ChainID:      chainID,
 		Version:      types.VersionHeader,
 		Height:       1,
@@ -708,11 +706,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		PrevHash:     prevHash,
 		LeaderPubKey: addr.Bytes(),
 		Nonce:        0,
-		Candidate: shard.NodeInfo{
-			PublicKey: []byte("root"),
-			Address:   "localhost",
-			Port:      "1234",
-		},
+		Candidate: shard.NodeInfo{},
 		ShardsHash: common.Hash{},
 		COSign: &types.COSign{
 			Step1: 0,
@@ -720,7 +714,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		},
 	}
 	var shards []shard.Shard
-	block, err := shard.NewCmBlock(header, shards)
+	block, err := shard.NewCmBlock(headerCM, shards)
 
 	if err := c.SaveShardBlock(0, block); err != nil {
 		log.Error("Save geneses block error:", err)
@@ -770,7 +764,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		TrxCount:           0,
 		PrevHash:           common.Hash{},
 		ProposalPubKey:     nil,
-		EpochNo:            0,
+		EpochNo:            headerCM.Height,
 		CMBlockHash:        common.Hash{},
 		TrxRootHash:        common.Hash{},
 		StateDeltaRootHash: common.Hash{},
@@ -1060,7 +1054,7 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlockHeaders []*shard.Mino
 		TrxCount:           0,
 		PrevHash:           c.LastHeader.FinalHeader.Hash(),
 		ProposalPubKey:     nil,
-		EpochNo:            0,
+		EpochNo:            c.LastHeader.CmHeader.Height,
 		CMBlockHash:        c.LastHeader.CmHeader.Hash(),
 		TrxRootHash:        TrxRootHash,
 		StateDeltaRootHash: StateDeltaRootHash,

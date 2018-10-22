@@ -171,7 +171,11 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *cs.CMBlock) {
 
 	var i uint64
 	if curBlock == nil {
-		i = 1
+		if lastCmblock.Height > sc.DefaultCommitteMaxMember {
+			i = lastCmblock.Height - sc.DefaultCommitteMaxMember + 1
+		} else {
+			i = 1
+		}
 	} else if curBlock.Height >= lastCmblock.Height {
 		log.Debug("cm block is already sync")
 		return
@@ -191,11 +195,15 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *cs.CMBlock) {
 		cm := block.GetObject().(cs.CMBlock)
 
 		var worker Worker
-		worker.Pubkey = string(cm.Candidate.PublicKey)
-		worker.Address = cm.Candidate.Address
-		worker.Port = cm.Candidate.Port
+		if len(cm.Candidate.PublicKey) != 0 {
+			worker.Pubkey = string(cm.Candidate.PublicKey)
+			worker.Address = cm.Candidate.Address
+			worker.Port = cm.Candidate.Port
 
-		c.addCommitteWorker(&worker)
+			c.addCommitteWorker(&worker)
+		} else {
+			log.Error("cm block candidate is nil")
+		}
 	}
 
 	c.SaveLastCMBlock(lastCmblock)
