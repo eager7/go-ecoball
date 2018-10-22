@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"math/big"
-	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/state"
-	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/core/types"
+	"math/big"
 )
 
 var log = elog.NewLogger("core-shard", elog.NoticeLog)
@@ -26,8 +26,8 @@ type MinorBlockHeader struct {
 	CMBlockHash       common.Hash
 	ProposalPublicKey []byte
 	//ConsData          ConsensusData
-	ShardId           uint32
-	CMEpochNo         uint64
+	ShardId   uint32
+	CMEpochNo uint64
 
 	Receipt types.BlockReceipt
 	hash    common.Hash
@@ -65,8 +65,8 @@ func (h *MinorBlockHeader) proto() (*pb.MinorBlockHeader, error) {
 		CMBlockHash:       h.CMBlockHash.Bytes(),
 		ProposalPublicKey: h.ProposalPublicKey,
 		//ConsData:          pbCon,
-		ShardId:           h.ShardId,
-		CMEpochNo:         h.CMEpochNo,
+		ShardId:   h.ShardId,
+		CMEpochNo: h.CMEpochNo,
 		Receipt: &pb.BlockReceipt{
 			BlockCpu: h.Receipt.BlockCpu,
 			BlockNet: h.Receipt.BlockNet,
@@ -170,8 +170,8 @@ func (h *MinorBlockHeader) GetChainID() common.Hash {
 }
 
 type AccountMinor struct {
-
-
+	Type    types.TxType
+	Receipt types.TransactionReceipt
 }
 
 func (a *AccountMinor) proto() (*pb.AccountMinor, error) {
@@ -210,7 +210,7 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *types.Header, txs []*typ
 		Transactions:     txs,
 		StateDelta:       sDelta,
 	}
-	fmt.Println("block.StateDelta:",block.StateDelta)
+	fmt.Println("block.StateDelta:", block.StateDelta)
 	if err := block.SetReceipt(prevHeader, cpu, net); err != nil {
 		return nil, err
 	}
@@ -325,7 +325,7 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 			return err
 		}
 		state := AccountMinor{
-			Accounts: account,
+			//Accounts: account,
 		}
 		b.StateDelta = append(b.StateDelta, &state)
 	}
