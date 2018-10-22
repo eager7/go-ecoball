@@ -29,8 +29,8 @@ func (c *committee) processSyncComplete(msg interface{}) {
 		return
 	}
 
-	cm := lastCmBlock.GetObject().(*cs.CMBlock)
-	c.ns.SyncCmBlockComplete(cm)
+	cm := lastCmBlock.GetObject().(cs.CMBlock)
+	c.ns.SyncCmBlockComplete(&cm)
 
 	/* missing_func vc block */
 	//lastVcBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeViewChangeBlock)
