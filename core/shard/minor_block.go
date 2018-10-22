@@ -200,21 +200,69 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *types.Header, txs []*typ
 		return nil, err
 	}
 	var sDelta []*AccountMinor
-	/*for _, tx := range txs {
-		transfer, ok := tx.Payload.GetObject().(types.TransferInfo)
-		if ok {
-			sDelta = append(sDelta, &state.Account{
-				Account: tx.From,
-				Balance: new(big.Int).Sub(new(big.Int).SetUint64(0), transfer.Value),
-				Nonce:   tx.Nonce,
-			})
-			sDelta = append(sDelta, &state.Account{
-				Account: tx.Addr,
-				Balance: transfer.Value,
-				Nonce:   tx.Nonce,
-			})
+	for _, tx := range txs {
+		//receipt := tx.Receipt
+		switch tx.Type {
+		case types.TxDeploy:
+			/*acc := state.Account{
+				Index:       0,
+				TimeStamp:   0,
+				Tokens:      nil,
+				Permissions: nil,
+				Contract:    types.DeployInfo{
+					TypeVm:   0,
+					Describe: nil,
+					Code:     nil,
+					Abi:      nil,
+				},
+				Delegates:   nil,
+				Resource:    state.Resource{
+					Ram: struct {
+						Quota float64 `json:"quota"`
+						Used  float64 `json:"used"`
+					}{},
+					Net: struct {
+						Staked    uint64  `json:"staked_aba, omitempty"`
+						Delegated uint64  `json:"delegated_aba, omitempty"`
+						Used      float64 `json:"used_byte, omitempty"`
+						Available float64 `json:"available_byte, omitempty"`
+						Limit     float64 `json:"limit_byte, omitempty"`
+					}{
+						Staked:    0,
+						Delegated: 0,
+						Used:      0,
+						Available: 0,
+						Limit:     0,
+					},
+					Cpu: struct {
+						Staked    uint64  `json:"staked_aba, omitempty"`
+						Delegated uint64  `json:"delegated_aba, omitempty"`
+						Used      float64 `json:"used_ms, omitempty"`
+						Available float64 `json:"available_ms, omitempty"`
+						Limit     float64 `json:"limit_ms, omitempty"`
+					}{
+						Staked:    0,
+						Delegated: 0,
+						Used:      0,
+						Available: 0,
+						Limit:     0,
+					},
+					Votes: struct {
+						Staked    uint64                        `json:"staked_aba, omitempty"`
+						Producers map[common.AccountName]uint64 `json:"producers, omitempty"`
+					}{
+						Staked:    0,
+						Producers: nil,
+					},
+				},
+				Hash:        common.Hash{},
+			}*/
+		case types.TxInvoke:
+		case types.TxTransfer:
+		default:
+			return nil, errors.New(log, "unknown transaction type")
 		}
-	}*/
+	}
 	block := &MinorBlock{
 		MinorBlockHeader: header,
 		Transactions:     txs,

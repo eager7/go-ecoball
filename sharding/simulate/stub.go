@@ -10,14 +10,14 @@ import (
 )
 
 func TellBlock(bl cs.BlockInterface) {
-	log.Error("tell ledger block")
+	log.Debug("tell ledger block")
 	if err := event.Send(event.ActorSharding, event.ActorLedger, bl); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func TellLedgerProductFinalBlock(epoch uint64, height uint64) {
-	log.Error("tell ledger product final block")
+	log.Debug("tell ledger product final block")
 
 	pb := message.ProducerBlock{
 		ChainID: cc.ChainHash,
