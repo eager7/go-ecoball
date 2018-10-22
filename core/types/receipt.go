@@ -19,6 +19,7 @@ type TransactionReceipt struct {
 	Net    		float64
 	NewToken 	[]byte
 	Accounts 	map[int][]byte
+	Producer	uint64
 	Result 		[]byte
 }
 
@@ -53,6 +54,7 @@ func (r *TransactionReceipt) Serialize() ([]byte, error) {
 		Net: 		r.Net,
 		NewToken:	r.NewToken,
 		Accounts:	accounts,
+		Producer:	r.Producer,
 		Result: 	common.CopyBytes(r.Result),
 	}
 	b, err := p.Marshal()
@@ -87,6 +89,7 @@ func (r *TransactionReceipt) Deserialize(data []byte) (error) {
 	for k, v := range receipt.Accounts {
 		r.Accounts[k] = v
 	}
+	r.Producer = receipt.Producer
 	r.Result = common.CopyBytes(receipt.Result)
 
 

@@ -106,6 +106,7 @@ message TransactionReceipt {
     bytes       Amount      = 10;
     bytes       NewToken    = 9;
     repeated bytes Accounts     = 8;
+    uint64      Producer    = 11;
 }
 message BlockReceipt {
     double BlockCpu = 1;
