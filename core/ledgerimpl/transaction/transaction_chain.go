@@ -989,7 +989,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		CMBlockHash:       c.LastHeader.CmHeader.Hash(),
 		ProposalPublicKey: nil,
 		ShardId:           c.LastHeader.MinorHeader.ShardId,
-		CMEpochNo:         0,
+		CMEpochNo:         c.LastHeader.CmHeader.Height,
 		Receipt:           types.BlockReceipt{},
 		COSign:            &types.COSign{},
 	}
