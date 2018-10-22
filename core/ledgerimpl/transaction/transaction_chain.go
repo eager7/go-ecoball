@@ -795,7 +795,7 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 		log.Warn("the block:", block.GetHeight(), "is existed")
 		return nil
 	}
-
+	log.Notice("Save Block", block.Type(), "Height", block.GetHeight())
 	if block.GetHeight() != 1 {
 		connect.Notify(info.InfoBlock, block)
 		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
