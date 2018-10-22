@@ -695,11 +695,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		PrevHash:     prevHash,
 		LeaderPubKey: addr.Bytes(),
 		Nonce:        0,
-		Candidate: shard.NodeInfo{
-			PublicKey: []byte("root"),
-			Address:   "localhost",
-			Port:      "1234",
-		},
+		Candidate: shard.NodeInfo{},
 		ShardsHash: common.Hash{},
 		COSign: &types.COSign{
 			Step1: 0,
