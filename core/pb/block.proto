@@ -446,3 +446,9 @@ message P2PRtSyncAckMsg {
     bytes              resp  = 1;
     repeated PeerInfo  peers = 2;
 }
+
+message SijPBShareDKG {
+    int32   index    = 1;
+    int32   viewNum  = 2;
+    bytes   Sij      = 3;
+}
