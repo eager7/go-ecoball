@@ -130,11 +130,15 @@ func (c *committee) reshardWorker(height uint64) (candidate *cs.NodeInfo, shards
 	} else {
 		var can cs.NodeInfo
 		back := c.ns.GetBackup()
-		can.PublicKey = []byte(back.Pubkey)
-		can.Address = back.Address
-		can.Port = back.Port
+		if back != nil {
+			can.PublicKey = []byte(back.Pubkey)
+			can.Address = back.Address
+			can.Port = back.Port
 
-		candidate = &can
+			candidate = &can
+		} else {
+			candidate = nil
+		}
 	}
 
 	ss := simulate.GetShards()
