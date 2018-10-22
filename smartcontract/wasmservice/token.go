@@ -4,6 +4,7 @@ import (
 	"github.com/ecoball/go-ecoball/vm/wasmvm/exec"
 	"github.com/ecoball/go-ecoball/common"
 	"math/big"
+	"github.com/ecoball/go-ecoball/core/state"
 )
 
 // C API: issueToken(char *name, int32 nameLen, int32 maxSupply, char *issuer, int32 issuerLen)
@@ -43,6 +44,19 @@ func (ws *WasmService) createToken(proc *exec.Process, name, nameLen, maxSupply,
 	if err != nil{
 		return -2
 	}
+
+	// generate trx receipt
+	token := state.TokenInfo{
+		Symbol:		string(nameSlice),
+		MaxSupply:	maxSupply,
+		Supply:		0,
+		Issuer:		common.NameToIndex(string(issuerSlice)),
+	}
+	data, err := token.Serialize()
+	if err != nil {
+		return -3
+	}
+	ws.context.Tc.Trx.Receipt.NewToken = data
 
 	return 0
 }
@@ -84,6 +98,23 @@ func (ws *WasmService) issueToken(proc *exec.Process, to, toLen, amount, name, n
 	if err != nil{
 		return -2
 	}
+
+	// generate trx receipt
+	token := state.Token{
+		Name:		string(nameSlice),
+		Balance: 	big.NewInt(int64(amount)),
+	}
+	acc := state.Account{
+		Index:			common.NameToIndex(string(toSlice)),
+		Tokens:			make(map[string]state.Token),
+	}
+	acc.Tokens[string(nameSlice)] = token
+
+	data, err := acc.Serialize()
+	if err != nil {
+		return -3
+	}
+	ws.context.Tc.Trx.Receipt.Accounts[0] = data
 
 	return 0
 }
@@ -156,6 +187,13 @@ func (ws *WasmService)transfer(proc *exec.Process, from, fromLen, to, toLen, amo
 	if err := ws.state.AccountAddBalance(common.NameToIndex(string(toSlice)), string(nameSlice), big.NewInt(int64(amount))); err != nil {
 		return -3
 	}
+
+	// generate trx receipt
+
+	ws.context.Tc.Trx.Receipt.From = common.NameToIndex(string(fromSlice))
+	ws.context.Tc.Trx.Receipt.To = common.NameToIndex(string(toSlice))
+	ws.context.Tc.Trx.Receipt.TokenName = string(nameSlice)
+	ws.context.Tc.Trx.Receipt.Amount = big.NewInt(int64(amount))
 
 	return 0
 }

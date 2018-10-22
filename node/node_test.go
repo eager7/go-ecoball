@@ -99,8 +99,8 @@ func TestRunNode(t *testing.T) {
 	go spectator.Bystander(ledger.L)
 	if config.StartNode {
 		//go example.VotingProducer(ledger.L)
-		//go example.TokenContract(ledger.L)
-		example.RecepitTest(ledger.L)
+		go example.TokenContract(ledger.L)
+		//example.RecepitTest(ledger.L)
 	}
 
 	wait()

@@ -1014,8 +1014,7 @@ func RecepitTest(ledger ledger.Ledger) {
 
 	receipt := types.TransactionReceipt{
 		TokenName:	"ABA",
-		From:		big.NewInt(100),
-		To:			big.NewInt(50),
+		Amount:		big.NewInt(100),
 		Hash:		common.NewHash(account),
 		Cpu:		10.0,
 		Net:		20.5,
