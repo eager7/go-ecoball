@@ -18,9 +18,10 @@ package types
 
 import (
 	"errors"
-	"github.com/ecoball/go-ecoball/core/pb"
 	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+
+	"github.com/ecoball/go-ecoball/core/pb"
 )
 
 type ShardInfo struct {
@@ -67,7 +68,7 @@ func (srs *StoreRepoStat) Serialize() ([]byte, error) {
 			Codec:   prefix.Codec,
 			Hash:    shard.Cid.Hash(),
 		}
-		si := &pb.ShardInfo{pb_cid, shard.RawSize}
+		si := &pb.ShardInfo{ShardCid: pb_cid, ShardSize: shard.RawSize}
 		sis = append(sis, si)
 	}
 	p.RandBlkInfo = sis

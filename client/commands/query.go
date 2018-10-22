@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"net/url"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
@@ -169,14 +170,14 @@ func getAccount(c *cli.Context) error {
 		chainId = common.HexToHash(chainIdStr)
 	}
 
-	accountInfo, err := get_account(chainId, address)
-	if nil != err {
-		return err
-	}
-	if nil != accountInfo {
-		accountInfo.Show()
-	}
-	return nil
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("name", address)
+	values.Set("chainId", chainId.HexString())
+	err = rpc.NodePost("/getAccountInfo", values.Encode(), &result)
+
+	fmt.Println(result.Result)
+	return err
 }
 
 func getBlockInfoById(height int64) (*types.Block, error) {

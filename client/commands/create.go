@@ -19,9 +19,10 @@ package commands
 import (
 	"errors"
 	"fmt"
-	"os"
+	//"os"
 	"strconv"
 	"time"
+	"net/url"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
@@ -29,7 +30,7 @@ import (
 	//"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/urfave/cli"
-	outerCommon "github.com/ecoball/go-ecoball/http/common"
+	//outerCommon "github.com/ecoball/go-ecoball/http/common"
 )
 
 var (
@@ -88,7 +89,18 @@ var (
 )
 
 func getInfo() (*types.Block, error) {
-	resp, err := rpc.NodeCall("getInfo", []interface{}{})
+	var result clientCommon.SimpleResult
+	err := rpc.NodeGet("/getInfo", &result)
+	if nil == err {
+		blockINfo := new(types.Block)
+		err := blockINfo.Deserialize(innercommon.FromHex(result.Result))
+		if nil == err {
+			return blockINfo, nil
+		}
+	}
+	return nil, err
+
+	/*resp, err := rpc.NodeCall("getInfo", []interface{}{})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return nil, err
@@ -107,11 +119,27 @@ func getInfo() (*types.Block, error) {
 			}
 		}
 	}
-	return nil, nil
+	return nil, nil*/
 }
 
 func get_required_keys(chainId innercommon.Hash, required_keys, permission string, trx *types.Transaction) (string, error) {
 	data, err := trx.Serialize()
+	if err != nil {
+		return "", err
+	}
+
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("permission", permission)
+	values.Set("chainId", chainId.HexString())
+	values.Set("keys", required_keys)
+	values.Set("transaction", innercommon.ToHex(data))
+	err = rpc.NodePost("/get_required_keys", values.Encode(), &result)
+	if nil == err {
+		return result.Result, nil
+	}
+	return "", err
+	/*data, err := trx.Serialize()
 	if err != nil {
 		return "", err
 	}
@@ -132,7 +160,7 @@ func get_required_keys(chainId innercommon.Hash, required_keys, permission strin
 			}
 		}
 	}
-	return "", err
+	return "", err*/
 }
 
 func newAccount(c *cli.Context) error {
@@ -246,12 +274,11 @@ func newAccount(c *cli.Context) error {
 		return err
 	}
 
-	resp, err := rpc.NodeCall("createAccount", []interface{}{innercommon.ToHex(data)})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
-	}
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("transaction", innercommon.ToHex(data))
+	err = rpc.NodePost("/invokeContract", values.Encode(), &result)
+	fmt.Println(result.Result)
 
-	//result
-	return rpc.EchoResult(resp)
+	return err
 }

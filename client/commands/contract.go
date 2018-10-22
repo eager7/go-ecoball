@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
+	"net/url"
 
 	"encoding/json"
 
@@ -32,7 +33,7 @@ import (
 	"github.com/ecoball/go-ecoball/http/common/abi"
 	"github.com/urfave/cli"
 	"strings"
-	innerCommon "github.com/ecoball/go-ecoball/http/common"
+	//innerCommon "github.com/ecoball/go-ecoball/http/common"
 	"github.com/ecoball/go-ecoball/common/config"
 )
 
@@ -102,7 +103,6 @@ var (
 )
 
 func setContract(c *cli.Context) error {
-
 	//Check the number of flags
 	if c.NumFlags() == 0 {
 		cli.ShowSubcommandHelp(c)
@@ -229,19 +229,39 @@ func setContract(c *cli.Context) error {
 	}
 
 	//rpc call
-	//resp, err := rpc.NodeCall("setContract", []interface{}{common.ToHex(data), contractName, description, abi_str})
-	resp, err := rpc.NodeCall("setContract", []interface{}{common.ToHex(datas)})
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("transaction", common.ToHex(datas))
+	err = rpc.NodePost("/setContract", values.Encode(), &result)
+	fmt.Println(result.Result)
+
+	return err
+	/*resp, err := rpc.NodeCall("setContract", []interface{}{common.ToHex(datas)})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
 
 	//result
-	return rpc.EchoResult(resp)
+	return rpc.EchoResult(resp)*/
 }
 
 func GetContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error){
-	resp, errcode := rpc.NodeCall("GetContract", []interface{}{chainID.HexString(), index.String()})
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("contractName", index.String())
+	values.Set("chainId", chainID.HexString())
+	err := rpc.NodePost("/getContract", values.Encode(), &result)
+	if nil == err {
+		deploy := new(types.DeployInfo)
+		if err := deploy.Deserialize(common.FromHex(result.Result)); err != nil{
+			return nil, err
+		}
+		return deploy, nil
+	}
+	return nil, err
+
+	/*resp, errcode := rpc.NodeCall("GetContract", []interface{}{chainID.HexString(), index.String()})
 	if errcode != nil {
 		fmt.Fprintln(os.Stderr, errcode)
 		return nil, errcode
@@ -261,11 +281,21 @@ func GetContract(chainID common.Hash, index common.AccountName) (*types.DeployIn
 			}
 		}
 	}
-	return deploy, nil
+	return deploy, nil*/
 }
 
 func StoreGet(chainID common.Hash, index common.AccountName, key []byte) (value []byte, err error){
-	resp, errcode := rpc.NodeCall("StoreGet", []interface{}{chainID.HexString(), index.String(), common.ToHex(key)})
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("contractName", index.String())
+	values.Set("chainId", chainID.HexString())
+	values.Set("key", common.ToHex(key))
+	err = rpc.NodePost("/storeGet", values.Encode(), &result)
+	if nil == err {
+		return common.FromHex(result.Result), nil
+	}
+	return nil, err
+	/*resp, errcode := rpc.NodeCall("StoreGet", []interface{}{chainID.HexString(), index.String(), common.ToHex(key)})
 	if errcode != nil {
 		fmt.Fprintln(os.Stderr, errcode)
 		return nil, errcode
@@ -281,7 +311,7 @@ func StoreGet(chainID common.Hash, index common.AccountName, key []byte) (value 
 			}
 		}
 	}
-	return nil, nil
+	return nil, nil*/
 }
 
 func GetContractTable(contractName string, accountName string, abiDef abi.ABI, tableName string) ([]byte, error){
@@ -386,13 +416,16 @@ func invokeContract(c *cli.Context) error {
 		}
 	}else {
 		contract, err := GetContract(info.ChainID, common.NameToIndex(contractName))
+		if err != nil {
+			return errors.New("GetContract failed")
+		}
 
 		var abiDef abi.ABI
 		err = abi.UnmarshalBinary(contract.Abi, &abiDef)
 		if err != nil {
 			return errors.New("can not find UnmarshalBinary abi file")
 		}
-	
+
 		//log.Debug("contractParam: ", contractParam)
 		argbyte, err := abi.CheckParam(abiDef, contractMethod, []byte(contractParam))
 		if err != nil {
@@ -401,7 +434,6 @@ func invokeContract(c *cli.Context) error {
 		}
 	
 		parameters = append(parameters, string(argbyte[:]))
-
 		GetContractTable(contractName, "root", abiDef, "accounts")
 	}
 
@@ -441,13 +473,21 @@ func invokeContract(c *cli.Context) error {
 		fmt.Println(err)
 		return err
 	}
+
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("transaction", common.ToHex(data))
+	err = rpc.NodePost("/invokeContract", values.Encode(), &result)
+	fmt.Println(result.Result)
+
+	return err
 	//rpc call
-	resp, err := rpc.NodeCall("invokeContract", []interface{}{common.ToHex(data)})
+	/*resp, err := rpc.NodeCall("invokeContract", []interface{}{common.ToHex(data)})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
 
 	//result
-	return rpc.EchoResult(resp)
+	return rpc.EchoResult(resp)*/
 }
