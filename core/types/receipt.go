@@ -10,12 +10,14 @@ import (
 )
 
 type TransactionReceipt struct {
+	From   		common.AccountName
+	To     		common.AccountName
 	TokenName	string
-	From   		*big.Int
-	To     		*big.Int
+	Amount 		*big.Int
 	Hash   		common.Hash
 	Cpu    		float64
 	Net    		float64
+	NewToken 	[]byte
 	Accounts 	map[int][]byte
 	Result 		[]byte
 }
@@ -26,11 +28,7 @@ type BlockReceipt struct {
 }
 
 func (r *TransactionReceipt) Serialize() ([]byte, error) {
-	from, err := r.From.GobEncode()
-	if err != nil {
-		return nil, err
-	}
-	to, err := r.To.GobEncode()
+	amount, err := r.Amount.GobEncode()
 	if err != nil {
 		return nil, err
 	}
@@ -46,12 +44,14 @@ func (r *TransactionReceipt) Serialize() ([]byte, error) {
 		accounts = append(accounts, r.Accounts[k])
 	}
 	p := &pb.TransactionReceipt{
+		From:   	uint64(r.From),
+		To:     	uint64(r.To),
 		TokenName:	r.TokenName,
-		From:   	from,
-		To:     	to,
+		Amount:		amount,
 		Hash: 		r.Hash.Bytes(),
 		Cpu: 		r.Cpu,
 		Net: 		r.Net,
+		NewToken:	r.NewToken,
 		Accounts:	accounts,
 		Result: 	common.CopyBytes(r.Result),
 	}
@@ -71,21 +71,18 @@ func (r *TransactionReceipt) Deserialize(data []byte) (error) {
 		return err
 	}
 
-	from := new(big.Int)
-	if err := from.GobDecode(receipt.From); err != nil {
-		return errors.New(log, fmt.Sprintf("GobDecode err:%s", err.Error()))
-	}
-	to := new(big.Int)
-	if err := to.GobDecode(receipt.To); err != nil {
+	amount := new(big.Int)
+	if err := amount.GobDecode(receipt.Amount); err != nil {
 		return errors.New(log, fmt.Sprintf("GobDecode err:%s", err.Error()))
 	}
 
 	r.TokenName = receipt.TokenName
-	r.From = from
-	r.To = to
+	r.From = common.AccountName(receipt.From)
+	r.To = common.AccountName(receipt.To)
 	r.Cpu = receipt.Cpu
 	r.Net = receipt.Net
 	r.Hash = common.NewHash(receipt.Hash)
+	r.NewToken = receipt.NewToken
 	r.Accounts = make(map[int][]byte)
 	for k, v := range receipt.Accounts {
 		r.Accounts[k] = v

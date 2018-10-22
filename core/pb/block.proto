@@ -100,9 +100,11 @@ message TransactionReceipt {
     double      Cpu         = 2;
     double      Net         = 3;
     bytes       Result      = 4;
-    bytes       From        = 5;
-    bytes       To          = 6;
+    uint64      From        = 5;
+    uint64      To          = 6;
     string      TokenName   = 7;
+    bytes       Amount      = 10;
+    bytes       NewToken    = 9;
     repeated bytes Accounts     = 8;
 }
 message BlockReceipt {

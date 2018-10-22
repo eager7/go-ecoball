@@ -78,8 +78,9 @@ func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash
 		Hash:       common.Hash{},
 		Receipt: TransactionReceipt{
 			TokenName: "",
-			From:      new(big.Int).SetUint64(0),
-			To:        new(big.Int).SetUint64(0),
+			From:      from,
+			To:        addr,
+			Amount:		new(big.Int).SetUint64(0),
 			Hash:      common.Hash{},
 			Cpu:       0,
 			Net:       0,

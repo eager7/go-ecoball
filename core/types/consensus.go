@@ -20,12 +20,13 @@ import (
 	"encoding/binary"
 	errIn "errors"
 	"fmt"
+	"sort"
+
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"sort"
 )
 
 type ConType uint32
@@ -279,9 +280,9 @@ func (data *DPosData) protoBuf() (*pb.ConsensusState, error) {
 		bookkeepers = append(bookkeepers, bookkeeper)
 	}
 	consensusState := &pb.ConsensusState{
-		data.leader.Bytes(),
-		bookkeepers,
-		data.timestamp,
+		Hash:        data.leader.Bytes(),
+		Bookkeepers: bookkeepers,
+		Timestamp:   data.timestamp,
 	}
 	return consensusState, nil
 }

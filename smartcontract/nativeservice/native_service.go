@@ -61,11 +61,11 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			return nil, err
 		}
 
+		// generate trx receipt
 		data, err := acc.Serialize()
 		if err != nil {
 			return nil, err
 		}
-
 		ns.tx.Receipt.Accounts[0] = data
 	case "set_account":
 		index := common.NameToIndex(ns.params[0])
@@ -78,6 +78,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			return nil, err
 		}
 
+		// generate trx receipt
 		acc := state.Account{
 			Index:			index,
 			Permissions: make(map[string]state.Permission, 1),
@@ -138,14 +139,15 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			return nil, err
 		}
 
+		// generate trx receipt
 		accFrom, err := ns.state.GetAccountByName(from)
 		if err != nil {
 			return nil, err
 		}
 
 		fromAccount := state.Account{
-			Tokens:			make(map[string]state.Token),
 			Index:			from,
+			Tokens:			make(map[string]state.Token),
 		}
 
 		toAccount := state.Account{
@@ -202,6 +204,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			return nil, err
 		}
 
+		// generate trx receipt
 		accFrom, err := ns.state.GetAccountByName(from)
 		if err != nil {
 			return nil, err
