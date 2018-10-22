@@ -11,7 +11,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/sharding/shard"
 )
 
 var log = elog.NewLogger("sharding", elog.NoticeLog)
