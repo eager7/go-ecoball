@@ -95,6 +95,11 @@ message InvokeInfo {
     repeated ParamData Param= 2;
 }
 
+message Transfer {
+    string Token = 1;
+    bytes  Value = 2;
+}
+
 message TransactionReceipt {
     bytes       Hash        = 1;
     double      Cpu         = 2;

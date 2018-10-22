@@ -22,20 +22,23 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"math/big"
+	"github.com/ecoball/go-ecoball/core/pb"
 )
 
 type TransferInfo struct {
+	Token string   `json:"token"`
 	Value *big.Int `json:"value"`
 }
 
-func NewTransferInfo(v *big.Int) *TransferInfo {
+func NewTransferInfo(token string, v *big.Int) *TransferInfo {
 	t := new(TransferInfo)
+	t.Token = token
 	t.Value = new(big.Int).Set(v)
 	return t
 }
 
 func NewTransfer(from, to common.AccountName, chainID common.Hash, perm string, value *big.Int, nonce uint64, time int64) (*Transaction, error) {
-	payload := NewTransferInfo(value)
+	payload := NewTransferInfo("ABA", value)
 	return NewTransaction(TxTransfer, from, to, chainID, perm, payload, nonce, time)
 }
 
@@ -44,11 +47,20 @@ func NewTransfer(from, to common.AccountName, chainID common.Hash, perm string, 
  *  @return []byte - a sequence of characters
  */
 func (t *TransferInfo) Serialize() ([]byte, error) {
+
 	data, err := t.Value.GobEncode()
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
+	pbTransfer := pb.Transfer{
+		Token: t.Token,
+		Value: data,
+	}
+	b, err := pbTransfer.Marshal()
+	if err != nil {
+		return nil, errors.New(log, "marshal failed")
+	}
+	return b, nil
 }
 
 /**
@@ -59,8 +71,13 @@ func (t *TransferInfo) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New(log, "data len is 0")
 	}
+	var pbTransfer pb.Transfer
+	if err := pbTransfer.Unmarshal(data); err != nil {
+		return errors.New(log, "unMarshal failed")
+	}
+	t.Token = pbTransfer.Token
 	t.Value = new(big.Int)
-	return t.Value.GobDecode(data)
+	return t.Value.GobDecode(pbTransfer.Value)
 }
 
 func (t TransferInfo) GetObject() interface{} {
