@@ -1157,6 +1157,10 @@ func (c *ChainTx) GetShardId() (uint32, error) {
 	}
 }
 
+func (c *ChainTx) CheckBlock() error {
+	return nil
+}
+
 func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, timeStamp int64, cpuLimit, netLimit float64) (err error) {
 	switch delta.Type {
 	case types.TxTransfer:
