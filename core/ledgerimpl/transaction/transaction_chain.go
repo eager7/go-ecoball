@@ -622,11 +622,11 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		if err := s.SetContract(tx.Addr, payload.TypeVm, payload.Describe, payload.Code, payload.Abi); err != nil {
 			return nil, 0, 0, err
 		}
-		
+
 		// generate trx receipt
 		acc := state.Account{
-			Index:			tx.Addr,
-			Contract:		payload,
+			Index:    tx.Addr,
+			Contract: payload,
 		}
 		if data, err := acc.Serialize(); err != nil {
 			return nil, 0, 0, err
@@ -706,8 +706,8 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		PrevHash:     prevHash,
 		LeaderPubKey: addr.Bytes(),
 		Nonce:        0,
-		Candidate: shard.NodeInfo{},
-		ShardsHash: common.Hash{},
+		Candidate:    shard.NodeInfo{},
+		ShardsHash:   common.Hash{},
 		COSign: &types.COSign{
 			Step1: 0,
 			Step2: 0,
@@ -844,9 +844,9 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 		} else {
 			//TODO:Handle StateDelta and Check State Hash
 			for _, delta := range Block.StateDelta {
-				switch delta.Type {
-				case types.TxTransfer:
-
+				if err := c.HandleDeltaState(c.StateDB.FinalDB, delta, Block.MinorBlockHeader.Timestamp,
+					c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
+					return err
 				}
 			}
 		}
@@ -983,6 +983,10 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		return nil, err
 	}
 
+	shardID, err := c.GetShardId()
+	if err != nil {
+		return nil, err
+	}
 	header := shard.MinorBlockHeader{
 		ChainID:           c.LastHeader.MinorHeader.ChainID,
 		Version:           c.LastHeader.MinorHeader.Version,
@@ -993,7 +997,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		StateDeltaHash:    s.GetHashRoot(),
 		CMBlockHash:       c.LastHeader.CmHeader.Hash(),
 		ProposalPublicKey: nil,
-		ShardId:           c.LastHeader.MinorHeader.ShardId,
+		ShardId:           shardID,
 		CMEpochNo:         c.LastHeader.CmHeader.Height,
 		Receipt:           types.BlockReceipt{},
 		COSign:            &types.COSign{},
@@ -1130,4 +1134,15 @@ func (c *ChainTx) GetShardId() (uint32, error) {
 	} else {
 		return c.shardId, nil
 	}
+}
+
+func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, timeStamp int64, cpuLimit, netLimit float64) (err error) {
+	switch delta.Type {
+	case types.TxTransfer:
+	case types.TxDeploy:
+	case types.TxInvoke:
+	default:
+		return errors.New(log, "unknown transaction type")
+	}
+	return nil
 }
