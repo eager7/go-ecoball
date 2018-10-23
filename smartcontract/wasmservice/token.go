@@ -94,6 +94,19 @@ func (ws *WasmService) issueToken(proc *exec.Process, to, toLen, amount, name, n
 		nameSlice = append(nameSlice, name_msg[Length - 1])
 	}
 
+	// Get token issuer
+	tokenInfo, err := ws.state.GetTokenInfo(string(nameSlice))
+	if err != nil {
+		return -4
+	}
+
+	// if declared permission actor had permission of token issuer
+	if tokenInfo.Issuer != ws.action.Permission.Actor {
+		if err := ws.state.CheckAccountPermission(tokenInfo.Issuer, ws.action.Permission.Actor, "active"); err != nil {
+			return -5
+		}
+	}
+
 	err = ws.state.IssueToken(common.NameToIndex(string(toSlice)), amount, string(nameSlice))
 	if err != nil{
 		return -2
