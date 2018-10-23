@@ -29,6 +29,8 @@ import (
 
 var log = elog.NewLogger("TxPool", elog.DebugLog)
 
+var T *TxPool
+
 type TxPool struct {
 	ledger    ledger.Ledger
 	PendingTxs map[common.Hash]*types.TxsList //UnPackaged list of legitimate transactions
@@ -49,7 +51,7 @@ func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
 	if _, err = NewTxPoolActor(pool, 3); nil != err {
 		pool = nil
 	}
-
+	T = pool
 	return
 }
 

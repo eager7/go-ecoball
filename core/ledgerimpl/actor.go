@@ -28,6 +28,7 @@ import (
 	"time"
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/txpool"
 )
 
 type LedActor struct {
@@ -100,18 +101,35 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		log.Debug("receive create block request")
 		switch msg.Type {
 		case shard.HeMinorBlock:
-
+			if txpool.T == nil {
+				ctx.Sender().Tell(errors.New(log, "create final block err the txPool is nil"))
+				return
+			}
+			txs, err := txpool.T.GetTxsList(msg.ChainID)
+			if err != nil {
+				ctx.Sender().Tell(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
+				return
+			}
+			minorBlock, err := l.ledger.NewMinorBlock(msg.ChainID, txs, time.Now().UnixNano())
+			if err != nil {
+				ctx.Sender().Tell(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
+				return
+			}
+			ctx.Sender().Tell(minorBlock)
 		case shard.HeCmBlock:
 			log.Warn("the minor block nonsupport create by actor")
 		case shard.HeFinalBlock:
 			block, err := l.ledger.CreateFinalBlock(msg.ChainID, time.Now().UnixNano())
 			if err != nil {
 				ctx.Sender().Tell(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
+				return
 			}
 			ctx.Sender().Tell(block)
 		default:
 			log.Error("unknown type:", msg.Type.String())
 		}
+	case message.CheckBlock:
+
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}
