@@ -43,3 +43,9 @@ type ProducerBlock struct {
 	Height  uint64
 	Type    shard.HeaderType
 }
+
+type CheckBlock struct {
+	Type   shard.HeaderType
+	Height uint64
+	Result error
+}
