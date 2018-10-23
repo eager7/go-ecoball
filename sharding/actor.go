@@ -60,6 +60,10 @@ func (s *ShardingActor) Receive(ctx actor.Context) {
 		log.Debug("receive final block")
 		s.instance.MsgDispatch(msg)
 
+	case *cs.MinorBlock:
+		log.Debug("receive minor block")
+		s.instance.MsgDispatch(msg)
+
 	default:
 		log.Warn("ShardingActor received unknown type message ", msg, " type ", reflect.TypeOf(msg))
 	}

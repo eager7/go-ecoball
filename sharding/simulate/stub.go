@@ -30,6 +30,20 @@ func TellLedgerProductFinalBlock(epoch uint64, height uint64) {
 	}
 }
 
+func TellLedgerProductMinorBlock(epoch uint64, height uint64) {
+	log.Debug("tell ledger product minor block")
+
+	pb := message.ProducerBlock{
+		ChainID: cc.ChainHash,
+		Height:  height,
+		Type:    cs.HeMinorBlock,
+	}
+
+	if err := event.Send(event.ActorSharding, event.ActorLedger, pb); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func CheckFinalBlock(f *cs.FinalBlock) bool {
 	log.Error("ledger check final block")
 	return true

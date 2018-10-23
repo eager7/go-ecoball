@@ -139,6 +139,17 @@ func (c *Cell) VerifyMinorPacket(p *sc.NetPacket) *sc.CsPacket {
 		return nil
 	}
 
+	if minor.ShardId < 1 || minor.ShardId > sc.DefaultShardMaxMember {
+		log.Error("shard id error ", minor.ShardId)
+		return nil
+	}
+
+	height := c.getShardHeight(minor.ShardId)
+	if height >= minor.Height {
+		log.Error("minor block height error ", minor.Height, " last ", height)
+		return nil
+	}
+
 	/*missing_func need verify signature here*/
 	var csp sc.CsPacket
 	csp.CopyHeader(p)
