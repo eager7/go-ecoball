@@ -35,6 +35,7 @@ import (
 	"os"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 )
 
 var root = common.NameToIndex("root")
@@ -251,6 +252,7 @@ func TestShard(t *testing.T) {
 
 func TestExample(t *testing.T) {
 	os.RemoveAll("/tmp/shard_example")
+	simulate.LoadConfig()
 	l, err := ledgerimpl.NewLedger("/tmp/shard_example", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
 	errors.CheckErrorPanic(err)
 

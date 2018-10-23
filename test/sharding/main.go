@@ -12,9 +12,9 @@ import (
 
 func main() {
 	os.RemoveAll("shard")
+	simulate.LoadConfig()
 	L, err := ledgerimpl.NewLedger("shard", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
 	errors.CheckErrorPanic(err)
-	simulate.LoadConfig()
 
 	actor, _ := sharding.NewShardingActor(L)
 

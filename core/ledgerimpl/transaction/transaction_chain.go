@@ -34,6 +34,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/trie"
 	"github.com/ecoball/go-ecoball/core/types"
 	dsnstore "github.com/ecoball/go-ecoball/dsn/block"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
 	"github.com/ecoball/go-ecoball/spectator/connect"
@@ -706,14 +707,26 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		PrevHash:     prevHash,
 		LeaderPubKey: addr.Bytes(),
 		Nonce:        0,
-		Candidate:    shard.NodeInfo{},
-		ShardsHash:   common.Hash{},
+		Candidate: shard.NodeInfo{},
+		ShardsHash: common.Hash{},
 		COSign: &types.COSign{
 			Step1: 0,
 			Step2: 0,
 		},
 	}
-	var shards []shard.Shard
+	log.Warn(string(headerCM.Candidate.PublicKey))
+	shards := []shard.Shard{shard.Shard{
+		Member:     []shard.NodeInfo{shard.NodeInfo{
+			PublicKey: simulate.GetNodePubKey(),
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
+		}},
+		MemberAddr: []shard.NodeAddr{shard.NodeAddr{
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
+		}},
+	}}
+
 	block, err := shard.NewCmBlock(headerCM, shards)
 
 	if err := c.SaveShardBlock(0, block); err != nil {
@@ -804,8 +817,10 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 	}
 
 	var heKey, heValue []byte
+	var blockType string
 	switch shard.HeaderType(block.Type()) {
 	case shard.HeCmBlock:
+		blockType = shard.HeCmBlock.String()
 		Block, ok := block.GetObject().(shard.CMBlock)
 		if !ok {
 			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeCmBlock.String()))
@@ -825,6 +840,7 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 		}
 		defer c.updateShardId()
 	case shard.HeMinorBlock:
+		blockType = shard.HeMinorBlock.String()
 		Block, ok := block.GetObject().(shard.MinorBlock)
 		if !ok {
 			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeMinorBlock.String()))
@@ -868,6 +884,7 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 			return err
 		}
 	case shard.HeFinalBlock:
+		blockType = shard.HeFinalBlock.String()
 		Block, ok := block.GetObject().(shard.FinalBlock)
 		if !ok {
 			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeFinalBlock.String()))
@@ -906,6 +923,7 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 	}
 	c.StateDB.FinalDB.CommitToDB()
 	c.BlockMap[block.Hash()] = BlockCache{Height: block.GetHeight(), Type: shard.HeaderType(block.Type())}
+	log.Notice("save "+blockType+" block", block.JsonString())
 
 	return nil
 }
@@ -1120,13 +1138,13 @@ func (c *ChainTx) updateShardId() (uint32, error) {
 	}
 	for index, s := range block.Shards {
 		for _, node := range s.Member {
-			if bytes.Equal(config.Root.PublicKey, node.PublicKey) {
+			if bytes.Equal(simulate.GetNodePubKey(), node.PublicKey) {
 				c.shardId = uint32(index)
-				return uint32(index)+1, nil
+				return uint32(index) + 1, nil
 			}
 		}
 	}
-	return 1, nil
+	return 1, errors.New(log, fmt.Sprintf("can't find the public key:%s", simulate.GetNodePubKey()))
 }
 
 func (c *ChainTx) GetShardId() (uint32, error) {
