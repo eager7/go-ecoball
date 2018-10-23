@@ -44,6 +44,8 @@ const (
 	APP_MSG_P2PRTSYNACK
 
 	APP_MSG_MAX
+
+	APP_MSG_DKGSIJ
 )
 
 // Messages maps the name of a message to its type
