@@ -40,7 +40,7 @@ func (b *minorBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 	}
 
 	if update.ShardId != b.bk.ShardId {
-		log.Error("shardid not same")
+		log.Error("shardid wrong block ", update.ShardId, " expect ", b.bk.ShardId)
 		return false
 	}
 
