@@ -123,7 +123,10 @@ func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
 }
 
 func TestInterface(t *testing.T) {
-	l := example.Ledger("/tmp/interface")
+	simulate.LoadConfig()
+	os.RemoveAll("/tmp/interface")
+	l, err := ledgerimpl.NewLedger("/tmp/interface", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	errors.CheckErrorPanic(err)
 	header := shard.CMBlockHeader{
 		ChainID:   config.ChainHash,
 		Version:   0,
@@ -142,20 +145,18 @@ func TestInterface(t *testing.T) {
 		COSign:     &types.COSign{},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
-	Shards := []shard.Shard{shard.Shard{
-		Member: []shard.NodeInfo{
-			{
-				PublicKey: []byte("0987654321"),
-				Address:   "1234",
-				Port:      "5678",
-			},
-		},
-		MemberAddr: []shard.NodeAddr{{
-			Address: "1234",
-			Port:    "5678",
+	shards := []shard.Shard{shard.Shard{
+		Member:     []shard.NodeInfo{shard.NodeInfo{
+			PublicKey: simulate.GetNodePubKey(),
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
+		}},
+		MemberAddr: []shard.NodeAddr{shard.NodeAddr{
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
 		}},
 	}}
-	block, err := shard.NewCmBlock(header, Shards)
+	block, err := shard.NewCmBlock(header, shards)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, block))
 	blockGet, err := l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, block.Hash())
 	errors.CheckErrorPanic(err)
@@ -197,26 +198,25 @@ func TestInterface(t *testing.T) {
 
 func TestShard(t *testing.T) {
 	os.RemoveAll("/tmp/shard_test")
+	simulate.LoadConfig()
 	l, err := ledgerimpl.NewLedger("/tmp/shard_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
 	errors.CheckErrorPanic(err)
 	elog.Log.Debug(common.JsonString(l, false))
 
 	blockNew, err := l.GetLastShardBlock(config.ChainHash, shard.HeCmBlock)
 	errors.CheckErrorPanic(err)
-	Shards := []shard.Shard{shard.Shard{
-		Member: []shard.NodeInfo{
-			{
-				PublicKey: []byte("12340987"),
-				Address:   "ew62",
-				Port:      "34523532",
-			},
-		},
-		MemberAddr: []shard.NodeAddr{{
-			Address: "1234",
-			Port:    "5678",
+	shards := []shard.Shard{shard.Shard{
+		Member:     []shard.NodeInfo{shard.NodeInfo{
+			PublicKey: simulate.GetNodePubKey(),
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
+		}},
+		MemberAddr: []shard.NodeAddr{shard.NodeAddr{
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
 		}},
 	}}
-	blockCM, err := l.NewCmBlock(config.ChainHash, time.Now().UnixNano(), Shards)
+	blockCM, err := l.NewCmBlock(config.ChainHash, time.Now().UnixNano(), shards)
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, blockCM))
 	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, blockCM.Hash())
