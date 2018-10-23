@@ -8,7 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/pb"
 )
 
-const AbaTotal = 100000
+const AbaTotal = 200000
 
 type TokenInfo struct {
 	Symbol 		 string					`json:"symbol"`

@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/common/config"
+	"math/big"
 )
 
 /*
@@ -131,8 +132,9 @@ func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) e
 		tester.SetContract(types.VmNative, []byte("system contract"), nil, nil)
 	}
 
-	s.CreateToken(state.AbaToken, state.AbaTotal, tester)
-	s.IssueToken(tester, 90000, state.AbaToken)
+	if err := s.AccountAddBalance(tester, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
+		return err
+	}
 
 	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
 	if err := s.SetResourceLimits(tester, tester, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {

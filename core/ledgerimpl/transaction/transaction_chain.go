@@ -843,7 +843,12 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 			}
 		} else {
 			//TODO:Handle StateDelta and Check State Hash
+			for _, delta := range Block.StateDelta {
+				switch delta.Type {
+				case types.TxTransfer:
 
+				}
+			}
 		}
 
 		//heValue = append(heValue, byte(shard.HeMinorBlock))
