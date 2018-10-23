@@ -715,7 +715,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		},
 	}
 	log.Warn(string(headerCM.Candidate.PublicKey))
-	shards := []shard.Shard{shard.Shard{
+	shards := []shard.Shard{/*{
 		Member:     []shard.NodeInfo{shard.NodeInfo{
 			PublicKey: simulate.GetNodePubKey(),
 			Address:   simulate.GetNodeInfo().Address,
@@ -725,7 +725,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 			Address:   simulate.GetNodeInfo().Address,
 			Port:      simulate.GetNodeInfo().Port,
 		}},
-	}}
+	}*/}
 
 	block, err := shard.NewCmBlock(headerCM, shards)
 
@@ -1160,6 +1160,7 @@ func (c *ChainTx) GetShardId() (uint32, error) {
 func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, timeStamp int64, cpuLimit, netLimit float64) (err error) {
 	switch delta.Type {
 	case types.TxTransfer:
+
 	case types.TxDeploy:
 	case types.TxInvoke:
 	default:
