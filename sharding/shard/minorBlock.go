@@ -172,8 +172,6 @@ func (s *shard) productMinorBlock(msg interface{}) {
 		simulate.TellLedgerProductMinorBlock(lastcm.Height, height)
 	} else {
 		minor := s.createMinorBlock()
-
-		log.Debug("create minor block epoch ", minor.CMEpochNo, " height ", minor.Height)
 		csi := newMinorBlockCsi(minor)
 		s.cs.StartConsensus(csi)
 	}

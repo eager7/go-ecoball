@@ -15,7 +15,7 @@ type chainData struct {
 }
 
 func makeChainData() *chainData {
-	return &chainData{shardHeight: make([]uint64, 0, common.DefaultShardMaxMember)}
+	return &chainData{shardHeight: make([]uint64, common.DefaultShardMaxMember, common.DefaultShardMaxMember)}
 }
 
 func (c *chainData) setCMBlock(cm *cs.CMBlock) {
@@ -41,6 +41,11 @@ func (c *chainData) setViewchangeBlock(vc *cs.ViewChangeBlock) {
 
 func (c *chainData) getViewchangeBlock() *cs.ViewChangeBlock {
 	return c.viewchangeBlock
+}
+
+func (c *chainData) saveMinorBlock() {
+	c.minorBlock = c.preMinorBlock
+	c.preMinorBlock = nil
 }
 
 func (c *chainData) setMinorBlock(minor *cs.MinorBlock) {
