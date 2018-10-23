@@ -29,7 +29,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/txpool"
-	"github.com/Masterminds/glide/msg"
 )
 
 type LedActor struct {
