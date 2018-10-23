@@ -1144,7 +1144,9 @@ func (c *ChainTx) updateShardId() (uint32, error) {
 			}
 		}
 	}
-	return 1, errors.New(log, fmt.Sprintf("can't find the public key:%s", simulate.GetNodePubKey()))
+	e := fmt.Sprintf("can't find the public key:%s", simulate.GetNodePubKey())
+	log.Warn(e)
+	return 0, nil
 }
 
 func (c *ChainTx) GetShardId() (uint32, error) {
