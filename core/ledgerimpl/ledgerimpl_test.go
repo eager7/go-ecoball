@@ -251,7 +251,7 @@ func TestShard(t *testing.T) {
 
 func TestExample(t *testing.T) {
 	os.RemoveAll("/tmp/shard_example")
-	_, err := ledgerimpl.NewLedger("/tmp/shard_example", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	l, err := ledgerimpl.NewLedger("/tmp/shard_example", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
 	errors.CheckErrorPanic(err)
 
 	pid := example.Actor()
@@ -263,7 +263,11 @@ func TestExample(t *testing.T) {
 	}
 	pidL, _ := event.GetActor(event.ActorLedger)
 	pidL.Request(msg, pid)
-
 	time.Sleep(time.Second * 1)
+
+	m, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	elog.Log.Debug(m.JsonString())
+
 	event.EventStop()
 }

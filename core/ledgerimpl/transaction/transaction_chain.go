@@ -1121,15 +1121,15 @@ func (c *ChainTx) getShardId() (uint32, error) {
 		for _, node := range s.Member {
 			if bytes.Equal(config.Root.PublicKey, node.PublicKey) {
 				c.shardId = uint32(index)
-				return uint32(index), nil
+				return uint32(index)+1, nil
 			}
 		}
 	}
-	return 0, errors.New(log, "not found shard id")
+	return 1, nil
 }
 
 func (c *ChainTx) GetShardId() (uint32, error) {
-	if c.shardId != 0 {
+	if c.shardId == 0 {
 		return c.getShardId()
 	} else {
 		return c.shardId, nil
