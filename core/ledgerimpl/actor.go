@@ -29,6 +29,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/txpool"
+	"github.com/Masterminds/glide/msg"
 )
 
 type LedActor struct {
@@ -129,7 +130,21 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			log.Error("unknown type:", msg.Type.String())
 		}
 	case message.CheckBlock:
+		result := message.CheckBlock{
+			Block:  msg.Block,
+			Result: nil,
+		}
+		switch msg.Block.Type() {
+		case uint32(shard.HeMinorBlock):
 
+		case uint32(shard.HeCmBlock):
+
+		case uint32(shard.HeFinalBlock):
+
+		default:
+			result.Result = errors.New(log, "unknown header type")
+		}
+		ctx.Sender().Tell(result)
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}
