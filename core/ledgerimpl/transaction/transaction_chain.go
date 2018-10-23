@@ -1160,7 +1160,18 @@ func (c *ChainTx) GetShardId() (uint32, error) {
 func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, timeStamp int64, cpuLimit, netLimit float64) (err error) {
 	switch delta.Type {
 	case types.TxTransfer:
-
+		if err := s.AccountSubBalance(delta.Receipt.From, state.AbaToken, delta.Receipt.Amount); err != nil {
+			return err
+		}
+		if err := s.AccountAddBalance(delta.Receipt.To, state.AbaToken, delta.Receipt.Amount); err != nil {
+			return err
+		}
+		if err := s.RecoverResources(delta.Receipt.From, timeStamp, cpuLimit, netLimit); err != nil {
+			return err
+		}
+		if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
+			return err
+		}
 	case types.TxDeploy:
 	case types.TxInvoke:
 	default:
