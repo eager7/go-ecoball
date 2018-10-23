@@ -823,6 +823,7 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 		if err := c.HeaderStore.Put([]byte("lastCmHeader"), heValue); err != nil {
 			return err
 		}
+		defer c.updateShardId()
 	case shard.HeMinorBlock:
 		Block, ok := block.GetObject().(shard.MinorBlock)
 		if !ok {
@@ -1108,7 +1109,7 @@ func (c *ChainTx) CreateFinalBlock(timeStamp int64) (*shard.FinalBlock, error) {
 	return c.NewFinalBlock(timeStamp, minorHeaders)
 }
 
-func (c *ChainTx) getShardId() (uint32, error) {
+func (c *ChainTx) updateShardId() (uint32, error) {
 	cm, err := c.GetLastShardBlock(shard.HeCmBlock)
 	if err != nil {
 		return 0, err
@@ -1130,7 +1131,7 @@ func (c *ChainTx) getShardId() (uint32, error) {
 
 func (c *ChainTx) GetShardId() (uint32, error) {
 	if c.shardId == 0 {
-		return c.getShardId()
+		return c.updateShardId()
 	} else {
 		return c.shardId, nil
 	}
