@@ -37,13 +37,11 @@ type EcoballNetwork interface {
 }
 
 type CommAPI interface {
-	//addrInfo example: ipv4:"/ip4/192.168.1.2/tcp/1234", ipv6:"/ip6/::/tcp/1234"
-	ConnectToPeer(addrInfo string, pubKey []byte, isPermanent bool) error
+	ConnectToPeer(ip, port string, pubKey []byte, isPermanent bool) error
 	ClosePeer(pubKey []byte) error
 
 	//Send a message to the peer with the ip/port/pubkey info
-	//addrInfo example: ipv4:"/ip4/192.168.1.2/tcp/1234", ipv6:"/ip6/::/tcp/1234"
-	SendMsgToPeer(addrInfo string, pubKey []byte, msg message.EcoBallNetMsg) error
+	SendMsgToPeer(ip, port string, pubKey []byte, msg message.EcoBallNetMsg) error
 
 	//Gossip a message to random peers
 	GossipMsg(msg message.EcoBallNetMsg) error

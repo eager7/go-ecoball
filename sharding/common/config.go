@@ -30,5 +30,5 @@ const (
 
 	DefaultProductViewChangeBlockTimer = 180
 
-	DefaultWaitMinorBlockTimer = 180
+	DefaultWaitMinorBlockTimer = 10
 )

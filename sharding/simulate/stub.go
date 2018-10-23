@@ -67,6 +67,7 @@ func GetPreproductionMinorBlock() *cs.MinorBlock {
 }
 
 func GetCandidateList() (workers []NodeConfig) {
+	workers = make([]NodeConfig, 0, 0)
 	return
 }
 

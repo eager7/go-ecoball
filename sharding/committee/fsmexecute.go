@@ -35,7 +35,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 	/* missing_func vc block */
 	//lastVcBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeViewChangeBlock)
 	//if err == nil && lastVcBlock != nil {
-	//	vc := lastVcBlock.GetObject().(*types.ViewChangeBlock)
+	//	vc := lastVcBlock.GetObject().(types.ViewChangeBlock)
 	//
 	//}
 
@@ -45,8 +45,13 @@ func (c *committee) processSyncComplete(msg interface{}) {
 		return
 	}
 
-	final := lastFinalBlock.GetObject().(*cs.FinalBlock)
-	c.ns.SaveLastFinalBlock(final)
+	final := lastFinalBlock.GetObject().(cs.FinalBlock)
+	c.ns.SaveLastFinalBlock(&final)
+
+	if cm.Height == 1 && final.Height == 1 {
+		c.fsm.Execute(ActProductCommitteeBlock, msg)
+		return
+	}
 
 	if cm.Height > final.EpochNo {
 		c.fsm.Execute(ActCollectMinorBlock, msg)

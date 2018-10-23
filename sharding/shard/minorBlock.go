@@ -40,7 +40,7 @@ func (b *minorBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 	}
 
 	if update.ShardId != b.bk.ShardId {
-		log.Error("shardid not same")
+		log.Error("shardid wrong block ", update.ShardId, " expect ", b.bk.ShardId)
 		return false
 	}
 
@@ -163,28 +163,20 @@ func (s *shard) productMinorBlock(msg interface{}) {
 			return
 		}
 
-		//lastMinor := s.ns.GetLastMinorBlock()
-		//var height uint64
-		//if lastMinor == nil {
-		//	height = 1
-		//} else {
-		//	height = lastMinor.Height + 1
-		//}
-
-		//simulate.TellLedgerProductMinorBlock(lastcm.Height, height, uint32(s.ns.Shardid))
-
-		bi, err := s.ns.Ledger.NewMinorBlock(config.ChainHash, nil, time.Now().UnixNano())
-		minor := bi.GetObject().(*cs.MinorBlock)
-
+		minor, err := s.ns.Ledger.NewMinorBlock(config.ChainHash, nil, time.Now().UnixNano())
 		if err != nil {
+			log.Error("ledger new minor block error ", err)
 			return
 		}
 
+		log.Debug("new minor block epoch ", minor.CMEpochNo, " height ", minor.Height)
 		csi := newMinorBlockCsi(minor)
 		s.cs.StartConsensus(csi)
 
 	} else {
 		minor := s.createMinorBlock()
+
+		log.Debug("create minor block epoch ", minor.CMEpochNo, " height ", minor.Height)
 		csi := newMinorBlockCsi(minor)
 		s.cs.StartConsensus(csi)
 	}

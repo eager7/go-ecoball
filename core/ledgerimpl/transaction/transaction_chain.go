@@ -622,19 +622,17 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		if err := s.SetContract(tx.Addr, payload.TypeVm, payload.Describe, payload.Code, payload.Abi); err != nil {
 			return nil, 0, 0, err
 		}
-		
+
 		// generate trx receipt
 		acc := state.Account{
-			Index:			tx.Addr,
-			Contract:		payload,
+			Index:    tx.Addr,
+			Contract: payload,
 		}
-		var err error
-		data, err := acc.Serialize()
-		if err != nil {
+		if data, err := acc.Serialize(); err != nil {
 			return nil, 0, 0, err
+		} else {
+			tx.Receipt.Accounts[0] = data
 		}
-		tx.Receipt.Accounts[0] = data
-
 	case types.TxInvoke:
 		actionNew, _ := types.NewAction(tx)
 		trxContext, _ := context.NewTranscationContext(s, tx, cpuLimit, netLimit, timeStamp)
@@ -700,7 +698,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 	}
 
 	//Init Committee Block
-	header := shard.CMBlockHeader{
+	headerCM := shard.CMBlockHeader{
 		ChainID:      chainID,
 		Version:      types.VersionHeader,
 		Height:       1,
@@ -708,19 +706,15 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		PrevHash:     prevHash,
 		LeaderPubKey: addr.Bytes(),
 		Nonce:        0,
-		Candidate: shard.NodeInfo{
-			PublicKey: []byte("root"),
-			Address:   "localhost",
-			Port:      "1234",
-		},
-		ShardsHash: common.Hash{},
+		Candidate:    shard.NodeInfo{},
+		ShardsHash:   common.Hash{},
 		COSign: &types.COSign{
 			Step1: 0,
 			Step2: 0,
 		},
 	}
 	var shards []shard.Shard
-	block, err := shard.NewCmBlock(header, shards)
+	block, err := shard.NewCmBlock(headerCM, shards)
 
 	if err := c.SaveShardBlock(0, block); err != nil {
 		log.Error("Save geneses block error:", err)
@@ -770,7 +764,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		TrxCount:           0,
 		PrevHash:           common.Hash{},
 		ProposalPubKey:     nil,
-		EpochNo:            0,
+		EpochNo:            headerCM.Height,
 		CMBlockHash:        common.Hash{},
 		TrxRootHash:        common.Hash{},
 		StateDeltaRootHash: common.Hash{},
@@ -801,7 +795,7 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 		log.Warn("the block:", block.GetHeight(), "is existed")
 		return nil
 	}
-
+	log.Notice("Save Block", block.Type(), "Height", block.GetHeight())
 	if block.GetHeight() != 1 {
 		connect.Notify(info.InfoBlock, block)
 		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
@@ -829,6 +823,7 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 		if err := c.HeaderStore.Put([]byte("lastCmHeader"), heValue); err != nil {
 			return err
 		}
+		defer c.updateShardId()
 	case shard.HeMinorBlock:
 		Block, ok := block.GetObject().(shard.MinorBlock)
 		if !ok {
@@ -849,7 +844,12 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 			}
 		} else {
 			//TODO:Handle StateDelta and Check State Hash
-
+			for _, delta := range Block.StateDelta {
+				if err := c.HandleDeltaState(c.StateDB.FinalDB, delta, Block.MinorBlockHeader.Timestamp,
+					c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
+					return err
+				}
+			}
 		}
 
 		//heValue = append(heValue, byte(shard.HeMinorBlock))
@@ -984,6 +984,10 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		return nil, err
 	}
 
+	shardID, err := c.GetShardId()
+	if err != nil {
+		return nil, err
+	}
 	header := shard.MinorBlockHeader{
 		ChainID:           c.LastHeader.MinorHeader.ChainID,
 		Version:           c.LastHeader.MinorHeader.Version,
@@ -994,8 +998,8 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		StateDeltaHash:    s.GetHashRoot(),
 		CMBlockHash:       c.LastHeader.CmHeader.Hash(),
 		ProposalPublicKey: nil,
-		ShardId:           c.LastHeader.MinorHeader.ShardId,
-		CMEpochNo:         0,
+		ShardId:           shardID,
+		CMEpochNo:         c.LastHeader.CmHeader.Height,
 		Receipt:           types.BlockReceipt{},
 		COSign:            &types.COSign{},
 	}
@@ -1060,7 +1064,7 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlockHeaders []*shard.Mino
 		TrxCount:           0,
 		PrevHash:           c.LastHeader.FinalHeader.Hash(),
 		ProposalPubKey:     nil,
-		EpochNo:            0,
+		EpochNo:            c.LastHeader.CmHeader.Height,
 		CMBlockHash:        c.LastHeader.CmHeader.Hash(),
 		TrxRootHash:        TrxRootHash,
 		StateDeltaRootHash: StateDeltaRootHash,
@@ -1105,7 +1109,7 @@ func (c *ChainTx) CreateFinalBlock(timeStamp int64) (*shard.FinalBlock, error) {
 	return c.NewFinalBlock(timeStamp, minorHeaders)
 }
 
-func (c *ChainTx) getShardId() (uint32, error) {
+func (c *ChainTx) updateShardId() (uint32, error) {
 	cm, err := c.GetLastShardBlock(shard.HeCmBlock)
 	if err != nil {
 		return 0, err
@@ -1118,17 +1122,28 @@ func (c *ChainTx) getShardId() (uint32, error) {
 		for _, node := range s.Member {
 			if bytes.Equal(config.Root.PublicKey, node.PublicKey) {
 				c.shardId = uint32(index)
-				return uint32(index), nil
+				return uint32(index)+1, nil
 			}
 		}
 	}
-	return 0, errors.New(log, "not found shard id")
+	return 1, nil
 }
 
 func (c *ChainTx) GetShardId() (uint32, error) {
-	if c.shardId != 0 {
-		return c.getShardId()
+	if c.shardId == 0 {
+		return c.updateShardId()
 	} else {
 		return c.shardId, nil
 	}
+}
+
+func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, timeStamp int64, cpuLimit, netLimit float64) (err error) {
+	switch delta.Type {
+	case types.TxTransfer:
+	case types.TxDeploy:
+	case types.TxInvoke:
+	default:
+		return errors.New(log, "unknown transaction type")
+	}
+	return nil
 }

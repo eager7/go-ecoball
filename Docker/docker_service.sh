@@ -61,7 +61,7 @@ fi
 case $1 in
     "start")
     #start main ecoball container 
-    if ! sudo docker run -d --name=ecoball -p 20678:20678 -v ${SOURCE_DIR}/ecoball_log:/var/ecoball_log $IMAGE 
+    if ! sudo docker run -d --name=ecoball -p 20678:20678 -v ${SOURCE_DIR}/ecoball_log:/var/ecoball_log $IMAGE /root/go/src/github.com/ecoball/go-ecoball/build/ecoball run
     then
         echo  -e "\033[;31m docker run start main ecoball failed!!! \033[0m"
         exit 1
@@ -87,7 +87,7 @@ case $1 in
         PORT=`expr $PORT + 1`
         TAIL=`expr $TAIL + 1`
 
-        if ! sudo docker run -d --name=ecoball_${TAIL} -p $PORT:20678 --volumes-from ecoball $IMAGE
+        if ! sudo docker run -d --name=ecoball_${TAIL} -p $PORT:20678 --volumes-from ecoball $IMAGE  /root/go/src/github.com/ecoball/go-ecoball/build/ecoball run
         then
             echo  -e "\033[;31m docker run start ecoball_${TAIL} failed!!! \033[0m"
             exit 1

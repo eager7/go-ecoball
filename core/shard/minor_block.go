@@ -4,16 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"math/big"
-	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/state"
-	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
-var log = elog.NewLogger("sharding", elog.NoticeLog)
+var log = elog.NewLogger("core-shard", elog.NoticeLog)
 
 type MinorBlockHeader struct {
 	ChainID           common.Hash
@@ -26,8 +25,8 @@ type MinorBlockHeader struct {
 	CMBlockHash       common.Hash
 	ProposalPublicKey []byte
 	//ConsData          ConsensusData
-	ShardId           uint32
-	CMEpochNo         uint64
+	ShardId   uint32
+	CMEpochNo uint64
 
 	Receipt types.BlockReceipt
 	hash    common.Hash
@@ -65,8 +64,8 @@ func (h *MinorBlockHeader) proto() (*pb.MinorBlockHeader, error) {
 		CMBlockHash:       h.CMBlockHash.Bytes(),
 		ProposalPublicKey: h.ProposalPublicKey,
 		//ConsData:          pbCon,
-		ShardId:           h.ShardId,
-		CMEpochNo:         h.CMEpochNo,
+		ShardId:   h.ShardId,
+		CMEpochNo: h.CMEpochNo,
 		Receipt: &pb.BlockReceipt{
 			BlockCpu: h.Receipt.BlockCpu,
 			BlockNet: h.Receipt.BlockNet,
@@ -170,22 +169,18 @@ func (h *MinorBlockHeader) GetChainID() common.Hash {
 }
 
 type AccountMinor struct {
-	Accounts *state.Account
-	//Account common.AccountName
-	//Balance *big.Int
-	//Nonce   uint64
+	Type    types.TxType
+	Receipt types.TransactionReceipt
 }
 
 func (a *AccountMinor) proto() (*pb.AccountMinor, error) {
-	data, err := a.Accounts.Serialize()
+	data, err := a.Receipt.Serialize()
 	if err != nil {
 		return nil, err
 	}
 	return &pb.AccountMinor{
 		AccountData: data,
-		Account:     0,
-		Balance:     nil,
-		Nonce:       0,
+		Type:        uint64(a.Type),
 	}, nil
 }
 
@@ -201,66 +196,49 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *types.Header, txs []*typ
 	}
 	var sDelta []*AccountMinor
 	for _, tx := range txs {
-		//receipt := tx.Receipt
-		switch tx.Type {
-		case types.TxDeploy:
-			/*acc := state.Account{
-				Index:       0,
-				TimeStamp:   0,
-				Tokens:      nil,
-				Permissions: nil,
-				Contract:    types.DeployInfo{
-					TypeVm:   0,
-					Describe: nil,
-					Code:     nil,
-					Abi:      nil,
+		for _, receipt := range tx.Receipt.Accounts {
+			acc := new(state.Account)
+			if err := acc.Deserialize(receipt); err != nil {
+				return nil, err
+			}
+			delta := AccountMinor{
+				Type:    tx.Type,
+				Receipt: types.TransactionReceipt{
+					From:      0,
+					To:        0,
+					TokenName: "",
+					Amount:    nil,
+					Hash:      common.Hash{},
+					Cpu:       0,
+					Net:       0,
+					NewToken:  nil,
+					Accounts:  nil,
+					Producer:  0,
+					Result:    nil,
 				},
-				Delegates:   nil,
-				Resource:    state.Resource{
-					Ram: struct {
-						Quota float64 `json:"quota"`
-						Used  float64 `json:"used"`
-					}{},
-					Net: struct {
-						Staked    uint64  `json:"staked_aba, omitempty"`
-						Delegated uint64  `json:"delegated_aba, omitempty"`
-						Used      float64 `json:"used_byte, omitempty"`
-						Available float64 `json:"available_byte, omitempty"`
-						Limit     float64 `json:"limit_byte, omitempty"`
-					}{
-						Staked:    0,
-						Delegated: 0,
-						Used:      0,
-						Available: 0,
-						Limit:     0,
-					},
-					Cpu: struct {
-						Staked    uint64  `json:"staked_aba, omitempty"`
-						Delegated uint64  `json:"delegated_aba, omitempty"`
-						Used      float64 `json:"used_ms, omitempty"`
-						Available float64 `json:"available_ms, omitempty"`
-						Limit     float64 `json:"limit_ms, omitempty"`
-					}{
-						Staked:    0,
-						Delegated: 0,
-						Used:      0,
-						Available: 0,
-						Limit:     0,
-					},
-					Votes: struct {
-						Staked    uint64                        `json:"staked_aba, omitempty"`
-						Producers map[common.AccountName]uint64 `json:"producers, omitempty"`
-					}{
-						Staked:    0,
-						Producers: nil,
-					},
-				},
-				Hash:        common.Hash{},
-			}*/
-		case types.TxInvoke:
-		case types.TxTransfer:
-		default:
-			return nil, errors.New(log, "unknown transaction type")
+			}
+			delta.Receipt.Hash = tx.Hash
+			delta.Receipt.Cpu = tx.Receipt.Cpu
+			delta.Receipt.Net = tx.Receipt.Net
+			delta.Receipt.Result = tx.Receipt.Result
+			switch tx.Type {
+			case types.TxDeploy:
+
+			case types.TxInvoke:
+
+			case types.TxTransfer:
+				delta.Receipt.From = tx.From
+				delta.Receipt.To = tx.Addr
+				transfer, ok := tx.Payload.GetObject().(types.TransferInfo)
+				if !ok {
+					return nil, errors.New(log, "get transfer object error")
+				}
+				delta.Receipt.TokenName = transfer.Token
+				delta.Receipt.Amount = transfer.Value
+			default:
+				return nil, errors.New(log, "unknown transaction type")
+			}
+			sDelta = append(sDelta, &delta)
 		}
 	}
 	block := &MinorBlock{
@@ -268,7 +246,7 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *types.Header, txs []*typ
 		Transactions:     txs,
 		StateDelta:       sDelta,
 	}
-	fmt.Println("block.StateDelta:",block.StateDelta)
+	fmt.Println("block.StateDelta:", block.StateDelta)
 	if err := block.SetReceipt(prevHeader, cpu, net); err != nil {
 		return nil, err
 	}
@@ -374,18 +352,15 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 	}
 
 	for _, acc := range pbBlock.StateDelta {
-		balance := new(big.Int)
-		if err := balance.GobDecode(acc.Balance); err != nil {
+		receipt := new(state.Account)
+		if err := receipt.Deserialize(acc.AccountData); err != nil {
 			return err
 		}
-		account := new(state.Account)
-		if err := account.Deserialize(acc.AccountData); err != nil {
-			return err
+		stateDelta := AccountMinor{
+			Type:    types.TxType(acc.Type),
+			Receipt: types.TransactionReceipt{},
 		}
-		state := AccountMinor{
-			Accounts: account,
-		}
-		b.StateDelta = append(b.StateDelta, &state)
+		b.StateDelta = append(b.StateDelta, &stateDelta)
 	}
 	return nil
 }

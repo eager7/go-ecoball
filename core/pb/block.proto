@@ -95,6 +95,11 @@ message InvokeInfo {
     repeated ParamData Param= 2;
 }
 
+message Transfer {
+    string Token = 1;
+    bytes  Value = 2;
+}
+
 message TransactionReceipt {
     bytes       Hash        = 1;
     double      Cpu         = 2;
@@ -357,9 +362,7 @@ message MinorBlockHeader {
 }
 message AccountMinor {
     bytes  AccountData = 4;
-    uint64 Account = 3;
-    bytes  Balance = 1;
-    uint64 Nonce   = 2;
+    uint64 Type = 3;
 }
 message MinorBlock {
     MinorBlockHeader Header = 1;
@@ -446,4 +449,15 @@ message PeerInfo {
 message P2PRtSyncAckMsg {
     bytes              resp  = 1;
     repeated PeerInfo  peers = 2;
+}
+
+message curvePointPB {
+	bytes  curvePoint = 1;
+}
+
+message SijPBShareDKG {
+    int64                   index     = 1;
+    int64                   epochNum  = 2;
+    bytes                   Sij       = 3;
+    repeated curvePointPB   PubPolyPB = 4;
 }
