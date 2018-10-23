@@ -4,6 +4,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/etime"
 	"github.com/ecoball/go-ecoball/common/message"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
@@ -30,6 +31,7 @@ const (
 	ActRecvConsensusPacket
 	ActChainNotSync
 	ActRecvCommitteePacket
+	ActLedgerBlockMsg
 	ActStateTimeout
 )
 
@@ -66,6 +68,8 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 			{productMinoBlock, ActRecvConsensusPacket, nil, s.processConsensusMinorPacket, nil, sc.StateNil},
 			{productMinoBlock, ActWaitBlock, nil, nil, nil, waitBlock},
 			{productMinoBlock, ActProductMinorBlock, nil, s.reproductMinorBlock, nil, sc.StateNil},
+			{productMinoBlock, ActRecvCommitteePacket, nil, s.processCommitteePacket, nil, sc.StateNil},
+			{productMinoBlock, ActLedgerBlockMsg, nil, s.processLedgerMinorBlockMsg, nil, sc.StateNil},
 		})
 
 	net.MakeNet(ns)
@@ -121,8 +125,10 @@ func (s *shard) pvcRoutine() {
 
 func (s *shard) processActorMsg(msg interface{}) {
 	switch msg.(type) {
-	case message.SyncComplete:
+	case *message.SyncComplete:
 		s.processSyncComplete()
+	case *cs.MinorBlock:
+		s.processMinorBlockMsg(msg.(*cs.MinorBlock))
 	default:
 		log.Error("wrong actor message")
 	}

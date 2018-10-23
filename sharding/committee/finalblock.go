@@ -196,7 +196,6 @@ func (c *committee) processLedgerFinalBlockMsg(p interface{}) {
 }
 
 func (c *committee) checkFinalPacket(p interface{}) bool {
-
 	/*recheck block*/
 	csp := p.(*sc.CsPacket)
 	if csp.BlockType != sc.SD_FINAL_BLOCK {

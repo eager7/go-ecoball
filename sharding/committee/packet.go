@@ -7,6 +7,7 @@ import (
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/net"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 )
 
@@ -99,6 +100,8 @@ func (c *committee) processShardBlockOnWaitStatus(p interface{}) {
 	if !c.ns.SaveMinorBlockToPool(minor) {
 		return
 	}
+
+	simulate.TellBlock(minor)
 
 	net.Np.TransitBlock(csp)
 

@@ -2,6 +2,7 @@ package cell
 
 import (
 	cs "github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/sharding/common"
 )
 
 type chainData struct {
@@ -10,10 +11,11 @@ type chainData struct {
 	viewchangeBlock *cs.ViewChangeBlock
 	minorBlock      *cs.MinorBlock
 	preMinorBlock   *cs.MinorBlock
+	shardHeight     []uint64
 }
 
 func makeChainData() *chainData {
-	return &chainData{}
+	return &chainData{shardHeight: make([]uint64, 0, common.DefaultShardMaxMember)}
 }
 
 func (c *chainData) setCMBlock(cm *cs.CMBlock) {
@@ -55,4 +57,22 @@ func (c *chainData) setPreMinorBlock(minor *cs.MinorBlock) {
 
 func (c *chainData) getPreMinorBlock() *cs.MinorBlock {
 	return c.preMinorBlock
+}
+
+func (c *chainData) setShardHeight(shardid uint32, height uint64) {
+	if shardid < 1 || shardid > common.DefaultShardMaxMember {
+		panic("wrong shard id")
+		return
+	}
+
+	c.shardHeight[shardid-1] = height
+}
+
+func (c *chainData) getShardHeight(shardid uint32) uint64 {
+	if shardid < 1 || shardid > common.DefaultShardMaxMember {
+		panic("wrong shard id")
+		return 0
+	}
+
+	return c.shardHeight[shardid-1]
 }
