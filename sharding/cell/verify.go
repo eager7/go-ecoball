@@ -53,7 +53,7 @@ func (c *Cell) VerifyFinalPacket(p *sc.NetPacket) *sc.CsPacket {
 	last := c.GetLastFinalBlock()
 	if last != nil {
 		if last.Height+1 != final.Height {
-			log.Debug("old final block last ", last.Height, " block ", final.Height)
+			log.Debug("wrong final block last ", last.Height, " block ", final.Height)
 			return nil
 		}
 	}

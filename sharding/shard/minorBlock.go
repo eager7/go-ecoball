@@ -163,6 +163,9 @@ func (s *shard) productMinorBlock(msg interface{}) {
 			return
 		}
 
+		/*missing_func */
+		time.Sleep(50 * time.Millisecond)
+
 		minor, err := s.ns.Ledger.NewMinorBlock(config.ChainHash, nil, time.Now().UnixNano())
 		if err != nil {
 			log.Error("ledger new minor block error ", err)
