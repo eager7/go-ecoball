@@ -17,9 +17,10 @@
 package rpc
 
 import (
-	//"fmt"
+	"strconv"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/gin-gonic/gin"
@@ -29,6 +30,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/state"
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/http/common/abi"
 )
 
 func StartHttpServer() (err error) {
@@ -38,12 +40,15 @@ func StartHttpServer() (err error) {
 	//register handle
 	router.POST("/getAccountInfo", getAccountInfo)
 	router.GET("/getInfo", getInfo)
+	router.GET("/getHeadBlock", getHeadBlock)
 	router.POST("/get_required_keys", get_required_keys)
 	router.POST("/invokeContract", invokeContract)
 	router.POST("/setContract", setContract)
 	router.POST("/getContract", getContract)
 	router.POST("/storeGet", storeGet)
 	router.POST("/transfer", transfer)
+	router.POST("/newInvokeContract", newInvokeContract)
+	router.POST("/newDeployContract", newDeployContract)
 
 	http.ListenAndServe(":20681", router)
 	return nil
@@ -84,26 +89,26 @@ func get_required_keys(c *gin.Context) {
 	chainId := c.PostForm("chainId")
 	required_keys := c.PostForm("keys")
 	permission := c.PostForm("permission")
-	transaction_data := c.PostForm("transaction")
+	accountName_str := c.PostForm("name")
 
-	key_datas := strings.Split(required_keys, "\n")
-	Transaction := new(types.Transaction)
+	key_datas := strings.Split(required_keys, ",")
+	/*Transaction := new(types.Transaction)
 	if err := Transaction.Deserialize(innerCommon.FromHex(transaction_data)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
-	}
+	}*/
 	//signTransaction, err := wallet.SignTransaction(inner.FromHex(transaction_data), datas)
 	hash := new(innerCommon.Hash)
 	chainids := hash.FormHexString(chainId)
-	data, err := ledger.L.FindPermission(chainids, Transaction.From, permission)
+	data, err := ledger.L.FindPermission(chainids, innerCommon.NameToIndex(accountName_str), permission)
 	if err != nil{
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
 	permission_datas := []state.Permission{}
 	if err := json.Unmarshal([]byte(data), &permission_datas); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
@@ -131,7 +136,7 @@ func get_required_keys(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusBadRequest, gin.H{"result": "no required_keys"})
+	c.JSON(http.StatusBadRequest, gin.H{"message": "no required_keys"})
 }
 
 func invokeContract(c *gin.Context) {
@@ -226,5 +231,108 @@ func transfer(c *gin.Context) {
 	}
 	
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
+}
+
+//use for scan
+func getHeadBlock(c *gin.Context) {
+	var height uint64 = 1
+	blockInfo, errcode := ledger.L.GetTxBlockByHeight(config.ChainHash, height)
+	if errcode != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": errcode.Error()})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{"result": "success", "chainId": blockInfo.ChainID.HexString()})
+}
+
+func newInvokeContract(c *gin.Context){
+	chainId_str := c.PostForm("chainId")
+	accountName := c.PostForm("accountName")
+	creator := c.PostForm("creator")
+	owner := c.PostForm("owner")
+
+	if "" == chainId_str || "" == accountName || "" == creator || "" == owner {
+		c.JSON(http.StatusBadRequest, gin.H{"result": "invalid params"})
+		return
+	}
+
+	max_cpu_usage_ms, err := strconv.ParseFloat(c.PostForm("max-cpu-usage-ms"), 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
+	max_net_usage, err := strconv.ParseFloat(c.PostForm("max-net-usage"), 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
+	creatorAccount := innerCommon.NameToIndex(creator)
+	timeStamp := time.Now().UnixNano()
+
+	hash := new(innerCommon.Hash)
+	chainId := hash.FormHexString(chainId_str)
+
+	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, chainId, "owner", "new_account",
+		[]string{accountName, innerCommon.AddressFromPubKey(innerCommon.FromHex(owner)).HexString()}, 0, timeStamp)
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
+	invoke.Receipt.Cpu = max_cpu_usage_ms
+	invoke.Receipt.Net = max_net_usage
+
+	data, err := invoke.Serialize()
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": innerCommon.ToHex(data)})
+}
+
+func newDeployContract(c *gin.Context){
+	chainId_str := c.PostForm("chainId")
+	contractName := c.PostForm("name")
+	description := c.PostForm("description")
+	data_str := c.PostForm("contract_data")
+	abi_str := c.PostForm("abi_data")
+
+	if "" == chainId_str || "" == contractName || "" == description || 
+		"" == data_str || "" == abi_str{
+		c.JSON(http.StatusBadRequest, gin.H{"result": "invalid params"})
+		return
+	}
+
+	hash := new(innerCommon.Hash)
+	chainId := hash.FormHexString(chainId_str)
+	time := time.Now().UnixNano()
+	data := []byte(data_str)
+
+	var contractAbi abi.ABI
+	if err := json.Unmarshal([]byte(abi_str), &contractAbi); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
+	abibyte, err := abi.MarshalBinary(contractAbi)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
+	transaction, err := types.NewDeployContract(innerCommon.NameToIndex(contractName), innerCommon.NameToIndex(contractName), chainId, "owner", types.VmWasm, description, data, abibyte, 0, time)
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
+	trx_data, err := transaction.Serialize()
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": innerCommon.ToHex(trx_data)})
 }
 

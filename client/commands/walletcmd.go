@@ -257,7 +257,7 @@ func sign_transaction(chainId outerCommon.Hash, required_keys string, trx *types
 	var result common.SimpleResult
 	values := url.Values{}
 	values.Set("keys", required_keys)
-	values.Set("data", outerCommon.ToHex(data))
+	values.Set("transaction", outerCommon.ToHex(data))
 	err = rpc.WalletPost("/wallet/signTransaction", values.Encode(), &result)
 	if nil == err {
 		trx.Deserialize(outerCommon.FromHex(result.Result))

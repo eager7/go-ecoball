@@ -163,18 +163,24 @@ func getPublicKeys(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
+
+	if len(data) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "no publickeys"})
+		return
+	}
+
 	var publickeys string
 	for _, k := range data {
 		publickeys += k
-		publickeys += "\n"
+		publickeys += ","
 	}
-	publickeys = strings.TrimSuffix(publickeys, "\n")
+	publickeys = strings.TrimSuffix(publickeys, ",")
 	c.JSON(http.StatusOK, gin.H{"result": publickeys})
 }
 
 func signTransaction(c *gin.Context) {
 	keys := c.PostForm("keys")
-	data := c.PostForm("data")
+	data := c.PostForm("transaction")
 	key := strings.Split(keys, "\n")
 	signData, err := wallet.SignTransaction(inner.FromHex(data), key)
 	if nil != err {
