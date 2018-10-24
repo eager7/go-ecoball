@@ -43,7 +43,12 @@ func (c *chainData) getViewchangeBlock() *cs.ViewChangeBlock {
 	return c.viewchangeBlock
 }
 
-func (c *chainData) saveMinorBlock() {
+func (c *chainData) saveMinorBlock(header *cs.MinorBlockHeader) {
+	if c.preMinorBlock == nil {
+		panic("pre minor block is nil")
+		return
+	}
+
 	c.minorBlock = c.preMinorBlock
 	c.preMinorBlock = nil
 }

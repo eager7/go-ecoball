@@ -1,12 +1,13 @@
 package net
 
 import (
-	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/elog"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
+	"github.com/gin-gonic/gin/json"
 	"math"
 	"math/rand"
 	"time"
@@ -188,12 +189,44 @@ func (n *net) TransitBlock(p *sc.CsPacket) {
 
 	sp := &sc.NetPacket{}
 	sp.CopyHeader(p)
-	block, err := json.Marshal(p.Packet)
-	if err != nil {
-		log.Error("broadcast sharding packet mashal error ", err)
+
+	switch p.Packet.(type) {
+	case *cs.CMBlock:
+		cm := p.Packet.(*cs.CMBlock)
+		packet, err := cm.Serialize()
+		if err != nil {
+			log.Error("transit cm block packet Serialize  error ", err)
+			return
+		}
+		sp.Packet = packet
+	case *cs.FinalBlock:
+		final := p.Packet.(*cs.FinalBlock)
+		packet, err := final.Serialize()
+		if err != nil {
+			log.Error("transit final block packet Serialize error ", err)
+			return
+		}
+		sp.Packet = packet
+	case *cs.MinorBlock:
+		minor := p.Packet.(*cs.MinorBlock)
+		packet, err := minor.Serialize()
+		if err != nil {
+			log.Error("transit minor block packet Serialize error ", err)
+			return
+		}
+		sp.Packet = packet
+	case *cs.ViewChangeBlock:
+		vc := p.Packet.(*cs.ViewChangeBlock)
+		packet, err := json.Marshal(vc)
+		if err != nil {
+			log.Error("transit block packet Marshal error ", err)
+			return
+		}
+		sp.Packet = packet
+	default:
+		log.Error("transit block wrong block type ")
 		return
 	}
 
-	sp.Packet = block
 	n.BroadcastBlock(sp)
 }

@@ -1,7 +1,6 @@
 package shard
 
 import (
-	"encoding/json"
 	"github.com/ecoball/go-ecoball/common"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -68,9 +67,9 @@ func (b *minorBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
 		return nil
 	}
 
-	data, err := json.Marshal(b.bk)
+	data, err := b.bk.Serialize()
 	if err != nil {
-		log.Error("minor block marshal error ", err)
+		log.Error("minor block Serialize error ", err)
 		return nil
 	}
 
