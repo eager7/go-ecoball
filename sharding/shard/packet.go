@@ -86,6 +86,14 @@ func (s *shard) processCommitteePacket(csp interface{}) {
 	switch p.BlockType {
 	case sc.SD_CM_BLOCK:
 		cm := p.Packet.(*cs.CMBlock)
+		last := s.ns.GetLastCMBlock()
+		if last != nil {
+			if last.Height >= cm.Height {
+				log.Debug("old cm packet ", cm.Height)
+				return
+			}
+		}
+
 		simulate.TellBlock(cm)
 		s.ns.SaveLastCMBlock(cm)
 		s.broadcastCommitteePacket(p)
@@ -93,6 +101,13 @@ func (s *shard) processCommitteePacket(csp interface{}) {
 		s.fsm.Execute(ActProductMinorBlock, nil)
 	case sc.SD_FINAL_BLOCK:
 		final := p.Packet.(*cs.FinalBlock)
+		last := s.ns.GetLastFinalBlock()
+		if last != nil {
+			if last.Height >= final.Height {
+				log.Debug("old final packet ", final.Height)
+				return
+			}
+		}
 		simulate.TellBlock(final)
 		s.ns.SaveLastFinalBlock(final)
 		s.broadcastCommitteePacket(p)
@@ -102,6 +117,15 @@ func (s *shard) processCommitteePacket(csp interface{}) {
 		}
 	case sc.SD_VIEWCHANGE_BLOCK:
 		vc := p.Packet.(*cs.ViewChangeBlock)
+		last := s.ns.GetLastViewchangeBlock()
+		if last != nil {
+			if last.FinalBlockHeight > vc.FinalBlockHeight ||
+				(last.FinalBlockHeight == vc.FinalBlockHeight ||
+					last.Round >= vc.Round) {
+				log.Debug("old vc packet ", vc.FinalBlockHeight, " ", vc.Round)
+				return
+			}
+		}
 		//simulate.TellBlock(vc)
 		panic("vc block")
 		s.ns.SaveLastViewchangeBlock(vc)
