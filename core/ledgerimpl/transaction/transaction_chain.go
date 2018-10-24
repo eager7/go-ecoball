@@ -1139,7 +1139,7 @@ func (c *ChainTx) updateShardId() (uint32, error) {
 	for index, s := range block.Shards {
 		for _, node := range s.Member {
 			if bytes.Equal(simulate.GetNodePubKey(), node.PublicKey) {
-				c.shardId = uint32(index)
+				c.shardId = uint32(index) + 1
 				return uint32(index) + 1, nil
 			}
 		}

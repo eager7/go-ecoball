@@ -132,6 +132,9 @@ func (c *Cell) SaveLastFinalBlock(bk *cs.FinalBlock) {
 
 	for _, minor := range bk.MinorBlocks {
 		c.chain.setShardHeight(minor.ShardId, minor.Height)
+		if uint32(c.Shardid) == minor.ShardId {
+			c.chain.saveMinorBlock()
+		}
 	}
 
 	c.minorBlockPool.clean()

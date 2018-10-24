@@ -8,6 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/sharding"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
+	"github.com/ecoball/go-ecoball/txpool"
 	"os"
 )
 
@@ -17,6 +18,11 @@ func main() {
 	os.RemoveAll("shard")
 	L, err := ledgerimpl.NewLedger("shard", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
 	errors.CheckErrorPanic(err)
+
+	_, err = txpool.Start(L)
+	if err != nil {
+		panic("txpool error")
+	}
 
 	actor, _ := sharding.NewShardingActor(L)
 
