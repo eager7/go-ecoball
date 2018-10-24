@@ -35,6 +35,7 @@ import (
 	"os"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 )
 
 var root = common.NameToIndex("root")
@@ -122,7 +123,10 @@ func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
 }
 
 func TestInterface(t *testing.T) {
-	l := example.Ledger("/tmp/interface")
+	simulate.LoadConfig()
+	os.RemoveAll("/tmp/interface")
+	l, err := ledgerimpl.NewLedger("/tmp/interface", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	errors.CheckErrorPanic(err)
 	header := shard.CMBlockHeader{
 		ChainID:   config.ChainHash,
 		Version:   0,
@@ -141,20 +145,18 @@ func TestInterface(t *testing.T) {
 		COSign:     &types.COSign{},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
-	Shards := []shard.Shard{shard.Shard{
-		Member: []shard.NodeInfo{
-			{
-				PublicKey: []byte("0987654321"),
-				Address:   "1234",
-				Port:      "5678",
-			},
-		},
-		MemberAddr: []shard.NodeAddr{{
-			Address: "1234",
-			Port:    "5678",
+	shards := []shard.Shard{shard.Shard{
+		Member:     []shard.NodeInfo{shard.NodeInfo{
+			PublicKey: simulate.GetNodePubKey(),
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
+		}},
+		MemberAddr: []shard.NodeAddr{shard.NodeAddr{
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
 		}},
 	}}
-	block, err := shard.NewCmBlock(header, Shards)
+	block, err := shard.NewCmBlock(header, shards)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, block))
 	blockGet, err := l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, block.Hash())
 	errors.CheckErrorPanic(err)
@@ -196,31 +198,30 @@ func TestInterface(t *testing.T) {
 
 func TestShard(t *testing.T) {
 	os.RemoveAll("/tmp/shard_test")
+	simulate.LoadConfig()
 	l, err := ledgerimpl.NewLedger("/tmp/shard_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
 	errors.CheckErrorPanic(err)
 	elog.Log.Debug(common.JsonString(l, false))
 
 	blockNew, err := l.GetLastShardBlock(config.ChainHash, shard.HeCmBlock)
 	errors.CheckErrorPanic(err)
-	Shards := []shard.Shard{shard.Shard{
-		Member: []shard.NodeInfo{
-			{
-				PublicKey: []byte("12340987"),
-				Address:   "ew62",
-				Port:      "34523532",
-			},
-		},
-		MemberAddr: []shard.NodeAddr{{
-			Address: "1234",
-			Port:    "5678",
+	shards := []shard.Shard{shard.Shard{
+		Member:     []shard.NodeInfo{shard.NodeInfo{
+			PublicKey: simulate.GetNodePubKey(),
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
+		}},
+		MemberAddr: []shard.NodeAddr{shard.NodeAddr{
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
 		}},
 	}}
-	blockCM, err := l.NewCmBlock(config.ChainHash, time.Now().UnixNano(), Shards)
+	blockCM, err := l.NewCmBlock(config.ChainHash, time.Now().UnixNano(), shards)
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, blockCM))
 	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, blockCM.Hash())
 	errors.CheckErrorPanic(err)
-	elog.Log.Info(blockNew.JsonString())
+	elog.Log.Info("Committee Block:", blockNew.JsonString())
 	errors.CheckEqualPanic(blockCM.JsonString() == blockNew.JsonString())
 
 	//MinorBlock
@@ -231,27 +232,28 @@ func TestShard(t *testing.T) {
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, blockMinor))
 	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeMinorBlock, blockMinor.Hash())
 	errors.CheckErrorPanic(err)
-	elog.Log.Info(blockNew.JsonString())
+	elog.Log.Info("Minor Block:", blockNew.JsonString())
 	errors.CheckEqualPanic(blockMinor.JsonString() == blockNew.JsonString())
 
 
 	//FinalBlock
 	blockNew, err = l.GetLastShardBlock(config.ChainHash, shard.HeFinalBlock)
 	errors.CheckErrorPanic(err)
-	blockFinal, err := l.CreateFinalBlock(config.ChainHash, time.Now().UnixNano())
+	blockFinal, err := l.CreateFinalBlock(config.ChainHash, time.Now().UnixNano(), []common.Hash{blockMinor.Hash()})
 	//blockFinal, err = l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []*shard.MinorBlockHeader{&blockMinor.MinorBlockHeader})
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, blockFinal))
 	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeFinalBlock, blockFinal.Hash())
 	errors.CheckErrorPanic(err)
-	elog.Log.Info(blockNew.JsonString())
+	elog.Log.Info("Final Block:", blockNew.JsonString())
 	errors.CheckEqualPanic(blockFinal.JsonString() == blockNew.JsonString())
 	event.EventStop()
 }
 
 func TestExample(t *testing.T) {
 	os.RemoveAll("/tmp/shard_example")
-	_, err := ledgerimpl.NewLedger("/tmp/shard_example", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	simulate.LoadConfig()
+	l, err := ledgerimpl.NewLedger("/tmp/shard_example", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
 	errors.CheckErrorPanic(err)
 
 	pid := example.Actor()
@@ -263,7 +265,11 @@ func TestExample(t *testing.T) {
 	}
 	pidL, _ := event.GetActor(event.ActorLedger)
 	pidL.Request(msg, pid)
-
 	time.Sleep(time.Second * 1)
+
+	m, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	elog.Log.Debug(m.JsonString())
+
 	event.EventStop()
 }

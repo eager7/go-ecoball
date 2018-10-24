@@ -64,3 +64,7 @@ func (s *shard) processSyncComplete() {
 		return
 	}
 }
+
+func (s *shard) processMinorBlockMsg(minor *cs.MinorBlock) {
+	s.fsm.Execute(ActLedgerBlockMsg, minor)
+}

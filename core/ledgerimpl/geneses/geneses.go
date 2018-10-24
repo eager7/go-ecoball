@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/common/config"
+	"math/big"
 )
 
 /*
@@ -118,6 +119,25 @@ func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) e
 
 	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
 	if err := s.SetResourceLimits(root, root, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	tester := common.NameToIndex("tester")
+	addr = common.AddressFromPubKey(config.Worker1.PublicKey)
+	fmt.Println("preset insert a tester account:", addr.HexString())
+	if tester, err := s.AddAccount(tester, addr, timeStamp); err != nil {
+		return err
+	} else {
+		tester.SetContract(types.VmNative, []byte("system contract"), nil, nil)
+	}
+
+	if err := s.AccountAddBalance(tester, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
+		return err
+	}
+
+	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
+	if err := s.SetResourceLimits(tester, tester, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
 		fmt.Println(err)
 		return err
 	}

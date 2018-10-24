@@ -53,7 +53,7 @@ func (c *Cell) VerifyFinalPacket(p *sc.NetPacket) *sc.CsPacket {
 	last := c.GetLastFinalBlock()
 	if last != nil {
 		if last.Height+1 != final.Height {
-			log.Debug("old final block last ", last.Height, " block ", final.Height)
+			log.Debug("wrong final block last ", last.Height, " block ", final.Height)
 			return nil
 		}
 	}
@@ -136,6 +136,17 @@ func (c *Cell) VerifyMinorPacket(p *sc.NetPacket) *sc.CsPacket {
 
 	if cm.Height != minor.CMEpochNo {
 		log.Error("minor block epoch error ", minor.CMEpochNo, " current epoch ", cm.Height)
+		return nil
+	}
+
+	if minor.ShardId < 1 || minor.ShardId > sc.DefaultShardMaxMember {
+		log.Error("shard id error ", minor.ShardId)
+		return nil
+	}
+
+	height := c.getShardHeight(minor.ShardId)
+	if height >= minor.Height {
+		log.Error("minor block height error ", minor.Height, " last ", height)
 		return nil
 	}
 

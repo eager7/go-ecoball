@@ -8,7 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/pb"
 )
 
-const AbaTotal = 100000
+const AbaTotal = 200000
 
 type TokenInfo struct {
 	Symbol 		 string					`json:"symbol"`
@@ -223,12 +223,6 @@ func (s *State) IssueToken(to common.AccountName, amount int32, symbol string) e
 		return err
 	}
 
-	if token.Issuer != to {
-		if err := s.CheckAccountPermission(token.Issuer, to, Active); err != nil {
-			return errors.New(log, fmt.Sprintf("account %s has not %s@%s permisson", to.String(), token.Issuer.String(), Active))
-		}
-	}
-
 	if amount > token.MaxSupply - token.Supply {
 		return errors.New(log, fmt.Sprintf("issue amount %d > issue balance %d", amount, token.MaxSupply - token.Supply))
 	}
@@ -238,6 +232,10 @@ func (s *State) IssueToken(to common.AccountName, amount int32, symbol string) e
 	}
 
 	token.Supply += amount
+
+	if err := s.CommitToken(token); err != nil {
+		return err
+	}
 
 	return nil
 }

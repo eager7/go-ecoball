@@ -3,14 +3,12 @@ package shard
 import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
-	"time"
 )
 
 type minorBlockCsi struct {
@@ -40,7 +38,7 @@ func (b *minorBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 	}
 
 	if update.ShardId != b.bk.ShardId {
-		log.Error("shardid not same")
+		log.Error("shardid wrong block ", update.ShardId, " expect ", b.bk.ShardId)
 		return false
 	}
 
@@ -163,23 +161,27 @@ func (s *shard) productMinorBlock(msg interface{}) {
 			return
 		}
 
-		minor, err := s.ns.Ledger.NewMinorBlock(config.ChainHash, nil, time.Now().UnixNano())
-		if err != nil {
-			log.Error("ledger new minor block error ", err)
-			return
+		lastMinor := s.ns.GetLastMinorBlock()
+		var height uint64
+		if lastMinor == nil {
+			height = 1
+		} else {
+			height = lastMinor.Height + 1
 		}
 
-		log.Debug("new minor block epoch ", minor.CMEpochNo, " height ", minor.Height)
-		csi := newMinorBlockCsi(minor)
-		s.cs.StartConsensus(csi)
-
+		simulate.TellLedgerProductMinorBlock(lastcm.Height, height)
 	} else {
 		minor := s.createMinorBlock()
-
-		log.Debug("create minor block epoch ", minor.CMEpochNo, " height ", minor.Height)
 		csi := newMinorBlockCsi(minor)
 		s.cs.StartConsensus(csi)
 	}
+}
+
+func (s *shard) processLedgerMinorBlockMsg(p interface{}) {
+	minor := p.(*cs.MinorBlock)
+
+	csi := newMinorBlockCsi(minor)
+	s.cs.StartConsensus(csi)
 }
 
 func (s *shard) reproductMinorBlock(msg interface{}) {

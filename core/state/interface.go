@@ -29,6 +29,7 @@ type InterfaceState interface {
 	AccountAddBalance(index common.AccountName, token string, value *big.Int) error
 	CreateToken(symbol string, maxSupply int32, issuer common.AccountName) (*TokenInfo, error)
 	IssueToken(to common.AccountName, amount int32, symbol string) error
+	GetTokenInfo(symbol string) (*TokenInfo, error)
 	TokenExisted(name string) bool
 	CopyState() (*State, error)
 	AddAccount(index common.AccountName, addr common.Address, timeStamp int64) (*Account, error)

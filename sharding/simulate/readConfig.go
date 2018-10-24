@@ -73,3 +73,7 @@ func GetCommittee() []NodeConfig {
 func GetShards() []NodeConfig {
 	return cfg.Shard
 }
+
+func GetNodePubKey() []byte {
+	return []byte(cfg.Pubkey)
+}

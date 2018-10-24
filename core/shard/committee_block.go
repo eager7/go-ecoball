@@ -10,7 +10,7 @@ import (
 )
 
 type NodeInfo struct {
-	PublicKey []byte
+	PublicKey []byte ``
 	Address   string
 	Port      string
 }

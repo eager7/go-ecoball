@@ -6,6 +6,7 @@ import (
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/net"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 )
 
 func (s *shard) verifyPacket(p *sc.NetPacket) {
@@ -85,12 +86,14 @@ func (s *shard) processCommitteePacket(csp interface{}) {
 	switch p.BlockType {
 	case sc.SD_CM_BLOCK:
 		cm := p.Packet.(*cs.CMBlock)
+		simulate.TellBlock(cm)
 		s.ns.SaveLastCMBlock(cm)
 		s.broadcastCommitteePacket(p)
 
 		s.fsm.Execute(ActProductMinorBlock, nil)
 	case sc.SD_FINAL_BLOCK:
 		final := p.Packet.(*cs.FinalBlock)
+		simulate.TellBlock(final)
 		s.ns.SaveLastFinalBlock(final)
 		s.broadcastCommitteePacket(p)
 
@@ -99,6 +102,8 @@ func (s *shard) processCommitteePacket(csp interface{}) {
 		}
 	case sc.SD_VIEWCHANGE_BLOCK:
 		vc := p.Packet.(*cs.ViewChangeBlock)
+		//simulate.TellBlock(vc)
+		panic("vc block")
 		s.ns.SaveLastViewchangeBlock(vc)
 		s.broadcastCommitteePacket(p)
 	default:

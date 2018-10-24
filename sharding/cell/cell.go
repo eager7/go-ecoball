@@ -129,6 +129,14 @@ func (c *Cell) SaveLastFinalBlock(bk *cs.FinalBlock) {
 	log.Debug("save final block epoch ", bk.EpochNo, " height ", bk.Height)
 
 	c.chain.setFinalBlock(bk)
+
+	for _, minor := range bk.MinorBlocks {
+		c.chain.setShardHeight(minor.ShardId, minor.Height)
+		if uint32(c.Shardid) == minor.ShardId {
+			c.chain.saveMinorBlock()
+		}
+	}
+
 	c.minorBlockPool.clean()
 }
 
@@ -358,6 +366,8 @@ func (c *Cell) saveShardsInfoFromCMBlock(cmb *cs.CMBlock) {
 			if c.Self.Equal(&worker) {
 				c.NodeType = sc.NodeShard
 				c.Shardid = uint16(i) + 1
+				log.Debug("worker ", worker.Pubkey, " ", worker.Address, " ", worker.Port)
+				log.Debug("self ", c.Self.Pubkey, " ", c.Self.Address, " ", c.Self.Port)
 				log.Debug("our shardid is ", c.Shardid)
 				break
 			}
@@ -378,4 +388,8 @@ func (c *Cell) saveShardsInfoFromCMBlock(cmb *cs.CMBlock) {
 		break
 	}
 
+}
+
+func (c *Cell) getShardHeight(shardid uint32) uint64 {
+	return c.chain.getShardHeight(shardid)
 }
