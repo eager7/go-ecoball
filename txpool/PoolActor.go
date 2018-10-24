@@ -100,7 +100,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		}
 	}
 
-	if handle {
+	if handle || config.DisableSharding {
 		ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
 		if err != nil {
 			log.Warn(tx.JsonString())
