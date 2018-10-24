@@ -239,7 +239,7 @@ func TestShard(t *testing.T) {
 	//FinalBlock
 	blockNew, err = l.GetLastShardBlock(config.ChainHash, shard.HeFinalBlock)
 	errors.CheckErrorPanic(err)
-	blockFinal, err := l.CreateFinalBlock(config.ChainHash, time.Now().UnixNano())
+	blockFinal, err := l.CreateFinalBlock(config.ChainHash, time.Now().UnixNano(), []common.Hash{blockMinor.Hash()})
 	//blockFinal, err = l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []*shard.MinorBlockHeader{&blockMinor.MinorBlockHeader})
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, 0, blockFinal))
