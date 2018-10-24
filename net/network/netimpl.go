@@ -40,6 +40,8 @@ const (
 
 	discoveryConnTimeout   = time.Second * 30
 
+	gossipMsgTTL           = time.Second * 100
+
 	ServiceTag                 = "_net-discovery._udp"
 
 	ProtocolP2pV1  protocol.ID = "/ecoball/app/1.0.0"
@@ -59,6 +61,7 @@ func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
 		host:         host,
 		engine:       NewMsgEngine(ctx, host.ID()),
 		strmap:       make(map[peer.ID]*messageSender),
+		gossipStore:  NewMsgStore(ctx, gossipMsgTTL),
 		quitsendJb:   make(chan bool, 1),
 	}
 
@@ -88,6 +91,8 @@ type NetImpl struct {
 	strmap       map[peer.ID]*messageSender
 	strmlk       sync.Mutex
 
+	gossipStore  MsgStore
+
 	mdnsService  discovery.Service
 	bootstrapper *BootStrapper
 
@@ -111,7 +116,6 @@ func (net *NetImpl) sendMessage(p pstore.PeerInfo, outgoing message.EcoBallNetMs
 	if err != nil {
 		return err
 	}
-
 	err = ms.SendMsg(net.ctx, outgoing)
 
 	return err
@@ -191,6 +195,7 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 
 func (net *NetImpl) preHandleGossipMsg(gmsg message.EcoBallNetMsg, sender peer.ID) {
 	log.Debug(fmt.Sprintf("receive a gossip msg(id=%d) from peer %s", gmsg.Type(), sender.Pretty()))
+
 	peers := net.getRandomPeers(GossipPeerCount, net.receiver.IsNotMyShard)
 
 	var fwPeers []peer.ID
@@ -198,6 +203,12 @@ func (net *NetImpl) preHandleGossipMsg(gmsg message.EcoBallNetMsg, sender peer.I
 		if peer != sender {
 			fwPeers = append(fwPeers, peer)
 		}
+	}
+
+	// targets is null or there is a same gossip message in the store
+	if len(fwPeers) == 0 || !net.gossipStore.Add(gmsg) {
+		log.Debug("terminate a gossip message")
+		return
 	}
 
 	net.forwardMsg(gmsg, fwPeers)

@@ -17,7 +17,8 @@
 package message
 
 import (
-        "io"
+	"io"
+	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
@@ -71,6 +72,7 @@ type HandlerFunc func(data []byte) (err error)
 type EcoBallNetMsg interface {
 	ChainID() uint32
 	Type() uint32
+	Nonce() uint64
 	Data() []byte
 	Exportable
 }
@@ -83,6 +85,7 @@ type Exportable interface {
 type impl struct {
 	chainId uint32
 	msgType uint32
+	nonce   uint64
 	data    []byte
 }
 
@@ -94,12 +97,18 @@ func newMsg(msgType uint32, data []byte) *impl {
 	return &impl{
 		chainId: 1, //TODO
 		msgType: msgType,
+		nonce:   util.RandomUInt64(),
 		data:    data,
 	}
 }
 
 func NewMessageFromProto(pbm pb.Message) (EcoBallNetMsg, error) {
-	m := newMsg(pbm.Type, pbm.Data)
+	m := new(impl)
+	m.chainId = pbm.ChainId
+	m.msgType = pbm.Type
+	m.nonce = pbm.Nonce
+	m.data = pbm.Data
+
 	return m, nil
 }
 
@@ -111,6 +120,10 @@ func (m *impl) Type() uint32 {
 	return m.msgType
 }
 
+func (m *impl) Nonce() uint64 {
+	return m.nonce
+}
+
 func (m *impl) Data() []byte {
 	return m.data
 }
@@ -120,6 +133,7 @@ func (m *impl) ToProtoV1() *pb.Message {
 	pbm.ChainId = m.chainId
 	pbm.Data = m.data
 	pbm.Type = m.msgType
+	pbm.Nonce = m.nonce
 	return pbm
 }
 
