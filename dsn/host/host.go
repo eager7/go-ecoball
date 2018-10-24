@@ -79,7 +79,7 @@ func InitDefaultConf() StorageHostConf {
 		TotalStorage: 10*1024*1024,
 		Collateral: "10000",
 		MaxCollateral: "20000",
-		AccountName: "root",
+		AccountName: "host",
 		ChainId: common.ToHex(chainId[:]),
 	}
 }

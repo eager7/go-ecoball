@@ -4,9 +4,6 @@ import (
 	"context"
 	rclient "github.com/ecoball/go-ecoball/dsn/renter/client"
 	"os"
-	"github.com/ecoball/go-ecoball/dsn/renter"
-	"path/filepath"
-	"github.com/ecoball/go-ecoball/dsn/common"
 	"fmt"
 )
 
@@ -123,32 +120,28 @@ func add()  {
 	if err != nil {
 		panic(err)
 	}
-
-	fpath := filepath.ToSlash(filepath.Clean(file))
-	stat, err := os.Lstat(fpath)
-	if err != nil {
-		panic(err)
-	}
-
-	var PieceSize uint64
-	if stat.Size() < common.EraDataPiece * (256 * 1024) {
-		PieceSize = uint64(stat.Size() / common.EraDataPiece)
-	} else {
-		PieceSize = uint64(256 * 1024)
-	}
-	req := renter.RscReq{
-		Cid: cid,
-		Redundency: int(conf.Redundancy),
-		IsDir: false,
-		Chunk: PieceSize,
-		FileSize: uint64(stat.Size()),
-	}
-	cid, err = appClient.RscCodingReq(&req)
+	cid, err = appClient.RscCodingReq(file, cid)
 	if err != nil {
 		panic(err)
 	}
 	appClient.InvokeFileContract(file, cid)
 	appClient.PayForFile(file, cid)
+}
+
+func cat()  {
+	conf := rclient.InitDefaultConf()
+	ctx := context.Background()
+	appClient := rclient.NewRenter(ctx, conf)
+	ok := appClient.CheckCollateral()
+	if !ok {
+		fmt.Println("Checking collateral failed")
+		return
+	}
+	cid := os.Args[3]
+	err := CliCatFile()
+	if err != nil {
+		appClient.RscDecodingReq(cid)
+	}
 }
 
 func main()  {
