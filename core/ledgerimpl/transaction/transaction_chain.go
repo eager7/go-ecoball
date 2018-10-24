@@ -858,6 +858,7 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 			if c.StateDB.FinalDB.GetHashRoot() != Block.StateDeltaHash {
 				return errors.New(log, fmt.Sprintf("the minor hash root is not eqaul, receive:%s, local:%s", Block.StateDeltaHash.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 			}
+			c.LastHeader.MinorHeader = &Block.MinorBlockHeader
 		} else {
 			//TODO:Handle StateDelta and Check State Hash
 			for _, delta := range Block.StateDelta {
@@ -876,7 +877,6 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 		heValue = append(heValue, data...)
 
 		heKey = Block.MinorBlockHeader.Hash().Bytes()
-		c.LastHeader.MinorHeader = &Block.MinorBlockHeader
 		if err := c.HeaderStore.Put([]byte("lastMinorHeader"), heValue); err != nil {
 			return err
 		}
@@ -1097,25 +1097,11 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlockHeaders []*shard.Mino
 	return block, nil
 }
 
-func (c *ChainTx) CreateFinalBlock(timeStamp int64) (*shard.FinalBlock, error) {
-	lastFinalBlock, err := c.GetLastShardBlock(shard.HeFinalBlock)
-	if err != nil {
-		return nil, err
-	}
-	block, ok := lastFinalBlock.GetObject().(shard.FinalBlock)
-	if !ok {
-		return nil, errors.New(log, "the type is error")
-	}
-	var lastHeight uint64
-	for _, h := range block.MinorBlocks {
-		if lastHeight < h.Height {
-			lastHeight = h.Height
-		}
-	}
+func (c *ChainTx) CreateFinalBlock(timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
 	var minorHeaders []*shard.MinorBlockHeader
-	for i := lastHeight + 1; i <= c.LastHeader.MinorHeader.Height; i++ {
-		if b, err := c.GetShardBlockByHeight(shard.HeMinorBlock, i); err != nil {
-			return nil, err
+	for _, hash := range hashes {
+		if b, err := c.GetShardBlockByHash(shard.HeMinorBlock, hash); err != nil {
+			log.Warn(err)
 		} else {
 			if B, ok := b.GetObject().(shard.MinorBlock); ok {
 				minorHeaders = append(minorHeaders, &B.MinorBlockHeader)
