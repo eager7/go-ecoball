@@ -83,14 +83,12 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	}
 	p.txPool.txsCache.Add(tx.Hash, nil)
 
-	shardId, err := p.txPool.ledger.GetShardId(tx.ChainID)
-	if err != nil {
-		return err
-	}
 	var handle bool
-	if config.DisableSharding {
-		handle = true
-	} else {
+	if !config.DisableSharding {
+		shardId, err := p.txPool.ledger.GetShardId(tx.ChainID)
+		if err != nil {
+			return err
+		}
 		if tx.Type == types.TxTransfer || tx.Addr == common.NameToIndex("root") {
 			if uint64(shardId) == uint64(tx.From)%3{
 				handle = true
@@ -101,6 +99,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 			}
 		}
 	}
+
 	if handle {
 		ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
 		if err != nil {
