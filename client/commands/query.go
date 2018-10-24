@@ -19,9 +19,9 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
-	"net/url"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
@@ -36,7 +36,7 @@ var (
 	QueryCommands = cli.Command{
 		Name:     "query",
 		Usage:    "operations for query info",
-		Category: "query",
+		Category: "Query",
 		Action:   clientCommon.DefaultAction,
 		Subcommands: []cli.Command{
 			{
@@ -47,11 +47,11 @@ var (
 			},
 			{
 				Name:   "account",
-				Usage:  "get account's info",
+				Usage:  "get account's info by name",
 				Action: getAccount,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "account_name, n",
+						Name:  "name, n",
 						Usage: "account name",
 					},
 					cli.StringFlag{
@@ -63,7 +63,7 @@ var (
 			},
 			{
 				Name:   "block",
-				Usage:  "get block's info",
+				Usage:  "get block's info by height",
 				Action: getBlock,
 				Flags: []cli.Flag{
 					cli.Int64Flag{
@@ -75,11 +75,11 @@ var (
 			},
 			{
 				Name:   "transaction",
-				Usage:  "get transaction 's info",
+				Usage:  "get transaction's info by hash",
 				Action: getTransaction,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "hash, i",
+						Name:  "hash, a",
 						Usage: "transaction hash",
 					},
 				},
@@ -151,11 +151,11 @@ func getAccount(c *cli.Context) error {
 		return nil
 	}
 
-	//account address
-	address := c.String("account_name")
-	if address == "" {
-		fmt.Println("Invalid account address: ", address)
-		return errors.New("Invalid account address")
+	//account name
+	name := c.String("name")
+	if name == "" {
+		fmt.Println("Invalid account name: ", name)
+		return errors.New("Invalid account name")
 	}
 
 	info, err := getInfo()
@@ -172,7 +172,7 @@ func getAccount(c *cli.Context) error {
 
 	var result clientCommon.SimpleResult
 	values := url.Values{}
-	values.Set("name", address)
+	values.Set("name", name)
 	values.Set("chainId", chainId.HexString())
 	err = rpc.NodePost("/getAccountInfo", values.Encode(), &result)
 
@@ -236,13 +236,13 @@ func getTransaction(c *cli.Context) error {
 	}
 
 	//account address
-	id := c.String("id")
-	if id == "" {
-		fmt.Println("Invalid block id: ", id)
-		return errors.New("Invalid block id")
+	hash := c.String("hash")
+	if hash == "" {
+		fmt.Println("Invalid transaction hash: ", hash)
+		return errors.New("Invalid transaction hash")
 	}
 
-	resp, err := rpc.NodeCall("getTransaction", []interface{}{id})
+	resp, err := rpc.NodeCall("getTransaction", []interface{}{hash})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
