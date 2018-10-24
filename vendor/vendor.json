@@ -51,6 +51,12 @@
 			"revisionTime": "2018-03-21T16:47:47Z"
 		},
 		{
+			"checksumSHA1": "8D60uhOvGzOxthqXG2H8CVm1O/4=",
+			"path": "github.com/btcsuite/btcd/btcec",
+			"revision": "92494a5188cd5fb1056d55ce597f38d5db4e343d",
+			"revisionTime": "2018-09-21T03:16:19Z"
+		},
+		{
 			"checksumSHA1": "oQgLy8KmIOVov04WXH7KgU1bszc=",
 			"path": "github.com/btcsuite/btcutil/base58",
 			"revision": "501929d3d046174c3d39f0ea54ece471aa17238c",
@@ -355,6 +361,18 @@
 			"path": "github.com/hashicorp/hcl/json/token",
 			"revision": "ef8a98b0bbce4a65b5aa4c368430a80ddc533168",
 			"revisionTime": "2018-04-04T17:41:02Z"
+		},
+		{
+			"checksumSHA1": "gE1rPvO/Yhe5vbLzXBligFVROpU=",
+			"path": "github.com/ipfs/go-ipfs-api",
+			"revision": "4857c98b7e16abaed1b66aaa5e4bcd9364001065",
+			"revisionTime": "2018-10-17T11:40:13Z"
+		},
+		{
+			"checksumSHA1": "RVvVY3OCP5irOlTAryy0LOTB7p0=",
+			"path": "github.com/ipfs/go-ipfs-files",
+			"revision": "90d206a6f3947f904673ebffd376a2dcbbd84942",
+			"revisionTime": "2018-10-17T15:38:06Z"
 		},
 		{
 			"checksumSHA1": "3N7NapaW5VGqC+y61bbYTew+LSE=",
@@ -783,6 +801,42 @@
 			"revisionTime": "2018-05-23T17:54:26Z"
 		},
 		{
+			"checksumSHA1": "CaDPwkye3PofZ6x3T/izbR/dxAQ=",
+			"path": "github.com/libp2p/go-flow-metrics",
+			"revision": "7e5a55af485341567f98d6847a373eb5ddcdcd43",
+			"revisionTime": "2018-09-06T18:27:56Z"
+		},
+		{
+			"checksumSHA1": "K8pH9leJzBQdA71+1hA4yLBOidE=",
+			"path": "github.com/libp2p/go-libp2p-crypto",
+			"revision": "137c71cdda7aadcaad5eaf03301f7c4f173858e2",
+			"revisionTime": "2018-08-11T16:47:18Z"
+		},
+		{
+			"checksumSHA1": "SgzFq2lRQGmFXHsAvgiMeuJlGPk=",
+			"path": "github.com/libp2p/go-libp2p-crypto/pb",
+			"revision": "137c71cdda7aadcaad5eaf03301f7c4f173858e2",
+			"revisionTime": "2018-08-11T16:47:18Z"
+		},
+		{
+			"checksumSHA1": "0fTe/BLsKnBm98L24VlQKVCC21w=",
+			"path": "github.com/libp2p/go-libp2p-metrics",
+			"revision": "2e91117d783799237709d7f5165eb55c86b623a1",
+			"revisionTime": "2018-08-22T00:08:44Z"
+		},
+		{
+			"checksumSHA1": "Ir8EXrnL7S7OiW9P8MAM2jTGPUY=",
+			"path": "github.com/libp2p/go-libp2p-peer",
+			"revision": "8160d3c68f7fb314c382fd15081cb74e45a8853a",
+			"revisionTime": "2018-09-19T17:27:35Z"
+		},
+		{
+			"checksumSHA1": "KWevKbYDWLuqqHQzHt+ckpp+DHM=",
+			"path": "github.com/libp2p/go-libp2p-protocol",
+			"revision": "b29f3d97e3a2fb8b29c5d04290e6cb5c5018004b",
+			"revisionTime": "2017-12-12T21:21:32Z"
+		},
+		{
 			"checksumSHA1": "NiPRC0JDsfCFir75S1TrFHPP8+M=",
 			"path": "github.com/magiconair/properties",
 			"revision": "2c9e9502788518c97fe44e8955cd069417ee89df",
@@ -819,6 +873,12 @@
 			"revisionTime": "2017-12-13T22:06:25Z"
 		},
 		{
+			"checksumSHA1": "a58zUNtDH/gEd6F6KI3FqT2iEo0=",
+			"path": "github.com/mitchellh/go-homedir",
+			"revision": "ae18d6b8b3205b561c79e8e5f69bff09736185f4",
+			"revisionTime": "2018-08-24T00:42:36Z"
+		},
+		{
 			"checksumSHA1": "Yvzge1YQcD/wSDXLD5qNHqmI/0s=",
 			"path": "github.com/mitchellh/mapstructure",
 			"revision": "00c29f56e2386353d58c599509e8dc3801b0d716",
@@ -835,6 +895,18 @@
 			"path": "github.com/muesli/cache2go",
 			"revision": "5cf6e5f43b169f03641db3f7dc6410375e7b2890",
 			"revisionTime": "2018-04-17T22:28:18Z"
+		},
+		{
+			"checksumSHA1": "w63fRMe5UoLtcWH/OMdgLlfTWjk=",
+			"path": "github.com/multiformats/go-multiaddr",
+			"revision": "de7d6d81956bd35b2b64ca4244b3abb6489827ec",
+			"revisionTime": "2018-09-14T16:00:47Z"
+		},
+		{
+			"checksumSHA1": "EUHOIK1wpTE/QO0uqg+WGhukZ60=",
+			"path": "github.com/multiformats/go-multiaddr-net",
+			"revision": "ceed2dc9f0152198ccf8745f5a17c81ff4ae6bd4",
+			"revisionTime": "2018-09-15T21:07:34Z"
 		},
 		{
 			"checksumSHA1": "4bqIfu2x/JV7DsCHtZa4irFt22w=",
@@ -1069,6 +1141,12 @@
 			"path": "github.com/urfave/cli",
 			"revision": "8e01ec4cd3e2d84ab2fe90d8210528ffbb06d8ff",
 			"revisionTime": "2018-02-26T03:02:53Z"
+		},
+		{
+			"checksumSHA1": "E5gaTTRbeY0UQOpJ4bYu6dw7aWk=",
+			"path": "github.com/whyrusleeping/tar-utils",
+			"revision": "8c6c8ba81d5c71fd69c0f48dbde4b2fb422b6dfc",
+			"revisionTime": "2018-05-09T14:17:11Z"
 		},
 		{
 			"checksumSHA1": "zHLlCNnnX/KNVue2tHr+FWxbszA=",

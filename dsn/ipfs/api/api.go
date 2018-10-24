@@ -7,20 +7,16 @@ import (
 	"github.com/ipfs/go-ipfs/core/corerepo"
 	"context"
 	"io"
-	"gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit/files"
 	"path"
-	"path/filepath"
-	"os"
 	"bytes"
-	//"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	opt "github.com/ipfs/go-ipfs/core/coreapi/interface/options"
-	"github.com/ecoball/go-ecoball/dsn/common"
 	chunker "gx/ipfs/QmVDjhUMtkRskBFAVNwyXuLSKbeAya7JKPnzAxMKDaK4x4/go-ipfs-chunker"
-	"fmt"
 	"gx/ipfs/QmYVNvtQkeZ6AKSwDrjQTs432QtL6umrrK41EBq3cu7iSP/go-cid"
 	dag "gx/ipfs/QmRy4Qk9hbgFX9NGJRm8rBThrA8PZhNCitMgeRYyZ67s59/go-merkledag"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
 	importer "gx/ipfs/QmSaz8Qg77gGqvDvLKeSAY7ivDEnramSWF6T7TcRwFpHtP/go-unixfs/importer"
+	ipld "gx/ipfs/QmZtNq8dArGfnpCZfx2pUNY7UcjGhVp5qqwQ4hH6mpTMRQ/go-ipld-format"
+	"github.com/ecoball/go-ecoball/dsn/erasure"
 )
 
 var dsnIpfsApi coreiface.CoreAPI
@@ -70,72 +66,6 @@ func IpfsBlockDel(ctx context.Context, p string) error {
 		return err
 	}
 	return dsnIpfsApi.Block().Rm(ctx, path)
-}
-
-func IpfsAddEraFile(ctx context.Context, fpath string, era uint8) (string, error) {
-	adder, err := NewEraAdder(ctx)
-	if err != nil {
-		return "", err
-	}
-	fpath = filepath.ToSlash(filepath.Clean(fpath))
-	stat, err := os.Lstat(fpath)
-	if err != nil {
-		return "", err
-	}
-	var fm EraMetaData
-	if era > 0 {
-		if stat.Size() < common.EraDataPiece * chunker.DefaultBlockSize {
-			fm.PieceSize = uint64(stat.Size() / common.EraDataPiece)
-		} else {
-			fm.PieceSize = uint64(chunker.DefaultBlockSize)
-		}
-		if stat.Size() < common.EraDataPiece * chunker.DefaultBlockSize {
-			adder.Chunker = fmt.Sprintf("size-%d", fm.PieceSize)
-		}
-	}
-	af, err := files.NewSerialFile(path.Base(fpath), fpath, false, stat)
-	if err != nil {
-		return "", err
-	}
-	err = adder.AddFile(af)
-	if err != nil {
-		ecolog.Error(err.Error())
-		return "", nil
-	}
-	fileRoot, err := adder.Finalize()
-	if err != nil {
-		ecolog.Error(err.Error())
-		return "", nil
-	}
-	err = adder.PinRoot()
-	if err != nil {
-		ecolog.Error(err.Error())
-		return "", nil
-	}
-
-	if era >0 {
-		fm.FileSize = uint64(stat.Size())
-		fileSize := int(fm.FileSize)
-		if fileSize % int(fm.PieceSize) == 0 {
-			fm.DataPiece = uint64(fileSize / int(fm.PieceSize))
-		} else {
-			fm.DataPiece = uint64(fileSize / int(fm.PieceSize) + 1)
-		}
-		fm.ParityPiece = fm.DataPiece * uint64(era)
-		ecolog.Debug("adder chunker ", adder.Chunker, "era ", era)
-		eraRoot, err := adder.EraEnCoding(af, fm)
-		if err != nil {
-			ecolog.Error(err.Error())
-			return "", nil
-		}
-		return AddMetadataTo(ctx, fileRoot, eraRoot, &fm)
-	}
-	return fileRoot.Cid().String(), nil
-}
-
-func IpfsCatErafile(ctx context.Context, cid string) (io.Reader, error) {
-	cater := NewEraCater(ctx)
-	return cater.CatFile(cid)
 }
 
 func IpfsAbaBlkPut(ctx context.Context, blk []byte) (string, error) {
@@ -200,4 +130,57 @@ func AddDagFromReader(ctx context.Context, r io.Reader, fm *EraMetaData, fc stri
 		return "", err
 	}
 	return AddMetadataTo(ctx, fileNode, eraNode, fm)
+}
+
+func AddMetadataTo(ctx context.Context, fileNode ipld.Node, eraNode ipld.Node, m *EraMetaData) (string, error) {
+	mdnode := new(dag.ProtoNode)
+	mdata := BytesForMetadata(m)
+	mdnode.SetData(mdata)
+	if err := mdnode.AddNodeLink("file", fileNode); err != nil {
+		return "", err
+	}
+	if err := mdnode.AddNodeLink("era", eraNode); err != nil {
+		return "", err
+	}
+	err := dsnIpfsNode.DAG.Add(ctx, mdnode)
+	if err != nil {
+		return "", err
+	}
+	return mdnode.Cid().String(), nil
+}
+
+func IpfsEraDecoding(ctx context.Context, cid string) (io.Reader, error) {
+	meta, err := Metadata(ctx, cid)
+	if err != nil {
+		return nil, err
+	}
+
+	ep, err := coreiface.ParsePath(path.Join(cid, "era"))
+	if err != nil {
+		return nil, err
+	}
+	eraNode, err := dsnIpfsApi.Dag().Get(ctx, ep)
+	if err != nil {
+		return nil, err
+	}
+	links := eraNode.Links()
+
+	var datas [][]byte
+	for i, l := range links {
+		p, _ := coreiface.ParsePath(l.Cid.String())
+		pnode, err := dsnIpfsApi.Dag().Get(ctx, p)
+		if err == nil {
+			datas[i] = pnode.RawData()
+		}
+	}
+	buff := new(bytes.Buffer)
+	ec, err := erasure.NewRSCode(int(meta.DataPiece), int(meta.ParityPiece))
+	if err != nil {
+		return nil, err
+	}
+	err = ec.Recover(datas, meta.FileSize, buff)
+	if err != nil {
+		return nil, err
+	}
+	return buff, nil
 }

@@ -65,5 +65,5 @@ func RscCoding(req *renter.RscReq) (string, error) {
 
 func RscDecoding(cid string) (io.Reader, error) {
 	ctx := context.Background()
-	return api.IpfsCatErafile(ctx, cid)
+	return api.IpfsEraDecoding(ctx, cid)
 }
