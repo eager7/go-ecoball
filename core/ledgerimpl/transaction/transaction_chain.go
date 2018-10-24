@@ -1113,7 +1113,7 @@ func (c *ChainTx) CreateFinalBlock(timeStamp int64) (*shard.FinalBlock, error) {
 		}
 	}
 	var minorHeaders []*shard.MinorBlockHeader
-	for i := lastHeight + 1; i < c.LastHeader.MinorHeader.Height; i++ {
+	for i := lastHeight + 1; i <= c.LastHeader.MinorHeader.Height; i++ {
 		if b, err := c.GetShardBlockByHeight(shard.HeMinorBlock, i); err != nil {
 			return nil, err
 		} else {
