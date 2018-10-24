@@ -7,10 +7,10 @@ import (
 )
 
 func (c *Cell) VerifyCmPacket(p *sc.NetPacket) *sc.CsPacket {
-	var cm cs.CMBlock
-	err := json.Unmarshal(p.Packet, &cm)
+	cm := new(cs.CMBlock)
+	err := cm.Deserialize(p.Packet)
 	if err != nil {
-		log.Error("cm block unmarshal error ", err)
+		log.Error("cm block Deserialize error ", err)
 		return nil
 	}
 
@@ -26,16 +26,16 @@ func (c *Cell) VerifyCmPacket(p *sc.NetPacket) *sc.CsPacket {
 
 	var csp sc.CsPacket
 	(&csp).CopyHeader(p)
-	(&csp).Packet = &cm
+	(&csp).Packet = cm
 
 	return &csp
 }
 
 func (c *Cell) VerifyFinalPacket(p *sc.NetPacket) *sc.CsPacket {
-	var final cs.FinalBlock
-	err := json.Unmarshal(p.Packet, &final)
+	final := new(cs.FinalBlock)
+	err := final.Deserialize(p.Packet)
 	if err != nil {
-		log.Error("final block unmarshal error ", err)
+		log.Error("final block Deserialize error ", err)
 		return nil
 	}
 
@@ -62,13 +62,13 @@ func (c *Cell) VerifyFinalPacket(p *sc.NetPacket) *sc.CsPacket {
 
 	var csp sc.CsPacket
 	csp.CopyHeader(p)
-	csp.Packet = &final
+	csp.Packet = final
 
 	return &csp
 }
 
 func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
-	var vc cs.ViewChangeBlock
+	vc := new(cs.ViewChangeBlock)
 	err := json.Unmarshal(p.Packet, &vc)
 	if err != nil {
 		log.Error("vc block unmarshal error ", err)
@@ -121,8 +121,8 @@ func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
 }
 
 func (c *Cell) VerifyMinorPacket(p *sc.NetPacket) *sc.CsPacket {
-	var minor cs.MinorBlock
-	err := json.Unmarshal(p.Packet, &minor)
+	minor := new(cs.MinorBlock)
+	err := minor.Deserialize(p.Packet)
 	if err != nil {
 		log.Error("minor block unmarshal error ", err)
 		return nil
@@ -153,7 +153,7 @@ func (c *Cell) VerifyMinorPacket(p *sc.NetPacket) *sc.CsPacket {
 	/*missing_func need verify signature here*/
 	var csp sc.CsPacket
 	csp.CopyHeader(p)
-	csp.Packet = &minor
+	csp.Packet = minor
 
 	return &csp
 }

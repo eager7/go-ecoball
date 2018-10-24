@@ -332,10 +332,6 @@ func (nn *NetNode) updateShardingInfo(info *sharding.SubShardingTopo) {
 	nn.connectToShardingPeers()
 }
 
-func (nn *NetNode) SendBroadcastMsg(msg message.EcoBallNetMsg) {
-	nn.broadCastCh <- msg
-}
-
 func (nn *NetNode) nativeMessageLoop() {
 	go func() {
 		for {

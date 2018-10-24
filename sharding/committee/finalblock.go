@@ -1,7 +1,6 @@
 package committee
 
 import (
-	"encoding/json"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/etime"
 	cs "github.com/ecoball/go-ecoball/core/shard"
@@ -68,9 +67,9 @@ func (b *finalBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
 		return nil
 	}
 
-	data, err := json.Marshal(b.bk)
+	data, err := b.bk.Serialize()
 	if err != nil {
-		log.Error("final block marshal error ", err)
+		log.Error("final block Serialize error ", err)
 		return nil
 	}
 
@@ -171,7 +170,8 @@ func (c *committee) productFinalBlock(msg interface{}) {
 			height = lastfinal.Height + 1
 		}
 
-		simulate.TellLedgerProductFinalBlock(lastcm.Height, height)
+		hashes := c.ns.GetMinorBlockHashesFromPool()
+		simulate.TellLedgerProductFinalBlock(lastcm.Height, height, hashes)
 	} else {
 		final := c.createFinalBlock()
 		if final == nil {

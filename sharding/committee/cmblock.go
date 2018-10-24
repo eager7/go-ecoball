@@ -1,7 +1,6 @@
 package committee
 
 import (
-	"encoding/json"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/etime"
@@ -81,9 +80,9 @@ func (b *cmBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
 		return nil
 	}
 
-	data, err := json.Marshal(b.bk)
+	data, err := b.bk.Serialize()
 	if err != nil {
-		log.Error("cm block marshal error ", err)
+		log.Error("cm block Serialize error ", err)
 		return nil
 	}
 
@@ -164,30 +163,30 @@ func (c *committee) createCommitteeBlock() *cs.CMBlock {
 	last := c.ns.GetLastCMBlock()
 	var height uint64
 	if last == nil {
-		height = 1
-	} else {
-		height = last.Height + 1
+		panic("last cm block is nil")
+		return nil
 	}
 
+	height = last.Height + 1
 	log.Debug("create cm block height ", height)
-
-	cosign := &types.COSign{}
-	cosign.Step1 = 1
-	cosign.Step2 = 0
 
 	header := cs.CMBlockHeader{
 		ChainID:      config.ChainHash,
-		Version:      0,
-		Height:       0,
-		Timestamp:    0,
-		PrevHash:     common.Hash{},
+		Version:      last.Version,
+		Height:       height,
+		Timestamp:    time.Now().UnixNano(),
+		PrevHash:     last.Hash(),
 		LeaderPubKey: nil,
 		Nonce:        0,
 		Candidate:    cs.NodeInfo{},
 		ShardsHash:   common.Hash{},
 		COSign:       nil,
 	}
-	header.Height = height
+
+	cosign := &types.COSign{}
+	cosign.Step1 = 1
+	cosign.Step2 = 0
+
 	header.COSign = cosign
 
 	candidate, shards := c.reshardWorker(height)
@@ -197,22 +196,11 @@ func (c *committee) createCommitteeBlock() *cs.CMBlock {
 		header.Candidate.Port = candidate.Port
 	}
 
-	cmb := &cs.CMBlock{
-		CMBlockHeader: header,
-		Shards:        make([]cs.Shard, len(shards)),
+	cmb, err := cs.NewCmBlock(header, shards)
+	if err != nil {
+		log.Error("new cm block err ", err)
+		return nil
 	}
-
-	copy(cmb.Shards, shards)
-
-	//for i, shard := range shards {
-	//	cmb.Shards[i].Id = shard.Id
-	//	cmb.Shards[i].Member = make([]types.NodeInfo, len(shard.Member))
-	//	for j, node := range shard.Member {
-	//		cmb.Shards[i].Member[j].PublicKey = node.PublicKey
-	//		cmb.Shards[i].Member[j].Port = node.Port
-	//		cmb.Shards[i].Member[j].Address = node.Address
-	//	}
-	//}
 
 	log.Debug("create cm block height ", cmb.Height)
 
@@ -224,6 +212,9 @@ func (c *committee) productCommitteeBlock(msg interface{}) {
 	etime.StopTime(c.stateTimer)
 
 	cm := c.createCommitteeBlock()
+	if cm == nil {
+		return
+	}
 
 	cms := newCmBlockCsi(cm)
 

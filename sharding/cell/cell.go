@@ -1,6 +1,7 @@
 package cell
 
 import (
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
@@ -80,7 +81,7 @@ func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 
 	if c.IsCommitteeMember() {
 		c.NodeType = sc.NodeCommittee
-		c.minorBlockPool.resize(len(bk.Shards))
+		c.minorBlockPool.clean()
 	} else {
 		if c.NodeType == sc.NodeCommittee {
 			log.Error("we are not in committee now, restart ")
@@ -131,9 +132,10 @@ func (c *Cell) SaveLastFinalBlock(bk *cs.FinalBlock) {
 	c.chain.setFinalBlock(bk)
 
 	for _, minor := range bk.MinorBlocks {
+		log.Debug("minor block shard id ", minor.ShardId, " height ", minor.Height)
 		c.chain.setShardHeight(minor.ShardId, minor.Height)
 		if uint32(c.Shardid) == minor.ShardId {
-			c.chain.saveMinorBlock()
+			c.chain.saveMinorBlock(minor)
 		}
 	}
 
@@ -225,8 +227,8 @@ func (c *Cell) SyncMinorsBlockToPool(minors []*cs.MinorBlock) {
 	c.minorBlockPool.syncMinorBlocks(minors)
 }
 
-func (c *Cell) GetMinorBlockFromPool() *minorBlockSet {
-	return c.minorBlockPool
+func (c *Cell) GetMinorBlockHashesFromPool() []common.Hash {
+	return c.minorBlockPool.getMinorBlockHashes()
 }
 
 func (c *Cell) IsMinorBlockEnoughInPool() bool {

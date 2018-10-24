@@ -242,35 +242,6 @@ message BlockCt {
 }
 
 /**
-** Gossip Pull Blocks request
-*/
-message PullBlocksRequest {
-	bytes   peer_hash    = 1;
-	uint32  chain_id     = 2;
-	uint64  height       = 3;
-}
-
-/**
-** Gossip Pull Blocks response
-*/
-message PullBlocksResponse {
-	bytes   peer_hash      = 1;
-	uint32  chain_id       = 2;
-	uint64  height         = 3;
-	uint64  block_count    = 4;
-	repeated BlockTx data  = 5;
-}
-
-/**
-** Gossip  Push Blocks
-*/
-message PushBlocks {
-	uint32  chain_id        = 1;
-    uint64  block_count     = 2;
-    repeated BlockTx data   = 3;
-}
-
-/**
 ** Signature for the previous block
 */
 message SignaturePreblock {
@@ -310,18 +281,6 @@ message ToutMsg {
      BlockTx    Blksyn_f                   = 2;
  }
 
-/**
-** Store Repo Stat Message
-*/
-message StoreRepoStatMsg {
-    bytes   peer_hash                = 1;
-    uint32  chain_id                 = 2;
-    uint64  repo_size                = 3;
-    uint64  storage_max              = 4;
-    uint64  num_objects              = 5;
-    repeated ShardInfo rand_blk_info = 6;
-    repeated Cid bad_blocks          = 7;
-}
 
 /**
 ** Shard info
@@ -430,6 +389,26 @@ message FinalBlockHeader {
 message FinalBlock {
     FinalBlockHeader            Header      = 1;
     repeated MinorBlockHeader MinorBlocks   = 2;
+}
+
+message ViewChangeBlockHeader {
+    bytes       ChainID             = 1;
+	uint32      Version             = 2;
+    uint64      Height              = 3;
+    int64       Timestamp           = 4;
+	bytes       PrevHash            = 5;
+
+    uint64      CMEpochNo           = 6;
+    uint64      FinalBlockHeight    = 7;
+    uint32      Round               = 8;
+    NodeInfo    Candidate           = 9;
+
+	bytes       hash                = 10;
+	COSign      COSign              = 11;
+}
+
+message ViewChangeBlock {
+    ViewChangeBlockHeader Header = 1;
 }
 
 message COSign {

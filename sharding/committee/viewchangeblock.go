@@ -144,7 +144,7 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 		return nil, false
 	}
 
-	vch := &cs.ViewChangeBlockHeader{
+	vch := cs.ViewChangeBlockHeader{
 		CMEpochNo:        0,
 		FinalBlockHeight: 0,
 		Round:            0,
