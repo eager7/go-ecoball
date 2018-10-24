@@ -81,7 +81,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			return
 		}
 		begin := time.Now().UnixNano()
-		if err := chain.SaveShardBlock(0, msg); err != nil {
+		if err := chain.SaveShardBlock(msg); err != nil {
 			log.Error("save block["+msg.GetChainID().HexString()+"] error:", err)
 			break
 		}

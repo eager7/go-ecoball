@@ -729,7 +729,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 
 	block, err := shard.NewCmBlock(headerCM, shards)
 
-	if err := c.SaveShardBlock(0, block); err != nil {
+	if err := c.SaveShardBlock(block); err != nil {
 		log.Error("Save geneses block error:", err)
 		return err
 	}
@@ -762,7 +762,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		Transactions:     nil,
 		StateDelta:       nil,
 	}
-	if err := c.SaveShardBlock(0, blockMinor); err != nil {
+	if err := c.SaveShardBlock(blockMinor); err != nil {
 		log.Error("Save geneses block error:", err)
 		return err
 	}
@@ -789,7 +789,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 	if err != nil {
 		return err
 	}
-	if err := c.SaveShardBlock(0, blockFinal); err != nil {
+	if err := c.SaveShardBlock(blockFinal); err != nil {
 		log.Error("Save geneses block error:", err)
 		return err
 	}
@@ -797,7 +797,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 	return nil
 }
 
-func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (err error) {
+func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	if block == nil {
 		return errors.New(log, "the block is nil")
 	}
@@ -845,7 +845,8 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 		if !ok {
 			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeMinorBlock.String()))
 		}
-		if shardID == Block.ShardId {
+
+		if c.shardId == Block.ShardId {
 			for i := 0; i < len(Block.Transactions); i++ {
 				log.Notice("Handle Transaction:", Block.Transactions[i].Type.String(), Block.Transactions[i].Hash.HexString(), " in final DB")
 				if _, _, _, err := c.HandleTransaction(
@@ -856,7 +857,7 @@ func (c *ChainTx) SaveShardBlock(shardID uint32, block shard.BlockInterface) (er
 				}
 			}
 			if c.StateDB.FinalDB.GetHashRoot() != Block.StateDeltaHash {
-				return errors.New(log, fmt.Sprintf("the minor hash root is not eqaul, receive:%s, local:%s", Block.StateDeltaHash.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
+				return errors.New(log, fmt.Sprintf("the minor state hash root is not eqaul, receive:%s, local:%s", Block.StateDeltaHash.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 			}
 			c.LastHeader.MinorHeader = &Block.MinorBlockHeader
 		} else {
