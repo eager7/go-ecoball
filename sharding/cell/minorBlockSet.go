@@ -1,7 +1,9 @@
 package cell
 
 import (
+	"github.com/ecoball/go-ecoball/common"
 	cs "github.com/ecoball/go-ecoball/core/shard"
+	sc "github.com/ecoball/go-ecoball/sharding/common"
 )
 
 type minorBlockSet struct {
@@ -9,12 +11,7 @@ type minorBlockSet struct {
 }
 
 func makeMinorBlockSet() *minorBlockSet {
-	return &minorBlockSet{blocks: make([]*cs.MinorBlock, 0, 10)}
-}
-
-func (m *minorBlockSet) resize(size int) {
-	m.blocks = m.blocks[:size]
-	m.clean()
+	return &minorBlockSet{blocks: make([]*cs.MinorBlock, sc.DefaultShardMaxMember, sc.DefaultShardMaxMember)}
 }
 
 func (m *minorBlockSet) clean() {
@@ -49,6 +46,15 @@ func (m *minorBlockSet) syncMinorBlocks(minors []*cs.MinorBlock) {
 	for i := 0; i < len(m.blocks); i++ {
 		m.blocks[i] = minors[i]
 	}
+}
+
+func (m *minorBlockSet) getMinorBlockHashes() (hashes []common.Hash) {
+	for _, minor := range m.blocks {
+		if minor != nil {
+			hashes = append(hashes, minor.Hash())
+		}
+	}
+	return
 }
 
 func (m *minorBlockSet) getMinorBlock(shardid uint16) *cs.MinorBlock {

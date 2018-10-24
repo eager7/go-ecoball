@@ -19,6 +19,7 @@ const (
 	HeMinorBlock HeaderType = 1
 	HeCmBlock    HeaderType = 2
 	HeFinalBlock HeaderType = 3
+	HeViewChange HeaderType = 4
 )
 
 func (h HeaderType) String() string {

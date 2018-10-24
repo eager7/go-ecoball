@@ -57,7 +57,12 @@ func (net *NetImpl)GossipMsg(msg message.EcoBallNetMsg) error {
 	if err != nil {
 		return err
 	}
-	return net.sendMsgToRandomPeers(GossipPeerCount, gossipMsg)
+
+	if net.gossipStore.Add(gossipMsg) {
+		return net.sendMsgToRandomPeers(GossipPeerCount, gossipMsg)
+	}
+
+	return fmt.Errorf("duplicated msg in gossip store")
 }
 
 func (net *NetImpl)sendMsgToRandomPeers(peerCounts int, msg message.EcoBallNetMsg) (err error) {

@@ -10,20 +10,25 @@ import (
 )
 
 func TellBlock(bl cs.BlockInterface) {
-	log.Debug("tell ledger block")
+	log.Debug("tell ledger block type ", bl.Type(), " height ", bl.GetHeight())
 	if err := event.Send(event.ActorSharding, event.ActorLedger, bl); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func TellLedgerProductFinalBlock(epoch uint64, height uint64) {
-	log.Debug("tell ledger product final block")
+func TellLedgerProductFinalBlock(epoch uint64, height uint64, hashes []common.Hash) {
+	log.Debug("tell ledger product final block hashes ", len(hashes))
+	if len(hashes) > 0 {
+		log.Debug(hashes[0])
+	}
 
 	pb := message.ProducerBlock{
 		ChainID: cc.ChainHash,
 		Height:  height,
 		Type:    cs.HeFinalBlock,
 	}
+
+	pb.Hashes = append(pb.Hashes, hashes...)
 
 	if err := event.Send(event.ActorSharding, event.ActorLedger, pb); err != nil {
 		log.Fatal(err)

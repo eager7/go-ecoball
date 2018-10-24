@@ -434,14 +434,8 @@ func invokeContract(c *cli.Context) error {
 		}
 	
 		parameters = append(parameters, string(argbyte[:]))
-		GetContractTable(contractName, "root", abiDef, "accounts")
+		GetContractTable(contractName, "root", abiDef, "Account")
 	}
-
-	//from address
-	//from := account.AddressFromPubKey(common.Account.PublicKey)
-
-	//contract address
-	//address := innerCommon.NewAddress(innerCommon.CopyBytes(innerCommon.FromHex(contractAddress)))
 
 	//time
 	time := time.Now().UnixNano()

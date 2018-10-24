@@ -14,11 +14,15 @@ import (
 var netInst network.EcoballNetwork
 
 func gossipMsgTest() {
+	fmt.Println("gossipMsgTest ...")
 	msg := message.New(message.APP_MSG_MAX, []byte{1,2,3,4,5,6,7,8,9})
-	netInst.GossipMsg(msg)
+	if err := netInst.GossipMsg(msg); err != nil {
+		fmt.Println(err)
+	}
 }
 
 func invalidMsgTest(p peer.ID) {
+	fmt.Println("invalidMsgTest ...")
 	msg := message.New(message.APP_MSG_MAX, []byte{1,2,3,4,5,6,7,8,9})
 	netInst.SendMsgToPeerWithId(p, msg)
 }
@@ -53,7 +57,7 @@ func main() {
 	go func() {
 		for {
 			invalidMsgTest(id)
-			time.Sleep(time.Second * 2)
+			time.Sleep(time.Second * 1)
 			gossipMsgTest()
 			return
 		}

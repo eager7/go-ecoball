@@ -102,7 +102,7 @@ func (ms *messageSender) SendMsg(ctx context.Context, msg message.EcoBallNetMsg)
 		ms.s = nil
 	}
 
-	log.Debug(fmt.Sprintf("send msg(id=%d) to peer %s",msg.Type(), ms.p.ID.Pretty()))
+	log.Debug(fmt.Sprintf("send msg(id=%d) to peer %s", msg.Type(), ms.p.ID.Pretty()))
 
 	return nil
 }
