@@ -402,12 +402,12 @@ func (l *LedgerImpl) NewFinalBlock(chainID common.Hash, timeStamp int64, minorBl
 	return chain.NewFinalBlock(timeStamp, minorBlocks)
 }
 
-func (l *LedgerImpl) CreateFinalBlock(chainID common.Hash, timeStamp int64) (*shard.FinalBlock, error) {
+func (l *LedgerImpl) CreateFinalBlock(chainID common.Hash, timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
-	return chain.CreateFinalBlock(timeStamp)
+	return chain.CreateFinalBlock(timeStamp, hashes)
 }
 
 func (l *LedgerImpl) GetShardId(chainID common.Hash) (uint32, error) {

@@ -42,6 +42,7 @@ type ProducerBlock struct {
 	ChainID common.Hash
 	Height  uint64
 	Type    shard.HeaderType
+	Hashes  []common.Hash
 }
 
 type CheckBlock struct {
