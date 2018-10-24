@@ -747,7 +747,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		CMBlockHash:       common.Hash{},
 		ProposalPublicKey: nil,
 		ShardId:           0,
-		CMEpochNo:         0,
+		CMEpochNo:         headerCM.Height,
 		Receipt: types.BlockReceipt{
 			BlockCpu: config.BlockCpuLimit,
 			BlockNet: config.BlockNetLimit,
@@ -1021,7 +1021,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		Receipt:           types.BlockReceipt{},
 		COSign:            &types.COSign{},
 	}
-	block, err := shard.NewMinorBlock(header, c.CurrentHeader, txs, cpu, net)
+	block, err := shard.NewMinorBlock(header, c.LastHeader.MinorHeader, txs, cpu, net)
 	if err != nil {
 		return nil, err
 	}

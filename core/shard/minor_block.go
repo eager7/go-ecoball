@@ -190,7 +190,7 @@ type MinorBlock struct {
 	StateDelta   []*AccountMinor
 }
 
-func NewMinorBlock(header MinorBlockHeader, prevHeader *types.Header, txs []*types.Transaction, cpu, net float64) (*MinorBlock, error) {
+func NewMinorBlock(header MinorBlockHeader, prevHeader *MinorBlockHeader, txs []*types.Transaction, cpu, net float64) (*MinorBlock, error) {
 	if err := header.ComputeHash(); err != nil {
 		return nil, err
 	}
@@ -253,7 +253,7 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *types.Header, txs []*typ
 	return block, nil
 }
 
-func (b *MinorBlock) SetReceipt(prevHeader *types.Header, cpu, net float64) error {
+func (b *MinorBlock) SetReceipt(prevHeader *MinorBlockHeader, cpu, net float64) error {
 	if prevHeader == nil {
 		return nil
 	}
