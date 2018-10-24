@@ -119,7 +119,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		case shard.HeCmBlock:
 			log.Warn("the minor block nonsupport create by actor")
 		case shard.HeFinalBlock:
-			block, err := l.ledger.CreateFinalBlock(msg.ChainID, time.Now().UnixNano(), msg.Hashes)
+			block, err := l.ledger.NewFinalBlock(msg.ChainID, time.Now().UnixNano(), msg.Hashes)
 			if err != nil {
 				ctx.Sender().Tell(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
 				return

@@ -1054,7 +1054,7 @@ func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBl
 	return block, nil
 }
 
-func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlockHeaders []*shard.MinorBlockHeader) (*shard.FinalBlock, error) {
+func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlockHeaders []*shard.MinorBlockHeader) (*shard.FinalBlock, error) {
 	var hashesTxs []common.Hash
 	var hashesState []common.Hash
 	var hashesMinor []common.Hash
@@ -1098,7 +1098,7 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, minorBlockHeaders []*shard.Mino
 	return block, nil
 }
 
-func (c *ChainTx) CreateFinalBlock(timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
+func (c *ChainTx) NewFinalBlock(timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
 	var minorHeaders []*shard.MinorBlockHeader
 	for _, hash := range hashes {
 		if b, err := c.GetShardBlockByHash(shard.HeMinorBlock, hash); err != nil {
@@ -1111,7 +1111,11 @@ func (c *ChainTx) CreateFinalBlock(timeStamp int64, hashes []common.Hash) (*shar
 			}
 		}
 	}
-	return c.NewFinalBlock(timeStamp, minorHeaders)
+	return c.newFinalBlock(timeStamp, minorHeaders)
+}
+
+func (c *ChainTx) NewViewChangeBlock(timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
+	return nil, nil
 }
 
 func (c *ChainTx) updateShardId() (uint32, error) {

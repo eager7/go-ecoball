@@ -393,21 +393,12 @@ func (l *LedgerImpl) NewMinorBlock(chainID common.Hash, txs []*types.Transaction
 	return chain.NewMinorBlock(txs, timeStamp)
 }
 
-
-func (l *LedgerImpl) NewFinalBlock(chainID common.Hash, timeStamp int64, minorBlocks []*shard.MinorBlockHeader) (*shard.FinalBlock, error) {
+func (l *LedgerImpl) NewFinalBlock(chainID common.Hash, timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
-	return chain.NewFinalBlock(timeStamp, minorBlocks)
-}
-
-func (l *LedgerImpl) CreateFinalBlock(chainID common.Hash, timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
-	chain, ok := l.ChainTxs[chainID]
-	if !ok {
-		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.CreateFinalBlock(timeStamp, hashes)
+	return chain.NewFinalBlock(timeStamp, hashes)
 }
 
 func (l *LedgerImpl) GetShardId(chainID common.Hash) (uint32, error) {
