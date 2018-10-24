@@ -1,4 +1,4 @@
-package backend
+package dsn
 
 import (
 	"context"
@@ -7,13 +7,12 @@ import (
 	"github.com/ecoball/go-ecoball/dsn/renter"
 	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
 	"github.com/ecoball/go-ecoball/dsn/erasure"
-	"github.com/ecoball/go-ecoball/common/elog"
 	"io"
 )
 
-var log = elog.NewLogger("dsn-b", elog.DebugLog)
+//var log = elog.NewLogger("dsn-era", elog.DebugLog)
 
-func EraCoding(req *renter.RscReq) (string, error) {
+func RscCoding(req *renter.RscReq) (string, error) {
 	ctx := context.Background()
 	r, err := api.IpfsCatFile(ctx, req.Cid)
 	if err != nil {
@@ -64,7 +63,7 @@ func EraCoding(req *renter.RscReq) (string, error) {
 	return  api.AddDagFromReader(ctx, erReader, &fm, req.Cid)
 }
 
-func EraDecoding(cid string) (io.Reader, error) {
+func RscDecoding(cid string) (io.Reader, error) {
 	ctx := context.Background()
 	return api.IpfsCatErafile(ctx, cid)
 }

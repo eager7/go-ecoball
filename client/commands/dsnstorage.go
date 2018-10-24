@@ -37,36 +37,10 @@ var (
 	}
 	
 )
-func dsnAddFile1(ctx *cli.Context) error {
 
-	var resp map[string]interface{}
-	var err error
-	//dsn.AddFile(os.Args[3],0)
-	if len(os.Args) <= 3  {
-		fmt.Println("error error need more than three Args")
-	}
-
-	if len(os.Args) == 4{
-		resp, err = rpc.NodeCall("DsnAddFile", []interface{}{os.Args[0],os.Args[1],os.Args[2],os.Args[3],"-1"})
-		fmt.Println("only 4 args, dsnadd file use default value -1")
-	}else if len(os.Args) == 5{
-		resp, err = rpc.NodeCall("DsnAddFile", []interface{}{os.Args[0],os.Args[1],os.Args[2],os.Args[3],os.Args[4]})
-	}
-	
-	if nil != resp["result"] {
-		switch resp["result"].(type) {
-		case string:
-			data := resp["result"].(string)
-			fmt.Println(data)
-			return nil
-		default:
-		}
-	}
-	
-	return err
-}
 func dsnAddFile(ctx *cli.Context) error {
-	return dsncli.AddFun()
+	_, err := dsncli.CliAddFile()
+	return err
 }
 
 func dsnGetFile(ctx *cli.Context) error {
@@ -96,5 +70,5 @@ func dsnGetFile(ctx *cli.Context) error {
 }
 
 func dsnCatFile (ctx *cli.Context)  {
-	dsncli.CatFun()
+	dsncli.CliCatFile()
 }

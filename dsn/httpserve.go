@@ -1,4 +1,4 @@
-package api
+package dsn
 
 import (
 	"fmt"
@@ -11,7 +11,6 @@ import (
 	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
 	stm "github.com/ecoball/go-ecoball/dsn/settlement"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
-	rbd "github.com/ecoball/go-ecoball/dsn/renter/backend"
 	rtypes "github.com/ecoball/go-ecoball/dsn/renter"
 )
 
@@ -20,6 +19,7 @@ func DsnHttpServ()  {
 	router.GET("/dsn/total", totalHandler)
 	router.POST("/dsn/eracode", eraCoding)
 	router.GET("/dsn/eradecode/:cid", eraDecoding)
+	router.GET("/dsn/accountstake/:name/:chainid", accountStake)
 	//TODO listen port need to be moved to config
 	http.ListenAndServe(":9000", router)
 }
@@ -53,7 +53,7 @@ func eraCoding(c *gin.Context)  {
 	} else {
 			fmt.Println(req)
 		}
-	cid, err := rbd.EraCoding(&req)
+	cid, err := RscCoding(&req)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"result": err.Error()})
 	} else {
@@ -66,11 +66,30 @@ func eraDecoding(c *gin.Context)  {
 	if !exsited {
 		c.JSON(http.StatusOK, gin.H{"result": "param err"})
 	} else {
-		r, err := rbd.EraDecoding(cid)
+		r, err := RscDecoding(cid)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{"result": err.Error()})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"result": "success", "data": r})
 		}
 	}
+}
+
+func accountStake(c *gin.Context)  {
+	name, exsited := c.Params.Get("name")
+	if !exsited {
+		c.JSON(http.StatusOK, gin.H{"result": "param err"})
+		return
+	}
+	chainId, exsited := c.Params.Get("chainid")
+	if !exsited {
+		c.JSON(http.StatusOK, gin.H{"result": "param err"})
+		return
+	}
+	sacc, err := ledger.L.AccountGet(common.HexToHash(chainId), common.NameToIndex(name))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"result": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"result": "success", "stake": sacc.Resource.Votes.Staked})
 }

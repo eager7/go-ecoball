@@ -1,24 +1,10 @@
 package cli
 
 import (
-	/*"context"
+	"context"
+	rclient "github.com/ecoball/go-ecoball/dsn/renter/client"
 	"os"
-	//"strconv"
-	//"bytes"
-	"io"
-	"strings"
-	//"encoding/json"
 	"fmt"
-	cmds "gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
-	cli "gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds/cli"
-	http "gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds/http"
-	cmdkit "gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
-	ipfscmd "github.com/ipfs/go-ipfs/core/commands"
-	//"github.com/ipfs/go-ipfs/core/coreunix"
-	//"github.com/ipfs/go-ipfs/core/coreunix"
-	//"github.com/ipfs/go-ipfs/core/coreunix"
-	"github.com/ipfs/go-ipfs/core/coreunix"
-	dsncmd "github.com/ecoball/go-ecoball/dsn/cmd"*/
 )
 
 /*
@@ -120,7 +106,44 @@ func main0() {
 	<-wait
 	os.Exit(ret)
 }*/
+func add()  {
+	conf := rclient.InitDefaultConf()
+	ctx := context.Background()
+	appClient := rclient.NewRenter(ctx, conf)
+	file := os.Args[3]
+	ok := appClient.CheckCollateral()
+	if !ok {
+		fmt.Println("Checking collateral failed")
+		return
+	}
+	cid, err := CliAddFile()
+	if err != nil {
+		panic(err)
+	}
+	cid, err = appClient.RscCodingReq(file, cid)
+	if err != nil {
+		panic(err)
+	}
+	appClient.InvokeFileContract(file, cid)
+	appClient.PayForFile(file, cid)
+}
+
+func cat()  {
+	conf := rclient.InitDefaultConf()
+	ctx := context.Background()
+	appClient := rclient.NewRenter(ctx, conf)
+	ok := appClient.CheckCollateral()
+	if !ok {
+		fmt.Println("Checking collateral failed")
+		return
+	}
+	cid := os.Args[3]
+	err := CliCatFile()
+	if err != nil {
+		appClient.RscDecodingReq(cid)
+	}
+}
 
 func main()  {
-	AddFun()
+	add()
 }
