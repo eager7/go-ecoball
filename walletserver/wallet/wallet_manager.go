@@ -264,7 +264,7 @@ func ListKeys(name string, password []byte) (map[string]string, error) {
 
 func GetPublicKeys() ([]string, error) {
 	if len(wallets) == 0 {
-		return nil, errors.New("You don't have any wallet!")
+		return nil, errors.New("You don't have any wallet or no wallet was opened")
 	}
 
 	keys := []string{}

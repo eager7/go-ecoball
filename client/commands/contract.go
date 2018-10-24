@@ -137,7 +137,7 @@ func setContract(c *cli.Context) error {
 		return err
 	}
 
-	//file data
+	//abifile data
 	abifile, err := os.OpenFile(abi_fileName, os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file failed")

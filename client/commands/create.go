@@ -123,18 +123,18 @@ func getInfo() (*types.Block, error) {
 }
 
 func get_required_keys(chainId innercommon.Hash, required_keys, permission string, trx *types.Transaction) (string, error) {
-	data, err := trx.Serialize()
+	/*data, err := trx.Serialize()
 	if err != nil {
 		return "", err
-	}
+	}*/
 
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("permission", permission)
 	values.Set("chainId", chainId.HexString())
 	values.Set("keys", required_keys)
-	values.Set("transaction", innercommon.ToHex(data))
-	err = rpc.NodePost("/get_required_keys", values.Encode(), &result)
+	values.Set("name", trx.From.String())
+	err := rpc.NodePost("/get_required_keys", values.Encode(), &result)
 	if nil == err {
 		return result.Result, nil
 	}
