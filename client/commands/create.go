@@ -233,7 +233,6 @@ func newAccount(c *cli.Context) error {
 
 	publickeys, err := GetPublicKeys()
 	if err != nil {
-		fmt.Println("get publicKey failed")
 		fmt.Println(err)
 		return err
 	}
@@ -256,9 +255,6 @@ func newAccount(c *cli.Context) error {
 		fmt.Println(err)
 		return err
 	}
-
-	fmt.Println(required_keys)
-	fmt.Println(info.ChainID.HexString())
 
 	if required_keys == "" {
 		fmt.Println("no required_keys")
