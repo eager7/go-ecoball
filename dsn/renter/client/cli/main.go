@@ -1,24 +1,13 @@
 package cli
 
 import (
-	/*"context"
+	"context"
+	rclient "github.com/ecoball/go-ecoball/dsn/renter/client"
 	"os"
-	//"strconv"
-	//"bytes"
-	"io"
-	"strings"
-	//"encoding/json"
+	"github.com/ecoball/go-ecoball/dsn/renter"
+	"path/filepath"
+	"github.com/ecoball/go-ecoball/dsn/common"
 	"fmt"
-	cmds "gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
-	cli "gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds/cli"
-	http "gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds/http"
-	cmdkit "gx/ipfs/QmdE4gMduCKCGAcczM2F5ioYDfdeKuPix138wrES1YSr7f/go-ipfs-cmdkit"
-	ipfscmd "github.com/ipfs/go-ipfs/core/commands"
-	//"github.com/ipfs/go-ipfs/core/coreunix"
-	//"github.com/ipfs/go-ipfs/core/coreunix"
-	//"github.com/ipfs/go-ipfs/core/coreunix"
-	"github.com/ipfs/go-ipfs/core/coreunix"
-	dsncmd "github.com/ecoball/go-ecoball/dsn/cmd"*/
 )
 
 /*
@@ -120,7 +109,48 @@ func main0() {
 	<-wait
 	os.Exit(ret)
 }*/
+func add()  {
+	conf := rclient.InitDefaultConf()
+	ctx := context.Background()
+	appClient := rclient.NewRenter(ctx, conf)
+	file := os.Args[3]
+	ok := appClient.CheckCollateral()
+	if !ok {
+		fmt.Println("Checking collateral failed")
+		return
+	}
+	cid, err := CliAddFile()
+	if err != nil {
+		panic(err)
+	}
+
+	fpath := filepath.ToSlash(filepath.Clean(file))
+	stat, err := os.Lstat(fpath)
+	if err != nil {
+		panic(err)
+	}
+
+	var PieceSize uint64
+	if stat.Size() < common.EraDataPiece * (256 * 1024) {
+		PieceSize = uint64(stat.Size() / common.EraDataPiece)
+	} else {
+		PieceSize = uint64(256 * 1024)
+	}
+	req := renter.RscReq{
+		Cid: cid,
+		Redundency: int(conf.Redundancy),
+		IsDir: false,
+		Chunk: PieceSize,
+		FileSize: uint64(stat.Size()),
+	}
+	cid, err = appClient.RscCodingReq(&req)
+	if err != nil {
+		panic(err)
+	}
+	appClient.InvokeFileContract(file, cid)
+	appClient.PayForFile(file, cid)
+}
 
 func main()  {
-	AddFun()
+	add()
 }

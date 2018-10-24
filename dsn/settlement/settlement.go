@@ -119,7 +119,7 @@ func (s *Settler) decodeFileContract(data []byte) (renter.FileContract, error) {
 	if err != nil {
 		return fc, err
 	}
-	var sig [dsnComm.SigSize]byte
+	/*var sig [dsnComm.SigSize]byte
 	err = dec.Decode(&sig)
 	if err != nil {
 		return fc, err
@@ -131,7 +131,7 @@ func (s *Settler) decodeFileContract(data []byte) (renter.FileContract, error) {
 	}
 	if err != nil {
 		return fc, err
-	}
+	}*/
 	return fc, nil
 }
 
@@ -200,7 +200,7 @@ func (s *Settler) HandleFileContract(data []byte, st state.InterfaceState) error
 		return err
 	}
 	s.storeAccountState(fc, st)
-	PinBlock(fc.Cid)
+	//PinBlock(fc.Cid)
 	return nil
 }
 

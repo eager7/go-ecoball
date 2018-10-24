@@ -19,7 +19,7 @@ func DsnAddFile(params []interface{})  *common.Response {
 	b := []byte(streq)
 	var req renter.RscReq
 	json.Unmarshal(b, &req)
-	cid, err := dsn.AddFile(&req)
+	cid, err := dsn.RscCoding(&req)
 	if err != nil {
 		return common.NewResponse(common.INVALID_PARAMS, "DsnAddFile faild")
 	}
@@ -31,7 +31,7 @@ func DsnCatFile(params []interface{})  *common.Response {
 	if len(params) < 1 {
 		log.Error("invalid arguments")
 	}
-	readerResult, err := dsn.CatFile(params[0].(string))
+	readerResult, err := dsn.RscDecoding(params[0].(string))
 	if err != nil {
 		return common.NewResponse(common.INVALID_PARAMS, "DsnGetFile faild")
 	}

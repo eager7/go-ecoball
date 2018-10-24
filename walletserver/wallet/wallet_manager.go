@@ -262,7 +262,7 @@ func ListKeys(name string, password []byte) (map[string]string, error) {
 	return wallet.ListKeys(), nil
 }
 
-func GetPublicKeys() ([]string, error) {
+func  GetPublicKeys() ([]string, error) {
 	if len(wallets) == 0 {
 		return nil, errors.New("You don't have any wallet!")
 	}

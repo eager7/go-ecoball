@@ -2,7 +2,6 @@ package dsn
 
 import (
 	"github.com/ecoball/go-ecoball/dsn/host"
-	"github.com/ecoball/go-ecoball/dsn/renter"
 	"github.com/ecoball/go-ecoball/dsn/settlement"
 	"context"
 	"github.com/ecoball/go-ecoball/account"
@@ -11,20 +10,14 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common"
-	"io"
-	"github.com/ecoball/go-ecoball/dsn/api"
-	ipfsapi "github.com/ecoball/go-ecoball/dsn/ipfs/api"
-	rb "github.com/ecoball/go-ecoball/dsn/renter/backend"
 )
 
 type DsnConf struct {
 	hConf host.StorageHostConf
-	rConf renter.RenterConf
 }
 
 type Dsn struct {
 	h    *host.StorageHost
-	r    *renter.Renter
 	s    *settlement.Settler
 	ctx  context.Context
 }
@@ -36,7 +29,7 @@ var (
 func InitDefaultConf() DsnConf {
 	return DsnConf{
 		hConf: host.InitDefaultConf(),
-		rConf: renter.InitDefaultConf(),
+		//rConf: renter.InitDefaultConf(),
 	}
 }
 
@@ -67,30 +60,8 @@ func StartDsn(ctx context.Context, l ledger.Ledger) error {
 	dsn.s = s
 	dsn.ctx = ctx
 
-	go api.DsnHttpServ()
+	go DsnHttpServ()
 
-	return nil
-}
-
-func AddFile(req *renter.RscReq) (string, error) {
-	return rb.EraCoding(req)
-}
-
-func CatFile(cid string) (io.Reader, error) {
-	ctx := context.Background()
-	r,err := ipfsapi.IpfsCatErafile(ctx, cid)
-	if err != nil {
-		log.Error("cat ", cid, " failed")
-		return nil, nil
-	}
-
-	//d, err := ioutil.ReadAll(r)
-	//ioutil.WriteFile("/root/ecoball/t.toml", d, os.ModePerm)
-	return r, err
-}
-
-func PinToServer(cid string) error {
-	//TODO
 	return nil
 }
 

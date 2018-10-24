@@ -10,7 +10,6 @@ import (
 	cmds "gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds"
 	ipfscli "gx/ipfs/QmNueRyPRQiV7PUEpnP4GgGLuK1rKQLaRW7sfPvUetYig1/go-ipfs-cmds/cli"
 	"github.com/ipfs/go-ipfs/core/coreunix"
-	"github.com/ecoball/go-ecoball/dsn/renter"
 	"github.com/ecoball/go-ecoball/dsn/common"
 	chunker "gx/ipfs/QmVDjhUMtkRskBFAVNwyXuLSKbeAya7JKPnzAxMKDaK4x4/go-ipfs-chunker"
 )
@@ -29,7 +28,7 @@ type Closer interface {
 
 func addRun(ctx context.Context, root *cmds.Command,
 	cmdline []string, stdin, stdout, stderr *os.File,
-	buildEnv cmds.MakeEnvironment, makeExecutor cmds.MakeExecutor) (*renter.RscReq, error) {
+	buildEnv cmds.MakeEnvironment, makeExecutor cmds.MakeExecutor) (string, error) {
 
 	printErr := func(err error) {
 		fmt.Fprintf(stderr, "Error: %s\n", err)
@@ -42,7 +41,7 @@ func addRun(ctx context.Context, root *cmds.Command,
 	if timeoutStr, ok := req.Options[cmds.TimeoutOpt]; ok {
 		timeout, err := time.ParseDuration(timeoutStr.(string))
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		req.Context, cancel = context.WithTimeout(req.Context, timeout)
 	} else {
@@ -77,9 +76,9 @@ func addRun(ctx context.Context, root *cmds.Command,
 	// AND the user requested help, print it out and exit
 	err := ipfscli.HandleHelp(cmdline[0], req, stdout)
 	if err == nil {
-		return nil, nil
+		return "", nil
 	} else if err != ipfscli.ErrNoHelpRequested {
-		return nil, err
+		return "", err
 	}
 	// no help requested, continue.
 
@@ -94,7 +93,7 @@ func addRun(ctx context.Context, root *cmds.Command,
 			printHelp(false, stderr)
 		}
 
-		return nil, err
+		return "", err
 	}
 
 	// here we handle the cases where
@@ -102,7 +101,7 @@ func addRun(ctx context.Context, root *cmds.Command,
 	// - the main command is invoked.
 	if req == nil || req.Command == nil || req.Command.Run == nil {
 		printHelp(false, stdout)
-		return nil, nil
+		return "", nil
 	}
 
 	cmd := req.Command
@@ -110,7 +109,7 @@ func addRun(ctx context.Context, root *cmds.Command,
 	env, err := buildEnv(req.Context, req)
 	if err != nil {
 		printErr(err)
-		return nil, err
+		return "", err
 	}
 	if c, ok := env.(Closer); ok {
 		defer c.Close()
@@ -119,7 +118,7 @@ func addRun(ctx context.Context, root *cmds.Command,
 	exctr, err := makeExecutor(req, env)
 	if err != nil {
 		printErr(err)
-		return nil, err
+		return "", err
 	}
 
 	//var (
@@ -140,7 +139,7 @@ func addRun(ctx context.Context, root *cmds.Command,
 	//fmt.Println(fpath)
 	stat, err := os.Lstat(fpath)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	//fmt.Println(fpath, stat.Size())
 	var PieceSize uint64
@@ -174,7 +173,7 @@ func addRun(ctx context.Context, root *cmds.Command,
 			//return nil, nil
 			break
 		default:
-			return nil, err
+			return "", err
 		}
 		if i == 1 {
 			object = v.(*coreunix.AddedObject)
@@ -183,13 +182,8 @@ func addRun(ctx context.Context, root *cmds.Command,
 		i++
 	}
 	fmt.Println(object.Name, object.Hash, object.Size, object.Bytes)
-	eraReq := new(renter.RscReq)
-	eraReq.Cid = object.Hash
-	eraReq.Redundency = 2
-	eraReq.FileSize = uint64(stat.Size())
-	eraReq.IsDir = false
-	eraReq.Chunk = PieceSize
-	return eraReq, nil
+
+	return object.Hash, nil
 }
 
 
@@ -200,7 +194,7 @@ func catRun(ctx context.Context, root *cmds.Command,
 	printErr := func(err error) {
 		fmt.Fprintf(stderr, "Error: %s\n", err)
 	}
-	cid := cmdline[3]
+	//cid := cmdline[3]
 	cmdline[3] = cmdline[3] + "/file"
 	req, errParse := ipfscli.Parse(ctx, cmdline[2:], stdin, root)
 
@@ -329,7 +323,7 @@ func catRun(ctx context.Context, root *cmds.Command,
 		//if kiterr, ok := err.(cmdkit.Error); ok && kiterr.Code == cmdkit.ErrClient {
 		//	printMetaHelp(stderr)
 		//}
-		err = eraCat(cid)
+		//err = eraCat(cid)
 		return err
 
 	case code := <-exitCh:
