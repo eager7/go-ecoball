@@ -432,6 +432,26 @@ message FinalBlock {
     repeated MinorBlockHeader MinorBlocks   = 2;
 }
 
+message ViewChangeBlockHeader {
+    bytes       ChainID             = 1;
+	uint32      Version             = 2;
+    uint64      Height              = 3;
+    int64       Timestamp           = 4;
+	bytes       PrevHash            = 5;
+
+    uint64      CMEpochNo           = 6;
+    uint64      FinalBlockHeight    = 7;
+    uint32      Round               = 8;
+    NodeInfo    Candidate           = 9;
+
+	bytes       hash                = 10;
+	COSign      COSign              = 11;
+}
+
+message ViewChangeBlock {
+    ViewChangeBlockHeader Header = 1;
+}
+
 message COSign {
     uint32 Step1 = 1;
     uint32 Step2 = 2;
