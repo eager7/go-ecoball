@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"path/filepath"
 	ipfsshell "github.com/ipfs/go-ipfs-api"
+	"fmt"
 )
 
 var (
@@ -66,9 +67,9 @@ func InitDefaultConf() RenterConf {
 	return RenterConf{
 		AccountName: "dsn",
 		Redundancy: 2,
-		Allowance: "100",
-		Collateral: "100",
-		MaxCollateral: "200",
+		Allowance: "10",
+		Collateral: "10",
+		MaxCollateral: "20",
 		ChainId: common.ToHex(chainId[:]),
 		//StorePath: "/tmp/storage/rent",
 		DsnApiUrl: "127.0.0.1:9000",
@@ -296,6 +297,7 @@ func (r *Renter)CheckCollateral() bool {
 	if err := json.Unmarshal(out, &result); err != nil {
 		return false
 	}
+	fmt.Println("col:", result.Stake)
 	col, err := strconv.Atoi(r.conf.Collateral)
 	if err != nil {
 		return false
