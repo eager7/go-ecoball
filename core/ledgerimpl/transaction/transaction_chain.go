@@ -929,6 +929,23 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		if err := c.HeaderStore.Put([]byte("lastFinalHeader"), heValue); err != nil {
 			return err
 		}
+	case shard.HeViewChange:
+		blockType = shard.HeViewChange.String()
+		Block, ok := block.GetObject().(shard.ViewChangeBlock)
+		if !ok {
+			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeViewChange.String()))
+		}
+		data, err := Block.ViewChangeBlockHeader.Serialize()
+		if err != nil {
+			return err
+		}
+		heValue = append(heValue, data...)
+		heKey = Block.ViewChangeBlockHeader.Hash().Bytes()
+
+		c.LastHeader.VCHeader = &Block.ViewChangeBlockHeader
+		if err := c.HeaderStore.Put([]byte("lastVCHeader"), heValue); err != nil {
+			return err
+		}
 	default:
 		return errors.New(log, fmt.Sprintf("unknown header type:%d", block.Type()))
 	}
@@ -985,6 +1002,10 @@ func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface,
 	case shard.HeCmBlock:
 		if c.LastHeader.CmHeader != nil {
 			return c.GetShardBlockByHash(typ, c.LastHeader.CmHeader.Hash())
+		}
+	case shard.HeViewChange :
+		if c.LastHeader.VCHeader != nil {
+			return c.GetShardBlockByHash(typ, c.LastHeader.VCHeader.Hash())
 		}
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown block type:%d", typ))

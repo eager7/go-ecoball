@@ -165,6 +165,36 @@ func TestFinalBlockHeader(t *testing.T) {
 	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
 }
 
+func TestVCBlockHeader(t *testing.T) {
+	//Init ViewChange Block
+	headerVC := shard.ViewChangeBlockHeader{
+		ChainID:          config.ChainHash,
+		Version:          types.VersionHeader,
+		Height:           1,
+		Timestamp:        time.Now().UnixNano(),
+		PrevHash:         common.Hash{},
+		CMEpochNo:        1,
+		FinalBlockHeight: 1,
+		Round:            0,
+		Candidate:        shard.NodeInfo{},
+		COSign:           &types.COSign{},
+	}
+	data, err := headerVC.Serialize()
+	headerVC2 := new(shard.ViewChangeBlockHeader)
+	errors.CheckErrorPanic(headerVC2.Deserialize(data))
+	errors.CheckEqualPanic(headerVC.JsonString() == headerVC2.JsonString())
+
+
+	blockVC, err := shard.NewVCBlock(headerVC)
+	errors.CheckErrorPanic(err)
+	data, err = blockVC.Serialize()
+
+	blockVC2 := new(shard.ViewChangeBlock)
+	errors.CheckErrorPanic(blockVC2.Deserialize(data))
+
+	errors.CheckEqualPanic(blockVC.JsonString() == blockVC2.JsonString())
+}
+
 func TestHeader(t *testing.T) {
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
 	h, err := types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, config.BlockCpuLimit, config.BlockNetLimit, time.Now().Unix())
