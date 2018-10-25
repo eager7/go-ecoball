@@ -72,13 +72,13 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
 	}
 
-	s.CreateToken(state.AbaToken, state.AbaTotal, root)
+	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), root)
 
 	//if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(90000)); err != nil {
 	//	return err
 	//}
 
-	s.IssueToken(root, 90000, state.AbaToken)
+	s.IssueToken(root, new(big.Int).SetUint64(90000), state.AbaToken)
 
 	fmt.Println("set root account's resource to [cpu:100, net:100]")
 	if err := s.SetResourceLimits(root, root, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
@@ -114,8 +114,8 @@ func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) e
 		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
 	}
 
-	s.CreateToken(state.AbaToken, state.AbaTotal, root)
-	s.IssueToken(root, 90000, state.AbaToken)
+	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), root)
+	s.IssueToken(root, new(big.Int).SetUint64(90000), state.AbaToken)
 
 	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
 	if err := s.SetResourceLimits(root, root, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {

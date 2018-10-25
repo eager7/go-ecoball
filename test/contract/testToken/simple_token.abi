@@ -5,7 +5,7 @@
       "base": "",
       "fields": [
          {"name":"creator", "type":"string"},
-         {"name":"max_supply", "type":"int32"},
+         {"name":"max_supply", "type":"int64"},
          {"name":"token_id", "type":"string"}
       ]
     },{
@@ -13,7 +13,7 @@
       "base": "",
       "fields": [
          {"name":"to", "type":"string"},
-         {"name":"amount", "type":"int32"},
+         {"name":"amount", "type":"int64"},
          {"name":"token_id", "type":"string"}
       ]
     },{	
@@ -22,14 +22,14 @@
       "fields": [
          {"name":"from", "type":"string"},
          {"name":"to", "type":"string"},
-         {"name":"amount", "type":"int32"},
+         {"name":"amount", "type":"int64"},
          {"name":"token_id", "type":"string"}
       ]
     },{
       "name": "Account",
       "base": "",
       "fields": [
-        {"name":"balance", "type":"int32"},
+        {"name":"balance", "type":"int64"},
         {"name":"name", "type":"char[16]"},
         {"name":"token_id", "type":"char[8]"}
       ]
@@ -37,8 +37,8 @@
       "name": "Stat",
       "base": "",
       "fields": [
-        {"name":"supply", "type":"int32"},
-        {"name":"max_supply", "type":"int32"},
+        {"name":"supply", "type":"int64"},
+        {"name":"max_supply", "type":"int64"},
 		    {"name":"issuer", "type":"char[16]"},
         {"name":"token_id", "type":"char[8]"}
       ]

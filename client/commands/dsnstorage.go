@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
    "github.com/urfave/cli"
-   "github.com/ecoball/go-ecoball/client/rpc"
-   dsncli "github.com/ecoball/go-ecoball/dsn/renter/client/cli"
+   dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
+	"context"
+	"io/ioutil"
 )
 var (
 	DsnStorageCommands = cli.Command{
@@ -39,36 +40,40 @@ var (
 )
 
 func dsnAddFile(ctx *cli.Context) error {
-	_, err := dsncli.CliAddFile()
-	return err
+	cbtx := context.Background()
+	dclient := dsncli.NewRcWithDefaultConf(cbtx)
+	file := os.Args[3]
+	//dclient.CheckCollateral()
+	cid, err := dclient.AddFile(file)
+	if err != nil {
+		return err
+	}
+	fmt.Println(cid)
+	newCid, err := dclient.RscCodingReq(file, cid)
+	if err != nil {
+		return err
+	}
+	fmt.Println("added ", file, newCid)
+	//dclient.InvokeFileContract(file, newCid)
+	//dclient.PayForFile(file, newCid)
+	return nil
 }
 
-func dsnGetFile(ctx *cli.Context) error {
-	var resp map[string]interface{}
-	var err error
-
-	if len(os.Args) == 4{
-		resp, err = rpc.NodeCall("DsnCatFile", []interface{}{os.Args[0],os.Args[1],os.Args[2],os.Args[3]})
-	}else{
-		fmt.Println("only input 4 args")
-	}
-
-	if nil != resp["result"] {
-		
-		switch resp["result"].(type) {
-
-		case string:
-			data := resp["result"].(string)
-			fmt.Println("catResult:",data)
-			return nil
-		default:
-		}
-	}
-	
-	return err
-
-}
 
 func dsnCatFile (ctx *cli.Context)  {
-	dsncli.CliCatFile()
+	cbtx := context.Background()
+	dclient := dsncli.NewRcWithDefaultConf(cbtx)
+	//dclient.CheckCollateral()
+	cid := os.Args[3]
+	r, err := dclient.CatFile(cid)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	d, err := ioutil.ReadAll(r)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println(string(d))
 }

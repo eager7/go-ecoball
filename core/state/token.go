@@ -12,8 +12,8 @@ const AbaTotal = 200000
 
 type TokenInfo struct {
 	Symbol 		 string					`json:"symbol"`
-	MaxSupply 	 int32					`json:"max_supply"`
-	Supply		 int32 					`json:"supply"`
+	MaxSupply 	 *big.Int				`json:"max_supply"`
+	Supply		 *big.Int 				`json:"supply"`
 	Issuer       common.AccountName     `json:"issuer"`
 }
 
@@ -22,11 +22,11 @@ type Token struct {
 	Balance *big.Int `json:"balance, omitempty"`
 }
 
-func NewToken(symbol string, maxSupply int32, issuer common.AccountName) (*TokenInfo, error){
+func NewToken(symbol string, maxSupply, supply *big.Int, issuer common.AccountName) (*TokenInfo, error){
 	stat := &TokenInfo{
 		Symbol: 	symbol,
 		MaxSupply:	maxSupply,
-		Supply:		0,
+		Supply:		supply,
 		Issuer:		issuer,
 	}
 
@@ -34,10 +34,12 @@ func NewToken(symbol string, maxSupply int32, issuer common.AccountName) (*Token
 }
 
 func (stat *TokenInfo) Serialize() ([]byte, error) {
+	maxSupply, err := stat.MaxSupply.GobEncode()
+	supply, err := stat.Supply.GobEncode()
 	p := &pb.TokenInfo{
 		Symbol:		stat.Symbol,
-		MaxSupply:	stat.MaxSupply,
-		Supply:		stat.Supply,
+		MaxSupply:	maxSupply,
+		Supply:		supply,
 		Issuer:		uint64(stat.Issuer),
 	}
 	b, err := p.Marshal()
@@ -56,9 +58,19 @@ func (stat *TokenInfo) Deserialize(data []byte) (error) {
 		return err
 	}
 
+	maxSupply := new(big.Int)
+	if err := maxSupply.GobDecode(status.MaxSupply); err != nil {
+		return errors.New(log, fmt.Sprintf("GobDecode err:%s", err.Error()))
+	}
+
+	supply := new(big.Int)
+	if err := supply.GobDecode(status.Supply); err != nil {
+		return errors.New(log, fmt.Sprintf("GobDecode err:%s", err.Error()))
+	}
+
 	stat.Symbol = status.Symbol
-	stat.MaxSupply = status.MaxSupply
-	stat.Supply = status.Supply
+	stat.MaxSupply = maxSupply
+	stat.Supply = supply
 	stat.Issuer = common.AccountName(status.Issuer)
 
 	return nil
@@ -196,7 +208,7 @@ func (s *State) CommitToken(token *TokenInfo) error {
 	return nil
 }
 
-func (s *State) CreateToken(symbol string, maxSupply int32, issuer common.AccountName) (*TokenInfo, error) {
+func (s *State) CreateToken(symbol string, maxSupply *big.Int, issuer common.AccountName) (*TokenInfo, error) {
 	if err := common.TokenNameCheck(symbol); err != nil {
 		return nil, err
 	}
@@ -205,7 +217,7 @@ func (s *State) CreateToken(symbol string, maxSupply int32, issuer common.Accoun
 		return nil, errors.New(log, fmt.Sprintf("%s token had created", symbol))
 	}
 
-	token, err := NewToken(symbol, maxSupply, issuer)
+	token, err := NewToken(symbol, maxSupply, big.NewInt(0), issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -217,21 +229,41 @@ func (s *State) CreateToken(symbol string, maxSupply int32, issuer common.Accoun
 	return token, nil
 }
 
-func (s *State) IssueToken(to common.AccountName, amount int32, symbol string) error{
+// for token contract api
+func (s *State) SetTokenInfo(symbol string, maxSupply, supply *big.Int, issuer common.AccountName) (*TokenInfo, error) {
+	if err := common.TokenNameCheck(symbol); err != nil {
+		return nil, err
+	}
+
+	token, err := NewToken(symbol, maxSupply, supply, issuer)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.CommitToken(token); err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
+
+func (s *State) IssueToken(to common.AccountName, amount *big.Int, symbol string) error{
 	token, err := s.GetTokenInfo(symbol)
 	if err != nil {
 		return err
 	}
 
-	if amount > token.MaxSupply - token.Supply {
-		return errors.New(log, fmt.Sprintf("issue amount %d > issue balance %d", amount, token.MaxSupply - token.Supply))
+	balance := new(big.Int).Sub(token.MaxSupply, token.Supply)
+
+	if balance.Cmp(amount) == -1 {
+		return errors.New(log, "no enough balance")
 	}
 
-	if err = s.AccountAddBalance(to, symbol, big.NewInt(int64(amount))); err != nil {
+	if err = s.AccountAddBalance(to, symbol, amount); err != nil {
 		return err
 	}
 
-	token.Supply += amount
+	token.Supply = new(big.Int).Add(token.Supply, amount)
 
 	if err := s.CommitToken(token); err != nil {
 		return err

@@ -215,8 +215,8 @@ message Account {
 */
 message TokenInfo {
     string      Symbol      = 1;
-    int32       MaxSupply   = 2;
-    int32       Supply      = 3;
+    bytes       MaxSupply   = 2;
+    bytes       Supply      = 3;
     uint64      Issuer      = 4;
 }
 

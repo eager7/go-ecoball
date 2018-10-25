@@ -5,6 +5,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"math/big"
 	"github.com/ecoball/go-ecoball/core/state"
+	"unsafe"
 )
 
 // C API: issueToken(char *name, int32 nameLen, int32 maxSupply, char *issuer, int32 issuerLen)
@@ -40,18 +41,12 @@ func (ws *WasmService) createToken(proc *exec.Process, name, nameLen, maxSupply,
 		issuerSlice = append(issuerSlice, issuer_msg[Length - 1])
 	}
 
-	_, err = ws.state.CreateToken(string(nameSlice), maxSupply, common.NameToIndex(string(issuerSlice)))
+	token, err := ws.state.CreateToken(string(nameSlice), big.NewInt(int64(maxSupply)), common.NameToIndex(string(issuerSlice)))
 	if err != nil{
 		return -2
 	}
 
 	// generate trx receipt
-	token := state.TokenInfo{
-		Symbol:		string(nameSlice),
-		MaxSupply:	maxSupply,
-		Supply:		0,
-		Issuer:		common.NameToIndex(string(issuerSlice)),
-	}
 	data, err := token.Serialize()
 	if err != nil {
 		return -3
@@ -107,7 +102,7 @@ func (ws *WasmService) issueToken(proc *exec.Process, to, toLen, amount, name, n
 		}
 	}
 
-	err = ws.state.IssueToken(common.NameToIndex(string(toSlice)), amount, string(nameSlice))
+	err = ws.state.IssueToken(common.NameToIndex(string(toSlice)), big.NewInt(int64(amount)), string(nameSlice))
 	if err != nil{
 		return -2
 	}
@@ -202,7 +197,6 @@ func (ws *WasmService)transfer(proc *exec.Process, from, fromLen, to, toLen, amo
 	}
 
 	// generate trx receipt
-
 	ws.context.Tc.Trx.Receipt.From = common.NameToIndex(string(fromSlice))
 	ws.context.Tc.Trx.Receipt.To = common.NameToIndex(string(toSlice))
 	ws.context.Tc.Trx.Receipt.TokenName = string(nameSlice)
@@ -210,3 +204,291 @@ func (ws *WasmService)transfer(proc *exec.Process, from, fromLen, to, toLen, amo
 
 	return 0
 }
+
+func (ws *WasmService)subBalance(proc *exec.Process, from, fromLen, amount, name, nameLen, perm, permLen int32) int32{
+
+	return 0
+}
+
+func (ws *WasmService)tokenExisted(proc *exec.Process, name, nameLen int32) int32 {
+	name_msg := make([]byte, nameLen)
+	err := proc.ReadAt(name_msg, int(name), int(nameLen))
+	if err != nil{
+		return -1
+	}
+
+	// C string end with '\0', but Go not. So delete '\0'
+	Length := len(name_msg)
+	var nameSlice []byte = name_msg[:Length - 1]
+	if name_msg[Length - 1] != 0 {
+		nameSlice = append(nameSlice, name_msg[Length - 1])
+	}
+
+	if ws.state.TokenExisted(string(nameSlice)) {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+type TokenStatus struct {
+	Symbol 		 [12]byte				`json:"symbol"`
+	MaxSupply 	 int64					`json:"max_supply"`
+	Supply		 int64 				`json:"supply"`
+	Issuer       [12]byte				`json:"issuer"`
+}
+
+type SliceMock struct {
+	addr uintptr
+	len  int
+	cap  int
+}
+
+func (ws *WasmService)getTokenInfo(proc *exec.Process, name, nameLen, token, tokenLen int32) int32{
+	name_msg := make([]byte, nameLen)
+	err := proc.ReadAt(name_msg, int(name), int(nameLen))
+	if err != nil{
+		return -1
+	}
+
+	// C string end with '\0', but Go not. So delete '\0'
+	Length := len(name_msg)
+	var nameSlice []byte = name_msg[:Length - 1]
+	if name_msg[Length - 1] != 0 {
+		nameSlice = append(nameSlice, name_msg[Length - 1])
+	}
+
+	// Get token info
+	tokenInfo, err := ws.state.GetTokenInfo(string(nameSlice))
+	if err != nil {
+		return -2
+	}
+
+	// construct TokenStatus var
+	var symbol [12]byte
+	var issuer [12]byte
+	issuerByte := common.IndexToName(tokenInfo.Issuer)
+	for i := 0; i < len(issuerByte); i++ {
+		issuer[i] = issuerByte[i]
+	}
+
+	for i := 0; i < len(tokenInfo.Symbol); i++ {
+		symbol[i] = tokenInfo.Symbol[i]
+	}
+
+	status := &TokenStatus{
+		Symbol:		symbol,
+		MaxSupply:	tokenInfo.MaxSupply.Int64(),
+		Supply:		tokenInfo.Supply.Int64(),
+		Issuer:		issuer,
+	}
+
+	if int(tokenLen) > (int)(unsafe.Sizeof(*status)) {
+		tokenLen = int32(unsafe.Sizeof(*status))
+	}
+
+	Len := unsafe.Sizeof(*status)
+	bytes := &SliceMock{
+		addr: uintptr(unsafe.Pointer(status)),
+		cap:  int(Len),
+		len:  int(Len),
+	}
+
+	// convert TokenStatus to []byte
+	data := *(*[]byte)(unsafe.Pointer(bytes))
+
+	err = proc.WriteAt(data[:], int(token), int(tokenLen))
+	if err != nil{
+		return -1
+	}
+
+	return 0
+}
+
+func (ws *WasmService)putTokenStatus(proc *exec.Process, name, nameLen, token, tokenLen int32) int32{
+	name_msg := make([]byte, nameLen)
+	err := proc.ReadAt(name_msg, int(name), int(nameLen))
+	if err != nil{
+		return -1
+	}
+
+	// C string end with '\0', but Go not. So delete '\0'
+	Length := len(name_msg)
+	var nameSlice []byte = name_msg[:Length - 1]
+	if name_msg[Length - 1] != 0 {
+		nameSlice = append(nameSlice, name_msg[Length - 1])
+	}
+
+	if ws.state.TokenExisted(string(nameSlice)) {
+		// Get token issuer
+		tokenInfo, err := ws.state.GetTokenInfo(string(nameSlice))
+		if err == nil {
+			return -4
+		}
+
+		// if declared permission actor had permission of token issuer
+		if tokenInfo.Issuer != ws.action.Permission.Actor {
+			if err := ws.state.CheckAccountPermission(tokenInfo.Issuer, ws.action.Permission.Actor, "active"); err != nil {
+				return -5
+			}
+		}
+	}
+
+	data := make([]byte, tokenLen)
+	err = proc.ReadAt(data, int(token), int(tokenLen))
+	if err != nil{
+		return -1
+	}
+
+
+	status := *(**TokenStatus)(unsafe.Pointer(&data))
+	issuerByte := make([]byte, len(status.Issuer))
+	for i := 0; i < len(status.Issuer); i++ {
+		issuerByte[i] =  status.Issuer[i]
+	}
+
+	tokenInfo, err := ws.state.SetTokenInfo(string(nameSlice), big.NewInt(status.MaxSupply), big.NewInt(status.Supply), common.NameToIndex(string(issuerByte)))
+	if err != nil{
+		return -2
+	}
+
+	// generate trx receipt
+	byte, err := tokenInfo.Serialize()
+	if err != nil {
+		return -3
+	}
+	ws.context.Tc.Trx.Receipt.NewToken = byte
+
+	return 0
+}
+
+func (ws *WasmService) getTokenStatus(proc *exec.Process, name, nameLen int32, maxSupply, maxSupplyLen, supply, supplyLen, issuer, issuerLen int32) int32 {
+	name_msg := make([]byte, nameLen)
+	err := proc.ReadAt(name_msg, int(name), int(nameLen))
+	if err != nil{
+		return -1
+	}
+
+	// C string end with '\0', but Go not. So delete '\0'
+	Length := len(name_msg)
+	var nameSlice []byte = name_msg[:Length - 1]
+	if name_msg[Length - 1] != 0 {
+		nameSlice = append(nameSlice, name_msg[Length - 1])
+	}
+
+	// Get token info
+	tokenInfo, err := ws.state.GetTokenInfo(string(nameSlice))
+	if err != nil {
+		return -2
+	}
+
+	bytes := tokenInfo.MaxSupply.Bytes()
+	if int(maxSupplyLen) > len(bytes) {
+		maxSupplyLen = int32(len(bytes))
+	}
+
+	err = proc.WriteAt(bytes, int(maxSupply), int(maxSupplyLen))
+	if err != nil{
+		return -1
+	}
+
+	bytes = tokenInfo.Supply.Bytes()
+	if int(supplyLen) > len(bytes) {
+		supplyLen = int32(len(bytes))
+	}
+
+	err = proc.WriteAt(bytes, int(supply), int(supplyLen))
+	if err != nil{
+		return -1
+	}
+
+	account := common.IndexToName(tokenInfo.Issuer)
+	bytes = []byte(account)
+	if int(issuerLen) > len(bytes) {
+		issuerLen = int32(len(bytes))
+	}
+	err = proc.WriteAt(bytes, int(issuer), int(issuerLen))
+	if err != nil{
+		return -1
+	}
+
+	return 0
+}
+
+// C API: issueToken(char *name, int32 nameLen, int32 maxSupply, char *issuer, int32 issuerLen)
+func (ws *WasmService) putTokenInfo(proc *exec.Process, name, nameLen int32, maxSupply, supply int64, issuer, issuerLen int32) int32 {
+	if maxSupply <= 0 {
+		return -1
+	}
+
+	name_msg := make([]byte, nameLen)
+	err := proc.ReadAt(name_msg, int(name), int(nameLen))
+	if err != nil{
+		return -1
+	}
+
+	// C string end with '\0', but Go not. So delete '\0'
+	Length := len(name_msg)
+	var nameSlice []byte = name_msg[:Length - 1]
+	if name_msg[Length - 1] != 0 {
+		nameSlice = append(nameSlice, name_msg[Length - 1])
+	}
+
+
+	issuer_msg := make([]byte, issuerLen)
+	err = proc.ReadAt(issuer_msg, int(issuer), int(issuerLen))
+	if err != nil{
+		return -1
+	}
+
+	// C string end with '\0', but Go not. So delete '\0'
+	Length = len(issuer_msg)
+	var issuerSlice []byte = issuer_msg[:Length - 1]
+	if issuer_msg[Length - 1] != 0 {
+		issuerSlice = append(issuerSlice, issuer_msg[Length - 1])
+	}
+
+	if ws.state.TokenExisted(string(nameSlice)) {
+		// Get token issuer
+		tokenInfo, err := ws.state.GetTokenInfo(string(nameSlice))
+		if err == nil {
+			return -4
+		}
+
+		// if declared permission actor had permission of token issuer
+		if tokenInfo.Issuer != ws.action.Permission.Actor {
+			if err := ws.state.CheckAccountPermission(tokenInfo.Issuer, ws.action.Permission.Actor, "active"); err != nil {
+				return -5
+			}
+		}
+	}
+
+	token, err := ws.state.SetTokenInfo(string(nameSlice), big.NewInt(maxSupply), big.NewInt(supply), common.NameToIndex(string(issuerSlice)))
+	if err != nil{
+		return -2
+	}
+
+	// generate trx receipt
+	data, err := token.Serialize()
+	if err != nil {
+		return -3
+	}
+	ws.context.Tc.Trx.Receipt.NewToken = data
+
+	return 0
+}
+
+type TokenBalance struct {
+
+}
+
+func (ws *WasmService)getAccountBalance(proc *exec.Process, account, accountlen int32) int32{
+
+	return 0
+}
+
+func (ws *WasmService)putAccountBalance(proc *exec.Process, account, accountlen int32) int32{
+
+	return 0
+}
+

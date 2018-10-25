@@ -6,6 +6,7 @@ import (
 	"time"
 	"errors"
 	"context"
+	"io"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -22,6 +23,7 @@ import (
 	clientcommon "github.com/ecoball/go-ecoball/client/common"
 	"net/url"
 	"path/filepath"
+	ipfsshell "github.com/ipfs/go-ipfs-api"
 )
 
 var (
@@ -48,27 +50,15 @@ type RenterConf struct {
 	MaxCollateral string
 	ChainId       string
 	//StorePath     string
-	ApiUrl		  string
-}
-
-type fileInfo struct {
-	name            string
-	size            uint64
-	transactionId   common.Hash
-	fileId          string
-	redundancy      uint8
-	fee             big.Int
+	DsnApiUrl	  string
+	IpfsApiUrl    string
 }
 
 type Renter struct {
-	//isSynced bool
-	//account  account.Account
-	files    map[string]fileInfo
-	conf     RenterConf
-	//ledger   ledger.Ledger
-	//db       store.Storage
-	client   *http.Client
-	ctx      context.Context
+	conf         RenterConf
+	client       *http.Client
+	ipfsClient   *ipfsshell.Shell
+	ctx          context.Context
 }
 
 func InitDefaultConf() RenterConf {
@@ -81,46 +71,30 @@ func InitDefaultConf() RenterConf {
 		MaxCollateral: "200",
 		ChainId: common.ToHex(chainId[:]),
 		//StorePath: "/tmp/storage/rent",
-		ApiUrl: "127.0.0.1:9000",
+		DsnApiUrl: "127.0.0.1:9000",
+		IpfsApiUrl: "127.0.0.1:5011",
 	}
 }
 
 func NewRenter(ctx context.Context, conf RenterConf) *Renter {
 	r := Renter{
-		//account: ac,
-		//ledger: l,
 		conf: conf,
-		files: make(map[string]fileInfo, 64),
 		client: &http.Client{},
+		ipfsClient: ipfsshell.NewShell(conf.IpfsApiUrl),
 		ctx: ctx,
 	}
-	//r.db, _ = store.NewBlockStore(conf.StorePath)
 	return &r
+}
+
+func NewRcWithDefaultConf(ctx context.Context) *Renter {
+	conf := InitDefaultConf()
+	return NewRenter(ctx, conf)
 }
 
 func (r *Renter) estimateFee(fname string, conf RenterConf) *big.Int {
 	//TODO
 	var fee big.Int
 	return &fee
-}
-
-func (r *Renter) getBlockSyncState(chainId common.Hash) bool {
-	timerChan := time.NewTicker(10 * time.Second).C
-	var syncState bool
-	for {
-		select {
-		case <-timerChan:
-			//TODO get current block synced state
-			if syncState {
-				//r.isSynced = true
-				return true
-			}
-		case <-r.ctx.Done():
-			return false
-		}
-
-	}
-	return false
 }
 
 func (r *Renter)createFileContract(fname string, cid string) ([]byte, error) {
@@ -307,7 +281,7 @@ func (r *Renter)CheckCollateral() bool {
 	//if sacc.Votes.Staked > 0 {
 	//	return true
 	//}
-	url := r.conf.ApiUrl + "/dsn/accountstake?" + "name=" + r.conf.AccountName + "&chainid=" + r.conf.ChainId
+	url := r.conf.DsnApiUrl + "/dsn/accountstake?" + "name=" + r.conf.AccountName + "&chainid=" + r.conf.ChainId
 	rsp, err := r.client.Get(url)
 	if err != nil {
 		return false
@@ -330,34 +304,6 @@ func (r *Renter)CheckCollateral() bool {
 		return false
 	}
 	return true
-}
-
-func (r *Renter) Files() []fileInfo {
-	var files []fileInfo
-	for _, v := range r.files {
-		files = append(files, v)
-	}
-	return files
-}
-
-func (r *Renter) TotalCost() big.Int {
-	fee := new(big.Int)
-	for _, v := range r.files {
-		fee = fee.Add(fee, &v.fee)
-	}
-	return *fee
-}
-
-func (r *Renter) persistFileInfo(fi fileInfo) error {
-	//TODO
-	//r.db.Put()
-	return nil
-}
-
-func (r *Renter) loadFileInfo() error {
-	//TODO
-	//r.db.Get()
-	return nil
 }
 
 func (r *Renter) RscCodingReq(fpath, cid string) (string, error) {
@@ -386,11 +332,11 @@ func (r *Renter) RscCodingReq(fpath, cid string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	result := resp["result"].(string)
+	result := resp["desc"].(string)
 	if result != "success" {
 		return "", errors.New(result)
 	}
-	newCid := resp["cid"].(string)
+	newCid := resp["result"].(string)
 	return newCid, nil
 }
 
@@ -400,4 +346,19 @@ func (r *Renter) RscDecodingReq(cid string) error{
 		return err
 	}
 	return rpc.EchoResult(resp)
+}
+
+func (r *Renter) AddFile(fpath string) (string, error) {
+	file, err := os.Open(fpath)
+	if err!= nil{
+		return "", err
+	}
+	defer file.Close()
+
+	return r.ipfsClient.Add(file)
+}
+
+func (r *Renter) CatFile(path string) (io.ReadCloser, error) {
+	newPath := path + "/file"
+	return r.ipfsClient.Cat(newPath)
 }
