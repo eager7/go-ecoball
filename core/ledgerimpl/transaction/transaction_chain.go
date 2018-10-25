@@ -1150,6 +1150,7 @@ func (c *ChainTx) NewViewChangeBlock(timeStamp int64, hashes []common.Hash) (*sh
 		Candidate:        shard.NodeInfo{},
 		COSign:           nil,
 	}
+	log.Warn(header)
 	return nil, nil
 }
 
