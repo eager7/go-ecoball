@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/ecoball/go-ecoball/client/common"
 	inner "github.com/ecoball/go-ecoball/common"
@@ -62,9 +63,14 @@ type WalletApi interface {
 	Dir       string
 	FileExten string
 }*/
+
+const INVALID_TIME int64 = -1
+
 var (
-	wallets = make(map[string]WalletApi) // 后台存储所有钱包
-	dir     string
+	wallets  = make(map[string]WalletApi) // 后台存储所有钱包
+	dir      string
+	timeout  int64 = INVALID_TIME
+	interval int64 = 0
 )
 
 func init() {
@@ -79,6 +85,7 @@ func init() {
 }
 
 func Create(name string, password []byte) error {
+	checkTimeout()
 	//whether the wallet file exists
 	filename := path.Join(dir, name)
 	if common.FileExisted(filename) {
@@ -122,6 +129,7 @@ func Create(name string, password []byte) error {
 打开钱包
 */
 func Open(name string, password []byte) error {
+	checkTimeout()
 	filename := path.Join(dir, name)
 	newWallet := &WalletImpl{
 		path:     filename,
@@ -157,6 +165,7 @@ func Open(name string, password []byte) error {
 }
 
 func ImportKey(name string, privateKey string) ([]byte, error) {
+	checkTimeout()
 	wallet, ok := wallets[name]
 
 	if !ok {
@@ -171,6 +180,7 @@ func ImportKey(name string, privateKey string) ([]byte, error) {
 }
 
 func RemoveKey(name string, password []byte, publickey string) error {
+	checkTimeout()
 	wallet, ok := wallets[name]
 
 	if !ok {
@@ -189,6 +199,7 @@ func RemoveKey(name string, password []byte, publickey string) error {
 }
 
 func CreateKey(name string) ([]byte, []byte, error) {
+	checkTimeout()
 	wallet, ok := wallets[name]
 
 	if !ok {
@@ -203,6 +214,7 @@ func CreateKey(name string) ([]byte, []byte, error) {
 }
 
 func Lock(name string) error {
+	checkTimeout()
 	wallet, ok := wallets[name]
 
 	if !ok {
@@ -222,6 +234,7 @@ func Lock(name string) error {
 }
 
 func Unlock(name string, password []byte) error {
+	checkTimeout()
 	wallet, ok := wallets[name]
 
 	if !ok {
@@ -245,6 +258,7 @@ func Unlock(name string, password []byte) error {
 }
 
 func ListKeys(name string, password []byte) (map[string]string, error) {
+	checkTimeout()
 	wallet, ok := wallets[name]
 
 	if !ok {
@@ -262,7 +276,8 @@ func ListKeys(name string, password []byte) (map[string]string, error) {
 	return wallet.ListKeys(), nil
 }
 
-func  GetPublicKeys() ([]string, error) {
+func GetPublicKeys() ([]string, error) {
+	checkTimeout()
 	if len(wallets) == 0 {
 		return nil, errors.New("You don't have any wallet or no wallet was opened")
 	}
@@ -288,7 +303,8 @@ func  GetPublicKeys() ([]string, error) {
 	return keys, nil
 }
 
-func List_wallets() ([]string, error) {
+func ListWallets() ([]string, error) {
+	checkTimeout()
 	if len(wallets) == 0 {
 		return nil, errors.New("You don't have any wallet!")
 	}
@@ -305,6 +321,7 @@ func List_wallets() ([]string, error) {
 }
 
 func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
+	checkTimeout()
 	Transaction := new(types.Transaction)
 	if err := Transaction.Deserialize(transaction); err != nil {
 		return nil, err
@@ -345,6 +362,7 @@ func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
 }
 
 func SignDigest(data []byte, publicKey string) ([]byte, error) {
+	checkTimeout()
 	bFound := false
 	result := []byte{}
 	for _, wallet := range wallets {
@@ -363,4 +381,25 @@ func SignDigest(data []byte, publicKey string) ([]byte, error) {
 	}
 
 	return result, nil
+}
+
+func SetTimeout(seconds int64) error {
+	if seconds < 0 {
+		return fmt.Errorf("Invalid arguments timeout seconds: %d", seconds)
+	}
+	interval = seconds
+	timeout = time.Now().Unix() + seconds
+	return nil
+}
+
+func checkTimeout() {
+	if INVALID_TIME != timeout && time.Now().Unix() > timeout {
+		for name, wallet := range wallets {
+			if wallet.CheckLocked() {
+				continue
+			}
+			Lock(name)
+			timeout = time.Now().Unix() + interval
+		}
+	}
 }
