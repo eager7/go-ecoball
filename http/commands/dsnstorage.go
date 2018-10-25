@@ -5,8 +5,6 @@ import (
 	"github.com/ecoball/go-ecoball/http/common"
 	"github.com/ecoball/go-ecoball/dsn"
 	"github.com/ecoball/go-ecoball/dsn/renter"
-	"fmt"
-	//"encoding/json"
 	"encoding/json"
 )
 
