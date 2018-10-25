@@ -503,7 +503,7 @@ func setTimeout(c *cli.Context) error {
 	}
 
 	values := url.Values{}
-	values.Set("interval", strconv.Itoa(interval))
+	values.Set("interval", strconv.FormatInt(interval, 10))
 	var result common.SimpleResult
 	err := rpc.WalletPost("/wallet/setTimeout", values.Encode(), &result)
 	if nil == err {
