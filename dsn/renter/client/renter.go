@@ -332,11 +332,11 @@ func (r *Renter) RscCodingReq(fpath, cid string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	result := resp["result"].(string)
+	result := resp["desc"].(string)
 	if result != "success" {
 		return "", errors.New(result)
 	}
-	newCid := resp["cid"].(string)
+	newCid := resp["result"].(string)
 	return newCid, nil
 }
 
@@ -359,5 +359,6 @@ func (r *Renter) AddFile(fpath string) (string, error) {
 }
 
 func (r *Renter) CatFile(path string) (io.ReadCloser, error) {
-	return r.ipfsClient.Cat(path)
+	newPath := path + "/file"
+	return r.ipfsClient.Cat(newPath)
 }

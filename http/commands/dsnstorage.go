@@ -23,7 +23,6 @@ func DsnAddFile(params []interface{})  *common.Response {
 	if err != nil {
 		return common.NewResponse(common.INVALID_PARAMS, "DsnAddFile faild")
 	}
-	fmt.Println(cid)
 	return common.NewResponse(common.SUCCESS, cid)
 }
 
