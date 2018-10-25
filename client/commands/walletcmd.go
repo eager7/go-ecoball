@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 	//"strings"
 
 	//"github.com/ecoball/go-ecoball/account"
@@ -181,13 +182,13 @@ var (
 				Name:   "setTimeout",
 				Usage:  "Set the lock interval of wallet",
 				Action: setTimeout,
-				Flags:  []cli.Flag{
+				Flags: []cli.Flag{
 					cli.IntFlag{
 						Name:  "interval, i",
 						Usage: "the lock interval of wallet.",
 					},
 				},
-			}
+			},
 		},
 	}
 )
@@ -488,7 +489,6 @@ func listWallets(c *cli.Context) error {
 	return err
 }
 
-
 func setTimeout(c *cli.Context) error {
 	//Check the number of flags
 	if c.NumFlags() == 0 {
@@ -501,9 +501,9 @@ func setTimeout(c *cli.Context) error {
 		fmt.Println("Invalid lock interval of wallet")
 		return errors.New("Invalid lock interval of wallet")
 	}
-	
+
 	values := url.Values{}
-	values.Set("interval", strconv.Itoa(interval) 
+	values.Set("interval", strconv.Itoa(interval))
 	var result common.SimpleResult
 	err := rpc.WalletPost("/wallet/setTimeout", values.Encode(), &result)
 	if nil == err {
