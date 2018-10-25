@@ -7,6 +7,7 @@ import (
    dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
 	"context"
 	"io/ioutil"
+	"errors"
 )
 var (
 	DsnStorageCommands = cli.Command{
@@ -43,19 +44,21 @@ func dsnAddFile(ctx *cli.Context) error {
 	cbtx := context.Background()
 	dclient := dsncli.NewRcWithDefaultConf(cbtx)
 	file := os.Args[3]
-	//dclient.CheckCollateral()
+	ok := dclient.CheckCollateral()
+	if !ok {
+		return errors.New("Checking collateral failed")
+	}
 	cid, err := dclient.AddFile(file)
 	if err != nil {
 		return err
 	}
-	fmt.Println(cid)
 	newCid, err := dclient.RscCodingReq(file, cid)
 	if err != nil {
 		return err
 	}
 	fmt.Println("added ", file, newCid)
-	//dclient.InvokeFileContract(file, newCid)
-	//dclient.PayForFile(file, newCid)
+	dclient.InvokeFileContract(file, newCid)
+	dclient.PayForFile(file, newCid)
 	return nil
 }
 

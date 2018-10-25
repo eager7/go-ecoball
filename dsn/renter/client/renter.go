@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"path/filepath"
 	ipfsshell "github.com/ipfs/go-ipfs-api"
+	"fmt"
 )
 
 var (
@@ -66,9 +67,9 @@ func InitDefaultConf() RenterConf {
 	return RenterConf{
 		AccountName: "dsn",
 		Redundancy: 2,
-		Allowance: "100",
-		Collateral: "100",
-		MaxCollateral: "200",
+		Allowance: "10",
+		Collateral: "10",
+		MaxCollateral: "20",
 		ChainId: common.ToHex(chainId[:]),
 		//StorePath: "/tmp/storage/rent",
 		DsnApiUrl: "127.0.0.1:9000",
@@ -296,6 +297,7 @@ func (r *Renter)CheckCollateral() bool {
 	if err := json.Unmarshal(out, &result); err != nil {
 		return false
 	}
+	fmt.Println("col:", result.Stake)
 	col, err := strconv.Atoi(r.conf.Collateral)
 	if err != nil {
 		return false
@@ -332,11 +334,11 @@ func (r *Renter) RscCodingReq(fpath, cid string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	result := resp["result"].(string)
+	result := resp["desc"].(string)
 	if result != "success" {
 		return "", errors.New(result)
 	}
-	newCid := resp["cid"].(string)
+	newCid := resp["result"].(string)
 	return newCid, nil
 }
 
@@ -359,5 +361,6 @@ func (r *Renter) AddFile(fpath string) (string, error) {
 }
 
 func (r *Renter) CatFile(path string) (io.ReadCloser, error) {
-	return r.ipfsClient.Cat(path)
+	newPath := path + "/file"
+	return r.ipfsClient.Cat(newPath)
 }

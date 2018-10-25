@@ -5,8 +5,6 @@ import (
 	"github.com/ecoball/go-ecoball/http/common"
 	"github.com/ecoball/go-ecoball/dsn"
 	"github.com/ecoball/go-ecoball/dsn/renter"
-	"fmt"
-	//"encoding/json"
 	"encoding/json"
 )
 
@@ -23,7 +21,6 @@ func DsnAddFile(params []interface{})  *common.Response {
 	if err != nil {
 		return common.NewResponse(common.INVALID_PARAMS, "DsnAddFile faild")
 	}
-	fmt.Println(cid)
 	return common.NewResponse(common.SUCCESS, cid)
 }
 
