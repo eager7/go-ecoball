@@ -1388,12 +1388,6 @@
 			"revisionTime": "2018-04-23T13:30:03Z"
 		},
 		{
-			"checksumSHA1": "a020l+lfY8PYfYRvUalBio/kuaM=",
-			"path": "golang.org/x/crypto/bn256",
-			"revision": "614d502a4dac94afa3a6ce146bd1736da82514c6",
-			"revisionTime": "2018-07-28T08:01:47Z"
-		},
-		{
 			"checksumSHA1": "1hwn8cgg4EVXhCpJIqmMbzqnUo0=",
 			"path": "golang.org/x/crypto/ed25519",
 			"revision": ""
