@@ -18,6 +18,7 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	inner "github.com/ecoball/go-ecoball/common"
@@ -43,6 +44,7 @@ func StartHttpServer() (err error) {
 	router.GET("/wallet/listWallets", listWallets)
 	router.GET("/wallet/getPublicKeys", getPublicKeys)
 	router.POST("/wallet/signTransaction", signTransaction)
+	router.POST("/wallet/setTimeout", setTimeout)
 
 	http.ListenAndServe(":"+config.WalletHttpPort, router)
 	return nil
@@ -57,7 +59,7 @@ func createWallet(c *gin.Context) {
 	password := c.PostForm("password")
 	if err := wallet.Create(name, []byte(password)); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return 
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }
@@ -143,7 +145,7 @@ func listKey(c *gin.Context) {
 }
 
 func listWallets(c *gin.Context) {
-	wallets, err := wallet.List_wallets()
+	wallets, err := wallet.ListWallets()
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -188,4 +190,20 @@ func signTransaction(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"result": inner.ToHex(signData)})
+}
+
+func setTimeout(c *gin.Context) {
+	strInterval := c.PostForm("interval")
+	interval, err := strconv.ParseInt(strInterval, 10, 64)
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	err = wallet.SetTimeout(interval)
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }

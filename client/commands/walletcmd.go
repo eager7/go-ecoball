@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 	//"strings"
 
 	//"github.com/ecoball/go-ecoball/account"
@@ -157,7 +158,7 @@ var (
 				},
 			},
 			{
-				Name:   "list_keys",
+				Name:   "listkeys",
 				Usage:  "list keys",
 				Action: listAccount,
 				Flags: []cli.Flag{
@@ -176,6 +177,17 @@ var (
 				Usage:  "list wallets",
 				Action: listWallets,
 				Flags:  []cli.Flag{},
+			},
+			{
+				Name:   "setTimeout",
+				Usage:  "Set the lock interval of wallet",
+				Action: setTimeout,
+				Flags: []cli.Flag{
+					cli.IntFlag{
+						Name:  "interval, i",
+						Usage: "the lock interval of wallet.",
+					},
+				},
 			},
 		},
 	}
@@ -471,6 +483,29 @@ func listAccount(c *cli.Context) error {
 func listWallets(c *cli.Context) error {
 	var result common.SimpleResult
 	err := rpc.WalletGet("/wallet/listWallets", &result)
+	if nil == err {
+		fmt.Println(result.Result)
+	}
+	return err
+}
+
+func setTimeout(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	interval := c.Int64("interval")
+	if 0 == interval {
+		fmt.Println("Invalid lock interval of wallet")
+		return errors.New("Invalid lock interval of wallet")
+	}
+
+	values := url.Values{}
+	values.Set("interval", strconv.FormatInt(interval, 10))
+	var result common.SimpleResult
+	err := rpc.WalletPost("/wallet/setTimeout", values.Encode(), &result)
 	if nil == err {
 		fmt.Println(result.Result)
 	}

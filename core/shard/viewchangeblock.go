@@ -163,12 +163,16 @@ type ViewChangeBlock struct {
 	ViewChangeBlockHeader
 }
 
-func (b *ViewChangeBlock) proto() (block *pb.ViewChangeBlock, err error) {
-	block.Header, err = b.ViewChangeBlockHeader.proto()
+func (b *ViewChangeBlock) proto() (*pb.ViewChangeBlock, error) {
+	pbHeader, err := b.ViewChangeBlockHeader.proto()
 	if err != nil {
 		return nil, err
 	}
-	return
+	pbBlock := pb.ViewChangeBlock{
+		Header: pbHeader,
+	}
+
+	return &pbBlock, nil
 }
 
 func (b *ViewChangeBlock) Serialize() ([]byte, error) {

@@ -55,6 +55,7 @@ type LastHeaders struct {
 	CmHeader    *shard.CMBlockHeader
 	MinorHeader *shard.MinorBlockHeader
 	FinalHeader *shard.FinalBlockHeader
+	VCHeader    *shard.ViewChangeBlockHeader
 }
 
 type BlockCache struct {
@@ -688,7 +689,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 
 //ShardBlock
 func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address) error {
-	if c.LastHeader.CmHeader != nil || c.LastHeader.MinorHeader != nil || c.LastHeader.FinalHeader != nil {
+	if c.LastHeader.CmHeader != nil || c.LastHeader.MinorHeader != nil || c.LastHeader.FinalHeader != nil || c.LastHeader.VCHeader != nil {
 		log.Debug("geneses shard block is existed:", c.CurrentHeader.Height)
 		return nil
 	}
@@ -713,15 +714,15 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		PrevHash:     prevHash,
 		LeaderPubKey: addr.Bytes(),
 		Nonce:        0,
-		Candidate: shard.NodeInfo{},
-		ShardsHash: common.Hash{},
+		Candidate:    shard.NodeInfo{},
+		ShardsHash:   common.Hash{},
 		COSign: &types.COSign{
 			Step1: 0,
 			Step2: 0,
 		},
 	}
 	log.Warn(string(headerCM.Candidate.PublicKey))
-	shards := []shard.Shard{/*{
+	shards := []shard.Shard{ /*{
 		Member:     []shard.NodeInfo{shard.NodeInfo{
 			PublicKey: simulate.GetNodePubKey(),
 			Address:   simulate.GetNodeInfo().Address,
@@ -781,7 +782,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		Height:             1,
 		Timestamp:          timeStamp,
 		TrxCount:           0,
-		PrevHash:           common.Hash{},
+		PrevHash:           prevHash,
 		ProposalPubKey:     nil,
 		EpochNo:            headerCM.Height,
 		CMBlockHash:        common.Hash{},
@@ -800,6 +801,28 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		return err
 	}
 	c.LastHeader.FinalHeader = &blockFinal.FinalBlockHeader
+
+	//Init ViewChange Block
+	headerVC := shard.ViewChangeBlockHeader{
+		ChainID:          chainID,
+		Version:          types.VersionHeader,
+		Height:           1,
+		Timestamp:        timeStamp,
+		PrevHash:         prevHash,
+		CMEpochNo:        headerCM.Height,
+		FinalBlockHeight: headerFinal.Height,
+		Round:            0,
+		Candidate:        shard.NodeInfo{},
+		COSign:           &types.COSign{},
+	}
+	blockVC, err := shard.NewVCBlock(headerVC)
+	if err != nil {
+		return err
+	}
+	if err := c.SaveShardBlock(blockVC); err != nil {
+		log.Error("Save geneses block error:", err)
+		return err
+	}
 	return nil
 }
 
@@ -912,6 +935,23 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		if err := c.HeaderStore.Put([]byte("lastFinalHeader"), heValue); err != nil {
 			return err
 		}
+	case shard.HeViewChange:
+		blockType = shard.HeViewChange.String()
+		Block, ok := block.GetObject().(shard.ViewChangeBlock)
+		if !ok {
+			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeViewChange.String()))
+		}
+		data, err := Block.ViewChangeBlockHeader.Serialize()
+		if err != nil {
+			return err
+		}
+		heValue = append(heValue, data...)
+		heKey = Block.ViewChangeBlockHeader.Hash().Bytes()
+
+		c.LastHeader.VCHeader = &Block.ViewChangeBlockHeader
+		if err := c.HeaderStore.Put([]byte("lastVCHeader"), heValue); err != nil {
+			return err
+		}
 	default:
 		return errors.New(log, fmt.Sprintf("unknown header type:%d", block.Type()))
 	}
@@ -968,6 +1008,10 @@ func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface,
 	case shard.HeCmBlock:
 		if c.LastHeader.CmHeader != nil {
 			return c.GetShardBlockByHash(typ, c.LastHeader.CmHeader.Hash())
+		}
+	case shard.HeViewChange :
+		if c.LastHeader.VCHeader != nil {
+			return c.GetShardBlockByHash(typ, c.LastHeader.VCHeader.Hash())
 		}
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown block type:%d", typ))
@@ -1120,7 +1164,20 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, hashes []common.Hash) (*shard.F
 	return c.newFinalBlock(timeStamp, minorHeaders)
 }
 
-func (c *ChainTx) NewViewChangeBlock(timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
+func (c *ChainTx) NewViewChangeBlock(timeStamp int64, hashes []common.Hash) (*shard.ViewChangeBlock, error) {
+	header := shard.ViewChangeBlockHeader{
+		ChainID:          common.Hash{},
+		Version:          0,
+		Height:           0,
+		Timestamp:        0,
+		PrevHash:         common.Hash{},
+		CMEpochNo:        0,
+		FinalBlockHeight: 0,
+		Round:            0,
+		Candidate:        shard.NodeInfo{},
+		COSign:           nil,
+	}
+	log.Warn(header)
 	return nil, nil
 }
 
