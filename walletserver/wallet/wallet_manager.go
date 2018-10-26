@@ -213,8 +213,10 @@ func CreateKey(name string) ([]byte, []byte, error) {
 	return wallet.CreateKey()
 }
 
-func Lock(name string) error {
-	checkTimeout()
+func Lock(name string, check bool) error {
+	if !check {
+		checkTimeout()
+	}
 	wallet, ok := wallets[name]
 
 	if !ok {
@@ -398,7 +400,7 @@ func checkTimeout() {
 			if wallet.CheckLocked() {
 				continue
 			}
-			Lock(name)
+			Lock(name, true)
 			timeout = time.Now().Unix() + interval
 		}
 	}

@@ -40,6 +40,8 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/dsn"
+	"github.com/ecoball/go-ecoball/sharding"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
 )
@@ -130,15 +132,25 @@ func runNode(c *cli.Context) error {
 
 	net.InitNetWork(ctx)
 
+	if !config.DisableSharding {
+		simulate.LoadConfig()
+	}
+
 	log.Info("Build Geneses Block")
 	var err error
-	ledger.L, err = ledgerimpl.NewLedger(config.RootDir+store.PathBlock, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), false)
+	ledger.L, err = ledgerimpl.NewLedger(config.RootDir+store.PathBlock, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), !config.DisableSharding)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	var sdactor *sharding.ShardingActor
+	if !config.DisableSharding {
+		log.Info("start sharding")
+		sdactor, _ = sharding.NewShardingActor(ledger.L)
+	}
+
 	//network depends on sharding
-	net.StartNetWork()
+	net.StartNetWork(sdactor)
 
 	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)

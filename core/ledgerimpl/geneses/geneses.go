@@ -99,6 +99,24 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 			return err
 		}
 	*/
+	tester := common.NameToIndex("tester")
+	addr = common.AddressFromPubKey(config.Worker1.PublicKey)
+	fmt.Println("preset insert a tester account:", addr.HexString())
+	if tester, err := s.AddAccount(tester, addr, timeStamp); err != nil {
+		return err
+	} else {
+		tester.SetContract(types.VmNative, []byte("system contract"), nil, nil)
+	}
+
+	if err := s.AccountAddBalance(tester, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
+		return err
+	}
+
+	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
+	if err := s.SetResourceLimits(tester, tester, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
+		fmt.Println(err)
+		return err
+	}
 	return nil
 }
 
