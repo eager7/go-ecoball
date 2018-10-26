@@ -119,6 +119,7 @@ func (c *Cell) createShardingTopo() {
 		}
 	}
 
+	log.Debug("send sharding topo to channel ", topo.ShardId, " len ", len(topo.ShardingInfo))
 	c.Topoc <- topo
 }
 
