@@ -11,8 +11,6 @@ type ApplyContext struct {
 	InlineAction	[]types.Action
 	St 				*state.State
 	RecurseDepth	int32
-	Accounts		[]string
-	AccountDelta 	map[string][]byte
 }
 
 func NewApplyContext(s *state.State, tc *TranscationContext, action	*types.Action, recurseDepth int32) (*ApplyContext, error){
@@ -22,7 +20,6 @@ func NewApplyContext(s *state.State, tc *TranscationContext, action	*types.Actio
 		InlineAction:	nil,
 		St:				s,
 		RecurseDepth:	recurseDepth,
-		AccountDelta:	make(map[string][]byte, 1),
 	}
 
 	return context, nil
