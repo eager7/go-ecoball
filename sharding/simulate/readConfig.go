@@ -29,11 +29,12 @@ func readConfigFile() *config {
 	}
 	fmt.Println(dir)
 
-	file := "config.json"
+	file := "sharding.json"
 
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		log.Info("read config file error")
+		panic("sharding configure not exist")
 		return nil
 	}
 
