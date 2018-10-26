@@ -920,9 +920,9 @@ func TokenContract(ledger ledger.Ledger) {
 
 	issueParameters2 = append(issueParameters2, string(argbyte[:]))
 
-	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, "issue", issueParameters2, 0, time.Now().UnixNano())
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, "issue", issueParameters2, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
-	invoke.SetSignature(&config.Worker1)
+	invoke.SetSignature(&config.Worker2)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
 

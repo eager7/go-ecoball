@@ -235,11 +235,13 @@ func (ws *WasmService) RegisterApi() {
 
 	functions.Register("ABA_token_Existed",ws.tokenExisted)
 
-	functions.Register("ABA_token_info_put",ws.putTokenInfo)
-	functions.Register("ABA_token_info_get",ws.getTokenInfo)
-	functions.Register("ABA_token_balance_put",ws.putAccountBalance)
-	functions.Register("ABA_token_balance_get",ws.getAccountBalance)
+	functions.Register("ABA_put_token_info",ws.putTokenInfo)
+	functions.Register("ABA_get_token_info",ws.getTokenInfo)
 
-	functions.Register("ABA_token_status_get",ws.getTokenStatus)
-	functions.Register("ABA_token_status_put",ws.putTokenStatus)
+	functions.Register("ABA_add_token_balance",ws.addAccountBalance)
+	functions.Register("ABA_sub_token_balance",ws.subAccountBalance)
+	functions.Register("ABA_get_token_balance",ws.getAccountBalance)
+
+	functions.Register("ABA_get_token_status",ws.getTokenStatus)
+	functions.Register("ABA_put_token_status",ws.putTokenStatus)
 }

@@ -27,11 +27,11 @@ type InterfaceState interface {
 	AccountGetBalance(index common.AccountName, token string) (*big.Int, error)
 	AccountSubBalance(index common.AccountName, token string, value *big.Int) error
 	AccountAddBalance(index common.AccountName, token string, value *big.Int) error
-	CreateToken(symbol string, maxSupply *big.Int, issuer common.AccountName) (*TokenInfo, error)
+	CreateToken(symbol string, maxSupply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error)
 	IssueToken(to common.AccountName, amount *big.Int, symbol string) error
 	GetTokenInfo(symbol string) (*TokenInfo, error)
 	TokenExisted(name string) bool
-	SetTokenInfo(symbol string, maxSupply, supply *big.Int, issuer common.AccountName) (*TokenInfo, error)
+	SetTokenInfo(symbol string, maxSupply, supply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error)
 	CopyState() (*State, error)
 	AddAccount(index common.AccountName, addr common.Address, timeStamp int64) (*Account, error)
 	SetContract(index common.AccountName, t types.VmType, des, code, abi[]byte) error

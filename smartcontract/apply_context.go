@@ -54,6 +54,9 @@ func DispatchAction(tc *context.TranscationContext, action *types.Action, recurs
 		return nil, err
 	}
 
+	for _, accName := range apply.Accounts {
+		tc.AccountDelta[accName] = apply.AccountDelta[accName]
+	}
 	return ret,nil
 }
 

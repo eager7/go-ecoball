@@ -4,7 +4,7 @@
       "name": "create",
       "base": "",
       "fields": [
-         {"name":"creator", "type":"string"},
+         {"name":"issuer", "type":"string"},
          {"name":"max_supply", "type":"int64"},
          {"name":"token_id", "type":"string"}
       ]
