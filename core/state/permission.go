@@ -6,6 +6,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
+	errIn "errors"
 )
 
 var Owner = "owner"
@@ -122,7 +123,7 @@ func (p *Permission) checkAccountPermission(state *State, guest string, permissi
 		return nil
 	}
 
-	return errors.New(log, fmt.Sprintf("%s@%s  weight is not enough, accounts weight:%d", guest, permission, weightAcc))
+	return errIn.New(fmt.Sprintf("%s@%s  weight is not enough, accounts weight:%d", guest, permission, weightAcc))
 }
 
 /**

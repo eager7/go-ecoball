@@ -1166,19 +1166,22 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, hashes []common.Hash) (*shard.F
 
 func (c *ChainTx) NewViewChangeBlock(timeStamp int64, hashes []common.Hash) (*shard.ViewChangeBlock, error) {
 	header := shard.ViewChangeBlockHeader{
-		ChainID:          common.Hash{},
-		Version:          0,
-		Height:           0,
-		Timestamp:        0,
-		PrevHash:         common.Hash{},
-		CMEpochNo:        0,
-		FinalBlockHeight: 0,
+		ChainID:          c.LastHeader.VCHeader.ChainID,
+		Version:          types.VersionHeader,
+		Height:           c.LastHeader.VCHeader.Height+1,
+		Timestamp:        timeStamp,
+		PrevHash:         c.LastHeader.VCHeader.Hash(),
+		CMEpochNo:        c.LastHeader.CmHeader.Height,
+		FinalBlockHeight: c.LastHeader.FinalHeader.Height,
 		Round:            0,
 		Candidate:        shard.NodeInfo{},
-		COSign:           nil,
+		COSign:           &types.COSign{},
 	}
-	log.Warn(header)
-	return nil, nil
+	block, err := shard.NewVCBlock(header)
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
 }
 
 func (c *ChainTx) updateShardId() (uint32, error) {
