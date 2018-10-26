@@ -1164,7 +1164,7 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, hashes []common.Hash) (*shard.F
 	return c.newFinalBlock(timeStamp, minorHeaders)
 }
 
-func (c *ChainTx) NewViewChangeBlock(timeStamp int64, hashes []common.Hash) (*shard.ViewChangeBlock, error) {
+func (c *ChainTx) NewViewChangeBlock(timeStamp int64, round uint16) (*shard.ViewChangeBlock, error) {
 	header := shard.ViewChangeBlockHeader{
 		ChainID:          c.LastHeader.VCHeader.ChainID,
 		Version:          types.VersionHeader,
@@ -1173,7 +1173,7 @@ func (c *ChainTx) NewViewChangeBlock(timeStamp int64, hashes []common.Hash) (*sh
 		PrevHash:         c.LastHeader.VCHeader.Hash(),
 		CMEpochNo:        c.LastHeader.CmHeader.Height,
 		FinalBlockHeight: c.LastHeader.FinalHeader.Height,
-		Round:            0,
+		Round:            round,
 		Candidate:        shard.NodeInfo{},
 		COSign:           &types.COSign{},
 	}

@@ -401,6 +401,14 @@ func (l *LedgerImpl) NewFinalBlock(chainID common.Hash, timeStamp int64, hashes 
 	return chain.NewFinalBlock(timeStamp, hashes)
 }
 
+func (l *LedgerImpl) NewViewChangeBlock(chainID common.Hash, timeStamp int64, round uint16) (*shard.ViewChangeBlock, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.NewViewChangeBlock(timeStamp, round)
+}
+
 func (l *LedgerImpl) GetShardId(chainID common.Hash) (uint32, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
