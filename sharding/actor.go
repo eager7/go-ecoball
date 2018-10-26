@@ -28,6 +28,7 @@ func NewShardingActor(l ledger.Ledger) (*ShardingActor, error) {
 
 		return shardingActor, nil
 	} else {
+		panic("start sharding actor error")
 		return nil, err
 	}
 }

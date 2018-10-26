@@ -31,7 +31,7 @@ func main() {
 	ctx := context.Background()
 	net.InitNetWork(ctx)
 
-	net.StartNetWork()
+	net.StartNetWork(nil)
 
 	remotePeer := "/ip4/192.168.8.221/tcp/4013"
 
