@@ -19,9 +19,9 @@ type PriPoly struct{
 }
 
 type PubPoly struct{
-	index int
+	index   int
 	viewNum int
-	coeffs []*bn256.G2
+	coEffs  []*bn256.G2
 }
 
 type SijShareDKG struct{
@@ -47,13 +47,13 @@ func SetPriShare(epochNum int, index, threshold int)*PriPoly{
 
 func SetPubPolybyPrivate(private *PriPoly)*PubPoly{
 	var public PubPoly
-	public.coeffs = make([]*bn256.G2, 0)
+	public.coEffs = make([]*bn256.G2, 0)
 
 	length := len(private.coeffs)
 
 	for i := 0; i < length; i++{
 		g1 := new(bn256.G2).ScalarBaseMult(private.coeffs[i])
-		public.coeffs = append(public.coeffs,g1)
+		public.coEffs = append(public.coEffs,g1)
 	}
 	public.index = private.index
 
@@ -68,7 +68,8 @@ func computeSij(priPoly *PriPoly, pubKeyShare *PubPoly, indexJ int, epochNum int
 	bigNum2 = new(big.Int)
 
 	Sij.SetString(priPoly.coeffs[0].String(),10)
-	bigNum1.SetInt64(int64(indexJ))
+	// in calculation, should use index+1 instead of index
+	bigNum1.SetInt64(int64(indexJ+1))
 	for i := 1; i < len(priPoly.coeffs); i++ {
 		bigNum2.SetInt64(int64(i))
 		bigNum2 = bigNum2.Exp(bigNum1, bigNum2, p)
@@ -81,19 +82,19 @@ func computeSij(priPoly *PriPoly, pubKeyShare *PubPoly, indexJ int, epochNum int
 }
 
 func SijVerify(sij *SijShareDKG,pubShare *PubPoly, indexJ int, epochNow int)*Complain{
-
-	bignum1 := new(big.Int).SetInt64(int64(indexJ))
+	// in calculation, should use index+1 instead of index
+	bignum1 := new(big.Int).SetInt64(int64(indexJ+1))
 	bignum2 := new(big.Int)
 	bignum3 := new(big.Int)
 
-	g1 := pubShare.coeffs[0]
+	g1 := pubShare.coEffs[0]
 	g2 := new(bn256.G2).ScalarBaseMult(&sij.Sij)
 
-	for i := 1; i < len(pubShare.coeffs); i++{
+	for i := 1; i < len(pubShare.coEffs); i++{
 		bignum2.SetInt64(int64(i))
 		bignum3.Exp(bignum1,bignum2,p)
 
-		g := new(bn256.G2).ScalarMult(pubShare.coeffs[i], bignum3)
+		g := new(bn256.G2).ScalarMult(pubShare.coEffs[i], bignum3)
 		g1 = g1.Add(g,g1)
 	}
 
