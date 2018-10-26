@@ -257,6 +257,7 @@ func runNode(c *cli.Context) error {
 	})
 	//capture single
 	go rpc.StartHttpServer()
+	go dsn.DsnHttpServ()
 	go wait(shutdown)
 
 	//Wait for each sub goroutine to exit
