@@ -641,6 +641,12 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		if err != nil {
 			return nil, 0, 0, err
 		}
+
+		// update state change in trx receipt
+		for i, acc := range trxContext.Accounts {
+			tx.Receipt.Accounts[i] = trxContext.AccountDelta[acc]
+		}
+
 		js, _ := json.Marshal(trxContext.Trace)
 		fmt.Println("json format: ", string(js))
 	default:
