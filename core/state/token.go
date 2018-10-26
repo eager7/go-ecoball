@@ -74,6 +74,7 @@ func (stat *TokenInfo) Deserialize(data []byte) (error) {
 	stat.Symbol = status.Symbol
 	stat.MaxSupply = maxSupply
 	stat.Supply = supply
+	stat.Creator = common.AccountName(status.Creator)
 	stat.Issuer = common.AccountName(status.Issuer)
 
 	return nil

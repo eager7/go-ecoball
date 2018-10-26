@@ -526,7 +526,6 @@ func (ws *WasmService)addAccountBalance(proc *exec.Process, account, accountLen,
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
 	if err != nil{
-		log.Error("529")
 		return -1
 	}
 
@@ -541,7 +540,6 @@ func (ws *WasmService)addAccountBalance(proc *exec.Process, account, accountLen,
 	account_msg := make([]byte, accountLen)
 	err = proc.ReadAt(account_msg, int(account), int(accountLen))
 	if err != nil{
-		log.Error("544")
 		return -1
 	}
 
@@ -554,18 +552,15 @@ func (ws *WasmService)addAccountBalance(proc *exec.Process, account, accountLen,
 	// Get token creator
 	tokenInfo, err := ws.state.GetTokenInfo(string(nameSlice))
 	if err != nil {
-		log.Error("557")
 		return -4
 	}
 
 	// this api must invoke by token's creator contract
 	if ws.action.ContractAccount != tokenInfo.Creator {
-		log.Error("563 ")
 		return -5
 	}
 
 	if err := ws.state.AccountAddBalance(common.NameToIndex(string(accountSlice)), string(nameSlice), big.NewInt(amount)); err != nil {
-		log.Error("568")
 		return -3
 	}
 
@@ -573,8 +568,25 @@ func (ws *WasmService)addAccountBalance(proc *exec.Process, account, accountLen,
 	var acc state.Account
 	var deltaByte []byte
 	// if one contract action invoke this api some times to modify the same account's balance
-	delta, ok := ws.context.AccountDelta[string(nameSlice)]
-	if !ok {	// first time
+	delta, ok := ws.context.Tc.AccountDelta[string(accountSlice)]
+	if ok {	// some time
+		err = acc.Deserialize(delta)
+		if err != nil {
+			return -4
+		}
+		// if accountDelta had existed, check if token existed in accountDelta
+		balance, ok := acc.Tokens[string(nameSlice)]
+		if ok {
+			balance.Balance = new(big.Int).Add(balance.Balance, big.NewInt(amount))
+			acc.Tokens[string(nameSlice)] = balance
+		} else {
+			newBalance := state.Token{
+				Name:		string(nameSlice),
+				Balance:	big.NewInt(amount),
+			}
+			acc.Tokens[string(nameSlice)] = newBalance
+		}
+	} else {	// first times
 		acc = state.Account{
 			Tokens:			make(map[string]state.Token),
 			Index:			common.NameToIndex(string(accountSlice)),
@@ -585,35 +597,24 @@ func (ws *WasmService)addAccountBalance(proc *exec.Process, account, accountLen,
 			Balance:	big.NewInt(amount),
 		}
 		acc.Tokens[string(nameSlice)] = balance
-	} else {	// some times
-		err = acc.Deserialize(delta)
-		if err != nil {
-			log.Error("591")
-			return -4
-		}
-
-		balance, _ := acc.Tokens[string(nameSlice)]
-		balance.Balance = new(big.Int).Add(balance.Balance, big.NewInt(amount))
-		acc.Tokens[string(nameSlice)] = balance
 	}
 
 	deltaByte, err = acc.Serialize()
 	if err != nil {
-		log.Error("602")
 		return -4
 	}
 
-	ws.context.AccountDelta[string(accountSlice)] = deltaByte
+	ws.context.Tc.AccountDelta[string(accountSlice)] = deltaByte
 
 	var flag int = 0
-	for _, accName := range ws.context.Accounts {
+	for _, accName := range ws.context.Tc.Accounts {
 		if accName == string(accountSlice) {
 			flag = 1
 		}
 	}
 
 	if flag == 0 {
-		ws.context.Accounts = append(ws.context.Accounts, string(accountSlice))
+		ws.context.Tc.Accounts = append(ws.context.Tc.Accounts, string(accountSlice))
 	}
 
 	return 0
@@ -666,8 +667,26 @@ func (ws *WasmService)subAccountBalance(proc *exec.Process, account, accountLen,
 	var deltaByte []byte
 	num := new(big.Int).Sub(big.NewInt(0), big.NewInt(amount))
 	// if one contract action invoke this api some times to modify the same account's balance
-	delta, ok := ws.context.AccountDelta[string(nameSlice)]
-	if !ok {	// first time
+	delta, ok := ws.context.Tc.AccountDelta[string(accountSlice)]
+	if ok {	// some time
+		err = acc.Deserialize(delta)
+		if err != nil {
+			return -4
+		}
+
+		// if accountDelta had existed, check if token existed in accountDelta
+		balance, ok := acc.Tokens[string(nameSlice)]
+		if ok {
+			balance.Balance = new(big.Int).Add(balance.Balance, num)
+			acc.Tokens[string(nameSlice)] = balance
+		} else {	// if may happen in ICO
+			newBalance := state.Token{
+				Name:		string(nameSlice),
+				Balance:	big.NewInt(amount),
+			}
+			acc.Tokens[string(nameSlice)] = newBalance
+		}
+	} else {	// first times
 		acc = state.Account{
 			Tokens:			make(map[string]state.Token),
 			Index:			common.NameToIndex(string(accountSlice)),
@@ -678,15 +697,6 @@ func (ws *WasmService)subAccountBalance(proc *exec.Process, account, accountLen,
 			Balance:	num,
 		}
 		acc.Tokens[string(nameSlice)] = balance
-	} else {	// some times
-		err = acc.Deserialize(delta)
-		if err != nil {
-			return -4
-		}
-
-		balance, _ := acc.Tokens[string(nameSlice)]
-		balance.Balance = new(big.Int).Add(balance.Balance, num)
-		acc.Tokens[string(nameSlice)] = balance
 	}
 
 	deltaByte, err = acc.Serialize()
@@ -694,16 +704,16 @@ func (ws *WasmService)subAccountBalance(proc *exec.Process, account, accountLen,
 		return -4
 	}
 
-	ws.context.AccountDelta[string(accountSlice)] = deltaByte
+	ws.context.Tc.AccountDelta[string(accountSlice)] = deltaByte
 	var flag int = 0;
-	for _, accName := range ws.context.Accounts {
+	for _, accName := range ws.context.Tc.Accounts {
 		if accName == string(accountSlice) {
 			flag = 1
 		}
 	}
 
 	if flag == 0 {
-		ws.context.Accounts = append(ws.context.Accounts, string(accountSlice))
+		ws.context.Tc.Accounts = append(ws.context.Tc.Accounts, string(accountSlice))
 	}
 
 	return 0
