@@ -217,6 +217,7 @@ message TokenInfo {
     string      Symbol      = 1;
     bytes       MaxSupply   = 2;
     bytes       Supply      = 3;
+    uint64      Creator     = 5;
     uint64      Issuer      = 4;
 }
 

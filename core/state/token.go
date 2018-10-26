@@ -14,6 +14,7 @@ type TokenInfo struct {
 	Symbol 		 string					`json:"symbol"`
 	MaxSupply 	 *big.Int				`json:"max_supply"`
 	Supply		 *big.Int 				`json:"supply"`
+	Creator 	 common.AccountName     `json:"issuer"`
 	Issuer       common.AccountName     `json:"issuer"`
 }
 
@@ -22,11 +23,12 @@ type Token struct {
 	Balance *big.Int `json:"balance, omitempty"`
 }
 
-func NewToken(symbol string, maxSupply, supply *big.Int, issuer common.AccountName) (*TokenInfo, error){
+func NewToken(symbol string, maxSupply, supply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error){
 	stat := &TokenInfo{
 		Symbol: 	symbol,
 		MaxSupply:	maxSupply,
 		Supply:		supply,
+		Creator:	creator,
 		Issuer:		issuer,
 	}
 
@@ -40,6 +42,7 @@ func (stat *TokenInfo) Serialize() ([]byte, error) {
 		Symbol:		stat.Symbol,
 		MaxSupply:	maxSupply,
 		Supply:		supply,
+		Creator:	uint64(stat.Creator),
 		Issuer:		uint64(stat.Issuer),
 	}
 	b, err := p.Marshal()
@@ -175,7 +178,7 @@ func (s *State) GetTokenInfo(symbol string) (*TokenInfo, error) {
 		return nil, err
 	}
 	if data == nil {
-		return nil, errors.New(log, fmt.Sprintf("no this account named:%s", symbol))
+		return nil, errors.New(log, fmt.Sprintf("no this token named:%s", symbol))
 	}
 
 	token = &TokenInfo{}
@@ -208,7 +211,7 @@ func (s *State) CommitToken(token *TokenInfo) error {
 	return nil
 }
 
-func (s *State) CreateToken(symbol string, maxSupply *big.Int, issuer common.AccountName) (*TokenInfo, error) {
+func (s *State) CreateToken(symbol string, maxSupply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error) {
 	if err := common.TokenNameCheck(symbol); err != nil {
 		return nil, err
 	}
@@ -217,7 +220,7 @@ func (s *State) CreateToken(symbol string, maxSupply *big.Int, issuer common.Acc
 		return nil, errors.New(log, fmt.Sprintf("%s token had created", symbol))
 	}
 
-	token, err := NewToken(symbol, maxSupply, big.NewInt(0), issuer)
+	token, err := NewToken(symbol, maxSupply, big.NewInt(0), creator, issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -230,12 +233,12 @@ func (s *State) CreateToken(symbol string, maxSupply *big.Int, issuer common.Acc
 }
 
 // for token contract api
-func (s *State) SetTokenInfo(symbol string, maxSupply, supply *big.Int, issuer common.AccountName) (*TokenInfo, error) {
+func (s *State) SetTokenInfo(symbol string, maxSupply, supply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error) {
 	if err := common.TokenNameCheck(symbol); err != nil {
 		return nil, err
 	}
 
-	token, err := NewToken(symbol, maxSupply, supply, issuer)
+	token, err := NewToken(symbol, maxSupply, supply, creator, issuer)
 	if err != nil {
 		return nil, err
 	}

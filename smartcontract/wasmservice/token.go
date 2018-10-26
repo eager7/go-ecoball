@@ -41,7 +41,7 @@ func (ws *WasmService) createToken(proc *exec.Process, name, nameLen, maxSupply,
 		issuerSlice = append(issuerSlice, issuer_msg[Length - 1])
 	}
 
-	token, err := ws.state.CreateToken(string(nameSlice), big.NewInt(int64(maxSupply)), common.NameToIndex(string(issuerSlice)))
+	token, err := ws.state.CreateToken(string(nameSlice), big.NewInt(int64(maxSupply)), ws.action.ContractAccount, common.NameToIndex(string(issuerSlice)))
 	if err != nil{
 		return -2
 	}
@@ -205,11 +205,6 @@ func (ws *WasmService)transfer(proc *exec.Process, from, fromLen, to, toLen, amo
 	return 0
 }
 
-func (ws *WasmService)subBalance(proc *exec.Process, from, fromLen, amount, name, nameLen, perm, permLen int32) int32{
-
-	return 0
-}
-
 func (ws *WasmService)tokenExisted(proc *exec.Process, name, nameLen int32) int32 {
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
@@ -234,7 +229,7 @@ func (ws *WasmService)tokenExisted(proc *exec.Process, name, nameLen int32) int3
 type TokenStatus struct {
 	Symbol 		 [12]byte				`json:"symbol"`
 	MaxSupply 	 int64					`json:"max_supply"`
-	Supply		 int64 				`json:"supply"`
+	Supply		 int64 					`json:"supply"`
 	Issuer       [12]byte				`json:"issuer"`
 }
 
@@ -244,7 +239,7 @@ type SliceMock struct {
 	cap  int
 }
 
-func (ws *WasmService)getTokenInfo(proc *exec.Process, name, nameLen, token, tokenLen int32) int32{
+func (ws *WasmService)getTokenStatus(proc *exec.Process, name, nameLen, token, tokenLen int32) int32{
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
 	if err != nil{
@@ -320,18 +315,21 @@ func (ws *WasmService)putTokenStatus(proc *exec.Process, name, nameLen, token, t
 	}
 
 	if ws.state.TokenExisted(string(nameSlice)) {
-		// Get token issuer
+		// Get token creator
 		tokenInfo, err := ws.state.GetTokenInfo(string(nameSlice))
 		if err == nil {
-			return -4
-		}
-
-		// if declared permission actor had permission of token issuer
-		if tokenInfo.Issuer != ws.action.Permission.Actor {
-			if err := ws.state.CheckAccountPermission(tokenInfo.Issuer, ws.action.Permission.Actor, "active"); err != nil {
+			// only token creator can modify token info
+			if tokenInfo.Creator != ws.action.ContractAccount {
 				return -5
 			}
 		}
+
+		// if declared permission actor had permission of token issuer
+		//if tokenInfo.Issuer != ws.action.Permission.Actor {
+		//	if err := ws.state.CheckAccountPermission(tokenInfo.Issuer, ws.action.Permission.Actor, "active"); err != nil {
+		//		return -5
+		//	}
+		//}
 	}
 
 	data := make([]byte, tokenLen)
@@ -340,14 +338,13 @@ func (ws *WasmService)putTokenStatus(proc *exec.Process, name, nameLen, token, t
 		return -1
 	}
 
-
 	status := *(**TokenStatus)(unsafe.Pointer(&data))
 	issuerByte := make([]byte, len(status.Issuer))
 	for i := 0; i < len(status.Issuer); i++ {
 		issuerByte[i] =  status.Issuer[i]
 	}
 
-	tokenInfo, err := ws.state.SetTokenInfo(string(nameSlice), big.NewInt(status.MaxSupply), big.NewInt(status.Supply), common.NameToIndex(string(issuerByte)))
+	tokenInfo, err := ws.state.SetTokenInfo(string(nameSlice), big.NewInt(status.MaxSupply), big.NewInt(status.Supply), ws.action.ContractAccount, common.NameToIndex(string(issuerByte)))
 	if err != nil{
 		return -2
 	}
@@ -362,7 +359,7 @@ func (ws *WasmService)putTokenStatus(proc *exec.Process, name, nameLen, token, t
 	return 0
 }
 
-func (ws *WasmService) getTokenStatus(proc *exec.Process, name, nameLen int32, maxSupply, maxSupplyLen, supply, supplyLen, issuer, issuerLen int32) int32 {
+func (ws *WasmService) getTokenInfo(proc *exec.Process, name, nameLen int32, maxSupply, maxSupplyLen, supply, supplyLen, issuer, issuerLen int32) int32 {
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
 	if err != nil{
@@ -382,32 +379,41 @@ func (ws *WasmService) getTokenStatus(proc *exec.Process, name, nameLen int32, m
 		return -2
 	}
 
-	bytes := tokenInfo.MaxSupply.Bytes()
-	if int(maxSupplyLen) > len(bytes) {
-		maxSupplyLen = int32(len(bytes))
+	num := tokenInfo.MaxSupply.Int64()
+	Len := unsafe.Sizeof(num)
+	bytes := &SliceMock{
+		addr: uintptr(unsafe.Pointer(&num)),
+		cap:  int(Len),
+		len:  int(Len),
 	}
-
-	err = proc.WriteAt(bytes, int(maxSupply), int(maxSupplyLen))
+	// convert TokenStatus to []byte
+	data := *(*[]byte)(unsafe.Pointer(bytes))
+	err = proc.WriteAt(data, int(maxSupply), int(maxSupplyLen))
 	if err != nil{
 		return -1
 	}
 
-	bytes = tokenInfo.Supply.Bytes()
-	if int(supplyLen) > len(bytes) {
-		supplyLen = int32(len(bytes))
-	}
 
-	err = proc.WriteAt(bytes, int(supply), int(supplyLen))
+	num = tokenInfo.Supply.Int64()
+	Len = unsafe.Sizeof(num)
+	bytes = &SliceMock{
+		addr: uintptr(unsafe.Pointer(&num)),
+		cap:  int(Len),
+		len:  int(Len),
+	}
+	// convert TokenStatus to []byte
+	data = *(*[]byte)(unsafe.Pointer(bytes))
+	err = proc.WriteAt(data, int(supply), int(supplyLen))
 	if err != nil{
 		return -1
 	}
 
 	account := common.IndexToName(tokenInfo.Issuer)
-	bytes = []byte(account)
-	if int(issuerLen) > len(bytes) {
-		issuerLen = int32(len(bytes))
+	data = []byte(account)
+	if int(issuerLen) > len(data) {
+		issuerLen = int32(len(data))
 	}
-	err = proc.WriteAt(bytes, int(issuer), int(issuerLen))
+	err = proc.WriteAt(data, int(issuer), int(issuerLen))
 	if err != nil{
 		return -1
 	}
@@ -449,21 +455,24 @@ func (ws *WasmService) putTokenInfo(proc *exec.Process, name, nameLen int32, max
 	}
 
 	if ws.state.TokenExisted(string(nameSlice)) {
-		// Get token issuer
+		// Get token creator
 		tokenInfo, err := ws.state.GetTokenInfo(string(nameSlice))
 		if err == nil {
-			return -4
-		}
-
-		// if declared permission actor had permission of token issuer
-		if tokenInfo.Issuer != ws.action.Permission.Actor {
-			if err := ws.state.CheckAccountPermission(tokenInfo.Issuer, ws.action.Permission.Actor, "active"); err != nil {
+			// only token creator can modify token info
+			if tokenInfo.Creator != ws.action.ContractAccount {
 				return -5
 			}
 		}
+
+		//// if declared permission actor had permission of token issuer
+		//if tokenInfo.Creator != ws.action.ContractAccount {
+		//	if err := ws.state.CheckAccountPermission(tokenInfo.Creator, ws.action.Permission.Actor, "active"); err != nil {
+		//		return -5
+		//	}
+		//}
 	}
 
-	token, err := ws.state.SetTokenInfo(string(nameSlice), big.NewInt(maxSupply), big.NewInt(supply), common.NameToIndex(string(issuerSlice)))
+	token, err := ws.state.SetTokenInfo(string(nameSlice), big.NewInt(maxSupply), big.NewInt(supply), ws.action.ContractAccount, common.NameToIndex(string(issuerSlice)))
 	if err != nil{
 		return -2
 	}
@@ -478,17 +487,224 @@ func (ws *WasmService) putTokenInfo(proc *exec.Process, name, nameLen int32, max
 	return 0
 }
 
-type TokenBalance struct {
+func (ws *WasmService)getAccountBalance(proc *exec.Process, account, accountLen, name, nameLen int32) int64{
+	name_msg := make([]byte, nameLen)
+	err := proc.ReadAt(name_msg, int(name), int(nameLen))
+	if err != nil{
+		return -1
+	}
 
+	// C string end with '\0', but Go not. So delete '\0'
+	Length := len(name_msg)
+	var nameSlice []byte = name_msg[:Length - 1]
+	if name_msg[Length - 1] != 0 {
+		nameSlice = append(nameSlice, name_msg[Length - 1])
+	}
+
+
+	account_msg := make([]byte, accountLen)
+	err = proc.ReadAt(account_msg, int(account), int(accountLen))
+	if err != nil{
+		return -1
+	}
+
+	Length = len(account_msg)
+	var accountSlice []byte = account_msg[:Length - 1]
+	if account_msg[Length - 1] != 0 {
+		accountSlice = append(accountSlice, account_msg[Length - 1])
+	}
+
+	bal, err := ws.state.AccountGetBalance(common.NameToIndex(string(accountSlice)), string(nameSlice))
+	if err != nil {
+		return -2
+	}
+
+	return bal.Int64()
 }
 
-func (ws *WasmService)getAccountBalance(proc *exec.Process, account, accountlen int32) int32{
+func (ws *WasmService)addAccountBalance(proc *exec.Process, account, accountLen, name, nameLen int32, amount int64) int32{
+	name_msg := make([]byte, nameLen)
+	err := proc.ReadAt(name_msg, int(name), int(nameLen))
+	if err != nil{
+		log.Error("529")
+		return -1
+	}
+
+	// C string end with '\0', but Go not. So delete '\0'
+	Length := len(name_msg)
+	var nameSlice []byte = name_msg[:Length - 1]
+	if name_msg[Length - 1] != 0 {
+		nameSlice = append(nameSlice, name_msg[Length - 1])
+	}
+
+
+	account_msg := make([]byte, accountLen)
+	err = proc.ReadAt(account_msg, int(account), int(accountLen))
+	if err != nil{
+		log.Error("544")
+		return -1
+	}
+
+	Length = len(account_msg)
+	var accountSlice []byte = account_msg[:Length - 1]
+	if account_msg[Length - 1] != 0 {
+		accountSlice = append(accountSlice, account_msg[Length - 1])
+	}
+
+	// Get token creator
+	tokenInfo, err := ws.state.GetTokenInfo(string(nameSlice))
+	if err != nil {
+		log.Error("557")
+		return -4
+	}
+
+	// this api must invoke by token's creator contract
+	if ws.action.ContractAccount != tokenInfo.Creator {
+		log.Error("563 ")
+		return -5
+	}
+
+	if err := ws.state.AccountAddBalance(common.NameToIndex(string(accountSlice)), string(nameSlice), big.NewInt(amount)); err != nil {
+		log.Error("568")
+		return -3
+	}
+
+	// generate trx receipt
+	var acc state.Account
+	var deltaByte []byte
+	// if one contract action invoke this api some times to modify the same account's balance
+	delta, ok := ws.context.AccountDelta[string(nameSlice)]
+	if !ok {	// first time
+		acc = state.Account{
+			Tokens:			make(map[string]state.Token),
+			Index:			common.NameToIndex(string(accountSlice)),
+		}
+
+		balance := state.Token{
+			Name:		string(nameSlice),
+			Balance:	big.NewInt(amount),
+		}
+		acc.Tokens[string(nameSlice)] = balance
+	} else {	// some times
+		err = acc.Deserialize(delta)
+		if err != nil {
+			log.Error("591")
+			return -4
+		}
+
+		balance, _ := acc.Tokens[string(nameSlice)]
+		balance.Balance = new(big.Int).Add(balance.Balance, big.NewInt(amount))
+		acc.Tokens[string(nameSlice)] = balance
+	}
+
+	deltaByte, err = acc.Serialize()
+	if err != nil {
+		log.Error("602")
+		return -4
+	}
+
+	ws.context.AccountDelta[string(accountSlice)] = deltaByte
+
+	var flag int = 0
+	for _, accName := range ws.context.Accounts {
+		if accName == string(accountSlice) {
+			flag = 1
+		}
+	}
+
+	if flag == 0 {
+		ws.context.Accounts = append(ws.context.Accounts, string(accountSlice))
+	}
 
 	return 0
 }
 
-func (ws *WasmService)putAccountBalance(proc *exec.Process, account, accountlen int32) int32{
+func (ws *WasmService)subAccountBalance(proc *exec.Process, account, accountLen, name, nameLen int32, amount int64) int32{
+	name_msg := make([]byte, nameLen)
+	err := proc.ReadAt(name_msg, int(name), int(nameLen))
+	if err != nil{
+		return -1
+	}
+
+	// C string end with '\0', but Go not. So delete '\0'
+	Length := len(name_msg)
+	var nameSlice []byte = name_msg[:Length - 1]
+	if name_msg[Length - 1] != 0 {
+		nameSlice = append(nameSlice, name_msg[Length - 1])
+	}
+
+
+	account_msg := make([]byte, accountLen)
+	err = proc.ReadAt(account_msg, int(account), int(accountLen))
+	if err != nil{
+		return -1
+	}
+
+	Length = len(account_msg)
+	var accountSlice []byte = account_msg[:Length - 1]
+	if account_msg[Length - 1] != 0 {
+		accountSlice = append(accountSlice, account_msg[Length - 1])
+	}
+
+	// Get token creator
+	tokenInfo, err := ws.state.GetTokenInfo(string(nameSlice))
+	if err != nil {
+		return -4
+	}
+
+	// this api must invoke by token's creator contract
+	if ws.action.ContractAccount != tokenInfo.Creator {
+		return -5
+	}
+
+	if err := ws.state.AccountSubBalance(common.NameToIndex(string(accountSlice)), string(nameSlice), big.NewInt(int64(amount))); err != nil {
+		return -2
+	}
+
+	// generate trx receipt
+	var acc state.Account
+	var deltaByte []byte
+	num := new(big.Int).Sub(big.NewInt(0), big.NewInt(amount))
+	// if one contract action invoke this api some times to modify the same account's balance
+	delta, ok := ws.context.AccountDelta[string(nameSlice)]
+	if !ok {	// first time
+		acc = state.Account{
+			Tokens:			make(map[string]state.Token),
+			Index:			common.NameToIndex(string(accountSlice)),
+		}
+
+		balance := state.Token{
+			Name:		string(nameSlice),
+			Balance:	num,
+		}
+		acc.Tokens[string(nameSlice)] = balance
+	} else {	// some times
+		err = acc.Deserialize(delta)
+		if err != nil {
+			return -4
+		}
+
+		balance, _ := acc.Tokens[string(nameSlice)]
+		balance.Balance = new(big.Int).Add(balance.Balance, num)
+		acc.Tokens[string(nameSlice)] = balance
+	}
+
+	deltaByte, err = acc.Serialize()
+	if err != nil {
+		return -4
+	}
+
+	ws.context.AccountDelta[string(accountSlice)] = deltaByte
+	var flag int = 0;
+	for _, accName := range ws.context.Accounts {
+		if accName == string(accountSlice) {
+			flag = 1
+		}
+	}
+
+	if flag == 0 {
+		ws.context.Accounts = append(ws.context.Accounts, string(accountSlice))
+	}
 
 	return 0
 }
-

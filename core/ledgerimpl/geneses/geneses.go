@@ -72,7 +72,7 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
 	}
 
-	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), root)
+	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), root, root)
 
 	//if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(90000)); err != nil {
 	//	return err
@@ -114,7 +114,7 @@ func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) e
 		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
 	}
 
-	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), root)
+	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), root, root)
 	s.IssueToken(root, new(big.Int).SetUint64(90000), state.AbaToken)
 
 	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
