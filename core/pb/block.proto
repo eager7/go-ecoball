@@ -447,3 +447,9 @@ message QualPBNLDKG {
      int64                   epochNum  = 2;
      repeated    int32       QUAL      = 3;
 }
+
+message QualPBLDKG {
+     int64                   index     = 1;
+     int64                   epochNum  = 2;
+     repeated    int32       QUAL      = 3;
+}
