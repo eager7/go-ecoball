@@ -441,3 +441,9 @@ message SijPBShareDKG {
     bytes                   Sij       = 3;
     repeated curvePointPB   PubPolyPB = 4;
 }
+
+message QualPBNLDKG {
+     int64                   index     = 1;
+     int64                   epochNum  = 2;
+     repeated    int32       QUAL      = 3;
+}
