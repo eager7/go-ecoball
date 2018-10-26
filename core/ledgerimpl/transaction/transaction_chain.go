@@ -837,13 +837,6 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		log.Warn("the block:", block.GetHeight(), "is existed")
 		return nil
 	}
-	log.Notice("Save Block", block.Type(), "Height", block.GetHeight())
-	if block.GetHeight() != 1 {
-		connect.Notify(info.InfoBlock, block)
-		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
-			log.Warn(err)
-		}
-	}
 
 	var heKey, heValue []byte
 	var blockType string
@@ -971,6 +964,14 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	c.StateDB.FinalDB.CommitToDB()
 	c.BlockMap[block.Hash()] = BlockCache{Height: block.GetHeight(), Type: shard.HeaderType(block.Type())}
 	log.Notice("save "+blockType+" block", block.JsonString())
+
+	log.Notice("Save Block", block.Type(), "Height", block.GetHeight())
+	if block.GetHeight() != 1 {
+		connect.Notify(info.InfoBlock, block)
+		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
+			log.Warn(err)
+		}
+	}
 
 	return nil
 }
