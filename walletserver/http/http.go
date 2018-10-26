@@ -86,7 +86,7 @@ func openWallet(c *gin.Context) {
 
 func lockWallet(c *gin.Context) {
 	name := c.PostForm("name")
-	if err := wallet.Lock(name); nil != err {
+	if err := wallet.Lock(name, false); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
