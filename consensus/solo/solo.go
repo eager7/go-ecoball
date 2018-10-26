@@ -98,6 +98,10 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 			if err != nil {
 				log.Fatal(err)
 			}
+			if err := solo.ledger.VerifyTxBlock(chainID, block); err != nil {
+				log.Warn(err)
+				continue
+			}
 			log.Debug(block.JsonString(false))
 			if err := block.SetSignature(&solo.account); err != nil {
 				log.Fatal(err)
