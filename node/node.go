@@ -40,6 +40,7 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/dsn"
+	"github.com/ecoball/go-ecoball/sharding"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
 )
@@ -137,8 +138,13 @@ func runNode(c *cli.Context) error {
 		log.Fatal(err)
 	}
 
+	var sdactor *sharding.ShardingActor
+	if !config.DisableSharding {
+		sdactor, _ = sharding.NewShardingActor(ledger.L)
+	}
+
 	//network depends on sharding
-	net.StartNetWork()
+	net.StartNetWork(sdactor)
 
 	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)

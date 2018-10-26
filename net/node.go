@@ -522,17 +522,14 @@ func InitNetWork(ctx context.Context) {
 	}
 }
 
-func StartNetWork() {
+func StartNetWork(sdactor *sharding.ShardingActor) {
 	netActor := NewNetActor(netNode)
 	actorId, _ := netActor.Start()
 	netNode.SetActorPid(actorId)
 
-	if !config.DisableSharding {
-		inst := sharding.GetShardingInst()
-		if inst != nil {
-			ch := inst.SubscribeShardingTopo()
-			netNode.SetShardingSubCh(ch)
-		}
+	if sdactor != nil {
+		ch := sdactor.SubscribeShardingTopo()
+		netNode.SetShardingSubCh(ch)
 	}
 
 	if err := netNode.Start(); err != nil {
