@@ -560,7 +560,7 @@ func (ws *WasmService)addAccountBalance(proc *exec.Process, account, accountLen,
 
 	// this api must invoke by token's creator contract
 	if ws.action.ContractAccount != tokenInfo.Creator {
-		log.Fatal("563 ", common.IndexToName(tokenInfo.Creator))
+		log.Error("563 ")
 		return -5
 	}
 
