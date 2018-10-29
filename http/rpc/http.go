@@ -17,10 +17,13 @@
 package rpc
 
 import (
+	"fmt"
 	"strconv"
 	"net/http"
 	"strings"
 	"time"
+	//"os"
+	"io/ioutil"
 
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/gin-gonic/gin"
@@ -51,6 +54,7 @@ func StartHttpServer() (err error) {
 	router.POST("/newDeployContract", newDeployContract)
 	//for invokContract
 	router.POST("/newContract", newContract)
+	//router.POST("/recieveFile", recieveFile)
 
 	http.ListenAndServe(":20681", router)
 	return nil
@@ -94,12 +98,6 @@ func get_required_keys(c *gin.Context) {
 	accountName_str := c.PostForm("name")
 
 	key_datas := strings.Split(required_keys, ",")
-	/*Transaction := new(types.Transaction)
-	if err := Transaction.Deserialize(innerCommon.FromHex(transaction_data)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}*/
-	//signTransaction, err := wallet.SignTransaction(inner.FromHex(transaction_data), datas)
 	hash := new(innerCommon.Hash)
 	chainids := hash.FormHexString(chainId)
 	data, err := ledger.L.FindPermission(chainids, innerCommon.NameToIndex(accountName_str), permission)
@@ -149,7 +147,9 @@ func invokeContract(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
 		return 
 	}
-	
+
+	fmt.Println(invoke.JsonString())
+
 	//send to txpool
 	err := event.Send(event.ActorNil, event.ActorTxPool, invoke)
 	if nil != err {
@@ -168,6 +168,8 @@ func setContract(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
 		return 
 	}
+
+	fmt.Println(deploy.JsonString())
 	
 	//send to txpool
 	err := event.Send(event.ActorNil, event.ActorTxPool, deploy)
@@ -294,50 +296,6 @@ func newInvokeContract(c *gin.Context){
 	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": innerCommon.ToHex(data)})
 }
 
-func newDeployContract(c *gin.Context){
-	chainId_str := c.PostForm("chainId")
-	contractName := c.PostForm("name")
-	description := c.PostForm("description")
-	data_str := c.PostForm("contract_data")
-	abi_str := c.PostForm("abi_data")
-
-	if "" == chainId_str || "" == contractName || "" == description || 
-		"" == data_str || "" == abi_str{
-		c.JSON(http.StatusBadRequest, gin.H{"result": "invalid params"})
-		return
-	}
-
-	hash := new(innerCommon.Hash)
-	chainId := hash.FormHexString(chainId_str)
-	time := time.Now().UnixNano()
-	data := []byte(data_str)
-
-	var contractAbi abi.ABI
-	if err := json.Unmarshal([]byte(abi_str), &contractAbi); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
-	abibyte, err := abi.MarshalBinary(contractAbi)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
-	transaction, err := types.NewDeployContract(innerCommon.NameToIndex(contractName), innerCommon.NameToIndex(contractName), chainId, "owner", types.VmWasm, description, data, abibyte, 0, time)
-	if nil != err {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
-	trx_data, err := transaction.Serialize()
-	if nil != err {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-	}
-
-	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": innerCommon.ToHex(trx_data)})
-}
-
 func newContract(c *gin.Context) {
 	chainId_str := c.PostForm("chainId")
 	contractName := c.PostForm("name")
@@ -346,9 +304,9 @@ func newContract(c *gin.Context) {
 
 	if "" == chainId_str || "" == contractName || "" == contractMethod || 
 	"" == contractParam {
-	c.JSON(http.StatusBadRequest, gin.H{"result": "invalid params"})
-	return
-}
+		c.JSON(http.StatusBadRequest, gin.H{"result": "invalid params"})
+		return
+	}
 
 	hash := new(innerCommon.Hash)
 	chainId := hash.FormHexString(chainId_str)
@@ -405,6 +363,73 @@ func newContract(c *gin.Context) {
 	//time
 	time := time.Now().UnixNano()
 	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), chainId, "owner", contractMethod, parameters, 0, time)
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
+	trx_data, err := transaction.Serialize()
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": innerCommon.ToHex(trx_data)})
+}
+
+func newDeployContract(c *gin.Context) {
+	chainId_str := c.PostForm("chainId")
+	contractName := c.PostForm("name")
+	description := c.PostForm("description")
+
+	if "" == chainId_str || "" == contractName || "" == description{
+		c.JSON(http.StatusBadRequest, gin.H{"result": "invalid params"})
+		return
+	}
+
+	hash := new(innerCommon.Hash)
+	chainId := hash.FormHexString(chainId_str)
+
+	c.Request.ParseMultipartForm(32 << 20)
+	file, _, err := c.Request.FormFile("wasmfile")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+	defer file.Close()
+	
+	data, errcode := ioutil.ReadAll(file)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": errcode.Error()})
+		return
+	}
+
+	abifile, _, err := c.Request.FormFile("abifile")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+	defer abifile.Close()
+	
+	abidata, errcode := ioutil.ReadAll(abifile)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": errcode.Error()})
+		return
+	}
+	
+	var contractAbi abi.ABI
+	if err := json.Unmarshal(abidata, &contractAbi); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
+	abibyte, err := abi.MarshalBinary(contractAbi)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
+	time := time.Now().UnixNano()
+	transaction, err := types.NewDeployContract(innerCommon.NameToIndex(contractName), innerCommon.NameToIndex(contractName), chainId, "owner", types.VmWasm, description, data, abibyte, 0, time)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
 		return

@@ -19,7 +19,6 @@ package commands
 import (
 	"errors"
 	"fmt"
-	//"os"
 	"strconv"
 	"time"
 	"net/url"
@@ -27,10 +26,8 @@ import (
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	innercommon "github.com/ecoball/go-ecoball/common"
-	//"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/urfave/cli"
-	//outerCommon "github.com/ecoball/go-ecoball/http/common"
 )
 
 var (
@@ -99,35 +96,9 @@ func getInfo() (*types.Block, error) {
 		}
 	}
 	return nil, err
-
-	/*resp, err := rpc.NodeCall("getInfo", []interface{}{})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return nil, err
-	}
-
-	if int64(outerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
-		if nil != resp["result"] {
-			switch resp["result"].(type) {
-			case string:
-				data := resp["result"].(string)
-				blockINfo := new(types.Block)
-				blockINfo.Deserialize(innercommon.FromHex(data))
-				//blockINfo.Show(true)
-				return blockINfo, nil
-			default:
-			}
-		}
-	}
-	return nil, nil*/
 }
 
 func get_required_keys(chainId innercommon.Hash, required_keys, permission string, trx *types.Transaction) (string, error) {
-	/*data, err := trx.Serialize()
-	if err != nil {
-		return "", err
-	}*/
-
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("permission", permission)
@@ -139,28 +110,6 @@ func get_required_keys(chainId innercommon.Hash, required_keys, permission strin
 		return result.Result, nil
 	}
 	return "", err
-	/*data, err := trx.Serialize()
-	if err != nil {
-		return "", err
-	}
-
-	resp, errcode := rpc.NodeCall("get_required_keys", []interface{}{chainId.HexString(), required_keys, permission, innercommon.ToHex(data)})
-	if errcode != nil {
-		fmt.Fprintln(os.Stderr, errcode)
-		return "", errcode
-	}
-
-	if int64(outerCommon.SUCCESS) == int64(resp["errorCode"].(float64)){
-		if nil != resp["result"] {
-			switch resp["result"].(type) {
-			case string:
-				data := resp["result"].(string)
-				return data, nil
-			default:
-			}
-		}
-	}
-	return "", err*/
 }
 
 func newAccount(c *cli.Context) error {
@@ -261,22 +210,14 @@ func newAccount(c *cli.Context) error {
 		return err
 	}
 
-	errcode := sign_transaction(info.ChainID, required_keys, invoke)
+	data, errcode := sign_transaction(info.ChainID, required_keys, invoke)
 	if nil != errcode {
 		fmt.Println(errcode)
 	}
 
-	//rpc call
-	//resp, err := rpc.Call("createAccount", []interface{}{creator, name, owner, active})
-	data, err := invoke.Serialize()
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
 	var result clientCommon.SimpleResult
 	values := url.Values{}
-	values.Set("transaction", innercommon.ToHex(data))
+	values.Set("transaction", data)
 	err = rpc.NodePost("/invokeContract", values.Encode(), &result)
 	fmt.Println(result.Result)
 

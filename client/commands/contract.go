@@ -217,33 +217,19 @@ func setContract(c *cli.Context) error {
 		return err
 	}
 
-	errcode := sign_transaction(info.ChainID, required_keys, transaction)
+	datas, errcode := sign_transaction(info.ChainID, required_keys, transaction)
 	if nil != errcode {
 		fmt.Println(errcode)
-	}
-
-	datas, err := transaction.Serialize()
-	if err != nil {
-		fmt.Println(err)
-		return err
 	}
 
 	//rpc call
 	var result clientCommon.SimpleResult
 	values := url.Values{}
-	values.Set("transaction", common.ToHex(datas))
-	err = rpc.NodePost("/setContract", values.Encode(), &result)
+	values.Set("transaction", datas)
+	err = rpc.NodePost("/invokeContract", values.Encode(), &result)
 	fmt.Println(result.Result)
 
 	return err
-	/*resp, err := rpc.NodeCall("setContract", []interface{}{common.ToHex(datas)})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
-	}
-
-	//result
-	return rpc.EchoResult(resp)*/
 }
 
 func GetContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error){
@@ -260,28 +246,6 @@ func GetContract(chainID common.Hash, index common.AccountName) (*types.DeployIn
 		return deploy, nil
 	}
 	return nil, err
-
-	/*resp, errcode := rpc.NodeCall("GetContract", []interface{}{chainID.HexString(), index.String()})
-	if errcode != nil {
-		fmt.Fprintln(os.Stderr, errcode)
-		return nil, errcode
-	}
-
-	deploy := new(types.DeployInfo)
-	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)){
-		if nil != resp["result"] {
-			switch resp["result"].(type) {
-			case string:
-				data := resp["result"].(string)
-				if err := deploy.Deserialize(common.FromHex(data)); err != nil{
-					return nil, err
-				}
-				return deploy, nil
-			default:
-			}
-		}
-	}
-	return deploy, nil*/
 }
 
 func StoreGet(chainID common.Hash, index common.AccountName, key []byte) (value []byte, err error){
@@ -295,23 +259,6 @@ func StoreGet(chainID common.Hash, index common.AccountName, key []byte) (value 
 		return common.FromHex(result.Result), nil
 	}
 	return nil, err
-	/*resp, errcode := rpc.NodeCall("StoreGet", []interface{}{chainID.HexString(), index.String(), common.ToHex(key)})
-	if errcode != nil {
-		fmt.Fprintln(os.Stderr, errcode)
-		return nil, errcode
-	}
-
-	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)){
-		if nil != resp["result"] {
-			switch resp["result"].(type) {
-			case string:
-				data := resp["result"].(string)
-				return common.FromHex(data), nil
-			default:
-			}
-		}
-	}
-	return nil, nil*/
 }
 
 func GetContractTable(contractName string, accountName string, abiDef abi.ABI, tableName string) ([]byte, error){
@@ -457,31 +404,16 @@ func invokeContract(c *cli.Context) error {
 		return err
 	}
 
-	errcode := sign_transaction(info.ChainID, required_keys, transaction)
+	data, errcode := sign_transaction(info.ChainID, required_keys, transaction)
 	if nil != errcode {
 		fmt.Println(errcode)
-	}
-	
-	data, err := transaction.Serialize()
-	if err != nil {
-		fmt.Println(err)
-		return err
 	}
 
 	var result clientCommon.SimpleResult
 	values := url.Values{}
-	values.Set("transaction", common.ToHex(data))
+	values.Set("transaction", data)
 	err = rpc.NodePost("/invokeContract", values.Encode(), &result)
 	fmt.Println(result.Result)
 
 	return err
-	//rpc call
-	/*resp, err := rpc.NodeCall("invokeContract", []interface{}{common.ToHex(data)})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
-	}
-
-	//result
-	return rpc.EchoResult(resp)*/
 }

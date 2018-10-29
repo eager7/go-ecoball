@@ -261,7 +261,7 @@ func GetPublicKeys() (string, error) {
 	return "", err
 }
 
-func sign_transaction(chainId outerCommon.Hash, required_keys string, trx *types.Transaction) error {
+/*func sign_transaction(chainId outerCommon.Hash, required_keys string, trx *types.Transaction) error {
 	data, err := trx.Serialize()
 	if err != nil {
 		return err
@@ -275,6 +275,23 @@ func sign_transaction(chainId outerCommon.Hash, required_keys string, trx *types
 		trx.Deserialize(outerCommon.FromHex(result.Result))
 	}
 	return err
+}*/
+
+func sign_transaction(chainId outerCommon.Hash, required_keys string, trx *types.Transaction) (string, error) {
+	data, err := trx.Serialize()
+	if err != nil {
+		return "", err
+	}
+	var result common.SimpleResult
+	values := url.Values{}
+	values.Set("keys", required_keys)
+	values.Set("transaction", outerCommon.ToHex(data))
+	err = rpc.WalletPost("/wallet/signTransaction", values.Encode(), &result)
+	if nil == err {
+		//trx.Deserialize(outerCommon.FromHex(result.Result))
+		return result.Result, nil
+	}
+	return "", err
 }
 
 func createKey(c *cli.Context) error {

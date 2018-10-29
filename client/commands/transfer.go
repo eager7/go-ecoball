@@ -131,31 +131,16 @@ func transferAction(c *cli.Context) error {
 		return err
 	}
 
-	errcode := sign_transaction(info.ChainID, required_keys, transaction)
+	data, errcode := sign_transaction(info.ChainID, required_keys, transaction)
 	if nil != errcode {
 		fmt.Println(errcode)
 	}
 
-	data, err := transaction.Serialize()
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
 	var result clientCommon.SimpleResult
 	values := url.Values{}
-	values.Set("transfer", inner.ToHex(data))
+	values.Set("transfer", data)
 	err = rpc.NodePost("/transfer", values.Encode(), &result)
 	fmt.Println(result.Result)
 
 	return err
-
-	/*resp, err := rpc.NodeCall("transfer", []interface{}{inner.ToHex(data)})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
-	}
-
-	//result
-	return rpc.EchoResult(resp)*/
 }
