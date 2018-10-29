@@ -1215,7 +1215,33 @@ func (c *ChainTx) GetShardId() (uint32, error) {
 	}
 }
 
-func (c *ChainTx) CheckBlock() error {
+func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
+	hash := block.Hash()
+	if _, ok := c.BlockMap[hash]; ok {
+		return errors.New(log, fmt.Sprintf("the block is existed:%s-%d", hash.HexString(), block.GetHeight()))
+	}
+	switch block.Type() {
+	case uint32(shard.HeMinorBlock):
+		//TODO:State Hash Check
+		minorBlock, ok := block.GetObject().(shard.MinorBlock)
+		if !ok {
+			return errors.New(log, "the block type is not minor block")
+		}
+		newBlock, err := c.NewMinorBlock(minorBlock.Transactions, minorBlock.Timestamp)
+		if err != nil {
+			return err
+		}
+		if !newBlock.StateDeltaHash.Equals(&minorBlock.StateDeltaHash) {
+			return errors.New(log, fmt.Sprintf("the state hash is not equal:%s, %s", minorBlock.StateDeltaHash.HexString(), newBlock.StateDeltaHash.HexString()))
+		}
+	case uint32(shard.HeCmBlock):
+	case uint32(shard.HeFinalBlock):
+		//TODO:State Hash Check
+	case uint32(shard.HeViewChange):
+	default:
+		return errors.New(log, "unknown header type")
+	}
+
 	return nil
 }
 
