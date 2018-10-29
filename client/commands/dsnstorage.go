@@ -7,7 +7,11 @@ import (
    dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
 	"context"
 	"io/ioutil"
-	"errors"
+	"net/url"
+	"github.com/ecoball/go-ecoball/common"
+	clientCommon "github.com/ecoball/go-ecoball/client/common"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/client/rpc"
 )
 var (
 	DsnStorageCommands = cli.Command{
@@ -44,10 +48,10 @@ func dsnAddFile(ctx *cli.Context) error {
 	cbtx := context.Background()
 	dclient := dsncli.NewRcWithDefaultConf(cbtx)
 	file := os.Args[3]
-	ok := dclient.CheckCollateral()
+	/*ok := dclient.CheckCollateral()
 	if !ok {
 		return errors.New("Checking collateral failed")
-	}
+	}*/
 	cid, err := dclient.AddFile(file)
 	if err != nil {
 		return err
@@ -57,8 +61,71 @@ func dsnAddFile(ctx *cli.Context) error {
 		return err
 	}
 	fmt.Println("added ", file, newCid)
-	dclient.InvokeFileContract(file, newCid)
-	dclient.PayForFile(file, newCid)
+	transaction, err := dclient.InvokeFileContract(file, newCid)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+
+	chainId, err := GetChainId()
+	if err != nil {
+		return err
+	}
+
+	pkKeys, err := GetPublicKeys()
+	if err != nil {
+		return err
+	}
+
+	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", transaction)
+	if err != nil {
+		return err
+	}
+
+	err = SignTransaction(chainId, reqKeys, transaction)
+	if err != nil {
+		return err
+	}
+
+	data, err := transaction.Serialize()
+	if err != nil {
+		return err
+	}
+
+	var retContract clientCommon.SimpleResult
+	ctcv := url.Values{}
+	ctcv.Set("transaction", common.ToHex(data))
+	err = rpc.NodePost("/invokeContract", ctcv.Encode(), &retContract)
+	fmt.Println("fileContract: ", retContract.Result)
+
+	///////////////////////////////////////////////////
+	payTrn, err := dclient.PayForFile(file, newCid)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+
+	reqKeys, err = GetRequiredKeys(chainId, pkKeys, "owner", payTrn)
+	if err != nil {
+		return err
+	}
+
+	err = SignTransaction(chainId, reqKeys, payTrn)
+	if err != nil {
+		return err
+	}
+
+	data, err = payTrn.Serialize()
+	if err != nil {
+		return err
+	}
+
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("transfer", common.ToHex(data))
+	err = rpc.NodePost("/transfer", values.Encode(), &result)
+	fmt.Println("pay: ", result.Result)
+
 	return nil
 }
 
@@ -79,4 +146,44 @@ func dsnCatFile (ctx *cli.Context)  {
 		return
 	}
 	fmt.Println(string(d))
+}
+
+func GetChainId() (common.Hash, error) {
+	info, err := getInfo()
+	return info.ChainID, err
+}
+
+func GetRequiredKeys(chainId common.Hash, required_keys, permission string, trx *types.Transaction) (string, error) {
+	/*data, err := trx.Serialize()
+	if err != nil {
+		return "", err
+	}*/
+
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("permission", permission)
+	values.Set("chainId", chainId.HexString())
+	values.Set("keys", required_keys)
+	values.Set("name", trx.From.String())
+	err := rpc.NodePost("/get_required_keys", values.Encode(), &result)
+	if nil == err {
+		return result.Result, nil
+	}
+	return "", err
+}
+
+func SignTransaction(chainId common.Hash, required_keys string, trx *types.Transaction) error {
+	data, err := trx.Serialize()
+	if err != nil {
+		return err
+	}
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("keys", required_keys)
+	values.Set("transaction", common.ToHex(data))
+	err = rpc.WalletPost("/wallet/signTransaction", values.Encode(), &result)
+	if nil == err {
+		trx.Deserialize(common.FromHex(result.Result))
+	}
+	return err
 }

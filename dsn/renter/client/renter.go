@@ -20,11 +20,12 @@ import (
 	"github.com/ecoball/go-ecoball/dsn/renter"
 	"strconv"
 	"github.com/ecoball/go-ecoball/client/rpc"
-	clientcommon "github.com/ecoball/go-ecoball/client/common"
-	"net/url"
+	//clientcommon "github.com/ecoball/go-ecoball/client/common"
+	//"net/url"
 	"path/filepath"
 	ipfsshell "github.com/ipfs/go-ipfs-api"
 	"fmt"
+	//ecoclient "github.com/ecoball/go-ecoball/client/commands"
 )
 
 var (
@@ -125,10 +126,10 @@ func (r *Renter)createFileContract(fname string, cid string) ([]byte, error) {
 	return fcBytes, nil
 }
 
-func (r *Renter) PayForFile(fname, cid string) error {
+func (r *Renter) PayForFile(fname, cid string) (*types.Transaction, error) {
 	fi, err := os.Stat(fname)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	fee := fi.Size() * int64(r.conf.Redundancy) / 1024 * 1024 + 1
@@ -138,10 +139,10 @@ func (r *Renter) PayForFile(fname, cid string) error {
 	tran, err := types.NewTransfer(common.NameToIndex(r.conf.AccountName),
 		innerCommon.NameToIndex(dsnComm.RootAccount), common.HexToHash(r.conf.ChainId), "owner", fun, 0, timeNow)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	trn, err := tran.Serialize()
+	/*trn, err := tran.Serialize()
 	if err != nil {
 		return err
 	}
@@ -185,17 +186,17 @@ func (r *Renter) PayForFile(fname, cid string) error {
 	var retTfer clientcommon.SimpleResult
 	ctcv := url.Values{}
 	ctcv.Set("transaction", common.ToHex(data))
-	err = rpc.NodePost("/transfer", values.Encode(), &retTfer)
+	err = rpc.NodePost("/transfer", values.Encode(), &retTfer)*/
 	//fmt.Println(result.Result)
-	return nil
+	return tran, nil
 }
-func (r *Renter) InvokeFileContract(fname, cid string) error {
+func (r *Renter) InvokeFileContract(fname, cid string) (*types.Transaction, error) {
 	/*if !r.isSynced {
 		return errUnSyncedStat
 	}*/
 	fc, err := r.createFileContract(fname, cid)
 	if err != nil {
-		return  errCreateContract
+		return  nil, errCreateContract
 	}
 
 	timeNow := time.Now().UnixNano()
@@ -203,7 +204,7 @@ func (r *Renter) InvokeFileContract(fname, cid string) error {
 		innerCommon.NameToIndex(dsnComm.RootAccount), common.HexToHash(r.conf.ChainId),
 		"owner", dsnComm.FcMethodFile, []string{string(fc)}, 0, timeNow)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	/*transaction.SetSignature(&config.Root)
@@ -212,12 +213,12 @@ func (r *Renter) InvokeFileContract(fname, cid string) error {
 		return err
 	}*/
 
-	trn, err := transaction.Serialize()
+	/*trn, err := transaction.Serialize()
 	if err != nil {
 		return err
-	}
+	}*/
 
-	var resultKeys clientcommon.SimpleResult
+	/*var resultKeys clientcommon.SimpleResult
 	err = rpc.WalletGet("/wallet/getPublicKeys", &resultKeys)
 	if err != nil {
 		return err
@@ -242,8 +243,19 @@ func (r *Renter) InvokeFileContract(fname, cid string) error {
 	err = rpc.WalletPost("/wallet/signTransaction", values.Encode(), &retTrn)
 	if err != nil {
 		return err
+	}*/
+
+	/*pkKeys, err := ecoclient.GetPublicKeys()
+	if err != nil {
+		return err
 	}
-	err = transaction.Deserialize(innerCommon.FromHex(retTrn.Result))
+
+	reqKeys, err := ecoclient.GetRequiredKeys(innerCommon.HexToHash(r.conf.ChainId), pkKeys, "owner", transaction)
+	if err != nil {
+		return err
+	}
+
+	err = ecoclient.SignTransaction(innerCommon.HexToHash(r.conf.ChainId), reqKeys, transaction)
 	if err != nil {
 		return err
 	}
@@ -256,21 +268,23 @@ func (r *Renter) InvokeFileContract(fname, cid string) error {
 	var retContract clientcommon.SimpleResult
 	ctcv := url.Values{}
 	ctcv.Set("transaction", common.ToHex(data))
-	err = rpc.NodePost("/invokeContract", values.Encode(), &retContract)
-
+	err = rpc.NodePost("/invokeContract", ctcv.Encode(), &retContract)
+	fmt.Println("fileContract: ", retContract.Result)
 	//var f fileInfo
-	/*f.size = uint64(fi.Size())
+	*//*f.size = uint64(fi.Size())
 	f.name = fname
 	f.fileId = cid
 	f.redundancy = r.conf.Redundancy
 	f.transactionId = transaction.Hash
 	f.fee = *r.estimateFee(fname, r.conf)
-	r.files[cid] = f*/
+	r.files[cid] = f*//*
 
 	//r.payForFile(f)
 	//r.persistFileInfo(f)
 
-	return nil
+	return err*/
+
+	return transaction, nil
 }
 
 func (r *Renter)CheckCollateral() bool {
