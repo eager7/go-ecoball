@@ -4,6 +4,7 @@ import subprocess
 import sys
 import argparse
 import json
+import os
 
 # Sharding scheme: initial startup of 5 committee, 3 Shared, each Shared 5 nodes.
 # Buy five servers, one server one committee docker instance and three share docker instance
