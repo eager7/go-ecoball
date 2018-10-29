@@ -9,6 +9,8 @@ import (
 )
 
 func (s *shard) processStateTimeout() {
+	log.Debug("state time out")
+
 	s.fsm.Execute(ActStateTimeout, nil)
 }
 

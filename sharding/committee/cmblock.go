@@ -111,6 +111,10 @@ func (b *cmBlockCsi) PrecommitRsp() uint32 {
 	return b.bk.Step2
 }
 
+func (b *cmBlockCsi) GetCosign() *types.COSign {
+	return b.bk.COSign
+}
+
 func (b *cmBlockCsi) GetCandidate() *cs.NodeInfo {
 	return nil
 }
@@ -168,7 +172,6 @@ func (c *committee) createCommitteeBlock() *cs.CMBlock {
 	}
 
 	height = last.Height + 1
-	log.Debug("create cm block height ", height)
 
 	header := cs.CMBlockHeader{
 		ChainID:      config.ChainHash,
@@ -218,7 +221,7 @@ func (c *committee) productCommitteeBlock(msg interface{}) {
 
 	cms := newCmBlockCsi(cm)
 
-	c.cs.StartConsensus(cms)
+	c.cs.StartConsensus(cms, sc.DefaultCmBlockWindow*time.Millisecond)
 
 	c.stateTimer.Reset(sc.DefaultProductCmBlockTimer * time.Second)
 }

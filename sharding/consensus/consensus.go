@@ -4,6 +4,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"time"
 )
 
 var (
@@ -23,33 +24,36 @@ type Consensus struct {
 	view *sc.CsView
 
 	instance sc.ConsensusInstance
-	rcb      retransCb
+	rcb      timerdCb
+	fcb      timerCb
 	ccb      csCompleteCb
 }
 
 type csCompleteCb func(bl interface{})
-type retransCb func(bStart bool)
+type timerdCb func(bStart bool, d time.Duration)
+type timerCb func(bStart bool)
 
-func MakeConsensus(ns *cell.Cell, rcb retransCb, ccb csCompleteCb) *Consensus {
+func MakeConsensus(ns *cell.Cell, rcb timerdCb, fcb timerCb, ccb csCompleteCb) *Consensus {
 	return &Consensus{
 		step: StepNIL,
 		ns:   ns,
 		rcb:  rcb,
+		fcb:  fcb,
 		ccb:  ccb,
 	}
 }
 
-func (c *Consensus) StartConsensus(instance sc.ConsensusInstance) {
+func (c *Consensus) StartConsensus(instance sc.ConsensusInstance, d time.Duration) {
 	if c.ns.IsLeader() {
-		c.startBlockConsensusLeader(instance)
+		c.startBlockConsensusLeader(instance, d)
 	} else {
 		c.startBlockConsensusVoter(instance)
 	}
 }
 
-func (c *Consensus) StartVcConsensus(instance sc.ConsensusInstance, bCandi bool) {
+func (c *Consensus) StartVcConsensus(instance sc.ConsensusInstance, d time.Duration, bCandi bool) {
 	if bCandi {
-		c.startBlockConsensusLeader(instance)
+		c.startBlockConsensusLeader(instance, d)
 	} else {
 		c.startBlockConsensusVoter(instance)
 	}
@@ -94,11 +98,38 @@ func (c *Consensus) ProcessRetransPacket() {
 		return
 	}
 
+	log.Debug("process restrans packet")
+
 	if c.ns.GetWorksCounter() == 1 {
 		c.sendCommit()
 	} else {
 		log.Debug("resend packet  step ", c.step)
 		packet := c.instance.MakeNetPacket(c.step)
 		c.sendCsPacket(packet)
+
+		c.rcb(true, sc.DefaultRetransTimer*time.Second)
+	}
+}
+
+func (c *Consensus) ProcessFullVoteTimeout() {
+	if c.instance == nil {
+		return
+	}
+
+	log.Debug("full vote timer out")
+
+	cosig := c.instance.GetCosign()
+	if c.step == StepPrePare {
+		if c.isVoteEnough(cosig.Step1) {
+			c.sendPreCommit()
+		} else {
+			log.Error("step prepare wrong vote counter")
+		}
+	} else if c.step == StepPreCommit {
+		if c.isVoteEnough(cosig.Step2) {
+			c.sendCommit()
+		} else {
+			log.Error("step precommit wrong vote counter")
+		}
 	}
 }

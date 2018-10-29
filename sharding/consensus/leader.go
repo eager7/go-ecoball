@@ -2,56 +2,71 @@ package consensus
 
 import (
 	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"time"
 )
 
-func (c *Consensus) startBlockConsensusLeader(instance sc.ConsensusInstance) {
+func (c *Consensus) startBlockConsensusLeader(instance sc.ConsensusInstance, d time.Duration) {
 	c.view = instance.GetCsView()
 	log.Debug("currenet view ", c.view.EpochNo, " ", c.view.FinalHeight, " ", c.view.MinorHeight, " ", c.view.Round)
 	c.instance = instance
 
-	c.sendPrepare()
+	c.sendPrepare(d)
 }
 
-func (c *Consensus) sendPrepare() {
+func (c *Consensus) sendPrepare(d time.Duration) {
 	log.Debug("send prepare")
 	c.step = StepPrePare
-	packet := c.instance.MakeNetPacket(c.step)
-	c.sendCsPacket(packet)
-	c.rcb(true)
+	//packet := c.instance.MakeNetPacket(c.step)
+	//c.sendCsPacket(packet)
+	c.rcb(true, d)
 }
 
 func (c *Consensus) prepareRsp(csp *sc.CsPacket) {
 	log.Debug("prepare response")
 	counter := c.instance.PrepareRsp()
-	if c.isVoteEnough(counter) {
+	if c.isVoteFull(counter) {
+		c.fcb(false)
 		c.sendPreCommit()
+	} else if c.isVoteOnThreshhold(counter) {
+		c.fcb(true)
 	}
 }
 
 func (c *Consensus) sendPreCommit() {
 	log.Debug("send precommit")
 	c.step = StepPreCommit
+	c.rcb(true, sc.DefaultRetransTimer*time.Second)
+
 	packet := c.instance.MakeNetPacket(c.step)
 	c.sendCsPacket(packet)
-	c.rcb(true)
+
 }
 
 func (c *Consensus) precommitRsp(csp *sc.CsPacket) {
 	log.Debug("precommit response")
 	counter := c.instance.PrecommitRsp()
-	if c.isVoteEnough(counter) {
-		c.rcb(false)
+	if c.isVoteFull(counter) {
+		c.fcb(false)
 		c.sendCommit()
+	} else if c.isVoteOnThreshhold(counter) {
+		c.fcb(true)
 	}
 }
 
 func (c *Consensus) sendCommit() {
 	log.Debug("send commit")
 	c.step = StepCommit
-	packet := c.instance.MakeNetPacket(c.step)
+	c.rcb(false, sc.DefaultBlockWindow)
 
-	c.csComplete()
-	c.sendCsPacket(packet)
+	packet := c.instance.MakeNetPacket(c.step)
+	//we need save cm block before we send it to peer,  because the shards is change
+	if packet.BlockType == sc.SD_CM_BLOCK {
+		c.csComplete()
+		c.sendCsPacket(packet)
+	} else {
+		c.sendCsPacket(packet)
+		c.csComplete()
+	}
 }
 
 func (c *Consensus) processPacketByLeader(csp *sc.CsPacket) {
