@@ -838,6 +838,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		return nil
 	}
 
+	stateHashRoot := c.StateDB.FinalDB.GetHashRoot()
 	var heKey, heValue []byte
 	var blockType string
 	switch shard.HeaderType(block.Type()) {
@@ -875,10 +876,12 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 					c.StateDB.FinalDB, Block.Transactions[i], Block.MinorBlockHeader.Timestamp,
 					c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
 					log.Warn(Block.Transactions[i].JsonString())
+					c.StateDB.FinalDB.Reset(stateHashRoot)
 					return err
 				}
 			}
 			if c.StateDB.FinalDB.GetHashRoot() != Block.StateDeltaHash {
+				c.StateDB.FinalDB.Reset(stateHashRoot)
 				return errors.New(log, fmt.Sprintf("the minor state hash root is not eqaul, receive:%s, local:%s", Block.StateDeltaHash.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 			}
 			c.LastHeader.MinorHeader = &Block.MinorBlockHeader
@@ -887,6 +890,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 			for _, delta := range Block.StateDelta {
 				if err := c.HandleDeltaState(c.StateDB.FinalDB, delta, Block.MinorBlockHeader.Timestamp,
 					c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
+					c.StateDB.FinalDB.Reset(stateHashRoot)
 					return err
 				}
 			}
