@@ -1284,6 +1284,43 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 			return err
 		}
 	case types.TxInvoke:
+		if delta.Receipt.NewToken != nil {
+			token := new(state.TokenInfo)
+			if err := token.Deserialize(delta.Receipt.NewToken); err != nil {
+				return err
+			}
+			if err := s.CommitToken(token); err != nil {
+				return err
+			}
+		}
+		for _, data := range delta.Receipt.Accounts {
+			acc := new(state.Account)
+			if err := acc.Deserialize(data); err != nil {
+				return err
+			}
+			accState, err := s.GetAccountByName(acc.Index)
+			if err != nil {
+				return err
+			}
+			if acc.Tokens != nil {
+				for k, v := range acc.Tokens {
+					accState.Tokens[k] = v
+				}
+			}
+			if acc.Permissions != nil {
+				for k, v := range acc.Permissions {
+					accState.Permissions[k] = v
+				}
+			}
+			if acc.Cpu.Limit != 0 {
+				accState.Cpu.Limit = acc.Cpu.Limit
+				accState.Cpu.Available = acc.Cpu.Available
+				accState.Cpu.Staked = acc.Cpu.Staked
+				accState.Cpu.Used = acc.Cpu.Used
+				accState.Cpu.Delegated = acc.Cpu.Delegated
+
+			}
+		}
 	default:
 		return errors.New(log, "unknown transaction type")
 	}

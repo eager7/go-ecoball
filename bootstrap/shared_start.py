@@ -92,7 +92,7 @@ for ip in args.committee_ip:
     with open("sharding.json", 'w') as f:
         json.dump(data, f)
     run("scp sharding.json ecoball@" + ip + ":/home/ecoball/go/src/github.com/ecoball/go-ecoball/build/")
-    run("ssh ecoball@" + ip + " \" cd /home/ecoball/go/src/github.com/ecoball/go-ecoball/build/; ./ecoball run\"")
+    run("ssh ecoball@" + ip + " \" cd /home/ecoball/go/src/github.com/ecoball/go-ecoball/build/; ./ecoball run & \"")
     sleep(1.5)
 
 for ip in args.shard_ip:
