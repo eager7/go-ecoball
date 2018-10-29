@@ -8,6 +8,7 @@ import (
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
+	"time"
 )
 
 type minorBlockCsi struct {
@@ -98,6 +99,10 @@ func (b *minorBlockCsi) PrecommitRsp() uint32 {
 	return b.bk.Step2
 }
 
+func (b *minorBlockCsi) GetCosign() *types.COSign {
+	return b.bk.COSign
+}
+
 func (b *minorBlockCsi) GetCandidate() *cs.NodeInfo {
 	return nil
 }
@@ -172,7 +177,7 @@ func (s *shard) productMinorBlock(msg interface{}) {
 	} else {
 		minor := s.createMinorBlock()
 		csi := newMinorBlockCsi(minor)
-		s.cs.StartConsensus(csi)
+		s.cs.StartConsensus(csi, sc.DefaultBlockWindow)
 	}
 }
 
@@ -180,7 +185,7 @@ func (s *shard) processLedgerMinorBlockMsg(p interface{}) {
 	minor := p.(*cs.MinorBlock)
 
 	csi := newMinorBlockCsi(minor)
-	s.cs.StartConsensus(csi)
+	s.cs.StartConsensus(csi, sc.DefaultMinorBlockWindow*time.Millisecond)
 }
 
 func (s *shard) reproductMinorBlock(msg interface{}) {

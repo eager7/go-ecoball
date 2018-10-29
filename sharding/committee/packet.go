@@ -62,11 +62,12 @@ func (c *committee) verifyShardingPacket(p *sc.NetPacket) {
 	}
 }
 
-func (c *committee) setRetransTimer(bStart bool) {
+func (c *committee) setRetransTimer(bStart bool, d time.Duration) {
+	log.Debug("set retrans timer ", bStart)
 	etime.StopTime(c.retransTimer)
 
 	if bStart {
-		c.retransTimer.Reset(sc.DefaultRetransTimer * time.Second)
+		c.retransTimer.Reset(d)
 	}
 }
 

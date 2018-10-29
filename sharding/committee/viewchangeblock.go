@@ -1,13 +1,13 @@
 package committee
 
 import (
-	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/etime"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 )
 
@@ -73,9 +73,9 @@ func (b *vcBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
 		return nil
 	}
 
-	data, err := json.Marshal(b.bk)
+	data, err := b.bk.Serialize()
 	if err != nil {
-		log.Error("vc block marshal error ", err)
+		log.Error("vc block Serialize error ", err)
 		return nil
 	}
 
@@ -102,6 +102,10 @@ func (b *vcBlockCsi) PrecommitRsp() uint32 {
 	}
 
 	return b.bk.Step2
+}
+
+func (b *vcBlockCsi) GetCosign() *types.COSign {
+	return b.bk.COSign
 }
 
 func (b *vcBlockCsi) GetCandidate() *cs.NodeInfo {
@@ -144,18 +148,16 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 		return nil, false
 	}
 
-	vch := cs.ViewChangeBlockHeader{
-		CMEpochNo:        0,
-		FinalBlockHeight: 0,
-		Round:            0,
-		Candidate:        cs.NodeInfo{},
-		Timestamp:        0,
-		COSign:           nil,
-	}
-
 	log.Debug("create vc block epoch ", epoch, " height ", height, " round ", round)
 	vc := &cs.ViewChangeBlock{
-		ViewChangeBlockHeader: vch,
+		ViewChangeBlockHeader: cs.ViewChangeBlockHeader{
+			CMEpochNo:        0,
+			FinalBlockHeight: 0,
+			Round:            0,
+			Candidate:        cs.NodeInfo{},
+			Timestamp:        0,
+			COSign:           nil,
+		},
 	}
 
 	vc.CMEpochNo = epoch
@@ -184,6 +186,7 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 	} else {
 		return vc, false
 	}
+
 }
 
 func (c *committee) productViewChangeBlock(msg interface{}) {
@@ -196,7 +199,7 @@ func (c *committee) productViewChangeBlock(msg interface{}) {
 
 	vci := newVcBlockCsi(vc)
 
-	c.cs.StartVcConsensus(vci, bCandidate)
+	c.cs.StartVcConsensus(vci, sc.DefaultViewchangeBlockWindow*time.Millisecond, bCandidate)
 
 	c.stateTimer.Reset(time.Duration(sc.DefaultProductViewChangeBlockTimer*(c.vccount+1)*(c.vccount+1)) * time.Second)
 }
@@ -224,8 +227,8 @@ func (c *committee) processViewchangeConsensusPacket(p interface{}) {
 
 func (c *committee) commitViewchangeBlock(bl *cs.ViewChangeBlock) {
 	log.Debug("recv consensus view change block epoch ", bl.CMEpochNo, " height ", bl.FinalBlockHeight, " round  ", bl.Round)
-	//simulate.TellBlock(bl)
-	panic("view change block")
+
+	simulate.TellBlock(bl)
 
 	c.ns.SaveLastViewchangeBlock(bl)
 	c.resetVcCounter(nil)

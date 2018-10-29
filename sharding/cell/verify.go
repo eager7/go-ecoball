@@ -1,7 +1,6 @@
 package cell
 
 import (
-	"encoding/json"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 )
@@ -52,7 +51,7 @@ func (c *Cell) VerifyFinalPacket(p *sc.NetPacket) *sc.CsPacket {
 
 	last := c.GetLastFinalBlock()
 	if last != nil {
-		if last.Height+1 != final.Height {
+		if last.Height >= final.Height {
 			log.Debug("wrong final block last ", last.Height, " block ", final.Height)
 			return nil
 		}
@@ -69,9 +68,9 @@ func (c *Cell) VerifyFinalPacket(p *sc.NetPacket) *sc.CsPacket {
 
 func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
 	vc := new(cs.ViewChangeBlock)
-	err := json.Unmarshal(p.Packet, &vc)
+	err := vc.Deserialize(p.Packet)
 	if err != nil {
-		log.Error("vc block unmarshal error ", err)
+		log.Error("vc block Deserialize error ", err)
 		return nil
 	}
 
@@ -104,7 +103,7 @@ func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
 				return nil
 			}
 		} else {
-			if last.Round+1 != vc.Round {
+			if last.Round >= vc.Round {
 				log.Error("vc block round error last ", last.Round, " block ", vc.Round)
 				return nil
 			}
@@ -115,7 +114,7 @@ func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
 
 	var csp sc.CsPacket
 	csp.CopyHeader(p)
-	csp.Packet = &vc
+	csp.Packet = vc
 
 	return &csp
 }

@@ -21,14 +21,19 @@ const (
 	/*timer of fsm state .second*/
 	DefaultSyncBlockTimer = 10 //180
 	DefaultRetransTimer   = 1  //180
+	DefaultFullVoteTimer  = 1  //180
 
-	DefaultProductCmBlockTimer = 60
-	DefaultCmBlockWindow       = 10
+	DefaultProductCmBlockTimer = 60  //second
+	DefaultCmBlockWindow       = 400 //Millisecond
 
-	DefaultProductFinalBlockTimer = 60
-	DefaultFinalBlockWindow       = 10
+	DefaultProductFinalBlockTimer = 60  //second
+	DefaultFinalBlockWindow       = 400 //Millisecond
 
-	DefaultProductViewChangeBlockTimer = 180
+	DefaultProductViewChangeBlockTimer = 180 //second
+	DefaultViewchangeBlockWindow       = 800 //Millisecond
 
-	DefaultWaitMinorBlockTimer = 180
+	DefaultWaitMinorBlockTimer = 180 //second
+	DefaultMinorBlockWindow    = 200 //Millisecond
+
+	DefaultBlockWindow = 0 //Millisecond
 )
