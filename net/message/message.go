@@ -47,6 +47,8 @@ const (
 	APP_MSG_MAX
 
 	APP_MSG_DKGSIJ
+	APP_MSG_DKGNLQUAL
+	APP_MSG_DKGLQUAL
 )
 
 // Messages maps the name of a message to its type

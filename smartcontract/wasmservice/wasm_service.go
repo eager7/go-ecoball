@@ -229,9 +229,9 @@ func (ws *WasmService) RegisterApi() {
 	// authorization
 	functions.Register("require_auth", ws.require_auth)
 	// token
-	functions.Register("ABA_createToken", ws.createToken)
-	functions.Register("ABA_issueToken", ws.issueToken)
-	functions.Register("ABA_transfer", ws.transfer)
+	//functions.Register("ABA_createToken", ws.createToken)
+	//functions.Register("ABA_issueToken", ws.issueToken)
+	//functions.Register("ABA_transfer", ws.transfer)
 
 	functions.Register("ABA_token_Existed",ws.tokenExisted)
 

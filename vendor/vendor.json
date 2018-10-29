@@ -51,6 +51,24 @@
 			"revisionTime": "2018-04-12T13:39:22Z"
 		},
 		{
+			"checksumSHA1": "LLVyR2dAgkihu0+HdZF+JK0gMMs=",
+			"path": "github.com/agl/ed25519",
+			"revision": "5312a61534124124185d41f09206b9fef1d88403",
+			"revisionTime": "2017-01-16T20:05:12Z"
+		},
+		{
+			"checksumSHA1": "30PBqj9BW03KCVqASvLg3bR+xYc=",
+			"path": "github.com/agl/ed25519/edwards25519",
+			"revision": "5312a61534124124185d41f09206b9fef1d88403",
+			"revisionTime": "2017-01-16T20:05:12Z"
+		},
+		{
+			"checksumSHA1": "wHBvnCJG9bkZdtxFFefU+8/WDSE=",
+			"path": "github.com/agl/ed25519/extra25519",
+			"revision": "5312a61534124124185d41f09206b9fef1d88403",
+			"revisionTime": "2017-01-16T20:05:12Z"
+		},
+		{
 			"checksumSHA1": "0rido7hYHQtfq3UJzVT5LClLAWc=",
 			"path": "github.com/beorn7/perks/quantile",
 			"revision": "3a771d992973f24aa725d07868b467d1ddfceafb",
@@ -299,6 +317,18 @@
 		{
 			"checksumSHA1": "Vym+ueo+9xbr7CjKbXjxIkUw5cI=",
 			"path": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
+			"revision": "1ef32a8b9fc3f8ec940126907cedb5998f6318e4",
+			"revisionTime": "2018-03-30T17:46:43Z"
+		},
+		{
+			"checksumSHA1": "curkzoP3cQRB7lxDrDgb7dCRhVg=",
+			"path": "github.com/gogo/protobuf/protoc-gen-gogo/plugin",
+			"revision": "1ef32a8b9fc3f8ec940126907cedb5998f6318e4",
+			"revisionTime": "2018-03-30T17:46:43Z"
+		},
+		{
+			"checksumSHA1": "bfkp6hE0rtigajYmX/vqfMSjs6o=",
+			"path": "github.com/gogo/protobuf/test/typedeclimport/subpkg",
 			"revision": "1ef32a8b9fc3f8ec940126907cedb5998f6318e4",
 			"revisionTime": "2018-03-30T17:46:43Z"
 		},
@@ -1384,6 +1414,12 @@
 		{
 			"checksumSHA1": "X3m+av/DAZik0PeyLBsXIzPMF08=",
 			"path": "golang.org/x/crypto/blake2s",
+			"revision": "b0697eccbea9adec5b7ba8008f4c33d98d733388",
+			"revisionTime": "2018-04-23T13:30:03Z"
+		},
+		{
+			"checksumSHA1": "f9ULtb+Deav4IqLlON7zCv3BsFE=",
+			"path": "golang.org/x/crypto/bn256",
 			"revision": "b0697eccbea9adec5b7ba8008f4c33d98d733388",
 			"revisionTime": "2018-04-23T13:30:03Z"
 		},
