@@ -210,10 +210,12 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return nil
 	}
 
+	stateHashRoot := c.StateDB.FinalDB.GetHashRoot()
 	for i := 0; i < len(block.Transactions); i++ {
 		log.Notice("Handle Transaction:", block.Transactions[i].Type.String(), block.Transactions[i].Hash.HexString(), " in final DB")
 		if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(block.Transactions[i].JsonString())
+			c.StateDB.FinalDB.Reset(stateHashRoot)
 			return err
 		}
 	}
@@ -229,26 +231,32 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		c.TxsStore.BatchPut(t.Hash.Bytes(), payload)
 	}
 	if err := c.TxsStore.BatchCommit(); err != nil {
+		c.StateDB.FinalDB.Reset(stateHashRoot)
 		return err
 	}
 	if c.StateDB.FinalDB.GetHashRoot().HexString() != block.StateHash.HexString() {
 		log.Warn(block.JsonString(true))
+		c.StateDB.FinalDB.Reset(stateHashRoot)
 		return errors.New(log, fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.FinalDB.GetHashRoot().HexString(), block.Hash.HexString()))
 	}
 
 	payload, err := block.Header.Serialize()
 	if err != nil {
+		c.StateDB.FinalDB.Reset(stateHashRoot)
 		return err
 	}
 	if err := c.HeaderStore.Put(block.Header.Hash.Bytes(), payload); err != nil {
+		c.StateDB.FinalDB.Reset(stateHashRoot)
 		return err
 	}
 	payload, err = block.Serialize()
 	if err != nil {
+		c.StateDB.FinalDB.Reset(stateHashRoot)
 		return err
 	}
 	c.BlockStore.BatchPut(block.Hash.Bytes(), payload)
 	if err := c.BlockStore.BatchCommit(); err != nil {
+		c.StateDB.FinalDB.Reset(stateHashRoot)
 		return err
 	}
 	c.StateDB.FinalDB.CommitToDB()
