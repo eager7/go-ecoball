@@ -257,7 +257,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	c.BlockStore.BatchPut(block.Hash.Bytes(), payload)
 	if err := c.BlockStore.BatchCommit(); err != nil {
 		c.StateDB.FinalDB.Reset(stateHashRoot)
-		return err
+     		return err
 	}
 	c.StateDB.FinalDB.CommitToDB()
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
@@ -1273,6 +1273,16 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 			return err
 		}
 	case types.TxDeploy:
+		if len(delta.Receipt.Accounts) != 1 {
+			return errors.New(log, "deploy delta's account len is not 1")
+		}
+		acc := new(state.Account)
+		if err := acc.Deserialize(delta.Receipt.Accounts[0]); err != nil {
+			return err
+		}
+		if err := s.SetContract(delta.Receipt.To, acc.Contract.TypeVm, acc.Contract.Describe, acc.Contract.Code, acc.Contract.Abi); err != nil {
+			return err
+		}
 	case types.TxInvoke:
 	default:
 		return errors.New(log, "unknown transaction type")
