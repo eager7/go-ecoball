@@ -38,7 +38,7 @@ if args.node_ip is None or args.host_ip is None or args.number is None or args.w
     sys.exit(1)
 
 if args.number < 0 or args.number > 4 * args.weight - 1:
-    print('The index value must be between 0 and %d' %(4 * args.weight))
+    print('The index value must be between 0 and %d' %(4 * args.weight -1))
     sys.exit(1)
 
 Pubkey = "1109ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be"

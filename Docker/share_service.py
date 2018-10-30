@@ -19,6 +19,7 @@
 import subprocess
 import sys
 import argparse
+import time
 
 
 def run(shell_command):
@@ -33,6 +34,16 @@ def run(shell_command):
         sys.exit(1)
 
 
+def sleep(t):
+    '''
+    Sleep t seconds
+    '''
+
+    print('sleep', t, '...')
+    time.sleep(t)
+    print('resume')
+
+    
 # Command Line Arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--node-ip', metavar='', help="IP address of node", nargs='+', dest="node_ip")
@@ -65,4 +76,5 @@ while count < 4 * args.weight:
     command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
     run(command)
     count += 1
+    sleep(2)
     
