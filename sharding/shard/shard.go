@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	log = elog.NewLogger("sdshard", elog.DebugLog)
+	log = elog.NewLogger("sharding", elog.DebugLog)
 )
 
 const (

@@ -3,7 +3,7 @@ package common
 import "github.com/ecoball/go-ecoball/common/elog"
 
 var (
-	log = elog.NewLogger("sdcommon", elog.DebugLog)
+	log = elog.NewLogger("sharding", elog.DebugLog)
 )
 
 const (

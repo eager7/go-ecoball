@@ -19,9 +19,9 @@ const (
 	DefaultThresholdOfConsensus  = 667 /*thousandth*/
 
 	/*timer of fsm state .second*/
-	DefaultSyncBlockTimer = 10 //180
-	DefaultRetransTimer   = 1  //180
-	DefaultFullVoteTimer  = 1  //180
+	DefaultSyncBlockTimer = 10
+	DefaultRetransTimer   = 1
+	DefaultFullVoteTimer  = 1
 
 	DefaultProductCmBlockTimer = 60  //second
 	DefaultCmBlockWindow       = 400 //Millisecond
@@ -33,7 +33,7 @@ const (
 	DefaultViewchangeBlockWindow       = 800 //Millisecond
 
 	DefaultWaitMinorBlockTimer = 180 //second
-	DefaultMinorBlockWindow    = 200 //Millisecond
+	DefaultMinorBlockWindow    = 400 //Millisecond
 
 	DefaultBlockWindow = 0 //Millisecond
 )
