@@ -8,7 +8,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
@@ -313,13 +312,13 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 	}
 
 	for _, acc := range pbBlock.StateDelta {
-		receipt := new(state.Account)
+		receipt := types.TransactionReceipt{}
 		if err := receipt.Deserialize(acc.AccountData); err != nil {
 			return err
 		}
 		stateDelta := AccountMinor{
 			Type:    types.TxType(acc.Type),
-			Receipt: types.TransactionReceipt{},
+			Receipt: receipt,
 		}
 		b.StateDelta = append(b.StateDelta, &stateDelta)
 	}

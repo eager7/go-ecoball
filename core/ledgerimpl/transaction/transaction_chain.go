@@ -935,9 +935,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		}
 
 		if Block.StateHashRoot != c.StateDB.FinalDB.GetHashRoot() {
-			err :=  errors.New(log, fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s",
-				Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
-			log.Panic(err)
+			log.Panic(fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s", Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 		}
 		//heValue = append(heValue, byte(shard.HeFinalBlock))
 		data, err := Block.FinalBlockHeader.Serialize()
@@ -1155,6 +1153,7 @@ func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBl
 }
 
 func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock) (*shard.FinalBlock, error) {
+	log.Debug("new final block")
 	var hashesTxs []common.Hash
 	var hashesState []common.Hash
 	var hashesMinor []common.Hash
@@ -1317,6 +1316,7 @@ func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, timeStamp int64, cpuLimit, netLimit float64) (err error) {
 	switch delta.Type {
 	case types.TxTransfer:
+		log.Info("handle delta in ", s.Type.String(), common.JsonString(delta, false))
 		if err := s.AccountSubBalance(delta.Receipt.From, state.AbaToken, delta.Receipt.Amount); err != nil {
 			return err
 		}
@@ -1329,7 +1329,6 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 		if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
 			return err
 		}
-
 	case types.TxDeploy:
 		if len(delta.Receipt.Accounts) != 1 {
 			return errors.New(log, "deploy delta's account len is not 1")
