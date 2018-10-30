@@ -27,7 +27,7 @@ func (c *Consensus) prepareRsp(csp *sc.CsPacket) {
 	if c.isVoteFull(counter) {
 		c.fcb(false)
 		c.sendPreCommit()
-	} else if c.isVoteOnThreshhold(counter) {
+	} else if c.isVoteOnThreshold(counter) {
 		c.fcb(true)
 	}
 }
@@ -48,7 +48,7 @@ func (c *Consensus) precommitRsp(csp *sc.CsPacket) {
 	if c.isVoteFull(counter) {
 		c.fcb(false)
 		c.sendCommit()
-	} else if c.isVoteOnThreshhold(counter) {
+	} else if c.isVoteOnThreshold(counter) {
 		c.fcb(true)
 	}
 }
