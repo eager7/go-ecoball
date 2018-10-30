@@ -4,7 +4,7 @@ MAINTAINER Docker ecoball <service@ecoball.org>
 
 #Install dependencies
 RUN apt-get update
-RUN apt-get install -y git gcc make wget golang-go python3 psmisc sudo
+RUN apt-get install -y git gcc make wget golang-go python3 psmisc sudo vim
 
 #Setting environment variables
 ENV GOPATH /root/go
