@@ -73,7 +73,7 @@ func InitDefaultConf() RenterConf {
 		MaxCollateral: "20",
 		ChainId: common.ToHex(chainId[:]),
 		//StorePath: "/tmp/storage/rent",
-		DsnApiUrl: "127.0.0.1:9000",
+		DsnApiUrl: "http://localhost:9000",
 		IpfsApiUrl: "127.0.0.1:5011",
 	}
 }
@@ -297,6 +297,7 @@ func (r *Renter)CheckCollateral() bool {
 	//	return true
 	//}
 	url := r.conf.DsnApiUrl + "/dsn/accountstake?" + "name=" + r.conf.AccountName + "&chainid=" + r.conf.ChainId
+	//url :="/dsn/accountstake/" + r.conf.AccountName + "/" + r.conf.ChainId
 	rsp, err := r.client.Get(url)
 	if err != nil {
 		return false
