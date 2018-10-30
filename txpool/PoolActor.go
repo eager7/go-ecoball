@@ -27,6 +27,8 @@ import (
 	"sync"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/dsn/block"
 )
 
 
@@ -63,6 +65,12 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 	case *message.RegChain:
 		log.Info("Add New TxList:", msg.ChainID.HexString())
 		p.txPool.AddTxsList(msg.ChainID)
+	case *shard.MinorBlock:
+		for _, v := range msg.Transactions {
+			log.Info("Delete tx:", v.Hash.HexString())
+			p.txPool.Delete(msg.ChainID, v.Hash)
+		}
+	case *shard.FinalBlock:
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}
