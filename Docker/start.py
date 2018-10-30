@@ -33,8 +33,8 @@ parser.add_argument('-w', '--weight', type=int, metavar='', help="The number of 
 args = parser.parse_args()
 
 #Input parameter judgment
-if args.node_ip is None or args.host_ip is None or args.number is None:
-    print('please input iP address of node and host node and the index number of container instance. -h shows options.')
+if args.node_ip is None or args.host_ip is None or args.number is None or args.weight is None:
+    print('please input iP address of node and host node and the index number of container instance and weight number. -h shows options.')
     sys.exit(1)
 
 if args.number < 0 or args.number > 3:
