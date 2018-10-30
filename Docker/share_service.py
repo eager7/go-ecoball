@@ -44,7 +44,7 @@ args = parser.parse_args()
 
 #Input parameter judgment
 if args.node_ip is None or args.host_ip is None:
-    print('please input iP address of nodes and ip of host node. -h shows options.')
+    print('please input iP address of nodes and ip of host node and weight number. -h shows options.')
     sys.exit(1)
 
 start_port = 2000
