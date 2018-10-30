@@ -59,7 +59,7 @@ func (c *Consensus) sendCommit() {
 	c.rcb(false, sc.DefaultBlockWindow)
 
 	packet := c.instance.MakeNetPacket(c.step)
-	//we need save cm block before we send it to peer,  because the shards is change
+	//we need save cm block before we send it to peer because the shards is change
 	if packet.BlockType == sc.SD_CM_BLOCK {
 		c.csComplete()
 		c.sendCsPacket(packet)

@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	log = elog.NewLogger("sdnet", elog.DebugLog)
+	log = elog.NewLogger("sharding", elog.DebugLog)
 )
 
 type net struct {

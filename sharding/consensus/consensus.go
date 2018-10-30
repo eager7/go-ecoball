@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	log = elog.NewLogger("sdconsensus", elog.DebugLog)
+	log = elog.NewLogger("sharding", elog.DebugLog)
 )
 
 const (

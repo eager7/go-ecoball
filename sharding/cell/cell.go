@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	log = elog.NewLogger("sdcell", elog.DebugLog)
+	log = elog.NewLogger("sharding", elog.DebugLog)
 )
 
 type Cell struct {

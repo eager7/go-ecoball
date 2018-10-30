@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	log = elog.NewLogger("sdsimulate", elog.DebugLog)
+	log = elog.NewLogger("sharding", elog.DebugLog)
 )
 
 var netMsgChain chan *sc.NetPacket
