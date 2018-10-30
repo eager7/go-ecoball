@@ -184,6 +184,18 @@ func (l *LedgerImpl) PreHandleTransaction(chainID common.Hash, tx *types.Transac
 	return chain.HandleTransaction(chain.StateDB.TempDB, tx, timeStamp, chain.CurrentHeader.Receipt.BlockCpu, chain.CurrentHeader.Receipt.BlockNet)
 }
 
+func (l *LedgerImpl) ShardPreHandleTransaction(chainID common.Hash, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, 0, 0, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	if err := chain.CheckTransactionWithDB(chain.StateDB.TempDB, tx); err != nil {
+		return nil, 0, 0, err
+	}
+	log.Notice("Handle Transaction:", tx.Type.String(), tx.Hash.HexString(), " in temp DB")
+	return chain.HandleTransaction(chain.StateDB.TempDB, tx, timeStamp, chain.LastHeader.MinorHeader.Receipt.BlockCpu, chain.LastHeader.MinorHeader.Receipt.BlockNet)
+}
+
 func (l *LedgerImpl) AccountGet(chainID common.Hash, index common.AccountName) (*state.Account, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
