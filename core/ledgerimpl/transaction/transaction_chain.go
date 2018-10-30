@@ -1343,6 +1343,12 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 		if err := s.SetContract(delta.Receipt.To, acc.Contract.TypeVm, acc.Contract.Describe, acc.Contract.Code, acc.Contract.Abi); err != nil {
 			return err
 		}
+		if err := s.RecoverResources(delta.Receipt.From, timeStamp, cpuLimit, netLimit); err != nil {
+			return err
+		}
+		if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
+			return err
+		}
 	case types.TxInvoke:
 		if delta.Receipt.NewToken != nil {
 			token := new(state.TokenInfo)
