@@ -60,8 +60,8 @@ count = 0
 while count < 4 * args.weight:
     command = "sudo docker run -d " + "--name=ecoball_" + str(count) + " -p "
     command += str(PORT + count) + ":20678 "
-    command += str(start_port + ip_index * 4 * args.weight + count) + ":" + str(start_port + ip_index * 4 * args.weight + count)
-    command += " " + image + " /root/go/src/github.com/ecoball/go-ecoball/build/Docker/start.py "
+    command += "-p " + str(start_port + ip_index * 4 * args.weight + count) + ":" + str(start_port + ip_index * 4 * args.weight + count)
+    command += " " + image + " /root/go/src/github.com/ecoball/go-ecoball/Docker/start.py "
     command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
     run(command)
     count += 1
