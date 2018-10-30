@@ -70,6 +70,7 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 			p.txPool.Delete(msg.ChainID, v.Hash)
 		}
 	case *shard.FinalBlock:
+	case *shard.CMBlock:
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}
@@ -90,35 +91,54 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	}
 	p.txPool.txsCache.Add(tx.Hash, nil)
 
-	var handle bool
+	lastCMBlock, err := p.txPool.ledger.GetLastShardBlock(tx.ChainID, shard.HeCmBlock)
+	if err != nil {
+		return err
+	}
+	numShard := len(lastCMBlock.GetObject().(shard.CMBlock).Shards)
+	if numShard == 0 {
+		log.Warn("the node network is not work")
+		return nil
+	}
+	log.Notice("the shard number is ", numShard)
 	if !config.DisableSharding {
+		var handle bool
 		shardId, err := p.txPool.ledger.GetShardId(tx.ChainID)
 		if err != nil {
 			return err
 		}
 		if tx.Type == types.TxTransfer || tx.Addr == common.NameToIndex("root") {
-			if uint64(shardId) == uint64(tx.From)%3{
+			if uint64(shardId) == uint64(tx.From)%uint64(numShard){
 				handle = true
 			}
 		} else {
-			if uint64(shardId) == uint64(tx.Addr)%3{
+			if uint64(shardId) == uint64(tx.Addr)%uint64(numShard){
 				handle = true
 			}
 		}
-	}
-
-	if handle || config.DisableSharding {
-		ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
-		if err != nil {
-			log.Warn(tx.JsonString())
-			return err
+		if handle || config.DisableSharding {
+			//ret, cpu, net, err := p.txPool.ledger.ShardPreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
+			//if err != nil {
+			//	log.Warn(tx.JsonString())
+			//	return err
+			//}
+			//log.Debug(ret, cpu, net, err)
+			p.txPool.Push(tx.ChainID, tx)
 		}
-		log.Debug(ret, cpu, net, err)
+	} else {
+		//ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
+		//if err != nil {
+		//	log.Warn(tx.JsonString())
+		//	return err
+		//}
+		//log.Debug(ret, cpu, net, err)
 		p.txPool.Push(tx.ChainID, tx)
 	}
 
+
+
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
-		log.Warn("broadcast transaction failed:" + tx.Hash.HexString())
+		log.Warn("broadcast transaction failed:", err.Error(), tx.Hash.HexString())
 	}
 
 	//ctx.Sender().Request(cpu, ctx.Self())
