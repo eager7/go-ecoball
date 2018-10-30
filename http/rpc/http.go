@@ -17,13 +17,13 @@
 package rpc
 
 import (
-	"fmt"
 	"strconv"
 	"net/http"
 	"strings"
 	"time"
 	//"os"
-	"io/ioutil"
+	//"io/ioutil"
+	"encoding/base64"
 
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/gin-gonic/gin"
@@ -48,6 +48,7 @@ func StartHttpServer() (err error) {
 	router.POST("/invokeContract", invokeContract)
 	router.POST("/setContract", setContract)
 	router.POST("/getContract", getContract)
+	router.POST("/getTokenInfo", getTokenInfo)
 	router.POST("/storeGet", storeGet)
 	router.POST("/transfer", transfer)
 	router.POST("/newInvokeContract", newInvokeContract)
@@ -58,6 +59,20 @@ func StartHttpServer() (err error) {
 
 	http.ListenAndServe(":20681", router)
 	return nil
+}
+
+func getTokenInfo(c *gin.Context) {
+	name := c.PostForm("name")
+	chainId_str := c.PostForm("chainId")
+	hash := new(innerCommon.Hash)
+
+	data, err := ledger.L.GetTokenInfo(hash.FormHexString(chainId_str), name)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"result": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": data.JsonString(false)})
 }
 
 func getAccountInfo(c *gin.Context) {
@@ -71,7 +86,7 @@ func getAccountInfo(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"result": data.JsonString(false)})
+	c.JSON(http.StatusOK, gin.H{"result": data.JsonString(true)})
 }
 
 func getInfo(c *gin.Context) {
@@ -148,8 +163,6 @@ func invokeContract(c *gin.Context) {
 		return 
 	}
 
-	fmt.Println(invoke.JsonString())
-
 	//send to txpool
 	err := event.Send(event.ActorNil, event.ActorTxPool, invoke)
 	if nil != err {
@@ -169,8 +182,6 @@ func setContract(c *gin.Context) {
 		return 
 	}
 
-	fmt.Println(deploy.JsonString())
-	
 	//send to txpool
 	err := event.Send(event.ActorNil, event.ActorTxPool, deploy)
 	if nil != err {
@@ -380,8 +391,10 @@ func newDeployContract(c *gin.Context) {
 	chainId_str := c.PostForm("chainId")
 	contractName := c.PostForm("name")
 	description := c.PostForm("description")
+	contract_data := c.PostForm("contract_data")
+	abi_data := c.PostForm("abi_data")
 
-	if "" == chainId_str || "" == contractName || "" == description{
+	if "" == chainId_str || "" == contractName || "" == description ||  contract_data == "" || abi_data == ""{
 		c.JSON(http.StatusBadRequest, gin.H{"result": "invalid params"})
 		return
 	}
@@ -389,35 +402,14 @@ func newDeployContract(c *gin.Context) {
 	hash := new(innerCommon.Hash)
 	chainId := hash.FormHexString(chainId_str)
 
-	c.Request.ParseMultipartForm(32 << 20)
-	file, _, err := c.Request.FormFile("wasmfile")
+	data, err := base64.StdEncoding.DecodeString(contract_data)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-	defer file.Close()
-	
-	data, errcode := ioutil.ReadAll(file)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": errcode.Error()})
-		return
-	}
-
-	abifile, _, err := c.Request.FormFile("abifile")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-	defer abifile.Close()
-	
-	abidata, errcode := ioutil.ReadAll(abifile)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": errcode.Error()})
 		return
 	}
 	
 	var contractAbi abi.ABI
-	if err := json.Unmarshal(abidata, &contractAbi); err != nil {
+	if err := json.Unmarshal([]byte(abi_data), &contractAbi); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
 		return
 	}

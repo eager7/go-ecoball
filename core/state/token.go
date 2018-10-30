@@ -6,6 +6,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"math/big"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"encoding/json"
 )
 
 const AbaTotal = 200000
@@ -35,15 +36,15 @@ func NewToken(symbol string, maxSupply, supply *big.Int, creator, issuer common.
 	return stat, nil
 }
 
-func (stat *TokenInfo) Serialize() ([]byte, error) {
-	maxSupply, err := stat.MaxSupply.GobEncode()
-	supply, err := stat.Supply.GobEncode()
+func (info *TokenInfo) Serialize() ([]byte, error) {
+	maxSupply, err := info.MaxSupply.GobEncode()
+	supply, err := info.Supply.GobEncode()
 	p := &pb.TokenInfo{
-		Symbol:		stat.Symbol,
+		Symbol:		info.Symbol,
 		MaxSupply:	maxSupply,
 		Supply:		supply,
-		Creator:	uint64(stat.Creator),
-		Issuer:		uint64(stat.Issuer),
+		Creator:	uint64(info.Creator),
+		Issuer:		uint64(info.Issuer),
 	}
 	b, err := p.Marshal()
 	if err != nil {
@@ -52,7 +53,7 @@ func (stat *TokenInfo) Serialize() ([]byte, error) {
 	return b, nil
 }
 
-func (stat *TokenInfo) Deserialize(data []byte) (error) {
+func (info *TokenInfo) Deserialize(data []byte) (error) {
 	if len(data) == 0 {
 		return errors.New(log, "input data's length is zero")
 	}
@@ -71,13 +72,29 @@ func (stat *TokenInfo) Deserialize(data []byte) (error) {
 		return errors.New(log, fmt.Sprintf("GobDecode err:%s", err.Error()))
 	}
 
-	stat.Symbol = status.Symbol
-	stat.MaxSupply = maxSupply
-	stat.Supply = supply
-	stat.Creator = common.AccountName(status.Creator)
-	stat.Issuer = common.AccountName(status.Issuer)
+	info.Symbol = status.Symbol
+	info.MaxSupply = maxSupply
+	info.Supply = supply
+	info.Creator = common.AccountName(status.Creator)
+	info.Issuer = common.AccountName(status.Issuer)
 
 	return nil
+}
+
+func (info *TokenInfo) JsonString(format bool) string {
+	if format {
+		data, err := json.MarshalIndent(info, "", "    ")
+		if err != nil {
+			fmt.Println(err)
+		}
+		return string(data)
+	} else {
+		data, err := json.Marshal(info)
+		if err != nil {
+			fmt.Println(err)
+		}
+		return string(data)
+	}
 }
 
 func (s *State) AccountGetBalance(index common.AccountName, token string) (*big.Int, error) {

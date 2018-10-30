@@ -1308,11 +1308,16 @@ func TransferExample() {
 	time.Sleep(time.Second * 15)
 	root := common.NameToIndex("root")
 	tester := common.NameToIndex("tester")
-	for i := 0; i < 100; i ++ {
+	for i := 0; i < 0; i ++ {
 		transfer, err := types.NewTransfer(root, tester, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
 		errors.CheckErrorPanic(err)
 		transfer.SetSignature(&config.Root)
 		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
 		time.Sleep(time.Second * 1)
 	}
+	contract, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, types.VmNative, "system control test", nil, nil, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(contract.SetSignature(&config.Root))
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	time.Sleep(time.Millisecond * 500)
 }
