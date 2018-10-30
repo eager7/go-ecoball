@@ -353,7 +353,7 @@ func invokeContract(c *cli.Context) error {
 				parameters = append(parameters, v)
 			}
 		}
-	}else if "pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
+	}else if "pledge" == contractMethod || "cancel_pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
 		parameters = strings.Split(contractParam, ",")
 	}else if "set_account" == contractMethod {
 		parameters = strings.Split(contractParam, "--")

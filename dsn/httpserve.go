@@ -19,7 +19,7 @@ func DsnHttpServ()  {
 	router.GET("/dsn/total", totalHandler)
 	router.POST("/dsn/eracode", eraCoding)
 	router.GET("/dsn/eradecode/:cid", eraDecoding)
-	router.GET("/dsn/accountstake/:name/:chainid", accountStake)
+	router.GET("/dsn/accountstake", accountStake)
 	//TODO listen port need to be moved to config
 	http.ListenAndServe(":9000", router)
 }
@@ -76,12 +76,14 @@ func eraDecoding(c *gin.Context)  {
 }
 
 func accountStake(c *gin.Context)  {
-	name, exsited := c.Params.Get("name")
+
+	//name, exsited := c.Params.Get("name")
+	name , exsited:= c.GetQuery("name")
 	if !exsited {
 		c.JSON(http.StatusOK, gin.H{"result": "param err"})
 		return
 	}
-	chainId, exsited := c.Params.Get("chainid")
+	chainId, exsited := c.GetQuery("chainid")
 	if !exsited {
 		c.JSON(http.StatusOK, gin.H{"result": "param err"})
 		return
@@ -92,4 +94,5 @@ func accountStake(c *gin.Context)  {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"result": "success", "stake": sacc.Resource.Votes.Staked})
+	
 }

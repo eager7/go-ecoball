@@ -24,10 +24,10 @@ def run(shell_command):
 
 # Command Line Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--node-ip', metavar='', help="IP address of node", nargs='+', dest="node_ip")
-parser.add_argument('-o', '--host-ip', metavar='', help="IP address of host node", dest="host_ip")
-parser.add_argument('-n', '--number', type=int, metavar='', help="The index number of container instance", dest="number")
-parser.add_argument('-w', '--weight', type=int, metavar='', help="The number of weights", dest="weight")
+parser.add_argument('-i', '--node-ip', metavar='', required=True, help="IP address of node", nargs='+', dest="node_ip")
+parser.add_argument('-o', '--host-ip', metavar='', required=True, help="IP address of host node", dest="host_ip")
+parser.add_argument('-n', '--number', type=int, required=True, metavar='', help="The index number of container instance", dest="number")
+parser.add_argument('-w', '--weight', type=int, default=1, metavar='', help="The number of weights", dest="weight")
 
 #parse Arguments
 args = parser.parse_args()
