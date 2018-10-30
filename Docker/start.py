@@ -37,8 +37,8 @@ if args.node_ip is None or args.host_ip is None or args.number is None or args.w
     print('please input iP address of node and host node and the index number of container instance and weight number. -h shows options.')
     sys.exit(1)
 
-if args.number < 0 or args.number > 3:
-    print('The index value must be between 0 and 3')
+if args.number < 0 or args.number > 4 * args.weight - 1:
+    print('The index value must be between 0 and %d' %(4 * args.weight))
     sys.exit(1)
 
 Pubkey = "1109ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be"
