@@ -48,6 +48,7 @@ func StartHttpServer() (err error) {
 	router.POST("/invokeContract", invokeContract)
 	router.POST("/setContract", setContract)
 	router.POST("/getContract", getContract)
+	router.POST("/getTokenInfo", getTokenInfo)
 	router.POST("/storeGet", storeGet)
 	router.POST("/transfer", transfer)
 	router.POST("/newInvokeContract", newInvokeContract)
@@ -58,6 +59,20 @@ func StartHttpServer() (err error) {
 
 	http.ListenAndServe(":20681", router)
 	return nil
+}
+
+func getTokenInfo(c *gin.Context) {
+	name := c.PostForm("name")
+	chainId_str := c.PostForm("chainId")
+	hash := new(innerCommon.Hash)
+
+	data, err := ledger.L.GetTokenInfo(hash.FormHexString(chainId_str), name)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"result": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": data.JsonString(false)})
 }
 
 func getAccountInfo(c *gin.Context) {
@@ -71,7 +86,7 @@ func getAccountInfo(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"result": data.JsonString(false)})
+	c.JSON(http.StatusOK, gin.H{"result": data.JsonString(true)})
 }
 
 func getInfo(c *gin.Context) {

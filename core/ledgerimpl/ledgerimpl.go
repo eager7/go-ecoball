@@ -309,6 +309,13 @@ func (l *LedgerImpl) AccountSubBalance(chainID common.Hash, index common.Account
 	}
 	return chain.StateDB.FinalDB.AccountSubBalance(index, token, new(big.Int).SetUint64(value))
 }
+func (l *LedgerImpl) GetTokenInfo(chainID common.Hash, token string) (*state.TokenInfo, error) {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.StateDB.FinalDB.GetTokenInfo(token)
+}
 func (l *LedgerImpl) TokenCreate(chainID common.Hash, index common.AccountName, token string, maximum uint64) error {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {

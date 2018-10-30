@@ -41,6 +41,7 @@ type Ledger interface {
 	StoreGet(chainID common.Hash, index common.AccountName, key []byte) (value []byte, err error)
 	//StoreSet(index common.AccountName, key, value []byte) error
 
+	GetTokenInfo(chainID common.Hash, token string) (*state.TokenInfo, error)
 	//TokenCreate(index common.AccountName, token string, maximum uint64) error
 	//TokenIsExisted(token string) bool
 

@@ -62,6 +62,22 @@ var (
 				},
 			},
 			{
+				Name:   "token",
+				Usage:  "get token's info by name",
+				Action: getTokenInfo,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "name, n",
+						Usage: "token name",
+					},
+					cli.StringFlag{
+						Name:  "chainId, c",
+						Usage: "chainId hash",
+						Value: "config.hash",
+					},
+				},
+			},
+			{
 				Name:   "block",
 				Usage:  "get block's info by height",
 				Action: getBlock,
@@ -179,6 +195,43 @@ func getAccount(c *cli.Context) error {
 	fmt.Println(result.Result)
 	return err
 }
+
+func getTokenInfo(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	//account name
+	name := c.String("name")
+	if name == "" {
+		fmt.Println("Invalid account name: ", name)
+		return errors.New("Invalid account name")
+	}
+
+	info, err := getInfo()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	chainId := info.ChainID
+	chainIdStr := c.String("chainId")
+	if "config.hash" != chainIdStr && "" != chainIdStr {
+		chainId = common.HexToHash(chainIdStr)
+	}
+
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("name", name)
+	values.Set("chainId", chainId.HexString())
+	err = rpc.NodePost("/getTokenInfo", values.Encode(), &result)
+
+	fmt.Println(result.Result)
+	return err
+}
+
 
 func getBlockInfoById(height int64) (*types.Block, error) {
 	resp, err := rpc.NodeCall("getBlock", []interface{}{height})
