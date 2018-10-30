@@ -935,7 +935,9 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		}
 
 		if Block.StateHashRoot != c.StateDB.FinalDB.GetHashRoot() {
-			return errors.New(log, fmt.Sprintf("the minor hash root is not eqaul, receive:%s, local:%s", Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
+			err :=  errors.New(log, fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s",
+				Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
+			log.Panic(err)
 		}
 		//heValue = append(heValue, byte(shard.HeFinalBlock))
 		data, err := Block.FinalBlockHeader.Serialize()
@@ -1121,7 +1123,10 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	if err != nil {
 		return nil, err
 	}
-
+	acc, _ := s.GetAccountByName(common.NameToIndex("root"))
+	log.Warn(acc.JsonString(false))
+	acc, _ = s.GetAccountByName(common.NameToIndex("tester"))
+	log.Warn(acc.JsonString(false))
 	return block, nil
 }
 
@@ -1149,11 +1154,11 @@ func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBl
 	return block, nil
 }
 
-func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlockHeaders []*shard.MinorBlockHeader) (*shard.FinalBlock, error) {
+func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock) (*shard.FinalBlock, error) {
 	var hashesTxs []common.Hash
 	var hashesState []common.Hash
 	var hashesMinor []common.Hash
-	for _, m := range minorBlockHeaders {
+	for _, m := range minorBlocks {
 		hashesTxs = append(hashesTxs, m.TrxHashRoot)
 		hashesState = append(hashesState, m.StateDeltaHash)
 		hashesMinor = append(hashesMinor, m.Hash())
@@ -1170,6 +1175,22 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlockHeaders []*shard.Mino
 	if err != nil {
 		return nil, err
 	}
+	s, err := c.StateDB.FinalDB.CopyState()
+	if err != nil {
+		return nil, err
+	}
+	s.Type = state.CopyType
+	var headers []*shard.MinorBlockHeader
+	for _, block := range minorBlocks {
+		headers = append(headers, &block.MinorBlockHeader)
+		for _, delta := range block.StateDelta {
+			if err := c.HandleDeltaState(s, delta, block.MinorBlockHeader.Timestamp,
+				c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	header := shard.FinalBlockHeader{
 		ChainID:            c.LastHeader.FinalHeader.ChainID,
 		Version:            c.LastHeader.FinalHeader.Version,
@@ -1186,27 +1207,31 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlockHeaders []*shard.Mino
 		StateHashRoot:      c.StateDB.FinalDB.GetHashRoot(),
 		COSign:             &types.COSign{},
 	}
-	block, err := shard.NewFinalBlock(header, minorBlockHeaders)
+	block, err := shard.NewFinalBlock(header, headers)
 	if err != nil {
 		return nil, err
 	}
+	acc, _ := s.GetAccountByName(common.NameToIndex("root"))
+	log.Warn(acc.JsonString(false))
+	acc, _ = s.GetAccountByName(common.NameToIndex("tester"))
+	log.Warn(acc.JsonString(false))
 	return block, nil
 }
 
 func (c *ChainTx) NewFinalBlock(timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
-	var minorHeaders []*shard.MinorBlockHeader
+	var minorBlocks []*shard.MinorBlock
 	for _, hash := range hashes {
 		if b, err := c.GetShardBlockByHash(shard.HeMinorBlock, hash); err != nil {
 			log.Warn(err)
 		} else {
 			if B, ok := b.GetObject().(shard.MinorBlock); ok {
-				minorHeaders = append(minorHeaders, &B.MinorBlockHeader)
+				minorBlocks = append(minorBlocks, &B)
 			} else {
 				return nil, errors.New(log, "the type is error")
 			}
 		}
 	}
-	return c.newFinalBlock(timeStamp, minorHeaders)
+	return c.newFinalBlock(timeStamp, minorBlocks)
 }
 
 func (c *ChainTx) NewViewChangeBlock(timeStamp int64, round uint16) (*shard.ViewChangeBlock, error) {
@@ -1304,6 +1329,7 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 		if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
 			return err
 		}
+
 	case types.TxDeploy:
 		if len(delta.Receipt.Accounts) != 1 {
 			return errors.New(log, "deploy delta's account len is not 1")

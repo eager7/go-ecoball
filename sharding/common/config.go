@@ -32,8 +32,9 @@ const (
 	DefaultProductViewChangeBlockTimer = 180 //second
 	DefaultViewchangeBlockWindow       = 800 //Millisecond
 
-	DefaultWaitMinorBlockTimer = 180 //second
-	DefaultMinorBlockWindow    = 400 //Millisecond
+	DefaultWaitMinorBlockTimer  = 180 //second
+	DefaultWaitMinorBlockWindow = 1   //second
+	DefaultMinorBlockWindow     = 400 //Millisecond
 
 	DefaultBlockWindow = 0 //Millisecond
 )

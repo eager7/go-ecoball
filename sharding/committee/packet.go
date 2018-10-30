@@ -106,7 +106,11 @@ func (c *committee) processShardBlockOnWaitStatus(p interface{}) {
 
 	net.Np.TransitBlock(csp)
 
-	if c.ns.IsMinorBlockEnoughInPool() {
+	if c.ns.IsMinorBlockThresholdInPool() {
+		etime.StopTime(c.stateTimer)
+		c.stateTimer.Reset(sc.DefaultWaitMinorBlockWindow * time.Second)
+	} else if c.ns.IsMinorBlockFullInPool() {
+		etime.StopTime(c.stateTimer)
 		c.fsm.Execute(ActProductFinalBlock, nil)
 	}
 }

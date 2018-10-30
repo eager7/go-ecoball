@@ -24,21 +24,21 @@ def run(shell_command):
 
 # Command Line Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--node-ip', metavar='', help="IP address of node", nargs='+', dest="node_ip")
-parser.add_argument('-o', '--host-ip', metavar='', help="IP address of host node", dest="host_ip")
-parser.add_argument('-n', '--number', type=int, metavar='', help="The index number of container instance", dest="number")
-parser.add_argument('-w', '--weight', type=int, metavar='', help="The number of weights", dest="weight")
+parser.add_argument('-i', '--node-ip', metavar='', required=True, help="IP address of node", nargs='+', dest="node_ip")
+parser.add_argument('-o', '--host-ip', metavar='', required=True, help="IP address of host node", dest="host_ip")
+parser.add_argument('-n', '--number', type=int, required=True, metavar='', help="The index number of container instance", dest="number")
+parser.add_argument('-w', '--weight', type=int, default=1, metavar='', help="The number of weights", dest="weight")
 
 #parse Arguments
 args = parser.parse_args()
 
 #Input parameter judgment
-if args.node_ip is None or args.host_ip is None or args.number is None:
-    print('please input iP address of node and host node and the index number of container instance. -h shows options.')
+if args.node_ip is None or args.host_ip is None or args.number is None or args.weight is None:
+    print('please input iP address of node and host node and the index number of container instance and weight number. -h shows options.')
     sys.exit(1)
 
-if args.number < 0 or args.number > 3:
-    print('The index value must be between 0 and 3')
+if args.number < 0 or args.number > 4 * args.weight - 1:
+    print('The index value must be between 0 and %d' %(4 * args.weight -1))
     sys.exit(1)
 
 Pubkey = "1109ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be"

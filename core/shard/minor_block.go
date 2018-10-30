@@ -196,50 +196,11 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *MinorBlockHeader, txs []
 	}
 	var sDelta []*AccountMinor
 	for _, tx := range txs {
-		for _, receipt := range tx.Receipt.Accounts {
-			acc := new(state.Account)
-			if err := acc.Deserialize(receipt); err != nil {
-				return nil, err
-			}
-			delta := AccountMinor{
-				Type:    tx.Type,
-				Receipt: types.TransactionReceipt{
-					From:      0,
-					To:        0,
-					TokenName: "",
-					Amount:    nil,
-					Hash:      common.Hash{},
-					Cpu:       0,
-					Net:       0,
-					NewToken:  nil,
-					Accounts:  nil,
-					Producer:  0,
-					Result:    nil,
-				},
-			}
-			delta.Receipt.Hash = tx.Hash
-			delta.Receipt.Cpu = tx.Receipt.Cpu
-			delta.Receipt.Net = tx.Receipt.Net
-			delta.Receipt.Result = tx.Receipt.Result
-			switch tx.Type {
-			case types.TxDeploy:
-
-			case types.TxInvoke:
-
-			case types.TxTransfer:
-				delta.Receipt.From = tx.From
-				delta.Receipt.To = tx.Addr
-				transfer, ok := tx.Payload.GetObject().(types.TransferInfo)
-				if !ok {
-					return nil, errors.New(log, "get transfer object error")
-				}
-				delta.Receipt.TokenName = transfer.Token
-				delta.Receipt.Amount = transfer.Value
-			default:
-				return nil, errors.New(log, "unknown transaction type")
-			}
-			sDelta = append(sDelta, &delta)
+		delta := AccountMinor{
+			Type:    tx.Type,
+			Receipt: tx.Receipt,
 		}
+		sDelta = append(sDelta, &delta)
 	}
 	block := &MinorBlock{
 		MinorBlockHeader: header,

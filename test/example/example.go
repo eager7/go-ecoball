@@ -1303,3 +1303,16 @@ func Actor() *actor.PID {
 	pid, _ := actor.SpawnNamed(props, "example")
 	return pid
 }
+
+func TransferExample() {
+	time.Sleep(time.Second * 15)
+	root := common.NameToIndex("root")
+	tester := common.NameToIndex("tester")
+	for i := 0; i < 100; i ++ {
+		transfer, err := types.NewTransfer(root, tester, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
+		errors.CheckErrorPanic(err)
+		transfer.SetSignature(&config.Root)
+		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+		time.Sleep(time.Second * 1)
+	}
+}

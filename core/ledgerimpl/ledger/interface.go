@@ -49,6 +49,7 @@ type Ledger interface {
 
 	GetTransaction(chainID, transactionId common.Hash) (*types.Transaction, error)
 
+	ShardPreHandleTransaction(chainID common.Hash, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error)
 	SaveShardBlock(chainID common.Hash, block shard.BlockInterface) (err error)
 	GetShardBlockByHash(chainID common.Hash, typ shard.HeaderType, hash common.Hash) (shard.BlockInterface, error)
 	GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64) (shard.BlockInterface, error)

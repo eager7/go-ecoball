@@ -73,10 +73,6 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 			{productCommitteBlock, ActCollectMinorBlock, nil, cm.collectMinorBlock, nil, collectMinorBlock},
 			{productCommitteBlock, ActStateTimeout, cm.resetVcCounter, cm.productViewChangeBlock, nil, productViewChangeBlock},
 
-			/*missing_func consensus fail or timeout*/
-			/*{ProductCommitteBlock, ActConsensusFail, , },
-			{ProductCommitteBlock, ActProductTimeout, , },*/
-
 			{collectMinorBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
 			{collectMinorBlock, ActProductFinalBlock, nil, cm.productFinalBlock, nil, productFinalBlock},
 			{collectMinorBlock, ActStateTimeout, nil, cm.productFinalBlock, nil, productFinalBlock},
@@ -89,10 +85,6 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 			{productFinalBlock, ActRecvConsensusPacket, nil, cm.processConsensusFinalPacket, nil, sc.StateNil},
 			{productFinalBlock, ActStateTimeout, cm.resetVcCounter, cm.productViewChangeBlock, nil, productViewChangeBlock},
 			{productFinalBlock, ActLedgerBlockMsg, nil, cm.processLedgerFinalBlockMsg, nil, sc.StateNil},
-
-			/*missing_func consensus fail or timeout*/
-			/*{ProductCommitteBlock, ActConsensusFail, , },
-			{ProductCommitteBlock, ActProductTimeout, , },*/
 
 			{productViewChangeBlock, ActProductCommitteeBlock, nil, cm.productCommitteeBlock, nil, productCommitteBlock},
 			{productViewChangeBlock, ActProductFinalBlock, nil, cm.productFinalBlock, nil, productFinalBlock},
