@@ -28,7 +28,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/shard"
-	"github.com/ecoball/go-ecoball/dsn/block"
 )
 
 
