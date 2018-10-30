@@ -8,7 +8,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
@@ -241,8 +240,9 @@ func (b *MinorBlock) SetReceipt(prevHeader *MinorBlockHeader, cpu, net float64) 
 			netLimit = config.BlockNetLimit
 		}
 	}
-	b.MinorBlockHeader.Receipt.BlockCpu = cpuLimit
-	b.MinorBlockHeader.Receipt.BlockNet = netLimit
+	log.Info("the new block limit is :", cpuLimit, netLimit)
+	b.MinorBlockHeader.Receipt.BlockCpu = config.BlockCpuLimit
+	b.MinorBlockHeader.Receipt.BlockNet = config.BlockNetLimit
 	return nil
 }
 
@@ -313,13 +313,13 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 	}
 
 	for _, acc := range pbBlock.StateDelta {
-		receipt := new(state.Account)
+		receipt := types.TransactionReceipt{}
 		if err := receipt.Deserialize(acc.AccountData); err != nil {
 			return err
 		}
 		stateDelta := AccountMinor{
 			Type:    types.TxType(acc.Type),
-			Receipt: types.TransactionReceipt{},
+			Receipt: receipt,
 		}
 		b.StateDelta = append(b.StateDelta, &stateDelta)
 	}

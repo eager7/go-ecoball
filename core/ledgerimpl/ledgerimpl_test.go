@@ -178,7 +178,7 @@ func TestInterface(t *testing.T) {
 	event.EventStop()
 }
 
-func TestShard(t *testing.T) {
+func xTestShard(t *testing.T) {
 	os.RemoveAll("/tmp/shard_test")
 	simulate.LoadConfig()
 	l, err := ledgerimpl.NewLedger("/tmp/shard_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)

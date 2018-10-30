@@ -917,6 +917,9 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		}
 		//TODO:Handle Minor Headers
 		for _, minorHeader := range Block.MinorBlocks {
+			if c.shardId == minorHeader.ShardId { //skip local block
+				continue
+			}
 			minorBlockInterface, err := c.GetShardBlockByHash(shard.HeMinorBlock, minorHeader.Hash())
 			if err != nil {
 				return err
@@ -935,9 +938,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		}
 
 		if Block.StateHashRoot != c.StateDB.FinalDB.GetHashRoot() {
-			err :=  errors.New(log, fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s",
-				Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
-			log.Panic(err)
+			log.Panic(fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s", Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 		}
 		//heValue = append(heValue, byte(shard.HeFinalBlock))
 		data, err := Block.FinalBlockHeader.Serialize()
@@ -988,7 +989,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	c.BlockMap[block.Hash()] = BlockCache{Height: block.GetHeight(), Type: shard.HeaderType(block.Type())}
 	log.Notice("save "+blockType+" block", block.JsonString())
 
-	log.Notice("Save Block", block.Type(), "Height", block.GetHeight())
+	log.Notice("Save Block", block.Type(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString())
 	if block.GetHeight() != 1 {
 		connect.Notify(info.InfoBlock, block)
 		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
@@ -1155,6 +1156,7 @@ func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBl
 }
 
 func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock) (*shard.FinalBlock, error) {
+	log.Debug("new final block")
 	var hashesTxs []common.Hash
 	var hashesState []common.Hash
 	var hashesMinor []common.Hash
@@ -1204,7 +1206,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 		TrxRootHash:        TrxRootHash,
 		StateDeltaRootHash: StateDeltaRootHash,
 		MinorBlocksHash:    MinorBlocksHash,
-		StateHashRoot:      c.StateDB.FinalDB.GetHashRoot(),
+		StateHashRoot:      s.GetHashRoot(),
 		COSign:             &types.COSign{},
 	}
 	block, err := shard.NewFinalBlock(header, headers)
@@ -1317,6 +1319,7 @@ func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, timeStamp int64, cpuLimit, netLimit float64) (err error) {
 	switch delta.Type {
 	case types.TxTransfer:
+		log.Info("handle delta in ", s.Type.String(), common.JsonString(delta, false))
 		if err := s.AccountSubBalance(delta.Receipt.From, state.AbaToken, delta.Receipt.Amount); err != nil {
 			return err
 		}
@@ -1329,7 +1332,6 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 		if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
 			return err
 		}
-
 	case types.TxDeploy:
 		if len(delta.Receipt.Accounts) != 1 {
 			return errors.New(log, "deploy delta's account len is not 1")

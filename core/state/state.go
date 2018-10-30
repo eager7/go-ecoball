@@ -37,6 +37,18 @@ const (
 	CopyType  TypeState = 3
 )
 
+func (t TypeState) String() string {
+	switch t {
+	case FinalType:
+		return "FinalType"
+	case TempType:
+		return "TempType"
+	case CopyType:
+		return "CopyType"
+	}
+	return "unknown type"
+}
+
 type State struct {
 	Type   TypeState
 	path   string
