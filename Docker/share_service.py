@@ -48,18 +48,19 @@ def sleep(t):
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--node-ip', metavar='', help="IP address of node", nargs='+', dest="node_ip")
 parser.add_argument('-o', '--host-ip', metavar='', help="IP address of host node", dest="host_ip")
-parser.add_argument('-w', '--weight', type=int, metavar='', help="The number of weights", dest="weight")
+parser.add_argument('-w', '--weight', type=int, metavar='', help="The number of weights", default=1, dest="weight")
+parser.add_argument('-d', '--deploy-browser-wallet', action='store_true', metavar='', help="Whether to deploy the browser and wallet", default=False, dest="deploy")
 
-#parse Arguments
+# parse Arguments
 args = parser.parse_args()
 
-#Input parameter judgment
+# Input parameter judgment
 if args.node_ip is None or args.host_ip is None:
     print('please input iP address of nodes and ip of host node and weight number. -h shows options.')
     sys.exit(1)
 
 start_port = 2000
-PORT = 20678
+PORT = 20680
 image = "jatel/internal:ecoball_v1.0"
 ip_index = args.node_ip.index(args.host_ip)
 
@@ -69,12 +70,29 @@ for ip in args.node_ip:
 
 count = 0
 while count < 4 * args.weight:
+    # start ecoball
     command = "sudo docker run -d " + "--name=ecoball_" + str(count) + " -p "
     command += str(PORT + count) + ":20678 "
     command += "-p " + str(start_port + ip_index * 4 * args.weight + count) + ":" + str(start_port + ip_index * 4 * args.weight + count)
     command += " " + image + " /root/go/src/github.com/ecoball/go-ecoball/Docker/start.py "
     command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
     run(command)
-    count += 1
     sleep(2)
+
+    if args.deploy and 0 == count:
+        # start ecowallet
+        command = "sudo docker run -d --name=ecowallet -p 20679:20679 "
+        command += image + " /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet"
+        run(command)
+        sleep(2)
+
+        # start eballscan
+        command = "sudo docker run -d --name=eballscan --link=ecoball_0:ecoball_alias -p 20680:20680 "
+        command += image + " /root/go/src/github.com/ecoball/eballscan/eballscan_service.sh ecoball_0"
+        run(command)
+        sleep(2)
+
+    count += 1
     
+
+print("start all ecoball success!!!") 
