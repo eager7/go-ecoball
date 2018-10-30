@@ -46,10 +46,10 @@ def sleep(t):
     
 # Command Line Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--node-ip', metavar='', help="IP address of node", nargs='+', dest="node_ip")
-parser.add_argument('-o', '--host-ip', metavar='', help="IP address of host node", dest="host_ip")
+parser.add_argument('-i', '--node-ip', required=True, metavar='', help="IP address of node", nargs='+', dest="node_ip")
+parser.add_argument('-o', '--host-ip', required=True, metavar='', help="IP address of host node", dest="host_ip")
 parser.add_argument('-w', '--weight', type=int, metavar='', help="The number of weights", default=1, dest="weight")
-parser.add_argument('-d', '--deploy-browser-wallet', action='store_true', metavar='', help="Whether to deploy the browser and wallet", default=False, dest="deploy")
+parser.add_argument('-d', '--deploy-browser-wallet', action='store_true', help="Whether to deploy the browser and wallet", dest="deploy")
 
 # parse Arguments
 args = parser.parse_args()
@@ -60,7 +60,7 @@ if args.node_ip is None or args.host_ip is None:
     sys.exit(1)
 
 start_port = 2000
-PORT = 20680
+PORT = 20681
 image = "jatel/internal:ecoball_v1.0"
 ip_index = args.node_ip.index(args.host_ip)
 
