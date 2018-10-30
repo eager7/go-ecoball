@@ -893,15 +893,6 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 				return errors.New(log, fmt.Sprintf("the minor state hash root is not eqaul, receive:%s, local:%s", Block.StateDeltaHash.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 			}
 			c.LastHeader.MinorHeader = &Block.MinorBlockHeader
-		} else {
-			//TODO:Handle StateDelta and Check State Hash
-			for _, delta := range Block.StateDelta {
-				if err := c.HandleDeltaState(c.StateDB.FinalDB, delta, Block.MinorBlockHeader.Timestamp,
-					c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
-					c.StateDB.FinalDB.Reset(stateHashRoot)
-					return err
-				}
-			}
 		}
 
 		//heValue = append(heValue, byte(shard.HeMinorBlock))
@@ -925,6 +916,24 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeFinalBlock.String()))
 		}
 		//TODO:Handle Minor Headers
+		for _, minorHeader := range Block.MinorBlocks {
+			minorBlockInterface, err := c.GetShardBlockByHash(shard.HeMinorBlock, minorHeader.Hash())
+			if err != nil {
+				return err
+			}
+			minorBlock, ok := minorBlockInterface.GetObject().(shard.MinorBlock)
+			if !ok {
+				return errors.New(log, "the type assertion failed")
+			}
+			for _, delta := range minorBlock.StateDelta {
+				if err := c.HandleDeltaState(c.StateDB.FinalDB, delta, minorBlock.MinorBlockHeader.Timestamp,
+					c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
+					c.StateDB.FinalDB.Reset(stateHashRoot)
+					return err
+				}
+			}
+		}
+
 		if Block.StateHashRoot != c.StateDB.FinalDB.GetHashRoot() {
 			return errors.New(log, fmt.Sprintf("the minor hash root is not eqaul, receive:%s, local:%s", Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 		}
@@ -1042,6 +1051,29 @@ func (c *ChainTx) GetLastShardBlockById(shardId uint32) (shard.BlockInterface, e
 }
 
 func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, error) {
+	lastMinor, err := c.GetLastShardBlock(shard.HeMinorBlock)
+	if err != nil {
+		return nil, err
+	}
+	lastFinal, err := c.GetLastShardBlock(shard.HeFinalBlock)
+	if err != nil {
+		return nil, err
+	}
+	if final, ok := lastFinal.GetObject().(*shard.FinalBlock); ok {
+		done := true
+		for _, m := range final.MinorBlocks {
+			hash := lastMinor.Hash()
+			mHash := m.Hash()
+			if mHash.Equals(&hash) {
+				done = false
+			}
+		}
+		if done {
+			return lastMinor.GetObject().(*shard.MinorBlock), nil
+		}
+	}
+
+
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, err
