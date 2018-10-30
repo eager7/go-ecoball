@@ -64,4 +64,5 @@ while count < 4 * args.weight:
     command += " " + image + " /root/go/src/github.com/ecoball/go-ecoball/build/Docker/start.py "
     command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
     run(command)
+    count += 1
     
