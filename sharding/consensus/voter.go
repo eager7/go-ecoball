@@ -65,11 +65,25 @@ func (c *Consensus) processCommit(csp *sc.CsPacket) {
 
 	c.step = StepCommit
 	packet := c.instance.MakeNetPacket(c.step)
-	c.csComplete()
-	net.Np.GossipBlock(packet)
-	if c.ns.NodeType == sc.NodeCommittee {
-		net.Np.SendBlockToShards(packet)
-	} else if c.ns.NodeType == sc.NodeShard {
-		net.Np.SendBlockToCommittee(packet)
+	if packet.BlockType == sc.SD_CM_BLOCK {
+		c.csComplete()
+
+		net.Np.GossipBlock(packet)
+		if c.ns.NodeType == sc.NodeCommittee {
+			net.Np.SendBlockToShards(packet)
+		} else if c.ns.NodeType == sc.NodeShard {
+			net.Np.SendBlockToCommittee(packet)
+		}
+
+	} else {
+		net.Np.GossipBlock(packet)
+		if c.ns.NodeType == sc.NodeCommittee {
+			net.Np.SendBlockToShards(packet)
+		} else if c.ns.NodeType == sc.NodeShard {
+			net.Np.SendBlockToCommittee(packet)
+		}
+
+		c.csComplete()
 	}
+
 }

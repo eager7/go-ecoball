@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	log = elog.NewLogger("sdshard", elog.DebugLog)
+	log = elog.NewLogger("sharding", elog.DebugLog)
 )
 
 const (
@@ -42,9 +42,10 @@ type shard struct {
 	ppc    chan *sc.CsPacket
 	pvc    <-chan *sc.NetPacket
 
-	stateTimer   *time.Timer
-	retransTimer *time.Timer
-	cs           *consensus.Consensus
+	stateTimer    *time.Timer
+	retransTimer  *time.Timer
+	fullVoteTimer *time.Timer
+	cs            *consensus.Consensus
 }
 
 func MakeShard(ns *cell.Cell) sc.NodeInstance {
@@ -53,7 +54,7 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 		ppc:    make(chan *sc.CsPacket, sc.DefaultShardMaxMember),
 	}
 
-	s.cs = consensus.MakeConsensus(s.ns, s.setRetransTimer, s.consensusCb)
+	s.cs = consensus.MakeConsensus(s.ns, s.setRetransTimer, s.setFullVoeTimer, s.consensusCb)
 
 	s.fsm = sc.NewFsm(blockSync,
 		[]sc.FsmElem{
@@ -97,6 +98,7 @@ func (s *shard) sRoutine() {
 	log.Debug("start shard routine")
 	s.stateTimer = time.NewTimer(sc.DefaultSyncBlockTimer * time.Second)
 	s.retransTimer = time.NewTimer(sc.DefaultRetransTimer * time.Millisecond)
+	s.fullVoteTimer = time.NewTimer(sc.DefaultFullVoteTimer * time.Millisecond)
 
 	for {
 		select {
@@ -108,6 +110,8 @@ func (s *shard) sRoutine() {
 			s.processStateTimeout()
 		case <-s.retransTimer.C:
 			s.processRetransTimeout()
+		case <-s.fullVoteTimer.C:
+			s.processFullVoteTimeout()
 		}
 	}
 }
@@ -134,11 +138,11 @@ func (s *shard) processActorMsg(msg interface{}) {
 	}
 }
 
-func (s *shard) setRetransTimer(bStart bool) {
+func (s *shard) setRetransTimer(bStart bool, d time.Duration) {
 	etime.StopTime(s.retransTimer)
 
 	if bStart {
-		s.retransTimer.Reset(sc.DefaultRetransTimer * time.Second)
+		s.retransTimer.Reset(d)
 	}
 }
 
@@ -150,5 +154,19 @@ func (s *shard) processPacket(packet *sc.CsPacket) {
 		s.recvCommitteePacket(packet)
 	default:
 		log.Error("wrong packet")
+	}
+}
+
+func (s *shard) processFullVoteTimeout() {
+	s.cs.ProcessFullVoteTimeout()
+}
+
+func (s *shard) setFullVoeTimer(bStart bool) {
+	log.Debug("set full vote timer ", bStart)
+
+	etime.StopTime(s.retransTimer)
+
+	if bStart {
+		s.fullVoteTimer.Reset(sc.DefaultFullVoteTimer * time.Second)
 	}
 }

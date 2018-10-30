@@ -10,7 +10,9 @@ import (
 )
 
 func (c *committee) processStateTimeout() {
-	c.setRetransTimer(false)
+	log.Debug("state time out")
+	c.setRetransTimer(false, 0)
+	c.setFullVoeTimer(false)
 	c.fsm.Execute(ActStateTimeout, nil)
 }
 
