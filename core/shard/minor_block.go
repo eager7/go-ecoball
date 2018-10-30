@@ -240,8 +240,9 @@ func (b *MinorBlock) SetReceipt(prevHeader *MinorBlockHeader, cpu, net float64) 
 			netLimit = config.BlockNetLimit
 		}
 	}
-	b.MinorBlockHeader.Receipt.BlockCpu = cpuLimit
-	b.MinorBlockHeader.Receipt.BlockNet = netLimit
+	log.Info("the new block limit is :", cpuLimit, netLimit)
+	b.MinorBlockHeader.Receipt.BlockCpu = config.BlockCpuLimit
+	b.MinorBlockHeader.Receipt.BlockNet = config.BlockNetLimit
 	return nil
 }
 

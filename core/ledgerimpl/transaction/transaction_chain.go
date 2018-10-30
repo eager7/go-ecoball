@@ -917,6 +917,9 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		}
 		//TODO:Handle Minor Headers
 		for _, minorHeader := range Block.MinorBlocks {
+			if c.shardId == minorHeader.ShardId { //skip local block
+				continue
+			}
 			minorBlockInterface, err := c.GetShardBlockByHash(shard.HeMinorBlock, minorHeader.Hash())
 			if err != nil {
 				return err
@@ -986,7 +989,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	c.BlockMap[block.Hash()] = BlockCache{Height: block.GetHeight(), Type: shard.HeaderType(block.Type())}
 	log.Notice("save "+blockType+" block", block.JsonString())
 
-	log.Notice("Save Block", block.Type(), "Height", block.GetHeight())
+	log.Notice("Save Block", block.Type(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString())
 	if block.GetHeight() != 1 {
 		connect.Notify(info.InfoBlock, block)
 		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
@@ -1203,7 +1206,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 		TrxRootHash:        TrxRootHash,
 		StateDeltaRootHash: StateDeltaRootHash,
 		MinorBlocksHash:    MinorBlocksHash,
-		StateHashRoot:      c.StateDB.FinalDB.GetHashRoot(),
+		StateHashRoot:      s.GetHashRoot(),
 		COSign:             &types.COSign{},
 	}
 	block, err := shard.NewFinalBlock(header, headers)
