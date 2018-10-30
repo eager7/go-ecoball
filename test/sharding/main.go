@@ -29,7 +29,7 @@ func main() {
 
 	topo := actor.SubscribeShardingTopo()
 
-	//go example.TransferExample()
+	go example.TransferExample()
 
 	go func() {
 		for {
