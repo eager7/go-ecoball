@@ -238,7 +238,20 @@ func (c *Cell) IsMinorBlockEnoughInPool() bool {
 		return true
 	}
 
-	if c.minorBlockPool.count() >= uint16(len(cm.Shards)*sc.DefaultThresholdOfMinorBlock/100) {
+	if c.minorBlockPool.count() == uint16(len(cm.Shards)*sc.DefaultThresholdOfMinorBlock/100) {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (c *Cell) IsMinorBlockFullInPool() bool {
+	cm := c.chain.cmBlock
+	if cm == nil {
+		return true
+	}
+
+	if c.minorBlockPool.count() == uint16(len(cm.Shards)) {
 		return true
 	} else {
 		return false
