@@ -232,7 +232,7 @@ func (c *Cell) GetMinorBlockHashesFromPool() []common.Hash {
 	return c.minorBlockPool.getMinorBlockHashes()
 }
 
-func (c *Cell) IsMinorBlockEnoughInPool() bool {
+func (c *Cell) IsMinorBlockThresholdInPool() bool {
 	cm := c.chain.cmBlock
 	if cm == nil {
 		return true

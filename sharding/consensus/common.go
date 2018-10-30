@@ -14,7 +14,7 @@ func (c *Consensus) isVoteEnough(counter uint32) bool {
 	}
 }
 
-func (c *Consensus) isVoteOnThreshhold(counter uint32) bool {
+func (c *Consensus) isVoteOnThreshold(counter uint32) bool {
 	if counter == c.ns.GetWorksCounter()*sc.DefaultThresholdOfConsensus/1000+1 {
 		return true
 	} else {
