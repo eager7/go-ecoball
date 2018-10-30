@@ -8,7 +8,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
@@ -196,50 +195,11 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *MinorBlockHeader, txs []
 	}
 	var sDelta []*AccountMinor
 	for _, tx := range txs {
-		for _, receipt := range tx.Receipt.Accounts {
-			acc := new(state.Account)
-			if err := acc.Deserialize(receipt); err != nil {
-				return nil, err
-			}
-			delta := AccountMinor{
-				Type:    tx.Type,
-				Receipt: types.TransactionReceipt{
-					From:      0,
-					To:        0,
-					TokenName: "",
-					Amount:    nil,
-					Hash:      common.Hash{},
-					Cpu:       0,
-					Net:       0,
-					NewToken:  nil,
-					Accounts:  nil,
-					Producer:  0,
-					Result:    nil,
-				},
-			}
-			delta.Receipt.Hash = tx.Hash
-			delta.Receipt.Cpu = tx.Receipt.Cpu
-			delta.Receipt.Net = tx.Receipt.Net
-			delta.Receipt.Result = tx.Receipt.Result
-			switch tx.Type {
-			case types.TxDeploy:
-
-			case types.TxInvoke:
-
-			case types.TxTransfer:
-				delta.Receipt.From = tx.From
-				delta.Receipt.To = tx.Addr
-				transfer, ok := tx.Payload.GetObject().(types.TransferInfo)
-				if !ok {
-					return nil, errors.New(log, "get transfer object error")
-				}
-				delta.Receipt.TokenName = transfer.Token
-				delta.Receipt.Amount = transfer.Value
-			default:
-				return nil, errors.New(log, "unknown transaction type")
-			}
-			sDelta = append(sDelta, &delta)
+		delta := AccountMinor{
+			Type:    tx.Type,
+			Receipt: tx.Receipt,
 		}
+		sDelta = append(sDelta, &delta)
 	}
 	block := &MinorBlock{
 		MinorBlockHeader: header,
@@ -280,8 +240,9 @@ func (b *MinorBlock) SetReceipt(prevHeader *MinorBlockHeader, cpu, net float64) 
 			netLimit = config.BlockNetLimit
 		}
 	}
-	b.MinorBlockHeader.Receipt.BlockCpu = cpuLimit
-	b.MinorBlockHeader.Receipt.BlockNet = netLimit
+	log.Info("the new block limit is :", cpuLimit, netLimit)
+	b.MinorBlockHeader.Receipt.BlockCpu = config.BlockCpuLimit
+	b.MinorBlockHeader.Receipt.BlockNet = config.BlockNetLimit
 	return nil
 }
 
@@ -352,13 +313,13 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 	}
 
 	for _, acc := range pbBlock.StateDelta {
-		receipt := new(state.Account)
+		receipt := types.TransactionReceipt{}
 		if err := receipt.Deserialize(acc.AccountData); err != nil {
 			return err
 		}
 		stateDelta := AccountMinor{
 			Type:    types.TxType(acc.Type),
-			Receipt: types.TransactionReceipt{},
+			Receipt: receipt,
 		}
 		b.StateDelta = append(b.StateDelta, &stateDelta)
 	}
