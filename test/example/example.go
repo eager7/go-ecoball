@@ -1320,4 +1320,9 @@ func TransferExample() {
 	errors.CheckErrorPanic(contract.SetSignature(&config.Root))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 500)
+
+	invoke, err := types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"delegate", common.AddressFromPubKey(config.Delegate.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
 }

@@ -938,7 +938,8 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		}
 
 		if Block.StateHashRoot != c.StateDB.FinalDB.GetHashRoot() {
-			log.Panic(fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s", Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
+			log.Error(common.JsonString(c.StateDB.FinalDB.Accounts, false))
+			return errors.New(log, fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s", Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 		}
 		//heValue = append(heValue, byte(shard.HeFinalBlock))
 		data, err := Block.FinalBlockHeader.Serialize()
@@ -1124,10 +1125,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	if err != nil {
 		return nil, err
 	}
-	acc, _ := s.GetAccountByName(common.NameToIndex("root"))
-	log.Warn(acc.JsonString(false))
-	acc, _ = s.GetAccountByName(common.NameToIndex("tester"))
-	log.Warn(acc.JsonString(false))
+	log.Warn(common.JsonString(s.Accounts, false))
 	return block, nil
 }
 
@@ -1213,10 +1211,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	if err != nil {
 		return nil, err
 	}
-	acc, _ := s.GetAccountByName(common.NameToIndex("root"))
-	log.Warn(acc.JsonString(false))
-	acc, _ = s.GetAccountByName(common.NameToIndex("tester"))
-	log.Warn(acc.JsonString(false))
+	log.Warn(common.JsonString(s.Accounts, false))
 	return block, nil
 }
 
@@ -1326,12 +1321,6 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 		if err := s.AccountAddBalance(delta.Receipt.To, state.AbaToken, delta.Receipt.Amount); err != nil {
 			return err
 		}
-		if err := s.RecoverResources(delta.Receipt.From, timeStamp, cpuLimit, netLimit); err != nil {
-			return err
-		}
-		if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
-			return err
-		}
 	case types.TxDeploy:
 		if len(delta.Receipt.Accounts) != 1 {
 			return errors.New(log, "deploy delta's account len is not 1")
@@ -1341,12 +1330,6 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 			return err
 		}
 		if err := s.SetContract(delta.Receipt.To, acc.Contract.TypeVm, acc.Contract.Describe, acc.Contract.Code, acc.Contract.Abi); err != nil {
-			return err
-		}
-		if err := s.RecoverResources(delta.Receipt.From, timeStamp, cpuLimit, netLimit); err != nil {
-			return err
-		}
-		if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
 			return err
 		}
 	case types.TxInvoke:
@@ -1368,6 +1351,9 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 			if err != nil {
 				return err
 			}
+			if accState == nil {
+				accState = acc
+			}
 			if acc.Tokens != nil {
 				for k, v := range acc.Tokens {
 					accState.Tokens[k] = v
@@ -1382,13 +1368,27 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 				accState.Cpu.Limit = acc.Cpu.Limit
 				accState.Cpu.Available = acc.Cpu.Available
 				accState.Cpu.Staked = acc.Cpu.Staked
-				accState.Cpu.Used = acc.Cpu.Used
+				//accState.Cpu.Used = acc.Cpu.Used
 				accState.Cpu.Delegated = acc.Cpu.Delegated
 
 			}
+			if acc.Net.Limit != 0 {
+				accState.Net.Limit = acc.Net.Limit
+				accState.Net.Delegated = acc.Net.Delegated
+				accState.Net.Staked = acc.Net.Staked
+				accState.Net.Available = acc.Net.Available
+			}
+			s.CommitAccount(accState)
 		}
+
 	default:
 		return errors.New(log, "unknown transaction type")
+	}
+	if err := s.RecoverResources(delta.Receipt.From, timeStamp, cpuLimit, netLimit); err != nil {
+		return err
+	}
+	if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
+		return err
 	}
 	return nil
 }
