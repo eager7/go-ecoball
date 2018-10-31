@@ -21,7 +21,7 @@ const (
 	/*timer of fsm state .second*/
 	DefaultSyncBlockTimer = 10
 	DefaultRetransTimer   = 1
-	DefaultFullVoteTimer  = 1
+	DefaultFullVoteTimer  = 3
 
 	DefaultProductCmBlockTimer = 60  //second
 	DefaultCmBlockWindow       = 400 //Millisecond
@@ -33,7 +33,7 @@ const (
 	DefaultViewchangeBlockWindow       = 800 //Millisecond
 
 	DefaultWaitMinorBlockTimer  = 180 //second
-	DefaultWaitMinorBlockWindow = 1   //second
+	DefaultWaitMinorBlockWindow = 10  //second
 	DefaultMinorBlockWindow     = 400 //Millisecond
 
 	DefaultBlockWindow = 0 //Millisecond

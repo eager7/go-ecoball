@@ -2,7 +2,6 @@ package shard
 
 import (
 	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/common/etime"
 	"github.com/ecoball/go-ecoball/common/message"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
@@ -30,7 +29,7 @@ const (
 	ActWaitBlock
 	ActRecvConsensusPacket
 	ActChainNotSync
-	ActRecvCommitteePacket
+	ActRecvShardingPacket
 	ActLedgerBlockMsg
 	ActStateTimeout
 )
@@ -42,16 +41,19 @@ type shard struct {
 	ppc    chan *sc.CsPacket
 	pvc    <-chan *sc.NetPacket
 
-	stateTimer    *time.Timer
-	retransTimer  *time.Timer
-	fullVoteTimer *time.Timer
+	stateTimer    *sc.Stimer
+	retransTimer  *sc.Stimer
+	fullVoteTimer *sc.Stimer
 	cs            *consensus.Consensus
 }
 
 func MakeShard(ns *cell.Cell) sc.NodeInstance {
 	s := &shard{ns: ns,
-		actorc: make(chan interface{}),
-		ppc:    make(chan *sc.CsPacket, sc.DefaultShardMaxMember),
+		actorc:        make(chan interface{}),
+		ppc:           make(chan *sc.CsPacket, sc.DefaultShardMaxMember),
+		stateTimer:    sc.NewStimer(0, false),
+		retransTimer:  sc.NewStimer(0, false),
+		fullVoteTimer: sc.NewStimer(0, false),
 	}
 
 	s.cs = consensus.MakeConsensus(s.ns, s.setRetransTimer, s.setFullVoeTimer, s.consensusCb)
@@ -64,12 +66,12 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 
 			{waitBlock, ActProductMinorBlock, nil, s.productMinorBlock, nil, productMinoBlock},
 			{waitBlock, ActChainNotSync, nil, nil, nil, blockSync},
-			{waitBlock, ActRecvCommitteePacket, nil, s.processCommitteePacket, nil, sc.StateNil},
+			{waitBlock, ActRecvShardingPacket, nil, s.processShardingPacket, nil, sc.StateNil},
 
 			{productMinoBlock, ActRecvConsensusPacket, nil, s.processConsensusMinorPacket, nil, sc.StateNil},
 			{productMinoBlock, ActWaitBlock, nil, nil, nil, waitBlock},
 			{productMinoBlock, ActProductMinorBlock, nil, s.reproductMinorBlock, nil, sc.StateNil},
-			{productMinoBlock, ActRecvCommitteePacket, nil, s.processCommitteePacket, nil, sc.StateNil},
+			{productMinoBlock, ActRecvShardingPacket, nil, s.processShardingPacket, nil, sc.StateNil},
 			{productMinoBlock, ActLedgerBlockMsg, nil, s.processLedgerMinorBlockMsg, nil, sc.StateNil},
 		})
 
@@ -96,9 +98,7 @@ func (s *shard) Start() {
 
 func (s *shard) sRoutine() {
 	log.Debug("start shard routine")
-	s.stateTimer = time.NewTimer(sc.DefaultSyncBlockTimer * time.Second)
-	s.retransTimer = time.NewTimer(sc.DefaultRetransTimer * time.Millisecond)
-	s.fullVoteTimer = time.NewTimer(sc.DefaultFullVoteTimer * time.Millisecond)
+	s.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 
 	for {
 		select {
@@ -106,12 +106,18 @@ func (s *shard) sRoutine() {
 			s.processActorMsg(msg)
 		case packet := <-s.ppc:
 			s.processPacket(packet)
-		case <-s.stateTimer.C:
-			s.processStateTimeout()
-		case <-s.retransTimer.C:
-			s.processRetransTimeout()
-		case <-s.fullVoteTimer.C:
-			s.processFullVoteTimeout()
+		case <-s.stateTimer.T.C:
+			if s.stateTimer.On {
+				s.processStateTimeout()
+			}
+		case <-s.retransTimer.T.C:
+			if s.retransTimer.On {
+				s.processRetransTimeout()
+			}
+		case <-s.fullVoteTimer.T.C:
+			if s.fullVoteTimer.On {
+				s.processFullVoteTimeout()
+			}
 		}
 	}
 }
@@ -139,10 +145,12 @@ func (s *shard) processActorMsg(msg interface{}) {
 }
 
 func (s *shard) setRetransTimer(bStart bool, d time.Duration) {
-	etime.StopTime(s.retransTimer)
+	log.Debug("set restrans timer ", bStart)
 
 	if bStart {
 		s.retransTimer.Reset(d)
+	} else {
+		s.retransTimer.Stop()
 	}
 }
 
@@ -151,7 +159,7 @@ func (s *shard) processPacket(packet *sc.CsPacket) {
 	case netmsg.APP_MSG_CONSENSUS_PACKET:
 		s.recvConsensusPacket(packet)
 	case netmsg.APP_MSG_SHARDING_PACKET:
-		s.recvCommitteePacket(packet)
+		s.recvShardingPacket(packet)
 	default:
 		log.Error("wrong packet")
 	}
@@ -164,9 +172,9 @@ func (s *shard) processFullVoteTimeout() {
 func (s *shard) setFullVoeTimer(bStart bool) {
 	log.Debug("set full vote timer ", bStart)
 
-	etime.StopTime(s.retransTimer)
-
 	if bStart {
 		s.fullVoteTimer.Reset(sc.DefaultFullVoteTimer * time.Second)
+	} else {
+		s.fullVoteTimer.Stop()
 	}
 }

@@ -2,7 +2,6 @@ package committee
 
 import (
 	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/common/etime"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
@@ -84,7 +83,6 @@ func (c *committee) processSyncComplete(msg interface{}) {
 }
 
 func (c *committee) doBlockSync(msg interface{}) {
-	etime.StopTime(c.stateTimer)
 	c.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 }
 
@@ -100,6 +98,5 @@ func (c *committee) processBlockSyncTimeout(msg interface{}) {
 }
 
 func (c *committee) collectMinorBlock(msg interface{}) {
-	etime.StopTime(c.stateTimer)
 	c.stateTimer.Reset(sc.DefaultWaitMinorBlockTimer * time.Second)
 }

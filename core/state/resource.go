@@ -102,7 +102,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 		accTo.mutex.Lock()
 		defer accTo.mutex.Unlock()
 		accTo.AddResourceLimits(false, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum, cpuLimit, netLimit)
-		if err := s.commitAccount(accTo); err != nil {
+		if err := s.CommitAccount(accTo); err != nil {
 			return err
 		}
 	}
@@ -121,7 +121,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 	if err := s.updateElectedProducers(acc, acc.Votes.Staked-cpuStaked-netStaked); err != nil {
 		return err
 	}
-	return s.commitAccount(acc)
+	return s.CommitAccount(acc)
 }
 
 /**
@@ -148,7 +148,7 @@ func (s *State) SubResources(index common.AccountName, cpu, net float64, cpuLimi
 	if err := acc.SubResourceLimits(cpu, net, cpuStakedSum, netStakedSum, cpuLimit, netLimit); err != nil {
 		return err
 	}
-	return s.commitAccount(acc)
+	return s.CommitAccount(acc)
 }
 
 /**
@@ -188,7 +188,7 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 		if err := acc.CancelDelegateOther(accTo, cpuStaked, netStaked, cpuStakedSum, netStakedSum, cpuLimit, netLimit); err != nil {
 			return err
 		}
-		if err := s.commitAccount(accTo); err != nil {
+		if err := s.CommitAccount(accTo); err != nil {
 			return err
 		}
 	} else {
@@ -218,7 +218,7 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 		s.prodMutex.Unlock()
 	}
 	s.commitProducersList()
-	return s.commitAccount(acc)
+	return s.CommitAccount(acc)
 }
 
 /**
@@ -242,7 +242,7 @@ func (s *State) RecoverResources(index common.AccountName, timeStamp int64, cpuL
 		return err
 	}
 	acc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit)
-	return s.commitAccount(acc)
+	return s.CommitAccount(acc)
 }
 
 /**
@@ -461,7 +461,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 		//	log.Info(event.Send(event.ActorNil, event.ActorConsensus, &message.ABABFTStart{}))
 		//}
 	}
-	return s.commitAccount(acc)
+	return s.CommitAccount(acc)
 }
 
 /**

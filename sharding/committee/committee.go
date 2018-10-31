@@ -2,7 +2,6 @@ package committee
 
 import (
 	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/common/etime"
 	"github.com/ecoball/go-ecoball/common/message"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
@@ -44,19 +43,22 @@ type committee struct {
 	actorc        chan interface{}
 	ppc           chan *sc.CsPacket
 	pvc           <-chan *sc.NetPacket
-	stateTimer    *time.Timer
-	retransTimer  *time.Timer
-	fullVoteTimer *time.Timer
+	stateTimer    *sc.Stimer
+	retransTimer  *sc.Stimer
+	fullVoteTimer *sc.Stimer
 	vccount       uint16
 	cs            *consensus.Consensus
 }
 
 func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 	cm := &committee{
-		ns:      ns,
-		actorc:  make(chan interface{}),
-		ppc:     make(chan *sc.CsPacket, sc.DefaultCommitteMaxMember),
-		vccount: 0,
+		ns:            ns,
+		actorc:        make(chan interface{}),
+		ppc:           make(chan *sc.CsPacket, sc.DefaultCommitteMaxMember),
+		vccount:       0,
+		stateTimer:    sc.NewStimer(0, false),
+		retransTimer:  sc.NewStimer(0, false),
+		fullVoteTimer: sc.NewStimer(0, false),
 	}
 
 	cm.cs = consensus.MakeConsensus(cm.ns, cm.setRetransTimer, cm.setFullVoeTimer, cm.consensusCb)
@@ -115,9 +117,7 @@ func (c *committee) Start() {
 
 func (c *committee) cmRoutine() {
 	log.Debug("start committee routine")
-	c.stateTimer = time.NewTimer(sc.DefaultSyncBlockTimer * time.Second)
-	c.retransTimer = time.NewTimer(sc.DefaultRetransTimer * time.Millisecond)
-	c.fullVoteTimer = time.NewTimer(sc.DefaultFullVoteTimer * time.Millisecond)
+	c.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 
 	for {
 		select {
@@ -125,12 +125,18 @@ func (c *committee) cmRoutine() {
 			c.processActorMsg(msg)
 		case packet := <-c.ppc:
 			c.processPacket(packet)
-		case <-c.stateTimer.C:
-			c.processStateTimeout()
-		case <-c.retransTimer.C:
-			c.processRetransTimeout()
-		case <-c.fullVoteTimer.C:
-			c.processFullVoteTimeout()
+		case <-c.stateTimer.T.C:
+			if c.stateTimer.On {
+				c.processStateTimeout()
+			}
+		case <-c.retransTimer.T.C:
+			if c.retransTimer.On {
+				c.processRetransTimeout()
+			}
+		case <-c.fullVoteTimer.T.C:
+			if c.fullVoteTimer.On {
+				c.processFullVoteTimeout()
+			}
 		}
 	}
 }
@@ -174,9 +180,10 @@ func (c *committee) processFullVoteTimeout() {
 
 func (c *committee) setFullVoeTimer(bStart bool) {
 	log.Debug("set full vote timer ", bStart)
-	etime.StopTime(c.retransTimer)
 
 	if bStart {
 		c.fullVoteTimer.Reset(sc.DefaultFullVoteTimer * time.Second)
+	} else {
+		c.fullVoteTimer.Stop()
 	}
 }

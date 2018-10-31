@@ -3,12 +3,10 @@ package committee
 import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/common/etime"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
-	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 )
@@ -19,6 +17,9 @@ type cmBlockCsi struct {
 }
 
 func newCmBlockCsi(bk *cs.CMBlock) *cmBlockCsi {
+	bk.Step1 = 1
+	bk.Step2 = 1
+
 	return &cmBlockCsi{bk: bk}
 }
 
@@ -66,20 +67,6 @@ func (b *cmBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 func (b *cmBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
 	csp := &sc.NetPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_CM_BLOCK, Step: step}
 
-	/*missing_func should fill in signature and bit map*/
-	if step == consensus.StepPrePare {
-		log.Debug("make cm prepare block")
-		b.bk.Step1 = 1
-	} else if step == consensus.StepPreCommit {
-		log.Debug("make cm precommit block")
-		b.bk.Step2 = 1
-	} else if step == consensus.StepCommit {
-		log.Debug("make cm commit block")
-	} else {
-		log.Fatal("step wrong")
-		return nil
-	}
-
 	data, err := b.bk.Serialize()
 	if err != nil {
 		log.Error("cm block Serialize error ", err)
@@ -96,17 +83,15 @@ func (b *cmBlockCsi) GetCsBlock() interface{} {
 }
 
 func (b *cmBlockCsi) PrepareRsp() uint32 {
-	if b.cache.Step1 == 1 {
-		b.bk.Step1++
-	}
+	log.Debug("prepare receive consign ", b.cache.Step1)
+	b.bk.Step1 |= b.cache.Step1
 
 	return b.bk.Step1
 }
 
 func (b *cmBlockCsi) PrecommitRsp() uint32 {
-	if b.cache.Step2 == 1 {
-		b.bk.Step2++
-	}
+	log.Debug("precommit receive consign ", b.cache.Step2)
+	b.bk.Step2 |= b.cache.Step2
 
 	return b.bk.Step2
 }
@@ -219,7 +204,7 @@ func (c *committee) createCommitteeBlock() *cs.CMBlock {
 }
 
 func (c *committee) productCommitteeBlock(msg interface{}) {
-	etime.StopTime(c.stateTimer)
+	c.stateTimer.Stop()
 
 	cm := c.createCommitteeBlock()
 	if cm == nil {

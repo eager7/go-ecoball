@@ -176,6 +176,22 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 		}
 	}
 
+	//send block to other shard
+	cmb := n.ns.GetLastCMBlock()
+	for i, shard := range cmb.Shards {
+		if n.ns.Shardid == uint16(i+1) {
+			continue
+		}
+
+		if leader {
+			go simulate.Sendto(shard.Member[0].Address, shard.Member[0].Port, sp)
+		} else if bakcup {
+			if len(shard.Member) > 1 {
+				go simulate.Sendto(shard.Member[1].Address, shard.Member[1].Port, sp)
+			}
+		}
+	}
+
 }
 
 func (n *net) TransitBlock(p *sc.CsPacket) {

@@ -138,7 +138,7 @@ func (s *State) AddPermission(index common.AccountName, perm Permission) error {
 	acc.mutex.Lock()
 	defer acc.mutex.Unlock()
 	acc.AddPermission(perm)
-	return s.commitAccount(acc)
+	return s.CommitAccount(acc)
 }
 
 /**

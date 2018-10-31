@@ -16,8 +16,6 @@ import (
 	ecommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
 	"github.com/ecoball/go-ecoball/common/elog"
-	"crypto/sha256"
-	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
 	"github.com/ecoball/go-ecoball/core/types"
 	innerCommon "github.com/ecoball/go-ecoball/common"
@@ -51,6 +49,7 @@ func (s *Settler) Start() error {
 
 func (s *Settler) payToHost(spf host.StorageProof, st state.InterfaceState) error {
 	reward := CalcHostReward(spf, st)
+	log.Info("pay for ", spf.AccountName, " ", reward.String())
 	timeNow := time.Now().UnixNano()
 	tran, err := types.NewTransfer(ecommon.NameToIndex(dsnComm.RootAccount),
 		innerCommon.NameToIndex(spf.AccountName), ecommon.HexToHash(s.chainId), "owner", reward, 0, timeNow)
@@ -73,7 +72,7 @@ func (s *Settler) decodeAnnouncement(fullAnnouncement []byte) (host.HostAncContr
 	if err != nil {
 		return announcement, err
 	}
-	var sig [dsnComm.SigSize]byte
+	/*var sig [dsnComm.SigSize]byte
 	err = dec.Decode(&sig)
 	if err != nil {
 		return announcement, err
@@ -85,7 +84,7 @@ func (s *Settler) decodeAnnouncement(fullAnnouncement []byte) (host.HostAncContr
 	}
 	if err != nil {
 		return announcement, err
-	}
+	}*/
 	return announcement, nil
 }
 
@@ -96,7 +95,7 @@ func (s *Settler) decodeProof(proof []byte) (host.StorageProof, error) {
 	if err != nil {
 		return sp, err
 	}
-	var sig [dsnComm.SigSize]byte
+	/*var sig [dsnComm.SigSize]byte
 	err = dec.Decode(&sig)
 	if err != nil {
 		return sp, err
@@ -108,7 +107,7 @@ func (s *Settler) decodeProof(proof []byte) (host.StorageProof, error) {
 	}
 	if err != nil {
 		return sp, err
-	}
+	}*/
 	return sp, nil
 }
 
@@ -180,13 +179,16 @@ func (s *Settler)HandleHostAnce(data []byte, st state.InterfaceState) error {
 func (s *Settler)HandleStorageProof(data []byte, st state.InterfaceState) error {
 	proof, err := s.decodeProof(data)
 	if err != nil {
+		log.Error(err.Error())
 		return err
 	}
 	valid, err := s.verifyStorageProof(proof, st)
 	if err != nil {
+		log.Error(err.Error())
 		return err
 	}
 	if !valid {
+		log.Error(errProofInvalid)
 		return errProofInvalid
 	}
 	s.payToHost(proof, st)

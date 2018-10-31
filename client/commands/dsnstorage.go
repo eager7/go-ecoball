@@ -105,17 +105,14 @@ func dsnAddFile(ctx *cli.Context) error {
 		fmt.Println(err.Error())
 		return err
 	}
-
 	reqKeys, err = GetRequiredKeys(chainId, pkKeys, "owner", payTrn)
 	if err != nil {
 		return err
 	}
-
 	err = SignTransaction(chainId, reqKeys, payTrn)
 	if err != nil {
 		return err
 	}
-
 	data, err = payTrn.Serialize()
 	if err != nil {
 		return err
@@ -147,6 +144,14 @@ func dsnCatFile (ctx *cli.Context)  {
 		return
 	}
 	fmt.Println(string(d))
+}
+
+func dsnGetFile(ctx *cli.Context) error {
+	cid := os.Args[3]
+	outPath := os.Args[4]
+	cbtx := context.Background()
+	dclient := dsncli.NewRcWithDefaultConf(cbtx)
+	return dclient.GetFile(cid, outPath)
 }
 
 func GetChainId() (common.Hash, error) {
@@ -186,5 +191,71 @@ func SignTransaction(chainId common.Hash, required_keys string, trx *types.Trans
 	if nil == err {
 		trx.Deserialize(common.FromHex(result.Result))
 	}
+	return err
+}
+
+func TxTransaction(trx *types.Transaction) error {
+	chainId, err := GetChainId()
+	if err != nil {
+		return err
+	}
+
+	pkKeys, err := GetPublicKeys()
+	if err != nil {
+		return err
+	}
+
+	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", trx)
+	if err != nil {
+		return err
+	}
+	err = SignTransaction(chainId, reqKeys, trx)
+	if err != nil {
+		return err
+	}
+	data, err := trx.Serialize()
+	if err != nil {
+		return err
+	}
+
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("transfer", common.ToHex(data))
+	err = rpc.NodePost("/transfer", values.Encode(), &result)
+	fmt.Println("tx transaction: ", result.Result)
+	return err
+}
+
+func InvokeContract(trx *types.Transaction) error {
+	chainId, err := GetChainId()
+	if err != nil {
+		return err
+	}
+
+	pkKeys, err := GetPublicKeys()
+	if err != nil {
+		return err
+	}
+
+	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", trx)
+	if err != nil {
+		return err
+	}
+
+	err = SignTransaction(chainId, reqKeys, trx)
+	if err != nil {
+		return err
+	}
+
+	data, err := trx.Serialize()
+	if err != nil {
+		return err
+	}
+
+	var retContract clientCommon.SimpleResult
+	ctcv := url.Values{}
+	ctcv.Set("transaction", common.ToHex(data))
+	err = rpc.NodePost("/invokeContract", ctcv.Encode(), &retContract)
+	fmt.Println("Contract: ", retContract.Result)
 	return err
 }

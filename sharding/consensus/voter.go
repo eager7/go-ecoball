@@ -40,6 +40,7 @@ func (c *Consensus) processPacketByVoter(csp *sc.CsPacket) {
 
 func (c *Consensus) processPrepare(csp *sc.CsPacket) {
 	log.Debug("process prepare")
+	c.setCosign()
 	c.sendPrepareRsp()
 }
 
@@ -50,8 +51,14 @@ func (c *Consensus) sendPrepareRsp() {
 
 func (c *Consensus) processPrecommit(csp *sc.CsPacket) {
 	log.Debug("process precommit")
-	c.step = StepPreCommit
 
+	if !c.checkCosign() {
+		log.Error("cosign error")
+		return
+	}
+
+	c.step = StepPreCommit
+	c.setCosign()
 	c.sendPrecommitRsp(csp)
 }
 
@@ -62,6 +69,11 @@ func (c *Consensus) sendPrecommitRsp(csp *sc.CsPacket) {
 
 func (c *Consensus) processCommit(csp *sc.CsPacket) {
 	log.Debug("process commit")
+
+	if !c.checkCosign() {
+		log.Error("cosign error")
+		return
+	}
 
 	c.step = StepCommit
 	packet := c.instance.MakeNetPacket(c.step)
