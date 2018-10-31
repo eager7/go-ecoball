@@ -27,6 +27,7 @@ import (
 type NotifyInfo interface {
 	Serialize() ([]byte, error)
 	Deserialize(data []byte) error
+	Type() uint32
 }
 
 type NotifyType int
@@ -41,15 +42,16 @@ const (
 type OneNotify struct {
 	InfoType NotifyType
 	Info     []byte
-	blockType uint32
+	BlockType uint32
 }
 
 func NewOneNotify(oneType NotifyType, message NotifyInfo) (*OneNotify, error) {
+	blockType := message.Type()
 	oneMessage, err := message.Serialize()
 	if nil != err {
 		return nil, err
 	}
-	return &OneNotify{oneType, oneMessage}, nil
+	return &OneNotify{oneType, oneMessage, blockType}, nil
 }
 
 func (this *OneNotify) Serialize() ([]byte, error) {
