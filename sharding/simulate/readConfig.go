@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 type NodeConfig struct {
@@ -18,6 +19,7 @@ type config struct {
 	Pubkey    string
 	Address   string
 	Port      string
+	Size      string
 	Committee []NodeConfig
 	Shard     []NodeConfig
 }
@@ -73,6 +75,22 @@ func GetCommittee() []NodeConfig {
 
 func GetShards() []NodeConfig {
 	return cfg.Shard
+}
+
+func GetShardSize() int {
+	if cfg.Size == "" {
+		return 5
+	} else {
+		i, err := strconv.Atoi(cfg.Size)
+		if err != nil {
+			panic("error")
+		}
+
+		if i < 1 || i > 200 {
+			panic("error")
+		}
+		return i
+	}
 }
 
 func GetNodePubKey() []byte {
