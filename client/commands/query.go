@@ -99,7 +99,7 @@ var (
 )
 
 func getAllChainInfo(c *cli.Context) error {
-	var result common.SimpleResult
+	var result clientCommon.SimpleResult
 	err := rpc.NodeGet("/query/allChainInfo", &result)
 	if nil == err {
 		fmt.Println(result.Result)
@@ -108,7 +108,7 @@ func getAllChainInfo(c *cli.Context) error {
 }
 
 func getMainChainHash() (common.Hash, error) {
-	var result common.SimpleResult
+	var result clientCommon.SimpleResult
 	err := rpc.NodeGet("/query/mainChainHash", &result)
 	if nil != err {
 		return nil, err
