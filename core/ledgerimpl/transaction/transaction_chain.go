@@ -929,7 +929,11 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 				return errors.New(log, "the type assertion failed")
 			}
 			for _, delta := range minorBlock.StateDelta {
-				if err := c.HandleDeltaState(c.StateDB.FinalDB, delta, minorBlock.MinorBlockHeader.Timestamp,
+				tx, err := minorBlock.GetTransaction(delta.Receipt.Hash)
+				if err != nil {
+					return err
+				}
+				if err := c.HandleDeltaState(c.StateDB.FinalDB, delta, tx, minorBlock.MinorBlockHeader.Timestamp,
 					c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
 					c.StateDB.FinalDB.Reset(stateHashRoot)
 					return err
@@ -1184,7 +1188,11 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	for _, block := range minorBlocks {
 		headers = append(headers, &block.MinorBlockHeader)
 		for _, delta := range block.StateDelta {
-			if err := c.HandleDeltaState(s, delta, block.MinorBlockHeader.Timestamp,
+			tx, err := block.GetTransaction(delta.Receipt.Hash)
+			if err != nil {
+				return nil, err
+			}
+			if err := c.HandleDeltaState(s, delta, tx, block.MinorBlockHeader.Timestamp,
 				c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
 				return nil, err
 			}
@@ -1311,7 +1319,7 @@ func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 	return nil
 }
 
-func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, timeStamp int64, cpuLimit, netLimit float64) (err error) {
+func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, tx *types.Transaction, timeStamp int64, cpuLimit, netLimit float64) (err error) {
 	switch delta.Type {
 	case types.TxTransfer:
 		log.Info("handle delta in ", s.Type.String(), common.JsonString(delta, false))
@@ -1319,6 +1327,12 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 			return err
 		}
 		if err := s.AccountAddBalance(delta.Receipt.To, state.AbaToken, delta.Receipt.Amount); err != nil {
+			return err
+		}
+		if err := s.RecoverResources(delta.Receipt.From, timeStamp, cpuLimit, netLimit); err != nil {
+			return err
+		}
+		if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
 			return err
 		}
 	case types.TxDeploy:
@@ -1332,8 +1346,14 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 		if err := s.SetContract(delta.Receipt.To, acc.Contract.TypeVm, acc.Contract.Describe, acc.Contract.Code, acc.Contract.Abi); err != nil {
 			return err
 		}
+		if err := s.RecoverResources(delta.Receipt.From, timeStamp, cpuLimit, netLimit); err != nil {
+			return err
+		}
+		if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
+			return err
+		}
 	case types.TxInvoke:
-		if delta.Receipt.NewToken != nil {
+		/*if delta.Receipt.NewToken != nil {
 			token := new(state.TokenInfo)
 			if err := token.Deserialize(delta.Receipt.NewToken); err != nil {
 				return err
@@ -1383,16 +1403,14 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 			}
 			//if acc.Delegates
 			s.CommitAccount(accState)
+		}*/
+		_, _, _, err := c.HandleTransaction(s, tx, timeStamp, cpuLimit, netLimit)
+		if err !=  nil {
+			return err
 		}
-
 	default:
 		return errors.New(log, "unknown transaction type")
 	}
-	if err := s.RecoverResources(delta.Receipt.From, timeStamp, cpuLimit, netLimit); err != nil {
-		return err
-	}
-	if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
-		return err
-	}
+
 	return nil
 }
