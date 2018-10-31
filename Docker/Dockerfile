@@ -4,7 +4,7 @@ MAINTAINER Docker ecoball <service@ecoball.org>
 
 #Install dependencies
 RUN apt-get update
-RUN apt-get install -y git gcc make wget golang-go python3 psmisc sudo
+RUN apt-get install -y git gcc make wget golang-go python3 psmisc sudo vim
 
 #Setting environment variables
 ENV GOPATH /root/go
@@ -21,7 +21,7 @@ RUN cd $GOPATH/src/github.com/ecoball/eballscan && ./eballscan_build.sh
 EXPOSE 20678
 EXPOSE 20679
 EXPOSE 20680
-EXPOSE 9000
+EXPOSE 9001
 EXPOSE 8081
 EXPOSE 26257
 

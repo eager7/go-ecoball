@@ -10,7 +10,9 @@ import (
 )
 
 func (c *committee) processStateTimeout() {
-	c.setRetransTimer(false)
+	log.Debug("state time out")
+	c.setRetransTimer(false, 0)
+	c.setFullVoeTimer(false)
 	c.fsm.Execute(ActStateTimeout, nil)
 }
 
@@ -72,7 +74,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 
 	/*haven't collect enough shard's minor block, the wait time will be longer than default configure when we enter
 	  WaitMinorBlock status, maybe we can recalculate the left time by check the minor block's timestamps */
-	if c.ns.IsMinorBlockEnoughInPool() {
+	if c.ns.IsMinorBlockThresholdInPool() {
 		c.fsm.Execute(ActProductFinalBlock, msg)
 		return
 	} else {

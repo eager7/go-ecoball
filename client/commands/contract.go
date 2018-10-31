@@ -96,6 +96,10 @@ var (
 						Name:  "param, p",
 						Usage: "method parameters",
 					},
+					cli.StringFlag{
+						Name:  "sender, s",
+						Usage: "sender name",
+					},
 				},
 			},
 		},
@@ -199,6 +203,7 @@ func setContract(c *cli.Context) error {
 		fmt.Println(err)
 		return err
 	}
+	fmt.Println(publickeys)
 
 	time := time.Now().UnixNano()
 	transaction, err := types.NewDeployContract(common.NameToIndex(contractName), common.NameToIndex(contractName), chainId, "owner", types.VmWasm, description, data, abibyte, 0, time)
@@ -348,7 +353,7 @@ func invokeContract(c *cli.Context) error {
 				parameters = append(parameters, v)
 			}
 		}
-	}else if "pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
+	}else if "pledge" == contractMethod || "cancel_pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
 		parameters = strings.Split(contractParam, ",")
 	}else if "set_account" == contractMethod {
 		parameters = strings.Split(contractParam, "--")
@@ -384,10 +389,16 @@ func invokeContract(c *cli.Context) error {
 		GetContractTable(contractName, "root", abiDef, "Account")
 	}
 
+	//contract address
+	sender := c.String("sender")
+	if sender == "" {
+		sender = contractName
+	}
+
 	//time
 	time := time.Now().UnixNano()
 
-	transaction, err := types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex(contractName), info.ChainID, "owner", contractMethod, parameters, 0, time)
+	transaction, err := types.NewInvokeContract(common.NameToIndex(sender), common.NameToIndex(contractName), info.ChainID, "owner", contractMethod, parameters, 0, time)
 	if nil != err {
 		fmt.Println(err)
 		return err

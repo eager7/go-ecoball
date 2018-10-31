@@ -2,6 +2,7 @@ package common
 
 import (
 	cs "github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type NodeInstance interface {
@@ -70,4 +71,5 @@ type ConsensusInstance interface {
 	PrepareRsp() uint32
 	PrecommitRsp() uint32
 	GetCandidate() *cs.NodeInfo
+	GetCosign() *types.COSign
 }

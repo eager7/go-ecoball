@@ -111,6 +111,10 @@ func (b *cmBlockCsi) PrecommitRsp() uint32 {
 	return b.bk.Step2
 }
 
+func (b *cmBlockCsi) GetCosign() *types.COSign {
+	return b.bk.COSign
+}
+
 func (b *cmBlockCsi) GetCandidate() *cs.NodeInfo {
 	return nil
 }
@@ -143,7 +147,9 @@ func (c *committee) reshardWorker(height uint64) (candidate *cs.NodeInfo, shards
 	ss := simulate.GetShards()
 
 	var shard cs.Shard
-	for i, member := range ss {
+	var i int
+	var member simulate.NodeConfig
+	for i, member = range ss {
 		var worker cs.NodeInfo
 		worker.PublicKey = []byte(member.Pubkey)
 		worker.Address = member.Address
@@ -154,6 +160,11 @@ func (c *committee) reshardWorker(height uint64) (candidate *cs.NodeInfo, shards
 			shards = append(shards, shard)
 			shard.Member = make([]cs.NodeInfo, 0, 5)
 		}
+	}
+
+	if (i+1)%5 != 0 {
+		shards = append(shards, shard)
+		shard.Member = make([]cs.NodeInfo, 0, 5)
 	}
 
 	return
@@ -168,7 +179,6 @@ func (c *committee) createCommitteeBlock() *cs.CMBlock {
 	}
 
 	height = last.Height + 1
-	log.Debug("create cm block height ", height)
 
 	header := cs.CMBlockHeader{
 		ChainID:      config.ChainHash,
@@ -218,7 +228,7 @@ func (c *committee) productCommitteeBlock(msg interface{}) {
 
 	cms := newCmBlockCsi(cm)
 
-	c.cs.StartConsensus(cms)
+	c.cs.StartConsensus(cms, sc.DefaultCmBlockWindow*time.Millisecond)
 
 	c.stateTimer.Reset(sc.DefaultProductCmBlockTimer * time.Second)
 }

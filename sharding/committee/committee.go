@@ -2,6 +2,7 @@ package committee
 
 import (
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/etime"
 	"github.com/ecoball/go-ecoball/common/message"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
@@ -14,7 +15,7 @@ import (
 )
 
 var (
-	log = elog.NewLogger("sdcommittee", elog.DebugLog)
+	log = elog.NewLogger("sharding", elog.DebugLog)
 )
 
 const (
@@ -38,15 +39,16 @@ const (
 )
 
 type committee struct {
-	ns           *cell.Cell
-	fsm          *sc.Fsm
-	actorc       chan interface{}
-	ppc          chan *sc.CsPacket
-	pvc          <-chan *sc.NetPacket
-	stateTimer   *time.Timer
-	retransTimer *time.Timer
-	vccount      uint16
-	cs           *consensus.Consensus
+	ns            *cell.Cell
+	fsm           *sc.Fsm
+	actorc        chan interface{}
+	ppc           chan *sc.CsPacket
+	pvc           <-chan *sc.NetPacket
+	stateTimer    *time.Timer
+	retransTimer  *time.Timer
+	fullVoteTimer *time.Timer
+	vccount       uint16
+	cs            *consensus.Consensus
 }
 
 func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
@@ -57,7 +59,7 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 		vccount: 0,
 	}
 
-	cm.cs = consensus.MakeConsensus(cm.ns, cm.setRetransTimer, cm.consensusCb)
+	cm.cs = consensus.MakeConsensus(cm.ns, cm.setRetransTimer, cm.setFullVoeTimer, cm.consensusCb)
 
 	cm.fsm = sc.NewFsm(blockSync,
 		[]sc.FsmElem{
@@ -71,14 +73,10 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 			{productCommitteBlock, ActCollectMinorBlock, nil, cm.collectMinorBlock, nil, collectMinorBlock},
 			{productCommitteBlock, ActStateTimeout, cm.resetVcCounter, cm.productViewChangeBlock, nil, productViewChangeBlock},
 
-			/*missing_func consensus fail or timeout*/
-			/*{ProductCommitteBlock, ActConsensusFail, , },
-			{ProductCommitteBlock, ActProductTimeout, , },*/
-
 			{collectMinorBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
 			{collectMinorBlock, ActProductFinalBlock, nil, cm.productFinalBlock, nil, productFinalBlock},
 			{collectMinorBlock, ActStateTimeout, nil, cm.productFinalBlock, nil, productFinalBlock},
-			{collectMinorBlock, ActRecvConsensusPacket, cm.processConsensBlockOnWaitStatus, nil, nil, productFinalBlock},
+			{collectMinorBlock, ActRecvConsensusPacket, cm.processConsensBlockOnWaitStatus, nil, cm.afterProcessConsensBlockOnWaitStatus, productFinalBlock},
 			{collectMinorBlock, ActRecvShardPacket, nil, cm.processShardBlockOnWaitStatus, nil, sc.StateNil},
 
 			{productFinalBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
@@ -87,10 +85,6 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 			{productFinalBlock, ActRecvConsensusPacket, nil, cm.processConsensusFinalPacket, nil, sc.StateNil},
 			{productFinalBlock, ActStateTimeout, cm.resetVcCounter, cm.productViewChangeBlock, nil, productViewChangeBlock},
 			{productFinalBlock, ActLedgerBlockMsg, nil, cm.processLedgerFinalBlockMsg, nil, sc.StateNil},
-
-			/*missing_func consensus fail or timeout*/
-			/*{ProductCommitteBlock, ActConsensusFail, , },
-			{ProductCommitteBlock, ActProductTimeout, , },*/
 
 			{productViewChangeBlock, ActProductCommitteeBlock, nil, cm.productCommitteeBlock, nil, productCommitteBlock},
 			{productViewChangeBlock, ActProductFinalBlock, nil, cm.productFinalBlock, nil, productFinalBlock},
@@ -123,6 +117,7 @@ func (c *committee) cmRoutine() {
 	log.Debug("start committee routine")
 	c.stateTimer = time.NewTimer(sc.DefaultSyncBlockTimer * time.Second)
 	c.retransTimer = time.NewTimer(sc.DefaultRetransTimer * time.Millisecond)
+	c.fullVoteTimer = time.NewTimer(sc.DefaultFullVoteTimer * time.Millisecond)
 
 	for {
 		select {
@@ -134,6 +129,8 @@ func (c *committee) cmRoutine() {
 			c.processStateTimeout()
 		case <-c.retransTimer.C:
 			c.processRetransTimeout()
+		case <-c.fullVoteTimer.C:
+			c.processFullVoteTimeout()
 		}
 	}
 }
@@ -168,5 +165,18 @@ func (c *committee) processPacket(packet *sc.CsPacket) {
 		c.recvShardPacket(packet)
 	default:
 		log.Error("wrong packet")
+	}
+}
+
+func (c *committee) processFullVoteTimeout() {
+	c.cs.ProcessFullVoteTimeout()
+}
+
+func (c *committee) setFullVoeTimer(bStart bool) {
+	log.Debug("set full vote timer ", bStart)
+	etime.StopTime(c.retransTimer)
+
+	if bStart {
+		c.fullVoteTimer.Reset(sc.DefaultFullVoteTimer * time.Second)
 	}
 }

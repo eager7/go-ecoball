@@ -72,7 +72,3 @@ func (s *Sharding) Start() {
 func (s *Sharding) SubscribeShardingTopo() <-chan interface{} {
 	return s.ns.Topoc
 }
-
-func GetShardingInst() ShardingInstance {
-	return nil
-}

@@ -14,10 +14,26 @@ func (c *Consensus) isVoteEnough(counter uint32) bool {
 	}
 }
 
+func (c *Consensus) isVoteOnThreshold(counter uint32) bool {
+	if counter == c.ns.GetWorksCounter()*sc.DefaultThresholdOfConsensus/1000+1 {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (c *Consensus) isVoteFull(counter uint32) bool {
+	if counter == c.ns.GetWorksCounter() {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (c *Consensus) sendCsPacket(packet *sc.NetPacket) {
 	net.Np.BroadcastBlock(packet)
 
-	if c.step == StepNIL {
+	if c.step >= StepCommit {
 		if c.ns.NodeType == sc.NodeCommittee {
 			net.Np.SendBlockToShards(packet)
 		} else if c.ns.NodeType == sc.NodeShard {

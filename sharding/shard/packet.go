@@ -126,8 +126,8 @@ func (s *shard) processCommitteePacket(csp interface{}) {
 				return
 			}
 		}
-		//simulate.TellBlock(vc)
-		panic("vc block")
+
+		simulate.TellBlock(vc)
 		s.ns.SaveLastViewchangeBlock(vc)
 		s.broadcastCommitteePacket(p)
 	default:

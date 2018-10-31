@@ -62,11 +62,12 @@ func (c *committee) verifyShardingPacket(p *sc.NetPacket) {
 	}
 }
 
-func (c *committee) setRetransTimer(bStart bool) {
+func (c *committee) setRetransTimer(bStart bool, d time.Duration) {
+	log.Debug("set retrans timer ", bStart)
 	etime.StopTime(c.retransTimer)
 
 	if bStart {
-		c.retransTimer.Reset(sc.DefaultRetransTimer * time.Second)
+		c.retransTimer.Reset(d)
 	}
 }
 
@@ -105,7 +106,11 @@ func (c *committee) processShardBlockOnWaitStatus(p interface{}) {
 
 	net.Np.TransitBlock(csp)
 
-	if c.ns.IsMinorBlockEnoughInPool() {
+	if c.ns.IsMinorBlockThresholdInPool() {
+		etime.StopTime(c.stateTimer)
+		c.stateTimer.Reset(sc.DefaultWaitMinorBlockWindow * time.Second)
+	} else if c.ns.IsMinorBlockFullInPool() {
+		etime.StopTime(c.stateTimer)
 		c.fsm.Execute(ActProductFinalBlock, nil)
 	}
 }

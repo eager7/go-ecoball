@@ -647,6 +647,11 @@ func (a *Account) CancelDelegateSelf(cpuStaked, netStaked, cpuStakedSum, netStak
 	a.Net.Staked -= netStaked
 	a.updateResource(cpuStakedSum, netStakedSum, cpuLimit, netLimit)
 }
+func (a *Account) CancelOthersDelegate(cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) {
+	a.Cpu.Delegated -= cpuStaked
+	a.Net.Delegated -= netStaked
+	a.updateResource(cpuStakedSum, netStakedSum, cpuLimit, netLimit)
+}
 func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) error {
 	done := false
 	for i := 0; i < len(a.Delegates); i++ {
@@ -658,7 +663,7 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 			if acc.Net.Delegated < netStaked {
 				return errors.New(log, fmt.Sprintf("the account:%s net amount is not enough", acc.Index.String()))
 			}
-			acc.CancelDelegateSelf(cpuStaked, netStaked, cpuStakedSum, netStakedSum, cpuLimit, netLimit)
+			acc.CancelOthersDelegate(cpuStaked, netStaked, cpuStakedSum, netStakedSum, cpuLimit, netLimit)
 
 			a.Delegates[i].CpuStaked -= cpuStaked
 			a.Delegates[i].NetStaked -= netStaked

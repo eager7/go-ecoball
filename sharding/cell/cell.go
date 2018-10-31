@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	log = elog.NewLogger("sdcell", elog.DebugLog)
+	log = elog.NewLogger("sharding", elog.DebugLog)
 )
 
 type Cell struct {
@@ -232,13 +232,26 @@ func (c *Cell) GetMinorBlockHashesFromPool() []common.Hash {
 	return c.minorBlockPool.getMinorBlockHashes()
 }
 
-func (c *Cell) IsMinorBlockEnoughInPool() bool {
+func (c *Cell) IsMinorBlockThresholdInPool() bool {
 	cm := c.chain.cmBlock
 	if cm == nil {
 		return true
 	}
 
-	if c.minorBlockPool.count() >= uint16(len(cm.Shards)*sc.DefaultThresholdOfMinorBlock/100) {
+	if c.minorBlockPool.count() == uint16(len(cm.Shards)*sc.DefaultThresholdOfMinorBlock/100) {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (c *Cell) IsMinorBlockFullInPool() bool {
+	cm := c.chain.cmBlock
+	if cm == nil {
+		return true
+	}
+
+	if c.minorBlockPool.count() == uint16(len(cm.Shards)) {
 		return true
 	} else {
 		return false

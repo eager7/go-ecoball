@@ -98,6 +98,10 @@ func (b *finalBlockCsi) PrecommitRsp() uint32 {
 	return b.bk.Step2
 }
 
+func (b *finalBlockCsi) GetCosign() *types.COSign {
+	return b.bk.COSign
+}
+
 func (b *finalBlockCsi) GetCandidate() *cs.NodeInfo {
 	return nil
 }
@@ -179,7 +183,7 @@ func (c *committee) productFinalBlock(msg interface{}) {
 		}
 		csi := newFinalBlockCsi(final)
 
-		c.cs.StartConsensus(csi)
+		c.cs.StartConsensus(csi, sc.DefaultBlockWindow)
 
 		c.stateTimer.Reset(sc.DefaultProductFinalBlockTimer * time.Second)
 	}
@@ -190,7 +194,7 @@ func (c *committee) processLedgerFinalBlockMsg(p interface{}) {
 
 	csi := newFinalBlockCsi(final)
 
-	c.cs.StartConsensus(csi)
+	c.cs.StartConsensus(csi, sc.DefaultFinalBlockWindow*time.Millisecond)
 
 	c.stateTimer.Reset(sc.DefaultProductFinalBlockTimer * time.Second)
 }
@@ -237,7 +241,11 @@ func (c *committee) processConsensBlockOnWaitStatus(p interface{}) bool {
 
 	c.productFinalBlock(nil)
 
-	return c.cs.ProcessPacket(p.(*sc.CsPacket))
+	return true
+}
+
+func (c *committee) afterProcessConsensBlockOnWaitStatus(p interface{}) {
+	c.fsm.Execute(ActRecvConsensusPacket, p)
 }
 
 func (c *committee) commitFinalBlock(bl *cs.FinalBlock) {

@@ -16,9 +16,9 @@ type Payload interface {
 type HeaderType uint32
 
 const (
-	HeMinorBlock HeaderType = 1
-	HeCmBlock    HeaderType = 2
-	HeFinalBlock HeaderType = 3
+	HeCmBlock    HeaderType = 1
+	HeFinalBlock HeaderType = 2
+	HeMinorBlock HeaderType = 3
 	HeViewChange HeaderType = 4
 )
 

@@ -1,0 +1,20 @@
+{
+  "Pubkey": "1109ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be41",
+  "Address": "127.0.0.1",
+  "Port": "20001",
+  "Committee": [{
+    "Pubkey": "1109ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be41",
+    "Address": "127.0.0.1",
+    "Port": "20001"
+  }],
+  "Shard": [{
+    "Pubkey": "2699ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be45",
+    "Address": "127.0.0.1",
+    "Port": "11006"
+  }],
+  "Candidate": [{
+    "Pubkey": "3199ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be45",
+    "Address": "192.168.11.1",
+    "Port": "12001"
+  }]
+}

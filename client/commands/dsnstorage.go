@@ -12,6 +12,7 @@ import (
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/client/rpc"
+	"errors"
 )
 var (
 	DsnStorageCommands = cli.Command{
@@ -48,10 +49,10 @@ func dsnAddFile(ctx *cli.Context) error {
 	cbtx := context.Background()
 	dclient := dsncli.NewRcWithDefaultConf(cbtx)
 	file := os.Args[3]
-	/*ok := dclient.CheckCollateral()
+	ok := dclient.CheckCollateral()
 	if !ok {
 		return errors.New("Checking collateral failed")
-	}*/
+	}
 	cid, err := dclient.AddFile(file)
 	if err != nil {
 		return err
