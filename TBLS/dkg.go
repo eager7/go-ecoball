@@ -57,24 +57,24 @@ type Dealer struct{
 	tagQUAL []bool // for leader
 }
 
-func StartDKG(epochNum int, index int, threshold int, abaTBLS *ABATBLS) {
+func StartDKG(epochNum int, index int, abaTBLS *ABATBLS) {
 	// var err error
 	// generate and send the corresponding messages Sij
-	genSijMsg(epochNum, index, threshold, abaTBLS)
+	genSijMsg(epochNum, index, abaTBLS)
 
 	go dkgRoutine(abaTBLS)
 
 
 }
 
-func genSijMsg(epochNum int, index int, threshold int, abaTBLS *ABATBLS) {
+func genSijMsg(epochNum int, index int, abaTBLS *ABATBLS) {
 	var err error
 	workers := abaTBLS.workers
 	workerNum := len(workers)
 	for i:=0; i< workerNum; i++ {
 		if i != index {
 			// compute the Sij, SijShareDKG
-			sijMsg := computeSij( &abaTBLS.PrivatePoly, &abaTBLS.PubKeyShare, i, epochNum)
+			sijMsg := computeSij( &abaTBLS.PrivatePoly, abaTBLS.PubKeyShare, i, epochNum)
 			// convert to SijPBShareDKG
 			var sijMsgPB = pb.SijPBShareDKG{}
 			sijMsgPB.EpochNum = int64(sijMsg.epochNum)
@@ -96,6 +96,12 @@ func genSijMsg(epochNum int, index int, threshold int, abaTBLS *ABATBLS) {
 			}
 			msgSend := message2.New(msgType, msgData) // EcoBallNetMsg
 			abaTBLS.netObject.SendMsgToPeer(workers[i].Address, workers[i].Port, []byte(workers[i].Pubkey), msgSend)
+		} else {
+			sijMsg := computeSij( &abaTBLS.PrivatePoly, abaTBLS.PubKeyShare, i, epochNum)
+			abaTBLS.dealer.deal[index].keyShare.index = index
+			abaTBLS.dealer.deal[index].keyShare.Sij = &sijMsg.Sij
+			abaTBLS.dealer.QUAL[index] = 1
+			abaTBLS.dealer.deal[index].status = false
 		}
 	}
 }
@@ -314,11 +320,8 @@ func computePriKeyDKG(abaTBLS *ABATBLS)(*big.Int, []*bn256.G2){
 	return priKey, coEffs
 }
 
-func ComputePubKey(index int, pubPoly []*bn256.G2)*bn256.G2{
-	pubKey := pubPoly[0]
-	if index == 0 {
-		return pubKey
-	}
+func ComputePubKeyDKG(index int, pubPoly []*bn256.G2)*bn256.G2{
+	var pubKey *bn256.G2
 	// in calculation, should use index+1 instead of index
 	bigindex := new(big.Int).SetInt64(int64(index+1))
 	for i := 1; i < len(pubPoly); i++{
@@ -351,4 +354,20 @@ func ProcessLQUALDKG(msg message2.EcoBallNetMsg,abaTBLS *ABATBLS) {
 
 	// stop the timer2 for waiting the Qual from leader
 	abaTBLS.timer2.Stop()
+}
+
+func VerifySignDKG (indexJ int, msg [] byte, sign []byte, abatbls *ABATBLS) bool {
+	//verify single DKG signature
+	// 1. generate the public
+	if abatbls.PrivateDKG == nil {
+		return false
+	}
+	var pubKeyDKG *bn256.G2
+	pubKeyDKG = ComputePubKeyDKG(indexJ, abatbls.PubKeyDKG.coEffs)
+	// 2. verify the msg and signature by using public key
+	check, err := VerifySignTBLS(pubKeyDKG, msg, sign)
+	if check == false || err != nil {
+		return false
+	}
+	return true
 }
