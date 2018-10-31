@@ -1,7 +1,6 @@
 package committee
 
 import (
-	"github.com/ecoball/go-ecoball/common/etime"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
@@ -64,10 +63,11 @@ func (c *committee) verifyShardingPacket(p *sc.NetPacket) {
 
 func (c *committee) setRetransTimer(bStart bool, d time.Duration) {
 	log.Debug("set retrans timer ", bStart)
-	etime.StopTime(c.retransTimer)
 
 	if bStart {
 		c.retransTimer.Reset(d)
+	} else {
+		c.retransTimer.Stop()
 	}
 }
 
@@ -107,10 +107,9 @@ func (c *committee) processShardBlockOnWaitStatus(p interface{}) {
 	net.Np.TransitBlock(csp)
 
 	if c.ns.IsMinorBlockThresholdInPool() {
-		etime.StopTime(c.stateTimer)
 		c.stateTimer.Reset(sc.DefaultWaitMinorBlockWindow * time.Second)
 	} else if c.ns.IsMinorBlockFullInPool() {
-		etime.StopTime(c.stateTimer)
+		c.stateTimer.Stop()
 		c.fsm.Execute(ActProductFinalBlock, nil)
 	}
 }

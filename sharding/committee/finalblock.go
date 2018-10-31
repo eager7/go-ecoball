@@ -2,12 +2,10 @@ package committee
 
 import (
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/etime"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	netmsg "github.com/ecoball/go-ecoball/net/message"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
-	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 )
@@ -18,6 +16,9 @@ type finalBlockCsi struct {
 }
 
 func newFinalBlockCsi(bk *cs.FinalBlock) *finalBlockCsi {
+	bk.Step1 = 1
+	bk.Step2 = 1
+
 	return &finalBlockCsi{bk: bk}
 }
 
@@ -53,20 +54,6 @@ func (b *finalBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 func (b *finalBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
 	csp := &sc.NetPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_FINAL_BLOCK, Step: step}
 
-	/*missing_func should fill in signature and bit map*/
-	if step == consensus.StepPrePare {
-		log.Debug("make final prepare block")
-		b.bk.Step1 = 1
-	} else if step == consensus.StepPreCommit {
-		log.Debug("make final precommit block")
-		b.bk.Step2 = 1
-	} else if step == consensus.StepCommit {
-		log.Debug("make final commit block")
-	} else {
-		log.Fatal("step wrong")
-		return nil
-	}
-
 	data, err := b.bk.Serialize()
 	if err != nil {
 		log.Error("final block Serialize error ", err)
@@ -83,17 +70,15 @@ func (b *finalBlockCsi) GetCsBlock() interface{} {
 }
 
 func (b *finalBlockCsi) PrepareRsp() uint32 {
-	if b.cache.Step1 == 1 {
-		b.bk.Step1++
-	}
+	log.Debug("prepare receive consign ", b.cache.Step1)
+	b.bk.Step1 += b.cache.Step1
 
 	return b.bk.Step1
 }
 
 func (b *finalBlockCsi) PrecommitRsp() uint32 {
-	if b.cache.Step2 == 1 {
-		b.bk.Step2++
-	}
+	log.Debug("precommit receive consign ", b.cache.Step2)
+	b.bk.Step2 += b.cache.Step2
 
 	return b.bk.Step2
 }
@@ -157,7 +142,7 @@ func (c *committee) createFinalBlock() *cs.FinalBlock {
 
 func (c *committee) productFinalBlock(msg interface{}) {
 	log.Debug("product final block")
-	etime.StopTime(c.stateTimer)
+	c.stateTimer.Stop()
 
 	if c.ns.IsLeader() {
 		lastcm := c.ns.GetLastCMBlock()
