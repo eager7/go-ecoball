@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	//"os"
+	"strings"
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/urfave/cli"
@@ -31,7 +31,6 @@ import (
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	inner "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/types"
-	//"github.com/ecoball/go-ecoball/common/config"
 )
 
 var (
@@ -87,26 +86,20 @@ func transferAction(c *cli.Context) error {
 	}
 
 	value := c.Int64("value")
-	if value == 0 {
-		fmt.Println("Please input a valid aba amount")
+	if value <= 0 {
+		fmt.Println("Invalid aba amount ", value)
 		return errors.New("Invalid aba amount")
 	}
 
 	bigValue := big.NewInt(value)
 
-	info, err := getInfo()
-	if err != nil {
+	chainHash, err := getMainChainHash()
+	if nil != err {
 		fmt.Println(err)
 		return err
 	}
 
-	chainId := info.ChainID
-	chainIdStr := c.String("chainId")
-	if "config.hash" != chainIdStr && "" != chainIdStr {
-		chainId = inner.HexToHash(chainIdStr)
-	}
-
-	publickeys, err := GetPublicKeys()
+	allPublickeys, err := getPublicKeys()
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -115,33 +108,49 @@ func transferAction(c *cli.Context) error {
 	//time
 	time := time.Now().UnixNano()
 
-	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), chainId, "owner", bigValue, 0, time)
+	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), chainHash, "owner", bigValue, 0, time)
 	if nil != err {
+		fmt.Println(err)
 		return err
 	}
 
 	permission := "active"
-	required_keys, err := get_required_keys(info.ChainID, publickeys, permission, transaction)
+	requiredKeys, err := getRequiredKeys(chainHash, permission, from)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	if required_keys == "" {
-		fmt.Println("no required_keys")
-		return err
+	publickeys := ""
+	keyDatas = strings.Split(allPublickeys, ",")
+	for _, v := range keyDatas {
+		addr := inner.AddressFromPubKey(inner.FromHex(v))
+		for _, vv := range requiredKeys {
+			if addr == vv {
+				publickeys += v
+				publickeys += "\n"
+				break
+			}
+		}
 	}
 
-	data, errcode := sign_transaction(info.ChainID, required_keys, transaction)
+	if "" == publickeys {
+		fmt.Println("no publickeys")
+		return errors.New("no publickeys")
+	}
+
+	data, errcode := signTransaction(chainHash, publickeys, transaction)
 	if nil != errcode {
 		fmt.Println(errcode)
+		return errcode
 	}
 
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("transfer", data)
 	err = rpc.NodePost("/transfer", values.Encode(), &result)
-	fmt.Println(result.Result)
-
+	if nil == err {
+		fmt.Println(result.Result)
+	}
 	return err
 }

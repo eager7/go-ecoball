@@ -31,7 +31,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/http/commands"
 	"github.com/ecoball/go-ecoball/http/common/abi"
@@ -44,12 +43,10 @@ func StartHttpServer() (err error) {
 
 	//register handle
 	router.GET("/getHeadBlock", getHeadBlock)
-	router.POST("/get_required_keys", get_required_keys)
 	router.POST("/invokeContract", invokeContract)
 	router.POST("/setContract", setContract)
 	router.POST("/getContract", getContract)
 	router.POST("/storeGet", storeGet)
-	router.POST("/transfer", transfer)
 	router.POST("/newInvokeContract", newInvokeContract)
 	router.POST("/newDeployContract", newDeployContract)
 	//for invokContract
@@ -60,13 +57,17 @@ func StartHttpServer() (err error) {
 	router.GET("/attach", attach)
 	router.GET("/getInfo", getInfo)
 
-	//get all chain id
+	//query information
 	router.GET("/query/mainChainHash", commands.GetMainChainHash)
 	router.GET("/query/allChainInfo", commands.GetAllChainInfo)
 	router.POST("/query/getAccountInfo", commands.GetAccountInfo)
 	router.POST("/query/getTokenInfo", commands.GetTokenInfo)
 	router.POST("/query/getBlockInfo", commands.GetBlockInfo)
 	router.POST("/query/getTransaction", commands.GetTransaction)
+	router.POST("/query/getRequiredKeys", commands.GetRequiredKeys)
+
+	//transfer
+	router.POST("/transfer", commands.Transfer)
 
 	http.ListenAndServe(":"+config.HttpLocalPort, router)
 	return nil
@@ -91,54 +92,6 @@ func getInfo(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": innerCommon.ToHex(data)})
-}
-
-func get_required_keys(c *gin.Context) {
-	chainId := c.PostForm("chainId")
-	required_keys := c.PostForm("keys")
-	permission := c.PostForm("permission")
-	accountName_str := c.PostForm("name")
-
-	key_datas := strings.Split(required_keys, ",")
-	hash := new(innerCommon.Hash)
-	chainids := hash.FormHexString(chainId)
-	data, err := ledger.L.FindPermission(chainids, innerCommon.NameToIndex(accountName_str), permission)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	permission_datas := []state.Permission{}
-	if err := json.Unmarshal([]byte(data), &permission_datas); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	public_address := []innerCommon.Address{}
-	for _, v := range permission_datas {
-		for _, value := range v.Keys {
-			public_address = append(public_address, value.Actor)
-		}
-	}
-
-	publickeys := ""
-	for _, v := range key_datas {
-		addr := innerCommon.AddressFromPubKey(innerCommon.FromHex(v))
-		for _, vv := range public_address {
-			if addr == vv {
-				publickeys += v
-				publickeys += "\n"
-				break
-			}
-		}
-	}
-	if "" != publickeys {
-		publickeys = strings.TrimSuffix(publickeys, "\n")
-		c.JSON(http.StatusOK, gin.H{"result": publickeys})
-		return
-	}
-
-	c.JSON(http.StatusBadRequest, gin.H{"message": "no required_keys"})
 }
 
 func invokeContract(c *gin.Context) {
@@ -214,25 +167,6 @@ func storeGet(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": innerCommon.ToHex(storage)})
-}
-
-func transfer(c *gin.Context) {
-	transfer := new(types.Transaction) //{
-	transaction_data := c.PostForm("transfer")
-
-	if err := transfer.Deserialize(innerCommon.FromHex(transaction_data)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
-	//send to txpool
-	err := event.Send(event.ActorNil, event.ActorTxPool, transfer)
-	if nil != err {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }
 
 //use for scan

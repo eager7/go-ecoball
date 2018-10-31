@@ -133,3 +133,38 @@ func GetTransaction(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"result": trx.JsonString()})
 }
+
+func GetRequiredKeys(c *gin.Context) {
+	chainHashStr := c.PostForm("chainHash")
+	permission := c.PostForm("permission")
+	accountName := c.PostForm("name")
+
+	hash := new(innerCommon.Hash)
+	chainHash := hash.FormHexString(chainHashStr)
+	data, err := ledger.L.FindPermission(chainHash, innerCommon.NameToIndex(accountName), permission)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	permissionDatas := []state.Permission{}
+	if err := json.Unmarshal([]byte(data), &permissionDatas); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	publicAddress := []innerCommon.Address{}
+	for _, v := range permissionDatas {
+		for _, value := range v.Keys {
+			publicAddress = append(publicAddress, value.Actor)
+		}
+	}
+
+	data, err := json.Marshal(&publicAddress)
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": string(data)})
+}
