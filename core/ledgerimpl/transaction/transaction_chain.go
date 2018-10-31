@@ -1366,7 +1366,7 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 			}
 			if acc.Cpu.Limit != 0 {
 				accState.Cpu.Limit = acc.Cpu.Limit
-				accState.Cpu.Available = acc.Cpu.Available
+				//accState.Cpu.Available = acc.Cpu.Available
 				accState.Cpu.Staked = acc.Cpu.Staked
 				//accState.Cpu.Used = acc.Cpu.Used
 				accState.Cpu.Delegated = acc.Cpu.Delegated
@@ -1376,8 +1376,12 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 				accState.Net.Limit = acc.Net.Limit
 				accState.Net.Delegated = acc.Net.Delegated
 				accState.Net.Staked = acc.Net.Staked
-				accState.Net.Available = acc.Net.Available
+				//accState.Net.Available = acc.Net.Available
 			}
+			if acc.TimeStamp != 0 {
+				accState.TimeStamp = acc.TimeStamp
+			}
+			//if acc.Delegates
 			s.CommitAccount(accState)
 		}
 
