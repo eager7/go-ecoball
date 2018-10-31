@@ -141,7 +141,7 @@ func (r *Renter) PayForFile(fname, cid string) (*types.Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	log.Debug("pay for ", fname, " ", fee)
 	/*trn, err := tran.Serialize()
 	if err != nil {
 		return err

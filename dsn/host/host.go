@@ -7,7 +7,7 @@ import (
 	"context"
 	"math/rand"
 	"io/ioutil"
-	"crypto/sha256"
+	//"crypto/sha256"
 	"github.com/ecoball/go-ecoball/dsn/crypto"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
@@ -25,6 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/dsn/ipfs"
 	"strconv"
 	client "github.com/ecoball/go-ecoball/client/commands"
+	"fmt"
 )
 
 var (
@@ -81,7 +82,7 @@ func InitDefaultConf() StorageHostConf {
 		TotalStorage: 10*1024*1024,
 		Collateral: "10",
 		MaxCollateral: "20",
-		AccountName: "host",
+		AccountName: "dsn",
 		ChainId: common.ToHex(chainId[:]),
 	}
 }
@@ -99,16 +100,12 @@ func (h *StorageHost) Start() error {
 	if err := ipfs.Initialize(); err != nil {
 		return err
 	}
-	if err := ipfs.DaemonRun(); err != nil {
+	go ipfs.DaemonRun()
+	/*if err := h.proofLoop(); err != nil {
 		return err
-	}
-	if err := h.Announce(); err != nil {
-		return err
-	}
+	}*/
 
-	if err := h.proofLoop(); err != nil {
-		return err
-	}
+	go h.proofLoop()
 	return nil
 }
 
@@ -175,6 +172,10 @@ func (h *StorageHost) Announce() error {
 		return err
 	}*/
 	err = client.InvokeContract(transaction)
+	if err != nil {
+		return err
+	}
+	h.announced = true
 	log.Debug("Invoke host announcement")
 	return nil
 }
@@ -205,18 +206,22 @@ func (h *StorageHost) createAnnouncement() ([]byte, error) {
 	afc.MaxCollateral, _ = bcv.GobEncode()
 	afc.AccountName = h.conf.AccountName
 	annBytes := encoding.Marshal(afc)
-	annHash := sha256.Sum256(annBytes)
+	/*annHash := sha256.Sum256(annBytes)
 	sig, err := h.account.Sign(annHash[:])
 	if err !=  nil {
 		return nil, err
 	}
-	return append(annBytes, sig[:]...), nil
+	return append(annBytes, sig[:]...), nil*/
+	return annBytes, nil
 }
 
 func (h *StorageHost)createStorageProof() ([]byte, error) {
 	repoStat, err := api.IpfsRepoStat(h.ctx)
 	if err != nil {
 		return nil, err
+	}
+	if repoStat.NumObjects == 0 {
+		return nil, errors.New("have no object")
 	}
 	var proof StorageProof
 	proof.PublicKey = h.account.PublicKey
@@ -244,6 +249,9 @@ func (h *StorageHost)createStorageProof() ([]byte, error) {
 	}
 	dataSize := len(blockData)
 	numberSegment := dataSize / dproof.SegmentSize
+	if numberSegment == 0 {
+		return nil, errors.New("no data")
+	}
 	segmentIndex := rand.Intn(int(numberSegment))
 	base, cachedHashSet := dproof.MerkleProof(blockData, uint64(segmentIndex))
 	proof.SegmentIndex = uint64(segmentIndex)
@@ -269,6 +277,7 @@ func (h *StorageHost) ProvideStorageProof() error {
 
 	proof, err := h.createStorageProof()
 	if err != nil {
+		log.Error(err.Error())
 		return errCreateStorageProof
 	}
 	timeNow := time.Now().UnixNano()
@@ -290,13 +299,17 @@ func (h *StorageHost) ProvideStorageProof() error {
 func (h *StorageHost) proofLoop() error {
 	//TODO period: move to config
 	//timerChan := time.NewTicker(24 * time.Hour).C
-	timerChan := time.NewTicker(60 * time.Second).C
+	timerChan := time.NewTicker(2 * 60 * time.Second).C
 	for {
 		select {
 		case <-timerChan:
-			err := h.ProvideStorageProof()
-			if err != nil {
-				return err
+			log.Debug("new storage proof...")
+			if !h.announced {
+				h.Announce()
+				continue
+			}
+			if h.announced {
+				h.ProvideStorageProof()
 			}
 		case <-h.ctx.Done():
 			return h.ctx.Err()

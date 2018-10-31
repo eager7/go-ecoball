@@ -256,6 +256,6 @@ func InvokeContract(trx *types.Transaction) error {
 	ctcv := url.Values{}
 	ctcv.Set("transaction", common.ToHex(data))
 	err = rpc.NodePost("/invokeContract", ctcv.Encode(), &retContract)
-	fmt.Println("fileContract: ", retContract.Result)
+	fmt.Println("Contract: ", retContract.Result)
 	return err
 }
