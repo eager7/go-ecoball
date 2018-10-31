@@ -17,18 +17,15 @@
 package commands
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
-	"strings"
+	"strconv"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/state"
-	"github.com/ecoball/go-ecoball/core/types"
-	innerCommon "github.com/ecoball/go-ecoball/http/common"
 	"github.com/urfave/cli"
 )
 
@@ -41,13 +38,12 @@ var (
 		Subcommands: []cli.Command{
 			{
 				Name:   "chain",
-				Usage:  "get all chain id",
-				Action: GetChainList,
-				Flags:  []cli.Flag{},
+				Usage:  "get all chain information",
+				Action: getAllChainInfo,
 			},
 			{
 				Name:   "account",
-				Usage:  "get account's info by name",
+				Usage:  "get account's info by name and chain hash(the default is the main chain hash)",
 				Action: getAccount,
 				Flags: []cli.Flag{
 					cli.StringFlag{
@@ -55,15 +51,14 @@ var (
 						Usage: "account name",
 					},
 					cli.StringFlag{
-						Name:  "chainId, c",
-						Usage: "chainId hash",
-						Value: "config.hash",
+						Name:  "chainHash, c",
+						Usage: "chain hash",
 					},
 				},
 			},
 			{
 				Name:   "token",
-				Usage:  "get token's info by name",
+				Usage:  "get token's info by name and chain hash(the default is the main chain hash)",
 				Action: getTokenInfo,
 				Flags: []cli.Flag{
 					cli.StringFlag{
@@ -71,16 +66,15 @@ var (
 						Usage: "token name",
 					},
 					cli.StringFlag{
-						Name:  "chainId, c",
-						Usage: "chainId hash",
-						Value: "config.hash",
+						Name:  "chainHash, c",
+						Usage: "chain hash",
 					},
 				},
 			},
 			{
 				Name:   "block",
 				Usage:  "get block's info by height",
-				Action: getBlock,
+				Action: getBlockInfo,
 				Flags: []cli.Flag{
 					cli.Int64Flag{
 						Name:  "height, t",
@@ -104,60 +98,28 @@ var (
 	}
 )
 
-func GetChainList(c *cli.Context) error {
-	resp, err := rpc.NodeCall("Get_ChainList", []interface{}{})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
+func getAllChainInfo(c *cli.Context) error {
+	var result common.SimpleResult
+	err := rpc.NodeGet("/query/allChainInfo", &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-
-	rpc.EchoErrInfo(resp)
-	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
-		if nil != resp["result"] {
-			switch resp["result"].(type) {
-			case string:
-				data := resp["result"].(string)
-				//chainList := []state.Chain{}
-				chainInfo_str := strings.Split(data, "\n")
-				for _, v := range chainInfo_str {
-					/*chain := new(state.Chain)
-					chain_str := strings.Split(v, ":")
-					chain.Index = common.NameToIndex(chain_str[0])
-					chain.Hash = common.HexToHash(chain_str[1])
-					chainList = append(chainList, *chain)*/
-					fmt.Println(v)
-				}
-				return nil
-			default:
-			}
-		}
-	}
-	return nil
+	return err
 }
 
-func get_account(chainId common.Hash, name string) (*state.Account, error) {
-	//rpc call
-	resp, err := rpc.NodeCall("get_account", []interface{}{chainId.HexString(), name})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+func getMainChainHash() (common.Hash, error) {
+	var result common.SimpleResult
+	err := rpc.NodeGet("/query/mainChainHash", &result)
+	if nil != err {
 		return nil, err
 	}
 
-	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
-		if nil != resp["result"] {
-			switch resp["result"].(type) {
-			case string:
-				data := resp["result"].(string)
-				accountInfo := new(state.Account)
-				accountInfo.Deserialize(common.FromHex(data))
-				return accountInfo, nil
-			default:
-			}
-		}
+	var hash common.Hash
+	if err := json.Unmarshal([]byte(result.Result), &hash); nil != err {
+		return nil, err
 	}
 
-	rpc.EchoErrInfo(resp)
-	return nil, nil
+	return hash, nil
 }
 
 func getAccount(c *cli.Context) error {
@@ -170,29 +132,35 @@ func getAccount(c *cli.Context) error {
 	//account name
 	name := c.String("name")
 	if name == "" {
-		fmt.Println("Invalid account name: ", name)
+		fmt.Println("Please input a valid account name")
 		return errors.New("Invalid account name")
 	}
 
-	info, err := getInfo()
-	if err != nil {
+	//chainHash
+	var chainHash common.Hash
+	var err error
+	chainHashStr := c.String("chainHash")
+	if "" == chainHashStr {
+		chainHash, err = getMainChainHash()
+
+	} else {
+		json.Unmarshal([]byte(chainHashStr), &chainHash)
+	}
+
+	if nil != err {
 		fmt.Println(err)
 		return err
 	}
 
-	chainId := info.ChainID
-	chainIdStr := c.String("chainId")
-	if "config.hash" != chainIdStr && "" != chainIdStr {
-		chainId = common.HexToHash(chainIdStr)
-	}
-
+	//http request
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("name", name)
-	values.Set("chainId", chainId.HexString())
-	err = rpc.NodePost("/getAccountInfo", values.Encode(), &result)
-
-	fmt.Println(result.Result)
+	values.Set("chainHash", chainHash.HexString())
+	err = rpc.NodePost("/query/getAccountInfo", values.Encode(), &result)
+	if nil == err {
+		fmt.Println(result.Result)
+	}
 	return err
 }
 
@@ -203,60 +171,42 @@ func getTokenInfo(c *cli.Context) error {
 		return nil
 	}
 
-	//account name
+	//token name
 	name := c.String("name")
 	if name == "" {
-		fmt.Println("Invalid account name: ", name)
-		return errors.New("Invalid account name")
+		fmt.Println("Please input a valid token name")
+		return errors.New("Invalid token name")
 	}
 
-	info, err := getInfo()
-	if err != nil {
+	//chainHash
+	var chainHash common.Hash
+	var err error
+	chainHashStr := c.String("chainHash")
+	if "" == chainHashStr {
+		chainHash, err = getMainChainHash()
+
+	} else {
+		json.Unmarshal([]byte(chainHashStr), &chainHash)
+	}
+
+	if nil != err {
 		fmt.Println(err)
 		return err
 	}
 
-	chainId := info.ChainID
-	chainIdStr := c.String("chainId")
-	if "config.hash" != chainIdStr && "" != chainIdStr {
-		chainId = common.HexToHash(chainIdStr)
-	}
-
+	//http request
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("name", name)
-	values.Set("chainId", chainId.HexString())
-	err = rpc.NodePost("/getTokenInfo", values.Encode(), &result)
-
-	fmt.Println(result.Result)
+	values.Set("chainHash", chainHash.HexString())
+	err = rpc.NodePost("/query/getTokenInfo", values.Encode(), &result)
+	if nil == err {
+		fmt.Println(result.Result)
+	}
 	return err
 }
 
-
-func getBlockInfoById(height int64) (*types.Block, error) {
-	resp, err := rpc.NodeCall("getBlock", []interface{}{height})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return nil, err
-	}
-
-	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
-		if nil != resp["result"] {
-			switch resp["result"].(type) {
-			case string:
-				data := resp["result"].(string)
-				blockINfo := new(types.Block)
-				blockINfo.Deserialize(common.FromHex(data))
-				return blockINfo, nil
-			default:
-			}
-		}
-	}
-	rpc.EchoErrInfo(resp)
-	return nil, nil
-}
-
-func getBlock(c *cli.Context) error {
+func getBlockInfo(c *cli.Context) error {
 	//Check the number of flags
 	if c.NumFlags() == 0 {
 		cli.ShowSubcommandHelp(c)
@@ -266,19 +216,19 @@ func getBlock(c *cli.Context) error {
 	//account address
 	height := c.Int64("height")
 	if height <= 0 {
-		fmt.Println("Invalid block id: ", height)
-		return errors.New("Invalid block id")
+		fmt.Println("Invalid block height: ", height)
+		return errors.New("Invalid block height")
 	}
 
-	block, err := getBlockInfoById(height)
-	if nil != err {
-		return err
+	//http request
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("height", strconv.FormatInt(height, 10))
+	err = rpc.NodePost("/query/getBlockInfo", values.Encode(), &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-	if nil != block {
-		block.Show(false)
-	}
-	//result
-	return nil
+	return err
 }
 
 func getTransaction(c *cli.Context) error {
@@ -291,30 +241,17 @@ func getTransaction(c *cli.Context) error {
 	//account address
 	hash := c.String("hash")
 	if hash == "" {
-		fmt.Println("Invalid transaction hash: ", hash)
+		fmt.Println("Please input a valid transaction hash")
 		return errors.New("Invalid transaction hash")
 	}
 
-	resp, err := rpc.NodeCall("getTransaction", []interface{}{hash})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
+	//http request
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("hash", hash)
+	err = rpc.NodePost("/query/getTransaction", values.Encode(), &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-
-	rpc.EchoErrInfo(resp)
-	if int64(innerCommon.SUCCESS) == int64(resp["errorCode"].(float64)) {
-		if nil != resp["result"] {
-			switch resp["result"].(type) {
-			case string:
-				data := resp["result"].(string)
-				trx := new(types.Transaction)
-				trx.Deserialize(common.FromHex(data))
-				fmt.Println(trx.JsonString())
-				return nil
-			default:
-			}
-		}
-	}
-
-	return nil
+	return err
 }

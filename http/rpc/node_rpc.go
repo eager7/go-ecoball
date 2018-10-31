@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/http/commands"
 	"github.com/ecoball/go-ecoball/http/common"
@@ -113,11 +112,8 @@ func StartRPCServer() (err error) {
 	//add handle
 	httpServer.AddHandleFunc("transfer", commands.Transfer)
 
-	//add attach
-	httpServer.AddHandleFunc("attach", commands.Attach)
-
 	//query
-//	httpServer.AddHandleFunc("query", commands.Query)
+	//	httpServer.AddHandleFunc("query", commands.Query)
 
 	//set contract
 	httpServer.AddHandleFunc("setContract", commands.SetContract)
@@ -131,23 +127,20 @@ func StartRPCServer() (err error) {
 	//get head block info
 	httpServer.AddHandleFunc("getInfo", commands.Getinfo)
 	//httpServer.AddHandleFunc("get_required_keys", commands.Get_required_keys)
-	httpServer.AddHandleFunc("get_account", commands.Get_account)
-	httpServer.AddHandleFunc("Get_ChainList", commands.Get_ChainList)
 	httpServer.AddHandleFunc("GetContract", commands.GetContract)
-	httpServer.AddHandleFunc("getBlock", commands.GetBlock)
 
 	httpServer.AddHandleFunc("netlistmyid", nrpc.CliServerListMyId)
 	httpServer.AddHandleFunc("netlistmypeer", nrpc.CliServerListMyPeers)
-	
+
 	//dsn服务
 	httpServer.AddHandleFunc("DsnAddFile", commands.DsnAddFile)
 	httpServer.AddHandleFunc("DsnCatFile", commands.DsnCatFile)
-	
+
 	//listen port
-	err = http.ListenAndServe(":"+config.HttpLocalPort, nil)
+	/*err = http.ListenAndServe(":"+config.HttpLocalPort, nil)
 	if err != nil {
 		rpcLog.Fatal("ListenAndServe: ", err.Error())
-	}
+	}*/
 
 	return
 }

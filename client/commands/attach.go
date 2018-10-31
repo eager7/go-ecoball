@@ -18,7 +18,6 @@ package commands
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
@@ -56,22 +55,19 @@ func attach(c *cli.Context) error {
 	//ip address
 	ip := c.String("ip")
 	if "" != ip {
-		common.Ip = ip
+		common.NodeIp = ip
 	}
 
 	//port
 	port := c.String("port")
 	if "" != port {
-		common.Port = port
+		common.NodePort = port
 	}
 
-	//rpc call
-	resp, err := rpc.NodeCall("attach", []interface{}{common.RpcAddress()})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return err
+	var result common.SimpleResult
+	err := rpc.NodeGet("/attach", &result)
+	if nil == err {
+		fmt.Println(result.Result)
 	}
-
-	//result
-	return rpc.EchoResult(resp)
+	return err
 }

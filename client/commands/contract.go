@@ -20,11 +20,13 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"time"
-	"net/url"
 
 	"encoding/json"
+
+	"strings"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
@@ -32,7 +34,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/http/common/abi"
 	"github.com/urfave/cli"
-	"strings"
 	//innerCommon "github.com/ecoball/go-ecoball/http/common"
 	"github.com/ecoball/go-ecoball/common/config"
 )
@@ -237,7 +238,7 @@ func setContract(c *cli.Context) error {
 	return err
 }
 
-func GetContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error){
+func GetContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error) {
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("contractName", index.String())
@@ -245,7 +246,7 @@ func GetContract(chainID common.Hash, index common.AccountName) (*types.DeployIn
 	err := rpc.NodePost("/getContract", values.Encode(), &result)
 	if nil == err {
 		deploy := new(types.DeployInfo)
-		if err := deploy.Deserialize(common.FromHex(result.Result)); err != nil{
+		if err := deploy.Deserialize(common.FromHex(result.Result)); err != nil {
 			return nil, err
 		}
 		return deploy, nil
@@ -253,7 +254,7 @@ func GetContract(chainID common.Hash, index common.AccountName) (*types.DeployIn
 	return nil, err
 }
 
-func StoreGet(chainID common.Hash, index common.AccountName, key []byte) (value []byte, err error){
+func StoreGet(chainID common.Hash, index common.AccountName, key []byte) (value []byte, err error) {
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("contractName", index.String())
@@ -266,7 +267,7 @@ func StoreGet(chainID common.Hash, index common.AccountName, key []byte) (value 
 	return nil, err
 }
 
-func GetContractTable(contractName string, accountName string, abiDef abi.ABI, tableName string) ([]byte, error){
+func GetContractTable(contractName string, accountName string, abiDef abi.ABI, tableName string) ([]byte, error) {
 	var fields []abi.FieldDef
 	for _, table := range abiDef.Tables {
 		if string(table.Name) == tableName {
@@ -286,10 +287,10 @@ func GetContractTable(contractName string, accountName string, abiDef abi.ABI, t
 
 	for i, _ := range fields {
 		key := []byte(fields[i].Name)
-		if fields[i].Name == "balance" {	// only for token contract, because KV struct can't support
+		if fields[i].Name == "balance" { // only for token contract, because KV struct can't support
 			key = []byte(accountName)
 		} else {
-			key = append(key, 0)		// C lang string end with 0
+			key = append(key, 0) // C lang string end with 0
 		}
 
 		storage, err := StoreGet(config.ChainHash, common.NameToIndex(contractName), key)
@@ -349,24 +350,24 @@ func invokeContract(c *cli.Context) error {
 		for _, v := range parameter {
 			if strings.Contains(v, "0x") {
 				parameters = append(parameters, common.AddressFromPubKey(common.FromHex(v)).HexString())
-			}else {
+			} else {
 				parameters = append(parameters, v)
 			}
 		}
-	}else if "pledge" == contractMethod || "cancel_pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
+	} else if "pledge" == contractMethod || "cancel_pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
 		parameters = strings.Split(contractParam, ",")
-	}else if "set_account" == contractMethod {
+	} else if "set_account" == contractMethod {
 		parameters = strings.Split(contractParam, "--")
-	}else if "reg_chain" == contractMethod {
+	} else if "reg_chain" == contractMethod {
 		parameter := strings.Split(contractParam, ",")
-		if len(parameter) == 3{
+		if len(parameter) == 3 {
 			parameters = append(parameters, parameter[0])
 			parameters = append(parameters, parameter[1])
 			parameters = append(parameters, common.AddressFromPubKey(common.FromHex(parameter[2])).HexString())
-		}else {
+		} else {
 			return errors.New("Invalid parameters")
 		}
-	}else {
+	} else {
 		contract, err := GetContract(info.ChainID, common.NameToIndex(contractName))
 		if err != nil {
 			return errors.New("GetContract failed")
@@ -384,7 +385,7 @@ func invokeContract(c *cli.Context) error {
 			fmt.Println(err.Error())
 			return errors.New("checkParam error")
 		}
-	
+
 		parameters = append(parameters, string(argbyte[:]))
 		GetContractTable(contractName, "root", abiDef, "Account")
 	}

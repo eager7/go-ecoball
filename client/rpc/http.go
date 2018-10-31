@@ -134,7 +134,7 @@ func get(resource, address string, obj interface{}) error {
 
 //post
 func NodePost(resource, data string, obj interface{}) error {
-	return post(resource, /*common.RpcAddress()*/"http://localhost:20681", data, obj)
+	return post(resource, common.RpcAddress(), data, obj)
 }
 
 func WalletPost(resource, data string, obj interface{}) error {
@@ -143,7 +143,7 @@ func WalletPost(resource, data string, obj interface{}) error {
 
 //get
 func NodeGet(resource string, obj interface{}) error {
-	return get(resource, "http://localhost:20681", obj)
+	return get(resource, common.RpcAddress(), obj)
 }
 
 func WalletGet(resource string, obj interface{}) error {

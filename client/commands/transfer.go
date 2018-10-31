@@ -25,11 +25,12 @@ import (
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/urfave/cli"
 
-	"time"
-	"github.com/ecoball/go-ecoball/core/types"
-	inner "github.com/ecoball/go-ecoball/common"
 	"math/big"
+	"time"
+
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
+	inner "github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/types"
 	//"github.com/ecoball/go-ecoball/common/config"
 )
 
@@ -38,16 +39,16 @@ var (
 		Name:        "transfer",
 		Usage:       "user ABA transfer",
 		Category:    "Transfer",
-		Description: "With ecoclient transfer, you could transfer ABA to others",
+		Description: "Transfer ABA to other users",
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "from, f",
-				Usage: "sender address",
+				Usage: "sender name",
 			},
 			cli.StringFlag{
 				Name:  "to, t",
-				Usage: "revicer address",
+				Usage: "receiver name",
 			},
 			cli.Int64Flag{
 				Name:  "value, v",
@@ -75,19 +76,19 @@ func transferAction(c *cli.Context) error {
 
 	from := c.String("from")
 	if from == "" {
-		fmt.Println("Invalid sender address: ", from)
-		return errors.New("Invalid sender address")
+		fmt.Println("Please input a valid from account")
+		return errors.New("Invalid sender name")
 	}
 
 	to := c.String("to")
 	if to == "" {
-		fmt.Println("Invalid revicer address: ", to)
-		return errors.New("Invalid revicer address")
+		fmt.Println("Please input a valid to account", to)
+		return errors.New("Invalid revicer name")
 	}
 
 	value := c.Int64("value")
-	if value <= 0 {
-		fmt.Println("Invalid aba amount: ", value)
+	if value == 0 {
+		fmt.Println("Please input a valid aba amount")
 		return errors.New("Invalid aba amount")
 	}
 
