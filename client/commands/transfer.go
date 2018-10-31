@@ -122,7 +122,7 @@ func transferAction(c *cli.Context) error {
 	}
 
 	publickeys := ""
-	keyDatas = strings.Split(allPublickeys, ",")
+	keyDatas := strings.Split(allPublickeys, ",")
 	for _, v := range keyDatas {
 		addr := inner.AddressFromPubKey(inner.FromHex(v))
 		for _, vv := range requiredKeys {

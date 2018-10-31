@@ -199,7 +199,7 @@ func setContract(c *cli.Context) error {
 		return err
 	}
 
-	publickeys, err := getPublicKeys()
+	allPublickeys, err := getPublicKeys()
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -207,7 +207,7 @@ func setContract(c *cli.Context) error {
 	fmt.Println(publickeys)
 
 	time := time.Now().UnixNano()
-	transaction, err := types.NewDeployContract(common.NameToIndex(contractName), common.NameToIndex(contractName), chainId, "owner", types.VmWasm, description, data, abibyte, 0, time)
+	transaction, err := types.NewDeployContract(common.NameToIndex(contractName), common.NameToIndex(contractName), chainHash, "owner", types.VmWasm, description, data, abibyte, 0, time)
 	if nil != err {
 		fmt.Println(err)
 		return err
@@ -220,9 +220,9 @@ func setContract(c *cli.Context) error {
 	}
 
 	publickeys := ""
-	keyDatas = strings.Split(allPublickeys, ",")
+	keyDatas := strings.Split(allPublickeys, ",")
 	for _, v := range keyDatas {
-		addr := inner.AddressFromPubKey(inner.FromHex(v))
+		addr := common.AddressFromPubKey(common.FromHex(v))
 		for _, vv := range requiredKeys {
 			if addr == vv {
 				publickeys += v
@@ -348,13 +348,13 @@ func invokeContract(c *cli.Context) error {
 
 	var parameters []string
 
-	info, err := getInfo()
-	if err != nil {
+	chainHash, err := getMainChainHash()
+	if nil != err {
 		fmt.Println(err)
 		return err
 	}
 
-	publickeys, err := GetPublicKeys()
+	allPublickeys, err := getPublicKeys()
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -383,7 +383,7 @@ func invokeContract(c *cli.Context) error {
 			return errors.New("Invalid parameters")
 		}
 	} else {
-		contract, err := GetContract(info.ChainID, common.NameToIndex(contractName))
+		contract, err := GetContract(chainHash, common.NameToIndex(contractName))
 		if err != nil {
 			return errors.New("GetContract failed")
 		}
@@ -420,18 +420,31 @@ func invokeContract(c *cli.Context) error {
 		return err
 	}
 
-	required_keys, err := get_required_keys(info.ChainID, publickeys, "active", transaction)
+	requiredKeys, err := getRequiredKeys(chainHash, "active", sender)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	if required_keys == "" {
-		fmt.Println("no required_keys")
-		return err
+	publickeys := ""
+	keyDatas := strings.Split(allPublickeys, ",")
+	for _, v := range keyDatas {
+		addr := inner.AddressFromPubKey(inner.FromHex(v))
+		for _, vv := range requiredKeys {
+			if addr == vv {
+				publickeys += v
+				publickeys += "\n"
+				break
+			}
+		}
 	}
 
-	data, errcode := sign_transaction(info.ChainID, required_keys, transaction)
+	if "" == publickeys {
+		fmt.Println("no publickeys")
+		return errors.New("no publickeys")
+	}
+
+	data, errcode := sign_transaction(chainHash, publickeys, transaction)
 	if nil != errcode {
 		fmt.Println(errcode)
 	}
@@ -440,7 +453,8 @@ func invokeContract(c *cli.Context) error {
 	values := url.Values{}
 	values.Set("transaction", data)
 	err = rpc.NodePost("/invokeContract", values.Encode(), &result)
-	fmt.Println(result.Result)
-
+	if nil == err {
+		fmt.Println(result.Result)
+	}
 	return err
 }
