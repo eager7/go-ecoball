@@ -75,7 +75,7 @@ func (this *onlooker) notify(message []byte) {
 	}
 }
 
-func Notify(infoType info.NotifyType, message info.NotifyInfo) error {
+func Notify(infoType info.NotifyType, message info.NotifyInfo, blockType uint32) error {
 	one, err := info.NewOneNotify(infoType, message)
 	if nil != err {
 		return err

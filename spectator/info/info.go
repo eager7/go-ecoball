@@ -35,11 +35,13 @@ const (
 	InfoNil NotifyType = iota
 	InfoBlock
 	SynBlock
+	ShardBlock
 )
 
 type OneNotify struct {
 	InfoType NotifyType
 	Info     []byte
+	blockType uint32
 }
 
 func NewOneNotify(oneType NotifyType, message NotifyInfo) (*OneNotify, error) {
