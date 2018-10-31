@@ -144,6 +144,10 @@ func (b *Block) protoBuf() (*pb.BlockTx, error) {
 	return &block, nil
 }
 
+func (b *Block) Type() uint32 {
+	return 0
+}
+
 /**
  *  @brief converts a structure into a sequence of characters
  *  @return []byte - a sequence of characters

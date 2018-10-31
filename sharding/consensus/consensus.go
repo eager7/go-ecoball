@@ -120,16 +120,16 @@ func (c *Consensus) ProcessFullVoteTimeout() {
 
 	cosig := c.instance.GetCosign()
 	if c.step == StepPrePare {
-		if c.isVoteEnough(cosig.Step1) {
+		if c.ns.IsVoteEnough(cosig.Step1) {
 			c.sendPreCommit()
 		} else {
-			log.Error("step prepare wrong vote counter")
+			panic("step prepare wrong vote counter")
 		}
 	} else if c.step == StepPreCommit {
-		if c.isVoteEnough(cosig.Step2) {
+		if c.ns.IsVoteEnough(cosig.Step2) {
 			c.sendCommit()
 		} else {
-			log.Error("step precommit wrong vote counter")
+			panic("step precommit wrong vote counter")
 		}
 	}
 }

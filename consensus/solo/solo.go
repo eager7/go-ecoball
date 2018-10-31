@@ -96,7 +96,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 			}
 			block, err := solo.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
 			if err != nil {
-				log.Fatal(err)
+				log.Error(err)
 			}
 			if err := solo.ledger.VerifyTxBlock(chainID, block); err != nil {
 				log.Warn(err)

@@ -6,27 +6,27 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/net"
 )
 
-func (c *Consensus) isVoteEnough(counter uint32) bool {
-	if counter >= c.ns.GetWorksCounter()*sc.DefaultThresholdOfConsensus/1000+1 {
-		return true
+func (c *Consensus) checkCosign() bool {
+	cosign := c.instance.GetCosign()
+	if c.step == StepPrePare {
+		return c.ns.IsVoteEnough(cosign.Step1)
+	} else if c.step == StepPreCommit {
+		return c.ns.IsVoteEnough(cosign.Step1) && c.ns.IsVoteEnough(cosign.Step2)
 	} else {
 		return false
 	}
 }
 
-func (c *Consensus) isVoteOnThreshold(counter uint32) bool {
-	if counter == c.ns.GetWorksCounter()*sc.DefaultThresholdOfConsensus/1000+1 {
-		return true
+func (c *Consensus) setCosign() {
+	cosign := c.instance.GetCosign()
+	if c.step == StepPrePare {
+		sign := c.ns.GetSignBit()
+		cosign.Step1 = sign
+	} else if c.step == StepPreCommit {
+		sign := c.ns.GetSignBit()
+		cosign.Step2 = sign
 	} else {
-		return false
-	}
-}
-
-func (c *Consensus) isVoteFull(counter uint32) bool {
-	if counter == c.ns.GetWorksCounter() {
-		return true
-	} else {
-		return false
+		panic("wrong step")
 	}
 }
 
@@ -61,6 +61,8 @@ func (c *Consensus) Reset() {
 	c.step = StepNIL
 	c.instance = nil
 	c.view = nil
+	c.rcb(false, sc.DefaultBlockWindow)
+	c.fcb(false)
 }
 
 func (c *Consensus) csComplete() {

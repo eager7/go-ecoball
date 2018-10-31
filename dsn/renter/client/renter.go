@@ -141,7 +141,7 @@ func (r *Renter) PayForFile(fname, cid string) (*types.Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	log.Debug("pay for ", fname, " ", fee)
 	/*trn, err := tran.Serialize()
 	if err != nil {
 		return err
@@ -378,4 +378,9 @@ func (r *Renter) AddFile(fpath string) (string, error) {
 func (r *Renter) CatFile(path string) (io.ReadCloser, error) {
 	newPath := path + "/file"
 	return r.ipfsClient.Cat(newPath)
+}
+
+func (r *Renter) GetFile(path, out string) error {
+	newPath := path + "/file"
+	return r.ipfsClient.Get(newPath, out)
 }

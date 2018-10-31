@@ -1308,7 +1308,7 @@ func TransferExample() {
 	time.Sleep(time.Second * 15)
 	root := common.NameToIndex("root")
 	tester := common.NameToIndex("tester")
-	for i := 0; i < 0; i ++ {
+	for i := 0; i < 10; i ++ {
 		transfer, err := types.NewTransfer(root, tester, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
 		errors.CheckErrorPanic(err)
 		transfer.SetSignature(&config.Root)
@@ -1319,5 +1319,10 @@ func TransferExample() {
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Root))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	time.Sleep(time.Millisecond * 500)
+
+	invoke, err := types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"delegate", common.AddressFromPubKey(config.Delegate.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 500)
 }

@@ -33,7 +33,7 @@ const (
 	DefaultViewchangeBlockWindow       = 800 //Millisecond
 
 	DefaultWaitMinorBlockTimer  = 180 //second
-	DefaultWaitMinorBlockWindow = 1   //second
+	DefaultWaitMinorBlockWindow = 10  //second
 	DefaultMinorBlockWindow     = 400 //Millisecond
 
 	DefaultBlockWindow = 0 //Millisecond

@@ -39,6 +39,10 @@ func (this *BlockHight) Deserialize(data []byte) error {
 	return json.Unmarshal(data, this)
 }
 
+func (this *BlockHight) Type() uint32 {
+	return 0
+}
+
 func SynBlocks(conn net.Conn) {
 	hight := BlockHight(database.MaxHight)
 	oneNotify, err := info.NewOneNotify(info.SynBlock, &hight)

@@ -48,7 +48,7 @@ func StartDsn(ctx context.Context, l ledger.Ledger) error {
 	//TODO conf should be user's config
 	conf := InitDefaultConf()
 	h := host.NewStorageHost(ctx, l, ha, conf.hConf)
-	go h.Start()
+	h.Start()
 
 	//r := renter.NewRenter(ctx, l, ra, conf.rConf)
 	//go r.Start()
@@ -66,16 +66,19 @@ func StartDsn(ctx context.Context, l ledger.Ledger) error {
 }
 
 func HandleStoreAnn(para string, st state.InterfaceState)  {
+	log.Debug("Handle storage announce...")
 	data := []byte(para)
 	dsn.s.HandleHostAnce(data, st)
 }
 
 func HandleStorageProof(para string, st state.InterfaceState)  {
+	log.Debug("Handle storage proof...")
 	data := []byte(para)
 	dsn.s.HandleStorageProof(data, st)
 }
 
 func HandleFileContract(para string, st state.InterfaceState)  {
+	log.Debug("Handle file contract...")
 	data := []byte(para)
 	dsn.s.HandleFileContract(data, st)
 }

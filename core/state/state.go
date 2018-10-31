@@ -183,7 +183,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
 	if err != nil {
 		return nil, err
 	}
-	if err := s.commitAccount(acc); err != nil {
+	if err := s.CommitAccount(acc); err != nil {
 		return nil, err
 	}
 	//save the mapping of addr and index
@@ -219,7 +219,7 @@ func (s *State) SetContract(index common.AccountName, t types.VmType, des, code,
 	if err := acc.SetContract(t, des, code, abi); err != nil {
 		return err
 	}
-	return s.commitAccount(acc)
+	return s.CommitAccount(acc)
 }
 
 /**
@@ -245,7 +245,7 @@ func (s *State) StoreSet(index common.AccountName, key, value []byte) (err error
 	if err := acc.StoreSet(s.path, key, value); err != nil {
 		return err
 	}
-	return s.commitAccount(acc)
+	return s.CommitAccount(acc)
 }
 func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, err error) {
 	acc, err := s.GetAccountByName(index)
@@ -288,7 +288,8 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 		return nil, err
 	}
 	if fData == nil {
-		return nil, errors.New(log, fmt.Sprintf("no this account named:%s", index.String()))
+		log.Warn(fmt.Sprintf("no this account named:%s", index.String()))
+		return nil, nil
 	}
 	acc = &Account{}
 	if err = acc.Deserialize(fData); err != nil {
@@ -332,7 +333,7 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
  *  @brief update the account's information into trie
  *  @param acc - account object
  */
-func (s *State) commitAccount(acc *Account) error {
+func (s *State) CommitAccount(acc *Account) error {
 	if acc == nil {
 		return errors.New(log, "param acc is nil")
 	}

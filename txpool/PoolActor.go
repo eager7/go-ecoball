@@ -91,17 +91,17 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	}
 	p.txPool.txsCache.Add(tx.Hash, nil)
 
-	lastCMBlock, err := p.txPool.ledger.GetLastShardBlock(tx.ChainID, shard.HeCmBlock)
-	if err != nil {
-		return err
-	}
-	numShard := len(lastCMBlock.GetObject().(shard.CMBlock).Shards)
-	if numShard == 0 {
-		log.Warn("the node network is not work")
-		return nil
-	}
-	log.Notice("the shard number is ", numShard)
 	if !config.DisableSharding {
+		lastCMBlock, err := p.txPool.ledger.GetLastShardBlock(tx.ChainID, shard.HeCmBlock)
+		if err != nil {
+			return err
+		}
+		numShard := len(lastCMBlock.GetObject().(shard.CMBlock).Shards)
+		if numShard == 0 {
+			log.Warn("the node network is not work")
+			return nil
+		}
+		log.Notice("the shard number is ", numShard)
 		var handle bool
 		shardId, err := p.txPool.ledger.GetShardId(tx.ChainID)
 		if err != nil {

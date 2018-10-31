@@ -23,11 +23,13 @@ func (c *Consensus) sendPrepare(d time.Duration) {
 
 func (c *Consensus) prepareRsp(csp *sc.CsPacket) {
 	log.Debug("prepare response")
-	counter := c.instance.PrepareRsp()
-	if c.isVoteFull(counter) {
+	sign := c.instance.PrepareRsp()
+	if c.ns.IsVoteFull(sign) {
+		log.Debug("prepare rsp vote full")
 		c.fcb(false)
 		c.sendPreCommit()
-	} else if c.isVoteOnThreshold(counter) {
+	} else if c.ns.IsVoteOnThreshold(sign) {
+		log.Debug("prepare rsp vote on threshold")
 		c.fcb(true)
 	}
 }
@@ -44,11 +46,13 @@ func (c *Consensus) sendPreCommit() {
 
 func (c *Consensus) precommitRsp(csp *sc.CsPacket) {
 	log.Debug("precommit response")
-	counter := c.instance.PrecommitRsp()
-	if c.isVoteFull(counter) {
+	sign := c.instance.PrecommitRsp()
+	if c.ns.IsVoteFull(sign) {
+		log.Debug("precommit rsp vote full")
 		c.fcb(false)
 		c.sendCommit()
-	} else if c.isVoteOnThreshold(counter) {
+	} else if c.ns.IsVoteOnThreshold(sign) {
+		log.Debug("precommit rsp vote on threshold ")
 		c.fcb(true)
 	}
 }
@@ -59,6 +63,7 @@ func (c *Consensus) sendCommit() {
 	c.rcb(false, sc.DefaultBlockWindow)
 
 	packet := c.instance.MakeNetPacket(c.step)
+
 	//we need save cm block before we send it to peer because the shards is change
 	if packet.BlockType == sc.SD_CM_BLOCK {
 		c.csComplete()
