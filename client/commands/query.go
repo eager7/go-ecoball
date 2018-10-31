@@ -265,10 +265,10 @@ func getRequiredKeys(chainHash common.Hash, permission string, account string) (
 	values.Set("name", account)
 	err := rpc.NodePost("/query/getRequiredKeys", values.Encode(), &result)
 
-	publicAddress := []innerCommon.Address{}
-	if nil != err{
+	publicAddress := []common.Address{}
+	if nil != err {
 		return publicAddress, err
-	} 
+	}
 
 	if err := json.Unmarshal([]byte(result.Result), &publicAddress); nil != err {
 		return publicAddress, err
