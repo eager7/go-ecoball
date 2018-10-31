@@ -15,7 +15,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/types"
 	innerCommon "github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/event"
+	//"github.com/ecoball/go-ecoball/common/event"
 	dproof "github.com/ecoball/go-ecoball/dsn/proof"
 	"github.com/ecoball/go-ecoball/dsn/host/pb"
 	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
@@ -23,6 +23,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
 	"github.com/ecoball/go-ecoball/dsn/ipfs"
+	"strconv"
+	client "github.com/ecoball/go-ecoball/client/commands"
 )
 
 var (
@@ -77,8 +79,8 @@ func InitDefaultConf() StorageHostConf {
 	chainId := config.ChainHash
 	return StorageHostConf{
 		TotalStorage: 10*1024*1024,
-		Collateral: "10000",
-		MaxCollateral: "20000",
+		Collateral: "10",
+		MaxCollateral: "20",
 		AccountName: "host",
 		ChainId: common.ToHex(chainId[:]),
 	}
@@ -117,11 +119,12 @@ func (h *StorageHost)checkCollateral() bool {
 	if err != nil {
 		return false
 	}
+	col, _ := strconv.Atoi(h.conf.Collateral)
 	//TODO much more checking
-	if sacc.Votes.Staked > 0 {
-		return true
+	if sacc.Votes.Staked < uint64(col) {
+		return false
 	}
-	return false
+	return true
 }
 
 func (h *StorageHost) getBlockSyncState(chainId common.Hash) bool {
@@ -166,11 +169,12 @@ func (h *StorageHost) Announce() error {
 	if err != nil {
 		return err
 	}
-	transaction.SetSignature(&config.Root)
+	/*transaction.SetSignature(&config.Root)
 	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
 	if err != nil {
 		return err
-	}
+	}*/
+	err = client.InvokeContract(transaction)
 	log.Debug("Invoke host announcement")
 	return nil
 }
@@ -247,12 +251,13 @@ func (h *StorageHost)createStorageProof() ([]byte, error) {
 	copy(proof.Segment[:], base)
 	proof.AccountName = h.conf.AccountName
 	proofBytes := encoding.Marshal(proof)
-	annHash := sha256.Sum256(proofBytes)
+	/*annHash := sha256.Sum256(proofBytes)
 	sig, err := h.account.Sign(annHash[:])
 	if err !=  nil {
 		return nil, err
-	}
-	return append(proofBytes, sig[:]...), nil
+	}*/
+	//return append(proofBytes, sig[:]...), nil
+	return proofBytes, nil
 }
 
 func (h *StorageHost) ProvideStorageProof() error {
@@ -273,17 +278,19 @@ func (h *StorageHost) ProvideStorageProof() error {
 	if err != nil {
 		return err
 	}
-	transaction.SetSignature(&config.Root)
+	/*transaction.SetSignature(&config.Root)
 	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
 	if err != nil {
 		return err
-	}
+	}*/
+	client.InvokeContract(transaction)
 	return nil
 }
 
 func (h *StorageHost) proofLoop() error {
 	//TODO period: move to config
-	timerChan := time.NewTicker(24 * time.Hour).C
+	//timerChan := time.NewTicker(24 * time.Hour).C
+	timerChan := time.NewTicker(60 * time.Second).C
 	for {
 		select {
 		case <-timerChan:

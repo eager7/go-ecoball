@@ -246,6 +246,15 @@ func (b *MinorBlock) SetReceipt(prevHeader *MinorBlockHeader, cpu, net float64) 
 	return nil
 }
 
+func (b *MinorBlock) GetTransaction(hash common.Hash) (*types.Transaction, error) {
+	for _, tx := range b.Transactions {
+		if tx.Hash.Equals(&hash) {
+			return tx, nil
+		}
+	}
+	return nil, errors.New(log, fmt.Sprintf("can't find the tx:", hash.HexString()))
+}
+
 func (b *MinorBlock) proto() (block *pb.MinorBlock, err error) {
 	var pbBlock pb.MinorBlock
 	pbBlock.Header, err = b.MinorBlockHeader.proto()

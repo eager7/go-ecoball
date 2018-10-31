@@ -929,7 +929,11 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 				return errors.New(log, "the type assertion failed")
 			}
 			for _, delta := range minorBlock.StateDelta {
-				if err := c.HandleDeltaState(c.StateDB.FinalDB, delta, minorBlock.MinorBlockHeader.Timestamp,
+				tx, err := minorBlock.GetTransaction(delta.Receipt.Hash)
+				if err != nil {
+					return err
+				}
+				if err := c.HandleDeltaState(c.StateDB.FinalDB, delta, tx, minorBlock.MinorBlockHeader.Timestamp,
 					c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
 					c.StateDB.FinalDB.Reset(stateHashRoot)
 					return err
@@ -938,7 +942,8 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		}
 
 		if Block.StateHashRoot != c.StateDB.FinalDB.GetHashRoot() {
-			log.Panic(fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s", Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
+			log.Error(common.JsonString(c.StateDB.FinalDB.Accounts, false))
+			return errors.New(log, fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s", Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 		}
 		//heValue = append(heValue, byte(shard.HeFinalBlock))
 		data, err := Block.FinalBlockHeader.Serialize()
@@ -1124,10 +1129,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	if err != nil {
 		return nil, err
 	}
-	acc, _ := s.GetAccountByName(common.NameToIndex("root"))
-	log.Warn(acc.JsonString(false))
-	acc, _ = s.GetAccountByName(common.NameToIndex("tester"))
-	log.Warn(acc.JsonString(false))
+	log.Warn(common.JsonString(s.Accounts, false))
 	return block, nil
 }
 
@@ -1186,7 +1188,11 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	for _, block := range minorBlocks {
 		headers = append(headers, &block.MinorBlockHeader)
 		for _, delta := range block.StateDelta {
-			if err := c.HandleDeltaState(s, delta, block.MinorBlockHeader.Timestamp,
+			tx, err := block.GetTransaction(delta.Receipt.Hash)
+			if err != nil {
+				return nil, err
+			}
+			if err := c.HandleDeltaState(s, delta, tx, block.MinorBlockHeader.Timestamp,
 				c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
 				return nil, err
 			}
@@ -1213,10 +1219,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	if err != nil {
 		return nil, err
 	}
-	acc, _ := s.GetAccountByName(common.NameToIndex("root"))
-	log.Warn(acc.JsonString(false))
-	acc, _ = s.GetAccountByName(common.NameToIndex("tester"))
-	log.Warn(acc.JsonString(false))
+	log.Warn(common.JsonString(s.Accounts, false))
 	return block, nil
 }
 
@@ -1316,7 +1319,7 @@ func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 	return nil
 }
 
-func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, timeStamp int64, cpuLimit, netLimit float64) (err error) {
+func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, tx *types.Transaction, timeStamp int64, cpuLimit, netLimit float64) (err error) {
 	switch delta.Type {
 	case types.TxTransfer:
 		log.Info("handle delta in ", s.Type.String(), common.JsonString(delta, false))
@@ -1350,7 +1353,7 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 			return err
 		}
 	case types.TxInvoke:
-		if delta.Receipt.NewToken != nil {
+		/*if delta.Receipt.NewToken != nil {
 			token := new(state.TokenInfo)
 			if err := token.Deserialize(delta.Receipt.NewToken); err != nil {
 				return err
@@ -1368,6 +1371,9 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 			if err != nil {
 				return err
 			}
+			if accState == nil {
+				accState = acc
+			}
 			if acc.Tokens != nil {
 				for k, v := range acc.Tokens {
 					accState.Tokens[k] = v
@@ -1380,15 +1386,31 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, ti
 			}
 			if acc.Cpu.Limit != 0 {
 				accState.Cpu.Limit = acc.Cpu.Limit
-				accState.Cpu.Available = acc.Cpu.Available
+				//accState.Cpu.Available = acc.Cpu.Available
 				accState.Cpu.Staked = acc.Cpu.Staked
-				accState.Cpu.Used = acc.Cpu.Used
+				//accState.Cpu.Used = acc.Cpu.Used
 				accState.Cpu.Delegated = acc.Cpu.Delegated
 
 			}
+			if acc.Net.Limit != 0 {
+				accState.Net.Limit = acc.Net.Limit
+				accState.Net.Delegated = acc.Net.Delegated
+				accState.Net.Staked = acc.Net.Staked
+				//accState.Net.Available = acc.Net.Available
+			}
+			if acc.TimeStamp != 0 {
+				accState.TimeStamp = acc.TimeStamp
+			}
+			//if acc.Delegates
+			s.CommitAccount(accState)
+		}*/
+		_, _, _, err := c.HandleTransaction(s, tx, timeStamp, cpuLimit, netLimit)
+		if err !=  nil {
+			return err
 		}
 	default:
 		return errors.New(log, "unknown transaction type")
 	}
+
 	return nil
 }
