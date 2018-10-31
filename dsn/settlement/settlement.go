@@ -16,8 +16,6 @@ import (
 	ecommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
 	"github.com/ecoball/go-ecoball/common/elog"
-	"crypto/sha256"
-	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
 	"github.com/ecoball/go-ecoball/core/types"
 	innerCommon "github.com/ecoball/go-ecoball/common"
@@ -73,7 +71,7 @@ func (s *Settler) decodeAnnouncement(fullAnnouncement []byte) (host.HostAncContr
 	if err != nil {
 		return announcement, err
 	}
-	var sig [dsnComm.SigSize]byte
+	/*var sig [dsnComm.SigSize]byte
 	err = dec.Decode(&sig)
 	if err != nil {
 		return announcement, err
@@ -85,7 +83,7 @@ func (s *Settler) decodeAnnouncement(fullAnnouncement []byte) (host.HostAncContr
 	}
 	if err != nil {
 		return announcement, err
-	}
+	}*/
 	return announcement, nil
 }
 
@@ -96,7 +94,7 @@ func (s *Settler) decodeProof(proof []byte) (host.StorageProof, error) {
 	if err != nil {
 		return sp, err
 	}
-	var sig [dsnComm.SigSize]byte
+	/*var sig [dsnComm.SigSize]byte
 	err = dec.Decode(&sig)
 	if err != nil {
 		return sp, err
@@ -108,7 +106,7 @@ func (s *Settler) decodeProof(proof []byte) (host.StorageProof, error) {
 	}
 	if err != nil {
 		return sp, err
-	}
+	}*/
 	return sp, nil
 }
 

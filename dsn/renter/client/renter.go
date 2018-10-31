@@ -378,3 +378,8 @@ func (r *Renter) CatFile(path string) (io.ReadCloser, error) {
 	newPath := path + "/file"
 	return r.ipfsClient.Cat(newPath)
 }
+
+func (r *Renter) GetFile(path, out string) error {
+	newPath := path + "/file"
+	return r.ipfsClient.Get(newPath, out)
+}
