@@ -23,18 +23,18 @@ const (
 	DefaultRetransTimer   = 1
 	DefaultFullVoteTimer  = 3
 
-	DefaultProductCmBlockTimer = 60  //second
-	DefaultCmBlockWindow       = 400 //Millisecond
+	DefaultProductCmBlockTimer = 120  //second
+	DefaultCmBlockWindow       = 1000 //Millisecond
 
-	DefaultProductFinalBlockTimer = 60  //second
-	DefaultFinalBlockWindow       = 400 //Millisecond
+	DefaultProductFinalBlockTimer = 180  //second
+	DefaultFinalBlockWindow       = 1000 //Millisecond
 
-	DefaultProductViewChangeBlockTimer = 180 //second
-	DefaultViewchangeBlockWindow       = 800 //Millisecond
+	DefaultProductViewChangeBlockTimer = 180  //second
+	DefaultViewchangeBlockWindow       = 1000 //Millisecond
 
-	DefaultWaitMinorBlockTimer  = 180 //second
-	DefaultWaitMinorBlockWindow = 10  //second
-	DefaultMinorBlockWindow     = 400 //Millisecond
+	DefaultWaitMinorBlockTimer  = 180  //second
+	DefaultWaitMinorBlockWindow = 10   //second
+	DefaultMinorBlockWindow     = 1000 //Millisecond
 
 	DefaultBlockWindow = 0 //Millisecond
 )
