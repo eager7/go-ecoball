@@ -257,7 +257,7 @@ func getMainChainHash() (common.Hash, error) {
 	return hash, nil
 }
 
-func getRequiredKeys(chainHash innercommon.Hash, permission string, account string) ([]innerCommon.Address, error) {
+func getRequiredKeys(chainHash common.Hash, permission string, account string) ([]common.Address, error) {
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("permission", permission)
