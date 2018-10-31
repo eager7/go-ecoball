@@ -84,14 +84,14 @@ func (b *cmBlockCsi) GetCsBlock() interface{} {
 
 func (b *cmBlockCsi) PrepareRsp() uint32 {
 	log.Debug("prepare receive consign ", b.cache.Step1)
-	b.bk.Step1 += b.cache.Step1
+	b.bk.Step1 |= b.cache.Step1
 
 	return b.bk.Step1
 }
 
 func (b *cmBlockCsi) PrecommitRsp() uint32 {
 	log.Debug("precommit receive consign ", b.cache.Step2)
-	b.bk.Step2 += b.cache.Step2
+	b.bk.Step2 |= b.cache.Step2
 
 	return b.bk.Step2
 }

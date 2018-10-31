@@ -73,14 +73,14 @@ func (b *minorBlockCsi) GetCsBlock() interface{} {
 
 func (b *minorBlockCsi) PrepareRsp() uint32 {
 
-	b.bk.Step1 += b.cache.Step1
+	b.bk.Step1 |= b.cache.Step1
 
 	return b.bk.Step1
 }
 
 func (b *minorBlockCsi) PrecommitRsp() uint32 {
 
-	b.bk.Step2 += b.cache.Step2
+	b.bk.Step2 |= b.cache.Step2
 
 	return b.bk.Step2
 }

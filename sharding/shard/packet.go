@@ -50,6 +50,8 @@ func (s *shard) verifyShardingPacket(p *sc.NetPacket) {
 		csp = s.ns.VerifyFinalPacket(p)
 	} else if p.BlockType == sc.SD_VIEWCHANGE_BLOCK {
 		csp = s.ns.VerifyViewChangePacket(p)
+	} else if p.BlockType == sc.SD_MINOR_BLOCK {
+		csp = s.ns.VerifyMinorPacket(p)
 	} else {
 		log.Error("wrong block type")
 		return
@@ -77,11 +79,11 @@ func (s *shard) recvConsensusPacket(packet *sc.CsPacket) {
 	s.fsm.Execute(ActRecvConsensusPacket, packet)
 }
 
-func (s *shard) recvCommitteePacket(packet *sc.CsPacket) {
-	s.fsm.Execute(ActRecvCommitteePacket, packet)
+func (s *shard) recvShardingPacket(packet *sc.CsPacket) {
+	s.fsm.Execute(ActRecvShardingPacket, packet)
 }
 
-func (s *shard) processCommitteePacket(csp interface{}) {
+func (s *shard) processShardingPacket(csp interface{}) {
 	p := csp.(*sc.CsPacket)
 	switch p.BlockType {
 	case sc.SD_CM_BLOCK:
@@ -108,6 +110,7 @@ func (s *shard) processCommitteePacket(csp interface{}) {
 				return
 			}
 		}
+
 		simulate.TellBlock(final)
 		s.ns.SaveLastFinalBlock(final)
 		s.broadcastCommitteePacket(p)
@@ -130,6 +133,14 @@ func (s *shard) processCommitteePacket(csp interface{}) {
 		simulate.TellBlock(vc)
 		s.ns.SaveLastViewchangeBlock(vc)
 		s.broadcastCommitteePacket(p)
+	case sc.SD_MINOR_BLOCK:
+		minor := p.Packet.(*cs.MinorBlock)
+		if !s.ns.SaveMinorBlockToPool(minor) {
+			return
+		}
+		simulate.TellBlock(minor)
+		net.Np.TransitBlock(p)
+
 	default:
 		log.Error("block type error ", p.BlockType)
 		return
