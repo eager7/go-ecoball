@@ -996,7 +996,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 
 	log.Notice("Save Block", block.Type(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString())
 	if block.GetHeight() != 1 {
-		connect.Notify(info.InfoBlock, block)
+		connect.Notify(info.ShardBlock, block)
 		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 			log.Warn(err)
 		}
