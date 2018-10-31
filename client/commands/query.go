@@ -111,12 +111,12 @@ func getMainChainHash() (common.Hash, error) {
 	var result clientCommon.SimpleResult
 	err := rpc.NodeGet("/query/mainChainHash", &result)
 	if nil != err {
-		return nil, err
+		return common.Hash{}, err
 	}
 
 	var hash common.Hash
 	if err := json.Unmarshal([]byte(result.Result), &hash); nil != err {
-		return nil, err
+		return common.Hash{}, err
 	}
 
 	return hash, nil
@@ -224,7 +224,7 @@ func getBlockInfo(c *cli.Context) error {
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("height", strconv.FormatInt(height, 10))
-	err = rpc.NodePost("/query/getBlockInfo", values.Encode(), &result)
+	err := rpc.NodePost("/query/getBlockInfo", values.Encode(), &result)
 	if nil == err {
 		fmt.Println(result.Result)
 	}
@@ -249,7 +249,7 @@ func getTransaction(c *cli.Context) error {
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("hash", hash)
-	err = rpc.NodePost("/query/getTransaction", values.Encode(), &result)
+	err := rpc.NodePost("/query/getTransaction", values.Encode(), &result)
 	if nil == err {
 		fmt.Println(result.Result)
 	}
