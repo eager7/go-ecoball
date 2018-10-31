@@ -204,7 +204,6 @@ func setContract(c *cli.Context) error {
 		fmt.Println(err)
 		return err
 	}
-	fmt.Println(publickeys)
 
 	time := time.Now().UnixNano()
 	transaction, err := types.NewDeployContract(common.NameToIndex(contractName), common.NameToIndex(contractName), chainHash, "owner", types.VmWasm, description, data, abibyte, 0, time)
@@ -414,7 +413,7 @@ func invokeContract(c *cli.Context) error {
 	//time
 	time := time.Now().UnixNano()
 
-	transaction, err := types.NewInvokeContract(common.NameToIndex(sender), common.NameToIndex(contractName), info.ChainID, "owner", contractMethod, parameters, 0, time)
+	transaction, err := types.NewInvokeContract(common.NameToIndex(sender), common.NameToIndex(contractName), chainHash, "owner", contractMethod, parameters, 0, time)
 	if nil != err {
 		fmt.Println(err)
 		return err
@@ -429,7 +428,7 @@ func invokeContract(c *cli.Context) error {
 	publickeys := ""
 	keyDatas := strings.Split(allPublickeys, ",")
 	for _, v := range keyDatas {
-		addr := inner.AddressFromPubKey(inner.FromHex(v))
+		addr := common.AddressFromPubKey(common.FromHex(v))
 		for _, vv := range requiredKeys {
 			if addr == vv {
 				publickeys += v
@@ -444,7 +443,7 @@ func invokeContract(c *cli.Context) error {
 		return errors.New("no publickeys")
 	}
 
-	data, errcode := sign_transaction(chainHash, publickeys, transaction)
+	data, errcode := signTransaction(chainHash, publickeys, transaction)
 	if nil != errcode {
 		fmt.Println(errcode)
 	}
