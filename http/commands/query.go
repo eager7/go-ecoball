@@ -160,7 +160,7 @@ func GetRequiredKeys(c *gin.Context) {
 		}
 	}
 
-	keys, err = json.Marshal(&publicAddress)
+	keys, err := json.Marshal(&publicAddress)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
