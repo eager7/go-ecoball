@@ -84,19 +84,6 @@ var (
 	}
 )
 
-func getInfo() (*types.Block, error) {
-	var result clientCommon.SimpleResult
-	err := rpc.NodeGet("/getInfo", &result)
-	if nil == err {
-		blockINfo := new(types.Block)
-		err := blockINfo.Deserialize(innercommon.FromHex(result.Result))
-		if nil == err {
-			return blockINfo, nil
-		}
-	}
-	return nil, err
-}
-
 func newAccount(c *cli.Context) error {
 	//Check the number of flags
 	if c.NumFlags() == 0 {

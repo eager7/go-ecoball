@@ -1,22 +1,6 @@
 package commands
 
-import (
-	"context"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"net/url"
-	"os"
-
-	clientCommon "github.com/ecoball/go-ecoball/client/common"
-	"github.com/ecoball/go-ecoball/client/rpc"
-	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/types"
-	dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
-	"github.com/urfave/cli"
-)
-
-var (
+/*var (
 	DsnStorageCommands = cli.Command{
 		Name:     "dsnstorage",
 		Usage:    "Distributed storage  interaction",
@@ -162,7 +146,7 @@ func GetRequiredKeys(chainId common.Hash, required_keys, permission string, trx 
 		return "", err
 	}*/
 
-	var result clientCommon.SimpleResult
+/*	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("permission", permission)
 	values.Set("chainId", chainId.HexString())
@@ -256,3 +240,4 @@ func InvokeContract(trx *types.Transaction) error {
 	fmt.Println("Contract: ", retContract.Result)
 	return err
 }
+*/
