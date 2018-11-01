@@ -1,6 +1,6 @@
 package nativeservice
 
-import (
+/*import (
 	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
@@ -269,3 +269,4 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 	}
 	return nil, nil
 }
+*/
