@@ -107,21 +107,6 @@ func getAllChainInfo(c *cli.Context) error {
 	return err
 }
 
-func getMainChainHash() (common.Hash, error) {
-	var result clientCommon.SimpleResult
-	err := rpc.NodeGet("/query/mainChainHash", &result)
-	if nil != err {
-		return common.Hash{}, err
-	}
-
-	var hash common.Hash
-	if err := json.Unmarshal([]byte(result.Result), &hash); nil != err {
-		return common.Hash{}, err
-	}
-
-	return hash, nil
-}
-
 func getAccount(c *cli.Context) error {
 	//Check the number of flags
 	if c.NumFlags() == 0 {
@@ -254,4 +239,40 @@ func getTransaction(c *cli.Context) error {
 		fmt.Println(result.Result)
 	}
 	return err
+}
+
+//other query method
+func getMainChainHash() (common.Hash, error) {
+	var result clientCommon.SimpleResult
+	err := rpc.NodeGet("/query/mainChainHash", &result)
+	if nil != err {
+		return common.Hash{}, err
+	}
+
+	var hash common.Hash
+	if err := json.Unmarshal([]byte(result.Result), &hash); nil != err {
+		return common.Hash{}, err
+	}
+
+	return hash, nil
+}
+
+func getRequiredKeys(chainHash common.Hash, permission string, account string) ([]common.Address, error) {
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("permission", permission)
+	values.Set("chainHash", chainHash.HexString())
+	values.Set("name", account)
+	err := rpc.NodePost("/query/getRequiredKeys", values.Encode(), &result)
+
+	publicAddress := []common.Address{}
+	if nil != err {
+		return publicAddress, err
+	}
+
+	if err := json.Unmarshal([]byte(result.Result), &publicAddress); nil != err {
+		return publicAddress, err
+	}
+
+	return publicAddress, nil
 }

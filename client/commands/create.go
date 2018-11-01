@@ -19,9 +19,9 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"time"
-	"net/url"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
@@ -96,20 +96,6 @@ func getInfo() (*types.Block, error) {
 		}
 	}
 	return nil, err
-}
-
-func get_required_keys(chainId innercommon.Hash, required_keys, permission string, trx *types.Transaction) (string, error) {
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("permission", permission)
-	values.Set("chainId", chainId.HexString())
-	values.Set("keys", required_keys)
-	values.Set("name", trx.From.String())
-	err := rpc.NodePost("/get_required_keys", values.Encode(), &result)
-	if nil == err {
-		return result.Result, nil
-	}
-	return "", err
 }
 
 func newAccount(c *cli.Context) error {

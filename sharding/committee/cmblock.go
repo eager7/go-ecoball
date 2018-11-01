@@ -130,6 +130,7 @@ func (c *committee) reshardWorker(height uint64) (candidate *cs.NodeInfo, shards
 	}
 
 	ss := simulate.GetShards()
+	size := simulate.GetShardSize()
 
 	var shard cs.Shard
 	var i int
@@ -141,15 +142,15 @@ func (c *committee) reshardWorker(height uint64) (candidate *cs.NodeInfo, shards
 		worker.Port = member.Port
 
 		shard.Member = append(shard.Member, worker)
-		if (i+1)%5 == 0 {
+		if (i+1)%size == 0 {
 			shards = append(shards, shard)
-			shard.Member = make([]cs.NodeInfo, 0, 5)
+			shard.Member = make([]cs.NodeInfo, 0, size)
 		}
 	}
 
-	if (i+1)%5 != 0 {
+	if (i+1)%size != 0 {
 		shards = append(shards, shard)
-		shard.Member = make([]cs.NodeInfo, 0, 5)
+		shard.Member = make([]cs.NodeInfo, 0, size)
 	}
 
 	return
