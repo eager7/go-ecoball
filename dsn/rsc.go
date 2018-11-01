@@ -1,13 +1,15 @@
 package dsn
 
 import (
-	"context"
 	"bytes"
-	"io/ioutil"
-	"github.com/ecoball/go-ecoball/dsn/renter"
-	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
-	"github.com/ecoball/go-ecoball/dsn/erasure"
+	"context"
 	"io"
+	"io/ioutil"
+
+	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/dsn/erasure"
+	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
+	"github.com/ecoball/go-ecoball/dsn/renter"
 )
 
 var log = elog.NewLogger("dsn-era", elog.DebugLog)
@@ -22,15 +24,15 @@ func RscCoding(req *renter.RscReq) (string, error) {
 
 	fm := api.EraMetaData{
 		PieceSize: req.Chunk,
-		FileSize: req.FileSize,
+		FileSize:  req.FileSize,
 	}
 
 	var fileSize int
 	fileSize = int(req.FileSize)
-	if fileSize % int(fm.PieceSize) == 0 {
+	if fileSize%int(fm.PieceSize) == 0 {
 		fm.DataPiece = uint64(fileSize / int(fm.PieceSize))
 	} else {
-		fm.DataPiece = uint64(fileSize / int(fm.PieceSize) + 1)
+		fm.DataPiece = uint64(fileSize/int(fm.PieceSize) + 1)
 	}
 	fm.ParityPiece = fm.DataPiece * uint64(req.Redundency)
 
@@ -51,7 +53,7 @@ func RscCoding(req *renter.RscReq) (string, error) {
 	}
 
 	pieces := len(shards)
-	p := make([]byte, pieces * len(shards[0]))
+	p := make([]byte, pieces*len(shards[0]))
 	k := 0
 	for i := 0; i < pieces; i++ {
 		for _, v := range shards[i] {
@@ -60,7 +62,7 @@ func RscCoding(req *renter.RscReq) (string, error) {
 		}
 	}
 	erReader := bytes.NewReader(p)
-	return  api.AddDagFromReader(ctx, erReader, &fm, req.Cid)
+	return api.AddDagFromReader(ctx, erReader, &fm, req.Cid)
 }
 
 func RscDecoding(cid string) (io.Reader, error) {
