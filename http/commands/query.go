@@ -160,13 +160,13 @@ func GetRequiredKeys(c *gin.Context) {
 		}
 	}
 
-	data, err = json.Marshal(&publicAddress)
+	keys, err = json.Marshal(&publicAddress)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"result": string(data)})
+	c.JSON(http.StatusOK, gin.H{"result": string(keys)})
 }
 
 func GetContract(c *gin.Context) {
