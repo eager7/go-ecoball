@@ -19,14 +19,14 @@ package commands
 import (
 	"github.com/ecoball/go-ecoball/core/types"
 
+	"fmt"
+
 	"github.com/ecoball/go-ecoball/account"
 	innerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"github.com/ecoball/go-ecoball/http/common"
-	"fmt"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
 var log = elog.NewLogger("commands", elog.DebugLog)
@@ -71,7 +71,7 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 	//from address
 	//from := account.AddressFromPubKey(common.Account.PublicKey)
 
-	transaction := new(types.Transaction)//{
+	transaction := new(types.Transaction) //{
 	//	Payload: &types.InvokeInfo{}}
 
 	var invalid bool
@@ -119,60 +119,6 @@ func InvokeContract(params []interface{}) *common.Response {
 	}
 
 	return common.NewResponse(common.SUCCESS, "")
-}
-
-func GetContract(params []interface{}) *common.Response {
-	if len(params) < 1 {
-		log.Error("invalid arguments")
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	switch params[0].(type){
-	case string:
-		//list account
-		chainId := params[0].(string)
-		accountName := params[1].(string)
-		hash := new(innerCommon.Hash)
-		chainids := hash.FormHexString(chainId)
-		contract, err := ledger.L.GetContract(chainids, innerCommon.NameToIndex(accountName))
-		if err != nil {
-			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
-		}
-
-		data, err := contract.Serialize()
-		if err != nil {
-			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
-		}
-		return common.NewResponse(common.SUCCESS, innerCommon.ToHex(data))
-	default:
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-}
-
-func StoreGet(params []interface{}) *common.Response {
-	if len(params) < 1 {
-		log.Error("invalid arguments")
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	switch params[0].(type){
-	case string:
-		//list account
-		chainId := params[0].(string)
-		accountName := params[1].(string)
-		key := params[2].(string)
-		hash := new(innerCommon.Hash)
-		chainids := hash.FormHexString(chainId)
-		storage, err := ledger.L.StoreGet(chainids, innerCommon.NameToIndex(accountName), innerCommon.FromHex(key))
-		if err != nil {
-			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
-		}
-
-		fmt.Println(string(storage))
-		return common.NewResponse(common.SUCCESS, innerCommon.ToHex(storage))
-	default:
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
 }
 
 func handleInvokeContract(params []interface{}) common.Errcode {
