@@ -240,7 +240,7 @@ func runNode(c *cli.Context) error {
 	ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
-			if err := rpc.StartRPCServer(); nil != err {
+			if err := rpc.StartHttpServer(); nil != err {
 				errChan <- err
 			}
 		}()
@@ -256,7 +256,6 @@ func runNode(c *cli.Context) error {
 		return nil
 	})
 	//capture single
-	go rpc.StartHttpServer()
 	go dsn.DsnHttpServ()
 	go wait(shutdown)
 
