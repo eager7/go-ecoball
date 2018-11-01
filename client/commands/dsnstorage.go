@@ -66,7 +66,7 @@ func dsnAddFile(ctx *cli.Context) error {
 		return err
 	}
 
-	chainId, err = getMainChainHash()
+	chainId, err := getMainChainHash()
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func dsnAddFile(ctx *cli.Context) error {
 		fmt.Println(err.Error())
 		return err
 	}
-	reqKeys, err = GetRequiredKeys(chainId, pkKeys, "owner", payTrn)
+	reqKeys, err = getRequiredKeys(chainId, "owner", payTrn.From.String())
 	if err != nil {
 		return err
 	}
@@ -192,17 +192,17 @@ func SignTransaction(chainId common.Hash, required_keys string, trx *types.Trans
 }
 
 func TxTransaction(trx *types.Transaction) error {
-	chainId, err := GetChainId()
+	chainHash, err := getMainChainHash()
 	if err != nil {
 		return err
 	}
 
-	pkKeys, err := GetPublicKeys()
+	pkKeys, err := getPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", trx)
+	reqKeys, err := getRequiredKeys(chainId, "owner", trx.From.String())
 	if err != nil {
 		return err
 	}
@@ -224,17 +224,17 @@ func TxTransaction(trx *types.Transaction) error {
 }
 
 func InvokeContract(trx *types.Transaction) error {
-	chainId, err := GetChainId()
+	chainHash, err := getMainChainHash()
 	if err != nil {
 		return err
 	}
 
-	pkKeys, err := GetPublicKeys()
+	pkKeys, err := getPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", trx)
+	reqKeys, err := getRequiredKeys(chainId, "owner", trx.From.String())
 	if err != nil {
 		return err
 	}
