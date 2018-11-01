@@ -22,9 +22,10 @@ enum  MsgType {
     APP_MSG_DKGSIJ          = 16;
     APP_MSG_DKGNLQUAL       = 17;
     APP_MSG_DKGLQUAL        = 18;
+    APP_MSG_SYNC_REQUEST   = 19;
+    APP_MSG_SYNC_RESPONSE   = 20;
 
-
-    APP_MSG_UNDEFINED       = 19;
+    APP_MSG_UNDEFINED       = 21;
 }
 
 

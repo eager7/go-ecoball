@@ -124,6 +124,36 @@ func (n *net) BroadcastBlock(packet *sc.NetPacket) {
 	}
 }
 
+func (n *net) SendSyncResponse(packet *sc.NetPacket, work *sc.WorkerId){
+	log.Debug("send sync response")
+	go simulate.Sendto(work.Address, work.Port, packet)
+}
+
+func (n *net) SendSyncMessage(packet *sc.NetPacket){
+	log.Debug("send sync message")
+
+	works := n.ns.GetWorks()
+	if works == nil {
+		log.Error("works is nil")
+		return
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	r := rand.Int31n(int32(len(works)-1))
+
+	var i int32 = 0
+	for _, work := range works {
+		if n.ns.Self.Equal(work) {
+			continue
+		}
+		if i == r {
+			go simulate.Sendto(work.Address, work.Port, packet)
+			break
+		}
+		i++
+	}
+}
+
 func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 	log.Debug("send block to shard")
 
@@ -149,7 +179,6 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 			}
 		}
 	}
-
 }
 
 func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {

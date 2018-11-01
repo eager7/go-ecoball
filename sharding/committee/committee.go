@@ -152,6 +152,7 @@ func (c *committee) pvcRoutine() {
 	}
 }
 
+
 func (c *committee) processActorMsg(msg interface{}) {
 	switch msg.(type) {
 	case *message.SyncComplete:
@@ -169,6 +170,11 @@ func (c *committee) processPacket(packet *sc.CsPacket) {
 		c.recvConsensusPacket(packet)
 	case pb.MsgType_APP_MSG_SHARDING_PACKET:
 		c.recvShardPacket(packet)
+	case pb.MsgType_APP_MSG_SYNC_REQUEST:
+		csp, worker := c.ns.RecvSyncRequestPacket(packet)
+		net.Np.SendSyncResponse(csp, worker)
+	case pb.MsgType_APP_MSG_SYNC_RESPONSE:
+		c.ns.RecvSyncResponsePacket(packet)
 	default:
 		log.Error("wrong packet")
 	}

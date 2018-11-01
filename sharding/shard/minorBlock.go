@@ -53,6 +53,8 @@ func (b *minorBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 	return true
 }
 
+
+
 func (b *minorBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
 	csp := &sc.NetPacket{PacketType: pb.MsgType_APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_MINOR_BLOCK, Step: step}
 

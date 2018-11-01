@@ -47,6 +47,11 @@ type shard struct {
 	cs            *consensus.Consensus
 }
 
+func MakeShardTest(ns *cell.Cell) *shard {
+	instance := MakeShard(ns)
+	return instance.(*shard)
+}
+
 func MakeShard(ns *cell.Cell) sc.NodeInstance {
 	s := &shard{ns: ns,
 		actorc:        make(chan interface{}),
@@ -160,10 +165,17 @@ func (s *shard) processPacket(packet *sc.CsPacket) {
 		s.recvConsensusPacket(packet)
 	case pb.MsgType_APP_MSG_SHARDING_PACKET:
 		s.recvShardingPacket(packet)
+	case pb.MsgType_APP_MSG_SYNC_REQUEST:
+		csp, worker := s.ns.RecvSyncRequestPacket(packet)
+		net.Np.SendSyncResponse(csp, worker)
+	case pb.MsgType_APP_MSG_SYNC_RESPONSE:
+		s.ns.RecvSyncResponsePacket(packet)
+
 	default:
 		log.Error("wrong packet")
 	}
 }
+
 
 func (s *shard) processFullVoteTimeout() {
 	s.cs.ProcessFullVoteTimeout()
@@ -178,3 +190,4 @@ func (s *shard) setFullVoeTimer(bStart bool) {
 		s.fullVoteTimer.Stop()
 	}
 }
+

@@ -3,6 +3,8 @@ package cell
 import (
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"fmt"
+	"encoding/json"
 )
 
 func (c *Cell) VerifyCmPacket(p *sc.NetPacket) *sc.CsPacket {
@@ -118,6 +120,53 @@ func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
 
 	return &csp
 }
+
+//For test
+/*func VerifySyncRequestPacketTest(p *sc.NetPacket) *sc.CsPacket {
+	var requestPacket *sc.SyncRequestPacket
+	err := json.Unmarshal(p.Packet, &requestPacket)
+	if err != nil {
+		log.Error("syncResponse unmarshal error ", err)
+		return nil
+	}
+	var csp sc.CsPacket
+	csp.CopyHeader(p)
+	csp.Packet = &requestPacket
+	return &csp
+}*/
+
+//Mark Decode
+func (c *Cell)VerifySyncRequestPacket(p *sc.NetPacket) *sc.CsPacket {
+	var requestPacket *sc.SyncRequestPacket
+	err := json.Unmarshal(p.Packet, &requestPacket)
+	if err != nil {
+		log.Error("syncResponse unmarshal error ", err)
+		return nil
+	}
+	var csp sc.CsPacket
+	csp.CopyHeader(p)
+	csp.Packet = requestPacket
+	return &csp
+}
+
+//Mark Decode
+func (c *Cell) VerifySyncResponsePacket(p *sc.NetPacket) *sc.CsPacket {
+	fmt.Println("syncResponse p = ", p)
+	fmt.Println("syncResponse packet = ", p.Packet)
+	var syncData *sc.SyncResponseData
+	err := json.Unmarshal(p.Packet, &syncData)
+	if err != nil {
+		log.Error("syncResponse decode error ", err)
+		fmt.Println("syncResponse decode error", err)
+		return nil
+	}
+	var csp sc.CsPacket
+	csp.CopyHeader(p)
+	csp.Packet = syncData
+	return &csp
+}
+
+
 
 func (c *Cell) VerifyMinorPacket(p *sc.NetPacket) *sc.CsPacket {
 	minor := new(cs.MinorBlock)
