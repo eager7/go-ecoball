@@ -10,7 +10,7 @@ import (
 	"io"
 )
 
-//var log = elog.NewLogger("dsn-era", elog.DebugLog)
+var log = elog.NewLogger("dsn-era", elog.DebugLog)
 
 func RscCoding(req *renter.RscReq) (string, error) {
 	ctx := context.Background()
