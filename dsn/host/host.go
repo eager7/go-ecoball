@@ -1,6 +1,6 @@
 package host
 
-import (
+/*import (
 	"context"
 	"errors"
 	"io/ioutil"
@@ -105,7 +105,7 @@ func (h *StorageHost) Start() error {
 		return err
 	}*/
 
-	go h.proofLoop()
+/*	go h.proofLoop()
 	return nil
 }
 
@@ -171,7 +171,7 @@ func (h *StorageHost) Announce() error {
 	if err != nil {
 		return err
 	}*/
-	err = client.InvokeContract(transaction)
+/*	err = client.InvokeContract(transaction)
 	if err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func (h *StorageHost) createAnnouncement() ([]byte, error) {
 		return nil, err
 	}
 	return append(annBytes, sig[:]...), nil*/
-	return annBytes, nil
+/*	return annBytes, nil
 }
 
 func (h *StorageHost) createStorageProof() ([]byte, error) {
@@ -264,8 +264,8 @@ func (h *StorageHost) createStorageProof() ([]byte, error) {
 	if err !=  nil {
 		return nil, err
 	}*/
-	//return append(proofBytes, sig[:]...), nil
-	return proofBytes, nil
+//return append(proofBytes, sig[:]...), nil
+/*	return proofBytes, nil
 }
 
 func (h *StorageHost) ProvideStorageProof() error {
@@ -292,7 +292,7 @@ func (h *StorageHost) ProvideStorageProof() error {
 	if err != nil {
 		return err
 	}*/
-	client.InvokeContract(transaction)
+/*	client.InvokeContract(transaction)
 	return nil
 }
 
@@ -379,3 +379,4 @@ func (st *StorageProof) Deserialize(data []byte) error {
 	st.AtHeight = sp.AtHeight
 	return nil
 }
+*/

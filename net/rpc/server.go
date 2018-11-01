@@ -90,5 +90,5 @@ func CliServerListMyPeers(params []interface{}) *common.Response {
 		return common.NewResponse(common.INTERNAL_ERROR, false)
 	}
 	log.Debug(peers)
-	return common.NewResponse(common.SUCCESS, peers)*/
-}
+	return common.NewResponse(common.SUCCESS, peers)
+}*/
