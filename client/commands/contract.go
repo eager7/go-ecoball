@@ -20,11 +20,13 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"time"
-	"net/url"
 
 	"encoding/json"
+
+	"strings"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
@@ -32,9 +34,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/http/common/abi"
 	"github.com/urfave/cli"
-	"strings"
 	//innerCommon "github.com/ecoball/go-ecoball/http/common"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var (
@@ -57,25 +57,24 @@ var (
 					},
 					cli.StringFlag{
 						Name:  "name, n",
-						Usage: "contract name",
+						Usage: "contract acount name",
 					},
 					cli.StringFlag{
 						Name:  "description, d",
 						Usage: "contract description",
 					},
 					cli.StringFlag{
-						Name:  "abipath, ap",
+						Name:  "abipath, i",
 						Usage: "abi file path",
 					},
 					cli.StringFlag{
-						Name:  "permission, per",
+						Name:  "permission, r",
 						Usage: "active permission",
 						Value: "active",
 					},
 					cli.StringFlag{
-						Name:  "chainId, c",
-						Usage: "chainId hash",
-						Value: "config.hash",
+						Name:  "chainHash, c",
+						Usage: "chain hash(the default is the main chain hash)",
 					},
 				},
 			},
@@ -97,8 +96,8 @@ var (
 						Usage: "method parameters",
 					},
 					cli.StringFlag{
-						Name:  "sender, s",
-						Usage: "sender name",
+						Name:  "invoker, i",
+						Usage: "Invoker account name",
 					},
 				},
 			},
@@ -116,14 +115,14 @@ func setContract(c *cli.Context) error {
 	//contract file path
 	fileName := c.String("path")
 	if fileName == "" {
-		fmt.Println("Invalid file path: ", fileName)
+		fmt.Println("Please input a valid contrace file path")
 		return errors.New("Invalid contrace file path")
 	}
 
 	//abi file path
 	abi_fileName := c.String("abipath")
 	if abi_fileName == "" {
-		fmt.Println("Invalid abifile path: ", fileName)
+		fmt.Println("Please input a valid abi file path")
 		return errors.New("Invalid abi file path")
 	}
 
@@ -170,59 +169,65 @@ func setContract(c *cli.Context) error {
 	//contract name
 	contractName := c.String("name")
 	if contractName == "" {
-		fmt.Println("Invalid contract name: ", contractName)
-		return errors.New("Invalid contract name")
+		fmt.Println("Please input your account name")
+		return errors.New("Invalid account name")
 	}
 
 	//contract description
 	description := c.String("description")
 	if description == "" {
-		fmt.Println("Invalid contract description: ", description)
+		fmt.Println("Please input a valid contract description")
 		return errors.New("Invalid contract description")
 	}
 
 	permission := c.String("permission")
-	if "" == permission {
-		permission = "active"
-	}
 
-	info, err := getInfo()
-	if err != nil {
+	//get main chain hash
+	chainHash, err := getMainChainHash()
+	if nil != err {
 		fmt.Println(err)
 		return err
 	}
 
-	chainId := info.ChainID
-	chainIdStr := c.String("chainId")
-	if "config.hash" != chainIdStr && "" != chainIdStr {
-		chainId = common.HexToHash(chainIdStr)
-	}
-
-	publickeys, err := GetPublicKeys()
+	//get all public keys
+	allPublickeys, err := getPublicKeys()
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
-	fmt.Println(publickeys)
 
 	time := time.Now().UnixNano()
-	transaction, err := types.NewDeployContract(common.NameToIndex(contractName), common.NameToIndex(contractName), chainId, "owner", types.VmWasm, description, data, abibyte, 0, time)
+	transaction, err := types.NewDeployContract(common.NameToIndex(contractName), common.NameToIndex(contractName), chainHash, "owner", types.VmWasm, description, data, abibyte, 0, time)
 	if nil != err {
+		fmt.Println(err)
 		return err
 	}
 
-	required_keys, err := get_required_keys(info.ChainID, publickeys, permission, transaction)
+	requiredKeys, err := getRequiredKeys(chainHash, permission, contractName)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	if required_keys == "" {
-		fmt.Println("no required_keys")
-		return err
+	publickeys := ""
+	keyDatas := strings.Split(allPublickeys, ",")
+	for _, v := range keyDatas {
+		addr := common.AddressFromPubKey(common.FromHex(v))
+		for _, vv := range requiredKeys {
+			if addr == vv {
+				publickeys += v
+				publickeys += "\n"
+				break
+			}
+		}
 	}
 
-	datas, errcode := sign_transaction(info.ChainID, required_keys, transaction)
+	if "" == publickeys {
+		fmt.Println("no publickeys")
+		return errors.New("no publickeys")
+	}
+
+	datas, errcode := signTransaction(chainHash, publickeys, transaction)
 	if nil != errcode {
 		fmt.Println(errcode)
 	}
@@ -232,78 +237,10 @@ func setContract(c *cli.Context) error {
 	values := url.Values{}
 	values.Set("transaction", datas)
 	err = rpc.NodePost("/invokeContract", values.Encode(), &result)
-	fmt.Println(result.Result)
-
+	if nil == err {
+		fmt.Println(result.Result)
+	}
 	return err
-}
-
-func GetContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error){
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("contractName", index.String())
-	values.Set("chainId", chainID.HexString())
-	err := rpc.NodePost("/getContract", values.Encode(), &result)
-	if nil == err {
-		deploy := new(types.DeployInfo)
-		if err := deploy.Deserialize(common.FromHex(result.Result)); err != nil{
-			return nil, err
-		}
-		return deploy, nil
-	}
-	return nil, err
-}
-
-func StoreGet(chainID common.Hash, index common.AccountName, key []byte) (value []byte, err error){
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("contractName", index.String())
-	values.Set("chainId", chainID.HexString())
-	values.Set("key", common.ToHex(key))
-	err = rpc.NodePost("/storeGet", values.Encode(), &result)
-	if nil == err {
-		return common.FromHex(result.Result), nil
-	}
-	return nil, err
-}
-
-func GetContractTable(contractName string, accountName string, abiDef abi.ABI, tableName string) ([]byte, error){
-	var fields []abi.FieldDef
-	for _, table := range abiDef.Tables {
-		if string(table.Name) == tableName {
-			for _, struction := range abiDef.Structs {
-				if struction.Name == table.Type {
-					fields = struction.Fields
-				}
-			}
-		}
-	}
-
-	if fields == nil {
-		return nil, errors.New("can not find struct of table  " + tableName)
-	}
-
-	table := make(map[string]string, len(fields))
-
-	for i, _ := range fields {
-		key := []byte(fields[i].Name)
-		if fields[i].Name == "balance" {	// only for token contract, because KV struct can't support
-			key = []byte(accountName)
-		} else {
-			key = append(key, 0)		// C lang string end with 0
-		}
-
-		storage, err := StoreGet(config.ChainHash, common.NameToIndex(contractName), key)
-		if err != nil {
-			return nil, errors.New("can not get store " + fields[i].Name)
-		}
-		fmt.Println(fields[i].Name + ": " + string(storage))
-		table[fields[i].Name] = string(storage)
-	}
-
-	js, _ := json.Marshal(table)
-	fmt.Println("json format: ", string(js))
-
-	return nil, nil
 }
 
 func invokeContract(c *cli.Context) error {
@@ -316,14 +253,14 @@ func invokeContract(c *cli.Context) error {
 	//contract address
 	contractName := c.String("name")
 	if contractName == "" {
-		fmt.Println("Invalid contract name: ", contractName)
-		return errors.New("Invalid contract name")
+		fmt.Println("Please input a valid contract account name")
+		return errors.New("Invalid contract account name")
 	}
 
-	//contract name
+	//contract method
 	contractMethod := c.String("method")
 	if contractMethod == "" {
-		fmt.Println("Invalid contract method: ", contractMethod)
+		fmt.Println("Please input a valid contract method")
 		return errors.New("Invalid contract method")
 	}
 
@@ -332,13 +269,13 @@ func invokeContract(c *cli.Context) error {
 
 	var parameters []string
 
-	info, err := getInfo()
-	if err != nil {
+	chainHash, err := getMainChainHash()
+	if nil != err {
 		fmt.Println(err)
 		return err
 	}
 
-	publickeys, err := GetPublicKeys()
+	allPublickeys, err := getPublicKeys()
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -349,27 +286,27 @@ func invokeContract(c *cli.Context) error {
 		for _, v := range parameter {
 			if strings.Contains(v, "0x") {
 				parameters = append(parameters, common.AddressFromPubKey(common.FromHex(v)).HexString())
-			}else {
+			} else {
 				parameters = append(parameters, v)
 			}
 		}
-	}else if "pledge" == contractMethod || "cancel_pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
+	} else if "pledge" == contractMethod || "cancel_pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
 		parameters = strings.Split(contractParam, ",")
-	}else if "set_account" == contractMethod {
+	} else if "set_account" == contractMethod {
 		parameters = strings.Split(contractParam, "--")
-	}else if "reg_chain" == contractMethod {
+	} else if "reg_chain" == contractMethod {
 		parameter := strings.Split(contractParam, ",")
-		if len(parameter) == 3{
+		if len(parameter) == 3 {
 			parameters = append(parameters, parameter[0])
 			parameters = append(parameters, parameter[1])
 			parameters = append(parameters, common.AddressFromPubKey(common.FromHex(parameter[2])).HexString())
-		}else {
+		} else {
 			return errors.New("Invalid parameters")
 		}
-	}else {
-		contract, err := GetContract(info.ChainID, common.NameToIndex(contractName))
+	} else {
+		contract, err := getContract(chainHash, common.NameToIndex(contractName))
 		if err != nil {
-			return errors.New("GetContract failed")
+			return errors.New("getContract failed")
 		}
 
 		var abiDef abi.ABI
@@ -384,38 +321,52 @@ func invokeContract(c *cli.Context) error {
 			fmt.Println(err.Error())
 			return errors.New("checkParam error")
 		}
-	
+
 		parameters = append(parameters, string(argbyte[:]))
-		GetContractTable(contractName, "root", abiDef, "Account")
+		getContractTable(contractName, "root", abiDef, "Account")
 	}
 
 	//contract address
-	sender := c.String("sender")
-	if sender == "" {
-		sender = contractName
+	invoker := c.String("invoker")
+	if invoker == "" {
+		fmt.Println("Please input a valid invoker account name")
+		return errors.New("Invalid invoker account name")
 	}
 
 	//time
 	time := time.Now().UnixNano()
 
-	transaction, err := types.NewInvokeContract(common.NameToIndex(sender), common.NameToIndex(contractName), info.ChainID, "owner", contractMethod, parameters, 0, time)
+	transaction, err := types.NewInvokeContract(common.NameToIndex(invoker), common.NameToIndex(contractName), chainHash, "owner", contractMethod, parameters, 0, time)
 	if nil != err {
 		fmt.Println(err)
 		return err
 	}
 
-	required_keys, err := get_required_keys(info.ChainID, publickeys, "active", transaction)
+	requiredKeys, err := getRequiredKeys(chainHash, "active", invoker)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	if required_keys == "" {
-		fmt.Println("no required_keys")
-		return err
+	publickeys := ""
+	keyDatas := strings.Split(allPublickeys, ",")
+	for _, v := range keyDatas {
+		addr := common.AddressFromPubKey(common.FromHex(v))
+		for _, vv := range requiredKeys {
+			if addr == vv {
+				publickeys += v
+				publickeys += "\n"
+				break
+			}
+		}
 	}
 
-	data, errcode := sign_transaction(info.ChainID, required_keys, transaction)
+	if "" == publickeys {
+		fmt.Println("no publickeys")
+		return errors.New("no publickeys")
+	}
+
+	data, errcode := signTransaction(chainHash, publickeys, transaction)
 	if nil != errcode {
 		fmt.Println(errcode)
 	}
@@ -424,7 +375,8 @@ func invokeContract(c *cli.Context) error {
 	values := url.Values{}
 	values.Set("transaction", data)
 	err = rpc.NodePost("/invokeContract", values.Encode(), &result)
-	fmt.Println(result.Result)
-
+	if nil == err {
+		fmt.Println(result.Result)
+	}
 	return err
 }

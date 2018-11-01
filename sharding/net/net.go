@@ -3,7 +3,7 @@ package net
 import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	cs "github.com/ecoball/go-ecoball/core/shard"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
@@ -28,7 +28,7 @@ func MakeNet(ns *cell.Cell) {
 	return
 }
 
-func (n *net) SendToPeer(packet *sc.NetPacket, worker *cell.Worker) {
+func (n *net) SendToPeer(packet *sc.NetPacket, worker *sc.Worker) {
 	if worker == nil {
 		log.Error("leader is nil")
 		return
@@ -136,7 +136,7 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 
 	sp := &sc.NetPacket{}
 	sp.DupHeader(packet)
-	sp.PacketType = netmsg.APP_MSG_SHARDING_PACKET
+	sp.PacketType = pb.MsgType_APP_MSG_SHARDING_PACKET
 	sp.Packet = packet.Packet
 
 	cm := n.ns.GetLastCMBlock()
@@ -164,7 +164,7 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 
 	sp := &sc.NetPacket{}
 	sp.DupHeader(packet)
-	sp.PacketType = netmsg.APP_MSG_SHARDING_PACKET
+	sp.PacketType = pb.MsgType_APP_MSG_SHARDING_PACKET
 	sp.Packet = packet.Packet
 
 	cm := n.ns.GetCmWorks()
@@ -173,6 +173,22 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 	} else if bakcup {
 		if len(cm) > 1 {
 			go simulate.Sendto(cm[1].Address, cm[1].Port, sp)
+		}
+	}
+
+	//send block to other shard
+	cmb := n.ns.GetLastCMBlock()
+	for i, shard := range cmb.Shards {
+		if n.ns.Shardid == uint16(i+1) {
+			continue
+		}
+
+		if leader {
+			go simulate.Sendto(shard.Member[0].Address, shard.Member[0].Port, sp)
+		} else if bakcup {
+			if len(shard.Member) > 1 {
+				go simulate.Sendto(shard.Member[1].Address, shard.Member[1].Port, sp)
+			}
 		}
 	}
 

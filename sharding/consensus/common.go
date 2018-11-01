@@ -1,7 +1,6 @@
 package consensus
 
 import (
-	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/net"
 )
@@ -47,7 +46,7 @@ func (c *Consensus) sendCsRspPacket() {
 
 	candiate := c.instance.GetCandidate()
 	if candiate != nil {
-		worker := &cell.Worker{}
+		worker := &sc.Worker{}
 		worker.InitWork(candiate)
 		net.Np.SendToPeer(csp, worker)
 	} else {

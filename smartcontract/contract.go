@@ -17,13 +17,12 @@
 package smartcontract
 
 import (
+	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/smartcontract/nativeservice"
-	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
+	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 )
 
 var log = elog.NewLogger("contract", elog.DebugLog)
@@ -48,12 +47,12 @@ func NewContractService(s state.InterfaceState, tx *types.Transaction, action *t
 	log.Debug("NewContractService type: ", contract.TypeVm)
 
 	switch contract.TypeVm {
-	case types.VmNative:
-		service, err := nativeservice.NewNativeService(s, tx, string(invoke.Method), invoke.Param, cpuLimit, netLimit, timeStamp)
-		if err != nil {
-			return nil, err
-		}
-		return service, nil
+	/*case types.VmNative:
+	service, err := nativeservice.NewNativeService(s, tx, string(invoke.Method), invoke.Param, cpuLimit, netLimit, timeStamp)
+	if err != nil {
+		return nil, err
+	}
+	return service, nil*/
 	case types.VmWasm:
 		service, err := wasmservice.NewWasmService(s, action, context, contract, &invoke, timeStamp)
 		if err != nil {

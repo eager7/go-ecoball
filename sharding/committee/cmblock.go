@@ -5,7 +5,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -65,7 +65,7 @@ func (b *cmBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 }
 
 func (b *cmBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
-	csp := &sc.NetPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_CM_BLOCK, Step: step}
+	csp := &sc.NetPacket{PacketType: pb.MsgType_APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_CM_BLOCK, Step: step}
 
 	data, err := b.bk.Serialize()
 	if err != nil {
@@ -84,14 +84,14 @@ func (b *cmBlockCsi) GetCsBlock() interface{} {
 
 func (b *cmBlockCsi) PrepareRsp() uint32 {
 	log.Debug("prepare receive consign ", b.cache.Step1)
-	b.bk.Step1 += b.cache.Step1
+	b.bk.Step1 |= b.cache.Step1
 
 	return b.bk.Step1
 }
 
 func (b *cmBlockCsi) PrecommitRsp() uint32 {
 	log.Debug("precommit receive consign ", b.cache.Step2)
-	b.bk.Step2 += b.cache.Step2
+	b.bk.Step2 |= b.cache.Step2
 
 	return b.bk.Step2
 }
@@ -130,10 +130,11 @@ func (c *committee) reshardWorker(height uint64) (candidate *cs.NodeInfo, shards
 	}
 
 	ss := simulate.GetShards()
+	size := simulate.GetShardSize()
 
 	var shard cs.Shard
 	var i int
-	var member simulate.NodeConfig
+	var member sc.Worker
 	for i, member = range ss {
 		var worker cs.NodeInfo
 		worker.PublicKey = []byte(member.Pubkey)
@@ -141,15 +142,15 @@ func (c *committee) reshardWorker(height uint64) (candidate *cs.NodeInfo, shards
 		worker.Port = member.Port
 
 		shard.Member = append(shard.Member, worker)
-		if (i+1)%5 == 0 {
+		if (i+1)%size == 0 {
 			shards = append(shards, shard)
-			shard.Member = make([]cs.NodeInfo, 0, 5)
+			shard.Member = make([]cs.NodeInfo, 0, size)
 		}
 	}
 
-	if (i+1)%5 != 0 {
+	if (i+1)%size != 0 {
 		shards = append(shards, shard)
-		shard.Member = make([]cs.NodeInfo, 0, 5)
+		shard.Member = make([]cs.NodeInfo, 0, size)
 	}
 
 	return

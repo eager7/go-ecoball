@@ -1,6 +1,6 @@
 package settlement
 
-import (
+/*import (
 	"errors"
 	"bytes"
 	"context"
@@ -85,7 +85,7 @@ func (s *Settler) decodeAnnouncement(fullAnnouncement []byte) (host.HostAncContr
 	if err != nil {
 		return announcement, err
 	}*/
-	return announcement, nil
+/*	return announcement, nil
 }
 
 func (s *Settler) decodeProof(proof []byte) (host.StorageProof, error) {
@@ -108,7 +108,7 @@ func (s *Settler) decodeProof(proof []byte) (host.StorageProof, error) {
 	if err != nil {
 		return sp, err
 	}*/
-	return sp, nil
+/*	return sp, nil
 }
 
 func (s *Settler) decodeFileContract(data []byte) (renter.FileContract, error) {
@@ -131,7 +131,7 @@ func (s *Settler) decodeFileContract(data []byte) (renter.FileContract, error) {
 	if err != nil {
 		return fc, err
 	}*/
-	return fc, nil
+/*	return fc, nil
 }
 
 func (s *Settler)verifyStorageProof(proof host.StorageProof, st state.InterfaceState) (bool, error) {
@@ -320,6 +320,4 @@ func CalcHostReward(spf host.StorageProof, st state.InterfaceState) *big.Int {
 
 	var reBit  big.Int
 	return reBit.SetInt64(int64(reward * 100000))
-}
-
-
+}*/

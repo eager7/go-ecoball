@@ -47,8 +47,8 @@ type WalletApi interface {
 	Lock() error
 	Unlock(password []byte) error
 	CreateKey() ([]byte, []byte, error)
-	RemoveKey(password []byte, publickey string) error
-	ImportKey(privateKey string) ([]byte, error)
+	RemoveKey(password []byte, publickey []byte) error
+	ImportKey(privateKey []byte) ([]byte, error)
 	ListPublicKey() ([]string, error)
 	CheckLocked() bool
 	CheckPassword(password []byte) bool
@@ -176,7 +176,7 @@ func ImportKey(name string, privateKey string) ([]byte, error) {
 		return nil, errors.New("wallet is locked")
 	}
 
-	return wallet.ImportKey(privateKey)
+	return wallet.ImportKey([]byte(privateKey))
 }
 
 func RemoveKey(name string, password []byte, publickey string) error {
@@ -195,7 +195,7 @@ func RemoveKey(name string, password []byte, publickey string) error {
 		return errors.New("wrong passwords!!")
 	}
 
-	return wallet.RemoveKey(password, publickey)
+	return wallet.RemoveKey(password, []byte(publickey))
 }
 
 func CreateKey(name string) ([]byte, []byte, error) {

@@ -1,20 +1,6 @@
 package commands
 
-import (
-	"fmt"
-	"os"
-   "github.com/urfave/cli"
-   dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
-	"context"
-	"io/ioutil"
-	"net/url"
-	"github.com/ecoball/go-ecoball/common"
-	clientCommon "github.com/ecoball/go-ecoball/client/common"
-	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/client/rpc"
-	"errors"
-)
-var (
+/*var (
 	DsnStorageCommands = cli.Command{
 		Name:     "dsnstorage",
 		Usage:    "Distributed storage  interaction",
@@ -31,18 +17,14 @@ var (
 						Value: "-1",
 					},
 				},
-
 			},
 			{
 				Name:   "cat",
 				Usage:  "cat file",
 				Action: dsnCatFile,
-	
 			},
 		},
-		
 	}
-	
 )
 
 func dsnAddFile(ctx *cli.Context) error {
@@ -68,22 +50,22 @@ func dsnAddFile(ctx *cli.Context) error {
 		return err
 	}
 
-	chainId, err := GetChainId()
+	chainId, err := getMainChainHash()
 	if err != nil {
 		return err
 	}
 
-	pkKeys, err := GetPublicKeys()
+	_, err = getPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", transaction)
+	_, err = getRequiredKeys(chainId, "owner", transaction.From.String())
 	if err != nil {
 		return err
 	}
 
-	err = SignTransaction(chainId, reqKeys, transaction)
+	err = SignTransaction(chainId, "", transaction)
 	if err != nil {
 		return err
 	}
@@ -105,11 +87,11 @@ func dsnAddFile(ctx *cli.Context) error {
 		fmt.Println(err.Error())
 		return err
 	}
-	reqKeys, err = GetRequiredKeys(chainId, pkKeys, "owner", payTrn)
+	_, err = getRequiredKeys(chainId, "owner", payTrn.From.String())
 	if err != nil {
 		return err
 	}
-	err = SignTransaction(chainId, reqKeys, payTrn)
+	err = SignTransaction(chainId, "", payTrn)
 	if err != nil {
 		return err
 	}
@@ -127,8 +109,7 @@ func dsnAddFile(ctx *cli.Context) error {
 	return nil
 }
 
-
-func dsnCatFile (ctx *cli.Context)  {
+func dsnCatFile(ctx *cli.Context) {
 	cbtx := context.Background()
 	dclient := dsncli.NewRcWithDefaultConf(cbtx)
 	//dclient.CheckCollateral()
@@ -165,7 +146,7 @@ func GetRequiredKeys(chainId common.Hash, required_keys, permission string, trx 
 		return "", err
 	}*/
 
-	var result clientCommon.SimpleResult
+/*	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("permission", permission)
 	values.Set("chainId", chainId.HexString())
@@ -195,21 +176,21 @@ func SignTransaction(chainId common.Hash, required_keys string, trx *types.Trans
 }
 
 func TxTransaction(trx *types.Transaction) error {
-	chainId, err := GetChainId()
+	chainId, err := getMainChainHash()
 	if err != nil {
 		return err
 	}
 
-	pkKeys, err := GetPublicKeys()
+	_, err = getPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", trx)
+	_, err = getRequiredKeys(chainId, "owner", trx.From.String())
 	if err != nil {
 		return err
 	}
-	err = SignTransaction(chainId, reqKeys, trx)
+	err = SignTransaction(chainId, "", trx)
 	if err != nil {
 		return err
 	}
@@ -227,22 +208,22 @@ func TxTransaction(trx *types.Transaction) error {
 }
 
 func InvokeContract(trx *types.Transaction) error {
-	chainId, err := GetChainId()
+	chainId, err := getMainChainHash()
 	if err != nil {
 		return err
 	}
 
-	pkKeys, err := GetPublicKeys()
+	_, err = getPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", trx)
+	_, err = getRequiredKeys(chainId, "owner", trx.From.String())
 	if err != nil {
 		return err
 	}
 
-	err = SignTransaction(chainId, reqKeys, trx)
+	err = SignTransaction(chainId, "", trx)
 	if err != nil {
 		return err
 	}
@@ -259,3 +240,4 @@ func InvokeContract(trx *types.Transaction) error {
 	fmt.Println("Contract: ", retContract.Result)
 	return err
 }
+*/

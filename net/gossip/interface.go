@@ -14,21 +14,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package rpc
+// Define the interface for the owner of gossip puller
 
-import (
-	"sync"
+package gossip
 
-	"github.com/ecoball/go-ecoball/http/common"
-)
+type Receiver interface {
+	GetDigests() []string
+	ContainItemInDigests(digests []string, item string) bool
 
-type HttpRpcServer struct {
-	sync.RWMutex
-	method2Handle map[string]func([]interface{}) *common.Response
-}
+	//input map: key is the peer id, value is the digest slice of peer
+	//output map: key is the peer id, value is the digest for request
+	ShuffelDigests(revDigests map[string][]string, digest []string) map[string][]string
 
-func (this *HttpRpcServer) AddHandleFunc(pattern string, handler func([]interface{}) *common.Response) {
-	this.Lock()
-	defer this.Unlock()
-	this.method2Handle[pattern] = handler
+	GetItemData(item string) []byte
+	UpdateItemData(dataArray [][]byte) error
 }

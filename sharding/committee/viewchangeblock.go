@@ -3,7 +3,7 @@ package committee
 import (
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -58,7 +58,7 @@ func (b *vcBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 }
 
 func (b *vcBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
-	csp := &sc.NetPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_VIEWCHANGE_BLOCK, Step: step}
+	csp := &sc.NetPacket{PacketType: pb.MsgType_APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_VIEWCHANGE_BLOCK, Step: step}
 
 	data, err := b.bk.Serialize()
 	if err != nil {
@@ -77,14 +77,14 @@ func (b *vcBlockCsi) GetCsBlock() interface{} {
 
 func (b *vcBlockCsi) PrepareRsp() uint32 {
 
-	b.bk.Step1 += b.cache.Step1
+	b.bk.Step1 |= b.cache.Step1
 
 	return b.bk.Step1
 }
 
 func (b *vcBlockCsi) PrecommitRsp() uint32 {
 
-	b.bk.Step2 += b.cache.Step2
+	b.bk.Step2 |= b.cache.Step2
 
 	return b.bk.Step2
 }

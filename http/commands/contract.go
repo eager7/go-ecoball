@@ -17,190 +17,30 @@
 package commands
 
 import (
-	"github.com/ecoball/go-ecoball/core/types"
+	"net/http"
 
-	"github.com/ecoball/go-ecoball/account"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/gin-gonic/gin"
+
 	innerCommon "github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/crypto/secp256k1"
-	"github.com/ecoball/go-ecoball/http/common"
-	"fmt"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
-var log = elog.NewLogger("commands", elog.DebugLog)
+func InvokeContract(c *gin.Context) {
+	invoke := new(types.Transaction) //{
+	transaction_data := c.PostForm("transaction")
 
-func SetContract(params []interface{}) *common.Response {
-	if len(params) < 1 {
-		log.Error("invalid arguments")
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	switch {
-	case len(params) == 1:
-		if errCode, result := handleSetContract(params); errCode != common.SUCCESS {
-			log.Error(errCode.Info())
-			return common.NewResponse(errCode, nil)
-		} else {
-			return common.NewResponse(common.SUCCESS, result)
-		}
-
-	default:
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	return common.NewResponse(common.SUCCESS, "")
-}
-
-func handleSetContract(params []interface{}) (common.Errcode, string) {
-	//generate key pair
-	keyData, err := secp256k1.NewECDSAPrivateKey()
-	if err != nil {
-		return common.GENERATE_KEY_PAIR_FAILED, ""
-	}
-
-	public, err := secp256k1.FromECDSAPub(&keyData.PublicKey)
-	if err != nil {
-		return common.GENERATE_KEY_PAIR_FAILED, ""
-	}
-
-	//generate address
-	address := account.AddressFromPubKey(public)
-
-	//from address
-	//from := account.AddressFromPubKey(common.Account.PublicKey)
-
-	transaction := new(types.Transaction)//{
-	//	Payload: &types.InvokeInfo{}}
-
-	var invalid bool
-	var name string
-	//invoke.Show()
-	//account name
-	if v, ok := params[0].(string); ok {
-		name = v
-	} else {
-		invalid = true
-	}
-
-	if invalid {
-		return common.INVALID_PARAMS, ""
-	}
-
-	if err := transaction.Deserialize(innerCommon.FromHex(name)); err != nil {
-		fmt.Println(err)
-		return common.INVALID_PARAMS, ""
-	}
-	//send to txpool
-	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
-	if nil != err {
-		return common.INTERNAL_ERROR, ""
-	}
-
-	return common.SUCCESS, address.HexString()
-}
-
-func InvokeContract(params []interface{}) *common.Response {
-	if len(params) < 1 {
-		log.Error("invalid arguments")
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	switch {
-	case len(params) == 1:
-		if errCode := handleInvokeContract(params); errCode != common.SUCCESS {
-			log.Error(errCode.Info())
-			return common.NewResponse(errCode, nil)
-		}
-
-	default:
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	return common.NewResponse(common.SUCCESS, "")
-}
-
-func GetContract(params []interface{}) *common.Response {
-	if len(params) < 1 {
-		log.Error("invalid arguments")
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	switch params[0].(type){
-	case string:
-		//list account
-		chainId := params[0].(string)
-		accountName := params[1].(string)
-		hash := new(innerCommon.Hash)
-		chainids := hash.FormHexString(chainId)
-		contract, err := ledger.L.GetContract(chainids, innerCommon.NameToIndex(accountName))
-		if err != nil {
-			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
-		}
-
-		data, err := contract.Serialize()
-		if err != nil {
-			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
-		}
-		return common.NewResponse(common.SUCCESS, innerCommon.ToHex(data))
-	default:
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-}
-
-func StoreGet(params []interface{}) *common.Response {
-	if len(params) < 1 {
-		log.Error("invalid arguments")
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	switch params[0].(type){
-	case string:
-		//list account
-		chainId := params[0].(string)
-		accountName := params[1].(string)
-		key := params[2].(string)
-		hash := new(innerCommon.Hash)
-		chainids := hash.FormHexString(chainId)
-		storage, err := ledger.L.StoreGet(chainids, innerCommon.NameToIndex(accountName), innerCommon.FromHex(key))
-		if err != nil {
-			return common.NewResponse(common.INTERNAL_ERROR, err.Error())
-		}
-
-		fmt.Println(string(storage))
-		return common.NewResponse(common.SUCCESS, innerCommon.ToHex(storage))
-	default:
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-}
-
-func handleInvokeContract(params []interface{}) common.Errcode {
-	transaction := new(types.Transaction)
-
-	var invalid bool
-	var name string
-
-	if v, ok := params[0].(string); ok {
-		name = v
-	} else {
-		invalid = true
-	}
-
-	if invalid {
-		return common.INVALID_PARAMS
-	}
-
-	if err := transaction.Deserialize(innerCommon.FromHex(name)); err != nil {
-		fmt.Println(err)
-		return common.INVALID_PARAMS
+	if err := invoke.Deserialize(innerCommon.FromHex(transaction_data)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
 	}
 
 	//send to txpool
-	err := event.Send(event.ActorNil, event.ActorTxPool, transaction)
+	err := event.Send(event.ActorNil, event.ActorTxPool, invoke)
 	if nil != err {
-		return common.INTERNAL_ERROR
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
-	return common.SUCCESS
+	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }

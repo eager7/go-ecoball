@@ -17,9 +17,9 @@ var (
 type Cell struct {
 	NodeType int
 	Shardid  uint16 /*only node is shard member*/
-	Self     Worker
+	Self     sc.Worker
 	cm       *workerSet
-	shard    []*Worker
+	shard    []*sc.Worker
 	//ss        *shardSet
 	//nodes     *workerMap
 	//candidate workerSet
@@ -50,7 +50,7 @@ func (c *Cell) LoadConfig() {
 
 	nodeType := sc.NodeNil
 	for _, member := range cmt {
-		var worker Worker
+		var worker sc.Worker
 		worker.Pubkey = member.Pubkey
 		worker.Address = member.Address
 		worker.Port = member.Port
@@ -73,7 +73,7 @@ func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 
 	c.chain.setCMBlock(bk)
 
-	worker := &Worker{}
+	worker := &sc.Worker{}
 	if len(bk.Candidate.PublicKey) != 0 {
 		worker.InitWork(&bk.Candidate)
 		c.addCommitteWorker(worker)
@@ -94,7 +94,7 @@ func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 }
 
 func (c *Cell) createShardingTopo() {
-	topo := &ShardingTopo{ShardId: c.Shardid}
+	topo := &sc.ShardingTopo{ShardId: c.Shardid}
 
 	lastcm := c.GetLastCMBlock()
 	if lastcm == nil {
@@ -104,16 +104,16 @@ func (c *Cell) createShardingTopo() {
 
 	total := len(lastcm.Shards) + 1
 
-	topo.ShardingInfo = make([][]Worker, total)
+	topo.ShardingInfo = make([][]sc.Worker, total)
 	for _, member := range c.cm.member {
-		var worker Worker
+		var worker sc.Worker
 		worker = *member
 		topo.ShardingInfo[0] = append(topo.ShardingInfo[0], worker)
 	}
 
 	for i, shard := range lastcm.Shards {
 		for _, member := range shard.Member {
-			var worker Worker
+			var worker sc.Worker
 			(&worker).InitWork(&member)
 			topo.ShardingInfo[i+1] = append(topo.ShardingInfo[i+1], worker)
 		}
@@ -149,7 +149,7 @@ func (c *Cell) GetLastFinalBlock() *cs.FinalBlock {
 
 func (c *Cell) SaveLastViewchangeBlock(bk *cs.ViewChangeBlock) {
 	log.Debug("save view change block epoch ", bk.CMEpochNo, " height ", bk.FinalBlockHeight, " round ", bk.Round)
-	leader := &Worker{}
+	leader := &sc.Worker{}
 	leader.InitWork(&bk.Candidate)
 	log.Debug("new leader ", leader.Address, " ", leader.Port)
 
@@ -205,7 +205,7 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *cs.CMBlock) {
 
 		cm := block.GetObject().(cs.CMBlock)
 
-		var worker Worker
+		var worker sc.Worker
 		if len(cm.Candidate.PublicKey) != 0 {
 			worker.Pubkey = string(cm.Candidate.PublicKey)
 			worker.Address = cm.Candidate.Address
@@ -306,11 +306,11 @@ func (c *Cell) IsCommitteeMember() bool {
 	return c.cm.isMember(&c.Self)
 }
 
-func (c *Cell) GetCmWorks() []*Worker {
+func (c *Cell) GetCmWorks() []*sc.Worker {
 	return c.cm.member
 }
 
-func (c *Cell) GetWorks() []*Worker {
+func (c *Cell) GetWorks() []*sc.Worker {
 	if c.NodeType == sc.NodeCommittee {
 		return c.cm.member
 	} else if c.NodeType == sc.NodeShard {
@@ -330,7 +330,7 @@ func (c *Cell) GetWorksCounter() uint32 {
 	}
 }
 
-func (c *Cell) GetLeader() *Worker {
+func (c *Cell) GetLeader() *sc.Worker {
 	if c.NodeType == sc.NodeCommittee {
 		return c.cm.member[0]
 	} else if c.NodeType == sc.NodeShard {
@@ -340,7 +340,7 @@ func (c *Cell) GetLeader() *Worker {
 	}
 }
 
-func (c *Cell) GetBackup() *Worker {
+func (c *Cell) GetBackup() *sc.Worker {
 	if c.NodeType == sc.NodeCommittee {
 		if len(c.cm.member) > 1 {
 			return c.cm.member[1]
@@ -358,7 +358,7 @@ func (c *Cell) GetBackup() *Worker {
 	}
 }
 
-func (c *Cell) addCommitteWorker(worker *Worker) {
+func (c *Cell) addCommitteWorker(worker *sc.Worker) {
 	log.Debug("add commit worker key ", worker.Pubkey, " address ", worker.Address, " port ", worker.Port)
 	backup := c.GetBackup()
 	if backup != nil && backup.Equal(worker) {
@@ -374,7 +374,7 @@ func (c *Cell) saveShardsInfoFromCMBlock(cmb *cs.CMBlock) {
 
 	for i, shard := range cmb.Shards {
 		for _, member := range shard.Member {
-			var worker Worker
+			var worker sc.Worker
 			worker.Pubkey = string(member.PublicKey)
 			worker.Address = member.Address
 			worker.Port = member.Port
@@ -394,7 +394,7 @@ func (c *Cell) saveShardsInfoFromCMBlock(cmb *cs.CMBlock) {
 		}
 
 		for _, member := range shard.Member {
-			var worker Worker
+			var worker sc.Worker
 			worker.Pubkey = string(member.PublicKey)
 			worker.Address = member.Address
 			worker.Port = member.Port

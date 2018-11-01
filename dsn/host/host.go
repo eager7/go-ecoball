@@ -1,41 +1,41 @@
 package host
 
-import (
-	"time"
-	"errors"
-	"math/big"
+/*import (
 	"context"
-	"math/rand"
+	"errors"
 	"io/ioutil"
+	"math/big"
+	"math/rand"
+	"time"
 	//"crypto/sha256"
-	"github.com/ecoball/go-ecoball/dsn/crypto"
 	"github.com/ecoball/go-ecoball/account"
-	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/types"
 	innerCommon "github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
+	"github.com/ecoball/go-ecoball/dsn/crypto"
 	//"github.com/ecoball/go-ecoball/common/event"
-	dproof "github.com/ecoball/go-ecoball/dsn/proof"
-	"github.com/ecoball/go-ecoball/dsn/host/pb"
-	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
+	"strconv"
+
+	client "github.com/ecoball/go-ecoball/client/commands"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
+	"github.com/ecoball/go-ecoball/dsn/host/pb"
 	"github.com/ecoball/go-ecoball/dsn/ipfs"
-	"strconv"
-	client "github.com/ecoball/go-ecoball/client/commands"
-	"fmt"
+	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
+	dproof "github.com/ecoball/go-ecoball/dsn/proof"
 )
 
 var (
-	dbPath string = "/tmp/store/leveldb"
-	contractDesc string = "storage host"
-	errGetBlockSyncState = errors.New("failed to get block sync state")
-	errCreateAnnouncement = errors.New("failed to create announcement")
-	errCreateStorageProof = errors.New("failed to create proof")
-	errCheckCol = errors.New("Checking collateral failed")
-	log = elog.NewLogger("dsn-h", elog.DebugLog)
+	dbPath                string = "/tmp/store/leveldb"
+	contractDesc          string = "storage host"
+	errGetBlockSyncState         = errors.New("failed to get block sync state")
+	errCreateAnnouncement        = errors.New("failed to create announcement")
+	errCreateStorageProof        = errors.New("failed to create proof")
+	errCheckCol                  = errors.New("Checking collateral failed")
+	log                          = elog.NewLogger("dsn-h", elog.DebugLog)
 )
 
 type StorageHostConf struct {
@@ -56,14 +56,14 @@ type HostAncContract struct {
 }
 
 type StorageProof struct {
-	PublicKey     []byte
-	RepoSize      uint64
-	Cid           string
-	SegmentIndex  uint64
-	Segment       [dproof.SegmentSize]byte
-	HashSet       []crypto.Hash
-	AtHeight      uint64
-	AccountName   string
+	PublicKey    []byte
+	RepoSize     uint64
+	Cid          string
+	SegmentIndex uint64
+	Segment      [dproof.SegmentSize]byte
+	HashSet      []crypto.Hash
+	AtHeight     uint64
+	AccountName  string
 }
 
 type StorageHost struct {
@@ -79,20 +79,20 @@ type StorageHost struct {
 func InitDefaultConf() StorageHostConf {
 	chainId := config.ChainHash
 	return StorageHostConf{
-		TotalStorage: 10*1024*1024,
-		Collateral: "10",
+		TotalStorage:  10 * 1024 * 1024,
+		Collateral:    "10",
 		MaxCollateral: "20",
-		AccountName: "dsn",
-		ChainId: common.ToHex(chainId[:]),
+		AccountName:   "dsn",
+		ChainId:       common.ToHex(chainId[:]),
 	}
 }
 
-func NewStorageHost(ctx context.Context, l ledger.Ledger,acc account.Account ,conf StorageHostConf) *StorageHost {
+func NewStorageHost(ctx context.Context, l ledger.Ledger, acc account.Account, conf StorageHostConf) *StorageHost {
 	return &StorageHost{
-		account:    acc,
-		ledger:     l,
-		conf:       conf,
-		ctx:        ctx,
+		account: acc,
+		ledger:  l,
+		conf:    conf,
+		ctx:     ctx,
 	}
 }
 
@@ -105,14 +105,14 @@ func (h *StorageHost) Start() error {
 		return err
 	}*/
 
-	go h.proofLoop()
+/*	go h.proofLoop()
 	return nil
 }
 
-func (h *StorageHost)checkCollateral() bool {
+func (h *StorageHost) checkCollateral() bool {
 	chainId := common.HexToHash(h.conf.ChainId)
 	accName := common.NameToIndex(h.conf.AccountName)
-	sacc, err :=h.ledger.AccountGet(chainId, accName)
+	sacc, err := h.ledger.AccountGet(chainId, accName)
 	if err != nil {
 		return false
 	}
@@ -171,7 +171,7 @@ func (h *StorageHost) Announce() error {
 	if err != nil {
 		return err
 	}*/
-	err = client.InvokeContract(transaction)
+/*	err = client.InvokeContract(transaction)
 	if err != nil {
 		return err
 	}
@@ -212,10 +212,10 @@ func (h *StorageHost) createAnnouncement() ([]byte, error) {
 		return nil, err
 	}
 	return append(annBytes, sig[:]...), nil*/
-	return annBytes, nil
+/*	return annBytes, nil
 }
 
-func (h *StorageHost)createStorageProof() ([]byte, error) {
+func (h *StorageHost) createStorageProof() ([]byte, error) {
 	repoStat, err := api.IpfsRepoStat(h.ctx)
 	if err != nil {
 		return nil, err
@@ -264,8 +264,8 @@ func (h *StorageHost)createStorageProof() ([]byte, error) {
 	if err !=  nil {
 		return nil, err
 	}*/
-	//return append(proofBytes, sig[:]...), nil
-	return proofBytes, nil
+//return append(proofBytes, sig[:]...), nil
+/*	return proofBytes, nil
 }
 
 func (h *StorageHost) ProvideStorageProof() error {
@@ -292,7 +292,7 @@ func (h *StorageHost) ProvideStorageProof() error {
 	if err != nil {
 		return err
 	}*/
-	client.InvokeContract(transaction)
+/*	client.InvokeContract(transaction)
 	return nil
 }
 
@@ -319,10 +319,10 @@ func (h *StorageHost) proofLoop() error {
 
 func (an *HostAncContract) marshal() *pb.Announcement {
 	return &pb.Announcement{
-		PublicKey:an.PublicKey,
-		StartAt:an.StartAt,
-		Collateral:an.Collateral,
-		MaxCollateral:an.MaxCollateral,
+		PublicKey:     an.PublicKey,
+		StartAt:       an.StartAt,
+		Collateral:    an.Collateral,
+		MaxCollateral: an.MaxCollateral,
 	}
 }
 
@@ -352,8 +352,8 @@ func (st *StorageProof) Serialize() ([]byte, error) {
 	sp.Cid = st.Cid
 	sp.SegmentIndex = st.SegmentIndex
 	copy(sp.Segment, st.Segment[:])
-	for k, v:= range st.HashSet {
-		copy(sp.HashSet[k * crypto.HashSize:], v[:])
+	for k, v := range st.HashSet {
+		copy(sp.HashSet[k*crypto.HashSize:], v[:])
 	}
 	sp.AtHeight = st.AtHeight
 	return sp.Marshal()
@@ -373,10 +373,10 @@ func (st *StorageProof) Deserialize(data []byte) error {
 	i := 0
 	setCount := len(sp.HashSet) / crypto.HashSize
 	for i < setCount {
-		copy(st.HashSet[i][:], sp.HashSet[:(i + 1) * crypto.HashSize])
+		copy(st.HashSet[i][:], sp.HashSet[:(i+1)*crypto.HashSize])
 		i++
 	}
 	st.AtHeight = sp.AtHeight
 	return nil
 }
-
+*/

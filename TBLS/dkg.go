@@ -4,6 +4,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/pb"
 	message2 "github.com/ecoball/go-ecoball/net/message"
+	npb "github.com/ecoball/go-ecoball/net/message/pb"
 	"golang.org/x/crypto/bn256"
 	"math/big"
 	"time"
@@ -89,7 +90,7 @@ func genSijMsg(epochNum int, index int, abaTBLS *ABATBLS) {
 				sijMsgPB.PubPolyPB = append(sijMsgPB.PubPolyPB, &TmpPoint)
 			}
 			// send the msg to peer
-			msgType := message2.APP_MSG_DKGSIJ
+			msgType := npb.MsgType_APP_MSG_DKGSIJ
 			msgData,err := sijMsgPB.Marshal()
 			if err != nil {
 				log.Debug("sijMsgPB serialization error:", err)
@@ -138,11 +139,11 @@ func dkgRoutine(abaTBLS *ABATBLS) {
 
 func ProcessDKGMsg(msg message2.EcoBallNetMsg,abaTBLS *ABATBLS) {
 	switch msg.Type() {
-	case message2.APP_MSG_DKGSIJ:
+	case npb.MsgType_APP_MSG_DKGSIJ:
 		ProcessSijMSGDKG(msg,abaTBLS)
-	case message2.APP_MSG_DKGNLQUAL:
+	case npb.MsgType_APP_MSG_DKGNLQUAL:
 		ProcessNLQUALDKG(msg,abaTBLS)
-	case message2.APP_MSG_DKGLQUAL:
+	case npb.MsgType_APP_MSG_DKGLQUAL:
 		ProcessLQUALDKG(msg,abaTBLS)
 	default:
 		log.Error("wrong actor message")

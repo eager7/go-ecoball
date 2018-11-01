@@ -17,92 +17,33 @@
 package commands
 
 import (
-	//"math/big"
-	//"time"
+	"net/http"
 
+	innerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/gin-gonic/gin"
 
-	inner "github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/http/common"
-	//"encoding/json"
 )
 
-//transfer handle
-func Transfer(params []interface{}) *common.Response {
-	if len(params) < 1 {
-		log.Error("invalid arguments")
-		return common.NewResponse(common.INVALID_PARAMS, nil)
+var log = elog.NewLogger("commands", elog.NoticeLog)
+
+func Transfer(c *gin.Context) {
+	transfer := new(types.Transaction) //{
+	transactionData := c.PostForm("transfer")
+
+	if err := transfer.Deserialize(innerCommon.FromHex(transactionData)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
-
-	switch {
-	case len(params) == 1:
-		if errCode := handleTransfer(params); errCode != common.SUCCESS {
-			log.Error(errCode.Info())
-			return common.NewResponse(errCode, nil)
-		}
-
-	default:
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
-
-	return common.NewResponse(common.SUCCESS, "")
-}
-
-func handleTransfer(params []interface{}) common.Errcode {
-	/*var (
-		from    string
-		to      string
-		value   *big.Int
-		invalid bool = false
-	)
-
-	if v, ok := params[0].(string); ok {
-		from = v
-	} else {
-		invalid = true
-	}
-
-	if v, ok := params[1].(string); ok {
-		to = v
-	} else {
-		invalid = true
-	}
-
-	if v, ok := params[2].(float64); ok {
-		value = big.NewInt(int64(v))
-	} else {
-		invalid = true
-	}
-
-	if invalid {
-		return common.INVALID_PARAMS
-	}*/
-
-	transaction := types.Transaction{}
-	var invalid bool
-	var name string 
-	//account name
-	if v, ok := params[0].(string); ok {
-		name = v
-	} else {
-		invalid = true
-	}
-
-	if invalid {
-		return common.INVALID_PARAMS
-	}
-
-	if err := transaction.Deserialize(inner.FromHex(name)); err != nil {
-		return common.INVALID_PARAMS
-	}
-	//transaction.Show()
 
 	//send to txpool
-	err := event.Send(event.ActorNil, event.ActorTxPool, &transaction)
+	err := event.Send(event.ActorNil, event.ActorTxPool, transfer)
 	if nil != err {
-		return common.INTERNAL_ERROR
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 
-	return common.SUCCESS
+	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }

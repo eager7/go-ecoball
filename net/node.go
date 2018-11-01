@@ -29,8 +29,10 @@ import (
 	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/sharding"
+	"github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
@@ -73,7 +75,7 @@ type NetNode struct {
 	self         peer.ID
 	network      network.EcoballNetwork
 	broadCastCh  chan message.EcoBallNetMsg
-	handlers     map[uint32]message.HandlerFunc
+	handlers     map[pb.MsgType]message.HandlerFunc
 	actorId      *actor.PID
 	listen       []string
 	shardingSubCh   <-chan interface{}
@@ -289,7 +291,7 @@ func (nn *NetNode) connectToShardingPeers() {
 	log.Debug("connect to sharding peers exit...")
 }
 
-func (nn *NetNode) updateShardingInfo(info *sharding.SubShardingTopo) {
+func (nn *NetNode) updateShardingInfo(info *common.ShardingTopo) {
 	nn.shardingInfo.rwlck.Lock()
 	nn.shardingInfo.shardId = info.ShardId
 	for sid, shard := range info.ShardingInfo {
@@ -337,7 +339,7 @@ func (nn *NetNode) nativeMessageLoop() {
 		for {
 			select {
 			case info := <-nn.shardingSubCh:
-				sinfo, ok := info.(*sharding.SubShardingTopo)
+				sinfo, ok := info.(*common.ShardingTopo)
 				if !ok {
 					log.Error("unsupport info from sharding.")
 					continue
@@ -345,7 +347,7 @@ func (nn *NetNode) nativeMessageLoop() {
 				log.Debug("receive a update sharding message")
 				go nn.updateShardingInfo(sinfo)
 			case msg := <-nn.broadCastCh:
-				log.Debug("broadCastCh receive msg:", message.MessageToStr[msg.Type()])
+				log.Debug("broadCastCh receive msg:", msg.Type().String())
 				nn.network.BroadcastMessage(msg)
 			}
 		}
@@ -353,9 +355,9 @@ func (nn *NetNode) nativeMessageLoop() {
 }
 
 func (nn *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
-	log.Debug(fmt.Sprintf("receive msg(id=%d) from peer %s", incoming.Type(), p.Pretty()))
-	if incoming.Type() >= message.APP_MSG_MAX {
-		log.Error("receive a invalid message ", message.MessageToStr[incoming.Type()])
+	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), p)
+	if incoming.Type() >= pb.MsgType_APP_MSG_UNDEFINED {
+		log.Error("receive a invalid message ", incoming.Type().String())
 		return
 	}
 

@@ -7,6 +7,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
+	sc "github.com/ecoball/go-ecoball/sharding/common"
 )
 
 func TellBlock(bl cs.BlockInterface) {
@@ -85,8 +86,8 @@ func GetPreproductionMinorBlock() *cs.MinorBlock {
 	return nil
 }
 
-func GetCandidateList() (workers []NodeConfig) {
-	workers = make([]NodeConfig, 0, 0)
+func GetCandidateList() (workers []sc.Worker) {
+	workers = make([]sc.Worker, 0, 0)
 	return
 }
 

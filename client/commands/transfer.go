@@ -17,20 +17,21 @@
 package commands
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
-	//"os"
+	"strings"
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/urfave/cli"
 
-	"time"
-	"github.com/ecoball/go-ecoball/core/types"
-	inner "github.com/ecoball/go-ecoball/common"
 	"math/big"
+	"time"
+
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
-	//"github.com/ecoball/go-ecoball/common/config"
+	inner "github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 var (
@@ -38,25 +39,24 @@ var (
 		Name:        "transfer",
 		Usage:       "user ABA transfer",
 		Category:    "Transfer",
-		Description: "With ecoclient transfer, you could transfer ABA to others",
+		Description: "Transfer ABA to other users",
 		ArgsUsage:   "[args]",
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "from, f",
-				Usage: "sender address",
+				Usage: "sender name",
 			},
 			cli.StringFlag{
 				Name:  "to, t",
-				Usage: "revicer address",
+				Usage: "receiver name",
 			},
 			cli.Int64Flag{
 				Name:  "value, v",
 				Usage: "ABA amount",
 			},
 			cli.StringFlag{
-				Name:  "chainId, c",
-				Usage: "chainId hash",
-				Value: "config.hash",
+				Name:  "chainHash, c",
+				Usage: "chain hash(the default is the main chain hash)",
 			},
 		},
 		Action: transferAction,
@@ -75,37 +75,41 @@ func transferAction(c *cli.Context) error {
 
 	from := c.String("from")
 	if from == "" {
-		fmt.Println("Invalid sender address: ", from)
-		return errors.New("Invalid sender address")
+		fmt.Println("Please input a valid from account")
+		return errors.New("Invalid sender name")
 	}
 
 	to := c.String("to")
 	if to == "" {
-		fmt.Println("Invalid revicer address: ", to)
-		return errors.New("Invalid revicer address")
+		fmt.Println("Please input a valid to account", to)
+		return errors.New("Invalid revicer name")
 	}
 
 	value := c.Int64("value")
 	if value <= 0 {
-		fmt.Println("Invalid aba amount: ", value)
+		fmt.Println("Invalid aba amount ", value)
 		return errors.New("Invalid aba amount")
 	}
 
 	bigValue := big.NewInt(value)
 
-	info, err := getInfo()
-	if err != nil {
+	//chainHash
+	var chainHash inner.Hash
+	var err error
+	chainHashStr := c.String("chainHash")
+	if "" == chainHashStr {
+		chainHash, err = getMainChainHash()
+
+	} else {
+		err = json.Unmarshal([]byte(chainHashStr), &chainHash)
+	}
+
+	if nil != err {
 		fmt.Println(err)
 		return err
 	}
 
-	chainId := info.ChainID
-	chainIdStr := c.String("chainId")
-	if "config.hash" != chainIdStr && "" != chainIdStr {
-		chainId = inner.HexToHash(chainIdStr)
-	}
-
-	publickeys, err := GetPublicKeys()
+	allPublickeys, err := getPublicKeys()
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -114,33 +118,49 @@ func transferAction(c *cli.Context) error {
 	//time
 	time := time.Now().UnixNano()
 
-	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), chainId, "owner", bigValue, 0, time)
+	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), chainHash, "owner", bigValue, 0, time)
 	if nil != err {
+		fmt.Println(err)
 		return err
 	}
 
 	permission := "active"
-	required_keys, err := get_required_keys(info.ChainID, publickeys, permission, transaction)
+	requiredKeys, err := getRequiredKeys(chainHash, permission, from)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	if required_keys == "" {
-		fmt.Println("no required_keys")
-		return err
+	publickeys := ""
+	keyDatas := strings.Split(allPublickeys, ",")
+	for _, v := range keyDatas {
+		addr := inner.AddressFromPubKey(inner.FromHex(v))
+		for _, vv := range requiredKeys {
+			if addr == vv {
+				publickeys += v
+				publickeys += "\n"
+				break
+			}
+		}
 	}
 
-	data, errcode := sign_transaction(info.ChainID, required_keys, transaction)
+	if "" == publickeys {
+		fmt.Println("no publickeys")
+		return errors.New("no publickeys")
+	}
+
+	data, errcode := signTransaction(chainHash, publickeys, transaction)
 	if nil != errcode {
 		fmt.Println(errcode)
+		return errcode
 	}
 
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("transfer", data)
 	err = rpc.NodePost("/transfer", values.Encode(), &result)
-	fmt.Println(result.Result)
-
+	if nil == err {
+		fmt.Println(result.Result)
+	}
 	return err
 }

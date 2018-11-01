@@ -14,24 +14,29 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package commands
+package http
 
-import (
-	"github.com/ecoball/go-ecoball/http/common"
-)
+type KeyPair struct {
+	PrivateKey []byte
+	PublicKey  []byte
+}
 
-//query
-func Attach(params []interface{}) *common.Response {
-	if len(params) < 1 {
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
+type KeyPairs struct {
+	Pairs []KeyPair
+}
 
-	switch params[0].(type) {
-	case string:
-		return common.NewResponse(common.SUCCESS, "attach "+params[0].(string)+" success!!!")
-	default:
-		return common.NewResponse(common.INVALID_PARAMS, nil)
-	}
+type OneKey struct {
+	Key []byte
+}
 
-	return common.NewResponse(common.SUCCESS, "")
+type Keys struct {
+	KeyList []OneKey
+}
+
+type Wallets struct {
+	NameList []string
+}
+
+type TransactionData struct {
+	Data []byte
 }

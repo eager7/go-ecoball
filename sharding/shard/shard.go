@@ -4,7 +4,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/message"
 	cs "github.com/ecoball/go-ecoball/core/shard"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
@@ -29,7 +29,7 @@ const (
 	ActWaitBlock
 	ActRecvConsensusPacket
 	ActChainNotSync
-	ActRecvCommitteePacket
+	ActRecvShardingPacket
 	ActLedgerBlockMsg
 	ActStateTimeout
 )
@@ -66,12 +66,12 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 
 			{waitBlock, ActProductMinorBlock, nil, s.productMinorBlock, nil, productMinoBlock},
 			{waitBlock, ActChainNotSync, nil, nil, nil, blockSync},
-			{waitBlock, ActRecvCommitteePacket, nil, s.processCommitteePacket, nil, sc.StateNil},
+			{waitBlock, ActRecvShardingPacket, nil, s.processShardingPacket, nil, sc.StateNil},
 
 			{productMinoBlock, ActRecvConsensusPacket, nil, s.processConsensusMinorPacket, nil, sc.StateNil},
 			{productMinoBlock, ActWaitBlock, nil, nil, nil, waitBlock},
 			{productMinoBlock, ActProductMinorBlock, nil, s.reproductMinorBlock, nil, sc.StateNil},
-			{productMinoBlock, ActRecvCommitteePacket, nil, s.processCommitteePacket, nil, sc.StateNil},
+			{productMinoBlock, ActRecvShardingPacket, nil, s.processShardingPacket, nil, sc.StateNil},
 			{productMinoBlock, ActLedgerBlockMsg, nil, s.processLedgerMinorBlockMsg, nil, sc.StateNil},
 		})
 
@@ -156,10 +156,10 @@ func (s *shard) setRetransTimer(bStart bool, d time.Duration) {
 
 func (s *shard) processPacket(packet *sc.CsPacket) {
 	switch packet.PacketType {
-	case netmsg.APP_MSG_CONSENSUS_PACKET:
+	case pb.MsgType_APP_MSG_CONSENSUS_PACKET:
 		s.recvConsensusPacket(packet)
-	case netmsg.APP_MSG_SHARDING_PACKET:
-		s.recvCommitteePacket(packet)
+	case pb.MsgType_APP_MSG_SHARDING_PACKET:
+		s.recvShardingPacket(packet)
 	default:
 		log.Error("wrong packet")
 	}
