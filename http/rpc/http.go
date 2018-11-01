@@ -52,7 +52,6 @@ func StartHttpServer() (err error) {
 
 	//attach
 	router.GET("/attach", attach)
-	router.GET("/getInfo", getInfo)
 
 	//query information
 	router.GET("/query/mainChainHash", commands.GetMainChainHash)
@@ -77,23 +76,6 @@ func StartHttpServer() (err error) {
 
 func attach(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
-}
-
-func getInfo(c *gin.Context) {
-	var height uint64 = 1
-	blockInfo, errcode := ledger.L.GetTxBlockByHeight(config.ChainHash, height)
-	if errcode != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": errcode.Error()})
-		return
-	}
-
-	data, errs := blockInfo.Serialize()
-	if errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": errs.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"result": innerCommon.ToHex(data)})
 }
 
 func setContract(c *gin.Context) {

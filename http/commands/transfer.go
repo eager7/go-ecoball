@@ -26,6 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 )
 
+var log = elog.NewLogger("commands", elog.NoticeLog)
 func Transfer(c *gin.Context) {
 	transfer := new(types.Transaction) //{
 	transactionData := c.PostForm("transfer")
