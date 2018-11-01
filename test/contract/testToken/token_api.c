@@ -82,7 +82,7 @@ int issue(char *to, long long int amount, char *token_id){
     ABA_assert( result != 0, "The token does not exist" );
 
     // check if has issuer's permission
-    require_auth(stat.issuer, strlen(stat.issuer));
+    ABA_require_auth(stat.issuer, strlen(stat.issuer));
 
     // if unsupplied token is greater than amount
     ABA_assert(stat.max_supply - stat.supply < amount, "The unsupplied token is not enough");
@@ -116,7 +116,7 @@ int transfer(char *from, char *to, long long int amount, char *token_id){
     ABA_assert( ABA_is_account(to,strlen(to)) != 0, "The receiving account does not exist" );
 
     // check if has from's permission
-    require_auth(from, strlen(from));
+    ABA_require_auth(from, strlen(from));
 
     // get balance of the transfer account
     aFrom.balance = ABA_get_token_balance(from, strlen(from), token_id, strlen(token_id));
@@ -132,7 +132,7 @@ int transfer(char *from, char *to, long long int amount, char *token_id){
     ABA_assert( result != 0, "param is wrong, add balance failed" );
 
     // const char *strActionData = "[\"worker1\", \"worker2\", \"15\", \"XXX\"]";
-    // inline_action("worker2", strlen("worker2"), "transfer", strlen("transfer"), strActionData, strlen(strActionData), "worker1", strlen("worker1"), "active", strlen("active"));
+    // ABA_inline_action("worker2", strlen("worker2"), "transfer", strlen("transfer"), strActionData, strlen(strActionData), "worker1", strlen("worker1"), "active", strlen("active"));
 
     result = ABA_add_token_balance(from, strlen(from), token_id, strlen(token_id), amount);
     ABA_assert( result != 0, "param is wrong, add balance failed" );
