@@ -110,8 +110,6 @@ func StartRPCServer() (err error) {
 	http.HandleFunc("/", handle)
 
 	//add handle
-	httpServer.AddHandleFunc("transfer", commands.Transfer)
-
 	//query
 	//	httpServer.AddHandleFunc("query", commands.Query)
 
@@ -127,7 +125,6 @@ func StartRPCServer() (err error) {
 	//get head block info
 	httpServer.AddHandleFunc("getInfo", commands.Getinfo)
 	//httpServer.AddHandleFunc("get_required_keys", commands.Get_required_keys)
-	httpServer.AddHandleFunc("GetContract", commands.GetContract)
 
 	httpServer.AddHandleFunc("netlistmyid", nrpc.CliServerListMyId)
 	httpServer.AddHandleFunc("netlistmypeer", nrpc.CliServerListMyPeers)
