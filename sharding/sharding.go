@@ -29,11 +29,6 @@ var (
 	log = elog.NewLogger("sharding", elog.DebugLog)
 )
 
-type SubShardingTopo struct {
-	ShardId      uint16
-	ShardingInfo [][]cell.Worker //shardID,shardInfo
-}
-
 type ShardingInstance interface {
 	Start()
 	MsgDispatch(msg interface{})

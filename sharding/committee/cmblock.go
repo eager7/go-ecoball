@@ -134,7 +134,7 @@ func (c *committee) reshardWorker(height uint64) (candidate *cs.NodeInfo, shards
 
 	var shard cs.Shard
 	var i int
-	var member simulate.NodeConfig
+	var member sc.Worker
 	for i, member = range ss {
 		var worker cs.NodeInfo
 		worker.PublicKey = []byte(member.Pubkey)

@@ -28,7 +28,7 @@ func MakeNet(ns *cell.Cell) {
 	return
 }
 
-func (n *net) SendToPeer(packet *sc.NetPacket, worker *cell.Worker) {
+func (n *net) SendToPeer(packet *sc.NetPacket, worker *sc.Worker) {
 	if worker == nil {
 		log.Error("leader is nil")
 		return

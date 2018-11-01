@@ -29,6 +29,7 @@ import (
 	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/sharding"
+	"github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
@@ -289,7 +290,7 @@ func (nn *NetNode) connectToShardingPeers() {
 	log.Debug("connect to sharding peers exit...")
 }
 
-func (nn *NetNode) updateShardingInfo(info *sharding.SubShardingTopo) {
+func (nn *NetNode) updateShardingInfo(info *common.ShardingTopo) {
 	nn.shardingInfo.rwlck.Lock()
 	nn.shardingInfo.shardId = info.ShardId
 	for sid, shard := range info.ShardingInfo {
@@ -337,7 +338,7 @@ func (nn *NetNode) nativeMessageLoop() {
 		for {
 			select {
 			case info := <-nn.shardingSubCh:
-				sinfo, ok := info.(*sharding.SubShardingTopo)
+				sinfo, ok := info.(*common.ShardingTopo)
 				if !ok {
 					log.Error("unsupport info from sharding.")
 					continue
