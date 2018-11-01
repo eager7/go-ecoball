@@ -85,7 +85,7 @@ func genSijMsg(epochNum int, index int, abaTBLS *ABATBLS) {
 				log.Debug("sijMsgPB sij serialization error:", err)
 			}
 			for j := 0; j < len(sijMsg.pubKeyPoly.coEffs); j++ {
-				buf := sijMsg.pubKeyPoly.coEffs[i].Marshal()
+				buf := sijMsg.pubKeyPoly.coEffs[j].Marshal()
 				TmpPoint := pb.CurvePointPB{buf}
 				sijMsgPB.PubPolyPB = append(sijMsgPB.PubPolyPB, &TmpPoint)
 			}
@@ -165,8 +165,9 @@ func ProcessSijMSGDKG(msg message2.EcoBallNetMsg,abaTBLS *ABATBLS) {
 		return
 	}
 	for j := 0; j < abaTBLS.threshold; j++ {
-		var TmpPoint *bn256.G2
-		TmpPoint.Unmarshal(sijMsgPB.PubPolyPB[j].CurvePoint)
+		// var TmpPoint *bn256.G2
+		// TmpPoint.Unmarshal(sijMsgPB.PubPolyPB[j].CurvePoint)
+		TmpPoint,_ := new(bn256.G2).Unmarshal(sijMsgPB.PubPolyPB[j].CurvePoint)
 		sijShareDKG.pubKeyPoly.coEffs = append(sijShareDKG.pubKeyPoly.coEffs, TmpPoint)
 	}
 
@@ -174,10 +175,11 @@ func ProcessSijMSGDKG(msg message2.EcoBallNetMsg,abaTBLS *ABATBLS) {
 	indexIn := sijShareDKG.index
 	abaTBLS.dealer.deal[indexIn].pubKeyShare = &sijShareDKG.pubKeyPoly
 	if abaTBLS.dealer.deal[indexIn].pubKeyShare != nil {
-		complain := SijVerify(&sijShareDKG, &sijShareDKG.pubKeyPoly, indexIn, abaTBLS.epochNum)
+		complain := SijVerify(&sijShareDKG, &sijShareDKG.pubKeyPoly, indexIn, abaTBLS.epochNum, abaTBLS.index)
 		if complain != nil {
 			abaTBLS.dealer.deal[indexIn].complain[abaTBLS.dealer.index] = complain
 			abaTBLS.dealer.complain++
+			return
 		}
 		abaTBLS.dealer.deal[indexIn].keyShare.index = indexIn
 		abaTBLS.dealer.deal[indexIn].keyShare.Sij = &sijShareDKG.Sij
@@ -193,6 +195,7 @@ func ProcessSijTimeout(abaTBLS *ABATBLS) {
 		var msgQual = pb.QualPBNLDKG{}
 		msgQual.Index = int64(abaTBLS.index)
 		msgQual.EpochNum = int64(abaTBLS.epochNum)
+		msgQual.QUAL = make([]int32,len(abaTBLS.workers))
 		for i:=0;i<len(abaTBLS.workers);i++ {
 			msgQual.QUAL[i] = int32(abaTBLS.dealer.QUAL[i])
 		}
