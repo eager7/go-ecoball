@@ -71,12 +71,12 @@ var (
 					cli.Int64Flag{
 						Name:  "max-cpu-usage-ms",
 						Usage: "Maximum CPU consumption",
-						Value: "0",
+						Value: 0,
 					},
 					cli.Int64Flag{
 						Name:  "max-net-usage",
 						Usage: "Maximum bandwidth",
-						Value: "0",
+						Value: 0,
 					},
 				},
 			},
@@ -151,7 +151,7 @@ func newAccount(c *cli.Context) error {
 	}
 
 	//chainHash
-	var chainHash common.Hash
+	var chainHash innercommon.Hash
 	var err error
 	chainHashStr := c.String("chainHash")
 	if "" == chainHashStr {
@@ -175,14 +175,14 @@ func newAccount(c *cli.Context) error {
 	creatorAccount := innercommon.NameToIndex(creator)
 	timeStamp := time.Now().UnixNano()
 
-	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, chainId, "owner", "new_account",
+	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, chainHash, "owner", "new_account",
 		[]string{name, innercommon.AddressFromPubKey(innercommon.FromHex(owner)).HexString()}, 0, timeStamp)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	invoke.Receipt.Cpu = max_cpu_usage_ms
-	invoke.Receipt.Net = max_net_usage
+	invoke.Receipt.Cpu = float64(max_cpu_usage_ms)
+	invoke.Receipt.Net = float64(max_net_usage)
 	//invoke.SetSignature(&config.Root)
 
 	requiredKeys, err := getRequiredKeys(chainHash, permission, creator)
@@ -194,7 +194,7 @@ func newAccount(c *cli.Context) error {
 	publickeys := ""
 	keyDatas := strings.Split(allPublickeys, ",")
 	for _, v := range keyDatas {
-		addr := inner.AddressFromPubKey(inner.FromHex(v))
+		addr := innercommon.AddressFromPubKey(inner.FromHex(v))
 		for _, vv := range requiredKeys {
 			if addr == vv {
 				publickeys += v
