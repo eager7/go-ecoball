@@ -21,9 +21,10 @@ package network
 import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 )
 
-func (net *NetImpl)SendMsgDataToShard(shardId uint16, msgId uint32, data []byte) error {
+func (net *NetImpl)SendMsgDataToShard(shardId uint16, msgId pb.MsgType, data []byte) error {
 	p, err := net.receiver.GetShardLeader(shardId)
 	if err != nil {
 		return err

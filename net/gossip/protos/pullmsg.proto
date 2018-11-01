@@ -1,0 +1,46 @@
+syntax = "proto3";
+package pb;
+
+// gossip pull related messages
+enum PullMsgType {
+    UNDEFINED     = 0;
+    BLOCK_MSG     = 1;
+    TRANS_MSG     = 2;
+}
+
+//gossip pull algo message
+message PullHello {
+    bytes  senderId      = 1;
+    PullMsgType msg_type = 2;
+}
+
+message PullDigest {
+    bytes  senderId          = 1;
+    repeated string digests  = 2;
+    PullMsgType msg_type     = 3;
+}
+
+message PullRequest {
+    bytes  asker             = 1;
+    repeated string ReqItems = 2;
+    PullMsgType msg_type     = 3;
+}
+
+message PullAckDataEnv {
+    bytes data               = 1;
+}
+
+message PullReqAck {
+    bytes responser                 = 1;
+    repeated PullAckDataEnv payload = 2;
+    PullMsgType msg_type            = 3;
+}
+
+message GossipPullMsg {
+    oneof subMsg {
+        PullHello  hello    = 1;
+        PullDigest digest   = 2;
+        PullRequest request = 3;
+        PullReqAck  reqAck  = 4;
+    }
+}

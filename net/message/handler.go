@@ -20,6 +20,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	eactor "github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 )
 
 func HdTransactionMsg(data []byte) error {
@@ -133,18 +134,18 @@ func HdBlkSynMsg(data []byte) error {
 }
 
 // MakeHandlers generates a map of MsgTypes to their corresponding handler functions
-func MakeHandlers() map[uint32]HandlerFunc {
-	return map[uint32]HandlerFunc{
-		APP_MSG_TRN:     HdTransactionMsg,
-		APP_MSG_BLK:     HdBlkMsg,
-		APP_MSG_SIGNPRE:   HdSignPreMsg,
-		APP_MSG_BLKF:      HdBlkFMsg,
-		APP_MSG_REQSYN:    HdReqSynMsg,
-		APP_MSG_REQSYNSOLO:    HdReqSynSoloMsg,
-		APP_MSG_SIGNBLKF:  HdSignBlkFMsg,
-		APP_MSG_BLKS:      HdBlkSMsg,
-		APP_MSG_BLKSYN:    HdBlkSynMsg,
-		APP_MSG_TIMEOUT:   HdToutMsg,
+func MakeHandlers() map[pb.MsgType]HandlerFunc {
+	return map[pb.MsgType]HandlerFunc{
+		pb.MsgType_APP_MSG_TRN:       HdTransactionMsg,
+		pb.MsgType_APP_MSG_BLK:       HdBlkMsg,
+		pb.MsgType_APP_MSG_SIGNPRE:   HdSignPreMsg,
+		pb.MsgType_APP_MSG_BLKF:      HdBlkFMsg,
+		pb.MsgType_APP_MSG_REQSYN:    HdReqSynMsg,
+		pb.MsgType_APP_MSG_REQSYNSOLO:HdReqSynSoloMsg,
+		pb.MsgType_APP_MSG_SIGNBLKF:  HdSignBlkFMsg,
+		pb.MsgType_APP_MSG_BLKS:      HdBlkSMsg,
+		pb.MsgType_APP_MSG_BLKSYN:    HdBlkSynMsg,
+		pb.MsgType_APP_MSG_TIMEOUT:   HdToutMsg,
 		//TODO add new msg handler at here
 	}
 }
