@@ -68,12 +68,12 @@ var (
 						Name:  "chainHash, c",
 						Usage: "chain hash(the default is the main chain hash)",
 					},
-					cli.Int64Flag{
+					cli.Float64Flag{
 						Name:  "max-cpu-usage-ms",
 						Usage: "Maximum CPU consumption",
 						Value: 0,
 					},
-					cli.Int64Flag{
+					cli.Float64Flag{
 						Name:  "max-net-usage",
 						Usage: "Maximum bandwidth",
 						Value: 0,
@@ -138,13 +138,13 @@ func newAccount(c *cli.Context) error {
 
 	permission := c.String("permission")
 
-	max_cpu_usage_ms := c.Int64("max-cpu-usage-ms")
+	max_cpu_usage_ms := c.Float64("max-cpu-usage-ms")
 	if max_cpu_usage_ms < 0 {
 		fmt.Println("Invalid max-cpu-usage-ms ", max_cpu_usage_ms)
 		return errors.New("Invalid max-cpu-usage-ms")
 	}
 
-	max_net_usage := c.Int64("max-net-usage")
+	max_net_usage := c.Float64("max-net-usage")
 	if max_net_usage < 0 {
 		fmt.Println("Invalid max_net_usage ", max_net_usage)
 		return errors.New("Invalid max_net_usage")
@@ -181,8 +181,8 @@ func newAccount(c *cli.Context) error {
 		fmt.Println(err)
 	}
 
-	invoke.Receipt.Cpu = float64(max_cpu_usage_ms)
-	invoke.Receipt.Net = float64(max_net_usage)
+	invoke.Receipt.Cpu = max_cpu_usage_ms
+	invoke.Receipt.Net = max_net_usage
 	//invoke.SetSignature(&config.Root)
 
 	requiredKeys, err := getRequiredKeys(chainHash, permission, creator)

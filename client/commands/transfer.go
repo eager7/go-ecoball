@@ -17,6 +17,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -54,9 +55,8 @@ var (
 				Usage: "ABA amount",
 			},
 			cli.StringFlag{
-				Name:  "chainId, c",
-				Usage: "chainId hash",
-				Value: "config.hash",
+				Name:  "chainHash, c",
+				Usage: "chain hash(the default is the main chain hash)",
 			},
 		},
 		Action: transferAction,
@@ -93,7 +93,17 @@ func transferAction(c *cli.Context) error {
 
 	bigValue := big.NewInt(value)
 
-	chainHash, err := getMainChainHash()
+	//chainHash
+	var chainHash inner.Hash
+	var err error
+	chainHashStr := c.String("chainHash")
+	if "" == chainHashStr {
+		chainHash, err = getMainChainHash()
+
+	} else {
+		err = json.Unmarshal([]byte(chainHashStr), &chainHash)
+	}
+
 	if nil != err {
 		fmt.Println(err)
 		return err

@@ -43,7 +43,6 @@ func StartHttpServer() (err error) {
 
 	//register handle
 	router.GET("/getHeadBlock", getHeadBlock)
-	router.POST("/invokeContract", invokeContract)
 	router.POST("/setContract", setContract)
 	router.POST("/newInvokeContract", newInvokeContract)
 	router.POST("/newDeployContract", newDeployContract)
@@ -69,6 +68,9 @@ func StartHttpServer() (err error) {
 	//transfer
 	router.POST("/transfer", commands.Transfer)
 
+	//contract
+	router.POST("/invokeContract", commands.InvokeContract)
+
 	http.ListenAndServe(":"+config.HttpLocalPort, router)
 	return nil
 }
@@ -92,25 +94,6 @@ func getInfo(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": innerCommon.ToHex(data)})
-}
-
-func invokeContract(c *gin.Context) {
-	invoke := new(types.Transaction) //{
-	transaction_data := c.PostForm("transaction")
-
-	if err := invoke.Deserialize(innerCommon.FromHex(transaction_data)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
-	//send to txpool
-	err := event.Send(event.ActorNil, event.ActorTxPool, invoke)
-	if nil != err {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }
 
 func setContract(c *gin.Context) {
