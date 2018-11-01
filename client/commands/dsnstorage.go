@@ -1,19 +1,21 @@
 package commands
 
 import (
-	"fmt"
-	"os"
-   "github.com/urfave/cli"
-   dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
 	"context"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/url"
-	"github.com/ecoball/go-ecoball/common"
+	"os"
+
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
-	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/client/rpc"
-	"errors"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/types"
+	dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
+	"github.com/urfave/cli"
 )
+
 var (
 	DsnStorageCommands = cli.Command{
 		Name:     "dsnstorage",
@@ -31,18 +33,14 @@ var (
 						Value: "-1",
 					},
 				},
-
 			},
 			{
 				Name:   "cat",
 				Usage:  "cat file",
 				Action: dsnCatFile,
-	
 			},
 		},
-		
 	}
-	
 )
 
 func dsnAddFile(ctx *cli.Context) error {
@@ -68,17 +66,17 @@ func dsnAddFile(ctx *cli.Context) error {
 		return err
 	}
 
-	chainId, err := GetChainId()
+	chainId, err = getMainChainHash()
 	if err != nil {
 		return err
 	}
 
-	pkKeys, err := GetPublicKeys()
+	pkKeys, err := getPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", transaction)
+	reqKeys, err := getRequiredKeys(chainId, "owner", transaction.From.String())
 	if err != nil {
 		return err
 	}
@@ -127,8 +125,7 @@ func dsnAddFile(ctx *cli.Context) error {
 	return nil
 }
 
-
-func dsnCatFile (ctx *cli.Context)  {
+func dsnCatFile(ctx *cli.Context) {
 	cbtx := context.Background()
 	dclient := dsncli.NewRcWithDefaultConf(cbtx)
 	//dclient.CheckCollateral()

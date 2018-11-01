@@ -194,7 +194,7 @@ func newAccount(c *cli.Context) error {
 	publickeys := ""
 	keyDatas := strings.Split(allPublickeys, ",")
 	for _, v := range keyDatas {
-		addr := innercommon.AddressFromPubKey(inner.FromHex(v))
+		addr := innercommon.AddressFromPubKey(innercommon.FromHex(v))
 		for _, vv := range requiredKeys {
 			if addr == vv {
 				publickeys += v
