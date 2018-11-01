@@ -32,6 +32,7 @@ import (
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 )
 
 const (
@@ -112,7 +113,7 @@ func (nrt *NetRouteTable) SyncWithPeer(id peer.ID) {
 		log.Error(err)
 		return
 	}
-	msg := message.New(message.APP_MSG_P2PRTSYN, data)
+	msg := message.New(pb.MsgType_APP_MSG_P2PRTSYN, data)
 
 	nrt.net.SendMsgToPeerWithId(id, msg)
 }
@@ -159,7 +160,7 @@ func (nrt *NetRouteTable) OnSyncRoute(msg message.EcoBallNetMsg) {
 		return
 	}
 
-	ackMsg := message.New(message.APP_MSG_P2PRTSYNACK, data)
+	ackMsg := message.New(pb.MsgType_APP_MSG_P2PRTSYNACK, data)
 	nrt.net.SendMsgToPeerWithId(remotePeer, ackMsg)
 }
 
@@ -200,9 +201,9 @@ func (nrt *NetRouteTable) OnSyncRouteAck(msg message.EcoBallNetMsg) {
 
 func (nrt *NetRouteTable) Start() {
 	var err error
-	msgs := []uint32{
-		message.APP_MSG_P2PRTSYN,
-		message.APP_MSG_P2PRTSYNACK,
+	msgs := []pb.MsgType{
+		pb.MsgType_APP_MSG_P2PRTSYN,
+		pb.MsgType_APP_MSG_P2PRTSYNACK,
 	}
 	nrt.msgSubCh, err = dispatcher.Subscribe(msgs...)
 	if err != nil {
@@ -237,10 +238,10 @@ func (nrt *NetRouteTable) SyncRouting(ctx context.Context){
 			if !ok {
 				continue
 			}
-			if msg.Type()==message.APP_MSG_P2PRTSYN {
+			if msg.Type()==pb.MsgType_APP_MSG_P2PRTSYN {
 				nrt.OnSyncRoute(msg)
 			}
-			if msg.Type()==message.APP_MSG_P2PRTSYNACK {
+			if msg.Type()==pb.MsgType_APP_MSG_P2PRTSYNACK {
 				nrt.OnSyncRouteAck(msg)
 			}
 		}

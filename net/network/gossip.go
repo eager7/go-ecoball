@@ -107,12 +107,12 @@ func (net *NetImpl)warpMsgByGossip(msg message.EcoBallNetMsg) (message.EcoBallNe
 		return nil, err
 	}
 	// wrap the message by the gossip msg type
-	gossipMsg := message.New(message.APP_MSG_GOSSIP, wrapData)
+	gossipMsg := message.New(pb.MsgType_APP_MSG_GOSSIP, wrapData)
 	return gossipMsg, nil
 }
 
 func (net *NetImpl)unwarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
-	if msg.Type() != message.APP_MSG_GOSSIP {
+	if msg.Type() != pb.MsgType_APP_MSG_GOSSIP {
 		return nil, fmt.Errorf("unwrap an invalid gossip message")
 	}
 	oriPbMsg := pb.Message{}

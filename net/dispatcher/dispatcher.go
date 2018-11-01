@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	"gx/ipfs/QmdbxjQWogRCHRaxhhGnYdT1oQJzL9GdqSKzCdqWr85AP2/pubsub"
 )
 
@@ -46,21 +47,13 @@ type Dispatcher struct {
 }
 
 func (ds *Dispatcher) publish(msg message.EcoBallNetMsg) {
-	if message.MessageToStr[msg.Type()] == "" {
-		log.Error("failed to find message type ", msg.Type())
-		return
-	}
-	ds.ps.Pub(msg, message.MessageToStr[msg.Type()])
+	ds.ps.Pub(msg, msg.Type().String())
 }
 
-func (ds *Dispatcher) subscribe(msgs ...uint32) <-chan interface{} {
+func (ds *Dispatcher) subscribe(msgs ...pb.MsgType) <-chan interface{} {
 	var msgstr []string
 	for _, msg := range msgs {
-		if message.MessageToStr[msg] == "" {
-			log.Error("failed to find message type ", msg)
-			continue
-		}
-		msgstr = append(msgstr, message.MessageToStr[msg])
+		msgstr = append(msgstr, msg.String())
 	}
 	if len(msgstr) > 0 {
 		return ds.ps.Sub(msgstr...)
@@ -69,14 +62,10 @@ func (ds *Dispatcher) subscribe(msgs ...uint32) <-chan interface{} {
 	return nil
 }
 
-func (ds *Dispatcher) unsubscribe(chn chan interface{}, msgType ...uint32) {
+func (ds *Dispatcher) unsubscribe(chn chan interface{}, msgType ...pb.MsgType) {
 	var msgstr []string
 	for _, msg := range msgType {
-		if message.MessageToStr[msg] == "" {
-			log.Error("failed to find message type ", msg)
-			continue
-		}
-		msgstr = append(msgstr, message.MessageToStr[msg])
+		msgstr = append(msgstr, msg.String())
 	}
 
 	ds.ps.Unsub(chn, msgstr...)
@@ -88,14 +77,14 @@ func (ds *Dispatcher) shutdown() {
 	ds.ps.Shutdown()
 }
 
-func Subscribe (msgs ...uint32) (<-chan interface{}, error) {
+func Subscribe (msgs ...pb.MsgType) (<-chan interface{}, error) {
 	if dispatcher == nil {
 		return nil, fmt.Errorf(errorStr)
 	}
 	return dispatcher.subscribe(msgs...), nil
 }
 
-func UnSubscribe (chn chan interface{}, msgs ...uint32) error {
+func UnSubscribe (chn chan interface{}, msgs ...pb.MsgType) error {
 	if dispatcher == nil {
 		return fmt.Errorf(errorStr)
 	}

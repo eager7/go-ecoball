@@ -3,6 +3,7 @@ package common
 import (
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 )
 
 type NodeInstance interface {
@@ -20,14 +21,14 @@ const (
 
 type NetPacket struct {
 	ChainId    uint32
-	PacketType uint32
+	PacketType pb.MsgType
 	BlockType  uint16
 	Step       uint16
 	Packet     []byte
 }
 
 type CsPacket struct {
-	PacketType uint32
+	PacketType pb.MsgType
 	BlockType  uint16
 	Step       uint16
 	Packet     interface{}

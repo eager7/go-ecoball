@@ -3,7 +3,7 @@ package net
 import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	cs "github.com/ecoball/go-ecoball/core/shard"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
@@ -136,7 +136,7 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 
 	sp := &sc.NetPacket{}
 	sp.DupHeader(packet)
-	sp.PacketType = netmsg.APP_MSG_SHARDING_PACKET
+	sp.PacketType = pb.MsgType_APP_MSG_SHARDING_PACKET
 	sp.Packet = packet.Packet
 
 	cm := n.ns.GetLastCMBlock()
@@ -164,7 +164,7 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 
 	sp := &sc.NetPacket{}
 	sp.DupHeader(packet)
-	sp.PacketType = netmsg.APP_MSG_SHARDING_PACKET
+	sp.PacketType = pb.MsgType_APP_MSG_SHARDING_PACKET
 	sp.Packet = packet.Packet
 
 	cm := n.ns.GetCmWorks()
