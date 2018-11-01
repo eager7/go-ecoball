@@ -71,12 +71,12 @@ func dsnAddFile(ctx *cli.Context) error {
 		return err
 	}
 
-	pkKeys, err := getPublicKeys()
+	_, err := getPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	reqKeys, err := getRequiredKeys(chainId, "owner", transaction.From.String())
+	_, err := getRequiredKeys(chainId, "owner", transaction.From.String())
 	if err != nil {
 		return err
 	}
@@ -197,12 +197,12 @@ func TxTransaction(trx *types.Transaction) error {
 		return err
 	}
 
-	pkKeys, err := getPublicKeys()
+	_, err := getPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	reqKeys, err := getRequiredKeys(chainId, "owner", trx.From.String())
+	_, err := getRequiredKeys(chainId, "owner", trx.From.String())
 	if err != nil {
 		return err
 	}
@@ -229,12 +229,12 @@ func InvokeContract(trx *types.Transaction) error {
 		return err
 	}
 
-	pkKeys, err := getPublicKeys()
+	_, err := getPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	reqKeys, err := getRequiredKeys(chainId, "owner", trx.From.String())
+	_, err := getRequiredKeys(chainId, "owner", trx.From.String())
 	if err != nil {
 		return err
 	}
