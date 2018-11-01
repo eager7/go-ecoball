@@ -17,10 +17,11 @@
 package commands
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
-	"strconv"
+	"strings"
 	"time"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
@@ -56,8 +57,7 @@ var (
 					},
 					cli.StringFlag{
 						Name:  "active, a",
-						Usage: "active public key",
-						Value: "owner",
+						Usage: "active public key(the default is the owner public key)",
 					},
 					cli.StringFlag{
 						Name:  "permission, p",
@@ -65,18 +65,17 @@ var (
 						Value: "active",
 					},
 					cli.StringFlag{
-						Name:  "chainId",
-						Usage: "chainId hash",
-						Value: "config.hash",
+						Name:  "chainHash, c",
+						Usage: "chain hash(the default is the main chain hash)",
 					},
-					cli.StringFlag{
+					cli.Int64Flag{
 						Name:  "max-cpu-usage-ms",
-						Usage: "max-cpu-usage-ms",
+						Usage: "Maximum CPU consumption",
 						Value: "0",
 					},
-					cli.StringFlag{
+					cli.Int64Flag{
 						Name:  "max-net-usage",
-						Usage: "max-net-usage",
+						Usage: "Maximum bandwidth",
 						Value: "0",
 					},
 				},
@@ -108,14 +107,14 @@ func newAccount(c *cli.Context) error {
 	//creator
 	creator := c.String("creator")
 	if creator == "" {
-		fmt.Println("Invalid creator name")
+		fmt.Println("Please input a valid creator name")
 		return errors.New("Invalid creator name")
 	}
 
 	//name
 	name := c.String("name")
 	if name == "" {
-		fmt.Println("Invalid account name")
+		fmt.Println("Please input a valid account name")
 		return errors.New("Invalid account name")
 	}
 
@@ -127,7 +126,7 @@ func newAccount(c *cli.Context) error {
 	//owner key
 	owner := c.String("owner")
 	if "" == owner {
-		fmt.Println("Invalid owner key")
+		fmt.Println("Please input a valid owner key")
 		return errors.New("Invalid owner key")
 	}
 
@@ -138,35 +137,36 @@ func newAccount(c *cli.Context) error {
 	}
 
 	permission := c.String("permission")
-	if "" == permission {
-		permission = "active"
+
+	max_cpu_usage_ms := c.Int64("max-cpu-usage-ms")
+	if max_cpu_usage_ms < 0 {
+		fmt.Println("Invalid max-cpu-usage-ms ", max_cpu_usage_ms)
+		return errors.New("Invalid max-cpu-usage-ms")
 	}
 
-	max_cpu_usage_ms, err := strconv.ParseFloat(c.String("max-cpu-usage-ms"), 64)
-	if err != nil {
+	max_net_usage := c.Int64("max-net-usage")
+	if max_net_usage < 0 {
+		fmt.Println("Invalid max_net_usage ", max_net_usage)
+		return errors.New("Invalid max_net_usage")
+	}
+
+	//chainHash
+	var chainHash common.Hash
+	var err error
+	chainHashStr := c.String("chainHash")
+	if "" == chainHashStr {
+		chainHash, err = getMainChainHash()
+
+	} else {
+		json.Unmarshal([]byte(chainHashStr), &chainHash)
+	}
+
+	if nil != err {
 		fmt.Println(err)
 		return err
 	}
 
-	max_net_usage, err := strconv.ParseFloat(c.String("max-net-usage"), 64)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	info, err := getInfo()
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	chainId := info.ChainID
-	chainIdStr := c.String("chainId")
-	if "config.hash" != chainIdStr && "" != chainIdStr {
-		chainId = innercommon.HexToHash(chainIdStr)
-	}
-
-	publickeys, err := GetPublicKeys()
+	allPublickeys, err := getPublicKeys()
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -185,18 +185,31 @@ func newAccount(c *cli.Context) error {
 	invoke.Receipt.Net = max_net_usage
 	//invoke.SetSignature(&config.Root)
 
-	required_keys, err := get_required_keys(info.ChainID, publickeys, permission, invoke)
+	requiredKeys, err := getRequiredKeys(chainHash, permission, creator)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	if required_keys == "" {
-		fmt.Println("no required_keys")
-		return err
+	publickeys := ""
+	keyDatas := strings.Split(allPublickeys, ",")
+	for _, v := range keyDatas {
+		addr := inner.AddressFromPubKey(inner.FromHex(v))
+		for _, vv := range requiredKeys {
+			if addr == vv {
+				publickeys += v
+				publickeys += "\n"
+				break
+			}
+		}
 	}
 
-	data, errcode := sign_transaction(info.ChainID, required_keys, invoke)
+	if "" == publickeys {
+		fmt.Println("no publickeys")
+		return errors.New("no publickeys")
+	}
+
+	data, errcode := signTransaction(chainHash, publickeys, invoke)
 	if nil != errcode {
 		fmt.Println(errcode)
 	}
@@ -206,6 +219,8 @@ func newAccount(c *cli.Context) error {
 	values.Set("transaction", data)
 	err = rpc.NodePost("/invokeContract", values.Encode(), &result)
 	fmt.Println(result.Result)
-
+	if nil == err {
+		fmt.Println(result.Result)
+	}
 	return err
 }

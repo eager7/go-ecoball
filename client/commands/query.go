@@ -26,6 +26,9 @@ import (
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/http/common/abi"
 	"github.com/urfave/cli"
 )
 
@@ -275,4 +278,73 @@ func getRequiredKeys(chainHash common.Hash, permission string, account string) (
 	}
 
 	return publicAddress, nil
+}
+
+func getContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error) {
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("contractName", index.String())
+	values.Set("chainId", chainID.HexString())
+	err := rpc.NodePost("/query/getContract", values.Encode(), &result)
+	if nil == err {
+		deploy := new(types.DeployInfo)
+		if err := deploy.Deserialize(common.FromHex(result.Result)); err != nil {
+			return nil, err
+		}
+		return deploy, nil
+	}
+	return nil, err
+}
+
+func storeGet(chainID common.Hash, index common.AccountName, key []byte) (value []byte, err error) {
+	var result clientCommon.SimpleResult
+	values := url.Values{}
+	values.Set("contractName", index.String())
+	values.Set("chainId", chainID.HexString())
+	values.Set("key", common.ToHex(key))
+	err = rpc.NodePost("/query/storeGet", values.Encode(), &result)
+	if nil == err {
+		return common.FromHex(result.Result), nil
+	}
+	return nil, err
+}
+
+func getContractTable(contractName string, accountName string, abiDef abi.ABI, tableName string) ([]byte, error) {
+	var fields []abi.FieldDef
+	for _, table := range abiDef.Tables {
+		if string(table.Name) == tableName {
+			for _, struction := range abiDef.Structs {
+				if struction.Name == table.Type {
+					fields = struction.Fields
+				}
+			}
+		}
+	}
+
+	if fields == nil {
+		return nil, errors.New("can not find struct of table: " + tableName)
+	}
+
+	table := make(map[string]string, len(fields))
+
+	for i, _ := range fields {
+		key := []byte(fields[i].Name)
+		if fields[i].Name == "balance" { // only for token contract, because KV struct can't support
+			key = []byte(accountName)
+		} else {
+			key = append(key, 0) // C lang string end with 0
+		}
+
+		storage, err := storeGet(config.ChainHash, common.NameToIndex(contractName), key)
+		if err != nil {
+			return nil, errors.New("can not get store " + fields[i].Name)
+		}
+		fmt.Println(fields[i].Name + ": " + string(storage))
+		table[fields[i].Name] = string(storage)
+	}
+
+	js, _ := json.Marshal(table)
+	fmt.Println("json format: ", string(js))
+
+	return nil, nil
 }

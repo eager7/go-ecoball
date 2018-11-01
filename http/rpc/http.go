@@ -45,8 +45,6 @@ func StartHttpServer() (err error) {
 	router.GET("/getHeadBlock", getHeadBlock)
 	router.POST("/invokeContract", invokeContract)
 	router.POST("/setContract", setContract)
-	router.POST("/getContract", getContract)
-	router.POST("/storeGet", storeGet)
 	router.POST("/newInvokeContract", newInvokeContract)
 	router.POST("/newDeployContract", newDeployContract)
 	//for invokContract
@@ -65,6 +63,8 @@ func StartHttpServer() (err error) {
 	router.POST("/query/getBlockInfo", commands.GetBlockInfo)
 	router.POST("/query/getTransaction", commands.GetTransaction)
 	router.POST("/query/getRequiredKeys", commands.GetRequiredKeys)
+	router.POST("/query/getContract", commands.GetContract)
+	router.POST("//query/storeGet", commands.StoreGet)
 
 	//transfer
 	router.POST("/transfer", commands.Transfer)
@@ -130,43 +130,6 @@ func setContract(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
-}
-
-func getContract(c *gin.Context) {
-	chainId := c.PostForm("chainId")
-	accountName := c.PostForm("contractName")
-	hash := new(innerCommon.Hash)
-
-	chainids := hash.FormHexString(chainId)
-	contract, err := ledger.L.GetContract(chainids, innerCommon.NameToIndex(accountName))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
-	data, err := contract.Serialize()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"result": innerCommon.ToHex(data)})
-}
-
-func storeGet(c *gin.Context) {
-	chainId := c.PostForm("chainId")
-	accountName := c.PostForm("contractName")
-	key := c.PostForm("key")
-
-	hash := new(innerCommon.Hash)
-	chainids := hash.FormHexString(chainId)
-	storage, err := ledger.L.StoreGet(chainids, innerCommon.NameToIndex(accountName), innerCommon.FromHex(key))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"result": innerCommon.ToHex(storage)})
 }
 
 //use for scan

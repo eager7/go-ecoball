@@ -168,3 +168,40 @@ func GetRequiredKeys(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"result": string(data)})
 }
+
+func GetContract(c *gin.Context) {
+	chainId := c.PostForm("chainId")
+	accountName := c.PostForm("contractName")
+	hash := new(innerCommon.Hash)
+
+	chainids := hash.FormHexString(chainId)
+	contract, err := ledger.L.GetContract(chainids, innerCommon.NameToIndex(accountName))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	data, err := contract.Serialize()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": innerCommon.ToHex(data)})
+}
+
+func StoreGet(c *gin.Context) {
+	chainId := c.PostForm("chainId")
+	accountName := c.PostForm("contractName")
+	key := c.PostForm("key")
+
+	hash := new(innerCommon.Hash)
+	chainids := hash.FormHexString(chainId)
+	storage, err := ledger.L.StoreGet(chainids, innerCommon.NameToIndex(accountName), innerCommon.FromHex(key))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": innerCommon.ToHex(storage)})
+}
