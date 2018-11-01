@@ -81,7 +81,7 @@ func dsnAddFile(ctx *cli.Context) error {
 		return err
 	}
 
-	err = SignTransaction(chainId, reqKeys, transaction)
+	err = SignTransaction(chainId, "", transaction)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func dsnAddFile(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	err = SignTransaction(chainId, reqKeys, payTrn)
+	err = SignTransaction(chainId, "", payTrn)
 	if err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ func SignTransaction(chainId common.Hash, required_keys string, trx *types.Trans
 }
 
 func TxTransaction(trx *types.Transaction) error {
-	chainHash, err := getMainChainHash()
+	chainId, err := getMainChainHash()
 	if err != nil {
 		return err
 	}
@@ -206,7 +206,7 @@ func TxTransaction(trx *types.Transaction) error {
 	if err != nil {
 		return err
 	}
-	err = SignTransaction(chainId, reqKeys, trx)
+	err = SignTransaction(chainId, "", trx)
 	if err != nil {
 		return err
 	}
@@ -224,7 +224,7 @@ func TxTransaction(trx *types.Transaction) error {
 }
 
 func InvokeContract(trx *types.Transaction) error {
-	chainHash, err := getMainChainHash()
+	chainId, err := getMainChainHash()
 	if err != nil {
 		return err
 	}
@@ -239,7 +239,7 @@ func InvokeContract(trx *types.Transaction) error {
 		return err
 	}
 
-	err = SignTransaction(chainId, reqKeys, trx)
+	err = SignTransaction(chainId, "", trx)
 	if err != nil {
 		return err
 	}
