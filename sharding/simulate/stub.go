@@ -82,7 +82,7 @@ func CheckFinalBlock(f *cs.FinalBlock) bool {
 //}
 
 func GetSyncStatus() bool {
-	return false
+	return true
 }
 
 func GetMinorBlockPool() []*cs.MinorBlock {
