@@ -104,6 +104,7 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 
 	var round uint16
 	var epoch uint64
+	var fheight uint64
 	var height uint64
 
 	if lastcm != nil {
@@ -111,10 +112,11 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 	}
 
 	if lastfinal != nil {
-		height = lastfinal.Height
+		fheight = lastfinal.Height
 	}
 
 	if lastvc == nil {
+		height = 1
 		round = 1
 	} else {
 		if lastfinal != nil && lastfinal.Height > lastvc.FinalBlockHeight {
@@ -122,6 +124,8 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 		} else {
 			round = lastvc.Round + 1
 		}
+
+		height = lastvc.Height + 1
 	}
 
 	works := c.ns.GetWorks()
@@ -133,7 +137,7 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 		return nil, false
 	}
 
-	log.Debug("create vc block epoch ", epoch, " height ", height, " round ", round)
+	log.Debug("create vc block epoch ", epoch, " fheight ", fheight, " round ", round, " height ", height)
 	vc := &cs.ViewChangeBlock{
 		ViewChangeBlockHeader: cs.ViewChangeBlockHeader{
 			CMEpochNo:        0,
@@ -145,8 +149,9 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 		},
 	}
 
+	vc.Height = height
 	vc.CMEpochNo = epoch
-	vc.FinalBlockHeight = height
+	vc.FinalBlockHeight = fheight
 	vc.Round = round
 
 	works = works[1:]
@@ -197,6 +202,27 @@ func (c *committee) checkVcPacket(p interface{}) bool {
 		return false
 	}
 
+	vc := csp.Packet.(*cs.ViewChangeBlock)
+	last := c.ns.GetLastViewchangeBlock()
+	lastfinal := c.ns.GetLastFinalBlock()
+	if last == nil || lastfinal == nil {
+		panic("last block is nil")
+		return false
+	}
+
+	if vc.FinalBlockHeight < lastfinal.Height {
+		log.Debug("wrong vc packet ", vc.FinalBlockHeight, " ", vc.Round)
+		return false
+	} else if vc.FinalBlockHeight == lastfinal.Height {
+		if last.Round >= vc.Round {
+			log.Debug("old vc packet ", vc.FinalBlockHeight, " ", vc.Round)
+			return false
+		}
+	} else {
+		log.Debug("last final ", lastfinal.Height, " recv view change final height ", vc.FinalBlockHeight, " need sync")
+		c.fsm.Execute(ActChainNotSync, nil)
+		return false
+	}
 	return true
 }
 

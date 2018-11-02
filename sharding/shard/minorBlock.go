@@ -199,9 +199,15 @@ func (s *shard) checkMinorPacket(p interface{}) bool {
 
 	minor := csp.Packet.(*cs.MinorBlock)
 	last := s.ns.GetLastMinorBlock()
-	if last != nil && minor.Height <= last.Height {
-		log.Error("old minor block, drop it")
-		return false
+	if last != nil {
+		if minor.Height <= last.Height {
+			log.Error("old minor block, drop it")
+			return false
+		} else if minor.Height > last.Height+1 {
+			log.Debug("last ", last.Height, "recv ", minor.Height, " need sync")
+			s.fsm.Execute(ActChainNotSync, nil)
+			return false
+		}
 	}
 
 	return true

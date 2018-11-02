@@ -93,6 +93,10 @@ func (s *shard) processShardingPacket(csp interface{}) {
 			if last.Height >= cm.Height {
 				log.Debug("old cm packet ", cm.Height)
 				return
+			} else if cm.Height > last.Height+1 {
+				log.Debug("cm block last ", last.Height, " recv ", cm.Height, " need sync")
+				s.fsm.Execute(ActChainNotSync, nil)
+				return
 			}
 		}
 
@@ -108,6 +112,10 @@ func (s *shard) processShardingPacket(csp interface{}) {
 			if last.Height >= final.Height {
 				log.Debug("old final packet ", final.Height)
 				return
+			} else if final.Height > last.Height+1 {
+				log.Debug("final block last ", last.Height, " recv ", final.Height, " need sync")
+				s.fsm.Execute(ActChainNotSync, nil)
+				return
 			}
 		}
 
@@ -121,13 +129,24 @@ func (s *shard) processShardingPacket(csp interface{}) {
 	case sc.SD_VIEWCHANGE_BLOCK:
 		vc := p.Packet.(*cs.ViewChangeBlock)
 		last := s.ns.GetLastViewchangeBlock()
-		if last != nil {
-			if last.FinalBlockHeight > vc.FinalBlockHeight ||
-				(last.FinalBlockHeight == vc.FinalBlockHeight ||
-					last.Round >= vc.Round) {
+		lastfinal := s.ns.GetLastFinalBlock()
+		if lastfinal == nil || last == nil {
+			panic("last block is nil")
+			return
+		}
+
+		if vc.FinalBlockHeight < lastfinal.Height {
+			log.Debug("old vc packet ", vc.FinalBlockHeight, " ", vc.Round)
+			return
+		} else if vc.FinalBlockHeight == lastfinal.Height {
+			if last.Round >= vc.Round {
 				log.Debug("old vc packet ", vc.FinalBlockHeight, " ", vc.Round)
 				return
 			}
+		} else {
+			log.Debug("last final ", lastfinal.Height, " recv view change final height ", vc.FinalBlockHeight, " need sync")
+			s.fsm.Execute(ActChainNotSync, nil)
+			return
 		}
 
 		simulate.TellBlock(vc)

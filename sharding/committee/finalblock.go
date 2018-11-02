@@ -194,9 +194,15 @@ func (c *committee) checkFinalPacket(p interface{}) bool {
 
 	final := csp.Packet.(*cs.FinalBlock)
 	last := c.ns.GetLastFinalBlock()
-	if last != nil && final.Height <= last.Height {
-		log.Error("old final block, drop it")
-		return false
+	if last != nil {
+		if final.Height <= last.Height {
+			log.Error("old final block, drop it")
+			return false
+		} else if final.Height > last.Height+1 {
+			log.Debug("final last ", last.Height, "recv ", final.Height, " need sync")
+			c.fsm.Execute(ActChainNotSync, nil)
+			return false
+		}
 	}
 
 	return true
