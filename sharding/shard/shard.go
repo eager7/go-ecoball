@@ -8,6 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
+	"github.com/ecoball/go-ecoball/sharding/datasync"
 	"github.com/ecoball/go-ecoball/sharding/net"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -45,6 +46,8 @@ type shard struct {
 	retransTimer  *sc.Stimer
 	fullVoteTimer *sc.Stimer
 	cs            *consensus.Consensus
+	sync          *datasync.Sync
+
 }
 
 func MakeShardTest(ns *cell.Cell) *shard {
@@ -59,6 +62,7 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 		stateTimer:    sc.NewStimer(0, false),
 		retransTimer:  sc.NewStimer(0, false),
 		fullVoteTimer: sc.NewStimer(0, false),
+		sync:          datasync.MakeSync(ns),
 	}
 
 	s.cs = consensus.MakeConsensus(s.ns, s.setRetransTimer, s.setFullVoeTimer, s.consensusCb)

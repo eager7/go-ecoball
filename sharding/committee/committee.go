@@ -8,6 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
+	"github.com/ecoball/go-ecoball/sharding/datasync"
 	"github.com/ecoball/go-ecoball/sharding/net"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -48,6 +49,8 @@ type committee struct {
 	fullVoteTimer *sc.Stimer
 	vccount       uint16
 	cs            *consensus.Consensus
+
+	sync *datasync.Sync
 }
 
 func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
@@ -59,6 +62,7 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 		stateTimer:    sc.NewStimer(0, false),
 		retransTimer:  sc.NewStimer(0, false),
 		fullVoteTimer: sc.NewStimer(0, false),
+		sync:          datasync.MakeSync(ns),
 	}
 
 	cm.cs = consensus.MakeConsensus(cm.ns, cm.setRetransTimer, cm.setFullVoeTimer, cm.consensusCb)
