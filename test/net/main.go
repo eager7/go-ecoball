@@ -54,9 +54,9 @@ func main() {
 		return
 	}
 
-	netInst = network.GetNetInstance()
-	if netInst == nil {
-		fmt.Println("inst of network is nil")
+	netInst, err = network.GetNetInstance()
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	netInst.Host().Peerstore().AddAddr(id, addr, time.Second * 10)

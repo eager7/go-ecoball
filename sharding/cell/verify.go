@@ -76,43 +76,45 @@ func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
 		return nil
 	}
 
+	last := c.GetLastViewchangeBlock()
+	if last == nil {
+		panic("vc block not exist")
+		return nil
+	}
+
+	if last.Height >= vc.Height {
+		log.Error("vc block height error last ", last.Height, " recv ", vc.Height)
+		return nil
+	}
+
 	cm := c.GetLastCMBlock()
-	if cm != nil {
-		if cm.Height != vc.CMEpochNo {
-			log.Error("vc block epoch error last ", cm.Height, " block ", vc.CMEpochNo)
-			return nil
-		}
+	if cm == nil {
+		panic("cm block is not exist")
+		return nil
+	}
+
+	if cm.Height != vc.CMEpochNo {
+		log.Error("vc block epoch error last ", cm.Height, " block ", vc.CMEpochNo)
+		return nil
 	}
 
 	final := c.GetLastFinalBlock()
-	if final != nil {
-		if final.Height != vc.FinalBlockHeight {
-			log.Error("vc block height error last ", final.Height, " block ", vc.FinalBlockHeight)
+	if final == nil {
+		panic("final block is not exist")
+		return nil
+	}
+
+	if final.Height != vc.FinalBlockHeight {
+		log.Error("vc block height error last ", final.Height, " block ", vc.FinalBlockHeight)
+		return nil
+	}
+
+	if vc.FinalBlockHeight == last.FinalBlockHeight {
+		if last.Round >= vc.Round {
+			log.Error("vc block round error last ", last.Round, " block ", vc.Round)
 			return nil
 		}
 	}
-
-	last := c.GetLastViewchangeBlock()
-	if last == nil {
-		if vc.Round != 1 {
-			log.Error("vc block round error ", vc.Round, "should be 1")
-			return nil
-		}
-	} else {
-		if final != nil && final.Height > vc.FinalBlockHeight {
-			if vc.Round != 1 {
-				log.Error("vc block round error ", vc.Round, "should be 1")
-				return nil
-			}
-		} else {
-			if last.Round >= vc.Round {
-				log.Error("vc block round error last ", last.Round, " block ", vc.Round)
-				return nil
-			}
-		}
-	}
-
-	/*missing_func need verify signature here*/
 
 	var csp sc.CsPacket
 	csp.CopyHeader(p)
@@ -176,6 +178,8 @@ func (c *Cell) VerifyMinorPacket(p *sc.NetPacket) *sc.CsPacket {
 		return nil
 	}
 
+	/*missing_func need verify signature here*/
+
 	cm := c.GetLastCMBlock()
 	if cm == nil {
 		log.Error("need product cm block first")
@@ -198,7 +202,6 @@ func (c *Cell) VerifyMinorPacket(p *sc.NetPacket) *sc.CsPacket {
 		return nil
 	}
 
-	/*missing_func need verify signature here*/
 	var csp sc.CsPacket
 	csp.CopyHeader(p)
 	csp.Packet = minor

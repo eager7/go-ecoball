@@ -27,7 +27,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 )
 
-var log = elog.NewLogger("TxPool", elog.DebugLog)
+var log = elog.NewLogger("TxPool", elog.NoticeLog)
 
 var T *TxPool
 

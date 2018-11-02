@@ -26,23 +26,25 @@ func (c *committee) recvShardPacket(packet *sc.CsPacket) {
 func (c *committee) processSyncComplete(msg interface{}) {
 	lastCmBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 	if err != nil || lastCmBlock == nil {
-		c.fsm.Execute(ActProductCommitteeBlock, msg)
+		panic("get cm block error ")
 		return
 	}
 
 	cm := lastCmBlock.GetObject().(cs.CMBlock)
 	c.ns.SyncCmBlockComplete(&cm)
 
-	/* missing_func vc block */
-	//lastVcBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, types.HeViewChangeBlock)
-	//if err == nil && lastVcBlock != nil {
-	//	vc := lastVcBlock.GetObject().(types.ViewChangeBlock)
-	//
+	//lastvc, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
+	//if err != nil || lastvc == nil {
+	//	panic("get vc block error ")
+	//	return
 	//}
+	//
+	//vc := lastvc.GetObject().(cs.ViewChangeBlock)
+	//c.ns.SaveLastViewchangeBlock(&vc)
 
 	lastFinalBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
-		c.fsm.Execute(ActCollectMinorBlock, msg)
+		panic("get final block error ")
 		return
 	}
 
@@ -83,6 +85,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 }
 
 func (c *committee) doBlockSync(msg interface{}) {
+	c.sync.SyncRequest(0, 0)
 	c.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 }
 

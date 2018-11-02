@@ -248,7 +248,7 @@ func (wi *WalletImpl) ImportKey(privateKey []byte) ([]byte, error) {
 	}
 
 	//wi.KeyData.Accounts = append(wi.KeyData.Accounts, account)
-	wi.KeyData.AccountsMap[inner.ToHex(pub)] = string(privateKey)
+	wi.KeyData.AccountsMap[string(pub)] = string(privateKey)
 
 	//lock wallet
 	errcode := wi.Lock()

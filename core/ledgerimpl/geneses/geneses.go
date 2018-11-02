@@ -141,21 +141,73 @@ func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) e
 		return err
 	}
 
-	tester := common.NameToIndex("tester")
-	addr = common.AddressFromPubKey(config.Worker1.PublicKey)
+	worker := common.NameToIndex("testeru")
+	addr = common.AddressFromPubKey(config.Worker.PublicKey)
 	fmt.Println("preset insert a tester account:", addr.HexString())
-	if _, err := s.AddAccount(tester, addr, timeStamp); err != nil {
+	if _, err := s.AddAccount(worker, addr, timeStamp); err != nil {
 		return err
 	}
 
-	if err := s.AccountAddBalance(tester, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
+	if err := s.AccountAddBalance(worker, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
 		return err
 	}
 
 	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
-	if err := s.SetResourceLimits(tester, tester, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
+	if err := s.SetResourceLimits(worker, worker, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
 		fmt.Println(err)
 		return err
 	}
+
+	worker1 := common.NameToIndex("testerh")
+	addr = common.AddressFromPubKey(config.Worker1.PublicKey)
+	fmt.Println("preset insert a tester account:", addr.HexString())
+	if _, err := s.AddAccount(worker1, addr, timeStamp); err != nil {
+		return err
+	}
+
+	if err := s.AccountAddBalance(worker1, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
+		return err
+	}
+
+	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
+	if err := s.SetResourceLimits(worker1, worker1, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	worker2 := common.NameToIndex("testerl")
+	addr = common.AddressFromPubKey(config.Worker2.PublicKey)
+	fmt.Println("preset insert a tester account:", addr.HexString())
+	if _, err := s.AddAccount(worker2, addr, timeStamp); err != nil {
+		return err
+	}
+
+	if err := s.AccountAddBalance(worker2, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
+		return err
+	}
+
+	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
+	if err := s.SetResourceLimits(worker2, worker2, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	worker3 := common.NameToIndex("testerp")
+	addr = common.AddressFromPubKey(config.Worker3.PublicKey)
+	fmt.Println("preset insert a tester account:", addr.HexString())
+	if _, err := s.AddAccount(worker3, addr, timeStamp); err != nil {
+		return err
+	}
+
+	if err := s.AccountAddBalance(worker3, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
+		return err
+	}
+
+	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
+	if err := s.SetResourceLimits(worker3, worker3, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
+		fmt.Println(err)
+		return err
+	}
+
 	return nil
 }

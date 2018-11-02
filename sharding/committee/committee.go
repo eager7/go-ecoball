@@ -96,6 +96,7 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 			{productViewChangeBlock, ActProductFinalBlock, nil, cm.productFinalBlock, nil, productFinalBlock},
 			{productViewChangeBlock, ActStateTimeout, cm.increaseCounter, cm.productViewChangeBlock, nil, productViewChangeBlock},
 			{productViewChangeBlock, ActRecvConsensusPacket, nil, cm.processViewchangeConsensusPacket, nil, sc.StateNil},
+			{productViewChangeBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
 		})
 
 	net.MakeNet(ns)
@@ -117,6 +118,8 @@ func (c *committee) Start() {
 	c.pvc = recvc
 	go c.cmRoutine()
 	c.pvcRoutine()
+
+	c.sync.SyncRequest(0, 0)
 }
 
 func (c *committee) cmRoutine() {
@@ -155,7 +158,6 @@ func (c *committee) pvcRoutine() {
 		}()
 	}
 }
-
 
 func (c *committee) processActorMsg(msg interface{}) {
 	switch msg.(type) {

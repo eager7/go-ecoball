@@ -831,6 +831,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		log.Error("Save geneses block error:", err)
 		return err
 	}
+	c.LastHeader.VCHeader = &blockVC.ViewChangeBlockHeader
 	return nil
 }
 
@@ -994,7 +995,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	c.BlockMap[block.Hash()] = BlockCache{Height: block.GetHeight(), Type: shard.HeaderType(block.Type())}
 	log.Notice("save "+blockType+" block", block.JsonString())
 
-	log.Notice("Save Block", block.Type(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString())
+	log.Notice("Shard ", c.shardId, "Save Block", block.Type(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString())
 	if block.GetHeight() != 1 {
 		connect.Notify(info.ShardBlock, block)
 		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
@@ -1046,7 +1047,7 @@ func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface,
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown block type:%d", typ))
 	}
-	return nil, nil
+	return nil, errors.New(log, "can't find the last block")
 }
 
 func (c *ChainTx) GetLastShardBlockById(shardId uint32) (shard.BlockInterface, error) {
@@ -1129,7 +1130,8 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	if err != nil {
 		return nil, err
 	}
-	log.Warn(common.JsonString(s.Accounts, false))
+	log.Info("new minor block hash:", block.Hash())
+	log.Warn(block.Hash().HexString(), block.StateDeltaHash.HexString(), common.JsonString(s.Accounts, false))
 	return block, nil
 }
 
@@ -1219,7 +1221,8 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	if err != nil {
 		return nil, err
 	}
-	log.Warn(common.JsonString(s.Accounts, false))
+	log.Info("new final block hash:", block.Hash())
+	log.Warn(block.Hash().HexString(), block.StateHashRoot.HexString(), common.JsonString(s.Accounts, false))
 	return block, nil
 }
 

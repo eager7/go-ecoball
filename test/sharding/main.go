@@ -10,7 +10,6 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"github.com/ecoball/go-ecoball/txpool"
 	"os"
-	"github.com/ecoball/go-ecoball/test/example"
 )
 
 func main() {
@@ -28,8 +27,6 @@ func main() {
 	actor, _ := sharding.NewShardingActor(L)
 
 	topo := actor.SubscribeShardingTopo()
-
-	go example.TransferExample()
 
 	go func() {
 		for {

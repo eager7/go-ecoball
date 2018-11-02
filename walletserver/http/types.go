@@ -40,3 +40,26 @@ type Wallets struct {
 type TransactionData struct {
 	Data []byte
 }
+
+type WalletNamePassword struct {
+	Name     string
+	Password string
+}
+
+type WalletName struct {
+	Name string
+}
+
+type WalletImportKey struct {
+	Name   string
+	PriKey OneKey
+}
+
+type WalletRemoveKey struct {
+	NamePassword WalletNamePassword
+	PubKey       OneKey
+}
+
+type WalletTimeout struct {
+	Interval int64
+}

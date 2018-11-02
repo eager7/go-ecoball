@@ -39,7 +39,6 @@ func MakeCell(l ledger.Ledger) *Cell {
 		minorBlockPool: makeMinorBlockSet(),
 		Ledger:         l,
 		Topoc:          make(chan interface{}),
-
 	}
 }
 
@@ -410,5 +409,3 @@ func (c *Cell) saveShardsInfoFromCMBlock(cmb *cs.CMBlock) {
 func (c *Cell) getShardHeight(shardid uint32) uint64 {
 	return c.chain.getShardHeight(shardid)
 }
-
-

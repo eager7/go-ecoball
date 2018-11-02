@@ -74,7 +74,7 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 			{blockSync, ActStateTimeout, nil, s.processBlockSyncTimeout, nil, sc.StateNil},
 
 			{waitBlock, ActProductMinorBlock, nil, s.productMinorBlock, nil, productMinoBlock},
-			{waitBlock, ActChainNotSync, nil, nil, nil, blockSync},
+			{waitBlock, ActChainNotSync, nil, s.doBlockSync, nil, blockSync},
 			{waitBlock, ActRecvShardingPacket, nil, s.processShardingPacket, nil, sc.StateNil},
 
 			{productMinoBlock, ActRecvConsensusPacket, nil, s.processConsensusMinorPacket, nil, sc.StateNil},
@@ -82,6 +82,7 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 			{productMinoBlock, ActProductMinorBlock, nil, s.reproductMinorBlock, nil, sc.StateNil},
 			{productMinoBlock, ActRecvShardingPacket, nil, s.processShardingPacket, nil, sc.StateNil},
 			{productMinoBlock, ActLedgerBlockMsg, nil, s.processLedgerMinorBlockMsg, nil, sc.StateNil},
+			{productMinoBlock, ActChainNotSync, nil, s.doBlockSync, nil, blockSync},
 		})
 
 	net.MakeNet(ns)

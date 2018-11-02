@@ -53,8 +53,6 @@ func (b *minorBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 	return true
 }
 
-
-
 func (b *minorBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
 	csp := &sc.NetPacket{PacketType: pb.MsgType_APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_MINOR_BLOCK, Step: step}
 
@@ -201,9 +199,15 @@ func (s *shard) checkMinorPacket(p interface{}) bool {
 
 	minor := csp.Packet.(*cs.MinorBlock)
 	last := s.ns.GetLastMinorBlock()
-	if last != nil && minor.Height <= last.Height {
-		log.Error("old minor block, drop it")
-		return false
+	if last != nil {
+		if minor.Height <= last.Height {
+			log.Error("old minor block, drop it")
+			return false
+		} else if minor.Height > last.Height+1 {
+			log.Debug("last ", last.Height, "recv ", minor.Height, " need sync")
+			s.fsm.Execute(ActChainNotSync, nil)
+			return false
+		}
 	}
 
 	return true

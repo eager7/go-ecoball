@@ -56,9 +56,9 @@ type pullMediator struct {
 }
 
 func NewPullMediator(ctx context.Context, cfg PullConfig, receiver Receiver) Mediator {
-	inst := network.GetNetInstance()
-	if inst == nil {
-		log.Error("network used before initialization")
+	inst, err := network.GetNetInstance()
+	if err != nil {
+		log.Error(err)
 		return nil
 	}
 

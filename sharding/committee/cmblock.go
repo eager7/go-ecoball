@@ -229,9 +229,15 @@ func (c *committee) checkCmPacket(p interface{}) bool {
 
 	cm := csp.Packet.(*cs.CMBlock)
 	last := c.ns.GetLastCMBlock()
-	if last != nil && cm.Height <= last.Height {
-		log.Error("old cm block, drop it")
-		return false
+	if last != nil {
+		if cm.Height <= last.Height {
+			log.Error("old cm block, drop it")
+			return false
+		} else if cm.Height > last.Height+1 {
+			log.Debug("cm last ", last.Height, " recv ", cm.Height, " need sync")
+			c.fsm.Execute(ActChainNotSync, nil)
+			return false
+		}
 	}
 
 	return true

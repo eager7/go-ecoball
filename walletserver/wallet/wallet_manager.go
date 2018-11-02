@@ -164,7 +164,7 @@ func Open(name string, password []byte) error {
 	return nil
 }
 
-func ImportKey(name string, privateKey string) ([]byte, error) {
+func ImportKey(name string, privateKey []byte) ([]byte, error) {
 	checkTimeout()
 	wallet, ok := wallets[name]
 
@@ -176,10 +176,10 @@ func ImportKey(name string, privateKey string) ([]byte, error) {
 		return nil, errors.New("wallet is locked")
 	}
 
-	return wallet.ImportKey([]byte(privateKey))
+	return wallet.ImportKey(privateKey)
 }
 
-func RemoveKey(name string, password []byte, publickey string) error {
+func RemoveKey(name string, password []byte, publickey []byte) error {
 	checkTimeout()
 	wallet, ok := wallets[name]
 
@@ -195,7 +195,7 @@ func RemoveKey(name string, password []byte, publickey string) error {
 		return errors.New("wrong passwords!!")
 	}
 
-	return wallet.RemoveKey(password, []byte(publickey))
+	return wallet.RemoveKey(password, publickey)
 }
 
 func CreateKey(name string) ([]byte, []byte, error) {
