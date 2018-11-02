@@ -244,7 +244,7 @@ func (s *Sync)  RecvSyncResponsePacket(packet *sc.CsPacket){
 		simulate.SyncComplete()
 	} else {
 		log.Info("Data sync not complete")
-
+		s.SendSyncRequest()
 	}
 }
 
