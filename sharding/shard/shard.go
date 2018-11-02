@@ -104,6 +104,8 @@ func (s *shard) Start() {
 	s.pvc = recvc
 	go s.sRoutine()
 	s.pvcRoutine()
+
+	s.sync.SyncRequest(0, 0)
 }
 
 func (s *shard) sRoutine() {
