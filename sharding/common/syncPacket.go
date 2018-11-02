@@ -34,14 +34,13 @@ type SyncRequestPacket struct {
 	Worker *WorkerId
 }
 
-type SeriliableBlock interface {
-
-}
 
 type SyncResponsePacket struct {
 	Len uint
 	BlockType uint8
 	Blocks []cs.Payload
+	LastHeight uint64
+	Compelte bool
 }
 
 
@@ -50,6 +49,8 @@ type SyncResponseData struct {
 	BlockType uint8
 	Len uint
 	Data [][]byte
+	LastHeight uint64
+	Compelte bool
 }
 
 
@@ -72,8 +73,15 @@ func (p *SyncResponsePacket)Encode(blockType uint8) *SyncResponseData {
 		p.BlockType,
 		p.Len,
 		data,
+		p.LastHeight,
+		p.Compelte,
 	}
 	return syncData
+}
+
+type DataSync interface {
+
+	SendSyncRequest()
 }
 
 

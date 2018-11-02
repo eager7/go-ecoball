@@ -423,6 +423,7 @@ func (s *Cell) SyncResponseDecode(syncData *sc.SyncResponseData) (*sc.SyncRespon
 	blockType := syncData.BlockType
 	len := syncData.Len
 	data := syncData.Data
+	lastHeight := syncData.LastHeight
 
 	fmt.Println("len = ", len)
 	fmt.Println("data = ", data)
@@ -440,6 +441,8 @@ func (s *Cell) SyncResponseDecode(syncData *sc.SyncResponseData) (*sc.SyncRespon
 		uint(len),
 		blockType,
 		list,
+		lastHeight,
+		syncData.Compelte,
 	}
 
 	return csp
@@ -458,23 +461,30 @@ func (s *Cell) DealSyncRequestHelper(request *sc.SyncRequestPacket) (*sc.NetPack
 	to := request.ToHeight
 	blockType := cs.HeaderType(request.BlockType)
 
+	var response sc.SyncResponsePacket
+
 	fmt.Println("from = ", from)
+	lastBlock, err := s.Ledger.GetLastShardBlock(config.ChainHash, blockType)
+	if err != nil {
+		log.Error("GetLastShardBlock error", err)
+		return nil
+	}
+	response.LastHeight = uint64(to)
 	if to < 0 {
-		lastBlock, err := s.Ledger.GetLastShardBlock(config.ChainHash, blockType)
-		if err != nil {
-			log.Error("GetLastShardBlock error", err)
-			return nil
-		}
 		to = int64(lastBlock.GetHeight())
 	}
 	if to > from + 10 {
 		to = from + 10
+		response.Compelte = false
+	} else {
+		response.Compelte = true
 	}
+
 
 
 	fmt.Println("to = ", to)
 
-	var response sc.SyncResponsePacket
+
 	for i := from; i <= to; i++ {
 		blockInterface, err := s.Ledger.GetShardBlockByHeight(config.ChainHash, blockType, uint64(i))
 		if err == nil {
@@ -518,6 +528,12 @@ func (s *Cell)  RecvSyncResponsePacket(packet *sc.CsPacket){
 
 	p := s.SyncResponseDecode(&data)
 	s.dealSyncResponse(p)
+	if p.Compelte {
+		simulate.SyncComplete()
+	} else {
+		log.Info("Data sync not complete")
+
+	}
 }
 
 func (s *Cell) DealSyncRequestHelperTest(request *sc.SyncRequestPacket) (*sc.NetPacket)  {

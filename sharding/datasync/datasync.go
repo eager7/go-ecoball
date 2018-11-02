@@ -7,16 +7,14 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/net"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	"github.com/ecoball/go-ecoball/net/message/pb"
+	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var (
 	log = elog.NewLogger("sync", elog.DebugLog)
 )
 
-type DataSync interface {
-
-	SendSyncRequest(fromHeight int64)
-}
 
 
 type Sync struct {
@@ -51,8 +49,26 @@ func MakeSyncRequestPacket(blockType int8, fromHeight int64, to int64, worker *s
 	return csp
 }
 
+//Request order is important
+func (sync *Sync)SendSyncRequest()  {
+	sync.SendSyncRequestWithType(shard.HeCmBlock)
+	sync.SendSyncRequestWithType(shard.HeViewChange)
+	sync.SendSyncRequestWithType(shard.HeFinalBlock)
+	sync.SendSyncRequestWithType(shard.HeMinorBlock)
+}
 
-func (sync *Sync)SendSyncRequest(blockType int8, fromHeight int64)  {
+func (sync *Sync)SendSyncRequestWithType(blockType shard.HeaderType) {
+	lastBlock, err := sync.cell.Ledger.GetLastShardBlock(config.ChainHash, shard.HeCmBlock)
+	if err != nil {
+		log.Error("get last block faield", err)
+		return
+	}
+	height := lastBlock.GetHeight() + 1
+	sync.SendSyncRequestWithHeightType(int8(blockType), int64(height))
+}
+
+
+func (sync *Sync)SendSyncRequestWithHeightType(blockType int8, fromHeight int64)  {
 	worker := &sc.WorkerId{
 		sync.cell.Self.Pubkey,
 		sync.cell.Self.Address,
