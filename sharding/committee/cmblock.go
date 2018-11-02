@@ -5,7 +5,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -65,7 +65,7 @@ func (b *cmBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 }
 
 func (b *cmBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
-	csp := &sc.NetPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_CM_BLOCK, Step: step}
+	csp := &sc.NetPacket{PacketType: pb.MsgType_APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_CM_BLOCK, Step: step}
 
 	data, err := b.bk.Serialize()
 	if err != nil {

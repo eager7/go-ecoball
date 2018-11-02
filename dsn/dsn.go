@@ -1,6 +1,6 @@
 package dsn
 
-import (
+/*import (
 	"github.com/ecoball/go-ecoball/dsn/host"
 	"github.com/ecoball/go-ecoball/dsn/settlement"
 	"context"
@@ -45,8 +45,8 @@ func StartDsn(ctx context.Context, l ledger.Ledger) error {
 	if err != nil {
 		return err
 	}*/
-	//TODO conf should be user's config
-	conf := InitDefaultConf()
+//TODO conf should be user's config
+/*conf := InitDefaultConf()
 	h := host.NewStorageHost(ctx, l, ha, conf.hConf)
 	h.Start()
 
@@ -81,4 +81,4 @@ func HandleFileContract(para string, st state.InterfaceState)  {
 	log.Debug("Handle file contract...")
 	data := []byte(para)
 	dsn.s.HandleFileContract(data, st)
-}
+}*/

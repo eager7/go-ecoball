@@ -4,7 +4,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/message"
 	cs "github.com/ecoball/go-ecoball/core/shard"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
@@ -156,9 +156,9 @@ func (s *shard) setRetransTimer(bStart bool, d time.Duration) {
 
 func (s *shard) processPacket(packet *sc.CsPacket) {
 	switch packet.PacketType {
-	case netmsg.APP_MSG_CONSENSUS_PACKET:
+	case pb.MsgType_APP_MSG_CONSENSUS_PACKET:
 		s.recvConsensusPacket(packet)
-	case netmsg.APP_MSG_SHARDING_PACKET:
+	case pb.MsgType_APP_MSG_SHARDING_PACKET:
 		s.recvShardingPacket(packet)
 	default:
 		log.Error("wrong packet")

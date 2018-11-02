@@ -214,7 +214,7 @@ func runNode(c *cli.Context) error {
 		return nil
 	})*/
 
-	dsn.StartDsn(ctx, ledger.L)
+	//dsn.StartDsn(ctx, ledger.L)
 
 	//start blockchain browser
 	ecoballGroup.Go(func() error {

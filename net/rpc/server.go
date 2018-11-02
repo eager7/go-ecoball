@@ -15,13 +15,13 @@
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 package rpc
 
-import (
+/*import (
 	"time"
 	//"net/http"
 	//erpc "github.com/ecoball/go-ecoball/http/rpc"
 	"github.com/ecoball/go-ecoball/common/elog"
 	eactor "github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/http/common"
+	//"github.com/ecoball/go-ecoball/http/common"
 )
 
 var log = elog.NewLogger("NetRpc", elog.DebugLog)
@@ -91,4 +91,4 @@ func CliServerListMyPeers(params []interface{}) *common.Response {
 	}
 	log.Debug(peers)
 	return common.NewResponse(common.SUCCESS, peers)
-}
+}*/

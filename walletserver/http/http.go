@@ -21,7 +21,6 @@ import (
 	"strconv"
 	"strings"
 
-	inner "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/walletserver/wallet"
 	"github.com/gin-gonic/gin"
@@ -71,7 +70,8 @@ func createKey(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"result": "publickey:" + inner.ToHex(pub) + "\n" + "privatekey:" + inner.ToHex(pri)})
+	info := KeyPair{PrivateKey: pri, PublicKey: pub}
+	c.JSON(http.StatusOK, info)
 }
 
 func openWallet(c *gin.Context) {
@@ -111,7 +111,8 @@ func importKey(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"result": "publickey:" + inner.ToHex(publickey)})
+	publicKey := OneKey{publickey}
+	c.JSON(http.StatusOK, publicKey)
 }
 
 func removeKey(c *gin.Context) {
@@ -134,14 +135,14 @@ func listKey(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	var key_str string
-	for k, v := range accounts {
-		key_str += "publickey:" + k + "\n" + "privatekey:" + v
-		key_str += "\n"
-	}
-	key_str = strings.TrimSuffix(key_str, "\n")
-	c.JSON(http.StatusOK, gin.H{"result": key_str})
 
+	var pairs = KeyPairs{Pairs: []KeyPair{}}
+	for k, v := range accounts {
+		onePair := KeyPair{PublicKey: []byte(k), PrivateKey: []byte(v)}
+		pairs.Pairs = append(pairs.Pairs, onePair)
+	}
+
+	c.JSON(http.StatusOK, pairs)
 }
 
 func listWallets(c *gin.Context) {
@@ -150,13 +151,10 @@ func listWallets(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	var walletsList string
-	for _, k := range wallets {
-		walletsList += k
-		walletsList += "\n"
-	}
-	walletsList = strings.TrimSuffix(walletsList, "\n")
-	c.JSON(http.StatusOK, gin.H{"result": walletsList})
+
+	wallet := Wallets{wallets}
+
+	c.JSON(http.StatusOK, wallet)
 }
 
 func getPublicKeys(c *gin.Context) {
@@ -171,25 +169,26 @@ func getPublicKeys(c *gin.Context) {
 		return
 	}
 
-	var publickeys string
+	publicKeys := Keys{KeyList: []OneKey{}}
 	for _, k := range data {
-		publickeys += k
-		publickeys += ","
+		publicKeys.KeyList = append(publicKeys.KeyList, OneKey{[]byte(k)})
 	}
-	publickeys = strings.TrimSuffix(publickeys, ",")
-	c.JSON(http.StatusOK, gin.H{"result": publickeys})
+
+	c.JSON(http.StatusOK, publicKeys)
 }
 
 func signTransaction(c *gin.Context) {
 	keys := c.PostForm("keys")
 	data := c.PostForm("transaction")
 	key := strings.Split(keys, "\n")
-	signData, err := wallet.SignTransaction(inner.FromHex(data), key)
+	signData, err := wallet.SignTransaction([]byte(data), key)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"result": inner.ToHex(signData)})
+	resultData := TransactionData{signData}
+
+	c.JSON(http.StatusOK, resultData)
 }
 
 func setTimeout(c *gin.Context) {

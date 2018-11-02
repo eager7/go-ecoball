@@ -9,21 +9,29 @@ import (
 	"fmt"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
+	"github.com/ecoball/go-ecoball/test/net/gossippull"
 )
 
 var netInst network.EcoballNetwork
 
 func gossipMsgTest() {
 	fmt.Println("gossipMsgTest ...")
-	msg := message.New(message.APP_MSG_MAX, []byte{1,2,3,4,5,6,7,8,9})
+	msg := message.New(pb.MsgType_APP_MSG_UNDEFINED, []byte{1,2,3,4,5,6,7,8,9})
 	if err := netInst.GossipMsg(msg); err != nil {
 		fmt.Println(err)
 	}
 }
 
+func gossipPullTest(ctx context.Context) {
+	fmt.Println("gossipPullTest ...")
+
+	gossippull.StartBlockPuller(ctx)
+}
+
 func invalidMsgTest(p peer.ID) {
 	fmt.Println("invalidMsgTest ...")
-	msg := message.New(message.APP_MSG_MAX, []byte{1,2,3,4,5,6,7,8,9})
+	msg := message.New(pb.MsgType_APP_MSG_UNDEFINED, []byte{1,2,3,4,5,6,7,8,9})
 	netInst.SendMsgToPeerWithId(p, msg)
 }
 
@@ -53,13 +61,13 @@ func main() {
 	}
 	netInst.Host().Peerstore().AddAddr(id, addr, time.Second * 10)
 
-	fmt.Println("begin to send message ......")
+	//fmt.Println("begin to send message ......")
 	go func() {
 		for {
 			invalidMsgTest(id)
 			time.Sleep(time.Second * 1)
-			gossipMsgTest()
-			return
+			gossipPullTest(ctx)
+			break
 		}
 	}()
 

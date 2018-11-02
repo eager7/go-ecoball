@@ -25,55 +25,13 @@ import (
 	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
 )
 
-const (
-	APP_MSG_TRN uint32 = iota
-	APP_MSG_BLK
-	APP_MSG_SIGNPRE
-	APP_MSG_BLKF
-	APP_MSG_SIGNBLKF
-	APP_MSG_BLKS
-	APP_MSG_REQSYN
-	APP_MSG_REQSYNSOLO
-	APP_MSG_BLKSYN
-	APP_MSG_TIMEOUT
-
-	APP_MSG_SHARDING_PACKET
-	APP_MSG_CONSENSUS_PACKET
-
-	APP_MSG_GOSSIP
-	APP_MSG_P2PRTSYN
-	APP_MSG_P2PRTSYNACK
-
-	APP_MSG_MAX
-
-	APP_MSG_DKGSIJ
-	APP_MSG_DKGNLQUAL
-	APP_MSG_DKGLQUAL
-)
-
-// Messages maps the name of a message to its type
-var Messages = map[string]uint32{
-	"block":               APP_MSG_BLKS,
-	"transaction":         APP_MSG_TRN,
-	"routingsync":         APP_MSG_P2PRTSYN,
-	"routingsyncack":      APP_MSG_P2PRTSYNACK,
-}
-
-// MessageToStr maps the numeric message type to its name
-var MessageToStr = map[uint32]string{
-	APP_MSG_BLKS:                "block",
-	APP_MSG_TRN:                 "transaction",
-	APP_MSG_P2PRTSYN:            "routingsync",
-	APP_MSG_P2PRTSYNACK:         "routingsyncack",
-}
-
 var log = elog.NewLogger("message", elog.DebugLog)
 
 type HandlerFunc func(data []byte) (err error)
 
 type EcoBallNetMsg interface {
 	ChainID() uint32
-	Type() uint32
+	Type() pb.MsgType
 	Nonce() uint64
 	Data() []byte
 	Exportable
@@ -86,16 +44,16 @@ type Exportable interface {
 
 type impl struct {
 	chainId uint32
-	msgType uint32
+	msgType pb.MsgType
 	nonce   uint64
 	data    []byte
 }
 
-func New(msgType uint32, data []byte) EcoBallNetMsg {
+func New(msgType pb.MsgType, data []byte) EcoBallNetMsg {
 	return newMsg(msgType, data)
 }
 
-func newMsg(msgType uint32, data []byte) *impl {
+func newMsg(msgType pb.MsgType, data []byte) *impl {
 	return &impl{
 		chainId: 1, //TODO
 		msgType: msgType,
@@ -118,7 +76,7 @@ func (m *impl) ChainID() uint32 {
 	return m.chainId
 }
 
-func (m *impl) Type() uint32 {
+func (m *impl) Type() pb.MsgType {
 	return m.msgType
 }
 

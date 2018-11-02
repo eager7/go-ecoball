@@ -31,6 +31,7 @@ import (
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/discovery"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 )
 
 const (
@@ -99,12 +100,16 @@ type NetImpl struct {
 	routingTable *NetRouteTable
 }
 
-func (net *NetImpl)GetPeerID() (peer.ID, error) {
+func (net *NetImpl) GetPeerID() (peer.ID, error) {
 	return net.host.ID(), nil
 }
 
 func (net *NetImpl) Host() host.Host {
 	return net.host
+}
+
+func (net *NetImpl) SelectRandomPeers(peerCount uint16) []peer.ID {
+	return net.getRandomPeers(int(peerCount), net.receiver.IsNotMyShard)
 }
 
 func (net *NetImpl) SetDelegate(r Receiver) {
@@ -179,7 +184,7 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 		p := s.Conn().RemotePeer()
 		ctx := context.Background()
 		net.routingTable.update(p)
-		if received.Type() == message.APP_MSG_GOSSIP {
+		if received.Type() == pb.MsgType_APP_MSG_GOSSIP {
 			net.preHandleGossipMsg(received, p)
 			msg, err := net.unwarpGossipMsg(received)
 			if err != nil {
@@ -298,6 +303,8 @@ func (net *NetImpl) Stop() {
 	net.host.Network().StopNotify((*netNotifiee)(net))
 
 	net.engine.Stop()
+
+	net.gossipStore.Stop()
 
 	net.quitsendJb <- true
 }

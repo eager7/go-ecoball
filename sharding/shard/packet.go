@@ -2,7 +2,7 @@ package shard
 
 import (
 	cs "github.com/ecoball/go-ecoball/core/shard"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/net"
@@ -11,9 +11,9 @@ import (
 
 func (s *shard) verifyPacket(p *sc.NetPacket) {
 	log.Debug("verify packet ", p.BlockType)
-	if p.PacketType == netmsg.APP_MSG_CONSENSUS_PACKET {
+	if p.PacketType == pb.MsgType_APP_MSG_CONSENSUS_PACKET {
 		s.verifyConsensusPacket(p)
-	} else if p.PacketType == netmsg.APP_MSG_SHARDING_PACKET {
+	} else if p.PacketType == pb.MsgType_APP_MSG_SHARDING_PACKET {
 		s.verifyShardingPacket(p)
 	} else {
 		log.Error("wrong packet type")
