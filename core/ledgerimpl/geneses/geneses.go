@@ -141,7 +141,7 @@ func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) e
 		return err
 	}
 
-	tester := common.NameToIndex("tester1")
+	tester := common.NameToIndex("tester")
 	addr = common.AddressFromPubKey(config.Worker1.PublicKey)
 	fmt.Println("preset insert a tester account:", addr.HexString())
 	if _, err := s.AddAccount(tester, addr, timeStamp); err != nil {

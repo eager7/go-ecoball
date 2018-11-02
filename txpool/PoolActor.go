@@ -30,6 +30,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/shard"
 )
 
+const magicNum = 999
 
 type PoolActor struct {
 	txPool *TxPool
@@ -109,12 +110,12 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		}
 		log.Info("the shard id is ", shardId)
 		if tx.Type == types.TxTransfer || tx.Addr == common.NameToIndex("root") {
-			if uint64(shardId) == uint64(tx.From)%uint64(numShard) + 1{
+			if uint64(shardId) == uint64(tx.From)%magicNum%uint64(numShard) + 1{
 				log.Info("put the tx ", tx.Hash.HexString(), "to txPool")
 				handle = true
 			}
 		} else {
-			if uint64(shardId) == uint64(tx.Addr)%uint64(numShard) + 1{
+			if uint64(shardId) == uint64(tx.Addr)%magicNum%uint64(numShard) + 1{
 				handle = true
 			}
 		}
