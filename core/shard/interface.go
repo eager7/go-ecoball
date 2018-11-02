@@ -69,6 +69,12 @@ func BlockDeserialize(data []byte, typ HeaderType) (BlockInterface, error) {
 			return nil, err
 		}
 		return block, nil
+	case HeViewChange:
+		block := new(ViewChangeBlock)
+		if err := block.Deserialize(data); err != nil {
+			return nil, err
+		}
+		return block, nil
 	default:
 		return nil, errors.New(log, "unknown header type")
 	}
