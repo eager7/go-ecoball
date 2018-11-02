@@ -13,8 +13,13 @@ func TestNewIndex(t *testing.T) {
 		fmt.Println(name, fmt.Sprintf("%d", name), "shard:", uint64(name)%999, uint64(name)%999%8+1)
 	}
 	name := common.NameToIndex("root")
-	fmt.Println(name, fmt.Sprintf("%d", name), "shard:", uint64(name)%999, uint64(name)%999%2+1)
-	name = common.NameToIndex("tester")
-	fmt.Println(name, fmt.Sprintf("%d", name), "shard:", uint64(name)%999, uint64(name)%999%2+1)
-
+	fmt.Println(name, fmt.Sprintf("%d", name), "shard:", uint64(name)%999, uint64(name)%999%5+1)
+	name = common.NameToIndex("testeru")
+	fmt.Println(name, fmt.Sprintf("%d", name), "shard:", uint64(name)%999, uint64(name)%999%5+1)
+	name = common.NameToIndex("testerh")
+	fmt.Println(name, fmt.Sprintf("%d", name), "shard:", uint64(name)%999, uint64(name)%999%5+1)
+	name = common.NameToIndex("testerl")
+	fmt.Println(name, fmt.Sprintf("%d", name), "shard:", uint64(name)%999, uint64(name)%999%5+1)
+	name = common.NameToIndex("testerp")
+	fmt.Println(name, fmt.Sprintf("%d", name), "shard:", uint64(name)%999, uint64(name)%999%5+1)
 }
