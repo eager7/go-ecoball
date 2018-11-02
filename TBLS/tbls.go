@@ -75,7 +75,11 @@ func (abaT *ABATBLS)StartTBLS(epochNum int, index int, workers []common.Worker) 
 	abaTBLS.validSignNum = 0
 
 	// get the network instance
-	abaTBLS.netObject = network.GetNetInstance()
+	abaTBLS.netObject,err = network.GetNetInstance()
+	if err != nil {
+		log.Error("get network error:", err)
+		return err
+	}
 	msg := []pb.MsgType{
 		pb.MsgType_APP_MSG_DKGSIJ,
 		pb.MsgType_APP_MSG_DKGNLQUAL,
