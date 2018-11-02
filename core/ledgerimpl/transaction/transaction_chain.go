@@ -831,6 +831,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		log.Error("Save geneses block error:", err)
 		return err
 	}
+	c.LastHeader.VCHeader = &blockVC.ViewChangeBlockHeader
 	return nil
 }
 
@@ -1046,7 +1047,7 @@ func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface,
 	default:
 		return nil, errors.New(log, fmt.Sprintf("unknown block type:%d", typ))
 	}
-	return nil, nil
+	return nil, errors.New(log, "can't find the last block")
 }
 
 func (c *ChainTx) GetLastShardBlockById(shardId uint32) (shard.BlockInterface, error) {
