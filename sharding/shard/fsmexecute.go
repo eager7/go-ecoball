@@ -9,7 +9,7 @@ import (
 )
 
 func (c *shard) doBlockSync(msg interface{}) {
-	c.sync.SendSyncRequest()
+	c.setSyncRequest()
 	c.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 }
 
@@ -31,6 +31,8 @@ func (s *shard) processBlockSyncTimeout(msg interface{}) {
 }
 
 func (s *shard) processSyncComplete() {
+	log.Debug("recv sync complete")
+
 	lastCmBlock, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 	if err != nil || lastCmBlock == nil {
 		panic("get cm block error ")
