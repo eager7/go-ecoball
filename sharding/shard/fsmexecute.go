@@ -9,7 +9,7 @@ import (
 )
 
 func (c *shard) doBlockSync(msg interface{}) {
-	c.sync.SyncRequest(0, 0)
+	c.sync.SendSyncRequest()
 	c.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 }
 
