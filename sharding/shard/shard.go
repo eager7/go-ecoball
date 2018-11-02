@@ -170,10 +170,10 @@ func (s *shard) processPacket(packet *sc.CsPacket) {
 	case pb.MsgType_APP_MSG_SHARDING_PACKET:
 		s.recvShardingPacket(packet)
 	case pb.MsgType_APP_MSG_SYNC_REQUEST:
-		csp, worker := s.ns.RecvSyncRequestPacket(packet)
+		csp, worker := s.sync.RecvSyncRequestPacket(packet)
 		net.Np.SendSyncResponse(csp, worker)
 	case pb.MsgType_APP_MSG_SYNC_RESPONSE:
-		s.ns.RecvSyncResponsePacket(packet)
+		s.sync.RecvSyncResponsePacket(packet)
 
 	default:
 		log.Error("wrong packet")

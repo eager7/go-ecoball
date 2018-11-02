@@ -19,6 +19,7 @@ func TestSync_SendSyncRequest(t *testing.T) {
 	requestPacket := MakeSyncRequestPacket(1, 10, -1,  worker)
 	fmt.Println("Second")
 	cell := &cell.Cell{}
+	sync := MakeSync(cell)
 	csp := cell.VerifySyncRequestPacket(requestPacket)
 	fmt.Println("Third")
 
@@ -28,7 +29,7 @@ func TestSync_SendSyncRequest(t *testing.T) {
 	requestPacket1 := csp.Packet.(*sc.SyncRequestPacket)
 	fmt.Println(requestPacket1.Worker, requestPacket1.ToHeight, requestPacket1.FromHeight)
 	fmt.Println("5th")
-	responseNetPacket := cell.DealSyncRequestHelperTest(requestPacket1)
+	responseNetPacket := sync.DealSyncRequestHelperTest(requestPacket1)
 	fmt.Println("6th")
 
 	responseCsp := cell.VerifySyncResponsePacket(responseNetPacket)
@@ -37,7 +38,7 @@ func TestSync_SendSyncRequest(t *testing.T) {
 	fmt.Println("8th")
 
 	fmt.Println("SyncResponseData = ", data)
-	responsePacket := cell.SyncResponseDecode(data)
+	responsePacket := sync.SyncResponseDecode(data)
 	blocks := responsePacket.Blocks
 	for _, payload := range blocks {
 		block := payload.(*sh.MinorBlock)
