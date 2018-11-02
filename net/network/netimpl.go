@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
 	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
@@ -31,7 +32,6 @@ import (
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/discovery"
-	"github.com/ecoball/go-ecoball/net/message/pb"
 )
 
 const (
@@ -74,8 +74,11 @@ func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
 	return netImpl
 }
 
-func GetNetInstance() EcoballNetwork {
-	return netImpl
+func GetNetInstance() (EcoballNetwork, error) {
+	if netImpl == nil {
+		return nil, fmt.Errorf("network has not been initialized")
+	}
+	return netImpl, nil
 }
 
 // impl transforms the network interface, which sends and receives
