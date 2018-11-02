@@ -169,6 +169,7 @@ func (ws *WasmService) Execute() ([]byte, error) {
 	res, err := vm.ExecCode(index, args...)
 	if err != nil {
 		log.Error("err=%v", err)
+		return nil, err
 	}
 	switch fType.ReturnTypes[0] {
 	case wasm.ValueTypeI32:

@@ -23,7 +23,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"strings"
 
 	"github.com/ecoball/go-ecoball/client/common"
 )
@@ -37,12 +36,14 @@ func newRequest(method, resource, address string, body io.Reader) (req *http.Req
 }
 
 //post raw data
-func postRawResponse(resource, address, data string) ([]byte, error) {
-	req, err := newRequest("POST", resource, address, strings.NewReader(data))
+func postRawResponse(resource, address string, data interface{}) ([]byte, error) {
+	s, _ := json.Marshal(data)
+	b := bytes.NewBuffer(s)
+	req, err := newRequest("POST", resource, address, b)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", "application/json")
 	res, err := http.DefaultClient.Do(req)
 	if nil != err {
 		return nil, err
@@ -68,7 +69,7 @@ func postRawResponse(resource, address, data string) ([]byte, error) {
 }
 
 //post method
-func post(resource, address, data string, obj interface{}) error {
+func post(resource, address string, data, obj interface{}) error {
 	body, err := postRawResponse(resource, address, data)
 	if nil != err {
 		return err
@@ -133,11 +134,11 @@ func get(resource, address string, obj interface{}) error {
 }
 
 //post
-func NodePost(resource, data string, obj interface{}) error {
+func NodePost(resource string, data, obj interface{}) error {
 	return post(resource, common.RpcAddress(), data, obj)
 }
 
-func WalletPost(resource, data string, obj interface{}) error {
+func WalletPost(resource string, data, obj interface{}) error {
 	return post(resource, common.WalletRpcAddress(), data, obj)
 }
 
