@@ -1082,7 +1082,6 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		}
 	}
 
-
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, err
@@ -1093,9 +1092,10 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	for i := 0; i < len(txs); i++ {
 		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
 		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
+			log.Error("handle transaction error:", err.Error())
 			log.Warn(txs[i].JsonString())
-			//c.ResetStateDB(c.CurrentHeader)
-			return nil, err
+			continue
+			//return nil, err
 		} else {
 			hashes = append(hashes, txs[i].Hash)
 			cpu += cp
