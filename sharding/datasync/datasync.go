@@ -19,9 +19,13 @@ type DataSync interface {
 }
 
 
-type sync struct {
+type Sync struct {
 	syncType int
 	cell *cell.Cell
+}
+
+func MakeSync(c *cell.Cell) *Sync {
+	return &Sync{cell: c}
 }
 
 func MakeSyncRequestPacket(blockType int8, fromHeight int64, to int64, worker *sc.WorkerId) (*sc.NetPacket) {
@@ -48,7 +52,7 @@ func MakeSyncRequestPacket(blockType int8, fromHeight int64, to int64, worker *s
 }
 
 
-func (sync *sync)SendSyncRequest(blockType int8, fromHeight int64)  {
+func (sync *Sync)SendSyncRequest(blockType int8, fromHeight int64)  {
 	worker := &sc.WorkerId{
 		sync.cell.Self.Pubkey,
 		sync.cell.Self.Address,
@@ -59,7 +63,7 @@ func (sync *sync)SendSyncRequest(blockType int8, fromHeight int64)  {
 	net.Np.SendSyncMessage(csp)
 }
 
-func (sync *sync)SendSyncRequestTo(blockType int8, fromHeight int64, toHeight int64)  {
+func (sync *Sync)SendSyncRequestTo(blockType int8, fromHeight int64, toHeight int64)  {
 	worker := &sc.WorkerId{
 		sync.cell.Self.Pubkey,
 		sync.cell.Self.Address,
@@ -75,7 +79,7 @@ func (sync *sync)SendSyncRequestTo(blockType int8, fromHeight int64, toHeight in
 }*/
 
 //TODO, now only treat shardInternal and commiteeInternal
-func (sync *sync)processShardInternalSync(packet *sc.SyncPacket)  {
+func (sync *Sync)processShardInternalSync(packet *sc.SyncPacket)  {
 	switch packet.MessageType {
 	case sc.SyncRequest:
 		//TODO,response with block data
@@ -84,7 +88,7 @@ func (sync *sync)processShardInternalSync(packet *sc.SyncPacket)  {
 	}
 }
 
-func (sync *sync)processSyncPacket(packet *sc.SyncPacket) {
+func (sync *Sync)processSyncPacket(packet *sc.SyncPacket) {
 
 	switch packet.SyncType {
 	case sc.ShardInternal:
