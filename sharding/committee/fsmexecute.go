@@ -24,6 +24,8 @@ func (c *committee) recvShardPacket(packet *sc.CsPacket) {
 }
 
 func (c *committee) processSyncComplete(msg interface{}) {
+	log.Debug("recv sync complete")
+
 	lastCmBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 	if err != nil || lastCmBlock == nil {
 		panic("get cm block error ")
@@ -85,7 +87,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 }
 
 func (c *committee) doBlockSync(msg interface{}) {
-	c.sync.SyncRequest(0, 0)
+	c.setSyncRequest()
 	c.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 }
 

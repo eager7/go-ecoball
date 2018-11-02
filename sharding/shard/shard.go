@@ -98,6 +98,8 @@ func (s *shard) Start() {
 	s.pvc = recvc
 	go s.sRoutine()
 	s.pvcRoutine()
+
+	s.setSyncRequest()
 }
 
 func (s *shard) sRoutine() {
@@ -181,4 +183,9 @@ func (s *shard) setFullVoeTimer(bStart bool) {
 	} else {
 		s.fullVoteTimer.Stop()
 	}
+}
+
+func (s *shard) setSyncRequest() {
+	log.Debug("set sync request ")
+	s.sync.SyncRequest(0, 0)
 }

@@ -29,6 +29,8 @@ func main() {
 
 	topo := actor.SubscribeShardingTopo()
 
+	go simulate.SyncComplete()
+
 	go example.TransferExample()
 
 	go func() {

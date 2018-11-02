@@ -1,6 +1,9 @@
 package datasync
 
-import "github.com/ecoball/go-ecoball/sharding/cell"
+import (
+	"github.com/ecoball/go-ecoball/sharding/cell"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
+)
 
 type Sync struct {
 	syncType int
@@ -12,5 +15,5 @@ func MakeSync(c *cell.Cell) *Sync {
 }
 
 func (sync *Sync) SyncRequest(blockType int8, fromHeight int64) {
-
+	simulate.SyncComplete()
 }

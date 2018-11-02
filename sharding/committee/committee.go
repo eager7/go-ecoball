@@ -119,7 +119,7 @@ func (c *committee) Start() {
 	go c.cmRoutine()
 	c.pvcRoutine()
 
-	c.sync.SyncRequest(0, 0)
+	c.setSyncRequest()
 }
 
 func (c *committee) cmRoutine() {
@@ -193,4 +193,8 @@ func (c *committee) setFullVoeTimer(bStart bool) {
 	} else {
 		c.fullVoteTimer.Stop()
 	}
+}
+
+func (c *committee) setSyncRequest() {
+	log.Debug("set sync request ")
 }
