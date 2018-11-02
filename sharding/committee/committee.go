@@ -119,7 +119,7 @@ func (c *committee) Start() {
 	go c.cmRoutine()
 	c.pvcRoutine()
 
-	c.sync.SyncRequest(0, 0)
+	c.sync.SendSyncRequest()
 }
 
 func (c *committee) cmRoutine() {
