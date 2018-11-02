@@ -19,9 +19,9 @@ type PriPoly struct{
 }
 
 type PubPoly struct{
-	index   int
-	viewNum int
-	coEffs  []*bn256.G2
+	index    int
+	epochNum int
+	coEffs   []*bn256.G2
 }
 
 type SijShareDKG struct{
@@ -88,7 +88,8 @@ func SijVerify(sij *SijShareDKG,pubShare *PubPoly, indexJ int, epochNow int, ind
 	bignum2 := new(big.Int)
 	bignum3 := new(big.Int)
 
-	g1 := pubShare.coEffs[0]
+	// g1 := pubShare.coEffs[0]
+	g1 := new(bn256.G2).ScalarMult(pubShare.coEffs[0], new(big.Int).SetInt64(1))
 	g2 := new(bn256.G2).ScalarBaseMult(&sij.Sij)
 
 	for i := 1; i < len(pubShare.coEffs); i++{
@@ -105,7 +106,6 @@ func SijVerify(sij *SijShareDKG,pubShare *PubPoly, indexJ int, epochNow int, ind
 	fmt.Println(byte1)
 	fmt.Println(byte2)
 	result := bytes.Compare(byte1, byte2)
-
 
 	if result == 0 && sij.epochNum == epochNow{
 		fmt.Println("compare pass")
