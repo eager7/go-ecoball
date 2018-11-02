@@ -14,57 +14,34 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package http
+package rpc
 
-type KeyPair struct {
-	PrivateKey []byte
-	PublicKey  []byte
+import (
+	innerCommon "github.com/ecoball/go-ecoball/common"
+)
+
+type AccountName struct {
+	Name      string
+	ChainHash innerCommon.Hash
 }
 
-type KeyPairs struct {
-	Pairs []KeyPair
+type TokenName struct {
+	Name      string
+	ChainHash innerCommon.Hash
 }
 
-type OneKey struct {
-	Key []byte
+type BlockHeight struct {
+	Height    uint64
+	ChainHash innerCommon.Hash
 }
 
-type Keys struct {
-	KeyList []OneKey
+type TransactionHash struct {
+	Hash      innerCommon.Hash
+	ChainHash innerCommon.Hash
 }
 
-type Wallets struct {
-	NameList []string
-}
-
-type TransactionData struct {
-	Data []byte
-}
-
-type RawTransactionData struct {
-	PublicKeys     Keys
-	RawTransaction TransactionData
-}
-
-type WalletNamePassword struct {
-	Name     string
-	Password string
-}
-
-type WalletName struct {
-	Name string
-}
-
-type WalletImportKey struct {
-	Name   string
-	PriKey OneKey
-}
-
-type WalletRemoveKey struct {
-	NamePassword WalletNamePassword
-	PubKey       OneKey
-}
-
-type WalletTimeout struct {
-	Interval int64
+type PermissionPublicKeys struct {
+	Name       string
+	Permission string
+	ChainHash  innerCommon.Hash
 }

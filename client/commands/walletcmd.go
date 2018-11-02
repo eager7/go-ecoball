@@ -17,17 +17,11 @@ package commands
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
-	//"strings"
 
-	//"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
-	outerCommon "github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/types"
 	walletHttp "github.com/ecoball/go-ecoball/walletserver/http"
 	"github.com/urfave/cli"
 )
@@ -251,55 +245,6 @@ func createWallet(c *cli.Context) error {
 	return err
 }
 
-func getPublicKeys() (string, error) {
-	var result walletHttp.Keys
-	err := rpc.WalletGet("/wallet/getPublicKeys", &result)
-	if nil == err {
-		data, err := json.Marshal(&result)
-		if nil != err {
-			return "", err
-		}
-		return string(data), nil
-	}
-	return "", err
-}
-
-/*func sign_transaction(chainId outerCommon.Hash, required_keys string, trx *types.Transaction) error {
-	data, err := trx.Serialize()
-	if err != nil {
-		return err
-	}
-	var result common.SimpleResult
-	values := url.Values{}
-	values.Set("keys", required_keys)
-	values.Set("transaction", outerCommon.ToHex(data))
-	err = rpc.WalletPost("/wallet/signTransaction", values.Encode(), &result)
-	if nil == err {
-		trx.Deserialize(outerCommon.FromHex(result.Result))
-	}
-	return err
-}*/
-
-func signTransaction(chainHash outerCommon.Hash, publickeys string, trx *types.Transaction) (string, error) {
-	data, err := trx.Serialize()
-	if err != nil {
-		return "", err
-	}
-	var result walletHttp.TransactionData
-	values := url.Values{}
-	values.Set("keys", publickeys)
-	values.Set("transaction", outerCommon.ToHex(data))
-	err = rpc.WalletPost("/wallet/signTransaction", values.Encode(), &result)
-	if nil == err {
-		data, err := json.Marshal(&result)
-		if nil != err {
-			return "", err
-		}
-		return string(data), nil
-	}
-	return "", err
-}
-
 func createKey(c *cli.Context) error {
 	//Check the number of flags
 	if c.NumFlags() == 0 {
@@ -317,8 +262,8 @@ func createKey(c *cli.Context) error {
 	requestData := walletHttp.WalletName{Name: name}
 	err := rpc.WalletPost("/wallet/createKey", &requestData, &result)
 	if nil == err {
-		fmt.Println("PrivateKey: ", hex.EncodeToString(result.PrivateKey))
-		fmt.Println("PublicKey: ", hex.EncodeToString(result.PublicKey))
+		fmt.Println("PrivateKey:", hex.EncodeToString(result.PrivateKey))
+		fmt.Println("PublicKey:", hex.EncodeToString(result.PublicKey))
 	}
 	return err
 }
@@ -426,12 +371,12 @@ func importKey(c *cli.Context) error {
 		return err
 	}
 
-	var result common.SimpleResult
+	var result walletHttp.OneKey
 	oneKey := walletHttp.OneKey{privateKey}
 	requestData := walletHttp.WalletImportKey{Name: name, PriKey: oneKey}
 	err = rpc.WalletPost("/wallet/importKey", &requestData, &result)
 	if nil == err {
-		fmt.Println(result.Result)
+		fmt.Println("PublicKey:", hex.EncodeToString(result.Key))
 	}
 	return err
 }
@@ -502,7 +447,7 @@ func listAccount(c *cli.Context) error {
 	err := rpc.WalletPost("/wallet/listKey", &requestData, &result)
 	if nil == err {
 		for _, v := range result.Pairs {
-			fmt.Println("PrivateKey: ", hex.EncodeToString(v.PrivateKey), "PublicKey: ", hex.EncodeToString(v.PublicKey))
+			fmt.Println("PrivateKey:", hex.EncodeToString(v.PrivateKey), "/tPublicKey:", hex.EncodeToString(v.PublicKey))
 		}
 	}
 	return err
@@ -512,7 +457,9 @@ func listWallets(c *cli.Context) error {
 	var result walletHttp.Wallets
 	err := rpc.WalletGet("/wallet/listWallets", &result)
 	if nil == err {
-		fmt.Println(result)
+		for _, oneWallet := range result.NameList {
+			fmt.Println(oneWallet)
+		}
 	}
 	return err
 }
@@ -537,4 +484,25 @@ func setTimeout(c *cli.Context) error {
 		fmt.Println(result.Result)
 	}
 	return err
+}
+
+//other wallet method
+func getPublicKeys() (walletHttp.Keys, error) {
+	var result walletHttp.Keys
+	err := rpc.WalletGet("/wallet/getPublicKeys", &result)
+	if nil == err {
+		return result, nil
+	}
+	return walletHttp.Keys{}, err
+}
+
+func signTransaction(publickeys walletHttp.Keys, rawData []byte) (walletHttp.TransactionData, error) {
+	var result walletHttp.TransactionData
+	oneTransaction := TransactionData{rawData}
+	requestData := RawTransactionData{PublicKeys: publickeys, RawTransaction: oneTransaction}
+	err = rpc.WalletPost("/wallet/signTransaction", &requestData, &result)
+	if nil == err {
+		return result, nil
+	}
+	return walletHttp.TransactionData{}, err
 }

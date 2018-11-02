@@ -17,11 +17,10 @@
 package commands
 
 import (
-	"encoding/json"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/urfave/cli"
@@ -95,13 +94,14 @@ func transferAction(c *cli.Context) error {
 
 	//chainHash
 	var chainHash inner.Hash
-	var err error
 	chainHashStr := c.String("chainHash")
 	if "" == chainHashStr {
 		chainHash, err = getMainChainHash()
 
 	} else {
-		err = json.Unmarshal([]byte(chainHashStr), &chainHash)
+		var hashTemp []byte
+		hashTemp, err = hex.DecodeString(chainHashStr)
+		copy(chainHash[:], hashTemp)
 	}
 
 	if nil != err {
@@ -109,6 +109,7 @@ func transferAction(c *cli.Context) error {
 		return err
 	}
 
+	//public keys
 	allPublickeys, err := getPublicKeys()
 	if err != nil {
 		fmt.Println(err)
@@ -131,25 +132,19 @@ func transferAction(c *cli.Context) error {
 		return err
 	}
 
-	publickeys := ""
-	keyDatas := strings.Split(allPublickeys, ",")
-	for _, v := range keyDatas {
-		addr := inner.AddressFromPubKey(inner.FromHex(v))
-		for _, vv := range requiredKeys {
-			if addr == vv {
-				publickeys += v
-				publickeys += "\n"
-				break
-			}
-		}
-	}
-
-	if "" == publickeys {
+	publickeys := clientCommon.IntersectionKeys(allPublickeys, requiredKeys)
+	if 0 == len(publickeys.KeyList) {
 		fmt.Println("no publickeys")
 		return errors.New("no publickeys")
 	}
 
-	data, errcode := signTransaction(chainHash, publickeys, transaction)
+	rawData, err := transaction.Serialize()
+	if nil != err {
+		fmt.Println(err)
+		return err
+	}
+
+	data, errcode := signTransaction(chainHash, publickeys, rawData)
 	if nil != errcode {
 		fmt.Println(errcode)
 		return errcode
