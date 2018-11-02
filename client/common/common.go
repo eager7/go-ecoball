@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"os"
 
+	innerCommon "github.com/ecoball/go-ecoball/common"
+	walletHttp "github.com/ecoball/go-ecoball/walletserver/http"
 	"github.com/urfave/cli"
 )
 
@@ -60,4 +62,19 @@ func DefaultAction(c *cli.Context) error {
 		fmt.Fprintln(os.Stderr, err)
 	}
 	return nil
+}
+
+//get real public key
+func IntersectionKeys(allKeys walletHttp.Keys, permission []innerCommon.Address) walletHttp.Keys {
+	result := walletHttp.Keys{KeyList: []OneKey{}}
+	for _, v := range allKeys.KeyList {
+		addr := innerCommon.AddressFromPubKey(v.Key)
+		for _, one := range permission {
+			if addr == one {
+				result.KeyList = append(result.KeyList, v)
+			}
+		}
+	}
+
+	return result
 }

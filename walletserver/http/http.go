@@ -18,7 +18,6 @@ package http
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/walletserver/wallet"
@@ -210,10 +209,18 @@ func getPublicKeys(c *gin.Context) {
 }
 
 func signTransaction(c *gin.Context) {
-	keys := c.PostForm("keys")
-	data := c.PostForm("transaction")
-	key := strings.Split(keys, "\n")
-	signData, err := wallet.SignTransaction([]byte(data), key)
+	var oneTransaction RawTransactionData
+	if err := c.BindJSON(&oneTransaction); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	publicKeys := []string{}
+	for _, v := range oneTransaction.PublicKeys.KeyList {
+		publicKeys = append(publicKeys, string(v.Key))
+	}
+
+	signData, err := wallet.SignTransaction(oneTransaction.RawTransaction.Data, publicKeys)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
