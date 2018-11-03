@@ -1307,7 +1307,7 @@ func Actor() *actor.PID {
 func TransferExample() {
 	time.Sleep(time.Second * 20)
 	root := common.NameToIndex("root")
-	/*worker := common.NameToIndex("testeru")
+	worker := common.NameToIndex("testeru")
 	worker1 := common.NameToIndex("testerh")
 	worker2 := common.NameToIndex("testerl")
 	worker3 := common.NameToIndex("testerp")
@@ -1346,7 +1346,7 @@ func TransferExample() {
 		transfer.SetSignature(&config.Delegate)
 		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
 		time.Sleep(time.Second * 1)
-	}*/
+	}
 	contract, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, types.VmNative, "system control test", nil, nil, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Root))
