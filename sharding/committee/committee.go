@@ -119,11 +119,13 @@ func (c *committee) Start() {
 	go c.cmRoutine()
 	c.pvcRoutine()
 
-	c.sync.SendSyncRequest()
+	c.setSyncRequest()
 }
 
 func (c *committee) cmRoutine() {
 	log.Debug("start committee routine")
+	c.ns.LoadLastBlock()
+
 	c.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 
 	for {
@@ -133,15 +135,18 @@ func (c *committee) cmRoutine() {
 		case packet := <-c.ppc:
 			c.processPacket(packet)
 		case <-c.stateTimer.T.C:
-			if c.stateTimer.On {
+			if c.stateTimer.GetStatus() {
+				c.stateTimer.SetStop()
 				c.processStateTimeout()
 			}
 		case <-c.retransTimer.T.C:
-			if c.retransTimer.On {
+			if c.retransTimer.GetStatus() {
+				c.retransTimer.SetStop()
 				c.processRetransTimeout()
 			}
 		case <-c.fullVoteTimer.T.C:
-			if c.fullVoteTimer.On {
+			if c.fullVoteTimer.GetStatus() {
+				c.fullVoteTimer.SetStop()
 				c.processFullVoteTimeout()
 			}
 		}
@@ -194,8 +199,17 @@ func (c *committee) setFullVoeTimer(bStart bool) {
 	log.Debug("set full vote timer ", bStart)
 
 	if bStart {
-		c.fullVoteTimer.Reset(sc.DefaultFullVoteTimer * time.Second)
+		//didn't restart vote timer if it is on, because we can receive duplicate response from peer
+		if !c.fullVoteTimer.GetStatus() {
+			log.Debug("reset full vote timer")
+			c.fullVoteTimer.Reset(sc.DefaultFullVoteTimer * time.Second)
+		}
 	} else {
 		c.fullVoteTimer.Stop()
 	}
+}
+
+func (c *committee) setSyncRequest() {
+	log.Debug("set sync request ")
+	c.sync.SyncRequest(0, 0)
 }

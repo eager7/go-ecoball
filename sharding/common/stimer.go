@@ -4,13 +4,13 @@ import "time"
 
 type Stimer struct {
 	T  *time.Timer
-	On bool
+	on bool
 }
 
 func NewStimer(d time.Duration, start bool) *Stimer {
 	s := &Stimer{
 		T:  time.NewTimer(d),
-		On: start,
+		on: start,
 	}
 
 	if !start {
@@ -20,8 +20,16 @@ func NewStimer(d time.Duration, start bool) *Stimer {
 	return s
 }
 
+func (s *Stimer) GetStatus() bool {
+	return s.on
+}
+
+func (s *Stimer) SetStop() {
+	s.on = false
+}
+
 func (s *Stimer) Stop() {
-	if !s.On {
+	if !s.on {
 		return
 	}
 
@@ -36,11 +44,11 @@ func (s *Stimer) Stop() {
 		log.Debug("timer stop success")
 	}
 
-	s.On = false
+	s.on = false
 }
 
 func (s *Stimer) Reset(d time.Duration) {
 	s.Stop()
 	s.T.Reset(d)
-	s.On = true
+	s.on = true
 }
