@@ -54,7 +54,7 @@ func postRawResponse(resource, address string, data interface{}) ([]byte, error)
 	}()
 
 	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, common.ReadAPIError(res.Body)
+		return nil, readAPIError(res.Body)
 	}
 
 	if res.StatusCode == http.StatusNotFound {
@@ -102,7 +102,7 @@ func getRawResponse(resource, address string) ([]byte, error) {
 	}()
 
 	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, common.ReadAPIError(res.Body)
+		return nil, readAPIError(res.Body)
 	}
 
 	if res.StatusCode == http.StatusNotFound {
