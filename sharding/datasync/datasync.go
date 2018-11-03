@@ -172,6 +172,8 @@ func (s *Sync) DealSyncRequestHelper(request *sc.SyncRequestPacket) (*sc.NetPack
 	from := request.FromHeight
 	to := request.ToHeight
 	blockType := cs.HeaderType(request.BlockType)
+	log.Debug("type = ", request.BlockType)
+	log.Debug("from = ", from, " to = ", to, " blockType = ", blockType)
 
 	var response sc.SyncResponsePacket
 
@@ -236,12 +238,13 @@ func (s *Sync)  RecvSyncRequestPacket(packet *sc.CsPacket) (*sc.NetPacket, *sc.W
 }
 
 func (s *Sync)  RecvSyncResponsePacket(packet *sc.CsPacket){
-	data := packet.Packet.(sc.SyncResponseData)
+	data := packet.Packet.(*sc.SyncResponseData)
 
-	p := s.SyncResponseDecode(&data)
+	p := s.SyncResponseDecode(data)
 	s.dealSyncResponse(p)
 	if p.Compelte {
 		simulate.SyncComplete()
+		log.Info("invoke SyncComplete")
 	} else {
 		log.Info("Data sync not complete")
 		s.SendSyncRequest()

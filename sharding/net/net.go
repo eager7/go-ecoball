@@ -139,11 +139,17 @@ func (n *net) SendSyncMessage(packet *sc.NetPacket){
 	}
 
 	rand.Seed(time.Now().UnixNano())
-	r := rand.Int31n(int32(len(works)-1))
+	log.Info("worker size = ", len(works))
+	var r int32
+	if (len(works) <= 1) {
+		r = 0
+	} else {
+		r = rand.Int31n(int32(len(works)-1))
+	}
 
 	var i int32 = 0
 	for _, work := range works {
-		if n.ns.Self.Equal(work) {
+		if n.ns.Self.Equal(work) && r != 0 {
 			continue
 		}
 		if i == r {
