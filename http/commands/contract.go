@@ -22,21 +22,18 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/gin-gonic/gin"
 
-	innerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
 )
 
 func InvokeContract(c *gin.Context) {
-	invoke := new(types.Transaction) //{
-	transaction_data := c.PostForm("transaction")
-
-	if err := invoke.Deserialize(innerCommon.FromHex(transaction_data)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+	var oneTransaction types.Transaction
+	if err := c.BindJSON(&oneTransaction); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
 	//send to txpool
-	err := event.Send(event.ActorNil, event.ActorTxPool, invoke)
+	err := event.Send(event.ActorNil, event.ActorTxPool, transfer)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

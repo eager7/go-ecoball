@@ -220,12 +220,11 @@ func signTransaction(c *gin.Context) {
 		publicKeys = append(publicKeys, string(v.Key))
 	}
 
-	signData, err := wallet.SignTransaction(oneTransaction.RawTransaction.Data, publicKeys)
+	resultData, err := wallet.SignTransaction(oneTransaction.RawData, publicKeys)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	resultData := TransactionData{signData}
 
 	c.JSON(http.StatusOK, resultData)
 }

@@ -64,9 +64,6 @@ func StartHttpServer() (err error) {
 	router.POST("/query/getContract", commands.GetContract)
 	router.POST("//query/storeGet", commands.StoreGet)
 
-	//transfer
-	router.POST("/transfer", commands.Transfer)
-
 	//contract
 	router.POST("/invokeContract", commands.InvokeContract)
 
