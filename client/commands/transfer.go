@@ -138,17 +138,14 @@ func transferAction(c *cli.Context) error {
 		return errors.New("no publickeys")
 	}
 
-	rawData, err := transaction.Serialize()
-	if nil != err {
-		fmt.Println(err)
-		return err
-	}
-
-	data, errcode := signTransaction(chainHash, publickeys, rawData)
+	//sign
+	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash)
 	if nil != errcode {
 		fmt.Println(errcode)
 		return errcode
 	}
+
+	//Data packaging
 
 	var result clientCommon.SimpleResult
 	values := url.Values{}
