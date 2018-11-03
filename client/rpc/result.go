@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
-package common
+package rpc
 
 import (
 	"encoding/json"
@@ -29,7 +29,7 @@ func (err Error) Error() string {
 	return err.Message
 }
 
-func ReadAPIError(r io.Reader) error {
+func readAPIError(r io.Reader) error {
 	var apiErr Error
 	if err := json.NewDecoder(r).Decode(&apiErr); err != nil {
 		return errors.New(err.Error() + " could not read error response")

@@ -35,7 +35,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/http/common/abi"
 	"github.com/urfave/cli"
-	//innerCommon "github.com/ecoball/go-ecoball/http/common"
 )
 
 var (
