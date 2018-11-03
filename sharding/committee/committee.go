@@ -124,6 +124,8 @@ func (c *committee) Start() {
 
 func (c *committee) cmRoutine() {
 	log.Debug("start committee routine")
+	c.ns.LoadLastBlock()
+
 	c.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 
 	for {
@@ -204,4 +206,5 @@ func (c *committee) setFullVoeTimer(bStart bool) {
 
 func (c *committee) setSyncRequest() {
 	log.Debug("set sync request ")
+	c.sync.SyncRequest(0, 0)
 }

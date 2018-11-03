@@ -45,12 +45,16 @@ func (c *chainData) getViewchangeBlock() *cs.ViewChangeBlock {
 
 func (c *chainData) saveMinorBlock(header *cs.MinorBlockHeader) {
 	if c.preMinorBlock == nil {
-		panic("pre minor block is nil")
-		return
+		log.Debug("pre minor block is not  exist")
+	} else {
+		if c.preMinorBlock.Hash() != header.Hash() ||
+			c.preMinorBlock.Height != header.Height {
+			log.Debug("pre block error")
+			return
+		}
+		c.minorBlock = c.preMinorBlock
+		c.preMinorBlock = nil
 	}
-
-	c.minorBlock = c.preMinorBlock
-	c.preMinorBlock = nil
 }
 
 func (c *chainData) setMinorBlock(minor *cs.MinorBlock) {
