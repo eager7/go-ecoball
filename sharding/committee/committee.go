@@ -189,7 +189,10 @@ func (c *committee) setFullVoeTimer(bStart bool) {
 	log.Debug("set full vote timer ", bStart)
 
 	if bStart {
-		c.fullVoteTimer.Reset(sc.DefaultFullVoteTimer * time.Second)
+		//didn't restart vote timer if it is on, because we can receive duplicate response from peer
+		if !c.fullVoteTimer.On {
+			c.fullVoteTimer.Reset(sc.DefaultFullVoteTimer * time.Second)
+		}
 	} else {
 		c.fullVoteTimer.Stop()
 	}
