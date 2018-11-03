@@ -24,8 +24,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	walletHttp "github.com/ecoball/go-ecoball/walletserver/http"
 )
 
 /*var (
@@ -61,6 +59,15 @@ type WalletApi interface {
 	Dir       string
 	FileExten string
 }*/
+
+type OneSign struct {
+	PublicKey []byte
+	SignData  []byte
+}
+
+type Sign struct {
+	Signature []OneSign
+}
 
 const INVALID_TIME int64 = -1
 
@@ -321,15 +328,15 @@ func ListWallets() ([]string, error) {
 	return keys, nil
 }
 
-func SignTransaction(transaction []byte, publicKeys []string) (walletHttp.SignTransaction, error) {
+func SignTransaction(transaction []byte, publicKeys []string) (Sign, error) {
 	checkTimeout()
-	var result = walletHttp.SignTransaction{Signature: []walletHttp.OneSignTransaction{}}
+	var result = Sign{Signature: []OneSign{}}
 	for _, publicKey := range publicKeys {
 		bFound := false
 		for _, wallet := range wallets {
 			if !wallet.CheckLocked() {
 				if signData, bHave := wallet.TrySignDigest(transaction, publicKey); bHave {
-					oneSignature := walletHttp.OneSignTransaction{PublicKey: walletHttp.OneKey{[]byte(publicKey)}, SignData: signData}
+					oneSignature := OneSign{PublicKey: []byte(publicKey), SignData: signData}
 					result.Signature = append(result.Signature, oneSignature)
 					if !bFound {
 						bFound = true
@@ -340,7 +347,7 @@ func SignTransaction(transaction []byte, publicKeys []string) (walletHttp.SignTr
 		}
 
 		if !bFound {
-			return nil, errors.New("Public key not found in unlocked wallets: " + string(publicKey))
+			return Sign{}, errors.New("Public key not found in unlocked wallets: " + string(publicKey))
 		}
 	}
 

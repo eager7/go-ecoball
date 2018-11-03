@@ -220,10 +220,16 @@ func signTransaction(c *gin.Context) {
 		publicKeys = append(publicKeys, string(v.Key))
 	}
 
-	resultData, err := wallet.SignTransaction(oneTransaction.RawData, publicKeys)
+	signData, err := wallet.SignTransaction(oneTransaction.RawData, publicKeys)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
+	}
+
+	resultData := SignTransaction{Signature: []OneSignTransaction{}}
+	for _, v := range signData.Signature {
+		oneSign := OneSignTransaction{PublicKey: OneKey{Key: v.PublicKey}, SignData: v.SignData}
+		resultData.Signature = append(resultData.Signature, oneSign)
 	}
 
 	c.JSON(http.StatusOK, resultData)

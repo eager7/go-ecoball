@@ -33,7 +33,7 @@ func InvokeContract(c *gin.Context) {
 	}
 
 	//send to txpool
-	err := event.Send(event.ActorNil, event.ActorTxPool, transfer)
+	err := event.Send(event.ActorNil, event.ActorTxPool, oneTransaction)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
