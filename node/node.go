@@ -39,7 +39,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/dsn"
+	//"github.com/ecoball/go-ecoball/dsn"
 	"github.com/ecoball/go-ecoball/sharding"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"golang.org/x/net/context"
@@ -191,7 +191,7 @@ func runNode(c *cli.Context) error {
 	}
 
 	//storage
-	ecoballGroup.Go(func() error {
+	/*ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
 			//initialize
@@ -216,7 +216,7 @@ func runNode(c *cli.Context) error {
 		}
 
 		return nil
-	})
+	})*/
 
 	//dsn.StartDsn(ctx, ledger.L)
 
@@ -260,7 +260,7 @@ func runNode(c *cli.Context) error {
 		return nil
 	})
 	//capture single
-	go dsn.DsnHttpServ()
+	//go dsn.DsnHttpServ()
 	go wait(shutdown)
 
 	//Wait for each sub goroutine to exit
