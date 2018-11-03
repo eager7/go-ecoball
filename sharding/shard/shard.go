@@ -104,6 +104,8 @@ func (s *shard) Start() {
 
 func (s *shard) sRoutine() {
 	log.Debug("start shard routine")
+	s.ns.LoadLastBlock()
+
 	s.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 
 	for {

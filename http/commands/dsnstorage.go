@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"fmt"
+//	"fmt"
 	"encoding/json"
 	"net/http"
 	"github.com/gin-gonic/gin"
@@ -13,14 +13,14 @@ import (
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
 //	rtypes "github.com/ecoball/go-ecoball/dsn/renter"
 	"github.com/ecoball/go-ecoball/http/request"
-	"context"
-	dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
+//	"context"
+//	dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
 	//"github.com/ecoball/go-ecoball/dsn/renter"
-	"github.com/ecoball/go-ecoball/client/commands"
-	clientCommon "github.com/ecoball/go-ecoball/client/common"
+	//"github.com/ecoball/go-ecoball/client/commands"
+//	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	
-	"net/url"
-	"github.com/ecoball/go-ecoball/client/rpc"
+//	"net/url"
+//	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/ecoball/go-ecoball/dsn"
 	"github.com/ecoball/go-ecoball/http/response"
 )
@@ -118,7 +118,7 @@ func AccountStake(c *gin.Context)  {
 
 func Dsnaddfile(c *gin.Context)  {
 
-
+/*
 	file, err := c.FormFile("file")
     if err != nil {
 	//	c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
@@ -216,6 +216,6 @@ func Dsnaddfile(c *gin.Context)  {
 	err = rpc.NodePost("/transfer", values.Encode(), &result)
 	fmt.Println("pay: ", result.Result)
 	
-	c.JSON(http.StatusOK, response.DsnAddFileResponse{	Code: response.CODENOMAL, Msg: "success", Cid: newCid })
+	c.JSON(http.StatusOK, response.DsnAddFileResponse{	Code: response.CODENOMAL, Msg: "success", Cid: newCid })*/
     
 }
