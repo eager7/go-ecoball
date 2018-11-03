@@ -113,15 +113,18 @@ func (s *shard) sRoutine() {
 		case packet := <-s.ppc:
 			s.processPacket(packet)
 		case <-s.stateTimer.T.C:
-			if s.stateTimer.On {
+			if s.stateTimer.GetStatus() {
+				s.stateTimer.SetStop()
 				s.processStateTimeout()
 			}
 		case <-s.retransTimer.T.C:
-			if s.retransTimer.On {
+			if s.retransTimer.GetStatus() {
+				s.retransTimer.SetStop()
 				s.processRetransTimeout()
 			}
 		case <-s.fullVoteTimer.T.C:
-			if s.fullVoteTimer.On {
+			if s.fullVoteTimer.GetStatus() {
+				s.fullVoteTimer.SetStop()
 				s.processFullVoteTimeout()
 			}
 		}
@@ -179,7 +182,11 @@ func (s *shard) setFullVoeTimer(bStart bool) {
 	log.Debug("set full vote timer ", bStart)
 
 	if bStart {
-		s.fullVoteTimer.Reset(sc.DefaultFullVoteTimer * time.Second)
+		//didn't restart vote timer if it is on, because we can receive duplicate response from peer
+		if !s.fullVoteTimer.GetStatus() {
+			log.Debug("reset full vote timer")
+			s.fullVoteTimer.Reset(sc.DefaultFullVoteTimer * time.Second)
+		}
 	} else {
 		s.fullVoteTimer.Stop()
 	}
