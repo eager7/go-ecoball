@@ -22,6 +22,7 @@ import (
 
 	"github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
+	innerCommon "github.com/ecoball/go-ecoball/common"
 	walletHttp "github.com/ecoball/go-ecoball/walletserver/http"
 	"github.com/urfave/cli"
 )
@@ -496,7 +497,7 @@ func getPublicKeys() (walletHttp.Keys, error) {
 	return walletHttp.Keys{}, err
 }
 
-func signTransaction(publickeys walletHttp.Keys, rawData []byte) (walletHttp.SignTransaction, error) {
+func signTransaction(chainHash innerCommon.Hash, publickeys walletHttp.Keys, rawData []byte) (walletHttp.SignTransaction, error) {
 	var result walletHttp.SignTransaction
 	oneTransaction := walletHttp.TransactionData{rawData}
 	requestData := walletHttp.RawTransactionData{PublicKeys: publickeys, RawData: rawData}
