@@ -9,12 +9,13 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/dsn/erasure"
 	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
-	"github.com/ecoball/go-ecoball/dsn/renter"
+
+	"github.com/ecoball/go-ecoball/http/request"
 )
 
 var log = elog.NewLogger("dsn-era", elog.DebugLog)
 
-func RscCoding(req *renter.RscReq) (string, error) {
+func RscCoding(req *request.DsnAddFileReq) (string, error) {
 	ctx := context.Background()
 	r, err := api.IpfsCatFile(ctx, req.Cid)
 	if err != nil {

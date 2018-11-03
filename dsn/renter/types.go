@@ -11,6 +11,7 @@ type RscReq struct {
 	FileSize    uint64  `json:"filesize"`
 }
 
+
 type AccountStakeRsp struct {
 	Result string `json:"result"`
 	Stake  uint64 `json:"stake"`
