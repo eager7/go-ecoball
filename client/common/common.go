@@ -66,7 +66,7 @@ func DefaultAction(c *cli.Context) error {
 
 //get real public key
 func IntersectionKeys(allKeys walletHttp.Keys, permission []innerCommon.Address) walletHttp.Keys {
-	result := walletHttp.Keys{KeyList: []OneKey{}}
+	result := walletHttp.Keys{KeyList: []walletHttp.OneKey{}}
 	for _, v := range allKeys.KeyList {
 		addr := innerCommon.AddressFromPubKey(v.Key)
 		for _, one := range permission {
