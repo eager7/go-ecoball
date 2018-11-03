@@ -230,7 +230,7 @@ func setContract(c *cli.Context) error {
 	}
 
 	//sign
-	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash)
+	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash[:])
 	if nil != errcode {
 		fmt.Println(errcode)
 		return errcode
@@ -372,7 +372,7 @@ func invokeContract(c *cli.Context) error {
 	}
 
 	//sign
-	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash)
+	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash[:])
 	if nil != errcode {
 		fmt.Println(errcode)
 		return errcode
