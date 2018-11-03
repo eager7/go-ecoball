@@ -115,7 +115,7 @@ disable_localdis_log   = true
 dsn_storage = false
 
 #sharding config info
-disable_sharding  = true
+disable_sharding  = false
 `
 
 type SwarmConfigInfo struct {
