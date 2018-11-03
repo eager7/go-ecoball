@@ -44,6 +44,7 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
+	"github.com/ecoball/go-ecoball/test/example"
 )
 
 var (
@@ -182,12 +183,15 @@ func runNode(c *cli.Context) error {
 		if ledger.L.StateDB(config.ChainHash).RequireVotingInfo() {
 			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{config.ChainHash})
 		}
+	case "SHARD":
+		log.Debug("Start Shard Mode")
+		go example.TransferExample()
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
 
 	//storage
-	/*ecoballGroup.Go(func() error {
+	ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
 			//initialize
@@ -212,7 +216,7 @@ func runNode(c *cli.Context) error {
 		}
 
 		return nil
-	})*/
+	})
 
 	//dsn.StartDsn(ctx, ledger.L)
 

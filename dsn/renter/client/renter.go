@@ -19,12 +19,13 @@ import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/dsn/renter"
 	"strconv"
-	"github.com/ecoball/go-ecoball/client/rpc"
+//	"github.com/ecoball/go-ecoball/client/rpc"
 	//clientcommon "github.com/ecoball/go-ecoball/client/common"
 	//"net/url"
 	"path/filepath"
 	ipfsshell "github.com/ipfs/go-ipfs-api"
 	"fmt"
+	"mime/multipart"
 	//ecoclient "github.com/ecoball/go-ecoball/client/commands"
 )
 
@@ -126,7 +127,33 @@ func (r *Renter)createFileContract(fname string, cid string) ([]byte, error) {
 	return fcBytes, nil
 }
 
+func (r *Renter)createFileContractWeb(fname string, size uint64, cid string) ([]byte, error) {
+
+	var fc renter.FileContract
+	fc.LocalPath = fname
+	
+	fc.FileSize = size
+	//fc.PublicKey = r.account.PublicKey
+	fc.Cid = cid
+	//fc.StartAt = r.ledger.GetCurrentHeight(common.HexToHash(r.conf.ChainId))
+	fc.StartAt = uint64(time.Now().Unix())
+	fc.Expiration = 0
+	fee := r.estimateFee(fname, r.conf)
+	fc.Funds, _ = fee.GobEncode()
+	fc.Redundancy = r.conf.Redundancy
+	fc.AccountName = r.conf.AccountName
+	fcBytes := encoding.Marshal(fc)
+	/*annHash := sha256.Sum256(fcBytes)
+	sig, err := r.account.Sign(annHash[:])
+	if err !=  nil {
+		return nil, err
+	}
+	return append(fcBytes, sig[:]...), nil*/
+	return fcBytes, nil
+}
+
 func (r *Renter) PayForFile(fname, cid string) (*types.Transaction, error) {
+
 	fi, err := os.Stat(fname)
 	if err != nil {
 		return nil, err
@@ -141,7 +168,7 @@ func (r *Renter) PayForFile(fname, cid string) (*types.Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("pay for ", fname, " ", fee)
+
 	/*trn, err := tran.Serialize()
 	if err != nil {
 		return err
@@ -287,6 +314,26 @@ func (r *Renter) InvokeFileContract(fname, cid string) (*types.Transaction, erro
 	return transaction, nil
 }
 
+func (r *Renter) InvokeFileContractWeb(fname string , size uint64, cid string) (*types.Transaction, error) {
+	/*if !r.isSynced {
+		return errUnSyncedStat
+	}*/
+	fc, err := r.createFileContractWeb(fname,size, cid)
+	if err != nil {
+		return  nil, errCreateContract
+	}
+
+	timeNow := time.Now().UnixNano()
+	transaction, err := types.NewInvokeContract(common.NameToIndex(r.conf.AccountName),
+		innerCommon.NameToIndex(dsnComm.RootAccount), common.HexToHash(r.conf.ChainId),
+		"owner", dsnComm.FcMethodFile, []string{string(fc)}, 0, timeNow)
+	if err != nil {
+		return nil, err
+	}
+
+	return transaction, nil
+}
+
 func (r *Renter)CheckCollateral() bool {
 	//sacc, err := r.ledger.AccountGet(common.HexToHash(r.conf.ChainId), common.NameToIndex(r.conf.AccountName))
 	//if err != nil {
@@ -323,6 +370,44 @@ func (r *Renter)CheckCollateral() bool {
 	return true
 }
 
+
+func (r *Renter)CheckCollateralParams(name string) bool {
+	//sacc, err := r.ledger.AccountGet(common.HexToHash(r.conf.ChainId), common.NameToIndex(r.conf.AccountName))
+	//if err != nil {
+	//	return false
+	//}
+	//TODO much more checking
+	//if sacc.Votes.Staked > 0 {
+	//	return true
+	//}
+	url := r.conf.DsnApiUrl + "/dsn/accountstake?" + "name=" +name + "&chainid=" + r.conf.ChainId 
+	//url :="/dsn/accountstake/" + r.conf.AccountName + "/" + r.conf.ChainId
+	rsp, err := r.client.Get(url)
+	if err != nil {
+		return false
+	}
+	defer rsp.Body.Close()
+
+	out, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		return false
+	}
+	var result renter.AccountStakeRsp
+	if err := json.Unmarshal(out, &result); err != nil {
+		return false
+	}
+	fmt.Println("col:", result.Stake)
+	col, err := strconv.Atoi(r.conf.Collateral)
+	if err != nil {
+		return false
+	}
+	if result.Stake < uint64(col) {
+		return false
+	}
+	return true
+}
+
+
 func (r *Renter) RscCodingReq(fpath, cid string) (string, error) {
 	fp := filepath.ToSlash(filepath.Clean(fpath))
 	stat, err := os.Lstat(fp)
@@ -343,36 +428,82 @@ func (r *Renter) RscCodingReq(fpath, cid string) (string, error) {
 		Chunk: PieceSize,
 		FileSize: uint64(stat.Size()),
 	}
+	fmt.Println(req)
+	return "", nil
+	// jreq, _ := json.Marshal(req)
+	// resp, err := rpc.NodeCall("DsnAddFile", []interface{}{string(jreq)})
+	// if err != nil {
+	// 	return "", err
+	// }
+	// result := resp["desc"].(string)
+	// if result != "success" {
+	// 	return "", errors.New(result)
+	// }
+	// newCid := resp["result"].(string)
+	// return newCid, nil
+}
 
-	jreq, _ := json.Marshal(req)
-	resp, err := rpc.NodeCall("DsnAddFile", []interface{}{string(jreq)})
-	if err != nil {
-		return "", err
+func (r *Renter) RscCodingReqWeb(size int64, cid string) (string, error) {
+	
+
+	var PieceSize uint64
+	if size < dsnComm.EraDataPiece * (256 * 1024) {
+		PieceSize = uint64(size / dsnComm.EraDataPiece)
+	} else {
+		PieceSize = uint64(256 * 1024)
 	}
-	result := resp["desc"].(string)
-	if result != "success" {
-		return "", errors.New(result)
+	req := renter.RscReq{
+		Cid: cid,
+		Redundency: int(r.conf.Redundancy),
+		IsDir: false,
+		Chunk: PieceSize,
+		FileSize: uint64(size),
 	}
-	newCid := resp["result"].(string)
-	return newCid, nil
+
+	fmt.Println(req)
+	return "", nil
+	// jreq, _ := json.Marshal(req)
+	// resp, err := rpc.NodeCall("DsnAddFile", []interface{}{string(jreq)})
+	// if err != nil {
+	// 	return "", err
+	// }
+	// result := resp["desc"].(string)
+	// if result != "success" {
+	// 	return "", errors.New(result)
+	// }
+	// newCid := resp["result"].(string)
+	// return newCid, nil
 }
 
 func (r *Renter) RscDecodingReq(cid string) error{
-	resp, err := rpc.NodeCall("DsnCatFile", []interface{}{cid})
-	if err != nil {
-		return err
-	}
-	return rpc.EchoResult(resp)
+	// resp, err := rpc.NodeCall("DsnCatFile", []interface{}{cid})
+	// if err != nil {
+	// 	return err
+	// }
+	// return rpc.EchoResult(resp)
+	return nil
 }
 
-func (r *Renter) AddFile(fpath string) (string, error) {
+func (r *Renter) AddFile(fpath string) (string, string, error) {
 	file, err := os.Open(fpath)
 	if err!= nil{
-		return "", err
+		return "","", err
 	}
 	defer file.Close()
 
 	return r.ipfsClient.Add(file)
+}
+
+func (r *Renter) HttpAddFile( mulFile *multipart.FileHeader) (string, string, error) {
+	// name := mulFile.Header.Get("file")
+	// fmt.Println(name)
+	src, err := mulFile.Open()
+	if err != nil {
+		return "","", err 
+	}
+	defer src.Close()
+	return r.ipfsClient.Add(src)
+
 }
 
 func (r *Renter) CatFile(path string) (io.ReadCloser, error) {

@@ -3,6 +3,7 @@ package shard
 import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/account"
 )
 
 type Payload interface {
@@ -37,6 +38,7 @@ func (h HeaderType) String() string {
 
 type HeaderInterface interface {
 	Payload
+	SetSignature(account *account.Account) error
 	Hash() common.Hash
 	GetChainID() common.Hash
 	GetHeight() uint64
