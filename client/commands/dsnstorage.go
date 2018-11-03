@@ -1,6 +1,21 @@
 package commands
 
-/*var (
+import (
+	"fmt"
+	"os"
+   "github.com/urfave/cli"
+   dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
+	"context"
+	"io/ioutil"
+	"net/url"
+	"github.com/ecoball/go-ecoball/common"
+	clientCommon "github.com/ecoball/go-ecoball/client/common"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/client/rpc"
+	"errors"
+	
+)
+var (
 	DsnStorageCommands = cli.Command{
 		Name:     "dsnstorage",
 		Usage:    "Distributed storage  interaction",
@@ -17,15 +32,24 @@ package commands
 						Value: "-1",
 					},
 				},
+
 			},
 			{
 				Name:   "cat",
 				Usage:  "cat file",
 				Action: dsnCatFile,
+	
 			},
 		},
+		
 	}
+	
 )
+
+func GetPublicKeys() (string, error) {
+
+	return getPublicKeys();
+}
 
 func dsnAddFile(ctx *cli.Context) error {
 	cbtx := context.Background()
@@ -35,7 +59,7 @@ func dsnAddFile(ctx *cli.Context) error {
 	if !ok {
 		return errors.New("Checking collateral failed")
 	}
-	cid, err := dclient.AddFile(file)
+	cid, _, err := dclient.AddFile(file)
 	if err != nil {
 		return err
 	}
@@ -50,22 +74,22 @@ func dsnAddFile(ctx *cli.Context) error {
 		return err
 	}
 
-	chainId, err := getMainChainHash()
+	chainId, err := GetChainId()
 	if err != nil {
 		return err
 	}
 
-	_, err = getPublicKeys()
+	pkKeys, err := GetPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	_, err = getRequiredKeys(chainId, "owner", transaction.From.String())
+	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", transaction)
 	if err != nil {
 		return err
 	}
 
-	err = SignTransaction(chainId, "", transaction)
+	err = SignTransaction(chainId, reqKeys, transaction)
 	if err != nil {
 		return err
 	}
@@ -87,11 +111,11 @@ func dsnAddFile(ctx *cli.Context) error {
 		fmt.Println(err.Error())
 		return err
 	}
-	_, err = getRequiredKeys(chainId, "owner", payTrn.From.String())
+	reqKeys, err = GetRequiredKeys(chainId, pkKeys, "owner", payTrn)
 	if err != nil {
 		return err
 	}
-	err = SignTransaction(chainId, "", payTrn)
+	err = SignTransaction(chainId, reqKeys, payTrn)
 	if err != nil {
 		return err
 	}
@@ -109,7 +133,8 @@ func dsnAddFile(ctx *cli.Context) error {
 	return nil
 }
 
-func dsnCatFile(ctx *cli.Context) {
+
+func dsnCatFile (ctx *cli.Context)  {
 	cbtx := context.Background()
 	dclient := dsncli.NewRcWithDefaultConf(cbtx)
 	//dclient.CheckCollateral()
@@ -136,8 +161,7 @@ func dsnGetFile(ctx *cli.Context) error {
 }
 
 func GetChainId() (common.Hash, error) {
-	info, err := getInfo()
-	return info.ChainID, err
+	return getMainChainHash()
 }
 
 func GetRequiredKeys(chainId common.Hash, required_keys, permission string, trx *types.Transaction) (string, error) {
@@ -146,7 +170,7 @@ func GetRequiredKeys(chainId common.Hash, required_keys, permission string, trx 
 		return "", err
 	}*/
 
-/*	var result clientCommon.SimpleResult
+	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("permission", permission)
 	values.Set("chainId", chainId.HexString())
@@ -176,21 +200,21 @@ func SignTransaction(chainId common.Hash, required_keys string, trx *types.Trans
 }
 
 func TxTransaction(trx *types.Transaction) error {
-	chainId, err := getMainChainHash()
+	chainId, err := GetChainId()
 	if err != nil {
 		return err
 	}
 
-	_, err = getPublicKeys()
+	pkKeys, err := GetPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	_, err = getRequiredKeys(chainId, "owner", trx.From.String())
+	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", trx)
 	if err != nil {
 		return err
 	}
-	err = SignTransaction(chainId, "", trx)
+	err = SignTransaction(chainId, reqKeys, trx)
 	if err != nil {
 		return err
 	}
@@ -208,22 +232,22 @@ func TxTransaction(trx *types.Transaction) error {
 }
 
 func InvokeContract(trx *types.Transaction) error {
-	chainId, err := getMainChainHash()
+	chainId, err := GetChainId()
 	if err != nil {
 		return err
 	}
 
-	_, err = getPublicKeys()
+	pkKeys, err := GetPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	_, err = getRequiredKeys(chainId, "owner", trx.From.String())
+	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", trx)
 	if err != nil {
 		return err
 	}
 
-	err = SignTransaction(chainId, "", trx)
+	err = SignTransaction(chainId, reqKeys, trx)
 	if err != nil {
 		return err
 	}
@@ -237,7 +261,6 @@ func InvokeContract(trx *types.Transaction) error {
 	ctcv := url.Values{}
 	ctcv.Set("transaction", common.ToHex(data))
 	err = rpc.NodePost("/invokeContract", ctcv.Encode(), &retContract)
-	fmt.Println("Contract: ", retContract.Result)
+	fmt.Println("fileContract: ", retContract.Result)
 	return err
 }
-*/
