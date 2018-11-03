@@ -25,8 +25,7 @@ import (
 	"strings"
 	"time"
 
-	inner "github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/types"
+	walletHttp "github.com/ecoball/go-ecoball/walletserver/http"
 )
 
 /*var (
@@ -322,26 +321,16 @@ func ListWallets() ([]string, error) {
 	return keys, nil
 }
 
-func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
+func SignTransaction(transaction []byte, publicKeys []string) (walletHttp.SignTransaction, error) {
 	checkTimeout()
-	Transaction := new(types.Transaction)
-	if err := Transaction.Deserialize(transaction); err != nil {
-		return nil, err
-	}
-
+	var result = walletHttp.SignTransaction{Signature: []walletHttp.OneSignTransaction{}}
 	for _, publicKey := range publicKeys {
 		bFound := false
 		for _, wallet := range wallets {
 			if !wallet.CheckLocked() {
-				if signData, bHave := wallet.TrySignDigest(Transaction.Hash.Bytes(), publicKey); bHave {
-					/*flag, err := Verify(Transaction.Hash.Bytes(), inner.FromHex(publicKey), signData); if !flag || err != nil {
-						fmt.Println(err)
-					}*/
-					sig := new(inner.Signature)
-					sig.PubKey = inner.CopyBytes(inner.FromHex(publicKey))
-					sig.SigData = inner.CopyBytes(signData)
-
-					Transaction.Signatures = append(Transaction.Signatures, *sig)
+				if signData, bHave := wallet.TrySignDigest(transaction, publicKey); bHave {
+					oneSignature := walletHttp.OneSignTransaction{PublicKey: walletHttp.OneKey{[]byte(publicKey)}, SignData: signData}
+					result.Signature = append(result.Signature, oneSignature)
 					if !bFound {
 						bFound = true
 					}
@@ -355,12 +344,7 @@ func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
 		}
 	}
 
-	data, err := Transaction.Serialize()
-	if nil != err {
-		return nil, err
-	}
-	return data, nil
-
+	return result, nil
 }
 
 func SignDigest(data []byte, publicKey string) ([]byte, error) {

@@ -496,13 +496,13 @@ func getPublicKeys() (walletHttp.Keys, error) {
 	return walletHttp.Keys{}, err
 }
 
-func signTransaction(publickeys walletHttp.Keys, rawData []byte) (walletHttp.TransactionData, error) {
-	var result walletHttp.TransactionData
-	oneTransaction := TransactionData{rawData}
-	requestData := RawTransactionData{PublicKeys: publickeys, RawTransaction: oneTransaction}
+func signTransaction(publickeys walletHttp.Keys, rawData []byte) (walletHttp.SignTransaction, error) {
+	var result walletHttp.SignTransaction
+	oneTransaction := walletHttp.TransactionData{rawData}
+	requestData := walletHttp.RawTransactionData{PublicKeys: publickeys, RawData: rawData}
 	err = rpc.WalletPost("/wallet/signTransaction", &requestData, &result)
 	if nil == err {
 		return result, nil
 	}
-	return walletHttp.TransactionData{}, err
+	return walletHttp.SignTransaction{}, err
 }

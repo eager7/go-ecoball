@@ -326,7 +326,7 @@ func getContract(chainID innerCommon.Hash, index innerCommon.AccountName) (*type
 	err := rpc.NodePost("/query/getContract", values.Encode(), &result)
 	if nil == err {
 		deploy := new(types.DeployInfo)
-		if err := deploy.Deserialize(common.FromHex(result.Result)); err != nil {
+		if err := deploy.Deserialize(innerCommon.FromHex(result.Result)); err != nil {
 			return nil, err
 		}
 		return deploy, nil
@@ -339,10 +339,10 @@ func storeGet(chainID innerCommon.Hash, index innerCommon.AccountName, key []byt
 	values := url.Values{}
 	values.Set("contractName", index.String())
 	values.Set("chainId", chainID.HexString())
-	values.Set("key", common.ToHex(key))
+	values.Set("key", innerCommon.ToHex(key))
 	err = rpc.NodePost("/query/storeGet", values.Encode(), &result)
 	if nil == err {
-		return common.FromHex(result.Result), nil
+		return innerCommon.FromHex(result.Result), nil
 	}
 	return nil, err
 }

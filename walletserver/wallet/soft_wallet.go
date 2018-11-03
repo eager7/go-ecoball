@@ -24,7 +24,6 @@ import (
 	"os"
 	"strings"
 
-	inner "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/crypto/aes"
 )
 
@@ -292,7 +291,7 @@ func (wallet *WalletImpl) TrySignDigest(digest []byte, publicKey string) (signDa
 	bFound := false
 	for public, private := range wallet.AccountsMap {
 		if strings.EqualFold(public, publicKey) {
-			privateKey = inner.FromHex(private)
+			privateKey = []byte(private)
 			bFound = true
 			break
 		}

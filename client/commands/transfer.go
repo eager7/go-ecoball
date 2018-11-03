@@ -20,7 +20,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/urfave/cli"
@@ -145,12 +144,12 @@ func transferAction(c *cli.Context) error {
 		return errcode
 	}
 
-	//Data packaging
+	for _, v := range data {
+		transaction.AddSignature(v.PublicKey.Key, v.SignData)
+	}
 
 	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("transfer", data)
-	err = rpc.NodePost("/transfer", values.Encode(), &result)
+	err = rpc.NodePost("/invokeContract", transaction, &result)
 	if nil == err {
 		fmt.Println(result.Result)
 	}
