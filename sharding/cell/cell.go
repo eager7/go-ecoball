@@ -68,6 +68,47 @@ func (c *Cell) LoadConfig() {
 	c.NodeType = nodeType
 }
 
+func (c *Cell) LoadLastBlock() {
+	lastCmBlock, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
+	if err != nil || lastCmBlock == nil {
+		panic("get cm block error ")
+		return
+	}
+
+	cm := lastCmBlock.GetObject().(cs.CMBlock)
+	c.SyncCmBlockComplete(&cm)
+
+	lastvc, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
+	if err != nil || lastvc == nil {
+		panic("get vc block error ")
+		return
+	}
+
+	vc := lastvc.GetObject().(cs.ViewChangeBlock)
+	c.SaveLastViewchangeBlock(&vc)
+
+	lastFinalBlock, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
+	if err != nil || lastFinalBlock == nil {
+		panic("get final block error ")
+		return
+	}
+
+	final := lastFinalBlock.GetObject().(cs.FinalBlock)
+	c.SaveLastFinalBlock(&final)
+
+	if c.NodeType == sc.NodeShard {
+		lastMinor, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
+		if err != nil || lastMinor == nil {
+			panic("get minor block error ")
+			return
+		}
+
+		minor := lastMinor.GetObject().(cs.MinorBlock)
+		c.SaveLastMinorBlock(&minor)
+	}
+
+}
+
 func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 	log.Debug("save cm block epoch ", bk.Height)
 
@@ -91,6 +132,7 @@ func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 	}
 
 	c.createShardingTopo()
+
 }
 
 func (c *Cell) createShardingTopo() {
@@ -130,6 +172,14 @@ func (c *Cell) GetLastCMBlock() *cs.CMBlock {
 func (c *Cell) SaveLastFinalBlock(bk *cs.FinalBlock) {
 	log.Debug("save final block epoch ", bk.EpochNo, " height ", bk.Height)
 
+	cur := c.GetLastFinalBlock()
+	if cur != nil {
+		if cur.Height >= bk.Height {
+			log.Debug("have saved last final block")
+			return
+		}
+	}
+
 	c.chain.setFinalBlock(bk)
 
 	for _, minor := range bk.MinorBlocks {
@@ -149,6 +199,15 @@ func (c *Cell) GetLastFinalBlock() *cs.FinalBlock {
 
 func (c *Cell) SaveLastViewchangeBlock(bk *cs.ViewChangeBlock) {
 	log.Debug("save view change block epoch ", bk.CMEpochNo, " height ", bk.FinalBlockHeight, " round ", bk.Round)
+
+	cur := c.GetLastViewchangeBlock()
+	if cur != nil {
+		if cur.Height >= bk.Height {
+			log.Debug("have saved last view change block")
+			return
+		}
+	}
+
 	leader := &sc.Worker{}
 	leader.InitWork(&bk.Candidate)
 	log.Debug("new leader ", leader.Address, " ", leader.Port)
