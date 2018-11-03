@@ -64,7 +64,7 @@ func attach(c *cli.Context) error {
 		common.NodePort = port
 	}
 
-	var result common.SimpleResult
+	var result rpc.SimpleResult
 	err := rpc.NodeGet("/attach", &result)
 	if nil == err {
 		fmt.Println(result.Result)

@@ -187,7 +187,7 @@ func setContract(c *cli.Context) error {
 	permission := c.String("permission")
 
 	//chainHash
-	var chainHash inner.Hash
+	var chainHash common.Hash
 	chainHashStr := c.String("chainHash")
 	if "" == chainHashStr {
 		chainHash, err = getMainChainHash()
