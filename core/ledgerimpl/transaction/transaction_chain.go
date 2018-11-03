@@ -419,6 +419,7 @@ func (c *ChainTx) RestoreCurrentShardHeader() (bool, error) {
 		if err := header.Deserialize(data); err != nil {
 			return false, err
 		}
+		c.LastHeader.CmHeader = header
 	}
 
 	data, err = c.HeaderStore.Get([]byte("lastMinorHeader"))
@@ -430,6 +431,9 @@ func (c *ChainTx) RestoreCurrentShardHeader() (bool, error) {
 		if err := header.Deserialize(data); err != nil {
 			return false, err
 		}
+		c.LastHeader.MinorHeader = header
+	} else {
+		return false, nil
 	}
 
 	data, err = c.HeaderStore.Get([]byte("lastFinalHeader"))
@@ -437,10 +441,25 @@ func (c *ChainTx) RestoreCurrentShardHeader() (bool, error) {
 		log.Warn("get last final header error:", err)
 	}
 	if data != nil {
-		header := new(shard.MinorBlockHeader)
+		header := new(shard.FinalBlockHeader)
 		if err := header.Deserialize(data); err != nil {
 			return false, err
 		}
+		c.LastHeader.FinalHeader = header
+	} else {
+		return false, nil
+	}
+
+	data, err = c.HeaderStore.Get([]byte("lastVCHeader"))
+	if err != nil {
+		log.Warn("get last final header error:", err)
+	}
+	if data != nil {
+		header := new(shard.ViewChangeBlockHeader)
+		if err := header.Deserialize(data); err != nil {
+			return false, err
+		}
+		c.LastHeader.VCHeader = header
 	} else {
 		return false, nil
 	}
@@ -698,7 +717,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 //ShardBlock
 func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address) error {
 	if c.LastHeader.CmHeader != nil || c.LastHeader.MinorHeader != nil || c.LastHeader.FinalHeader != nil || c.LastHeader.VCHeader != nil {
-		log.Debug("geneses shard block is existed:", c.CurrentHeader.Height)
+		log.Debug("geneses shard block is existed")
 		return nil
 	}
 
