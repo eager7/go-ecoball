@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ecoball/go-ecoball/client/common"
 	inner "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/types"
 )
@@ -88,7 +87,8 @@ func Create(name string, password []byte) error {
 	checkTimeout()
 	//whether the wallet file exists
 	filename := path.Join(dir, name)
-	if common.FileExisted(filename) {
+	_, err := os.Stat(filename)
+	if err == nil || os.IsExist(err) {
 		return errors.New("The file already exists")
 	}
 
@@ -103,7 +103,7 @@ func Create(name string, password []byte) error {
 	}
 
 	//lock wallet
-	err := newWallet.Lock()
+	err = newWallet.Lock()
 	newWallet.lockflag = locked
 	if nil != err {
 		return err

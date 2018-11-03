@@ -29,8 +29,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/http/commands"
 	"github.com/ecoball/go-ecoball/http/common/abi"
-	innerRpc "github.com/ecoball/go-ecoball/http/rpc"
 	"github.com/urfave/cli"
 )
 
@@ -156,7 +156,7 @@ func getAccount(c *cli.Context) error {
 
 	//http request
 	var result state.Account
-	requestData := innerRpc.AccountName{Name: name, ChainHash: chainHash}
+	requestData := commands.AccountName{Name: name, ChainHash: chainHash}
 	err = rpc.NodePost("/query/getAccountInfo", &requestData, &result)
 	if nil == err {
 		fmt.Println(result.JsonString(true))
@@ -198,7 +198,7 @@ func getTokenInfo(c *cli.Context) error {
 
 	//http request
 	var result state.TokenInfo
-	requestData := innerRpc.TokenName{Name: name, ChainHash: chainHash}
+	requestData := commands.TokenName{Name: name, ChainHash: chainHash}
 	err = rpc.NodePost("/query/getTokenInfo", &requestData, &result)
 	if nil == err {
 		fmt.Println(result.JsonString(true))
@@ -240,8 +240,8 @@ func getBlockInfo(c *cli.Context) error {
 
 	//http request
 	var result types.Block
-	requestData := innerRpc.BlockHeight{Height: height, ChainHash: chainHash}
-	err := rpc.NodePost("/query/getBlockInfo", &requestData, &result)
+	requestData := commands.BlockHeight{Height: height, ChainHash: chainHash}
+	err = rpc.NodePost("/query/getBlockInfo", &requestData, &result)
 	if nil == err {
 		fmt.Println(result.JsonString(true))
 	}
@@ -288,8 +288,8 @@ func getTransaction(c *cli.Context) error {
 
 	//http request
 	var result types.Transaction
-	requestData := innerRpc.TransactionHash{Hash: hash, ChainHash: chainHash}
-	err := rpc.NodePost("/query/getTransaction", &requestData, &result)
+	requestData := commands.TransactionHash{Hash: hash, ChainHash: chainHash}
+	err = rpc.NodePost("/query/getTransaction", &requestData, &result)
 	if nil == err {
 		fmt.Println(result.JsonString())
 	}
@@ -307,9 +307,9 @@ func getMainChainHash() (innerCommon.Hash, error) {
 	return result, nil
 }
 
-func getRequiredKeys(chainHash common.Hash, permission string, account string) ([]innerCommon.Address, error) {
+func getRequiredKeys(chainHash innerCommon.Hash, permission string, account string) ([]innerCommon.Address, error) {
 	var result []innerCommon.Address
-	requestData := innerRpc.PermissionPublicKeys{Name: account, Permission: permission, ChainHash: chainHash}
+	requestData := commands.PermissionPublicKeys{Name: account, Permission: permission, ChainHash: chainHash}
 	err := rpc.NodePost("/query/getRequiredKeys", &requestData, &result)
 	if nil != err {
 		return result, nil
@@ -318,7 +318,7 @@ func getRequiredKeys(chainHash common.Hash, permission string, account string) (
 	return []innerCommon.Address{}, err
 }
 
-func getContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error) {
+func getContract(chainID innerCommon.Hash, index innerCommon.AccountName) (*types.DeployInfo, error) {
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("contractName", index.String())
@@ -334,7 +334,7 @@ func getContract(chainID common.Hash, index common.AccountName) (*types.DeployIn
 	return nil, err
 }
 
-func storeGet(chainID common.Hash, index common.AccountName, key []byte) (value []byte, err error) {
+func storeGet(chainID innerCommon.Hash, index innerCommon.AccountName, key []byte) (value []byte, err error) {
 	var result clientCommon.SimpleResult
 	values := url.Values{}
 	values.Set("contractName", index.String())
