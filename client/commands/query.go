@@ -29,8 +29,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/http/commands"
 	"github.com/ecoball/go-ecoball/http/common/abi"
+	"github.com/ecoball/go-ecoball/http/request"
 	"github.com/urfave/cli"
 )
 
@@ -156,7 +156,7 @@ func getAccount(c *cli.Context) error {
 
 	//http request
 	var result state.Account
-	requestData := commands.AccountName{Name: name, ChainHash: chainHash}
+	requestData := request.AccountName{Name: name, ChainHash: chainHash}
 	err = rpc.NodePost("/query/getAccountInfo", &requestData, &result)
 	if nil == err {
 		fmt.Println(result.JsonString(true))
@@ -198,7 +198,7 @@ func getTokenInfo(c *cli.Context) error {
 
 	//http request
 	var result state.TokenInfo
-	requestData := commands.TokenName{Name: name, ChainHash: chainHash}
+	requestData := request.TokenName{Name: name, ChainHash: chainHash}
 	err = rpc.NodePost("/query/getTokenInfo", &requestData, &result)
 	if nil == err {
 		fmt.Println(result.JsonString(true))
@@ -240,7 +240,7 @@ func getBlockInfo(c *cli.Context) error {
 
 	//http request
 	var result types.Block
-	requestData := commands.BlockHeight{Height: height, ChainHash: chainHash}
+	requestData := request.BlockHeight{Height: height, ChainHash: chainHash}
 	err = rpc.NodePost("/query/getBlockInfo", &requestData, &result)
 	if nil == err {
 		fmt.Println(result.JsonString(true))
@@ -288,7 +288,7 @@ func getTransaction(c *cli.Context) error {
 
 	//http request
 	var result types.Transaction
-	requestData := commands.TransactionHash{Hash: hash, ChainHash: chainHash}
+	requestData := request.TransactionHash{Hash: hash, ChainHash: chainHash}
 	err = rpc.NodePost("/query/getTransaction", &requestData, &result)
 	if nil == err {
 		fmt.Println(result.JsonString())
@@ -309,7 +309,7 @@ func getMainChainHash() (innerCommon.Hash, error) {
 
 func getRequiredKeys(chainHash innerCommon.Hash, permission string, account string) ([]innerCommon.Address, error) {
 	var result []innerCommon.Address
-	requestData := commands.PermissionPublicKeys{Name: account, Permission: permission, ChainHash: chainHash}
+	requestData := request.PermissionPublicKeys{Name: account, Permission: permission, ChainHash: chainHash}
 	err := rpc.NodePost("/query/getRequiredKeys", &requestData, &result)
 	if nil != err {
 		return result, nil

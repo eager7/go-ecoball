@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/http/request"
 	"github.com/gin-gonic/gin"
 )
 
@@ -65,7 +66,7 @@ func GetAllChainInfo(c *gin.Context) {
 }
 
 func GetAccountInfo(c *gin.Context) {
-	var oneAccount AccountName
+	var oneAccount request.AccountName
 	if err := c.BindJSON(&oneAccount); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -81,7 +82,7 @@ func GetAccountInfo(c *gin.Context) {
 }
 
 func GetTokenInfo(c *gin.Context) {
-	var oneToken TokenName
+	var oneToken request.TokenName
 	if err := c.BindJSON(&oneToken); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -97,7 +98,7 @@ func GetTokenInfo(c *gin.Context) {
 }
 
 func GetBlockInfo(c *gin.Context) {
-	var oneHeight BlockHeight
+	var oneHeight request.BlockHeight
 	if err := c.BindJSON(&oneHeight); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -113,7 +114,7 @@ func GetBlockInfo(c *gin.Context) {
 }
 
 func GetTransaction(c *gin.Context) {
-	var oneHash TransactionHash
+	var oneHash request.TransactionHash
 	if err := c.BindJSON(&oneHash); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -129,7 +130,7 @@ func GetTransaction(c *gin.Context) {
 }
 
 func GetRequiredKeys(c *gin.Context) {
-	var onePermission PermissionPublicKeys
+	var onePermission request.PermissionPublicKeys
 	if err := c.BindJSON(&onePermission); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
