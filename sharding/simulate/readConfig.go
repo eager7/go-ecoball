@@ -30,7 +30,7 @@ func readConfigFile() *config {
 
 	rootDir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 	rootDir = strings.Replace(rootDir, "\\", "/", -1)
-	file := rootDir + "sharding.json"
+	file := rootDir + "/sharding.json"
 
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
