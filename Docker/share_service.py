@@ -68,7 +68,7 @@ str_ip = " "
 for ip in args.node_ip:
     str_ip += (ip + " ")
 
-count = 0
+count = 1
 while count < 4 * args.weight:
     # start ecoball
     command = "sudo docker run -d " + "--name=ecoball_" + str(count) + " -p "
@@ -93,7 +93,14 @@ while count < 4 * args.weight:
         run(command)
         sleep(2)
 
+    if 0 == count:
+        break
+
     count += 1
+
+    if count == 4 * args.weight:
+        sleep(5)
+        count = 0
     
 
 print("start all ecoball success!!!") 
