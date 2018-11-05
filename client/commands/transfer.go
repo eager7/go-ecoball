@@ -144,7 +144,7 @@ func transferAction(c *cli.Context) error {
 		return errcode
 	}
 
-	for _, v := range data {
+	for _, v := range data.Signature {
 		transaction.AddSignature(v.PublicKey.Key, v.SignData)
 	}
 

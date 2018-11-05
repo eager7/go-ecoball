@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"time"
 
@@ -379,13 +378,11 @@ func invokeContract(c *cli.Context) error {
 		return errcode
 	}
 
-	for _, v := range data {
+	for _, v := range data.Signature {
 		transaction.AddSignature(v.PublicKey.Key, v.SignData)
 	}
 
 	var result rpc.SimpleResult
-	values := url.Values{}
-	values.Set("transaction", data)
 	err = rpc.NodePost("/invokeContract", transaction, &result)
 	if nil == err {
 		fmt.Println(result.Result)
