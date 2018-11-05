@@ -105,7 +105,7 @@ func (s *shard) Start() {
 	go s.sRoutine()
 	s.pvcRoutine()
 
-	s.setSyncRequest()
+	go s.setSyncRequest()
 }
 
 func (s *shard) sRoutine() {
@@ -209,5 +209,5 @@ func (s *shard) setFullVoeTimer(bStart bool) {
 
 func (s *shard) setSyncRequest() {
 	log.Debug("set sync request ")
-	s.sync.SyncRequest(0, 0)
+	s.sync.SendSyncRequest()
 }

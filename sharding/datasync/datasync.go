@@ -55,6 +55,22 @@ func MakeSyncRequestPacket(blockType int8, fromHeight int64, to int64, worker *s
 
 //Request order is important
 func (sync *Sync)SendSyncRequest()  {
+	log.Debug("SendSyncRequest, node type = ", sync.cell.NodeType)
+	if sync.cell.NodeType == sc.NodeShard {
+		log.Debug("Node is ", sc.NodeShard)
+		lastBlock, err := sync.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
+		if err != nil {
+			log.Error("GetLastShardBlock ", err)
+		}
+		log.Debug("SendSyncRequest, get Height = ", lastBlock.GetHeight())
+		if lastBlock.GetHeight() == 1 {
+			simulate.SyncComplete()
+			log.Info("invoke SyncComplete cause Height = 1")
+			return
+		}
+	} else {
+		log.Debug("Node isn't NodeShard")
+	}
 	sync.SendSyncRequestWithType(cs.HeCmBlock)
 	sync.SendSyncRequestWithType(cs.HeViewChange)
 	sync.SendSyncRequestWithType(cs.HeFinalBlock)
@@ -172,6 +188,8 @@ func (s *Sync) DealSyncRequestHelper(request *sc.SyncRequestPacket) (*sc.NetPack
 	from := request.FromHeight
 	to := request.ToHeight
 	blockType := cs.HeaderType(request.BlockType)
+	log.Debug("type = ", request.BlockType)
+	log.Debug("from = ", from, " to = ", to, " blockType = ", blockType)
 
 	var response sc.SyncResponsePacket
 
@@ -236,12 +254,13 @@ func (s *Sync)  RecvSyncRequestPacket(packet *sc.CsPacket) (*sc.NetPacket, *sc.W
 }
 
 func (s *Sync)  RecvSyncResponsePacket(packet *sc.CsPacket){
-	data := packet.Packet.(sc.SyncResponseData)
+	data := packet.Packet.(*sc.SyncResponseData)
 
-	p := s.SyncResponseDecode(&data)
+	p := s.SyncResponseDecode(data)
 	s.dealSyncResponse(p)
 	if p.Compelte {
 		simulate.SyncComplete()
+		log.Info("invoke SyncComplete")
 	} else {
 		log.Info("Data sync not complete")
 		s.SendSyncRequest()
