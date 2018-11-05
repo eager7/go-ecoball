@@ -63,7 +63,7 @@ var (
 						Value: "active",
 					},
 					cli.StringFlag{
-						Name:  "chainHash, c",
+						Name:  "chainHash, h",
 						Usage: "chain hash(the default is the main chain hash)",
 					},
 					cli.Float64Flag{
