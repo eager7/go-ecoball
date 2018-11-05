@@ -108,6 +108,7 @@ func (abaT *ABATBLS)SignPreTBLS(msg []byte)[]byte {
 	return signPreTBLS
 }
 
+// the leader need to call this function once before Generate the TBLS signature
 func (abaT *ABATBLS)VerifyPreTBLS(indexJ int, epochNum int, msg []byte, sign []byte) bool {
 	// step 1, verify the input signTBLS and msg (by the public key corresponding to the index )
 	if epochNum != abaTBLS.epochNum {
