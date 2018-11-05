@@ -128,7 +128,10 @@ func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 			log.Error("we are not in committee now, restart ")
 			panic("we are not in committee now, restart ")
 		}
-		c.saveShardsInfoFromCMBlock(bk)
+
+		if bk.Height > 1 {
+			c.saveShardsInfoFromCMBlock(bk)
+		}
 	}
 
 	c.createShardingTopo()
