@@ -148,7 +148,7 @@ func transferAction(c *cli.Context) error {
 		transaction.AddSignature(v.PublicKey.Key, v.SignData)
 	}
 
-	var result clientCommon.SimpleResult
+	var result rpc.SimpleResult
 	err = rpc.NodePost("/invokeContract", transaction, &result)
 	if nil == err {
 		fmt.Println(result.Result)

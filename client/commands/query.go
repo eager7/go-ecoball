@@ -319,7 +319,7 @@ func getRequiredKeys(chainHash innerCommon.Hash, permission string, account stri
 }
 
 func getContract(chainID innerCommon.Hash, index innerCommon.AccountName) (*types.DeployInfo, error) {
-	var result clientCommon.SimpleResult
+	var result rpc.SimpleResult
 	values := url.Values{}
 	values.Set("contractName", index.String())
 	values.Set("chainId", chainID.HexString())
@@ -335,7 +335,7 @@ func getContract(chainID innerCommon.Hash, index innerCommon.AccountName) (*type
 }
 
 func storeGet(chainID innerCommon.Hash, index innerCommon.AccountName, key []byte) (value []byte, err error) {
-	var result clientCommon.SimpleResult
+	var result rpc.SimpleResult
 	values := url.Values{}
 	values.Set("contractName", index.String())
 	values.Set("chainId", chainID.HexString())

@@ -236,12 +236,12 @@ func setContract(c *cli.Context) error {
 		return errcode
 	}
 
-	for _, v := range data {
+	for _, v := range data.Signature {
 		transaction.AddSignature(v.PublicKey.Key, v.SignData)
 	}
 
 	//rpc call
-	var result clientCommon.SimpleResult
+	var result rpc.SimpleResult
 	err = rpc.NodePost("/invokeContract", transaction, &result)
 	if nil == err {
 		fmt.Println(result.Result)
@@ -274,7 +274,8 @@ func invokeContract(c *cli.Context) error {
 	contractParam := c.String("param")
 
 	//chainHash
-	var chainHash inner.Hash
+	var chainHash common.Hash
+	var err error
 	chainHashStr := c.String("chainHash")
 	if "" == chainHashStr {
 		chainHash, err = getMainChainHash()
@@ -382,7 +383,7 @@ func invokeContract(c *cli.Context) error {
 		transaction.AddSignature(v.PublicKey.Key, v.SignData)
 	}
 
-	var result clientCommon.SimpleResult
+	var result rpc.SimpleResult
 	values := url.Values{}
 	values.Set("transaction", data)
 	err = rpc.NodePost("/invokeContract", transaction, &result)

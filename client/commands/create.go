@@ -194,7 +194,7 @@ func newAccount(c *cli.Context) error {
 		transaction.AddSignature(v.PublicKey.Key, v.SignData)
 	}
 
-	var result clientCommon.SimpleResult
+	var result rpc.SimpleResult
 	err = rpc.NodePost("/invokeContract", transaction, &result)
 	fmt.Println(result.Result)
 	if nil == err {
