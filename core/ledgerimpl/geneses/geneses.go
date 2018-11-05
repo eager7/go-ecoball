@@ -72,6 +72,24 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
 	}
 
+	saving := common.NameToIndex("saving")
+	savingAddr := common.AddressFromPubKey(config.Saving.PublicKey)
+	fmt.Println("preset insert a bpay account:", savingAddr.HexString())
+	if root, err := s.AddAccount(saving, savingAddr, timeStamp); err != nil {
+		return err
+	} else {
+		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
+	}
+
+	bpay := common.NameToIndex("bpay")
+	bpayAddr := common.AddressFromPubKey(config.Bpay.PublicKey)
+	fmt.Println("preset insert a bpay account:", bpayAddr.HexString())
+	if root, err := s.AddAccount(bpay, bpayAddr, timeStamp); err != nil {
+		return err
+	} else {
+		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
+	}
+
 	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), root, root)
 
 	//if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(90000)); err != nil {
@@ -85,6 +103,7 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 		fmt.Println(err)
 		return err
 	}
+
 	/*
 		delegate := common.NameToIndex("delegate")
 		if _, err := s.AddAccount(delegate, common.AddressFromPubKey(config.Delegate.PublicKey), timeStamp); err != nil {

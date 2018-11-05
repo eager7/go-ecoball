@@ -1285,6 +1285,147 @@ func RecepitTest(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 }
 
+func ProducerIncentive(ledger ledger.Ledger) {
+	log.Info("-----------------------------Create Account-----------------------------")
+	root := common.NameToIndex("root")
+	worker := common.NameToIndex("worker")
+	worker1 := common.NameToIndex("worker1")
+	worker2 := common.NameToIndex("worker2")
+
+
+	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, nil, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, tokenContract))
+	time.Sleep(time.Second * 2)
+
+	invoke, err := types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"worker", common.AddressFromPubKey(config.Worker.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+
+	log.Info("-----------------------------Root Delegated Stake-----------------------------")
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker", "1000", "1000"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker1", "100", "100"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker2", "100", "100"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+
+	log.Info("-----------------------------Transfer-----------------------------")
+	transfer, err := types.NewTransfer(root, worker, config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	transfer, err = types.NewTransfer(root, worker1, config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	transfer, err = types.NewTransfer(root, worker2, config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	log.Info("-----------------------------Stake-----------------------------")
+	invoke, err = types.NewInvokeContract(worker, root, config.ChainHash, state.Owner, "pledge", []string{"worker", "worker", "250", "250"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Worker)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(worker1, root, config.ChainHash, state.Owner, "pledge", []string{"worker1", "worker1", "250", "250"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(worker2, root, config.ChainHash, state.Owner, "pledge", []string{"worker2", "worker2", "250", "250"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Worker2)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+
+	log.Info("-----------------------------Register Producer-----------------------------")
+	//worker1, worker2 register to producer
+	time.Sleep(time.Second * 5)
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker"), common.NameToIndex("root"), config.ChainHash, state.Active, "reg_prod", []string{"worker"}, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
+
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("root"), config.ChainHash, state.Active, "reg_prod", []string{"worker1"}, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
+
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("root"), config.ChainHash, state.Active, "reg_prod", []string{"worker2"}, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker2)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
+
+	for {
+		balance, _ := ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("worker"), state.AbaToken)
+		fmt.Println("worker account balance: ", balance)
+		balance1, _ := ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("worker1"), state.AbaToken)
+		fmt.Println("worker1 account balance: ", balance1)
+		balance2, _ := ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("worker2"), state.AbaToken)
+		fmt.Println("worker2 account balance: ", balance2)
+		balanceSaving, _ := ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("saving"), state.AbaToken)
+		fmt.Println("saving account balance: ", balanceSaving)
+		time.Sleep(time.Second * 30)
+	}
+}
+
 func Wait() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)

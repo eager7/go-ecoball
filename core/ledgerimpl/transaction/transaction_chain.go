@@ -138,11 +138,54 @@ func NewTransactionChain(path string, ledger ledger.Ledger, shard bool) (c *Chai
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+	// every 120 blocks issue reward
+	//if ledger.GetCurrentHeight(config.ChainHash) % 30 == 0 {
+	//	//c.StateDB.FinalDB.IssueToken(common.NameToIndex("root"), new(big.Int).SetUint64(200), state.AbaToken)
+	//
+	//	//savingTx, err := types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("saving"), config.ChainHash, "", big.NewInt(100), 0, time.Now().UnixNano())
+	//	//if err != nil {
+	//	//	fmt.Println(err)
+	//	//	return nil, err
+	//	//}
+	//	//savingTx.SetSignature(&config.Root)
+	//	//txs = append(txs, savingTx)
+	//
+	//	//bpayTx, err := types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("bpay"), config.ChainHash, "", big.NewInt(100), 0, time.Now().UnixNano())
+	//	//if err != nil {
+	//	//	fmt.Println(err)
+	//	//	return nil, err
+	//	//}
+	//	//txs = append(txs, bpayTx)
+	//
+	//	c.StateDB.FinalDB.IssueToken(common.NameToIndex("saving"), big.NewInt(100), state.AbaToken)
+	//
+	//	produces, err := ledger.GetProducerList(config.ChainHash)
+	//	if err != nil {
+	//		fmt.Println(err)
+	//		return nil, err
+	//	}
+	//
+	//	value := 100 / len(produces)
+	//	for _, producer := range produces {
+	//		//bpayTx, err := types.NewTransfer(common.NameToIndex("root"), producer, config.ChainHash, "active", big.NewInt(int64(value)), 0, timeStamp)
+	//		//if err != nil {
+	//		//	fmt.Println(err)
+	//		//	return nil, err
+	//		//}
+	//		//bpayTx.SetSignature(&config.Root)
+	//		//
+	//		//txs = append(txs, bpayTx)
+	//		c.StateDB.FinalDB.IssueToken(producer, big.NewInt(int64(value)), state.AbaToken)
+	//	}
+	//}
+
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, err
 	}
 	s.Type = state.CopyType
+
+
 	var cpu, net float64
 	for i := 0; i < len(txs); i++ {
 		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")

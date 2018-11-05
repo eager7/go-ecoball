@@ -68,7 +68,11 @@ user_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f
 #user_privkey = "0x1eec266c518c0c5adfd3bbf0e4a40b22cad482a0eedfa836e90b5dcc4a643878"
 #user_pubkey = "0x045a8d217b04abc5fc44a724041eb5adeb8aff6f8559f759b6797026a638b2136e2e8ddb8eee52ef4f431a5af02b44732475648da1f9ddc7265e70a64f8ec24c17"
 
+bpy_privkey = "0xf3ff6f880630e8c0e5e52c7e4a6c1122053aed2175b1f15aced26fb5411c6587"
+bpy_pubkey = "0x040d645979992f10b9ec17d3d81c985aea5aac5228724711f7a099672a9401eeb88487ee134c8229c37ebcc1bf262d2d8d8281344ee6bf89717587c78d6c77db12"
 
+saving_privkey = "0xf127600109c39c605d5108e3c2c1e32b8ab42413f57e115a33900fda27df2906"
+saving_pubkey = "0x041634009884d3bd1c59306d5dc721ea53f5a33a47d49fa5996ca7dde71fd0a0ab8822a9ec4d5fd84dcfe96740c06f56efd30bbb46ae05f3c370b91cce83c73544"
 
 #debug config info
 worker1_privkey = "0xc3e2cbed03aacc62d8f32045013364ea493f6d24e84f26bcef4edc2e9d260c0e"
@@ -151,6 +155,8 @@ var (
 	Worker1            account.Account
 	Worker2            account.Account
 	Worker3            account.Account
+	Saving			   account.Account
+	Bpay			   account.Account
 	SwarmConfig        SwarmConfigInfo
 	EnableLocalDiscovery  bool
 	DisableLocalDisLog    bool
@@ -241,6 +247,8 @@ func initVariable() {
 	Worker3 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker3_privkey")), PublicKey: common.FromHex(viper.GetString("worker3_pubkey")), Alg: 0}
 	Delegate = account.Account{PrivateKey: common.FromHex(viper.GetString("delegate_privkey")), PublicKey: common.FromHex(viper.GetString("delegate_pubkey")), Alg: 0}
 	Worker = account.Account{PrivateKey: common.FromHex(viper.GetString("worker_privkey")), PublicKey: common.FromHex(viper.GetString("worker_pubkey")), Alg: 0}
+	Saving = account.Account{PrivateKey: common.FromHex(viper.GetString("saving_privkey")), PublicKey: common.FromHex(viper.GetString("saving_pubkey")), Alg: 0}
+	Bpay = account.Account{PrivateKey: common.FromHex(viper.GetString("bpay_privkey")), PublicKey: common.FromHex(viper.GetString("bpay_pubkey")), Alg: 0}
 	PeerList = viper.GetStringSlice(ListPeers)
 	PeerIndex = viper.GetStringSlice(IndexPeers)
 	ChainHash = common.SingleHash(common.FromHex(viper.GetString("root_pubkey")))
