@@ -99,7 +99,7 @@ func dsnAddFile(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Println(data)
 	// var retContract clientCommon.SimpleResult
 	// ctcv := url.Values{}
 	// ctcv.Set("transaction", common.ToHex(data))
@@ -191,6 +191,7 @@ func SignTransaction(chainId common.Hash, required_keys string, trx *types.Trans
 	if err != nil {
 		return err
 	}
+	fmt.Println(data)
 	// var result clientCommon.SimpleResult
 	// values := url.Values{}
 	// values.Set("keys", required_keys)
@@ -225,7 +226,7 @@ func TxTransaction(trx *types.Transaction) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Println(data)
 	// var result clientCommon.SimpleResult
 	// values := url.Values{}
 	// values.Set("transfer", common.ToHex(data))
@@ -259,7 +260,7 @@ func InvokeContract(trx *types.Transaction) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Println(data)
 	// var retContract clientCommon.SimpleResult
 	// ctcv := url.Values{}
 	// ctcv.Set("transaction", common.ToHex(data))
