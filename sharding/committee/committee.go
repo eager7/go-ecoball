@@ -211,5 +211,5 @@ func (c *committee) setFullVoeTimer(bStart bool) {
 
 func (c *committee) setSyncRequest() {
 	log.Debug("set sync request ")
-	c.sync.SyncRequest(0, 0)
+	c.sync.SendSyncRequest()
 }
