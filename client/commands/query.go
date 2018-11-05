@@ -373,7 +373,7 @@ func getContractTable(contractName string, accountName string, abiDef abi.ABI, t
 			key = append(key, 0) // C lang string end with 0
 		}
 
-		storage, err := storeGet(config.ChainHash, common.NameToIndex(contractName), key)
+		storage, err := storeGet(config.ChainHash, innerCommon.NameToIndex(contractName), key)
 		if err != nil {
 			return nil, errors.New("can not get store " + fields[i].Name)
 		}
