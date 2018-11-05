@@ -1,7 +1,7 @@
 package commands
 
 import (
-//	"fmt"
+	"fmt"
 	"encoding/json"
 	"net/http"
 	"github.com/gin-gonic/gin"
@@ -13,14 +13,14 @@ import (
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
 //	rtypes "github.com/ecoball/go-ecoball/dsn/renter"
 	"github.com/ecoball/go-ecoball/http/request"
-//	"context"
-//	dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
+	"context"
+	dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
 	//"github.com/ecoball/go-ecoball/dsn/renter"
-	//"github.com/ecoball/go-ecoball/client/commands"
-//	clientCommon "github.com/ecoball/go-ecoball/client/common"
+	"github.com/ecoball/go-ecoball/client/commands"
+	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	
 //	"net/url"
-//	"github.com/ecoball/go-ecoball/client/rpc"
+	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/ecoball/go-ecoball/dsn"
 	"github.com/ecoball/go-ecoball/http/response"
 )
@@ -118,7 +118,7 @@ func AccountStake(c *gin.Context)  {
 
 func Dsnaddfile(c *gin.Context)  {
 
-/*
+
 	file, err := c.FormFile("file")
     if err != nil {
 	//	c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
@@ -126,6 +126,7 @@ func Dsnaddfile(c *gin.Context)  {
 		return
 	}
 
+	accountName, _ := c.GetQuery("accountname")
 	hashcode , _:= c.GetQuery("hash")
 	fmt.Println(hashcode)
 	cbtx := context.Background()
@@ -149,6 +150,8 @@ func Dsnaddfile(c *gin.Context)  {
 		return 
 	}
 
+
+
 	chainId, err := commands.GetChainId()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.DsnAddFileResponse{	Code: response.CODESERVERINNERERR, Msg: err.Error(), Cid: newCid })
@@ -161,29 +164,36 @@ func Dsnaddfile(c *gin.Context)  {
 		return 
 	}
 
-	reqKeys, err := commands.GetRequiredKeys(chainId, pkKeys, "owner", transaction)
+	reqKeys, err := commands.GetRequiredKeys(chainId, "owner", accountName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.DsnAddFileResponse{	Code: response.CODESERVERINNERERR, Msg: err.Error(), Cid: newCid })
 		return 
 	}
 
-	err = commands.SignTransaction(chainId, reqKeys, transaction)
+	publickeys := clientCommon.IntersectionKeys(pkKeys, reqKeys)
+	if 0 == len(publickeys.KeyList) {
+
+		c.JSON(http.StatusInternalServerError, response.DsnAddFileResponse{	Code: response.CODESERVERINNERERR, Msg: "no publickeys", Cid: newCid })
+	}
+
+	
+	data, err := commands.SignTransaction(chainId, publickeys, transaction.Hash[:])
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.DsnAddFileResponse{	Code: response.CODESERVERINNERERR, Msg: err.Error(), Cid: newCid })
+		return
+	}
+
+	for _, v := range data.Signature {
+		transaction.AddSignature(v.PublicKey.Key, v.SignData)
+	}
+
+	var result rpc.SimpleResult
+	err = rpc.NodePost("/invokeContract", transaction, &result)
+	if nil == err {
 		c.JSON(http.StatusInternalServerError, response.DsnAddFileResponse{	Code: response.CODESERVERINNERERR, Msg: err.Error(), Cid: newCid })
 		return 
 	}
-
-	data, err := transaction.Serialize()
-	if err != nil {
-		return 
-	}
-
-	var retContract clientCommon.SimpleResult
-	ctcv := url.Values{}
-	ctcv.Set("transaction", common.ToHex(data))
-	err = rpc.NodePost("/invokeContract", ctcv.Encode(), &retContract)
-	fmt.Println("fileContract: ", retContract.Result)
-
+	
 	///////////////////////////////////////////////////
 	payTrn, err := dclient.PayForFile(newCid, newCid)
 	if err != nil {
@@ -192,30 +202,25 @@ func Dsnaddfile(c *gin.Context)  {
 		return 
 	}
 
-	reqKeys, err = commands.GetRequiredKeys(chainId, pkKeys, "owner", payTrn)
+
+
+	dataPays, err := commands.SignTransaction(chainId, publickeys, payTrn.Hash[:])
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.DsnAddFileResponse{	Code: response.CODESERVERINNERERR, Msg: err.Error(), Cid: newCid })
 		return 
 	}
 
-	err = commands.SignTransaction(chainId, reqKeys, payTrn)
-	if err != nil {
+	for _, v := range dataPays.Signature {
+		transaction.AddSignature(v.PublicKey.Key, v.SignData)
+	}
+
+	var resultPays rpc.SimpleResult
+	err = rpc.NodePost("/invokeContract", transaction, &resultPays)
+	if nil == err {
 		c.JSON(http.StatusInternalServerError, response.DsnAddFileResponse{	Code: response.CODESERVERINNERERR, Msg: err.Error(), Cid: newCid })
 		return 
 	}
-
-	data, err = payTrn.Serialize()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, response.DsnAddFileResponse{	Code: response.CODESERVERINNERERR, Msg: err.Error(), Cid: newCid })
-		return 
-	}
-
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("transfer", common.ToHex(data))
-	err = rpc.NodePost("/transfer", values.Encode(), &result)
-	fmt.Println("pay: ", result.Result)
 	
-	c.JSON(http.StatusOK, response.DsnAddFileResponse{	Code: response.CODENOMAL, Msg: "success", Cid: newCid })*/
-    
+	c.JSON(http.StatusOK, response.DsnAddFileResponse{	Code: response.CODENOMAL, Msg: "success", Cid: newCid })
+	
 }
