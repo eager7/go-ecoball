@@ -222,7 +222,7 @@ func (b *FinalBlock) Deserialize(data []byte) error {
 	}
 	var pbBlock pb.FinalBlock
 	if err := pbBlock.Unmarshal(data); err != nil {
-		return err
+		return errors.New(log, err.Error())
 	}
 	dataHeader, err := pbBlock.Header.Marshal()
 	if err != nil {

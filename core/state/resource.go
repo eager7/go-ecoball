@@ -32,10 +32,6 @@ type Chain struct {
 	Index   common.AccountName
 }
 type Resource struct {
-	Ram struct {
-		Quota float64 `json:"quota"`
-		Used  float64 `json:"used"`
-	}
 	Net struct {
 		Staked    uint64  `json:"staked_aba, omitempty"`     //total stake delegated from account to self, uint ABA
 		Delegated uint64  `json:"delegated_aba, omitempty"`  //total stake delegated to account from others, uint ABA

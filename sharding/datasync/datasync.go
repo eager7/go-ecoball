@@ -20,14 +20,27 @@ var (
 )
 
 
+type BlocksCache struct {
+	cmBlocks []cs.CMBlock
+	finalBlocks []cs.FinalBlock
+	minorBlocks map[int]cs.MinorBlock
+}
 
 type Sync struct {
-	syncType int
+	//syncType int
 	cell *cell.Cell
+	cache BlocksCache
 }
 
 func MakeSync(c *cell.Cell) *Sync {
-	return &Sync{cell: c}
+	return &Sync{
+		cell: c,
+		cache: BlocksCache{
+			cmBlocks: make([]cs.CMBlock,0),
+			finalBlocks: make([]cs.FinalBlock,0),
+			minorBlocks: make(map[int]cs.MinorBlock),
+		},
+	}
 }
 
 func MakeSyncRequestPacket(blockType int8, fromHeight int64, to int64, worker *sc.WorkerId) (*sc.NetPacket) {

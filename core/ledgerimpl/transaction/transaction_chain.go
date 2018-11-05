@@ -138,11 +138,54 @@ func NewTransactionChain(path string, ledger ledger.Ledger, shard bool) (c *Chai
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+	// every 120 blocks issue reward
+	//if ledger.GetCurrentHeight(config.ChainHash) % 30 == 0 {
+	//	//c.StateDB.FinalDB.IssueToken(common.NameToIndex("root"), new(big.Int).SetUint64(200), state.AbaToken)
+	//
+	//	//savingTx, err := types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("saving"), config.ChainHash, "", big.NewInt(100), 0, time.Now().UnixNano())
+	//	//if err != nil {
+	//	//	fmt.Println(err)
+	//	//	return nil, err
+	//	//}
+	//	//savingTx.SetSignature(&config.Root)
+	//	//txs = append(txs, savingTx)
+	//
+	//	//bpayTx, err := types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("bpay"), config.ChainHash, "", big.NewInt(100), 0, time.Now().UnixNano())
+	//	//if err != nil {
+	//	//	fmt.Println(err)
+	//	//	return nil, err
+	//	//}
+	//	//txs = append(txs, bpayTx)
+	//
+	//	c.StateDB.FinalDB.IssueToken(common.NameToIndex("saving"), big.NewInt(100), state.AbaToken)
+	//
+	//	produces, err := ledger.GetProducerList(config.ChainHash)
+	//	if err != nil {
+	//		fmt.Println(err)
+	//		return nil, err
+	//	}
+	//
+	//	value := 100 / len(produces)
+	//	for _, producer := range produces {
+	//		//bpayTx, err := types.NewTransfer(common.NameToIndex("root"), producer, config.ChainHash, "active", big.NewInt(int64(value)), 0, timeStamp)
+	//		//if err != nil {
+	//		//	fmt.Println(err)
+	//		//	return nil, err
+	//		//}
+	//		//bpayTx.SetSignature(&config.Root)
+	//		//
+	//		//txs = append(txs, bpayTx)
+	//		c.StateDB.FinalDB.IssueToken(producer, big.NewInt(int64(value)), state.AbaToken)
+	//	}
+	//}
+
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, err
 	}
 	s.Type = state.CopyType
+
+
 	var cpu, net float64
 	for i := 0; i < len(txs); i++ {
 		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
@@ -419,6 +462,7 @@ func (c *ChainTx) RestoreCurrentShardHeader() (bool, error) {
 		if err := header.Deserialize(data); err != nil {
 			return false, err
 		}
+		c.LastHeader.CmHeader = header
 	}
 
 	data, err = c.HeaderStore.Get([]byte("lastMinorHeader"))
@@ -430,6 +474,9 @@ func (c *ChainTx) RestoreCurrentShardHeader() (bool, error) {
 		if err := header.Deserialize(data); err != nil {
 			return false, err
 		}
+		c.LastHeader.MinorHeader = header
+	} else {
+		return false, nil
 	}
 
 	data, err = c.HeaderStore.Get([]byte("lastFinalHeader"))
@@ -437,10 +484,25 @@ func (c *ChainTx) RestoreCurrentShardHeader() (bool, error) {
 		log.Warn("get last final header error:", err)
 	}
 	if data != nil {
-		header := new(shard.MinorBlockHeader)
+		header := new(shard.FinalBlockHeader)
 		if err := header.Deserialize(data); err != nil {
 			return false, err
 		}
+		c.LastHeader.FinalHeader = header
+	} else {
+		return false, nil
+	}
+
+	data, err = c.HeaderStore.Get([]byte("lastVCHeader"))
+	if err != nil {
+		log.Warn("get last final header error:", err)
+	}
+	if data != nil {
+		header := new(shard.ViewChangeBlockHeader)
+		if err := header.Deserialize(data); err != nil {
+			return false, err
+		}
+		c.LastHeader.VCHeader = header
 	} else {
 		return false, nil
 	}
@@ -698,7 +760,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 //ShardBlock
 func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address) error {
 	if c.LastHeader.CmHeader != nil || c.LastHeader.MinorHeader != nil || c.LastHeader.FinalHeader != nil || c.LastHeader.VCHeader != nil {
-		log.Debug("geneses shard block is existed:", c.CurrentHeader.Height)
+		log.Debug("geneses shard block is existed")
 		return nil
 	}
 
