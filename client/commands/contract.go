@@ -230,13 +230,13 @@ func setContract(c *cli.Context) error {
 	}
 
 	//sign
-	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash[:])
+	signData, errcode := signTransaction(chainHash, publickeys, transaction.Hash[:])
 	if nil != errcode {
 		fmt.Println(errcode)
 		return errcode
 	}
 
-	for _, v := range data.Signature {
+	for _, v := range signData.Signature {
 		transaction.AddSignature(v.PublicKey.Key, v.SignData)
 	}
 

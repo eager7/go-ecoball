@@ -136,7 +136,7 @@ func newAccount(c *cli.Context) error {
 	}
 
 	//chainHash
-	var chainHash inner.Hash
+	var chainHash innercommon.Hash
 	var err error
 	chainHashStr := c.String("chainHash")
 	if "" == chainHashStr {
