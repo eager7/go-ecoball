@@ -59,8 +59,9 @@ type LastHeaders struct {
 }
 
 type BlockCache struct {
-	Height uint64
-	Type   shard.HeaderType
+	ShardID uint32
+	Height  uint64
+	Type    shard.HeaderType
 }
 
 type ChainTx struct {
@@ -138,11 +139,53 @@ func NewTransactionChain(path string, ledger ledger.Ledger, shard bool) (c *Chai
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+	// every 120 blocks issue reward
+	//if ledger.GetCurrentHeight(config.ChainHash) % 30 == 0 {
+	//	//c.StateDB.FinalDB.IssueToken(common.NameToIndex("root"), new(big.Int).SetUint64(200), state.AbaToken)
+	//
+	//	//savingTx, err := types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("saving"), config.ChainHash, "", big.NewInt(100), 0, time.Now().UnixNano())
+	//	//if err != nil {
+	//	//	fmt.Println(err)
+	//	//	return nil, err
+	//	//}
+	//	//savingTx.SetSignature(&config.Root)
+	//	//txs = append(txs, savingTx)
+	//
+	//	//bpayTx, err := types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("bpay"), config.ChainHash, "", big.NewInt(100), 0, time.Now().UnixNano())
+	//	//if err != nil {
+	//	//	fmt.Println(err)
+	//	//	return nil, err
+	//	//}
+	//	//txs = append(txs, bpayTx)
+	//
+	//	c.StateDB.FinalDB.IssueToken(common.NameToIndex("saving"), big.NewInt(100), state.AbaToken)
+	//
+	//	produces, err := ledger.GetProducerList(config.ChainHash)
+	//	if err != nil {
+	//		fmt.Println(err)
+	//		return nil, err
+	//	}
+	//
+	//	value := 100 / len(produces)
+	//	for _, producer := range produces {
+	//		//bpayTx, err := types.NewTransfer(common.NameToIndex("root"), producer, config.ChainHash, "active", big.NewInt(int64(value)), 0, timeStamp)
+	//		//if err != nil {
+	//		//	fmt.Println(err)
+	//		//	return nil, err
+	//		//}
+	//		//bpayTx.SetSignature(&config.Root)
+	//		//
+	//		//txs = append(txs, bpayTx)
+	//		c.StateDB.FinalDB.IssueToken(producer, big.NewInt(int64(value)), state.AbaToken)
+	//	}
+	//}
+
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, err
 	}
 	s.Type = state.CopyType
+
 	var cpu, net float64
 	for i := 0; i < len(txs); i++ {
 		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
@@ -257,7 +300,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	c.BlockStore.BatchPut(block.Hash.Bytes(), payload)
 	if err := c.BlockStore.BatchCommit(); err != nil {
 		c.StateDB.FinalDB.Reset(stateHashRoot)
-     		return err
+		return err
 	}
 	c.StateDB.FinalDB.CommitToDB()
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
@@ -410,6 +453,17 @@ func (c *ChainTx) RestoreCurrentHeader() (bool, error) {
 }
 
 func (c *ChainTx) RestoreCurrentShardHeader() (bool, error) {
+	headers, err := c.HeaderStore.SearchAll()
+	if err != nil {
+		return false, err
+	}
+	if len(headers) == 0 {
+		return false, nil
+	}
+	log.Info("The geneses block is existed:", len(headers))
+	//for _, v := range headers {}
+
+
 	data, err := c.HeaderStore.Get([]byte("lastCmHeader"))
 	if err != nil {
 		log.Warn("get last committee header error:", err)
@@ -867,6 +921,11 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	}
 
 	stateHashRoot := c.StateDB.FinalDB.GetHashRoot()
+	blockCache := BlockCache{
+		ShardID: 0,
+		Height:  block.GetHeight(),
+		Type:    shard.HeaderType(block.Type()),
+	}
 	var heKey, heValue []byte
 	var blockType string
 	switch shard.HeaderType(block.Type()) {
@@ -896,7 +955,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		if !ok {
 			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeMinorBlock.String()))
 		}
-
+		blockCache.ShardID = Block.ShardId
 		if c.shardId == Block.ShardId {
 			for i := 0; i < len(Block.Transactions); i++ {
 				log.Notice("Handle Transaction:", Block.Transactions[i].Type.String(), Block.Transactions[i].Hash.HexString(), " in final DB")
@@ -1011,7 +1070,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		return err
 	}
 	c.StateDB.FinalDB.CommitToDB()
-	c.BlockMap[block.Hash()] = BlockCache{Height: block.GetHeight(), Type: shard.HeaderType(block.Type())}
+	c.BlockMap[block.Hash()] = blockCache
 	log.Notice("save "+blockType+" block", block.JsonString())
 
 	log.Notice("Shard ", c.shardId, "Save Block", block.Type(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString())
@@ -1034,12 +1093,18 @@ func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash) (s
 	return shard.BlockDeserialize(dataBlock, typ)
 }
 
-func (c *ChainTx) GetShardBlockByHeight(typ shard.HeaderType, height uint64) (shard.BlockInterface, error) {
+func (c *ChainTx) GetShardBlockByHeight(typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, error) {
 	c.lockBlock.RLock()
 	defer c.lockBlock.RUnlock()
 	for k, v := range c.BlockMap {
-		if v.Height == height && v.Type == typ {
-			return c.GetShardBlockByHash(typ, k)
+		if typ != shard.HeMinorBlock {
+			if v.Height == height && v.Type == typ {
+				return c.GetShardBlockByHash(typ, k)
+			}
+		} else {
+			if v.Height == height && v.Type == typ && v.ShardID == shardID {
+				return c.GetShardBlockByHash(typ, k)
+			}
 		}
 	}
 	return nil, errors.New(log, fmt.Sprintf("can't find this block:[type]%s, [height]%d", typ.String(), height))
@@ -1059,7 +1124,7 @@ func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface,
 		if c.LastHeader.CmHeader != nil {
 			return c.GetShardBlockByHash(typ, c.LastHeader.CmHeader.Hash())
 		}
-	case shard.HeViewChange :
+	case shard.HeViewChange:
 		if c.LastHeader.VCHeader != nil {
 			return c.GetShardBlockByHash(typ, c.LastHeader.VCHeader.Hash())
 		}
@@ -1265,7 +1330,7 @@ func (c *ChainTx) NewViewChangeBlock(timeStamp int64, round uint16) (*shard.View
 	header := shard.ViewChangeBlockHeader{
 		ChainID:          c.LastHeader.VCHeader.ChainID,
 		Version:          types.VersionHeader,
-		Height:           c.LastHeader.VCHeader.Height+1,
+		Height:           c.LastHeader.VCHeader.Height + 1,
 		Timestamp:        timeStamp,
 		PrevHash:         c.LastHeader.VCHeader.Hash(),
 		CMEpochNo:        c.LastHeader.CmHeader.Height,
@@ -1427,7 +1492,7 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, tx
 			s.CommitAccount(accState)
 		}*/
 		_, _, _, err := c.HandleTransaction(s, tx, timeStamp, cpuLimit, netLimit)
-		if err !=  nil {
+		if err != nil {
 			return err
 		}
 	default:

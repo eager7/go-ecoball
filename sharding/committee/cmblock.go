@@ -223,13 +223,26 @@ func (c *committee) productCommitteeBlock(msg interface{}) {
 func (c *committee) checkCmPacket(p interface{}) bool {
 	/*check block*/
 	csp := p.(*sc.CsPacket)
+	last := c.ns.GetLastCMBlock()
+	lastf := c.ns.GetLastFinalBlock()
+
+	if csp.BlockType == sc.SD_FINAL_BLOCK {
+		final := csp.Packet.(*cs.FinalBlock)
+		if final.EpochNo > lastf.EpochNo ||
+			final.Height > lastf.Height {
+			log.Debug("cm last ", last.Height, " recv final ", final.EpochNo, " need sync")
+			c.fsm.Execute(ActChainNotSync, nil)
+			return false
+		}
+	}
+
 	if csp.BlockType != sc.SD_CM_BLOCK {
 		log.Error("it is not cm block, drop it")
 		return false
 	}
 
 	cm := csp.Packet.(*cs.CMBlock)
-	last := c.ns.GetLastCMBlock()
+
 	if last != nil {
 		if cm.Height <= last.Height {
 			log.Error("old cm block, drop it")

@@ -372,12 +372,12 @@ func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ shard.HeaderTy
 	return chain.GetShardBlockByHash(typ, hash)
 }
 
-func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64) (shard.BlockInterface, error) {
+func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
-	return chain.GetShardBlockByHeight(typ, height)
+	return chain.GetShardBlockByHeight(typ, height, shardID)
 }
 
 func (l *LedgerImpl) GetLastShardBlock(chainID common.Hash, typ shard.HeaderType) (shard.BlockInterface, error) {

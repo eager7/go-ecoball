@@ -338,12 +338,15 @@ func computePriKeyDKG(abaTBLS *ABATBLS)(*big.Int, []*bn256.G2){
 }
 
 func ComputePubKeyDKG(index int, pubPoly []*bn256.G2)*bn256.G2{
+	var pubKeyData bn256.G2
 	var pubKey *bn256.G2
+	pubKey = &pubKeyData
+	pubKeyData = *pubPoly[0]
 	// in calculation, should use index+1 instead of index
-	bigindex := new(big.Int).SetInt64(int64(index+1))
+	bigIndex := new(big.Int).SetInt64(int64(index+1))
 	for i := 1; i < len(pubPoly); i++{
-		bignum := new(big.Int).SetInt64(int64(i))
-		exp := new(big.Int).Exp(bigindex, bignum, p)
+		bigNum := new(big.Int).SetInt64(int64(i))
+		exp := new(big.Int).Exp(bigIndex, bigNum, p)
 		point := new(bn256.G2).ScalarMult(pubPoly[i], exp)
 		pubKey = new(bn256.G2).Add(pubKey, point)
 	}
