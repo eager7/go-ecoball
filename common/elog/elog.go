@@ -239,6 +239,7 @@ func (l *loggerModule) Fatal(a ...interface{}) {
 	}
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ FATAL " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
+	debug.PrintStack()
 	l.logger.Fatal(a...)
 }
 

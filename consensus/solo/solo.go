@@ -29,6 +29,7 @@ import (
 	netMessage "github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/txpool"
 	"time"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
@@ -47,8 +48,8 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.
 	actor := &soloActor{solo: solo}
 	NewSoloActor(actor)
 
-	msg := []uint32{
-		netMessage.APP_MSG_BLKS,
+	msg := []pb.MsgType{
+		pb.MsgType_APP_MSG_BLKS,
 	}
 
 	solo.msg, err = dispatcher.Subscribe(msg...)
@@ -120,7 +121,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 				log.Error("can't parse msg")
 				continue
 			}
-			log.Info("receive msg:", netMessage.MessageToStr[in.Type()])
+			log.Info("receive msg:", in.Type().String())
 			block := new(types.Block)
 			if err := block.Deserialize(in.Data()); err != nil {
 				log.Error(err)

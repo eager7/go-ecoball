@@ -289,7 +289,7 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	}
 	if fData == nil {
 		log.Warn(fmt.Sprintf("no this account named:%s", index.String()))
-		return nil, nil
+		return nil, errors.New(log, fmt.Sprintf("no this account named:%s", index.String()))
 	}
 	acc = &Account{}
 	if err = acc.Deserialize(fData); err != nil {

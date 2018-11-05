@@ -253,5 +253,9 @@ func TestExample(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	elog.Log.Debug(m.JsonString())
 
+	block, err := l.GetLastShardBlock(config.ChainHash, shard.HeViewChange)
+	errors.CheckErrorPanic(err)
+	elog.Log.Debug("vc block:", block.JsonString())
+
 	event.EventStop()
 }

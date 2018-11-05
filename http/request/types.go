@@ -14,21 +14,34 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package rpc
+package request
 
 import (
-	"sync"
-
-	"github.com/ecoball/go-ecoball/http/common"
+	innerCommon "github.com/ecoball/go-ecoball/common"
 )
 
-type HttpRpcServer struct {
-	sync.RWMutex
-	method2Handle map[string]func([]interface{}) *common.Response
+type AccountName struct {
+	Name      string
+	ChainHash innerCommon.Hash
 }
 
-func (this *HttpRpcServer) AddHandleFunc(pattern string, handler func([]interface{}) *common.Response) {
-	this.Lock()
-	defer this.Unlock()
-	this.method2Handle[pattern] = handler
+type TokenName struct {
+	Name      string
+	ChainHash innerCommon.Hash
+}
+
+type BlockHeight struct {
+	Height    uint64
+	ChainHash innerCommon.Hash
+}
+
+type TransactionHash struct {
+	Hash      innerCommon.Hash
+	ChainHash innerCommon.Hash
+}
+
+type PermissionPublicKeys struct {
+	Name       string
+	Permission string
+	ChainHash  innerCommon.Hash
 }

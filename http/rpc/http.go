@@ -43,7 +43,6 @@ func StartHttpServer() (err error) {
 
 	//register handle
 	router.GET("/getHeadBlock", getHeadBlock)
-	router.POST("/invokeContract", invokeContract)
 	router.POST("/setContract", setContract)
 	router.POST("/newInvokeContract", newInvokeContract)
 	router.POST("/newDeployContract", newDeployContract)
@@ -53,7 +52,6 @@ func StartHttpServer() (err error) {
 
 	//attach
 	router.GET("/attach", attach)
-	router.GET("/getInfo", getInfo)
 
 	//query information
 	router.GET("/query/mainChainHash", commands.GetMainChainHash)
@@ -66,50 +64,22 @@ func StartHttpServer() (err error) {
 	router.POST("/query/getContract", commands.GetContract)
 	router.POST("//query/storeGet", commands.StoreGet)
 
-	//transfer
-	router.POST("/transfer", commands.Transfer)
+	//contract
+	router.POST("/invokeContract", commands.InvokeContract)
+
+	//dsnstorage
+	router.GET("/dsn/total", commands.TotalHandler)
+	router.POST("/dsn/eracode", commands.EraCoding)
+	router.GET("/dsn/eradecode", commands.EraDecoding)
+	router.GET("/dsn/accountstake", commands.AccountStake)
+
+	router.POST("/dsn/dsnaddfile", commands.Dsnaddfile)
 
 	http.ListenAndServe(":"+config.HttpLocalPort, router)
 	return nil
 }
 
 func attach(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"result": "success"})
-}
-
-func getInfo(c *gin.Context) {
-	var height uint64 = 1
-	blockInfo, errcode := ledger.L.GetTxBlockByHeight(config.ChainHash, height)
-	if errcode != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": errcode.Error()})
-		return
-	}
-
-	data, errs := blockInfo.Serialize()
-	if errs != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": errs.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"result": innerCommon.ToHex(data)})
-}
-
-func invokeContract(c *gin.Context) {
-	invoke := new(types.Transaction) //{
-	transaction_data := c.PostForm("transaction")
-
-	if err := invoke.Deserialize(innerCommon.FromHex(transaction_data)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
-	//send to txpool
-	err := event.Send(event.ActorNil, event.ActorTxPool, invoke)
-	if nil != err {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }
 

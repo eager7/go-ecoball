@@ -5,7 +5,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -16,9 +16,9 @@ type cmBlockCsi struct {
 	cache *cs.CMBlock
 }
 
-func newCmBlockCsi(bk *cs.CMBlock) *cmBlockCsi {
-	bk.Step1 = 1
-	bk.Step2 = 1
+func newCmBlockCsi(bk *cs.CMBlock, sign uint32) *cmBlockCsi {
+	bk.Step1 = sign
+	bk.Step2 = sign
 
 	return &cmBlockCsi{bk: bk}
 }
@@ -65,7 +65,7 @@ func (b *cmBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 }
 
 func (b *cmBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
-	csp := &sc.NetPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_CM_BLOCK, Step: step}
+	csp := &sc.NetPacket{PacketType: pb.MsgType_APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_CM_BLOCK, Step: step}
 
 	data, err := b.bk.Serialize()
 	if err != nil {
@@ -212,7 +212,8 @@ func (c *committee) productCommitteeBlock(msg interface{}) {
 		return
 	}
 
-	cms := newCmBlockCsi(cm)
+	sign := c.ns.GetSignBit()
+	cms := newCmBlockCsi(cm, sign)
 
 	c.cs.StartConsensus(cms, sc.DefaultCmBlockWindow*time.Millisecond)
 
@@ -229,9 +230,15 @@ func (c *committee) checkCmPacket(p interface{}) bool {
 
 	cm := csp.Packet.(*cs.CMBlock)
 	last := c.ns.GetLastCMBlock()
-	if last != nil && cm.Height <= last.Height {
-		log.Error("old cm block, drop it")
-		return false
+	if last != nil {
+		if cm.Height <= last.Height {
+			log.Error("old cm block, drop it")
+			return false
+		} else if cm.Height > last.Height+1 {
+			log.Debug("cm last ", last.Height, " recv ", cm.Height, " need sync")
+			c.fsm.Execute(ActChainNotSync, nil)
+			return false
+		}
 	}
 
 	return true

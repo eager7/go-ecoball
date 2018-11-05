@@ -118,7 +118,7 @@ func NewVM(module *wasm.Module) (*VM, error) {
 	vm.globals = make([]uint64, len(module.GlobalIndexSpace))
 	vm.newFuncTable()
 	vm.module = module
-
+    vm.RecoverPanic = true
 	nNatives := 0
 	for i, fn := range module.FunctionIndexSpace {
 		// Skip native methods as they need not be

@@ -137,19 +137,21 @@ func (s *Shell) Cat(path string) (io.ReadCloser, error) {
 
 type object struct {
 	Hash string
+	Name string
+	Size string
 }
 
 // Add a file to ipfs from the given reader, returns the hash of the added file
-func (s *Shell) Add(r io.Reader) (string, error) {
+func (s *Shell) Add(r io.Reader) (string, string, error) {
 	return s.AddWithOpts(r, true, false)
 }
 
 // AddNoPin a file to ipfs from the given reader, returns the hash of the added file without pinning the file
-func (s *Shell) AddNoPin(r io.Reader) (string, error) {
+func (s *Shell) AddNoPin(r io.Reader) (string, string, error) {
 	return s.AddWithOpts(r, false, false)
 }
 
-func (s *Shell) AddWithOpts(r io.Reader, pin bool, rawLeaves bool) (string, error) {
+func (s *Shell) AddWithOpts(r io.Reader, pin bool, rawLeaves bool) (string, string, error) {
 	var rc io.ReadCloser
 	if rclose, ok := r.(io.ReadCloser); ok {
 		rc = rclose
@@ -163,7 +165,7 @@ func (s *Shell) AddWithOpts(r io.Reader, pin bool, rawLeaves bool) (string, erro
 	fileReader := files.NewMultiFileReader(slf, true)
 
 	var out object
-	return out.Hash, s.Request("add").
+	return out.Hash, out.Name, s.Request("add").
 		Option("progress", false).
 		Option("pin", pin).
 		Option("raw-leaves", rawLeaves).

@@ -68,7 +68,7 @@ str_ip = " "
 for ip in args.node_ip:
     str_ip += (ip + " ")
 
-count = 0
+count = 1
 while count < 4 * args.weight:
     # start ecoball
     command = "sudo docker run -d " + "--name=ecoball_" + str(count) + " -p "
@@ -77,6 +77,7 @@ while count < 4 * args.weight:
     command += " " + image + " /root/go/src/github.com/ecoball/go-ecoball/Docker/start.py "
     command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
     run(command)
+    print(command)
     sleep(2)
 
     if args.deploy and 0 == count:
@@ -92,7 +93,14 @@ while count < 4 * args.weight:
         run(command)
         sleep(2)
 
+    if 0 == count:
+        break
+
     count += 1
+
+    if count == 4 * args.weight:
+        sleep(5)
+        count = 0
     
 
 print("start all ecoball success!!!") 

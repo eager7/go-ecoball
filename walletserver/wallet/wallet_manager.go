@@ -24,10 +24,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/ecoball/go-ecoball/client/common"
-	inner "github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/types"
 )
 
 /*var (
@@ -47,8 +43,8 @@ type WalletApi interface {
 	Lock() error
 	Unlock(password []byte) error
 	CreateKey() ([]byte, []byte, error)
-	RemoveKey(password []byte, publickey string) error
-	ImportKey(privateKey string) ([]byte, error)
+	RemoveKey(password []byte, publickey []byte) error
+	ImportKey(privateKey []byte) ([]byte, error)
 	ListPublicKey() ([]string, error)
 	CheckLocked() bool
 	CheckPassword(password []byte) bool
@@ -63,6 +59,15 @@ type WalletApi interface {
 	Dir       string
 	FileExten string
 }*/
+
+type OneSign struct {
+	PublicKey []byte
+	SignData  []byte
+}
+
+type Sign struct {
+	Signature []OneSign
+}
 
 const INVALID_TIME int64 = -1
 
@@ -88,7 +93,8 @@ func Create(name string, password []byte) error {
 	checkTimeout()
 	//whether the wallet file exists
 	filename := path.Join(dir, name)
-	if common.FileExisted(filename) {
+	_, err := os.Stat(filename)
+	if err == nil || os.IsExist(err) {
 		return errors.New("The file already exists")
 	}
 
@@ -103,7 +109,7 @@ func Create(name string, password []byte) error {
 	}
 
 	//lock wallet
-	err := newWallet.Lock()
+	err = newWallet.Lock()
 	newWallet.lockflag = locked
 	if nil != err {
 		return err
@@ -164,7 +170,7 @@ func Open(name string, password []byte) error {
 	return nil
 }
 
-func ImportKey(name string, privateKey string) ([]byte, error) {
+func ImportKey(name string, privateKey []byte) ([]byte, error) {
 	checkTimeout()
 	wallet, ok := wallets[name]
 
@@ -179,7 +185,7 @@ func ImportKey(name string, privateKey string) ([]byte, error) {
 	return wallet.ImportKey(privateKey)
 }
 
-func RemoveKey(name string, password []byte, publickey string) error {
+func RemoveKey(name string, password []byte, publickey []byte) error {
 	checkTimeout()
 	wallet, ok := wallets[name]
 
@@ -322,26 +328,16 @@ func ListWallets() ([]string, error) {
 	return keys, nil
 }
 
-func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
+func SignTransaction(transaction []byte, publicKeys []string) (Sign, error) {
 	checkTimeout()
-	Transaction := new(types.Transaction)
-	if err := Transaction.Deserialize(transaction); err != nil {
-		return nil, err
-	}
-
+	var result = Sign{Signature: []OneSign{}}
 	for _, publicKey := range publicKeys {
 		bFound := false
 		for _, wallet := range wallets {
 			if !wallet.CheckLocked() {
-				if signData, bHave := wallet.TrySignDigest(Transaction.Hash.Bytes(), publicKey); bHave {
-					/*flag, err := Verify(Transaction.Hash.Bytes(), inner.FromHex(publicKey), signData); if !flag || err != nil {
-						fmt.Println(err)
-					}*/
-					sig := new(inner.Signature)
-					sig.PubKey = inner.CopyBytes(inner.FromHex(publicKey))
-					sig.SigData = inner.CopyBytes(signData)
-
-					Transaction.Signatures = append(Transaction.Signatures, *sig)
+				if signData, bHave := wallet.TrySignDigest(transaction, publicKey); bHave {
+					oneSignature := OneSign{PublicKey: []byte(publicKey), SignData: signData}
+					result.Signature = append(result.Signature, oneSignature)
 					if !bFound {
 						bFound = true
 					}
@@ -351,16 +347,11 @@ func SignTransaction(transaction []byte, publicKeys []string) ([]byte, error) {
 		}
 
 		if !bFound {
-			return nil, errors.New("Public key not found in unlocked wallets: " + string(publicKey))
+			return Sign{}, errors.New("Public key not found in unlocked wallets: " + string(publicKey))
 		}
 	}
 
-	data, err := Transaction.Serialize()
-	if nil != err {
-		return nil, err
-	}
-	return data, nil
-
+	return result, nil
 }
 
 func SignDigest(data []byte, publicKey string) ([]byte, error) {

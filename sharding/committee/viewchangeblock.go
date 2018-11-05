@@ -3,7 +3,7 @@ package committee
 import (
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -14,9 +14,9 @@ type vcBlockCsi struct {
 	cache *cs.ViewChangeBlock
 }
 
-func newVcBlockCsi(block *cs.ViewChangeBlock) *vcBlockCsi {
-	block.Step1 = 1
-	block.Step2 = 1
+func newVcBlockCsi(block *cs.ViewChangeBlock, sign uint32) *vcBlockCsi {
+	block.Step1 = sign
+	block.Step2 = sign
 
 	return &vcBlockCsi{bk: block}
 }
@@ -58,7 +58,7 @@ func (b *vcBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 }
 
 func (b *vcBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
-	csp := &sc.NetPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_VIEWCHANGE_BLOCK, Step: step}
+	csp := &sc.NetPacket{PacketType: pb.MsgType_APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_VIEWCHANGE_BLOCK, Step: step}
 
 	data, err := b.bk.Serialize()
 	if err != nil {
@@ -76,14 +76,14 @@ func (b *vcBlockCsi) GetCsBlock() interface{} {
 }
 
 func (b *vcBlockCsi) PrepareRsp() uint32 {
+	log.Debug("prepare receive consign ", b.cache.Step1)
 
 	b.bk.Step1 |= b.cache.Step1
-
 	return b.bk.Step1
 }
 
 func (b *vcBlockCsi) PrecommitRsp() uint32 {
-
+	log.Debug("precommit receive consign ", b.cache.Step2)
 	b.bk.Step2 |= b.cache.Step2
 
 	return b.bk.Step2
@@ -104,6 +104,7 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 
 	var round uint16
 	var epoch uint64
+	var fheight uint64
 	var height uint64
 
 	if lastcm != nil {
@@ -111,10 +112,11 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 	}
 
 	if lastfinal != nil {
-		height = lastfinal.Height
+		fheight = lastfinal.Height
 	}
 
 	if lastvc == nil {
+		height = 1
 		round = 1
 	} else {
 		if lastfinal != nil && lastfinal.Height > lastvc.FinalBlockHeight {
@@ -122,6 +124,8 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 		} else {
 			round = lastvc.Round + 1
 		}
+
+		height = lastvc.Height + 1
 	}
 
 	works := c.ns.GetWorks()
@@ -133,7 +137,7 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 		return nil, false
 	}
 
-	log.Debug("create vc block epoch ", epoch, " height ", height, " round ", round)
+	log.Debug("create vc block epoch ", epoch, " fheight ", fheight, " round ", round, " height ", height)
 	vc := &cs.ViewChangeBlock{
 		ViewChangeBlockHeader: cs.ViewChangeBlockHeader{
 			CMEpochNo:        0,
@@ -145,8 +149,9 @@ func (c *committee) createVcBlock() (*cs.ViewChangeBlock, bool) {
 		},
 	}
 
+	vc.Height = height
 	vc.CMEpochNo = epoch
-	vc.FinalBlockHeight = height
+	vc.FinalBlockHeight = fheight
 	vc.Round = round
 
 	works = works[1:]
@@ -182,7 +187,8 @@ func (c *committee) productViewChangeBlock(msg interface{}) {
 		return
 	}
 
-	vci := newVcBlockCsi(vc)
+	sign := c.ns.GetSignBit()
+	vci := newVcBlockCsi(vc, sign)
 
 	c.cs.StartVcConsensus(vci, sc.DefaultViewchangeBlockWindow*time.Millisecond, bCandidate)
 
@@ -197,6 +203,27 @@ func (c *committee) checkVcPacket(p interface{}) bool {
 		return false
 	}
 
+	vc := csp.Packet.(*cs.ViewChangeBlock)
+	last := c.ns.GetLastViewchangeBlock()
+	lastfinal := c.ns.GetLastFinalBlock()
+	if last == nil || lastfinal == nil {
+		panic("last block is nil")
+		return false
+	}
+
+	if vc.FinalBlockHeight < lastfinal.Height {
+		log.Debug("wrong vc packet ", vc.FinalBlockHeight, " ", vc.Round)
+		return false
+	} else if vc.FinalBlockHeight == lastfinal.Height {
+		if last.Round >= vc.Round {
+			log.Debug("old vc packet ", vc.FinalBlockHeight, " ", vc.Round)
+			return false
+		}
+	} else {
+		log.Debug("last final ", lastfinal.Height, " recv view change final height ", vc.FinalBlockHeight, " need sync")
+		c.fsm.Execute(ActChainNotSync, nil)
+		return false
+	}
 	return true
 }
 

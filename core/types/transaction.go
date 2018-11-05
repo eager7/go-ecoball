@@ -117,6 +117,14 @@ func (t *Transaction) SetSignature(account *account.Account) error {
 	return nil
 }
 
+func (t *Transaction) AddSignature(pubKey, sigData []byte) error {
+	if pubKey == nil || sigData == nil {
+		return errors.New(log, fmt.Sprintf("the input param is nil, %s, %s", pubKey, sigData))
+	}
+	t.Signatures = append(t.Signatures, common.Signature{PubKey:pubKey, SigData:sigData})
+	return nil
+}
+
 func (t *Transaction) VerifySignature() (bool, error) {
 	for _, v := range t.Signatures {
 		result, err := secp256k1.Verify(t.Hash.Bytes(), v.SigData, v.PubKey)

@@ -10,6 +10,14 @@ import (
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 )
 
+func SyncComplete() {
+	log.Debug("sync complete")
+	m := &message.SyncComplete{}
+	if err := event.Send(event.ActorSharding, event.ActorSharding, m); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func TellBlock(bl cs.BlockInterface) {
 	log.Debug("tell ledger block type ", bl.Type(), " height ", bl.GetHeight())
 	if err := event.Send(event.ActorSharding, event.ActorLedger, bl); err != nil {

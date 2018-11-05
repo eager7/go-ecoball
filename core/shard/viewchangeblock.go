@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"fmt"
 	"encoding/json"
+	"github.com/ecoball/go-ecoball/account"
 )
 
 type ViewChangeBlockHeader struct {
@@ -193,7 +194,7 @@ func (b *ViewChangeBlock) Deserialize(data []byte) error {
 	}
 	var pbBlock pb.ViewChangeBlock
 	if err := pbBlock.Unmarshal(data); err != nil {
-		return err
+		return errors.New(log, err.Error())
 	}
 	dataHeader, err := pbBlock.Header.Marshal()
 	if err != nil {
@@ -229,4 +230,16 @@ func NewVCBlock(header ViewChangeBlockHeader) (*ViewChangeBlock, error) {
 	return &ViewChangeBlock{
 		ViewChangeBlockHeader: header,
 	}, nil
+}
+
+func (b *ViewChangeBlock) SetSignature(account *account.Account) error {
+	sigData, err := account.Sign(b.hash.Bytes())
+	if err != nil {
+		return err
+	}
+	sig := common.Signature{}
+	sig.SigData = common.CopyBytes(sigData)
+	sig.PubKey = common.CopyBytes(account.PublicKey)
+	//t.Signatures = append(t.Signatures, sig)
+	return nil
 }

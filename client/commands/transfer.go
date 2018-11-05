@@ -17,10 +17,9 @@
 package commands
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
-	"strings"
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/urfave/cli"
@@ -54,9 +53,8 @@ var (
 				Usage: "ABA amount",
 			},
 			cli.StringFlag{
-				Name:  "chainId, c",
-				Usage: "chainId hash",
-				Value: "config.hash",
+				Name:  "chainHash, c",
+				Usage: "chain hash(the default is the main chain hash)",
 			},
 		},
 		Action: transferAction,
@@ -93,12 +91,25 @@ func transferAction(c *cli.Context) error {
 
 	bigValue := big.NewInt(value)
 
-	chainHash, err := getMainChainHash()
+	//chainHash
+	var chainHash inner.Hash
+	var err error
+	chainHashStr := c.String("chainHash")
+	if "" == chainHashStr {
+		chainHash, err = getMainChainHash()
+
+	} else {
+		var hashTemp []byte
+		hashTemp, err = hex.DecodeString(chainHashStr)
+		copy(chainHash[:], hashTemp)
+	}
+
 	if nil != err {
 		fmt.Println(err)
 		return err
 	}
 
+	//public keys
 	allPublickeys, err := getPublicKeys()
 	if err != nil {
 		fmt.Println(err)
@@ -121,34 +132,25 @@ func transferAction(c *cli.Context) error {
 		return err
 	}
 
-	publickeys := ""
-	keyDatas := strings.Split(allPublickeys, ",")
-	for _, v := range keyDatas {
-		addr := inner.AddressFromPubKey(inner.FromHex(v))
-		for _, vv := range requiredKeys {
-			if addr == vv {
-				publickeys += v
-				publickeys += "\n"
-				break
-			}
-		}
-	}
-
-	if "" == publickeys {
+	publickeys := clientCommon.IntersectionKeys(allPublickeys, requiredKeys)
+	if 0 == len(publickeys.KeyList) {
 		fmt.Println("no publickeys")
 		return errors.New("no publickeys")
 	}
 
-	data, errcode := signTransaction(chainHash, publickeys, transaction)
+	//sign
+	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash[:])
 	if nil != errcode {
 		fmt.Println(errcode)
 		return errcode
 	}
 
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("transfer", data)
-	err = rpc.NodePost("/transfer", values.Encode(), &result)
+	for _, v := range data.Signature {
+		transaction.AddSignature(v.PublicKey.Key, v.SignData)
+	}
+
+	var result rpc.SimpleResult
+	err = rpc.NodePost("/invokeContract", transaction, &result)
 	if nil == err {
 		fmt.Println(result.Result)
 	}

@@ -3,7 +3,7 @@ package net
 import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	cs "github.com/ecoball/go-ecoball/core/shard"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
@@ -136,16 +136,24 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 
 	sp := &sc.NetPacket{}
 	sp.DupHeader(packet)
-	sp.PacketType = netmsg.APP_MSG_SHARDING_PACKET
+	sp.PacketType = pb.MsgType_APP_MSG_SHARDING_PACKET
 	sp.Packet = packet.Packet
 
 	cm := n.ns.GetLastCMBlock()
+
+	var bfinal = false
+	if sp.BlockType == sc.SD_FINAL_BLOCK {
+		bfinal = true
+	}
+
 	for _, shard := range cm.Shards {
 		if leader {
-			go simulate.Sendto(shard.Member[0].Address, shard.Member[0].Port, sp)
+			i := n.ns.CalcShardLeader(len(shard.Member), bfinal)
+			go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
 		} else if bakcup {
 			if len(shard.Member) > 1 {
-				go simulate.Sendto(shard.Member[1].Address, shard.Member[1].Port, sp)
+				i := n.ns.CalcShardBackup(len(shard.Member), bfinal)
+				go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
 			}
 		}
 	}
@@ -164,7 +172,7 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 
 	sp := &sc.NetPacket{}
 	sp.DupHeader(packet)
-	sp.PacketType = netmsg.APP_MSG_SHARDING_PACKET
+	sp.PacketType = pb.MsgType_APP_MSG_SHARDING_PACKET
 	sp.Packet = packet.Packet
 
 	cm := n.ns.GetCmWorks()
@@ -184,10 +192,12 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 		}
 
 		if leader {
-			go simulate.Sendto(shard.Member[0].Address, shard.Member[0].Port, sp)
+			i := n.ns.CalcShardLeader(len(shard.Member), false)
+			go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
 		} else if bakcup {
 			if len(shard.Member) > 1 {
-				go simulate.Sendto(shard.Member[1].Address, shard.Member[1].Port, sp)
+				i := n.ns.CalcShardBackup(len(shard.Member), false)
+				go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
 			}
 		}
 	}

@@ -39,11 +39,12 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/dsn"
+	//"github.com/ecoball/go-ecoball/dsn"
 	"github.com/ecoball/go-ecoball/sharding"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
+	"github.com/ecoball/go-ecoball/test/example"
 )
 
 var (
@@ -182,6 +183,9 @@ func runNode(c *cli.Context) error {
 		if ledger.L.StateDB(config.ChainHash).RequireVotingInfo() {
 			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{config.ChainHash})
 		}
+	case "SHARD":
+		log.Debug("Start Shard Mode")
+		go example.TransferExample()
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
@@ -214,7 +218,7 @@ func runNode(c *cli.Context) error {
 		return nil
 	})*/
 
-	dsn.StartDsn(ctx, ledger.L)
+	//dsn.StartDsn(ctx, ledger.L)
 
 	//start blockchain browser
 	ecoballGroup.Go(func() error {
@@ -240,7 +244,7 @@ func runNode(c *cli.Context) error {
 	ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
-			if err := rpc.StartRPCServer(); nil != err {
+			if err := rpc.StartHttpServer(); nil != err {
 				errChan <- err
 			}
 		}()
@@ -256,8 +260,7 @@ func runNode(c *cli.Context) error {
 		return nil
 	})
 	//capture single
-	go rpc.StartHttpServer()
-	go dsn.DsnHttpServ()
+	//go dsn.DsnHttpServ()
 	go wait(shutdown)
 
 	//Wait for each sub goroutine to exit

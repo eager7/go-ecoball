@@ -7,6 +7,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/account"
 )
 
 type FinalBlockHeader struct {
@@ -173,6 +174,18 @@ func NewFinalBlock(header FinalBlockHeader, minorBlocks []*MinorBlockHeader) (*F
 	}, nil
 }
 
+func (b *FinalBlock) SetSignature(account *account.Account) error {
+	sigData, err := account.Sign(b.hash.Bytes())
+	if err != nil {
+		return err
+	}
+	sig := common.Signature{}
+	sig.SigData = common.CopyBytes(sigData)
+	sig.PubKey = common.CopyBytes(account.PublicKey)
+	//t.Signatures = append(t.Signatures, sig)
+	return nil
+}
+
 func (b *FinalBlock) proto() (block *pb.FinalBlock, err error) {
 	var pbBlock pb.FinalBlock
 	pbBlock.Header, err = b.FinalBlockHeader.proto()
@@ -209,7 +222,7 @@ func (b *FinalBlock) Deserialize(data []byte) error {
 	}
 	var pbBlock pb.FinalBlock
 	if err := pbBlock.Unmarshal(data); err != nil {
-		return err
+		return errors.New(log, err.Error())
 	}
 	dataHeader, err := pbBlock.Header.Marshal()
 	if err != nil {

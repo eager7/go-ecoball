@@ -4,6 +4,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/pb"
 	message2 "github.com/ecoball/go-ecoball/net/message"
+	npb "github.com/ecoball/go-ecoball/net/message/pb"
 	"golang.org/x/crypto/bn256"
 	"math/big"
 	"time"
@@ -84,12 +85,12 @@ func genSijMsg(epochNum int, index int, abaTBLS *ABATBLS) {
 				log.Debug("sijMsgPB sij serialization error:", err)
 			}
 			for j := 0; j < len(sijMsg.pubKeyPoly.coEffs); j++ {
-				buf := sijMsg.pubKeyPoly.coEffs[i].Marshal()
+				buf := sijMsg.pubKeyPoly.coEffs[j].Marshal()
 				TmpPoint := pb.CurvePointPB{buf}
 				sijMsgPB.PubPolyPB = append(sijMsgPB.PubPolyPB, &TmpPoint)
 			}
 			// send the msg to peer
-			msgType := message2.APP_MSG_DKGSIJ
+			msgType := npb.MsgType_APP_MSG_DKGSIJ
 			msgData,err := sijMsgPB.Marshal()
 			if err != nil {
 				log.Debug("sijMsgPB serialization error:", err)
@@ -138,11 +139,11 @@ func dkgRoutine(abaTBLS *ABATBLS) {
 
 func ProcessDKGMsg(msg message2.EcoBallNetMsg,abaTBLS *ABATBLS) {
 	switch msg.Type() {
-	case message2.APP_MSG_DKGSIJ:
+	case npb.MsgType_APP_MSG_DKGSIJ:
 		ProcessSijMSGDKG(msg,abaTBLS)
-	case message2.APP_MSG_DKGNLQUAL:
+	case npb.MsgType_APP_MSG_DKGNLQUAL:
 		ProcessNLQUALDKG(msg,abaTBLS)
-	case message2.APP_MSG_DKGLQUAL:
+	case npb.MsgType_APP_MSG_DKGLQUAL:
 		ProcessLQUALDKG(msg,abaTBLS)
 	default:
 		log.Error("wrong actor message")
@@ -163,26 +164,38 @@ func ProcessSijMSGDKG(msg message2.EcoBallNetMsg,abaTBLS *ABATBLS) {
 		log.Debug("sijMsgPB sij deserialization error:", err)
 		return
 	}
+	var pubKeyPoly = new(PubPoly)
+	pubKeyPoly.coEffs = make([]*bn256.G2,abaTBLS.threshold)
 	for j := 0; j < abaTBLS.threshold; j++ {
-		var TmpPoint *bn256.G2
-		TmpPoint.Unmarshal(sijMsgPB.PubPolyPB[j].CurvePoint)
+		// var TmpPoint *bn256.G2
+		// TmpPoint.Unmarshal(sijMsgPB.PubPolyPB[j].CurvePoint)
+		TmpPoint,_ := new(bn256.G2).Unmarshal(sijMsgPB.PubPolyPB[j].CurvePoint)
 		sijShareDKG.pubKeyPoly.coEffs = append(sijShareDKG.pubKeyPoly.coEffs, TmpPoint)
+		pubKeyPoly.coEffs[j] = TmpPoint
 	}
-
+	sijShareDKG.pubKeyPoly.index = sijShareDKG.index
+	sijShareDKG.pubKeyPoly.epochNum = sijShareDKG.epochNum
+	pubKeyPoly.index = sijShareDKG.index
+	pubKeyPoly.epochNum = sijShareDKG.epochNum
 	// to compute
 	indexIn := sijShareDKG.index
-	abaTBLS.dealer.deal[indexIn].pubKeyShare = &sijShareDKG.pubKeyPoly
+
+	//abaTBLS.dealer.deal[indexIn].pubKeyShare = &sijShareDKG.pubKeyPoly
+	abaTBLS.dealer.deal[indexIn].pubKeyShare = pubKeyPoly
+
 	if abaTBLS.dealer.deal[indexIn].pubKeyShare != nil {
-		complain := SijVerify(&sijShareDKG, &sijShareDKG.pubKeyPoly, indexIn, abaTBLS.epochNum)
+		complain := SijVerify(&sijShareDKG, &sijShareDKG.pubKeyPoly, indexIn, abaTBLS.epochNum, abaTBLS.index)
 		if complain != nil {
 			abaTBLS.dealer.deal[indexIn].complain[abaTBLS.dealer.index] = complain
 			abaTBLS.dealer.complain++
+			return
 		}
 		abaTBLS.dealer.deal[indexIn].keyShare.index = indexIn
 		abaTBLS.dealer.deal[indexIn].keyShare.Sij = &sijShareDKG.Sij
 		abaTBLS.dealer.QUAL[indexIn] = 1
 		abaTBLS.dealer.deal[indexIn].status = false
 	}
+
 }
 
 func ProcessSijTimeout(abaTBLS *ABATBLS) {
@@ -192,11 +205,12 @@ func ProcessSijTimeout(abaTBLS *ABATBLS) {
 		var msgQual = pb.QualPBNLDKG{}
 		msgQual.Index = int64(abaTBLS.index)
 		msgQual.EpochNum = int64(abaTBLS.epochNum)
+		msgQual.QUAL = make([]int32,len(abaTBLS.workers))
 		for i:=0;i<len(abaTBLS.workers);i++ {
 			msgQual.QUAL[i] = int32(abaTBLS.dealer.QUAL[i])
 		}
 		// send the msg to peer
-		msgType := message2.APP_MSG_DKGNLQUAL
+		msgType := npb.MsgType_APP_MSG_DKGNLQUAL
 		msgData,err := msgQual.Marshal()
 		if err != nil {
 			log.Debug("MSG_DKGNLQUAL serialization error:", err)
@@ -253,11 +267,12 @@ func ProcessNLQualTimeout(abaTBLS *ABATBLS) {
 			var msgQual = pb.QualPBLDKG{}
 			msgQual.Index = int64(abaTBLS.index)
 			msgQual.EpochNum = int64(abaTBLS.epochNum)
+			msgQual.QUAL = make([]int32,len(abaTBLS.workers))
 			for i:=0;i<len(abaTBLS.workers);i++ {
 				msgQual.QUAL[i] = int32(abaTBLS.Qual[i])
 			}
 			// send the msg to peer
-			msgType := message2.APP_MSG_DKGLQUAL
+			msgType := npb.MsgType_APP_MSG_DKGLQUAL
 			msgData,err := msgQual.Marshal()
 			if err != nil {
 				log.Debug("MSG_DKGLQUAL serialization error:", err)
@@ -279,10 +294,10 @@ func ProcessQualTimeout() {
 }
 
 func computePriKeyDKG(abaTBLS *ABATBLS)(*big.Int, []*bn256.G2){
-	coEffs := make([]*bn256.G2, abaTBLS.dealer.threshold)
+	coEffs := make([]*bn256.G2, abaTBLS.threshold)
 	priKey := new(big.Int).SetInt64(0)
 
-	for i := 0; i <= len(abaTBLS.Qual); i++ {
+	for i := 0; i < len(abaTBLS.Qual); i++ {
 		if abaTBLS.Qual[i]>0 {
 			if abaTBLS.dealer.QUAL[i] == 0 {
 				// means there is missing
@@ -294,7 +309,7 @@ func computePriKeyDKG(abaTBLS *ABATBLS)(*big.Int, []*bn256.G2){
 	}
 	var tag int
 	tag = 0
-	for i := 0; i <= len(abaTBLS.Qual); i++ {
+	for i := 0; i < len(abaTBLS.Qual); i++ {
 		if abaTBLS.Qual[i] > 0 {
 			if abaTBLS.dealer.QUAL[i] == 0 {
 				// means there is missing
@@ -303,11 +318,13 @@ func computePriKeyDKG(abaTBLS *ABATBLS)(*big.Int, []*bn256.G2){
 				}
 				break
 			}
-			for j:=0;j<abaTBLS.threshold;j++ {
-				if tag == 0 {
-					tag = 1
+			if tag ==0 {
+				for j:=0; j < abaTBLS.threshold; j++ {
 					coEffs[j] = new(bn256.G2).ScalarMult(abaTBLS.dealer.deal[i].pubKeyShare.coEffs[j], new(big.Int).SetInt64(1))
-				} else {
+				}
+				tag = 1
+			} else {
+				for j:=0; j < abaTBLS.threshold; j++ {
 					coEffs[j] = new(bn256.G2).Add(coEffs[j], abaTBLS.dealer.deal[i].pubKeyShare.coEffs[j])
 				}
 			}
@@ -343,7 +360,7 @@ func ProcessLQUALDKG(msg message2.EcoBallNetMsg,abaTBLS *ABATBLS) {
 		return
 	}
 
-	if abaTBLS.index == int(msgQual.Index) && abaTBLS.epochNum == int(msgQual.EpochNum) {
+	if 0 == int(msgQual.Index) && abaTBLS.epochNum == int(msgQual.EpochNum) {
 		for i:=0; i<len(msgQual.QUAL);i++ {
 			abaTBLS.Qual[i] = int(msgQual.QUAL[i])
 		}

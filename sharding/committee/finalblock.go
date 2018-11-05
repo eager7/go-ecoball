@@ -4,7 +4,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -15,9 +15,9 @@ type finalBlockCsi struct {
 	cache *cs.FinalBlock
 }
 
-func newFinalBlockCsi(bk *cs.FinalBlock) *finalBlockCsi {
-	bk.Step1 = 1
-	bk.Step2 = 1
+func newFinalBlockCsi(bk *cs.FinalBlock, sign uint32) *finalBlockCsi {
+	bk.Step1 = sign
+	bk.Step2 = sign
 
 	return &finalBlockCsi{bk: bk}
 }
@@ -52,7 +52,7 @@ func (b *finalBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 }
 
 func (b *finalBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
-	csp := &sc.NetPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_FINAL_BLOCK, Step: step}
+	csp := &sc.NetPacket{PacketType: pb.MsgType_APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_FINAL_BLOCK, Step: step}
 
 	data, err := b.bk.Serialize()
 	if err != nil {
@@ -166,7 +166,9 @@ func (c *committee) productFinalBlock(msg interface{}) {
 		if final == nil {
 			return
 		}
-		csi := newFinalBlockCsi(final)
+
+		sign := c.ns.GetSignBit()
+		csi := newFinalBlockCsi(final, sign)
 
 		c.cs.StartConsensus(csi, sc.DefaultBlockWindow)
 
@@ -177,7 +179,8 @@ func (c *committee) productFinalBlock(msg interface{}) {
 func (c *committee) processLedgerFinalBlockMsg(p interface{}) {
 	final := p.(*cs.FinalBlock)
 
-	csi := newFinalBlockCsi(final)
+	sign := c.ns.GetSignBit()
+	csi := newFinalBlockCsi(final, sign)
 
 	c.cs.StartConsensus(csi, sc.DefaultFinalBlockWindow*time.Millisecond)
 
@@ -194,9 +197,15 @@ func (c *committee) checkFinalPacket(p interface{}) bool {
 
 	final := csp.Packet.(*cs.FinalBlock)
 	last := c.ns.GetLastFinalBlock()
-	if last != nil && final.Height <= last.Height {
-		log.Error("old final block, drop it")
-		return false
+	if last != nil {
+		if final.Height <= last.Height {
+			log.Error("old final block, drop it")
+			return false
+		} else if final.Height > last.Height+1 {
+			log.Debug("final last ", last.Height, "recv ", final.Height, " need sync")
+			c.fsm.Execute(ActChainNotSync, nil)
+			return false
+		}
 	}
 
 	return true

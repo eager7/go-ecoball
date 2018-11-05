@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
 	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
@@ -73,8 +74,11 @@ func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
 	return netImpl
 }
 
-func GetNetInstance() EcoballNetwork {
-	return netImpl
+func GetNetInstance() (EcoballNetwork, error) {
+	if netImpl == nil {
+		return nil, fmt.Errorf("network has not been initialized")
+	}
+	return netImpl, nil
 }
 
 // impl transforms the network interface, which sends and receives
@@ -99,12 +103,16 @@ type NetImpl struct {
 	routingTable *NetRouteTable
 }
 
-func (net *NetImpl)GetPeerID() (peer.ID, error) {
+func (net *NetImpl) GetPeerID() (peer.ID, error) {
 	return net.host.ID(), nil
 }
 
 func (net *NetImpl) Host() host.Host {
 	return net.host
+}
+
+func (net *NetImpl) SelectRandomPeers(peerCount uint16) []peer.ID {
+	return net.getRandomPeers(int(peerCount), net.receiver.IsNotMyShard)
 }
 
 func (net *NetImpl) SetDelegate(r Receiver) {
@@ -179,7 +187,7 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 		p := s.Conn().RemotePeer()
 		ctx := context.Background()
 		net.routingTable.update(p)
-		if received.Type() == message.APP_MSG_GOSSIP {
+		if received.Type() == pb.MsgType_APP_MSG_GOSSIP {
 			net.preHandleGossipMsg(received, p)
 			msg, err := net.unwarpGossipMsg(received)
 			if err != nil {
@@ -298,6 +306,8 @@ func (net *NetImpl) Stop() {
 	net.host.Network().StopNotify((*netNotifiee)(net))
 
 	net.engine.Stop()
+
+	net.gossipStore.Stop()
 
 	net.quitsendJb <- true
 }

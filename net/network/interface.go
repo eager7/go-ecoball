@@ -19,8 +19,10 @@ package network
 import (
 	"context"
 	"github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
+
 )
 
 type EcoballNetwork interface {
@@ -28,6 +30,9 @@ type EcoballNetwork interface {
 
 	// SetDelegate registers the Reciver to handle messages received from the network.
 	SetDelegate(Receiver)
+
+	SelectRandomPeers(peerCount uint16) []peer.ID
+
 
 	Start()
 	Stop()
@@ -56,7 +61,7 @@ type CommAPI interface {
 }
 
 type ShardingMsgAPI interface {
-	SendMsgDataToShard(shardId uint16, msgId uint32, data []byte) error
+	SendMsgDataToShard(shardId uint16, msgId pb.MsgType, data []byte) error
 	SendMsgToShards(message.EcoBallNetMsg) error
 	SendMsgToCommittee(message.EcoBallNetMsg) error
 }

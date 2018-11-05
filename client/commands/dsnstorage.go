@@ -1,21 +1,20 @@
 package commands
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/url"
 	"os"
-
-	clientCommon "github.com/ecoball/go-ecoball/client/common"
-	"github.com/ecoball/go-ecoball/client/rpc"
+   "github.com/urfave/cli"
+   dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
+	"context"
+	"io/ioutil"
+//	"net/url"
 	"github.com/ecoball/go-ecoball/common"
+//	 clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/core/types"
-	dsncli "github.com/ecoball/go-ecoball/dsn/renter/client"
-	"github.com/urfave/cli"
+//	"github.com/ecoball/go-ecoball/client/rpc"
+	"errors"
+	
 )
-
 var (
 	DsnStorageCommands = cli.Command{
 		Name:     "dsnstorage",
@@ -33,15 +32,25 @@ var (
 						Value: "-1",
 					},
 				},
+
 			},
 			{
 				Name:   "cat",
 				Usage:  "cat file",
 				Action: dsnCatFile,
+	
 			},
 		},
+		
 	}
+	
 )
+
+func GetPublicKeys() (string, error) {
+
+	return "",nil
+//	return getPublicKeys();
+}
 
 func dsnAddFile(ctx *cli.Context) error {
 	cbtx := context.Background()
@@ -51,7 +60,7 @@ func dsnAddFile(ctx *cli.Context) error {
 	if !ok {
 		return errors.New("Checking collateral failed")
 	}
-	cid, err := dclient.AddFile(file)
+	cid, _, err := dclient.AddFile(file)
 	if err != nil {
 		return err
 	}
@@ -66,22 +75,22 @@ func dsnAddFile(ctx *cli.Context) error {
 		return err
 	}
 
-	chainId, err := getMainChainHash()
+	chainId, err := GetChainId()
 	if err != nil {
 		return err
 	}
 
-	_, err = getPublicKeys()
+	pkKeys, err := GetPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	_, err = getRequiredKeys(chainId, "owner", transaction.From.String())
+	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", transaction)
 	if err != nil {
 		return err
 	}
 
-	err = SignTransaction(chainId, "", transaction)
+	err = SignTransaction(chainId, reqKeys, transaction)
 	if err != nil {
 		return err
 	}
@@ -90,12 +99,12 @@ func dsnAddFile(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
-	var retContract clientCommon.SimpleResult
-	ctcv := url.Values{}
-	ctcv.Set("transaction", common.ToHex(data))
-	err = rpc.NodePost("/invokeContract", ctcv.Encode(), &retContract)
-	fmt.Println("fileContract: ", retContract.Result)
+	fmt.Println(data)
+	// var retContract clientCommon.SimpleResult
+	// ctcv := url.Values{}
+	// ctcv.Set("transaction", common.ToHex(data))
+	// err = rpc.NodePost("/invokeContract", ctcv.Encode(), &retContract)
+	// fmt.Println("fileContract: ", retContract.Result)
 
 	///////////////////////////////////////////////////
 	payTrn, err := dclient.PayForFile(file, newCid)
@@ -103,11 +112,11 @@ func dsnAddFile(ctx *cli.Context) error {
 		fmt.Println(err.Error())
 		return err
 	}
-	_, err = getRequiredKeys(chainId, "owner", payTrn.From.String())
+	reqKeys, err = GetRequiredKeys(chainId, pkKeys, "owner", payTrn)
 	if err != nil {
 		return err
 	}
-	err = SignTransaction(chainId, "", payTrn)
+	err = SignTransaction(chainId, reqKeys, payTrn)
 	if err != nil {
 		return err
 	}
@@ -116,16 +125,17 @@ func dsnAddFile(ctx *cli.Context) error {
 		return err
 	}
 
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("transfer", common.ToHex(data))
-	err = rpc.NodePost("/transfer", values.Encode(), &result)
-	fmt.Println("pay: ", result.Result)
+	// var result clientCommon.SimpleResult
+	// values := url.Values{}
+	// values.Set("transfer", common.ToHex(data))
+	// err = rpc.NodePost("/transfer", values.Encode(), &result)
+	// fmt.Println("pay: ", result.Result)
 
 	return nil
 }
 
-func dsnCatFile(ctx *cli.Context) {
+
+func dsnCatFile (ctx *cli.Context)  {
 	cbtx := context.Background()
 	dclient := dsncli.NewRcWithDefaultConf(cbtx)
 	//dclient.CheckCollateral()
@@ -152,8 +162,7 @@ func dsnGetFile(ctx *cli.Context) error {
 }
 
 func GetChainId() (common.Hash, error) {
-	info, err := getInfo()
-	return info.ChainID, err
+	return getMainChainHash()
 }
 
 func GetRequiredKeys(chainId common.Hash, required_keys, permission string, trx *types.Transaction) (string, error) {
@@ -162,17 +171,19 @@ func GetRequiredKeys(chainId common.Hash, required_keys, permission string, trx 
 		return "", err
 	}*/
 
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("permission", permission)
-	values.Set("chainId", chainId.HexString())
-	values.Set("keys", required_keys)
-	values.Set("name", trx.From.String())
-	err := rpc.NodePost("/get_required_keys", values.Encode(), &result)
-	if nil == err {
-		return result.Result, nil
-	}
-	return "", err
+	// var result clientCommon.SimpleResult
+	// values := url.Values{}
+	// values.Set("permission", permission)
+	// values.Set("chainId", chainId.HexString())
+	// values.Set("keys", required_keys)
+	// values.Set("name", trx.From.String())
+	// err := rpc.NodePost("/get_required_keys", values.Encode(), &result)
+	// if nil == err {
+	// 	return result.Result, nil
+	// }
+	//return "", err
+
+	return "", nil
 }
 
 func SignTransaction(chainId common.Hash, required_keys string, trx *types.Transaction) error {
@@ -180,33 +191,34 @@ func SignTransaction(chainId common.Hash, required_keys string, trx *types.Trans
 	if err != nil {
 		return err
 	}
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("keys", required_keys)
-	values.Set("transaction", common.ToHex(data))
-	err = rpc.WalletPost("/wallet/signTransaction", values.Encode(), &result)
-	if nil == err {
-		trx.Deserialize(common.FromHex(result.Result))
-	}
+	fmt.Println(data)
+	// var result clientCommon.SimpleResult
+	// values := url.Values{}
+	// values.Set("keys", required_keys)
+	// values.Set("transaction", common.ToHex(data))
+	// err = rpc.WalletPost("/wallet/signTransaction", values.Encode(), &result)
+	// if nil == err {
+	// 	trx.Deserialize(common.FromHex(result.Result))
+	// }
 	return err
 }
 
 func TxTransaction(trx *types.Transaction) error {
-	chainId, err := getMainChainHash()
+	chainId, err := GetChainId()
 	if err != nil {
 		return err
 	}
 
-	_, err = getPublicKeys()
+	pkKeys, err := GetPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	_, err = getRequiredKeys(chainId, "owner", trx.From.String())
+	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", trx)
 	if err != nil {
 		return err
 	}
-	err = SignTransaction(chainId, "", trx)
+	err = SignTransaction(chainId, reqKeys, trx)
 	if err != nil {
 		return err
 	}
@@ -214,32 +226,32 @@ func TxTransaction(trx *types.Transaction) error {
 	if err != nil {
 		return err
 	}
-
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("transfer", common.ToHex(data))
-	err = rpc.NodePost("/transfer", values.Encode(), &result)
-	fmt.Println("tx transaction: ", result.Result)
+	fmt.Println(data)
+	// var result clientCommon.SimpleResult
+	// values := url.Values{}
+	// values.Set("transfer", common.ToHex(data))
+	// err = rpc.NodePost("/transfer", values.Encode(), &result)
+	// fmt.Println("tx transaction: ", result.Result)
 	return err
 }
 
 func InvokeContract(trx *types.Transaction) error {
-	chainId, err := getMainChainHash()
+	chainId, err := GetChainId()
 	if err != nil {
 		return err
 	}
 
-	_, err = getPublicKeys()
+	pkKeys, err := GetPublicKeys()
 	if err != nil {
 		return err
 	}
 
-	_, err = getRequiredKeys(chainId, "owner", trx.From.String())
+	reqKeys, err := GetRequiredKeys(chainId, pkKeys, "owner", trx)
 	if err != nil {
 		return err
 	}
 
-	err = SignTransaction(chainId, "", trx)
+	err = SignTransaction(chainId, reqKeys, trx)
 	if err != nil {
 		return err
 	}
@@ -248,11 +260,11 @@ func InvokeContract(trx *types.Transaction) error {
 	if err != nil {
 		return err
 	}
-
-	var retContract clientCommon.SimpleResult
-	ctcv := url.Values{}
-	ctcv.Set("transaction", common.ToHex(data))
-	err = rpc.NodePost("/invokeContract", ctcv.Encode(), &retContract)
-	fmt.Println("Contract: ", retContract.Result)
+	fmt.Println(data)
+	// var retContract clientCommon.SimpleResult
+	// ctcv := url.Values{}
+	// ctcv.Set("transaction", common.ToHex(data))
+	// err = rpc.NodePost("/invokeContract", ctcv.Encode(), &retContract)
+	// fmt.Println("fileContract: ", retContract.Result)
 	return err
 }

@@ -13,30 +13,63 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
-package common
 
-import (
-	"encoding/json"
-	"errors"
-	"io"
-)
+package http
 
-type Error struct {
-	Message string `json:"message"`
+type KeyPair struct {
+	PrivateKey []byte
+	PublicKey  []byte
 }
 
-func (err Error) Error() string {
-	return err.Message
+type KeyPairs struct {
+	Pairs []KeyPair
 }
 
-func ReadAPIError(r io.Reader) error {
-	var apiErr Error
-	if err := json.NewDecoder(r).Decode(&apiErr); err != nil {
-		return errors.New(err.Error() + " could not read error response")
-	}
-	return apiErr
+type OneKey struct {
+	Key []byte
 }
 
-type SimpleResult struct {
-	Result string `json:"result"`
+type Keys struct {
+	KeyList []OneKey
+}
+
+type Wallets struct {
+	NameList []string
+}
+
+type RawTransactionData struct {
+	PublicKeys Keys
+	RawData    []byte
+}
+
+type OneSignTransaction struct {
+	PublicKey OneKey
+	SignData  []byte
+}
+
+type SignTransaction struct {
+	Signature []OneSignTransaction
+}
+
+type WalletNamePassword struct {
+	Name     string
+	Password string
+}
+
+type WalletName struct {
+	Name string
+}
+
+type WalletImportKey struct {
+	Name   string
+	PriKey OneKey
+}
+
+type WalletRemoveKey struct {
+	NamePassword WalletNamePassword
+	PubKey       OneKey
+}
+
+type WalletTimeout struct {
+	Interval int64
 }

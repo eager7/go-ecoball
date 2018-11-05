@@ -7,6 +7,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/account"
 )
 
 type NodeInfo struct {
@@ -236,6 +237,18 @@ func NewCmBlock(header CMBlockHeader, shards []Shard) (*CMBlock, error) {
 	}, nil
 }
 
+func (b *CMBlock) SetSignature(account *account.Account) error {
+	sigData, err := account.Sign(b.hash.Bytes())
+	if err != nil {
+	return err
+	}
+	sig := common.Signature{}
+	sig.SigData = common.CopyBytes(sigData)
+	sig.PubKey = common.CopyBytes(account.PublicKey)
+	//t.Signatures = append(t.Signatures, sig)
+	return nil
+}
+
 func (b *CMBlock) proto() (block *pb.CMBlock, err error) {
 	var pbBlock pb.CMBlock
 	pbBlock.Header, err = b.CMBlockHeader.proto()
@@ -269,7 +282,7 @@ func (b *CMBlock) Deserialize(data []byte) error {
 	}
 	var pbBlock pb.CMBlock
 	if err := pbBlock.Unmarshal(data); err != nil {
-		return err
+		return errors.New(log, err.Error())
 	}
 	dataHeader, err := pbBlock.Header.Marshal()
 	if err != nil {

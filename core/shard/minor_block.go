@@ -9,6 +9,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/account"
 )
 
 var log = elog.NewLogger("core-shard", elog.NoticeLog)
@@ -213,6 +214,18 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *MinorBlockHeader, txs []
 	return block, nil
 }
 
+func (b *MinorBlock) SetSignature(account *account.Account) error {
+	sigData, err := account.Sign(b.hash.Bytes())
+	if err != nil {
+		return err
+	}
+	sig := common.Signature{}
+	sig.SigData = common.CopyBytes(sigData)
+	sig.PubKey = common.CopyBytes(account.PublicKey)
+	//t.Signatures = append(t.Signatures, sig)
+	return nil
+}
+
 func (b *MinorBlock) SetReceipt(prevHeader *MinorBlockHeader, cpu, net float64) error {
 	if prevHeader == nil {
 		return nil
@@ -298,7 +311,7 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 	}
 	var pbBlock pb.MinorBlock
 	if err := pbBlock.Unmarshal(data); err != nil {
-		return err
+		return errors.New(log, err.Error())
 	}
 	dataHeader, err := pbBlock.Header.Marshal()
 	if err != nil {

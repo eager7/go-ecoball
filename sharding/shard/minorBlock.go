@@ -4,7 +4,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -15,9 +15,9 @@ type minorBlockCsi struct {
 	cache *cs.MinorBlock
 }
 
-func newMinorBlockCsi(block *cs.MinorBlock) *minorBlockCsi {
-	block.Step1 = 1
-	block.Step2 = 1
+func newMinorBlockCsi(block *cs.MinorBlock, sign uint32) *minorBlockCsi {
+	block.Step1 = sign
+	block.Step2 = sign
 
 	return &minorBlockCsi{bk: block}
 }
@@ -54,7 +54,7 @@ func (b *minorBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 }
 
 func (b *minorBlockCsi) MakeNetPacket(step uint16) *sc.NetPacket {
-	csp := &sc.NetPacket{PacketType: netmsg.APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_MINOR_BLOCK, Step: step}
+	csp := &sc.NetPacket{PacketType: pb.MsgType_APP_MSG_CONSENSUS_PACKET, BlockType: sc.SD_MINOR_BLOCK, Step: step}
 
 	data, err := b.bk.Serialize()
 	if err != nil {
@@ -72,6 +72,7 @@ func (b *minorBlockCsi) GetCsBlock() interface{} {
 }
 
 func (b *minorBlockCsi) PrepareRsp() uint32 {
+	log.Debug("prepare receive consign ", b.cache.Step1)
 
 	b.bk.Step1 |= b.cache.Step1
 
@@ -79,6 +80,7 @@ func (b *minorBlockCsi) PrepareRsp() uint32 {
 }
 
 func (b *minorBlockCsi) PrecommitRsp() uint32 {
+	log.Debug("precommit receive consign ", b.cache.Step2)
 
 	b.bk.Step2 |= b.cache.Step2
 
@@ -162,7 +164,8 @@ func (s *shard) productMinorBlock(msg interface{}) {
 		simulate.TellLedgerProductMinorBlock(lastcm.Height, height)
 	} else {
 		minor := s.createMinorBlock()
-		csi := newMinorBlockCsi(minor)
+		sign := s.ns.GetSignBit()
+		csi := newMinorBlockCsi(minor, sign)
 		s.cs.StartConsensus(csi, sc.DefaultBlockWindow)
 	}
 }
@@ -170,7 +173,8 @@ func (s *shard) productMinorBlock(msg interface{}) {
 func (s *shard) processLedgerMinorBlockMsg(p interface{}) {
 	minor := p.(*cs.MinorBlock)
 
-	csi := newMinorBlockCsi(minor)
+	sign := s.ns.GetSignBit()
+	csi := newMinorBlockCsi(minor, sign)
 	s.cs.StartConsensus(csi, sc.DefaultMinorBlockWindow*time.Millisecond)
 }
 
@@ -199,9 +203,15 @@ func (s *shard) checkMinorPacket(p interface{}) bool {
 
 	minor := csp.Packet.(*cs.MinorBlock)
 	last := s.ns.GetLastMinorBlock()
-	if last != nil && minor.Height <= last.Height {
-		log.Error("old minor block, drop it")
-		return false
+	if last != nil {
+		if minor.Height <= last.Height {
+			log.Error("old minor block, drop it")
+			return false
+		} else if minor.Height > last.Height+1 {
+			log.Debug("last ", last.Height, "recv ", minor.Height, " need sync")
+			s.fsm.Execute(ActChainNotSync, nil)
+			return false
+		}
 	}
 
 	return true

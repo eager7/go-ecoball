@@ -74,7 +74,6 @@ func newClientApp() *cli.App {
 		commands.QueryCommands,
 		commands.AttachCommands,
 		commands.CreateCommands,
-		commands.StorageCommands,
 		commands.DsnStorageCommands,
 	}
 

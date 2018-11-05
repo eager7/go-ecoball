@@ -19,9 +19,9 @@ type PriPoly struct{
 }
 
 type PubPoly struct{
-	index   int
-	viewNum int
-	coEffs  []*bn256.G2
+	index    int
+	epochNum int
+	coEffs   []*bn256.G2
 }
 
 type SijShareDKG struct{
@@ -37,15 +37,15 @@ func SetPriShare(epochNum int, index, threshold int)*PriPoly{
 	private.index = index
 	private.epochNum = epochNum
 	for i := 0; i < threshold; i++{
-		randSeed := rand.New(rand.NewSource(time.Now().Unix()))
-		bignum := new(big.Int).Rand(randSeed, p)
-		// bignum := new(big.Int).SetInt64(int64(index))
-		private.coeffs = append(private.coeffs, bignum)
+		randSeed := rand.New(rand.NewSource(time.Now().Unix()+int64(2*i*i+8*index*index*index+1024)))
+		bigNum := new(big.Int).Rand(randSeed, p)
+		// bigNum := new(big.Int).SetInt64(int64(index))
+		private.coeffs = append(private.coeffs, bigNum)
 	}
 	return &private
 }
 
-func SetPubPolybyPrivate(private *PriPoly)*PubPoly{
+func SetPubPolyByPrivate(private *PriPoly)*PubPoly{
 	var public PubPoly
 	public.coEffs = make([]*bn256.G2, 0)
 
@@ -76,18 +76,20 @@ func computeSij(priPoly *PriPoly, pubKeyShare *PubPoly, indexJ int, epochNum int
 		bigNum2.Mul(bigNum2, priPoly.coeffs[i])
 		Sij = Sij.Add(Sij, bigNum2)
 	}
-	fmt.Printf("sij = %s\n",Sij.String())
+	fmt.Printf("ABATBLS:\n %s,\n %s,\n %s\n",priPoly.coeffs[0].String(),priPoly.coeffs[1].String(),priPoly.coeffs[2].String())
+	fmt.Printf("%d,%d,sij = %s\n",priPoly.index,indexJ,Sij.String())
 
 	return &SijShareDKG{priPoly.index, epochNum,*Sij, *pubKeyShare }
 }
 
-func SijVerify(sij *SijShareDKG,pubShare *PubPoly, indexJ int, epochNow int)*Complain{
+func SijVerify(sij *SijShareDKG,pubShare *PubPoly, indexJ int, epochNow int, index int)*Complain{
 	// in calculation, should use index+1 instead of index
-	bignum1 := new(big.Int).SetInt64(int64(indexJ+1))
+	bignum1 := new(big.Int).SetInt64(int64(index+1))
 	bignum2 := new(big.Int)
 	bignum3 := new(big.Int)
 
-	g1 := pubShare.coEffs[0]
+	// g1 := pubShare.coEffs[0]
+	g1 := new(bn256.G2).ScalarMult(pubShare.coEffs[0], new(big.Int).SetInt64(1))
 	g2 := new(bn256.G2).ScalarBaseMult(&sij.Sij)
 
 	for i := 1; i < len(pubShare.coEffs); i++{
@@ -100,11 +102,11 @@ func SijVerify(sij *SijShareDKG,pubShare *PubPoly, indexJ int, epochNow int)*Com
 
 	byte1 := g1.Marshal()
 	byte2 := g2.Marshal()
+	fmt.Printf("compare:\n")
 	fmt.Println(byte1)
 	fmt.Println(byte2)
 	result := bytes.Compare(byte1, byte2)
 
-	fmt.Println("compare")
 	if result == 0 && sij.epochNum == epochNow{
 		fmt.Println("compare pass")
 		return nil

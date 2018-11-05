@@ -4,10 +4,11 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/message"
 	cs "github.com/ecoball/go-ecoball/core/shard"
-	netmsg "github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
+	"github.com/ecoball/go-ecoball/sharding/datasync"
 	"github.com/ecoball/go-ecoball/sharding/net"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
@@ -45,6 +46,7 @@ type shard struct {
 	retransTimer  *sc.Stimer
 	fullVoteTimer *sc.Stimer
 	cs            *consensus.Consensus
+	sync          *datasync.Sync
 }
 
 func MakeShard(ns *cell.Cell) sc.NodeInstance {
@@ -54,6 +56,7 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 		stateTimer:    sc.NewStimer(0, false),
 		retransTimer:  sc.NewStimer(0, false),
 		fullVoteTimer: sc.NewStimer(0, false),
+		sync:          datasync.MakeSync(ns),
 	}
 
 	s.cs = consensus.MakeConsensus(s.ns, s.setRetransTimer, s.setFullVoeTimer, s.consensusCb)
@@ -65,7 +68,7 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 			{blockSync, ActStateTimeout, nil, s.processBlockSyncTimeout, nil, sc.StateNil},
 
 			{waitBlock, ActProductMinorBlock, nil, s.productMinorBlock, nil, productMinoBlock},
-			{waitBlock, ActChainNotSync, nil, nil, nil, blockSync},
+			{waitBlock, ActChainNotSync, nil, s.doBlockSync, nil, blockSync},
 			{waitBlock, ActRecvShardingPacket, nil, s.processShardingPacket, nil, sc.StateNil},
 
 			{productMinoBlock, ActRecvConsensusPacket, nil, s.processConsensusMinorPacket, nil, sc.StateNil},
@@ -73,6 +76,7 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 			{productMinoBlock, ActProductMinorBlock, nil, s.reproductMinorBlock, nil, sc.StateNil},
 			{productMinoBlock, ActRecvShardingPacket, nil, s.processShardingPacket, nil, sc.StateNil},
 			{productMinoBlock, ActLedgerBlockMsg, nil, s.processLedgerMinorBlockMsg, nil, sc.StateNil},
+			{productMinoBlock, ActChainNotSync, nil, s.doBlockSync, nil, blockSync},
 		})
 
 	net.MakeNet(ns)
@@ -94,10 +98,14 @@ func (s *shard) Start() {
 	s.pvc = recvc
 	go s.sRoutine()
 	s.pvcRoutine()
+
+	s.setSyncRequest()
 }
 
 func (s *shard) sRoutine() {
 	log.Debug("start shard routine")
+	s.ns.LoadLastBlock()
+
 	s.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 
 	for {
@@ -107,15 +115,18 @@ func (s *shard) sRoutine() {
 		case packet := <-s.ppc:
 			s.processPacket(packet)
 		case <-s.stateTimer.T.C:
-			if s.stateTimer.On {
+			if s.stateTimer.GetStatus() {
+				s.stateTimer.SetStop()
 				s.processStateTimeout()
 			}
 		case <-s.retransTimer.T.C:
-			if s.retransTimer.On {
+			if s.retransTimer.GetStatus() {
+				s.retransTimer.SetStop()
 				s.processRetransTimeout()
 			}
 		case <-s.fullVoteTimer.T.C:
-			if s.fullVoteTimer.On {
+			if s.fullVoteTimer.GetStatus() {
+				s.fullVoteTimer.SetStop()
 				s.processFullVoteTimeout()
 			}
 		}
@@ -156,9 +167,9 @@ func (s *shard) setRetransTimer(bStart bool, d time.Duration) {
 
 func (s *shard) processPacket(packet *sc.CsPacket) {
 	switch packet.PacketType {
-	case netmsg.APP_MSG_CONSENSUS_PACKET:
+	case pb.MsgType_APP_MSG_CONSENSUS_PACKET:
 		s.recvConsensusPacket(packet)
-	case netmsg.APP_MSG_SHARDING_PACKET:
+	case pb.MsgType_APP_MSG_SHARDING_PACKET:
 		s.recvShardingPacket(packet)
 	default:
 		log.Error("wrong packet")
@@ -173,8 +184,17 @@ func (s *shard) setFullVoeTimer(bStart bool) {
 	log.Debug("set full vote timer ", bStart)
 
 	if bStart {
-		s.fullVoteTimer.Reset(sc.DefaultFullVoteTimer * time.Second)
+		//didn't restart vote timer if it is on, because we can receive duplicate response from peer
+		if !s.fullVoteTimer.GetStatus() {
+			log.Debug("reset full vote timer")
+			s.fullVoteTimer.Reset(sc.DefaultFullVoteTimer * time.Second)
+		}
 	} else {
 		s.fullVoteTimer.Stop()
 	}
+}
+
+func (s *shard) setSyncRequest() {
+	log.Debug("set sync request ")
+	s.sync.SyncRequest(0, 0)
 }

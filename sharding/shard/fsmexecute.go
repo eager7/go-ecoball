@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+func (c *shard) doBlockSync(msg interface{}) {
+	c.setSyncRequest()
+	c.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
+}
+
 func (s *shard) processStateTimeout() {
 	log.Debug("state time out")
 
@@ -26,20 +31,29 @@ func (s *shard) processBlockSyncTimeout(msg interface{}) {
 }
 
 func (s *shard) processSyncComplete() {
+	log.Debug("recv sync complete")
+
 	lastCmBlock, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 	if err != nil || lastCmBlock == nil {
-		s.fsm.Execute(ActWaitBlock, nil)
+		panic("get cm block error ")
 		return
 	}
 
 	cm := lastCmBlock.GetObject().(cs.CMBlock)
 	s.ns.SyncCmBlockComplete(&cm)
 
-	/* missing_func vc block */
+	lastvc, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
+	if err != nil || lastvc == nil {
+		panic("get vc block error ")
+		return
+	}
+
+	vc := lastvc.GetObject().(cs.ViewChangeBlock)
+	s.ns.SaveLastViewchangeBlock(&vc)
 
 	lastFinalBlock, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
-		s.fsm.Execute(ActProductMinorBlock, nil)
+		panic("get final block error ")
 		return
 	}
 
@@ -47,10 +61,13 @@ func (s *shard) processSyncComplete() {
 	s.ns.SaveLastFinalBlock(&final)
 
 	lastMinor, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
-	if err == nil || lastFinalBlock != nil {
-		minor := lastMinor.GetObject().(cs.MinorBlock)
-		s.ns.SaveLastMinorBlock(&minor)
+	if err != nil || lastMinor == nil {
+		panic("get minor block error ")
+		return
 	}
+
+	minor := lastMinor.GetObject().(cs.MinorBlock)
+	s.ns.SaveLastMinorBlock(&minor)
 
 	if cm.Height == 1 && final.Height == 1 {
 		s.fsm.Execute(ActWaitBlock, nil)

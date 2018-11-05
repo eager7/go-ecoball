@@ -13,38 +13,30 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
+package rpc
 
-package common
-
-type Errcode int64
-
-const (
-	SUCCESS Errcode = iota
-	INVALID_ACCOUNT
-	INVALID_PARAMS
-	INVALID_CONTRACT_ABI
-	TRX_FAIL
-	GENERATE_KEY_PAIR_FAILED
-	INTERNAL_ERROR
-	SAMEDATA
+import (
+	"encoding/json"
+	"errors"
+	"io"
 )
 
-var ErrorCodeInfo = map[Errcode]string{
-	SUCCESS:                  "success",
-	INVALID_ACCOUNT:          "invalid account",
-	INVALID_PARAMS:           "invalid arguments",
-	INVALID_CONTRACT_ABI:     "contract abi error",
-	TRX_FAIL:				  "create transcation failed",
-	GENERATE_KEY_PAIR_FAILED: "generate key pair failed",
-	INTERNAL_ERROR:           "internal error",
-	SAMEDATA:                 "duplicated data",
+type Error struct {
+	Message string `json:"message"`
 }
 
-func (this *Errcode) Info() string {
-	desc, exist := ErrorCodeInfo[*this]
-	if exist {
-		return desc
-	} else {
-		return "No error description"
+func (err Error) Error() string {
+	return err.Message
+}
+
+func readAPIError(r io.Reader) error {
+	var apiErr Error
+	if err := json.NewDecoder(r).Decode(&apiErr); err != nil {
+		return errors.New(err.Error() + " could not read error response")
 	}
+	return apiErr
+}
+
+type SimpleResult struct {
+	Result string `json:"result"`
 }

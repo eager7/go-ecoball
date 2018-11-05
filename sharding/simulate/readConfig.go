@@ -3,11 +3,13 @@ package simulate
 import (
 	"encoding/json"
 	"fmt"
-	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
+
+	sc "github.com/ecoball/go-ecoball/sharding/common"
 )
 
 type config struct {
@@ -26,7 +28,9 @@ func readConfigFile() *config {
 	}
 	fmt.Println(dir)
 
-	file := "sharding.json"
+	rootDir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+	rootDir = strings.Replace(rootDir, "\\", "/", -1)
+	file := rootDir + "/sharding.json"
 
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {

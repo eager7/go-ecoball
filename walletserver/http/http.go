@@ -18,10 +18,7 @@ package http
 
 import (
 	"net/http"
-	"strconv"
-	"strings"
 
-	inner "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/walletserver/wallet"
 	"github.com/gin-gonic/gin"
@@ -55,9 +52,13 @@ func attach(c *gin.Context) {
 }
 
 func createWallet(c *gin.Context) {
-	name := c.PostForm("name")
-	password := c.PostForm("password")
-	if err := wallet.Create(name, []byte(password)); nil != err {
+	var oneWallet WalletNamePassword
+	if err := c.BindJSON(&oneWallet); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err := wallet.Create(oneWallet.Name, []byte(oneWallet.Password)); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
@@ -65,19 +66,29 @@ func createWallet(c *gin.Context) {
 }
 
 func createKey(c *gin.Context) {
-	name := c.PostForm("name")
-	pub, pri, err := wallet.CreateKey(name)
+	var oneWallet WalletName
+	if err := c.BindJSON(&oneWallet); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	pub, pri, err := wallet.CreateKey(oneWallet.Name)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"result": "publickey:" + inner.ToHex(pub) + "\n" + "privatekey:" + inner.ToHex(pri)})
+	info := KeyPair{PrivateKey: pri, PublicKey: pub}
+	c.JSON(http.StatusOK, info)
 }
 
 func openWallet(c *gin.Context) {
-	name := c.PostForm("name")
-	password := c.PostForm("password")
-	if err := wallet.Open(name, []byte(password)); nil != err {
+	var oneWallet WalletNamePassword
+	if err := c.BindJSON(&oneWallet); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err := wallet.Open(oneWallet.Name, []byte(oneWallet.Password)); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
@@ -85,8 +96,13 @@ func openWallet(c *gin.Context) {
 }
 
 func lockWallet(c *gin.Context) {
-	name := c.PostForm("name")
-	if err := wallet.Lock(name, false); nil != err {
+	var oneWallet WalletName
+	if err := c.BindJSON(&oneWallet); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err := wallet.Lock(oneWallet.Name, false); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
@@ -94,9 +110,13 @@ func lockWallet(c *gin.Context) {
 }
 
 func unlockWallet(c *gin.Context) {
-	name := c.PostForm("name")
-	password := c.PostForm("password")
-	if err := wallet.Unlock(name, []byte(password)); nil != err {
+	var oneWallet WalletNamePassword
+	if err := c.BindJSON(&oneWallet); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if err := wallet.Unlock(oneWallet.Name, []byte(oneWallet.Password)); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
@@ -104,21 +124,29 @@ func unlockWallet(c *gin.Context) {
 }
 
 func importKey(c *gin.Context) {
-	name := c.PostForm("name")
-	privateKey := c.PostForm("privateKey")
-	publickey, err := wallet.ImportKey(name, privateKey)
+	var oneWallet WalletImportKey
+	if err := c.BindJSON(&oneWallet); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	publickey, err := wallet.ImportKey(oneWallet.Name, oneWallet.PriKey.Key)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"result": "publickey:" + inner.ToHex(publickey)})
+	publicKey := OneKey{publickey}
+	c.JSON(http.StatusOK, publicKey)
 }
 
 func removeKey(c *gin.Context) {
-	name := c.PostForm("name")
-	password := c.PostForm("password")
-	publickey := c.PostForm("publickey")
-	err := wallet.RemoveKey(name, []byte(password), publickey)
+	var oneWallet WalletRemoveKey
+	if err := c.BindJSON(&oneWallet); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err := wallet.RemoveKey(oneWallet.NamePassword.Name, []byte(oneWallet.NamePassword.Password), oneWallet.PubKey.Key)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -127,21 +155,25 @@ func removeKey(c *gin.Context) {
 }
 
 func listKey(c *gin.Context) {
-	name := c.PostForm("name")
-	password := c.PostForm("password")
-	accounts, err := wallet.ListKeys(name, []byte(password))
+	var oneWallet WalletNamePassword
+	if err := c.BindJSON(&oneWallet); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	accounts, err := wallet.ListKeys(oneWallet.Name, []byte(oneWallet.Password))
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	var key_str string
-	for k, v := range accounts {
-		key_str += "publickey:" + k + "\n" + "privatekey:" + v
-		key_str += "\n"
-	}
-	key_str = strings.TrimSuffix(key_str, "\n")
-	c.JSON(http.StatusOK, gin.H{"result": key_str})
 
+	var pairs = KeyPairs{Pairs: []KeyPair{}}
+	for k, v := range accounts {
+		onePair := KeyPair{PublicKey: []byte(k), PrivateKey: []byte(v)}
+		pairs.Pairs = append(pairs.Pairs, onePair)
+	}
+
+	c.JSON(http.StatusOK, pairs)
 }
 
 func listWallets(c *gin.Context) {
@@ -150,13 +182,10 @@ func listWallets(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	var walletsList string
-	for _, k := range wallets {
-		walletsList += k
-		walletsList += "\n"
-	}
-	walletsList = strings.TrimSuffix(walletsList, "\n")
-	c.JSON(http.StatusOK, gin.H{"result": walletsList})
+
+	wallet := Wallets{wallets}
+
+	c.JSON(http.StatusOK, wallet)
 }
 
 func getPublicKeys(c *gin.Context) {
@@ -171,35 +200,49 @@ func getPublicKeys(c *gin.Context) {
 		return
 	}
 
-	var publickeys string
+	publicKeys := Keys{KeyList: []OneKey{}}
 	for _, k := range data {
-		publickeys += k
-		publickeys += ","
+		publicKeys.KeyList = append(publicKeys.KeyList, OneKey{[]byte(k)})
 	}
-	publickeys = strings.TrimSuffix(publickeys, ",")
-	c.JSON(http.StatusOK, gin.H{"result": publickeys})
+
+	c.JSON(http.StatusOK, publicKeys)
 }
 
 func signTransaction(c *gin.Context) {
-	keys := c.PostForm("keys")
-	data := c.PostForm("transaction")
-	key := strings.Split(keys, "\n")
-	signData, err := wallet.SignTransaction(inner.FromHex(data), key)
+	var oneTransaction RawTransactionData
+	if err := c.BindJSON(&oneTransaction); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	publicKeys := []string{}
+	for _, v := range oneTransaction.PublicKeys.KeyList {
+		publicKeys = append(publicKeys, string(v.Key))
+	}
+
+	signData, err := wallet.SignTransaction(oneTransaction.RawData, publicKeys)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"result": inner.ToHex(signData)})
+
+	resultData := SignTransaction{Signature: []OneSignTransaction{}}
+	for _, v := range signData.Signature {
+		oneSign := OneSignTransaction{PublicKey: OneKey{Key: v.PublicKey}, SignData: v.SignData}
+		resultData.Signature = append(resultData.Signature, oneSign)
+	}
+
+	c.JSON(http.StatusOK, resultData)
 }
 
 func setTimeout(c *gin.Context) {
-	strInterval := c.PostForm("interval")
-	interval, err := strconv.ParseInt(strInterval, 10, 64)
-	if nil != err {
+	var oneWallet WalletTimeout
+	if err := c.BindJSON(&oneWallet); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	err = wallet.SetTimeout(interval)
+
+	err := wallet.SetTimeout(oneWallet.Interval)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

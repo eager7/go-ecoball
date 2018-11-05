@@ -14,36 +14,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-package common
+// Define the interface for the owner of gossip puller
 
-import (
-	"encoding/json"
+package gossip
 
-	"github.com/ecoball/go-ecoball/account"
-)
+type Receiver interface {
+	GetDigests() []string
+	ContainItemInDigests(digests []string, item string) bool
 
-var Account account.Account
+	//input map: key is the peer id, value is the digest slice of peer
+	//output map: key is the peer id, value is the digest for request
+	ShuffelDigests(revDigests map[string][]string, digest []string) map[string][]string
 
-type Response struct {
-	errCode Errcode
-	desc    string
-	result  interface{}
-}
-
-func NewResponse(code Errcode, info interface{}) *Response {
-	resp := Response{
-		errCode: code,
-		desc:    code.Info(),
-		result:  info,
-	}
-
-	return &resp
-}
-
-func (this *Response) Serialize() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"errorCode": int64(this.errCode),
-		"desc":      this.desc,
-		"result":    this.result,
-	})
+	GetItemData(item string) []byte
+	UpdateItemData(dataArray [][]byte) error
 }
