@@ -16,9 +16,9 @@ type cmBlockCsi struct {
 	cache *cs.CMBlock
 }
 
-func newCmBlockCsi(bk *cs.CMBlock) *cmBlockCsi {
-	bk.Step1 = 1
-	bk.Step2 = 1
+func newCmBlockCsi(bk *cs.CMBlock, sign uint32) *cmBlockCsi {
+	bk.Step1 = sign
+	bk.Step2 = sign
 
 	return &cmBlockCsi{bk: bk}
 }
@@ -212,7 +212,8 @@ func (c *committee) productCommitteeBlock(msg interface{}) {
 		return
 	}
 
-	cms := newCmBlockCsi(cm)
+	sign := c.ns.GetSignBit()
+	cms := newCmBlockCsi(cm, sign)
 
 	c.cs.StartConsensus(cms, sc.DefaultCmBlockWindow*time.Millisecond)
 
@@ -222,13 +223,26 @@ func (c *committee) productCommitteeBlock(msg interface{}) {
 func (c *committee) checkCmPacket(p interface{}) bool {
 	/*check block*/
 	csp := p.(*sc.CsPacket)
+	last := c.ns.GetLastCMBlock()
+	lastf := c.ns.GetLastFinalBlock()
+
+	if csp.BlockType == sc.SD_FINAL_BLOCK {
+		final := csp.Packet.(*cs.FinalBlock)
+		if final.EpochNo > lastf.EpochNo ||
+			final.Height > lastf.Height {
+			log.Debug("cm last ", last.Height, " recv final ", final.EpochNo, " need sync")
+			c.fsm.Execute(ActChainNotSync, nil)
+			return false
+		}
+	}
+
 	if csp.BlockType != sc.SD_CM_BLOCK {
 		log.Error("it is not cm block, drop it")
 		return false
 	}
 
 	cm := csp.Packet.(*cs.CMBlock)
-	last := c.ns.GetLastCMBlock()
+
 	if last != nil {
 		if cm.Height <= last.Height {
 			log.Error("old cm block, drop it")
