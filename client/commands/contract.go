@@ -340,7 +340,6 @@ func invokeContract(c *cli.Context) error {
 		}
 
 		parameters = append(parameters, string(argbyte[:]))
-		getContractTable(contractName, "root", abiDef, "Account")
 	}
 
 	//contract address
