@@ -210,7 +210,7 @@ func attachWallet(c *cli.Context) error {
 	}
 
 	//rpc call
-	var result common.SimpleResult
+	var result rpc.SimpleResult
 	err := rpc.WalletGet("/wallet/attach", &result)
 	if nil == err {
 		fmt.Println(result.Result)
@@ -237,7 +237,7 @@ func createWallet(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	var result common.SimpleResult
+	var result rpc.SimpleResult
 	requestData := walletHttp.WalletNamePassword{Name: name, Password: passwd}
 	err := rpc.WalletPost("/wallet/create", &requestData, &result)
 	if nil == err {
@@ -288,7 +288,7 @@ func openWallet(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	var result common.SimpleResult
+	var result rpc.SimpleResult
 	requestData := walletHttp.WalletNamePassword{Name: name, Password: passwd}
 	err := rpc.WalletPost("/wallet/openWallet", &requestData, &result)
 	if nil == err {
@@ -310,7 +310,7 @@ func lockWallet(c *cli.Context) error {
 		return errors.New("Invalid wallet name")
 	}
 
-	var result common.SimpleResult
+	var result rpc.SimpleResult
 	requestData := walletHttp.WalletName{Name: name}
 	err := rpc.WalletPost("/wallet/lockWallet", &requestData, &result)
 	if nil == err {
@@ -338,7 +338,7 @@ func unlockWallet(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	var result common.SimpleResult
+	var result rpc.SimpleResult
 	requestData := walletHttp.WalletNamePassword{Name: name, Password: passwd}
 	err := rpc.WalletPost("/wallet/unlockWallet", &requestData, &result)
 	if nil == err {
@@ -413,7 +413,7 @@ func removeKey(c *cli.Context) error {
 		return err
 	}
 
-	var result common.SimpleResult
+	var result rpc.SimpleResult
 	oneKey := walletHttp.OneKey{publicKey}
 	oneWallet := walletHttp.WalletNamePassword{Name: name, Password: passwd}
 	requestData := walletHttp.WalletRemoveKey{NamePassword: oneWallet, PubKey: oneKey}
@@ -448,7 +448,7 @@ func listAccount(c *cli.Context) error {
 	err := rpc.WalletPost("/wallet/listKey", &requestData, &result)
 	if nil == err {
 		for _, v := range result.Pairs {
-			fmt.Println("PrivateKey:", hex.EncodeToString(v.PrivateKey), "/tPublicKey:", hex.EncodeToString(v.PublicKey))
+			fmt.Println("PrivateKey:", hex.EncodeToString(v.PrivateKey), "\tPublicKey:", hex.EncodeToString(v.PublicKey))
 		}
 	}
 	return err
@@ -478,7 +478,7 @@ func setTimeout(c *cli.Context) error {
 		return errors.New("Invalid lock interval of wallet")
 	}
 
-	var result common.SimpleResult
+	var result rpc.SimpleResult
 	requestData := walletHttp.WalletTimeout{Interval: interval}
 	err := rpc.WalletPost("/wallet/setTimeout", &requestData, &result)
 	if nil == err {
@@ -499,9 +499,8 @@ func getPublicKeys() (walletHttp.Keys, error) {
 
 func signTransaction(chainHash innerCommon.Hash, publickeys walletHttp.Keys, rawData []byte) (walletHttp.SignTransaction, error) {
 	var result walletHttp.SignTransaction
-	oneTransaction := walletHttp.TransactionData{rawData}
 	requestData := walletHttp.RawTransactionData{PublicKeys: publickeys, RawData: rawData}
-	err = rpc.WalletPost("/wallet/signTransaction", &requestData, &result)
+	err := rpc.WalletPost("/wallet/signTransaction", &requestData, &result)
 	if nil == err {
 		return result, nil
 	}
