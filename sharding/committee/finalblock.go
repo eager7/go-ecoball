@@ -15,9 +15,9 @@ type finalBlockCsi struct {
 	cache *cs.FinalBlock
 }
 
-func newFinalBlockCsi(bk *cs.FinalBlock) *finalBlockCsi {
-	bk.Step1 = 1
-	bk.Step2 = 1
+func newFinalBlockCsi(bk *cs.FinalBlock, sign uint32) *finalBlockCsi {
+	bk.Step1 = sign
+	bk.Step2 = sign
 
 	return &finalBlockCsi{bk: bk}
 }
@@ -166,7 +166,9 @@ func (c *committee) productFinalBlock(msg interface{}) {
 		if final == nil {
 			return
 		}
-		csi := newFinalBlockCsi(final)
+
+		sign := c.ns.GetSignBit()
+		csi := newFinalBlockCsi(final, sign)
 
 		c.cs.StartConsensus(csi, sc.DefaultBlockWindow)
 
@@ -177,7 +179,8 @@ func (c *committee) productFinalBlock(msg interface{}) {
 func (c *committee) processLedgerFinalBlockMsg(p interface{}) {
 	final := p.(*cs.FinalBlock)
 
-	csi := newFinalBlockCsi(final)
+	sign := c.ns.GetSignBit()
+	csi := newFinalBlockCsi(final, sign)
 
 	c.cs.StartConsensus(csi, sc.DefaultFinalBlockWindow*time.Millisecond)
 

@@ -170,15 +170,24 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 	sp.Packet = packet.Packet
 
 	cm := n.ns.GetLastCMBlock()
+
+	var bfinal = false
+	if sp.BlockType == sc.SD_FINAL_BLOCK {
+		bfinal = true
+	}
+
 	for _, shard := range cm.Shards {
 		if leader {
-			go simulate.Sendto(shard.Member[0].Address, shard.Member[0].Port, sp)
+			i := n.ns.CalcShardLeader(len(shard.Member), bfinal)
+			go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
 		} else if bakcup {
 			if len(shard.Member) > 1 {
-				go simulate.Sendto(shard.Member[1].Address, shard.Member[1].Port, sp)
+				i := n.ns.CalcShardBackup(len(shard.Member), bfinal)
+				go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
 			}
 		}
 	}
+
 }
 
 func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
@@ -213,10 +222,12 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 		}
 
 		if leader {
-			go simulate.Sendto(shard.Member[0].Address, shard.Member[0].Port, sp)
+			i := n.ns.CalcShardLeader(len(shard.Member), false)
+			go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
 		} else if bakcup {
 			if len(shard.Member) > 1 {
-				go simulate.Sendto(shard.Member[1].Address, shard.Member[1].Port, sp)
+				i := n.ns.CalcShardBackup(len(shard.Member), false)
+				go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
 			}
 		}
 	}
