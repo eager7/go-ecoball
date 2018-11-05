@@ -259,7 +259,7 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *cs.CMBlock) {
 	}
 
 	for ; i < lastCmblock.Height; i++ {
-		block, err := c.Ledger.GetShardBlockByHeight(config.ChainHash, cs.HeCmBlock, i)
+		block, err := c.Ledger.GetShardBlockByHeight(config.ChainHash, cs.HeCmBlock, i, 0)
 		if err != nil {
 			log.Error("get block error ", err)
 			return
