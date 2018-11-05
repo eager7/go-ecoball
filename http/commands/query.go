@@ -108,7 +108,7 @@ func GetBlockInfo(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, *blockInfo)
+	c.JSON(http.StatusOK, gin.H{"result": blockInfo.JsonString(true)})
 }
 
 func GetTransaction(c *gin.Context) {
@@ -124,7 +124,7 @@ func GetTransaction(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, *trx)
+	c.JSON(http.StatusOK, gin.H{"result": trx.JsonString()})
 }
 
 func GetRequiredKeys(c *gin.Context) {

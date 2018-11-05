@@ -237,11 +237,11 @@ func getBlockInfo(c *cli.Context) error {
 	}
 
 	//http request
-	var result types.Block
+	var result rpc.SimpleResult
 	requestData := request.BlockHeight{Height: height, ChainHash: chainHash}
 	err = rpc.NodePost("/query/getBlockInfo", &requestData, &result)
 	if nil == err {
-		fmt.Println(result.JsonString(true))
+		fmt.Println((result.Result)
 	}
 	return err
 }
@@ -285,7 +285,7 @@ func getTransaction(c *cli.Context) error {
 	}
 
 	//http request
-	var result types.Transaction
+	var result rpc.SimpleResult
 	requestData := request.TransactionHash{Hash: hash, ChainHash: chainHash}
 	err = rpc.NodePost("/query/getTransaction", &requestData, &result)
 	if nil == err {
