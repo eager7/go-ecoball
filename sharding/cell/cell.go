@@ -332,7 +332,9 @@ func (c *Cell) isShardLeader() bool {
 		return false
 	}
 
-	if (&c.Self).Equal(c.shard[0]) {
+	i := c.CalcShardLeader(len(c.shard), false)
+
+	if (&c.Self).Equal(c.shard[i]) {
 		return true
 	} else {
 		return false
@@ -354,7 +356,9 @@ func (c *Cell) isShardBackup() bool {
 		return false
 	}
 
-	if (&c.Self).Equal(c.shard[1]) {
+	i := c.CalcShardBackup(len(c.shard), false)
+
+	if (&c.Self).Equal(c.shard[i]) {
 		return true
 	} else {
 		return false
@@ -393,7 +397,8 @@ func (c *Cell) GetLeader() *sc.Worker {
 	if c.NodeType == sc.NodeCommittee {
 		return c.cm.member[0]
 	} else if c.NodeType == sc.NodeShard {
-		return c.shard[0]
+		i := c.CalcShardLeader(len(c.shard), false)
+		return c.shard[i]
 	} else {
 		return nil
 	}
@@ -408,7 +413,8 @@ func (c *Cell) GetBackup() *sc.Worker {
 		}
 	} else if c.NodeType == sc.NodeShard {
 		if len(c.shard) > 1 {
-			return c.shard[0]
+			i := c.CalcShardLeader(len(c.shard), false)
+			return c.shard[i]
 		} else {
 			return nil
 		}
@@ -467,4 +473,33 @@ func (c *Cell) saveShardsInfoFromCMBlock(cmb *cs.CMBlock) {
 
 func (c *Cell) getShardHeight(shardid uint32) uint64 {
 	return c.chain.getShardHeight(shardid)
+}
+
+func (c *Cell) CalcShardLeader(size int, bfinal bool) uint64 {
+	final := c.GetLastFinalBlock()
+	var height uint64
+	if bfinal {
+		height = final.Height + 1
+	} else {
+		height = final.Height
+	}
+
+	i := (height % sc.DefaultEpochFinalBlockNumber) % uint64(size)
+	log.Debug("current leader i ", i)
+	return i
+}
+
+func (c *Cell) CalcShardBackup(size int, bfinal bool) uint64 {
+	final := c.GetLastFinalBlock()
+
+	var height uint64
+	if bfinal {
+		height = final.Height + 1
+	} else {
+		height = final.Height
+	}
+
+	i := (height % sc.DefaultEpochFinalBlockNumber) % uint64(size)
+	log.Debug("current backup i ", i)
+	return i
 }
