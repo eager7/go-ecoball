@@ -15,9 +15,9 @@ type minorBlockCsi struct {
 	cache *cs.MinorBlock
 }
 
-func newMinorBlockCsi(block *cs.MinorBlock) *minorBlockCsi {
-	block.Step1 = 1
-	block.Step2 = 1
+func newMinorBlockCsi(block *cs.MinorBlock, sign uint32) *minorBlockCsi {
+	block.Step1 = sign
+	block.Step2 = sign
 
 	return &minorBlockCsi{bk: block}
 }
@@ -72,6 +72,7 @@ func (b *minorBlockCsi) GetCsBlock() interface{} {
 }
 
 func (b *minorBlockCsi) PrepareRsp() uint32 {
+	log.Debug("prepare receive consign ", b.cache.Step1)
 
 	b.bk.Step1 |= b.cache.Step1
 
@@ -79,6 +80,7 @@ func (b *minorBlockCsi) PrepareRsp() uint32 {
 }
 
 func (b *minorBlockCsi) PrecommitRsp() uint32 {
+	log.Debug("precommit receive consign ", b.cache.Step2)
 
 	b.bk.Step2 |= b.cache.Step2
 
@@ -162,7 +164,8 @@ func (s *shard) productMinorBlock(msg interface{}) {
 		simulate.TellLedgerProductMinorBlock(lastcm.Height, height)
 	} else {
 		minor := s.createMinorBlock()
-		csi := newMinorBlockCsi(minor)
+		sign := s.ns.GetSignBit()
+		csi := newMinorBlockCsi(minor, sign)
 		s.cs.StartConsensus(csi, sc.DefaultBlockWindow)
 	}
 }
@@ -170,7 +173,8 @@ func (s *shard) productMinorBlock(msg interface{}) {
 func (s *shard) processLedgerMinorBlockMsg(p interface{}) {
 	minor := p.(*cs.MinorBlock)
 
-	csi := newMinorBlockCsi(minor)
+	sign := s.ns.GetSignBit()
+	csi := newMinorBlockCsi(minor, sign)
 	s.cs.StartConsensus(csi, sc.DefaultMinorBlockWindow*time.Millisecond)
 }
 
