@@ -53,7 +53,7 @@ type Ledger interface {
 	ShardPreHandleTransaction(chainID common.Hash, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error)
 	SaveShardBlock(chainID common.Hash, block shard.BlockInterface) (err error)
 	GetShardBlockByHash(chainID common.Hash, typ shard.HeaderType, hash common.Hash) (shard.BlockInterface, error)
-	GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64) (shard.BlockInterface, error)
+	GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, error)
 	GetLastShardBlock(chainID common.Hash, typ shard.HeaderType) (shard.BlockInterface, error)
 	GetLastShardBlockById(chainID common.Hash, shardId uint32) (shard.BlockInterface, error)
 	NewCmBlock(chainID common.Hash, timeStamp int64, shards []shard.Shard) (*shard.CMBlock, error)
