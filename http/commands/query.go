@@ -35,11 +35,9 @@ func GetMainChainHash(c *gin.Context) {
 
 func GetAllChainInfo(c *gin.Context) {
 	//Gets the child chain under the creation chain
-	chainList, errcode := ledger.L.GetChainList(config.ChainHash)
-	if nil != errcode {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": errcode.Error()})
-		return
-	}
+	chainList := []state.Chain{}
+	mainChain := state.Chain{Hash: config.ChainHash}
+	chainList = append(chainList, mainChain)
 
 	//Gets all chain under the creation chain and child chain
 	allChainInfo := chainList

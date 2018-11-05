@@ -87,7 +87,7 @@ func fileOpen(path string) (*os.File, error) {
 		return nil, err
 	}
 
-	var currentTime = time.Now().Format("2006-01-02_15.04")
+	var currentTime = time.Now().Format("2006-01-02_15.04.00")
 	logfile, err := os.OpenFile(path+currentTime+"_LOG.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, err
