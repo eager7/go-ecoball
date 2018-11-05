@@ -26,10 +26,8 @@ import (
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	innerCommon "github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/http/common/abi"
 	"github.com/ecoball/go-ecoball/http/request"
 	"github.com/urfave/cli"
 )
@@ -332,57 +330,4 @@ func getContract(chainID innerCommon.Hash, index innerCommon.AccountName) (*type
 		return deploy, nil
 	}
 	return nil, err
-}
-
-func storeGet(chainID innerCommon.Hash, index innerCommon.AccountName, key []byte) (value []byte, err error) {
-	var result rpc.SimpleResult
-	values := url.Values{}
-	values.Set("contractName", index.String())
-	values.Set("chainId", chainID.HexString())
-	values.Set("key", innerCommon.ToHex(key))
-	err = rpc.NodePost("/query/storeGet", values.Encode(), &result)
-	if nil == err {
-		return innerCommon.FromHex(result.Result), nil
-	}
-	return nil, err
-}
-
-func getContractTable(contractName string, accountName string, abiDef abi.ABI, tableName string) ([]byte, error) {
-	var fields []abi.FieldDef
-	for _, table := range abiDef.Tables {
-		if string(table.Name) == tableName {
-			for _, struction := range abiDef.Structs {
-				if struction.Name == table.Type {
-					fields = struction.Fields
-				}
-			}
-		}
-	}
-
-	if fields == nil {
-		return nil, errors.New("can not find struct of table: " + tableName)
-	}
-
-	table := make(map[string]string, len(fields))
-
-	for i, _ := range fields {
-		key := []byte(fields[i].Name)
-		if fields[i].Name == "balance" { // only for token contract, because KV struct can't support
-			key = []byte(accountName)
-		} else {
-			key = append(key, 0) // C lang string end with 0
-		}
-
-		storage, err := storeGet(config.ChainHash, innerCommon.NameToIndex(contractName), key)
-		if err != nil {
-			return nil, errors.New("can not get store " + fields[i].Name)
-		}
-		fmt.Println(fields[i].Name + ": " + string(storage))
-		table[fields[i].Name] = string(storage)
-	}
-
-	js, _ := json.Marshal(table)
-	fmt.Println("json format: ", string(js))
-
-	return nil, nil
 }

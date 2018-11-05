@@ -74,7 +74,7 @@ func InitDefaultConf() RenterConf {
 		MaxCollateral: "20",
 		ChainId: common.ToHex(chainId[:]),
 		//StorePath: "/tmp/storage/rent",
-		DsnApiUrl: "http://localhost:9000",
+		DsnApiUrl: "http://localhost:20678",
 		IpfsApiUrl: "127.0.0.1:5011",
 	}
 }

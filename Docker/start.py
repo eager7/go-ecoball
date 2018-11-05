@@ -69,7 +69,7 @@ ip_index = args.node_ip.index(args.host_ip)
 
 data = {
     "Pubkey": Pubkey + str(start_pubkey + 4 * args.weight * ip_index + args.number),
-    "Address": "127.0.0.1",
+    "Address": args.host_ip,
     "Port": str(start_port + args.number),
     "Committee": committee,
     "Shard": shard
