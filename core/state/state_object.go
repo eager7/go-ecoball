@@ -261,10 +261,6 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 			Abi:      common.CopyBytes(a.Contract.Abi),
 		},
 		Delegates: delegates,
-		Ram: &pb.Ram{
-			Quota: a.Ram.Quota,
-			Used:  a.Ram.Used,
-		},
 		Cpu: &pb.Res{
 			Staked:    a.Cpu.Staked,
 			Delegated: a.Cpu.Delegated,
@@ -303,8 +299,6 @@ func (a *Account) Deserialize(data []byte) error {
 	a.Index = common.AccountName(pbAcc.Index)
 	a.TimeStamp = pbAcc.TimeStamp
 
-	a.Ram.Quota = pbAcc.Ram.Quota
-	a.Ram.Used = pbAcc.Ram.Used
 	a.Cpu.Staked = pbAcc.Cpu.Staked
 	a.Cpu.Delegated = pbAcc.Cpu.Delegated
 	a.Cpu.Used = pbAcc.Cpu.Used
