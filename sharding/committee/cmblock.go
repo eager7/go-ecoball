@@ -16,9 +16,9 @@ type cmBlockCsi struct {
 	cache *cs.CMBlock
 }
 
-func newCmBlockCsi(bk *cs.CMBlock) *cmBlockCsi {
-	bk.Step1 = 1
-	bk.Step2 = 1
+func newCmBlockCsi(bk *cs.CMBlock, sign uint32) *cmBlockCsi {
+	bk.Step1 = sign
+	bk.Step2 = sign
 
 	return &cmBlockCsi{bk: bk}
 }
@@ -212,7 +212,8 @@ func (c *committee) productCommitteeBlock(msg interface{}) {
 		return
 	}
 
-	cms := newCmBlockCsi(cm)
+	sign := c.ns.GetSignBit()
+	cms := newCmBlockCsi(cm, sign)
 
 	c.cs.StartConsensus(cms, sc.DefaultCmBlockWindow*time.Millisecond)
 

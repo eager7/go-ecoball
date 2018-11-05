@@ -14,9 +14,9 @@ type vcBlockCsi struct {
 	cache *cs.ViewChangeBlock
 }
 
-func newVcBlockCsi(block *cs.ViewChangeBlock) *vcBlockCsi {
-	block.Step1 = 1
-	block.Step2 = 1
+func newVcBlockCsi(block *cs.ViewChangeBlock, sign uint32) *vcBlockCsi {
+	block.Step1 = sign
+	block.Step2 = sign
 
 	return &vcBlockCsi{bk: block}
 }
@@ -76,14 +76,14 @@ func (b *vcBlockCsi) GetCsBlock() interface{} {
 }
 
 func (b *vcBlockCsi) PrepareRsp() uint32 {
+	log.Debug("prepare receive consign ", b.cache.Step1)
 
 	b.bk.Step1 |= b.cache.Step1
-
 	return b.bk.Step1
 }
 
 func (b *vcBlockCsi) PrecommitRsp() uint32 {
-
+	log.Debug("precommit receive consign ", b.cache.Step2)
 	b.bk.Step2 |= b.cache.Step2
 
 	return b.bk.Step2
@@ -187,7 +187,8 @@ func (c *committee) productViewChangeBlock(msg interface{}) {
 		return
 	}
 
-	vci := newVcBlockCsi(vc)
+	sign := c.ns.GetSignBit()
+	vci := newVcBlockCsi(vc, sign)
 
 	c.cs.StartVcConsensus(vci, sc.DefaultViewchangeBlockWindow*time.Millisecond, bCandidate)
 
