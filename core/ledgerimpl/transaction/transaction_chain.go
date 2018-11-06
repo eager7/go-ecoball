@@ -138,7 +138,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger, shard bool) (c *Chai
 *  @brief  create a new block, this function will execute the transaction to rebuild mpt trie
 *  @param  consensusData - the data of consensus module set
  */
-func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, []*types.Transaction, error) {
 	//// every 30 blocks issue reward
 	//if ledger.GetCurrentHeight(config.ChainHash) % 30 == 0 {
 	//	c.StateDB.FinalDB.IssueToken(common.NameToIndex("saving"), big.NewInt(100), state.AbaToken)
@@ -157,7 +157,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	s.Type = state.CopyType
 
@@ -166,8 +166,8 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
 		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].JsonString())
-			//c.ResetStateDB(c.CurrentHeader)
-			return nil, err
+			txs = append(txs[:i], txs[i+1:]...)
+			return nil, txs, err
 		} else {
 			cpu += cp
 			net += n
@@ -176,9 +176,9 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 	block, err := types.NewBlock(c.CurrentHeader.ChainID, c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
 	if err != nil {
 		//c.ResetStateDB(c.CurrentHeader)
-		return nil, err
+		return nil, nil, err
 	}
-	return block, nil
+	return block, nil, nil
 }
 
 /**
@@ -1118,14 +1118,14 @@ func (c *ChainTx) GetLastShardBlockById(shardId uint32) (shard.BlockInterface, e
 	return c.GetShardBlockByHash(shard.HeMinorBlock, hash)
 }
 
-func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, error) {
+func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error) {
 	lastMinor, err := c.GetLastShardBlock(shard.HeMinorBlock)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	lastFinal, err := c.GetLastShardBlock(shard.HeFinalBlock)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if final, ok := lastFinal.GetObject().(*shard.FinalBlock); ok {
 		done := true
@@ -1137,13 +1137,13 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 			}
 		}
 		if done {
-			return lastMinor.GetObject().(*shard.MinorBlock), nil
+			return lastMinor.GetObject().(*shard.MinorBlock), nil, nil
 		}
 	}
 
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	s.Type = state.CopyType
 	var hashes []common.Hash
@@ -1153,8 +1153,8 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
 			log.Error("handle transaction error:", err.Error())
 			log.Warn(txs[i].JsonString())
-			continue
-			//return nil, err
+			txs = append(txs[:i], txs[i+1:]...)
+			return nil, txs, err
 		} else {
 			hashes = append(hashes, txs[i].Hash)
 			cpu += cp
@@ -1163,12 +1163,12 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	}
 	merkleHash, err := trie.GetMerkleRoot(hashes)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	shardID, err := c.GetShardId()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	header := shard.MinorBlockHeader{
 		ChainID:           c.LastHeader.MinorHeader.ChainID,
@@ -1187,11 +1187,11 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	}
 	block, err := shard.NewMinorBlock(header, c.LastHeader.MinorHeader, txs, cpu, net)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	log.Info("new minor block hash:", block.Hash())
 	log.Warn(block.Hash().HexString(), block.StateDeltaHash.HexString(), common.JsonString(s.Accounts, false))
-	return block, nil
+	return block, nil, nil
 }
 
 func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBlock, error) {
@@ -1363,7 +1363,7 @@ func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 		if !ok {
 			return errors.New(log, "the block type is not minor block")
 		}
-		newBlock, err := c.NewMinorBlock(minorBlock.Transactions, minorBlock.Timestamp)
+		newBlock, _, err := c.NewMinorBlock(minorBlock.Transactions, minorBlock.Timestamp)
 		if err != nil {
 			return err
 		}
