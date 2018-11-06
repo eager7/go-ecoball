@@ -26,6 +26,8 @@ import (
 	ipfsshell "github.com/ipfs/go-ipfs-api"
 	"fmt"
 	"mime/multipart"
+	"github.com/ecoball/go-ecoball/dsn"
+	"github.com/ecoball/go-ecoball/http/request"
 	//ecoclient "github.com/ecoball/go-ecoball/client/commands"
 )
 
@@ -452,7 +454,7 @@ func (r *Renter) RscCodingReqWeb(size int64, cid string) (string, error) {
 	} else {
 		PieceSize = uint64(256 * 1024)
 	}
-	req := renter.RscReq{
+	req := request.DsnAddFileReq{
 		Cid: cid,
 		Redundency: int(r.conf.Redundancy),
 		IsDir: false,
@@ -460,8 +462,13 @@ func (r *Renter) RscCodingReqWeb(size int64, cid string) (string, error) {
 		FileSize: uint64(size),
 	}
 
-	fmt.Println(req)
-	return "", nil
+	cid, err := dsn.RscCoding(&req)
+	if err != nil {
+		return "", err
+	} else {
+		return cid, nil
+	}
+
 	// jreq, _ := json.Marshal(req)
 	// resp, err := rpc.NodeCall("DsnAddFile", []interface{}{string(jreq)})
 	// if err != nil {
