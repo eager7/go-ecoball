@@ -80,6 +80,5 @@ root_dir = os.path.split(os.path.realpath(__file__))[0]
 with open(os.path.join(root_dir, '../build/sharding.json'), 'w') as f:
     json.dump(data, f)
 
-run("cd " + os.path.join(root_dir, '../build/')
+run("cd " + os.path.join(root_dir, '../build/') + "&& ./ecoball run")
 
-run("./ecoball run")
