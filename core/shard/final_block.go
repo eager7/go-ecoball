@@ -148,6 +148,9 @@ func (h *FinalBlockHeader) JsonString() string {
 func (h *FinalBlockHeader) Type() uint32 {
 	return uint32(HeFinalBlock)
 }
+func (h FinalBlockHeader) GetObject() interface{} {
+	return h
+}
 
 func (h *FinalBlockHeader) Hash() common.Hash {
 	return h.hash

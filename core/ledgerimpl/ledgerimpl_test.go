@@ -170,7 +170,7 @@ func TestInterface(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	fmt.Println(list)
 
-	blockMinor, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, 0)
+	blockMinor, _, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, 0)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockMinor))
 	blockLastMinor, err := l.GetLastShardBlockById(config.ChainHash, 1)
 	errors.CheckErrorPanic(err)
@@ -209,7 +209,7 @@ func xTestShard(t *testing.T) {
 	//MinorBlock
 	blockNew, err = l.GetLastShardBlock(config.ChainHash, shard.HeMinorBlock)
 	errors.CheckErrorPanic(err)
-	blockMinor, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
+	blockMinor, _, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockMinor))
 	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeMinorBlock, blockMinor.Hash())
@@ -249,7 +249,7 @@ func TestExample(t *testing.T) {
 	pidL.Request(msg, pid)
 	time.Sleep(time.Second * 1)
 
-	m, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
+	m, _, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	elog.Log.Debug(m.JsonString())
 
