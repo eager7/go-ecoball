@@ -45,6 +45,7 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
 	"github.com/ecoball/go-ecoball/test/example"
+	"github.com/ecoball/go-ecoball/dsn/ipfs"
 )
 
 var (
@@ -191,7 +192,7 @@ func runNode(c *cli.Context) error {
 	}
 
 	//storage
-	/*ecoballGroup.Go(func() error {
+	ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
 			//initialize
@@ -216,7 +217,7 @@ func runNode(c *cli.Context) error {
 		}
 
 		return nil
-	})*/
+	})
 
 	//dsn.StartDsn(ctx, ledger.L)
 
