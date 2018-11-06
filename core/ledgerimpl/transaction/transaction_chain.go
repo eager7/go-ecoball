@@ -1207,7 +1207,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	if err != nil {
 		return nil, nil, err
 	}
-	log.Info("new minor block hash:", block.Hash())
+	log.Info("new minor block:", block.GetHeight(), " hash:", block.Hash())
 	log.Warn(block.Hash().HexString(), block.StateDeltaHash.HexString(), common.JsonString(s.Accounts, false))
 	return block, nil, nil
 }
