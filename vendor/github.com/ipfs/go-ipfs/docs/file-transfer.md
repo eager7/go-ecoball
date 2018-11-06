@@ -48,8 +48,8 @@ addresses (like the example below), then your nodes are online.
                 "/ip4/127.0.0.1/tcp/4001/ipfs/QmTNwsFkLAed15kQEC1ZJWPfoNbBQnMFojfJKQ9sZj1dk8",
                 "/ip4/192.168.2.131/tcp/4001/ipfs/QmTNwsFkLAed15kQEC1ZJWPfoNbBQnMFojfJKQ9sZj1dk8",
         ],
-        "AgentVersion": "go-ipfs/0.4.11-dev/",
-        "ProtocolVersion": "ipfs/0.1.0"
+        "AgentVersion": "ecoball/0.4.11-dev/",
+        "ProtocolVersion": "ecoball/0.1.0"
 }
 ```
 

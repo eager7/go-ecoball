@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"encoding/hex"
 
 	"github.com/ecoball/go-ecoball/crypto/aes"
 )
@@ -195,14 +196,14 @@ func (wi *WalletImpl) CreateKey() ([]byte, []byte, error) {
 
 func (wi *WalletImpl) RemoveKey(password []byte, publickey []byte) error {
 	wi.lockflag = locked
-	_, ok := wi.AccountsMap[string(publickey)]
+	_, ok := wi.AccountsMap[hex.EncodeToString(publickey)]
 
 	if !ok {
 		wi.lockflag = unlock
 		return errors.New("publickey is not exist")
 	}
 
-	delete(wi.KeyData.AccountsMap, string(publickey))
+	delete(wi.KeyData.AccountsMap, hex.EncodeToString(publickey))
 
 	errcode := wi.Lock()
 	if nil != errcode {
@@ -247,7 +248,7 @@ func (wi *WalletImpl) ImportKey(privateKey []byte) ([]byte, error) {
 	}
 
 	//wi.KeyData.Accounts = append(wi.KeyData.Accounts, account)
-	wi.KeyData.AccountsMap[string(pub)] = string(privateKey)
+	wi.KeyData.AccountsMap[hex.EncodeToString(pub)] = hex.EncodeToString(privateKey)
 
 	//lock wallet
 	errcode := wi.Lock()

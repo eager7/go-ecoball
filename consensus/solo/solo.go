@@ -95,9 +95,15 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 			//	//log.Info("no transaction in this time")
 			//	continue
 			//}
-			block, err := solo.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
+			PACKAGE:
+			block, txs, err := solo.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
 			if err != nil {
 				log.Error(err)
+				if txs != nil {
+					goto PACKAGE
+				} else {
+					panic(err)
+				}
 			}
 			if err := solo.ledger.VerifyTxBlock(chainID, block); err != nil {
 				log.Warn(err)

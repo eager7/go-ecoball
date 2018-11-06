@@ -448,7 +448,7 @@ func listAccount(c *cli.Context) error {
 	err := rpc.WalletPost("/wallet/listKey", &requestData, &result)
 	if nil == err {
 		for _, v := range result.Pairs {
-			fmt.Println("PrivateKey:", hex.EncodeToString(v.PrivateKey), "\tPublicKey:", hex.EncodeToString(v.PublicKey))
+			fmt.Println("PrivateKey:", string(v.PrivateKey), "\tPublicKey:", string(v.PublicKey))
 		}
 	}
 	return err

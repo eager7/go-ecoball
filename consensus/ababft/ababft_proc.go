@@ -56,7 +56,7 @@ func ProcessSTART(actorC *ActorABABFT) {
 			var blockSolo *types.Block
 			tTime := time.Now().UnixNano()
 			// headerPayload.LeaderPubKey = actorC.serviceABABFT.account.PublicKey
-			blockSolo,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, conData, tTime)
+			blockSolo,_, err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, conData, tTime)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -443,7 +443,7 @@ func ProcessPreBlkTimeout(actorC *ActorABABFT) {
 			var blockFirst *types.Block
 			tTime := time.Now().UnixNano()
 			// headerPayload.LeaderPubKey = actorC.serviceABABFT.account.PublicKey
-			blockFirst,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, conData, tTime)
+			blockFirst,_, err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, conData, tTime)
 			if err != nil {
 				log.Fatal(err)
 			}

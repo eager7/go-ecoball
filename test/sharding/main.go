@@ -30,6 +30,7 @@ func main() {
 	topo := actor.SubscribeShardingTopo()
 
 	go example.TransferExample()
+	go simulate.SyncComplete()
 
 	go func() {
 		for {
