@@ -65,7 +65,7 @@ func TestLedgerImpl_ResetStateDB(t *testing.T) {
 	elog.Log.Info("reset block to create block")
 	errors.CheckErrorPanic(l.ResetStateDB(config.ChainHash, prevBlock.Header))
 	elog.Log.Info("reset block:")
-	newBlock, err := l.NewTxBlock(config.ChainHash, currentBlock.Transactions, currentBlock.ConsensusData, currentBlock.TimeStamp)
+	newBlock, _, err := l.NewTxBlock(config.ChainHash, currentBlock.Transactions, currentBlock.ConsensusData, currentBlock.TimeStamp)
 	errors.CheckErrorPanic(err)
 	newBlock.SetSignature(&config.Root)
 	errors.CheckEqualPanic(currentBlock.JsonString(false) == newBlock.JsonString(false))

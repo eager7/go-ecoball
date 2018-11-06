@@ -61,6 +61,7 @@ type VM struct {
 
 	funcTable [256]func()
 
+	Limit uint64
 	// RecoverPanic controls whether the `ExecCode` method
 	// recovers from a panic and returns it as an error
 	// instead.
@@ -118,6 +119,7 @@ func NewVM(module *wasm.Module) (*VM, error) {
 	vm.globals = make([]uint64, len(module.GlobalIndexSpace))
 	vm.newFuncTable()
 	vm.module = module
+	vm.Limit = 10000
     vm.RecoverPanic = true
 	nNatives := 0
 	for i, fn := range module.FunctionIndexSpace {
@@ -355,6 +357,11 @@ outer:
 	for int(vm.ctx.pc) < len(vm.ctx.code) && !vm.abort {
 		op := vm.ctx.code[vm.ctx.pc]
 		vm.ctx.pc++
+		vm.Limit--
+		if vm.Limit == 0 {
+			panic("cpu limit!")
+		}
+
 		switch op {
 		case ops.Return:
 			break outer

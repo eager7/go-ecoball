@@ -59,8 +59,8 @@ func dsnAddFile(ctx *cli.Context) error {
 	cbtx := context.Background()
 	dclient := dsncli.NewRcWithDefaultConf(cbtx)
 	file := os.Args[3]
-	walletName := os.Args[4]
-	ok := dclient.CheckCollateralParams(walletName)
+	accountName := os.Args[4]
+	ok := dclient.CheckCollateralParams(accountName)
 	if !ok {
 		return errors.New("Checking collateral failed")
 	}
@@ -91,7 +91,7 @@ func dsnAddFile(ctx *cli.Context) error {
 	}
 
 	//reqKeys, err := getRequiredKeys(chainId, pkKeys, "owner", transaction)
-	reqKeys, err := GetRequiredKeys(chainId, "owner", walletName)
+	reqKeys, err := GetRequiredKeys(chainId, "owner", accountName)
 	if err != nil {
 		return err
 	}
@@ -211,7 +211,7 @@ func SignTransaction(chainHash innerCommon.Hash, publickeys walletHttp.Keys, raw
 	
 }
 
-func TxTransaction(trx *types.Transaction, walletName string) error {
+func TxTransaction(trx *types.Transaction, accountName string) error {
 
 	chainId, err := GetChainId()
 	if err != nil {
@@ -224,7 +224,7 @@ func TxTransaction(trx *types.Transaction, walletName string) error {
 	}
 
 	//reqKeys, err := getRequiredKeys(chainId, pkKeys, "owner", transaction)
-	reqKeys, err := GetRequiredKeys(chainId, "owner", walletName)
+	reqKeys, err := GetRequiredKeys(chainId, "owner", accountName)
 	if err != nil {
 		return err
 	}
@@ -270,7 +270,7 @@ func TxTransaction(trx *types.Transaction, walletName string) error {
 	return err
 }
 
-func InvokeContract(trx *types.Transaction, walletName string) error {
+func InvokeContract(trx *types.Transaction, accountName string) error {
 	chainId, err := GetChainId()
 	if err != nil {
 		return err
@@ -283,7 +283,7 @@ func InvokeContract(trx *types.Transaction, walletName string) error {
 
 
 	//reqKeys, err := getRequiredKeys(chainId, pkKeys, "owner", transaction)
-	reqKeys, err := GetRequiredKeys(chainId, "owner", walletName)
+	reqKeys, err := GetRequiredKeys(chainId, "owner", accountName)
 	if err != nil {
 		return err
 	}
