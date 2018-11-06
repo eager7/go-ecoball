@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 )
@@ -28,9 +27,7 @@ func readConfigFile() *config {
 	}
 	fmt.Println(dir)
 
-	rootDir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
-	rootDir = strings.Replace(rootDir, "\\", "/", -1)
-	file := rootDir + "/sharding.json"
+	file := "sharding.json"
 
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {

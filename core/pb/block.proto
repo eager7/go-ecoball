@@ -411,6 +411,11 @@ message ViewChangeBlock {
     ViewChangeBlockHeader Header = 1;
 }
 
+message Payload {
+    uint32 type = 1;
+    bytes  data = 2;
+}
+
 message COSign {
     uint32 Step1 = 1;
     uint32 Step2 = 2;
