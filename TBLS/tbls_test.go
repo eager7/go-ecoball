@@ -693,7 +693,7 @@ func TestTBLS(t *testing.T) {
 	bigTmp = bigTmp.Add(bigTmp,abaTBLS3.PrivatePoly.coeffs[0])
 	bigTmp = bigTmp.Add(bigTmp,abaTBLS4.PrivatePoly.coeffs[0])
 	bigTmp = bigTmp.Add(bigTmp,abaTBLS7.PrivatePoly.coeffs[0])
-	bigTmp.Mod(bigTmp,p)
+	// bigTmp.Mod(bigTmp,p)
 	// check the private key
 	var qual []int
 	for indexJ := range abaTBLS.mapSignDKG {
@@ -725,8 +725,8 @@ func TestTBLS(t *testing.T) {
 	signPreTBLS := BLSSign(bigTmp, msg)
 	fmt.Println("signPreTBLS:\n",signPreTBLS)
 
-	// bigTmp.Add(bigTmp,new(big.Int).SetInt64(1))
-	// bigTmp.Add(bigTmp,new(big.Int).SetInt64(-1))
+	bigTmp.Add(bigTmp,new(big.Int).SetInt64(100))
+	bigTmp.Add(bigTmp,new(big.Int).SetInt64(-100))
 	priTmp := new(bn256.G1).ScalarBaseMult(bigTmp)
 	pointG1 := new(bn256.G1).ScalarBaseMult(new(big.Int).SetInt64(1))
 	pointG2 := new(bn256.G2).ScalarBaseMult(new(big.Int).SetInt64(1))
