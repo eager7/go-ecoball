@@ -289,12 +289,15 @@ func (wi *WalletImpl) CheckLocked() bool {
 
 func (wallet *WalletImpl) TrySignDigest(digest []byte, publicKey string) (signData []byte, bFind bool) {
 	privateKey := []byte{}
+	var err error
 	bFound := false
 	for public, private := range wallet.AccountsMap {
 		if strings.EqualFold(public, publicKey) {
-			privateKey = []byte(private)
-			bFound = true
-			break
+			privateKey, err = hex.DecodeString(private)
+			if nil == err{
+				bFound = true
+				break
+			}
 		}
 	}
 

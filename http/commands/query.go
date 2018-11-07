@@ -17,6 +17,7 @@
 package commands
 
 import (
+	//"fmt"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -26,17 +27,23 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/gin-gonic/gin"
+	"github.com/ecoball/go-ecoball/http/request"
 )
 
 func GetMainChainHash(c *gin.Context) {
 	//response
-	data, err := json.Marshal(&config.ChainHash)
+	/*data, err := json.Marshal(&config.ChainHash)
 	if nil != err {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	} else {
 		c.JSON(http.StatusOK, gin.H{"result": string(data)})
-	}
+	}*/
+
+	/*var chaidHash request.ChainHash
+	chaidHash.ChainId = []byte(config.ChainHash.HexString())*/
+	//fmt.Println(config.ChainHash.HexString())
+	c.JSON(http.StatusOK, config.ChainHash.HexString())
 }
 
 func GetAllChainInfo(c *gin.Context) {
@@ -78,11 +85,17 @@ func GetAllChainInfo(c *gin.Context) {
 }
 
 func GetAccountInfo(c *gin.Context) {
-	name := c.PostForm("name")
+	/*name := c.PostForm("name")
 	chainHashStr := c.PostForm("chainHash")
-	hash := new(innerCommon.Hash)
+	hash := new(innerCommon.Hash)*/
 
-	data, err := ledger.L.AccountGet(hash.FormHexString(chainHashStr), innerCommon.NameToIndex(name))
+	var account request.AccountName
+	if err := c.BindJSON(&account); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	data, err := ledger.L.AccountGet(account.ChainHash, innerCommon.NameToIndex(account.Name))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -135,13 +148,19 @@ func GetTransaction(c *gin.Context) {
 }
 
 func GetRequiredKeys(c *gin.Context) {
-	chainHashStr := c.PostForm("chainHash")
+	var perPubKey request.PermissionPublicKeys
+	if err := c.BindJSON(&perPubKey); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	/*chainHashStr := c.PostForm("chainHash")
 	permission := c.PostForm("permission")
 	accountName := c.PostForm("name")
 
 	hash := new(innerCommon.Hash)
-	chainHash := hash.FormHexString(chainHashStr)
-	data, err := ledger.L.FindPermission(chainHash, innerCommon.NameToIndex(accountName), permission)
+	chainHash := hash.FormHexString(chainHashStr)*/
+	data, err := ledger.L.FindPermission(perPubKey.ChainHash, innerCommon.NameToIndex(perPubKey.Name), perPubKey.Permission)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -153,20 +172,21 @@ func GetRequiredKeys(c *gin.Context) {
 		return
 	}
 
-	publicAddress := []innerCommon.Address{}
+	pubAdd := request.PubKeyAddress{Addresses: []innerCommon.Address{}}
+	//publicAddress := []innerCommon.Address{}
 	for _, v := range permissionDatas {
 		for _, value := range v.Keys {
-			publicAddress = append(publicAddress, value.Actor)
+			pubAdd.Addresses = append(pubAdd.Addresses, value.Actor)
 		}
 	}
 
-	keys, err := json.Marshal(&publicAddress)
+	/*keys, err := json.Marshal(&publicAddress)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
-	}
+	}*/
 
-	c.JSON(http.StatusOK, gin.H{"result": string(keys)})
+	c.JSON(http.StatusOK, pubAdd)
 }
 
 func GetContract(c *gin.Context) {
