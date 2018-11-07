@@ -1022,6 +1022,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 
 		if Block.StateHashRoot != c.StateDB.FinalDB.GetHashRoot() {
 			log.Error(common.JsonString(c.StateDB.FinalDB.Params, false), common.JsonString(c.StateDB.FinalDB.Accounts, false))
+			time.Sleep(time.Hour*10)
 			return errors.New(log, fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s", Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 		}
 		heValue, err = shard.Serialize(&Block.FinalBlockHeader)
