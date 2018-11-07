@@ -14,6 +14,7 @@ type Action struct {
 	ContractAccount       common.AccountName			`json:"account"`
 	Permission 			  PermissionLevel				`json:"permission"`
 	Payload		  		  Payload						`json:"payload"`
+	Console				  string						`json:"console"`
 }
 
 func NewAction(tx *Transaction) (*Action, error){
