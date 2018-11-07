@@ -41,6 +41,8 @@ int create(char *issuer, long long int max_supply, char *token_id){
     // balance = ABA_get_token_balance("root", strlen("root"), "ABA", strlen("ABA"));
     // ABA_assert( balance != 67100, "get root's balance is wrong!" );
 
+    ABA_prints(issuer);
+
     ABA_assert( max_supply <= 0, "max_supply must be postive!" );
     ABA_assert( isTokenString(token_id),  "token id must be all upper character");
     ABA_assert( ABA_is_account(issuer, strlen(issuer)) != 0, "The issuer account does not exist" );

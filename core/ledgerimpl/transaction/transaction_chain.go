@@ -961,18 +961,21 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 			return err
 		}
 		if c.shardId == Block.ShardId {
+			s, err := c.StateDB.FinalDB.CopyState()
+			if err != nil {
+				return err
+			}
+			s.Type = state.CopyType
 			for i := 0; i < len(Block.Transactions); i++ {
-				log.Notice("Handle Transaction:", Block.Transactions[i].Type.String(), Block.Transactions[i].Hash.HexString(), " in final DB")
+				log.Notice("Handle Transaction:", Block.Transactions[i].Type.String(), Block.Transactions[i].Hash.HexString(), " in Copy DB")
 				if _, _, _, err := c.HandleTransaction(
-					c.StateDB.FinalDB, Block.Transactions[i], Block.MinorBlockHeader.Timestamp,
+					s, Block.Transactions[i], Block.MinorBlockHeader.Timestamp,
 					c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
 					log.Warn(Block.Transactions[i].JsonString())
-					c.StateDB.FinalDB.Reset(stateHashRoot)
 					return err
 				}
 			}
-			if c.StateDB.FinalDB.GetHashRoot() != Block.StateDeltaHash {
-				c.StateDB.FinalDB.Reset(stateHashRoot)
+			if s.GetHashRoot() != Block.StateDeltaHash {
 				return errors.New(log, fmt.Sprintf("the minor state hash root is not eqaul, receive:%s, local:%s", Block.StateDeltaHash.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 			}
 			c.LastHeader.MinorHeader = &Block.MinorBlockHeader
@@ -994,7 +997,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		//TODO:Handle Minor Headers
 		for _, minorHeader := range Block.MinorBlocks {
 			if c.shardId == minorHeader.ShardId { //skip local block
-				continue
+				//continue
 			}
 			minorBlockInterface, err := c.GetShardBlockByHash(shard.HeMinorBlock, minorHeader.Hash())
 			if err != nil {
@@ -1018,7 +1021,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		}
 
 		if Block.StateHashRoot != c.StateDB.FinalDB.GetHashRoot() {
-			log.Error(common.JsonString(c.StateDB.FinalDB.Accounts, false))
+			log.Error(common.JsonString(c.StateDB.FinalDB.Params, false), common.JsonString(c.StateDB.FinalDB.Accounts, false))
 			return errors.New(log, fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s", Block.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 		}
 		heValue, err = shard.Serialize(&Block.FinalBlockHeader)
@@ -1298,6 +1301,7 @@ func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBl
 
 func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock) (*shard.FinalBlock, error) {
 	log.Debug("new final block")
+	var TrxCount uint32
 	var hashesTxs []common.Hash
 	var hashesState []common.Hash
 	var hashesMinor []common.Hash
@@ -1325,6 +1329,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	s.Type = state.CopyType
 	var headers []*shard.MinorBlockHeader
 	for _, block := range minorBlocks {
+		TrxCount += uint32(len(block.Transactions))
 		headers = append(headers, &block.MinorBlockHeader)
 		for _, delta := range block.StateDelta {
 			tx, err := block.GetTransaction(delta.Receipt.Hash)
@@ -1343,7 +1348,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 		Version:            c.LastHeader.FinalHeader.Version,
 		Height:             c.LastHeader.FinalHeader.Height + 1,
 		Timestamp:          timeStamp,
-		TrxCount:           0,
+		TrxCount:           TrxCount,
 		PrevHash:           c.LastHeader.FinalHeader.Hash(),
 		ProposalPubKey:     nil,
 		EpochNo:            c.LastHeader.CmHeader.Height,

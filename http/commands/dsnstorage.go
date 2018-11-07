@@ -280,7 +280,7 @@ func DsnGetIpInfo(c *gin.Context)  {
 
 	}
 
-	c.JSON(http.StatusInternalServerError, response.DsnIpInfoRep{Code: response.CODENOMAL, Msg: "success", IpInfoLists: ipInfoLists})
+	c.JSON(http.StatusOK, response.DsnIpInfoRep{Code: response.CODENOMAL, Msg: "success", IpInfoLists: ipInfoLists})
 
 }
 
