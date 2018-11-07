@@ -1325,6 +1325,11 @@ func TransferExample() {
 		transfer.SetSignature(&config.Worker)
 		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
 		time.Sleep(time.Second * 1)
+
+		invoke, err := types.NewInvokeContract(worker, worker, config.ChainHash, state.Owner, "pledge", []string{"worker", "worker", "100", "100"}, 0, time.Now().UnixNano())
+		invoke.SetSignature(&config.Worker)
+		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+		time.Sleep(time.Millisecond * 500)
 	}
 	for i := 0; i < 1; i ++ {
 		transfer, err := types.NewTransfer(worker1, worker2, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
@@ -1353,8 +1358,5 @@ func TransferExample() {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 500)
 
-	/*invoke, err := types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"delegate", common.AddressFromPubKey(config.Delegate.PublicKey).HexString()}, 0, time.Now().UnixNano())
-	invoke.SetSignature(&config.Root)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	time.Sleep(time.Millisecond * 500)*/
+
 }
