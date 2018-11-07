@@ -11,3 +11,9 @@ type DsnAddFileReq struct {
 	FileSize    uint64  `json:"filesize"`
 
 }
+
+type DsnIpInfoReq struct {
+
+	Iplists     []string  `iplists`
+
+}
