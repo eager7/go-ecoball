@@ -96,7 +96,7 @@ config = {
     "http_port": str(args.http_port),
     "wallet_http_port": str(args.wallet_http_port),
     "version": str(args.version),
-    "log_dir": args.args,
+    "log_dir": args.log_dir,
     "output_to_terminal": args.output_to_terminal,
     "log_level": args.log_level,
     "consensus_algorithm": args.consensus_algorithm,
@@ -135,7 +135,7 @@ config = {
 }
 
 with open(os.path.join(root_dir, '../build/ecoball.toml'), 'w') as f:
-    pytoml.dump(data, f)
+    pytoml.dump(config, f)
 
 #start ecoball
 run("cd " + os.path.join(root_dir, '../build/') + "&& ./ecoball run")

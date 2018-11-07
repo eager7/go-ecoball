@@ -17,7 +17,9 @@
 package commands
 
 import (
+	"fmt"
 	"net/http"
+	"encoding/hex"
 
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/gin-gonic/gin"
@@ -26,14 +28,27 @@ import (
 )
 
 func InvokeContract(c *gin.Context) {
+	var trx string
 	var oneTransaction types.Transaction
-	if err := c.BindJSON(&oneTransaction); nil != err {
+	if err := c.BindJSON(&trx); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
+	data, err := hex.DecodeString(trx)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = oneTransaction.Deserialize(data)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	fmt.Println(oneTransaction.JsonString())
 	//send to txpool
-	err := event.Send(event.ActorNil, event.ActorTxPool, oneTransaction)
+	err = event.Send(event.ActorNil, event.ActorTxPool, &oneTransaction)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

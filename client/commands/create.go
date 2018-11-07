@@ -185,7 +185,7 @@ func newAccount(c *cli.Context) error {
 	}
 
 	//sign
-	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash[:])
+	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash.Bytes())
 	if nil != errcode {
 		fmt.Println(errcode)
 		return errcode
@@ -195,8 +195,15 @@ func newAccount(c *cli.Context) error {
 		transaction.AddSignature(v.PublicKey.Key, v.SignData)
 	}
 
+	datas, err := transaction.Serialize()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
 	var result rpc.SimpleResult
-	err = rpc.NodePost("/invokeContract", transaction, &result)
+	trx_str := hex.EncodeToString(datas)
+	err = rpc.NodePost("/invokeContract", &trx_str, &result)
 	fmt.Println(result.Result)
 	if nil == err {
 		fmt.Println(result.Result)
