@@ -205,8 +205,5 @@ func newAccount(c *cli.Context) error {
 	trx_str := hex.EncodeToString(datas)
 	err = rpc.NodePost("/invokeContract", &trx_str, &result)
 	fmt.Println(result.Result)
-	if nil == err {
-		fmt.Println(result.Result)
-	}
 	return err
 }

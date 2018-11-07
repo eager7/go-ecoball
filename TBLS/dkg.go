@@ -235,6 +235,7 @@ func ProcessNLQUALDKG(msg message2.EcoBallNetMsg,abaTBLS *ABATBLS) {
 		return
 	}
 	var indexIn = int(msgQual.Index)
+	// fmt.Println("indexIn:",indexIn,abaTBLS.dealer.tagQUAL[indexIn],msgQual.EpochNum)
 	if abaTBLS.dealer.tagQUAL[indexIn]==false && abaTBLS.epochNum==int(msgQual.EpochNum) {
 		abaTBLS.dealer.tagQUAL[indexIn] = true
 		for i:=0;i<len(abaTBLS.workers);i++ {
