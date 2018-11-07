@@ -20,6 +20,7 @@ import subprocess
 import sys
 import argparse
 import time
+import os
 
 
 def run(shell_command):
@@ -59,6 +60,12 @@ if args.node_ip is None or args.host_ip is None:
     print('please input iP address of nodes and ip of host node and weight number. -h shows options.')
     sys.exit(1)
 
+#create directory
+root_dir = os.path.split(os.path.realpath(__file__))[0]
+log_dir = os.path.join(root_dir, 'ecoball_log/committee')
+if not os.path.exists(log_dir):
+     os.makedirs(log_dir)
+    
 start_port = 2000
 PORT = 20681
 image = "jatel/internal:ecoball_v1.0"
@@ -74,8 +81,10 @@ while count < args.weight:
     command = "sudo docker run -d " + "--name=ecoball_" + str(count) + " -p "
     command += str(PORT + count) + ":20678 "
     command += "-p " + str(start_port + ip_index * 4 * args.weight + count) + ":" + str(start_port + ip_index * 4 * args.weight + count)
-    command += " " + image + " /root/go/src/github.com/ecoball/go-ecoball/Docker/start.py "
+    command += " -v " + log_dir  + ":/var/ecoball_log "
+    command += image + " /root/go/src/github.com/ecoball/go-ecoball/Docker/start.py "
     command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
+    command += " --log-dir=/var/ecoball_log/ecoball_" + str(count) + "/"
     print(command)
     run(command)
     sleep(2)
