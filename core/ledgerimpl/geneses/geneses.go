@@ -72,6 +72,13 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
 	}
 
+	abaToken := common.NameToIndex("abatoken")
+	tokenAddr := common.AddressFromPubKey(config.ABAToken.PublicKey)
+	fmt.Println("preset insert a token account:", tokenAddr.HexString())
+	if _, err := s.AddAccount(abaToken, tokenAddr, timeStamp); err != nil {
+		return err
+	}
+
 	//saving := common.NameToIndex("saving")
 	//savingAddr := common.AddressFromPubKey(config.Saving.PublicKey)
 	//fmt.Println("preset insert a bpay account:", savingAddr.HexString())
@@ -90,7 +97,7 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 	//	root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
 	//}
 
-	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), root, root)
+	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), abaToken, root)
 
 	//if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(90000)); err != nil {
 	//	return err
