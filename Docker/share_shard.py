@@ -49,7 +49,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--node-ip', required=True, metavar='', help="IP address of node", nargs='+', dest="node_ip")
 parser.add_argument('-o', '--host-ip', required=True, metavar='', help="IP address of host node", dest="host_ip")
 parser.add_argument('-w', '--weight', type=int, metavar='', help="The number of weights", default=1, dest="weight")
-parser.add_argument('-d', '--deploy-browser-wallet', action='store_true', help="Whether to deploy the browser and wallet", dest="deploy")
 
 # parse Arguments
 args = parser.parse_args()
@@ -68,7 +67,7 @@ str_ip = " "
 for ip in args.node_ip:
     str_ip += (ip + " ")
 
-count = 1
+count = args.weight
 while count < 4 * args.weight:
     # start ecoball
     command = "sudo docker run -d " + "--name=ecoball_" + str(count) + " -p "
@@ -76,31 +75,10 @@ while count < 4 * args.weight:
     command += "-p " + str(start_port + ip_index * 4 * args.weight + count) + ":" + str(start_port + ip_index * 4 * args.weight + count)
     command += " " + image + " /root/go/src/github.com/ecoball/go-ecoball/Docker/start.py "
     command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
-    run(command)
     print(command)
+    run(command)
     sleep(2)
-
-    if args.deploy and 0 == count:
-        # start ecowallet
-        command = "sudo docker run -d --name=ecowallet -p 20679:20679 "
-        command += image + " /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet"
-        run(command)
-        sleep(2)
-
-        # start eballscan
-        command = "sudo docker run -d --name=eballscan --link=ecoball_0:ecoball_alias -p 20680:20680 "
-        command += image + " /root/go/src/github.com/ecoball/eballscan/eballscan_service.sh ecoball_0"
-        run(command)
-        sleep(2)
-
-    if 0 == count:
-        break
-
     count += 1
-
-    if count == 4 * args.weight:
-        sleep(5)
-        count = 0
     
 
-print("start all ecoball success!!!") 
+print("start all ecoball shard container on this physical machine(" + args.host_ip + ") successfully!!!") 
