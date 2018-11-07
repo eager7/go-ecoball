@@ -116,7 +116,8 @@ func AccountStake(c *gin.Context)  {
 }
 
 
-func Dsnaddfile(c *gin.Context)  {
+
+func DsnaddfileWeb(c *gin.Context)  {
 
 
 	file, err := c.FormFile("file")
@@ -127,8 +128,8 @@ func Dsnaddfile(c *gin.Context)  {
 	}
 
 	accountName, _ := c.GetQuery("accountname")
-	hashcode , _:= c.GetQuery("hash")
-	fmt.Println(hashcode)
+	//hashcode , _:= c.GetQuery("hash")
+	//fmt.Println(hashcode)
 	cbtx := context.Background()
 	dclient := dsncli.NewRcWithDefaultConf(cbtx)
 	cid, _, err := dclient.HttpAddFile(file)
@@ -224,3 +225,9 @@ func Dsnaddfile(c *gin.Context)  {
 	c.JSON(http.StatusOK, response.DsnAddFileResponse{	Code: response.CODENOMAL, Msg: "success", Cid: newCid })
 	
 }
+
+func DsnGetIpInfo(c *gin.Context)  {
+
+	
+}
+

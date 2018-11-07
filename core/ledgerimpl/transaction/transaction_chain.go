@@ -1103,6 +1103,24 @@ func (c *ChainTx) GetShardBlockByHeight(typ shard.HeaderType, height uint64, sha
 	return nil, errors.New(log, fmt.Sprintf("can't find this block:[type]%s, [height]%d", typ.String(), height))
 }
 
+func (c *ChainTx) GetFinalBlocksByEpochNo(epochNo uint64) (finalBlocks []shard.BlockInterface, num int, err error) {
+	c.lockBlock.RLock()
+	defer c.lockBlock.RUnlock()
+	num = 0
+	for k, v := range c.BlockMap {
+		if v.Type == shard.HeCmBlock {
+			block, err := c.GetShardBlockByHash(v.Type, k)
+			if err != nil {
+				return nil, 0, errors.New(log, fmt.Sprintf("can't find this block:[type]%s, [epochNo]%d", v.Type.String(), epochNo))
+			}
+			finalBlocks = append(finalBlocks, block)
+			num++
+		}
+	}
+
+	return finalBlocks, num,nil
+}
+
 func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface, error) {
 	switch typ {
 	case shard.HeFinalBlock:
@@ -1213,6 +1231,47 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 }
 
 func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBlock, error) {
+	if c.LastHeader.CmHeader.Height > 3 {
+		// get cmBlock
+		epochNo := c.LastHeader.CmHeader.Height - 3
+		cmBlock, err := c.GetShardBlockByHeight(shard.HeCmBlock, epochNo, 0)
+		if err != nil {
+			return nil, err
+		}
+
+		finalBlocks, total, err := c.GetFinalBlocksByEpochNo(epochNo)
+		if err != nil {
+			return nil, err
+		}
+
+		shards := cmBlock.GetObject().(shard.CMBlock).Shards
+		num := make([]int, len(shards) + 1)	// [0] is committee
+		num[0] = total
+
+		// calculate how many minorblock of shard had produced during this epoch
+		for _, fBlock := range finalBlocks {
+			for _, mBlock := range fBlock.GetObject().(shard.FinalBlock).MinorBlocks {
+				num[mBlock.ShardId] += 1		// shard id start from 1
+			}
+		}
+
+		// calculate how many minor block
+		var totalNum int = 0
+		for _, number := range num {
+			totalNum += number
+		}
+		rewardEveryBlock := 10000 / totalNum		// reward(!0) every block
+
+
+		// calculate reward every producer
+		for i, s := range shards {
+			reward := num[i] * rewardEveryBlock / len(s.Member)		// reward(!0) every producer
+			for _, member := range s.Member {
+				log.Debug(string(member.PublicKey) + " get reward ", reward)
+			}
+		}
+	}
+
 	header := shard.CMBlockHeader{
 		ChainID:      c.LastHeader.CmHeader.ChainID,
 		Version:      c.LastHeader.CmHeader.Version,

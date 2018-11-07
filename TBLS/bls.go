@@ -67,6 +67,7 @@ func RecoverSignature(abaTBLS *ABATBLS)[]byte{
 			signPoint.Unmarshal(value)
 			num := LagrangeBase(indexJ+1, qual)
 			signPoint = new(bn256.G1).ScalarMult(signPoint, num)
+			//fmt.Println("0,indexJ:",indexJ,value)
 			if signPoint == nil {
 				fmt.Println("error")
 				return nil
@@ -77,12 +78,10 @@ func RecoverSignature(abaTBLS *ABATBLS)[]byte{
 				fmt.Println("error")
 			}
 			num := LagrangeBase(indexJ+1, qual)
-			if num.Cmp(new(big.Int).SetInt64(0)) == 1 {
-				sig = new(bn256.G1).ScalarMult(sig, num)
-			} else {
-				sig = new(bn256.G1).ScalarMult(sig, new(big.Int).Neg(num))
-				sig = new(bn256.G1).Neg(sig)
-			}
+			// fmt.Println("indexJ:",indexJ,qual,value)
+			// fmt.Printf("num %s:",num.String())
+
+			sig = new(bn256.G1).ScalarMult(sig, num)
 			signPoint = new(bn256.G1).Add(signPoint,sig)
 		}
 	}
@@ -90,6 +89,41 @@ func RecoverSignature(abaTBLS *ABATBLS)[]byte{
 }
 
 //compute lj(x)
+func LagrangeBase(index int,QUAL []int)(*big.Int){
+	bigNum2 := new(big.Int).SetInt64(int64(index))
+	bigNum3 := new(big.Int).SetInt64(1)
+	bigNum4 := new(big.Int).SetInt64(1)
+	bigNum5 := new(big.Int).SetInt64(1)
+	bigNum6 := new(big.Int).SetInt64(1)
+	bigNum7 := new(big.Int).SetInt64(1)
+	for i := 0; i < len(QUAL); i++{
+		if index == QUAL[i] {
+			continue
+		}
+		bigNum3.SetInt64(int64(QUAL[i])) //xj
+		bigNum3.Neg(bigNum3)             //-xm
+		bigNum4.Add(bigNum2, bigNum3)    //xj-xm
+
+		bigNum5.Mul(bigNum5, bigNum3)
+		bigNum6.Mul(bigNum6, bigNum4)
+	}
+	// bigNum7 is the inverse of bigNum6 under mod p
+	bigNum7.ModInverse(bigNum6,p)
+
+	// bigNum8 := new(big.Int).SetInt64(1)
+	// bigNum8.Mul(bigNum7,bigNum6)
+	// fmt.Printf("bigNum7,bigNum8:%s,%s\n",bigNum7.String(),bigNum8.String())
+	// bigNum8.Mod(bigNum8,p)
+	// fmt.Printf("bigNum7,bigNum8:%s,%s\n",bigNum7.String(),bigNum8.String())
+	bigNum5.Mul(bigNum5, bigNum7)
+	// fmt.Printf("bigNum5:%s\n",bigNum5.String())
+	bigNum5.Mod(bigNum5,p)
+	// fmt.Printf("bigNum5:%s\n",bigNum5.String())
+
+	return bigNum5
+}
+
+/*
 func LagrangeBase(index int,QUAL []int)(*big.Int){
 	bigNum2 := new(big.Int).SetInt64(int64(index))
 	bigNum3 := new(big.Int).SetInt64(1)
@@ -112,3 +146,4 @@ func LagrangeBase(index int,QUAL []int)(*big.Int){
 
 	return bigNum5
 }
+ */
