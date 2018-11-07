@@ -1327,7 +1327,7 @@ func TransferExample() {
 		time.Sleep(time.Second * 1)
 
 		log.Debug("invoke pledge contract")
-		invoke, err := types.NewInvokeContract(worker, worker, config.ChainHash, state.Owner, "pledge", []string{"worker", "worker", "100", "100"}, 0, time.Now().UnixNano())
+		invoke, err := types.NewInvokeContract(worker, root, config.ChainHash, state.Owner, "pledge", []string{"worker", "worker", "100", "100"}, 0, time.Now().UnixNano())
 		invoke.SetSignature(&config.Worker)
 		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 		time.Sleep(time.Millisecond * 500)

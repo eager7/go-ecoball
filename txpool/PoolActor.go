@@ -102,7 +102,6 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 			log.Warn("the node network is not work")
 			return nil
 		}
-		log.Notice("the shard number is ", numShard)
 		var handle bool
 		shardId, err := p.txPool.ledger.GetShardId(tx.ChainID)
 		if err != nil {
@@ -110,12 +109,16 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		}
 		log.Info("the shard id is ", shardId)
 		if tx.Type == types.TxTransfer || tx.Addr == common.NameToIndex("root") {
-			if uint64(shardId) == uint64(tx.From)%magicNum%uint64(numShard) + 1{
+			toShard := uint64(tx.From)%magicNum%uint64(numShard) + 1
+			log.Info("the handle shard id is ", toShard)
+			if uint64(shardId) == toShard {
 				log.Info("put the tx ", tx.Hash.HexString(), "to txPool")
 				handle = true
 			}
 		} else {
-			if uint64(shardId) == uint64(tx.Addr)%magicNum%uint64(numShard) + 1{
+			toShard := uint64(tx.Addr)%magicNum%uint64(numShard) + 1
+			log.Info("the handle shard id is ", toShard)
+			if uint64(shardId) == toShard {
 				handle = true
 			}
 		}
