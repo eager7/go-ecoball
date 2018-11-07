@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
+	//"net/url"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
@@ -318,17 +318,11 @@ func getRequiredKeys(chainHash innerCommon.Hash, permission string, account stri
 }
 
 func getContract(chainID innerCommon.Hash, index innerCommon.AccountName) (*types.DeployInfo, error) {
-	var result rpc.SimpleResult
-	values := url.Values{}
-	values.Set("contractName", index.String())
-	values.Set("chainId", chainID.HexString())
-	err := rpc.NodePost("/query/getContract", values.Encode(), &result)
+	requestData := request.ContractName{Name: index, ChainHash: chainID}
+	contract := types.DeployInfo{TypeVm: 0, Describe: []byte{}, Code: []byte{}, Abi: []byte{}}
+	err := rpc.NodePost("/query/getContract", &requestData, &contract)
 	if nil == err {
-		deploy := new(types.DeployInfo)
-		if err := deploy.Deserialize(innerCommon.FromHex(result.Result)); err != nil {
-			return nil, err
-		}
-		return deploy, nil
+		return &contract, nil
 	}
 	return nil, err
 }
