@@ -427,98 +427,6 @@ func (c *ChainTx) RestoreCurrentHeader() (bool, error) {
 	return true, nil
 }
 
-func (c *ChainTx) RestoreCurrentShardHeader() (bool, error) {
-	data, err := c.HeaderStore.Get([]byte("lastCmHeader"))
-	if err != nil {
-		log.Warn("get last committee header error:", err)
-	}
-	if data != nil {
-		payload, err := shard.HeaderDeserialize(data)
-		if err != nil {
-			return false, err
-		}
-		header, ok := payload.GetObject().(shard.CMBlockHeader)
-		if ok {
-			c.LastHeader.CmHeader = &header
-		}
-	}
-
-	data, err = c.HeaderStore.Get([]byte("lastMinorHeader"))
-	if err != nil {
-		log.Warn("get last minor header error:", err)
-	}
-	if data != nil {
-		payload, err := shard.HeaderDeserialize(data)
-		if err != nil {
-			return false, err
-		}
-		header, ok := payload.GetObject().(shard.MinorBlockHeader)
-		if ok {
-			c.LastHeader.MinorHeader = &header
-			c.shardId = header.ShardId
-		}
-	} else {
-		return false, nil
-	}
-
-	data, err = c.HeaderStore.Get([]byte("lastFinalHeader"))
-	if err != nil {
-		log.Warn("get last final header error:", err)
-	}
-	if data != nil {
-		payload, err := shard.HeaderDeserialize(data)
-		if err != nil {
-			return false, err
-		}
-		header, ok := payload.GetObject().(shard.FinalBlockHeader)
-		if ok {
-			c.LastHeader.FinalHeader = &header
-		}
-	}
-
-	data, err = c.HeaderStore.Get([]byte("lastVCHeader"))
-	if err != nil {
-		log.Warn("get last final header error:", err)
-	}
-	if data != nil {
-		payload, err := shard.HeaderDeserialize(data)
-		if err != nil {
-			return false, err
-		}
-		header, ok := payload.GetObject().(shard.ViewChangeBlockHeader)
-		if ok {
-			c.LastHeader.VCHeader = &header
-		}
-	}
-
-	headers, err := c.HeaderStore.SearchAll()
-	if err != nil {
-		return false, err
-	}
-	if len(headers) == 0 {
-		return false, nil
-	}
-	log.Info("The geneses block is existed:", len(headers))
-	for _, v := range headers {
-		header, err := shard.HeaderDeserialize([]byte(v))
-		if err != nil {
-			return false, err
-		}
-		blockCache := BlockCache{
-			ShardID: 0,
-			Height:  header.GetHeight(),
-			Type:    shard.HeaderType(header.Type()),
-		}
-		if header.Type() == uint32(shard.HeMinorBlock) {
-			m, ok := header.GetObject().(shard.MinorBlockHeader)
-			if ok {
-				blockCache.ShardID = m.ShardId
-			}
-		}
-		c.BlockMap[header.Hash()] = blockCache
-	}
-	return true, nil
-}
 
 /**
 *  @brief  get a transaction from levelDB by a hash
@@ -769,6 +677,99 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 }
 
 //ShardBlock
+func (c *ChainTx) RestoreCurrentShardHeader() (bool, error) {
+	data, err := c.HeaderStore.Get([]byte("lastCmHeader"))
+	if err != nil {
+		log.Warn("get last committee header error:", err)
+	}
+	if data != nil {
+		payload, err := shard.HeaderDeserialize(data)
+		if err != nil {
+			return false, err
+		}
+		header, ok := payload.GetObject().(shard.CMBlockHeader)
+		if ok {
+			c.LastHeader.CmHeader = &header
+		}
+	}
+
+	data, err = c.HeaderStore.Get([]byte("lastMinorHeader"))
+	if err != nil {
+		log.Warn("get last minor header error:", err)
+	}
+	if data != nil {
+		payload, err := shard.HeaderDeserialize(data)
+		if err != nil {
+			return false, err
+		}
+		header, ok := payload.GetObject().(shard.MinorBlockHeader)
+		if ok {
+			c.LastHeader.MinorHeader = &header
+			c.shardId = header.ShardId
+		}
+	} else {
+		return false, nil
+	}
+
+	data, err = c.HeaderStore.Get([]byte("lastFinalHeader"))
+	if err != nil {
+		log.Warn("get last final header error:", err)
+	}
+	if data != nil {
+		payload, err := shard.HeaderDeserialize(data)
+		if err != nil {
+			return false, err
+		}
+		header, ok := payload.GetObject().(shard.FinalBlockHeader)
+		if ok {
+			c.LastHeader.FinalHeader = &header
+		}
+	}
+
+	data, err = c.HeaderStore.Get([]byte("lastVCHeader"))
+	if err != nil {
+		log.Warn("get last final header error:", err)
+	}
+	if data != nil {
+		payload, err := shard.HeaderDeserialize(data)
+		if err != nil {
+			return false, err
+		}
+		header, ok := payload.GetObject().(shard.ViewChangeBlockHeader)
+		if ok {
+			c.LastHeader.VCHeader = &header
+		}
+	}
+
+	headers, err := c.HeaderStore.SearchAll()
+	if err != nil {
+		return false, err
+	}
+	if len(headers) == 0 {
+		return false, nil
+	}
+	log.Info("The geneses block is existed:", len(headers), "shardId:", c.shardId)
+	for _, v := range headers {
+		header, err := shard.HeaderDeserialize([]byte(v))
+		if err != nil {
+			return false, err
+		}
+		blockCache := BlockCache{
+			ShardID: 0,
+			Height:  header.GetHeight(),
+			Type:    shard.HeaderType(header.Type()),
+		}
+		if header.Type() == uint32(shard.HeMinorBlock) {
+			m, ok := header.GetObject().(shard.MinorBlockHeader)
+			if ok {
+				blockCache.ShardID = m.ShardId
+			}
+		}
+		c.BlockMap[header.Hash()] = blockCache
+	}
+	return true, nil
+}
+
 func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address) error {
 	if c.LastHeader.CmHeader != nil || c.LastHeader.MinorHeader != nil || c.LastHeader.FinalHeader != nil || c.LastHeader.VCHeader != nil {
 		log.Debug("geneses shard block is existed")
@@ -954,6 +955,11 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeMinorBlock.String()))
 		}
 		blockCache.ShardID = Block.ShardId
+
+		heValue, err = shard.Serialize(&Block.MinorBlockHeader)
+		if err != nil {
+			return err
+		}
 		if c.shardId == Block.ShardId {
 			for i := 0; i < len(Block.Transactions); i++ {
 				log.Notice("Handle Transaction:", Block.Transactions[i].Type.String(), Block.Transactions[i].Hash.HexString(), " in final DB")
@@ -970,17 +976,12 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 				return errors.New(log, fmt.Sprintf("the minor state hash root is not eqaul, receive:%s, local:%s", Block.StateDeltaHash.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
 			}
 			c.LastHeader.MinorHeader = &Block.MinorBlockHeader
+			heKey = Block.MinorBlockHeader.Hash().Bytes()
+			if err := c.HeaderStore.Put([]byte("lastMinorHeader"), heValue); err != nil {
+				return err
+			}
 		}
 
-		heValue, err = shard.Serialize(&Block.MinorBlockHeader)
-		if err != nil {
-			return err
-		}
-
-		heKey = Block.MinorBlockHeader.Hash().Bytes()
-		if err := c.HeaderStore.Put([]byte("lastMinorHeader"), heValue); err != nil {
-			return err
-		}
 		if err := c.BlockStore.Put(common.Uint32ToBytes(Block.ShardId), Block.Hash().Bytes()); err != nil {
 			return err
 		}
@@ -1543,6 +1544,7 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, tx
 			//if acc.Delegates
 			s.CommitAccount(accState)
 		}*/
+		log.Info("handle tx in ", s.Type.String(), common.JsonString(delta, false))
 		_, _, _, err := c.HandleTransaction(s, tx, timeStamp, cpuLimit, netLimit)
 		if err != nil {
 			return err

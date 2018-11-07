@@ -73,6 +73,7 @@ type BlockLimit struct {
  *  @param netStaked - stake delegated net
  */
 func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netStaked uint64, cpuLimit, netLimit float64) error {
+	log.Debug("SetResourceLimits:", from, to, cpuStaked, netStaked)
 	cpuStakedSum, err := s.getParam(cpuAmount)
 	if err != nil {
 		return err

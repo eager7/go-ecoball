@@ -1305,7 +1305,7 @@ func Actor() *actor.PID {
 }
 
 func TransferExample() {
-	time.Sleep(time.Second * 20)
+	time.Sleep(time.Second * 10)
 	root := common.NameToIndex("root")
 	worker := common.NameToIndex("testeru")
 	worker1 := common.NameToIndex("testerh")
@@ -1326,6 +1326,7 @@ func TransferExample() {
 		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
 		time.Sleep(time.Second * 1)
 
+		log.Debug("invoke pledge contract")
 		invoke, err := types.NewInvokeContract(worker, worker, config.ChainHash, state.Owner, "pledge", []string{"worker", "worker", "100", "100"}, 0, time.Now().UnixNano())
 		invoke.SetSignature(&config.Worker)
 		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
