@@ -17,6 +17,7 @@
 package http
 
 import (
+	"encoding/hex"
 	"net/http"
 
 	"github.com/ecoball/go-ecoball/common/config"
@@ -202,7 +203,11 @@ func getPublicKeys(c *gin.Context) {
 
 	publicKeys := Keys{KeyList: []OneKey{}}
 	for _, k := range data {
-		publicKeys.KeyList = append(publicKeys.KeyList, OneKey{[]byte(k)})
+		key, err := hex.DecodeString(k)
+		if nil == err {
+			publicKeys.KeyList = append(publicKeys.KeyList, OneKey{key})
+		}
+		
 	}
 
 	c.JSON(http.StatusOK, publicKeys)
@@ -217,7 +222,7 @@ func signTransaction(c *gin.Context) {
 
 	publicKeys := []string{}
 	for _, v := range oneTransaction.PublicKeys.KeyList {
-		publicKeys = append(publicKeys, string(v.Key))
+		publicKeys = append(publicKeys, hex.EncodeToString(v.Key))
 	}
 
 	signData, err := wallet.SignTransaction(oneTransaction.RawData, publicKeys)

@@ -45,3 +45,7 @@ type PermissionPublicKeys struct {
 	Permission string
 	ChainHash  innerCommon.Hash
 }
+
+type PubKeyAddress struct{
+	Addresses []innerCommon.Address
+}

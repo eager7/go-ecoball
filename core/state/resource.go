@@ -81,6 +81,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 	if err != nil {
 		return err
 	}
+	log.Debug("SetResourceLimits:", from, to, cpuStaked, netStaked, cpuStakedSum, netStakedSum)
 	acc, err := s.GetAccountByName(from)
 	if err != nil {
 		return err

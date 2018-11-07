@@ -16,6 +16,7 @@
 package wallet
 
 import (
+	"encoding/hex"
 	"crypto/sha512"
 	"errors"
 	"fmt"
@@ -336,7 +337,8 @@ func SignTransaction(transaction []byte, publicKeys []string) (Sign, error) {
 		for _, wallet := range wallets {
 			if !wallet.CheckLocked() {
 				if signData, bHave := wallet.TrySignDigest(transaction, publicKey); bHave {
-					oneSignature := OneSign{PublicKey: []byte(publicKey), SignData: signData}
+					pubkey, _ := hex.DecodeString(publicKey)
+					oneSignature := OneSign{PublicKey: pubkey, SignData: signData}
 					result.Signature = append(result.Signature, oneSignature)
 					if !bFound {
 						bFound = true
