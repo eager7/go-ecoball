@@ -2,7 +2,9 @@ package commands
 
 import (
 	"fmt"
-	"encoding/json"
+//	"encoding/json"
+	"os"
+	"runtime"
 	"net/http"
 	"github.com/gin-gonic/gin"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
@@ -18,11 +20,12 @@ import (
 	//"github.com/ecoball/go-ecoball/dsn/renter"
 	"github.com/ecoball/go-ecoball/client/commands"
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
-	
+	"net"
 //	"net/url"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/ecoball/go-ecoball/dsn"
 	"github.com/ecoball/go-ecoball/http/response"
+	"github.com/oschwald/geoip2-golang"
 )
 
 // func DsnHttpServ()  {
@@ -56,17 +59,23 @@ func TotalHandler(c *gin.Context)  {
 
 func EraCoding(c *gin.Context)  {
 
+
+	// var req request.DsnAddFileReq
+	// buf := make([]byte,c.Request.ContentLength)
+	// _ , err := c.Request.Body.Read(buf)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, response.DsnEraCoding{ Code: response.CODEPARAMSERR, Msg: err.Error(), Cid: ""})
+	// }
+
+	// err = json.Unmarshal(buf,&req)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, response.DsnEraCoding{ Code: response.CODEPARAMSERR, Msg: err.Error(), Cid: ""})
+	// } 
 	var req request.DsnAddFileReq
-	buf := make([]byte,c.Request.ContentLength)
-    _ , err := c.Request.Body.Read(buf)
+	err := c.BindJSON(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.DsnEraCoding{ Code: response.CODEPARAMSERR, Msg: err.Error(), Cid: ""})
 	}
-
-	err = json.Unmarshal(buf,&req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, response.DsnEraCoding{ Code: response.CODEPARAMSERR, Msg: err.Error(), Cid: ""})
-	} 
 
 	cid, err := dsn.RscCoding(&req)
 	if err != nil {
@@ -228,6 +237,56 @@ func DsnaddfileWeb(c *gin.Context)  {
 
 func DsnGetIpInfo(c *gin.Context)  {
 
-	
+
+	var req request.DsnIpInfoReq
+	err := c.BindJSON(&req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.DsnEraCoding{ Code: response.CODEPARAMSERR, Msg: err.Error()})
+	}
+	var ostype = runtime.GOOS
+
+	db := &geoip2.Reader{}
+    if ostype == "windows"{
+		db, err = geoip2.Open("..\\dsn\\GeoLite2-City.mmdb")
+    }else if ostype == "linux"{
+        db, err = geoip2.Open("../dsn/GeoLite2-City.mmdb")
+    }
+
+    if err != nil {
+		c.JSON(http.StatusInternalServerError, response.DsnIpInfoRep{ Code: response.CODEPARAMSERR, Msg: err.Error()})
+		return
+	}
+
+
+	ipInfoLists := make ([]response.DsnIpInfo , len(req.Iplists))
+	for i := 0; i < len(req.Iplists); i++ {
+
+		ip := net.ParseIP(req.Iplists[i])
+		record, err := db.City(ip)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, response.DsnIpInfoRep{ Code: response.CODEPARAMSERR, Msg: err.Error()})
+		}
+		ipInfoLists[i].City =  record.City.Names["en"]
+		if(len(record.Subdivisions)>0){
+			ipInfoLists[i].Subdivision = record.Subdivisions[0].Names["en"]
+		}else{
+			ipInfoLists[i].Subdivision = ""
+		}
+		ipInfoLists[i].Country = record.Country.Names["en"]
+		ipInfoLists[i].Countrycode = record.Country.IsoCode
+		ipInfoLists[i].Timezone =  record.Location.TimeZone
+		ipInfoLists[i].Latitude = record.Location.Latitude
+		ipInfoLists[i].Longitude = record.Location.Longitude
+
+	}
+
+	c.JSON(http.StatusInternalServerError, response.DsnIpInfoRep{Code: response.CODENOMAL, Msg: "success", IpInfoLists: ipInfoLists})
+
+}
+
+func GetProjectPath() string{
+    var projectPath string
+    projectPath, _ = os.Getwd()
+    return projectPath
 }
 
