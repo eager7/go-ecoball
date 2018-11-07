@@ -282,11 +282,7 @@ func DsnGetIpInfo(c *gin.Context)  {
 
 	c.JSON(http.StatusInternalServerError, response.DsnIpInfoRep{Code: response.CODENOMAL, Msg: "success", IpInfoLists: ipInfoLists})
 
-  
-
 }
-
-
 
 func GetProjectPath() string{
     var projectPath string

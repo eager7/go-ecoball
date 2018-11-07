@@ -1357,7 +1357,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	if err != nil {
 		return nil, err
 	}
-	log.Info("new final block hash:", block.Hash())
+	log.Info("new final block:", block.Height, "hash:", block.Hash())
 	log.Warn(block.Hash().HexString(), block.StateHashRoot.HexString(), common.JsonString(s.Accounts, false))
 	return block, nil
 }
