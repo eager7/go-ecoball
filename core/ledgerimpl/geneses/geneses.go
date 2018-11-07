@@ -79,6 +79,11 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 		return err
 	}
 
+	// set root control token account
+	perm := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
+	perm.Accounts["root"] = state.AccFactor{Actor: common.NameToIndex("root"), Weight: 1, Permission: "active"}
+	s.AddPermission(abaToken, perm)
+
 	//saving := common.NameToIndex("saving")
 	//savingAddr := common.AddressFromPubKey(config.Saving.PublicKey)
 	//fmt.Println("preset insert a bpay account:", savingAddr.HexString())
