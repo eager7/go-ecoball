@@ -52,3 +52,23 @@ type DsnAccountStake struct {
 	AccountStake uint64  
 
 }
+
+//ip经纬度信息
+type DsnIpInfo struct {
+
+	City   	  		 string    //城市
+	Subdivision 	 string    //省，州
+	Country  	     string    //国家
+	Countrycode      string    //国家代号
+	Timezone		 string    //时区
+	Latitude 	     float64   //纬度
+	Longitude        float64   //经度
+}
+
+type DsnIpInfoRep struct {
+
+	Code   int
+	Msg    string  
+	IpInfoLists []DsnIpInfo
+
+}

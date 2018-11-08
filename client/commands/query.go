@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
+	//"net/url"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
@@ -140,7 +140,6 @@ func getAccount(c *cli.Context) error {
 	chainHashStr := c.String("chainHash")
 	if "" == chainHashStr {
 		chainHash, err = getMainChainHash()
-
 	} else {
 		var hashTemp []byte
 		hashTemp, err = hex.DecodeString(chainHashStr)
@@ -296,38 +295,34 @@ func getTransaction(c *cli.Context) error {
 
 //other query method
 func getMainChainHash() (innerCommon.Hash, error) {
-	var result innerCommon.Hash
+	var result string
 	err := rpc.NodeGet("/query/mainChainHash", &result)
 	if nil != err {
 		return innerCommon.Hash{}, err
 	}
 
-	return result, nil
+	hash := new(innerCommon.Hash)
+	return hash.FormHexString(result), nil
 }
 
 func getRequiredKeys(chainHash innerCommon.Hash, permission string, account string) ([]innerCommon.Address, error) {
-	var result []innerCommon.Address
+	//var result string
+	pubAdd := request.PubKeyAddress{Addresses: []innerCommon.Address{}}
 	requestData := request.PermissionPublicKeys{Name: account, Permission: permission, ChainHash: chainHash}
-	err := rpc.NodePost("/query/getRequiredKeys", &requestData, &result)
-	if nil != err {
-		return result, nil
+	err := rpc.NodePost("/query/getRequiredKeys", &requestData, &pubAdd)
+	if nil == err {
+		return pubAdd.Addresses, nil
 	}
 
 	return []innerCommon.Address{}, err
 }
 
 func getContract(chainID innerCommon.Hash, index innerCommon.AccountName) (*types.DeployInfo, error) {
-	var result rpc.SimpleResult
-	values := url.Values{}
-	values.Set("contractName", index.String())
-	values.Set("chainId", chainID.HexString())
-	err := rpc.NodePost("/query/getContract", values.Encode(), &result)
+	requestData := request.ContractName{Name: index, ChainHash: chainID}
+	contract := types.DeployInfo{TypeVm: 0, Describe: []byte{}, Code: []byte{}, Abi: []byte{}}
+	err := rpc.NodePost("/query/getContract", &requestData, &contract)
 	if nil == err {
-		deploy := new(types.DeployInfo)
-		if err := deploy.Deserialize(innerCommon.FromHex(result.Result)); err != nil {
-			return nil, err
-		}
-		return deploy, nil
+		return &contract, nil
 	}
 	return nil, err
 }

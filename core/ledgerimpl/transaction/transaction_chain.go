@@ -33,7 +33,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/trie"
 	"github.com/ecoball/go-ecoball/core/types"
-	dsnstore "github.com/ecoball/go-ecoball/dsn/block"
+	dsnstore "github.com/ecoball/go-ecoball/dsn/host/block"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
