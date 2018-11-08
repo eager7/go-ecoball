@@ -3,6 +3,8 @@ package commands
 import (
 	"os"
 	"net/http"
+	"net"
+	"runtime"
 	"github.com/gin-gonic/gin"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/common/config"
@@ -12,6 +14,8 @@ import (
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
 	"github.com/ecoball/go-ecoball/http/response"
 	"github.com/ecoball/go-ecoball/dsn/host"
+	"github.com/ecoball/go-ecoball/http/request"
+	"github.com/oschwald/geoip2-golang"
 )
 
 func TotalHandler(c *gin.Context)  {
@@ -46,7 +50,7 @@ func EraCoding(c *gin.Context)  {
 	// }
 
 
-/*	var req request.DsnAddFileReq
+	var req request.DsnAddFileReq
 	err := c.BindJSON(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.DsnEraCoding{ Code: response.CODEPARAMSERR, Msg: err.Error(), Cid: ""})
@@ -57,7 +61,7 @@ func EraCoding(c *gin.Context)  {
 		c.JSON(http.StatusInternalServerError, response.DsnEraCoding{ Code: response.CODESERVERINNERERR, Msg: err.Error(), Cid: ""})
 	} else {
 		c.JSON(http.StatusOK, response.DsnEraCoding {Code: response.CODENOMAL, Msg:"success", Cid: cid })
-	}*/
+	}
 	
 }
 
@@ -76,7 +80,7 @@ func EraDecoding(c *gin.Context)  {
 	}
 }
 func DsnGetIpInfo(c *gin.Context)  {
-	/*var req request.DsnIpInfoReq
+	var req request.DsnIpInfoReq
 	err := c.BindJSON(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.DsnEraCoding{ Code: response.CODEPARAMSERR, Msg: err.Error()})
@@ -117,9 +121,7 @@ func DsnGetIpInfo(c *gin.Context)  {
 		ipInfoLists[i].Longitude = record.Location.Longitude
 
 	}
-
-	c.JSON(http.StatusOK, response.DsnIpInfoRep{Code: response.CODENOMAL, Msg: "success", IpInfoLists: ipInfoLists})*/
-
+	c.JSON(http.StatusOK, response.DsnIpInfoRep{Code: response.CODENOMAL, Msg: "success", IpInfoLists: ipInfoLists})
 }
 
 func GetProjectPath() string{
