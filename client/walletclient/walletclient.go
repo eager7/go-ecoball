@@ -10,6 +10,7 @@ import (
 	innerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/state"
 	walletHttp "github.com/ecoball/go-ecoball/walletserver/http"
+	"encoding/hex"
 )
 
 type WalletClientConf struct {
@@ -113,7 +114,7 @@ func (w *WalletClient) InvokeContract(transaction *types.Transaction) (string, e
 	if err != nil {
 		return "", err
 	}
-	reqKeys, err := getRequiredKeys(chainId, "owner", w.Conf.WalletName)
+	reqKeys, err := getRequiredKeys(chainId, "owner", w.Conf.AccountName)
 	if err != nil {
 		return "", err
 	}
@@ -129,8 +130,14 @@ func (w *WalletClient) InvokeContract(transaction *types.Transaction) (string, e
 		transaction.AddSignature(v.PublicKey.Key, v.SignData)
 	}
 
+	datas, err := transaction.Serialize()
+	if err != nil {
+		return "", err
+	}
+
+	trx_str := hex.EncodeToString(datas)
 	var resultPays rpc.SimpleResult
-	err = rpc.NodePost("/invokeContract", transaction, &resultPays)
+	err = rpc.NodePost("/invokeContract", &trx_str, &resultPays)
 	return transaction.Hash.HexString(), err
 }
 
@@ -143,7 +150,7 @@ func (w *WalletClient) Transer(transaction *types.Transaction) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	reqKeys, err := getRequiredKeys(chainId, "owner", w.Conf.WalletName)
+	reqKeys, err := getRequiredKeys(chainId, "owner", w.Conf.AccountName)
 	if err != nil {
 		return "", err
 	}
@@ -159,8 +166,14 @@ func (w *WalletClient) Transer(transaction *types.Transaction) (string, error) {
 		transaction.AddSignature(v.PublicKey.Key, v.SignData)
 	}
 
+	datas, err := transaction.Serialize()
+	if err != nil {
+		return "", err
+	}
+
+	trx_str := hex.EncodeToString(datas)
 	var resultPays rpc.SimpleResult
-	err = rpc.NodePost("/invokeContract", transaction, &resultPays)
+	err = rpc.NodePost("/invokeContract", &trx_str, &resultPays)
 	return transaction.Hash.HexString(), err
 }
 

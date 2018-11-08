@@ -145,18 +145,19 @@ func (r *DsnClient)createFileContractWeb(fname string, size uint64, cid string) 
 	return fcBytes, nil
 }
 
-func (r *DsnClient) PayForFile(fname, cid string) (*types.Transaction, error) {
+func (r *DsnClient) PayForFile(fname string) (*types.Transaction, error) {
 	fi, err := os.Stat(fname)
 	if err != nil {
 		return nil, err
 	}
 
 	fee := fi.Size() * int64(r.Conf.Redundancy) / 1024 * 1024 + 1
-	var bf big.Int
-	fun := bf.SetInt64(fee)
+	//var bf big.Int
+	//fun := bf.SetInt64(fee)
+	bigValue := big.NewInt(fee)
 	timeNow := time.Now().UnixNano()
 	tran, err := types.NewTransfer(common.NameToIndex(r.Conf.AccountName),
-		innerCommon.NameToIndex(dsnComm.RootAccount), common.HexToHash(r.Conf.ChainId), "owner", fun, 0, timeNow)
+		innerCommon.NameToIndex(dsnComm.RootAccount), common.HexToHash(r.Conf.ChainId), "owner", bigValue, 0, timeNow)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +215,7 @@ func (r *DsnClient) RscCodingReq(fpath, cid string) (string, error) {
 	} else {
 		PieceSize = uint64(256 * 1024)
 	}
-	req := RscReq{
+	req := dsnComm.RscReq{
 		Cid: cid,
 		Redundency: int(r.Conf.Redundancy),
 		IsDir: false,

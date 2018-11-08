@@ -69,7 +69,7 @@ func dsnAddFile(ctx *cli.Context) error {
 	}
 	fmt.Println("added ", file, newCid)
 	//pay for file
-	payTrn, err := dclient.PayForFile(file, newCid)
+	payTrn, err := dclient.PayForFile(file)
 	if err != nil {
 		fmt.Println(err.Error())
 		return err
@@ -79,6 +79,7 @@ func dsnAddFile(ctx *cli.Context) error {
 		fmt.Println(err.Error())
 		return err
 	}
+	fmt.Println("payed for file, id: ", payTrn.Hash.HexString())
 	//Invoke file contract
 	transaction, err := dclient.InvokeFileContract(file, newCid, trnID)
 	if err != nil {
