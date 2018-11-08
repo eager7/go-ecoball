@@ -40,6 +40,7 @@ func (h HeaderType) String() string {
 type HeaderInterface interface {
 	Payload
 	//SetSignature(account *account.Account) error
+	VerifySignature() (bool, error)
 	Hash() common.Hash
 	GetChainID() common.Hash
 	GetHeight() uint64

@@ -1451,6 +1451,7 @@ func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 		if err != nil {
 			return err
 		}
+
 		if !newBlock.StateDeltaHash.Equals(&minorBlock.StateDeltaHash) {
 			return errors.New(log, fmt.Sprintf("the state hash is not equal:%s, %s", minorBlock.StateDeltaHash.HexString(), newBlock.StateDeltaHash.HexString()))
 		}
