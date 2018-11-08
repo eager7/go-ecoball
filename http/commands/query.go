@@ -26,8 +26,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
-	"github.com/gin-gonic/gin"
 	"github.com/ecoball/go-ecoball/http/request"
+	"github.com/gin-gonic/gin"
 )
 
 func GetMainChainHash(c *gin.Context) {
@@ -61,6 +61,9 @@ func GetAllChainInfo(c *gin.Context) {
 			chainList = chainListTemp
 		}
 	}
+
+	mainChain := state.Chain{Hash: config.ChainHash}
+	allChainInfo = append(allChainInfo, mainChain)
 
 	//response
 	data, err := json.Marshal(&allChainInfo)
