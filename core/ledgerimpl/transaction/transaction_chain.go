@@ -917,7 +917,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	c.lockBlock.Lock()
 	defer c.lockBlock.Unlock()
 	if _, ok := c.BlockMap[block.Hash()]; ok {
-		log.Warn("the block:", block.GetHeight(), "is existed")
+		log.Warn("the block:", block.Type(), block.GetHeight(), "is existed")
 		return nil
 	}
 
