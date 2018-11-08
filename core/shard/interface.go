@@ -40,16 +40,14 @@ func (h HeaderType) String() string {
 type HeaderInterface interface {
 	Payload
 	//SetSignature(account *account.Account) error
+	VerifySignature() (bool, error)
 	Hash() common.Hash
 	GetChainID() common.Hash
 	GetHeight() uint64
 }
 
 type BlockInterface interface {
-	Payload
-	Hash() common.Hash
-	GetChainID() common.Hash
-	GetHeight() uint64
+	HeaderInterface
 }
 
 func Serialize(payload Payload) ([]byte, error) {

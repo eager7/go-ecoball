@@ -42,6 +42,7 @@ import (
 	"math/big"
 	"sync"
 	"time"
+	"github.com/ecoball/go-ecoball/common/message"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -131,6 +132,8 @@ func NewTransactionChain(path string, ledger ledger.Ledger, shard bool) (c *Chai
 
 	c.StateDB.FinalDB.Type = state.FinalType
 
+	event.InitMsgDispatcher()
+
 	return c, nil
 }
 
@@ -166,6 +169,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
 		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].JsonString())
+			event.Send(event.ActorLedger, event.ActorTxPool, message.DeleteTx{ChainID:txs[i].ChainID, Hash:txs[i].Hash})
 			txs = append(txs[:i], txs[i+1:]...)
 			return nil, txs, err
 		} else {
@@ -589,12 +593,15 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	case types.TxTransfer:
 		payload, ok := tx.Payload.GetObject().(types.TransferInfo)
 		if !ok {
+			event.PublishTrxRes(tx.Hash, "transaction type error[transfer]")
 			return nil, 0, 0, errors.New(log, "transaction type error[transfer]")
 		}
 		if err := s.AccountSubBalance(tx.From, state.AbaToken, payload.Value); err != nil {
+			event.PublishTrxRes(tx.Hash, err.Error())
 			return nil, 0, 0, err
 		}
 		if err := s.AccountAddBalance(tx.Addr, state.AbaToken, payload.Value); err != nil {
+			event.PublishTrxRes(tx.Hash, err.Error())
 			return nil, 0, 0, err
 		}
 
@@ -602,15 +609,19 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		//tx.Receipt.To.Balance, _ = s.AccountGetBalance(tx.Addr, state.AbaToken)
 		tx.Receipt.TokenName = state.AbaToken
 		tx.Receipt.Amount = payload.Value
+
 	case types.TxDeploy:
 		if err := s.CheckPermission(tx.Addr, state.Active, tx.Hash, tx.Signatures); err != nil {
+			event.PublishTrxRes(tx.Hash, err.Error())
 			return nil, 0, 0, err
 		}
 		payload, ok := tx.Payload.GetObject().(types.DeployInfo)
 		if !ok {
+			event.PublishTrxRes(tx.Hash, "transaction type error[deploy]")
 			return nil, 0, 0, errors.New(log, "transaction type error[deploy]")
 		}
 		if err := s.SetContract(tx.Addr, payload.TypeVm, payload.Describe, payload.Code, payload.Abi); err != nil {
+			event.PublishTrxRes(tx.Hash, err.Error())
 			return nil, 0, 0, err
 		}
 
@@ -620,15 +631,18 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 			Contract: payload,
 		}
 		if data, err := acc.Serialize(); err != nil {
+			event.PublishTrxRes(tx.Hash, err.Error())
 			return nil, 0, 0, err
 		} else {
 			tx.Receipt.Accounts[0] = data
 		}
+
 	case types.TxInvoke:
 		actionNew, _ := types.NewAction(tx)
 		trxContext, _ := context.NewTranscationContext(s, tx, cpuLimit, netLimit, timeStamp)
 		ret, err = smartcontract.DispatchAction(trxContext, actionNew, 0)
 		if err != nil {
+			event.PublishTrxRes(tx.Hash, err.Error())
 			return nil, 0, 0, err
 		}
 
@@ -637,9 +651,16 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 			tx.Receipt.Accounts[i] = trxContext.AccountDelta[acc]
 		}
 
-		js, _ := json.Marshal(trxContext.Trace)
-		fmt.Println("json format: ", string(js))
+		js, err := json.Marshal(trxContext.Trace)
+		if err != nil {
+			event.PublishTrxRes(tx.Hash, err.Error())
+			return nil, 0, 0, err
+		}
+		//fmt.Println("json format: ", string(js))
+
+		event.PublishTrxRes(tx.Hash, string(js))
 	default:
+		event.PublishTrxRes(tx.Hash, "the transaction's type error")
 		return nil, 0, 0, errors.New(log, "the transaction's type error")
 	}
 	end := time.Now().UnixNano()
@@ -651,6 +672,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	}
 	data, err := tx.Serialize()
 	if err != nil {
+		event.PublishTrxRes(tx.Hash, err.Error())
 		return nil, 0, 0, err
 	}
 	if tx.Receipt.Net == 0 {
@@ -666,12 +688,23 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		tx.Receipt.Result = common.CopyBytes(ret)
 	}
 	if err := s.RecoverResources(tx.From, timeStamp, cpuLimit, netLimit); err != nil {
+		event.PublishTrxRes(tx.Hash, err.Error())
 		return nil, 0, 0, err
 	}
 	if err := s.SubResources(tx.From, cpu, net, cpuLimit, netLimit); err != nil {
+		event.PublishTrxRes(tx.Hash, err.Error())
 		return nil, 0, 0, err
 	}
 	log.Debug("result:", ret, "cpu:", cpu, "net:", net)
+
+	switch tx.Type {
+	case types.TxTransfer:
+		event.PublishTrxRes(tx.Hash, "transfer success!")
+	case types.TxDeploy:
+		event.PublishTrxRes(tx.Hash, "contract deploy success!")
+	default:
+		event.PublishTrxRes(tx.Hash, "the transaction's type error")
+	}
 
 	return ret, cpu, net, nil
 }
@@ -1194,6 +1227,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
 			log.Error("handle transaction error:", err.Error())
 			log.Warn(txs[i].JsonString())
+			event.Send(event.ActorLedger, event.ActorTxPool, message.DeleteTx{ChainID:txs[i].ChainID, Hash:txs[i].Hash})
 			txs = append(txs[:i], txs[i+1:]...)
 			return nil, txs, err
 		} else {
@@ -1440,6 +1474,16 @@ func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 	if _, ok := c.BlockMap[hash]; ok {
 		return errors.New(log, fmt.Sprintf("the block is existed:%s-%d", hash.HexString(), block.GetHeight()))
 	}
+
+	result, err := block.VerifySignature()
+	if err != nil {
+		log.Error("Block VerifySignature Failed")
+		return err
+	}
+	if result == false {
+		return errors.New(log, "block verify signature failed")
+	}
+
 	switch block.Type() {
 	case uint32(shard.HeMinorBlock):
 		//TODO:State Hash Check
@@ -1447,7 +1491,12 @@ func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 		if !ok {
 			return errors.New(log, "the block type is not minor block")
 		}
-		newBlock, _, err := c.NewMinorBlock(minorBlock.Transactions, minorBlock.Timestamp)
+		for _, v := range minorBlock.Transactions {			//Check Transaction
+			if err := c.CheckTransaction(v); err != nil {
+				return err
+			}
+		}
+		newBlock, _, err := c.NewMinorBlock(minorBlock.Transactions, minorBlock.Timestamp) //check state hash
 		if err != nil {
 			return err
 		}
@@ -1457,6 +1506,21 @@ func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 	case uint32(shard.HeCmBlock):
 	case uint32(shard.HeFinalBlock):
 		//TODO:State Hash Check
+		finalBlock, ok := block.GetObject().(shard.FinalBlock)
+		if !ok {
+			return errors.New(log, "block type error")
+		}
+		var hashes []common.Hash
+		for _, v := range finalBlock.MinorBlocks {
+			hashes = append(hashes, v.Hash())
+		}
+		newBlock, err := c.NewFinalBlock(finalBlock.Timestamp, hashes)
+		if err != nil {
+			return err
+		}
+		if !newBlock.StateHashRoot.Equals(&finalBlock.StateHashRoot) {
+			return errors.New(log, fmt.Sprintf("the state hash is not equal:%s, %s", finalBlock.StateHashRoot.HexString(), newBlock.StateHashRoot.HexString()))
+		}
 	case uint32(shard.HeViewChange):
 	default:
 		return errors.New(log, "unknown header type")

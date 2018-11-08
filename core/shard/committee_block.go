@@ -45,6 +45,16 @@ func (h *CMBlockHeader) ComputeHash() error {
 	return nil
 }
 
+func (h *CMBlockHeader) VerifySignature() (bool, error) {
+	/*for _, v := range h.Signatures {
+		b, err := secp256k1.Verify(h.Hash.Bytes(), v.SigData, v.PubKey)
+		if err != nil || b != true {
+			return false, err
+		}
+	}*/
+	return true, nil
+}
+
 func (h *CMBlockHeader) proto() (*pb.CMBlockHeader, error) {
 	//if h.ConsData.Payload == nil {
 	//	return nil, errors.New(log, "the cm block header's consensus data is nil")
@@ -155,6 +165,7 @@ func (h *CMBlockHeader) Hash() common.Hash {
 func (h *CMBlockHeader) GetHeight() uint64 {
 	return h.Height
 }
+
 func (h *CMBlockHeader) GetChainID() common.Hash {
 	return h.ChainID
 }
@@ -163,6 +174,7 @@ func (h CMBlockHeader) GetObject() interface{} {
 	return h
 }
 
+//Block Interface
 type NodeAddr struct {
 	Address string
 	Port    string
