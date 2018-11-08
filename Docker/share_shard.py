@@ -68,7 +68,6 @@ if not os.path.exists(log_dir):
 start_port = 2000
 PORT = 20681
 image = "jatel/internal:ecoball_v1.0"
-ip_index = args.node_ip.index(args.host_ip)
 
 str_ip = " "
 for ip in args.node_ip:
@@ -79,7 +78,7 @@ while count < 4 * args.weight:
     # start ecoball
     command = "sudo docker run -d " + "--name=ecoball_" + str(count) + " -p "
     command += str(PORT + count) + ":20678 "
-    command += "-p " + str(start_port + ip_index * 4 * args.weight + count) + ":" + str(start_port + ip_index * 4 * args.weight + count)
+    command += "-p " + str(start_port + count) + ":" + str(start_port + count)
     command += " -v " + log_dir  + ":/var/ecoball_log "
     command += image + " /root/go/src/github.com/ecoball/go-ecoball/Docker/start.py "
     command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
