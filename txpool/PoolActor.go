@@ -72,6 +72,8 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 		}
 	case *shard.FinalBlock:
 	case *shard.CMBlock:
+	case message.DeleteTx:
+		p.txPool.Delete(msg.ChainID, msg.Hash)
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}

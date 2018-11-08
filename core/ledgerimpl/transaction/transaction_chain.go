@@ -42,6 +42,7 @@ import (
 	"math/big"
 	"sync"
 	"time"
+	"github.com/ecoball/go-ecoball/common/message"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -1194,6 +1195,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
 			log.Error("handle transaction error:", err.Error())
 			log.Warn(txs[i].JsonString())
+			event.Send(event.ActorLedger, event.ActorTxPool, message.DeleteTx{ChainID:txs[i].ChainID, Hash:txs[i].Hash})
 			txs = append(txs[:i], txs[i+1:]...)
 			return nil, txs, err
 		} else {
