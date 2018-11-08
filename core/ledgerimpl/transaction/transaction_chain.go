@@ -1231,7 +1231,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		return nil, nil, err
 	}
 	log.Info("new minor block:", block.GetHeight(), " hash:", block.Hash())
-	log.Warn(block.Hash().HexString(), block.StateDeltaHash.HexString(), common.JsonString(s.Params, false), common.JsonString(s.Accounts, false))
+	log.Warn(block.Hash().HexString(), block.StateDeltaHash.HexString(), common.JsonString(c.StateDB.FinalDB.Params, false), common.JsonString(s.Accounts, false))
 	return block, nil, nil
 }
 
@@ -1365,7 +1365,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 		return nil, err
 	}
 	log.Info("new final block:", block.Height, "hash:", block.Hash())
-	log.Warn(block.Hash().HexString(), block.StateHashRoot.HexString(), common.JsonString(s.Params, false), common.JsonString(s.Accounts, false))
+	log.Warn(block.Hash().HexString(), block.StateHashRoot.HexString(), common.JsonString(c.StateDB.FinalDB.Params, false), common.JsonString(s.Accounts, false))
 	return block, nil
 }
 
