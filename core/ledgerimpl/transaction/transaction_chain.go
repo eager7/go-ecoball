@@ -1440,6 +1440,16 @@ func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 	if _, ok := c.BlockMap[hash]; ok {
 		return errors.New(log, fmt.Sprintf("the block is existed:%s-%d", hash.HexString(), block.GetHeight()))
 	}
+
+	result, err := block.VerifySignature()
+	if err != nil {
+		log.Error("Block VerifySignature Failed")
+		return err
+	}
+	if result == false {
+		return errors.New(log, "block verify signature failed")
+	}
+
 	switch block.Type() {
 	case uint32(shard.HeMinorBlock):
 		//TODO:State Hash Check
@@ -1447,17 +1457,36 @@ func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 		if !ok {
 			return errors.New(log, "the block type is not minor block")
 		}
-		newBlock, _, err := c.NewMinorBlock(minorBlock.Transactions, minorBlock.Timestamp)
+		for _, v := range minorBlock.Transactions {			//Check Transaction
+			if err := c.CheckTransaction(v); err != nil {
+				return err
+			}
+		}
+		newBlock, _, err := c.NewMinorBlock(minorBlock.Transactions, minorBlock.Timestamp) //check state hash
 		if err != nil {
 			return err
 		}
-
 		if !newBlock.StateDeltaHash.Equals(&minorBlock.StateDeltaHash) {
 			return errors.New(log, fmt.Sprintf("the state hash is not equal:%s, %s", minorBlock.StateDeltaHash.HexString(), newBlock.StateDeltaHash.HexString()))
 		}
 	case uint32(shard.HeCmBlock):
 	case uint32(shard.HeFinalBlock):
 		//TODO:State Hash Check
+		finalBlock, ok := block.GetObject().(shard.FinalBlock)
+		if !ok {
+			return errors.New(log, "block type error")
+		}
+		var hashes []common.Hash
+		for _, v := range finalBlock.MinorBlocks {
+			hashes = append(hashes, v.Hash())
+		}
+		newBlock, err := c.NewFinalBlock(finalBlock.Timestamp, hashes)
+		if err != nil {
+			return err
+		}
+		if !newBlock.StateHashRoot.Equals(&finalBlock.StateHashRoot) {
+			return errors.New(log, fmt.Sprintf("the state hash is not equal:%s, %s", finalBlock.StateHashRoot.HexString(), newBlock.StateHashRoot.HexString()))
+		}
 	case uint32(shard.HeViewChange):
 	default:
 		return errors.New(log, "unknown header type")

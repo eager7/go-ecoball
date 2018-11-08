@@ -47,10 +47,7 @@ type HeaderInterface interface {
 }
 
 type BlockInterface interface {
-	Payload
-	Hash() common.Hash
-	GetChainID() common.Hash
-	GetHeight() uint64
+	HeaderInterface
 }
 
 func Serialize(payload Payload) ([]byte, error) {
