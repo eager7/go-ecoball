@@ -44,16 +44,18 @@ var (
 
 func dsnAddFile(ctx *cli.Context) error {
 	cbtx := context.Background()
-
 	file := os.Args[3]
+
 	walletName := "ecoball"
 	accountName := "dsn"
 	collateral := 0
+
 	wClient := wc.NewWalletClient(accountName, walletName, collateral)
 	ok := wClient.CheckCollateral()
 	if !ok {
 		return errors.New("Checking account's collateral failed")
 	}
+
 	dclient := fc.NewRcWithDefaultConf(cbtx)
 	//Add file to ipfs network
 	cid, _, err := dclient.AddFile(file)

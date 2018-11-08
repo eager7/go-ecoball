@@ -63,6 +63,7 @@ func InitDefaultConf() StorageHostConf {
 func NewStorageHost(ctx context.Context, conf StorageHostConf) *StorageHost {
 	return &StorageHost{
 		conf:    conf,
+		wc:      wc.NewWalletClient(conf.AccountName, conf.WalletName, 10),
 		ctx:     ctx,
 	}
 }
