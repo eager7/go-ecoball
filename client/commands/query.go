@@ -110,12 +110,10 @@ var (
 )
 
 func getAllChainInfo(c *cli.Context) error {
-	var result []state.Chain
+	var result rpc.SimpleResult
 	err := rpc.NodeGet("/query/allChainInfo", &result)
 	if nil == err {
-		for _, v := range result {
-			fmt.Println(hex.EncodeToString(v.Hash[:]))
-		}
+		fmt.Println(result.Result)
 	}
 	return err
 }

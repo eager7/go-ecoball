@@ -54,5 +54,13 @@ func InvokeContract(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"result": "success"})
+	var result string
+	cmsg, err := event.Subscribe(oneTransaction.Hash)
+	select {
+		case msg := <-cmsg:
+			result = msg.(string)
+	}
+	event.UnSubscribe(cmsg, oneTransaction.Hash)
+
+	c.JSON(http.StatusOK, gin.H{"result": result})
 }
