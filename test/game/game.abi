@@ -1,0 +1,61 @@
+{
+  "types": [],
+  "structs": [{
+      "name": "create",
+      "base": "",
+      "fields": [
+         {"name":"player1", "type":"string"},
+         {"name":"player2", "type":"string"}
+      ]
+    },{
+      "name": "close",
+      "base": "",
+      "fields": [
+         {"name":"player1", "type":"string"},
+         {"name":"player2", "type":"string"},
+         {"name":"closer", "type":"string"}
+      ]
+    },{	
+      "name": "restart",
+      "base": "",
+      "fields": [
+         {"name":"player1", "type":"string"},
+         {"name":"player2", "type":"string"},
+         {"name":"restart", "type":"string"}
+      ]
+    },{	
+      "name": "follow",
+      "base": "",
+      "fields": [
+         {"name":"player1", "type":"string"},
+         {"name":"player2", "type":"string"},
+         {"name":"host", "type":"string"},
+		 {"name":"row", "type":"int32"},
+		 {"name":"column", "type":"int32"}
+      ]
+    }
+  ],
+  "actions": [{
+      "name": "create",
+      "type": "create"
+    },{
+      "name": "close",
+      "type": "close"
+    },{
+      "name": "restart",
+      "type": "restart"
+    },{
+      "name": "follow",
+      "type": "follow"
+    }
+  ],
+  "tables": [{
+      "name": "game",
+      "type": "game",
+      "index_type": "i64",
+      "key_names" : ["gamekey"],
+      "key_types" : ["string"]
+    }
+  ]
+}
+
