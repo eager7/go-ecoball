@@ -1,0 +1,69 @@
+{
+  "types": [],
+  "structs": [{
+      "name": "create",
+      "base": "",
+      "fields": [
+         {"name":"creator", "type":"string"},
+         {"name":"max_supply", "type":"int32"},
+         {"name":"token_id", "type":"string"}
+      ]
+    },{
+      "name": "issue",
+      "base": "",
+      "fields": [
+         {"name":"to", "type":"string"},
+         {"name":"amount", "type":"int32"},
+         {"name":"token_id", "type":"string"}
+      ]
+    },{	
+      "name": "transfer",
+      "base": "",
+      "fields": [
+         {"name":"from", "type":"string"},
+         {"name":"to", "type":"string"},
+         {"name":"amount", "type":"int32"},
+         {"name":"token_id", "type":"string"}
+      ]
+    },{
+      "name": "account",
+      "base": "",
+      "fields": [
+        {"name":"balance", "type":"string"}
+      ]
+    },{
+      "name": "currency_stats",
+      "base": "",
+      "fields": [
+        {"name":"supply", "type":"string"},
+        {"name":"max_supply", "type":"string"},
+		{"name":"issuer", "type":"string"}
+      ]
+    }
+  ],
+  "actions": [{
+      "name": "create",
+      "type": "create"
+    },{
+      "name": "issue",
+      "type": "issue"
+    },{	
+      "name": "transfer",
+      "type": "transfer"
+    }
+  ],
+  "tables": [{
+      "name": "accounts",
+      "type": "account",
+      "index_type": "i64",
+      "key_names" : ["currency"],
+      "key_types" : ["uint64"]
+    },{
+      "name": "stat",
+      "type": "currency_stats",
+      "index_type": "i64",
+      "key_names" : ["currency"],
+      "key_types" : ["uint64"]
+    }  
+  ]
+}
