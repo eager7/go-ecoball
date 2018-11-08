@@ -53,7 +53,7 @@ Start committee node second when sharding starts
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
 ./share_committee.py -i $IPOFALLNODES -o $HOSTIP -w $WEIGHT
 ```
-It will start 3 * $WEIGHT ecoball shard node.
+It will start 3 * $WEIGHT ecoball committee node.
 
 Log generation for each node is under ./ecoball_log/committee/$DOCKERNAME/ directory
 
