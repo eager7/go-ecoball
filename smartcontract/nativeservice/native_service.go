@@ -11,8 +11,8 @@ import (
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"strconv"
-	//"github.com/ecoball/go-ecoball/dsn"
-	//dsnComm "github.com/ecoball/go-ecoball/dsn/common"
+	"github.com/ecoball/go-ecoball/dsn/audit"
+	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
 	"math/big"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
 )
@@ -288,13 +288,13 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			}
 			ns.tx.Receipt.Accounts[1] = data1
 		}
-		/*
-			case dsnComm.FcMethodProof:
-				dsn.HandleStorageProof(ns.params[0], ns.state)
-			case dsnComm.FcMethodAn:
-				dsn.HandleStoreAnn(ns.params[0], ns.state)
-			case dsnComm.FcMethodFile:
-				dsn.HandleFileContract(ns.params[0], ns.state)*/
+
+		case dsnComm.FcMethodProof:
+			audit.HandleStorageProof(ns.params[0], ns.state)
+		case dsnComm.FcMethodAn:
+			audit.HandleStoreAnn(ns.params[0], ns.state)
+		case dsnComm.FcMethodFile:
+			audit.HandleFileContract(ns.params[0], ns.state)
 	default:
 		ns.Println(fmt.Sprintf("unknown method:%s", method))
 		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", method))

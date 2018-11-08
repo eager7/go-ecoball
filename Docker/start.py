@@ -35,7 +35,7 @@ parser.add_argument('--version', type=float, default=1.0, metavar='', help="syst
 parser.add_argument('--log-dir', default="/tmp/Log/", metavar='', help="log file location", dest="log_dir")
 parser.add_argument('--output-to-terminal', type=bool, default=True, metavar='', help=" debug output type", dest="output_to_terminal")
 parser.add_argument('--log-level', type=int, default=1, metavar='', help="debug level", dest="log_level")
-parser.add_argument('--consensus-algorithm', default="SOLO", metavar='', help="can set as SOLO, DPOS, ABABFT, SHARD", dest="consensus_algorithm")
+parser.add_argument('--consensus-algorithm', default="SHARD", metavar='', help="can set as SOLO, DPOS, ABABFT, SHARD", dest="consensus_algorithm")
 parser.add_argument('--time-slot', type=int, default=500, metavar='', help="block interval time, uint ms", dest="time_slot")
 
 #parse Arguments
@@ -104,6 +104,8 @@ config = {
     "start_node": True,
     "root_privkey": "34a44d65ec3f517d6e7550ccb17839d391b69805ddd955e8442c32d38013c54e",
     "root_pubkey": "04de18b1a406bfe6fb95ef37f21c875ffc9f6f59e71fea8efad482b82746da148e0f154d708001810b52fb1762d737fec40508b492628f86c605391a891a61ad0b",
+    "aba_token_privkey": "675e6cbc4190bc861a987eec5be717ebdd6ead16cb5f537df00637080f000917",
+    "aba_token_pubkey": "040eb444f2962e94722f84d3298b062051b7d488d14c0a8216f730e1f36177fa1e73fdcb16582aaa62efa7a0fa1737f282a276081252cb41429597c8c9159d43ee",
     "user_privkey": "34a44d65ec3f517d6e7550ccb17839d391b69805ddd955e8442c32d38013c54e",
     "user_pubkey": "04de18b1a406bfe6fb95ef37f21c875ffc9f6f59e71fea8efad482b82746da148e0f154d708001810b52fb1762d737fec40508b492628f86c605391a891a61ad0b",
     "worker1_privkey": "cb0324ee8f7bd11dec57e39c4f560b9343c6c81c71012b96be29f26b92fef6f9",
@@ -130,8 +132,8 @@ config = {
     "conn_mgr_graceperiod": 20,
     "enable_local_discovery": False,
     "disable_localdis_log": True,
-    "dsn_storage": True,
-    "disable_sharding": True
+    "dsn_storage": False,
+    "disable_sharding": False
 }
 
 with open(os.path.join(root_dir, '../build/ecoball.toml'), 'w') as f:

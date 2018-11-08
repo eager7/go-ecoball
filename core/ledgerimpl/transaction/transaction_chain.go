@@ -33,7 +33,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/trie"
 	"github.com/ecoball/go-ecoball/core/types"
-	dsnstore "github.com/ecoball/go-ecoball/dsn/block"
+	dsnstore "github.com/ecoball/go-ecoball/dsn/host/block"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
@@ -948,7 +948,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	c.lockBlock.Lock()
 	defer c.lockBlock.Unlock()
 	if _, ok := c.BlockMap[block.Hash()]; ok {
-		log.Warn("the block:", block.GetHeight(), "is existed")
+		log.Warn("the block:", block.Type(), block.GetHeight(), "is existed")
 		return nil
 	}
 
@@ -1262,7 +1262,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		return nil, nil, err
 	}
 	log.Info("new minor block:", block.GetHeight(), " hash:", block.Hash())
-	log.Warn(block.Hash().HexString(), block.StateDeltaHash.HexString(), common.JsonString(s.Params, false), common.JsonString(s.Accounts, false))
+	log.Warn(block.Hash().HexString(), block.StateDeltaHash.HexString(), common.JsonString(c.StateDB.FinalDB.Params, false), common.JsonString(s.Accounts, false))
 	return block, nil, nil
 }
 
@@ -1396,7 +1396,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 		return nil, err
 	}
 	log.Info("new final block:", block.Height, "hash:", block.Hash())
-	log.Warn(block.Hash().HexString(), block.StateHashRoot.HexString(), common.JsonString(s.Params, false), common.JsonString(s.Accounts, false))
+	log.Warn(block.Hash().HexString(), block.StateHashRoot.HexString(), common.JsonString(c.StateDB.FinalDB.Params, false), common.JsonString(s.Accounts, false))
 	return block, nil
 }
 

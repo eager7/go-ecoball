@@ -28,7 +28,7 @@ import (
 	"github.com/ecoball/go-ecoball/client/commands"
 	"github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/dsn/cmd"
+	"github.com/ecoball/go-ecoball/dsn/host/cmd"
 	"github.com/peterh/liner"
 	"github.com/urfave/cli"
 )

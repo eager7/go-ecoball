@@ -21,6 +21,8 @@ import (
 	"bytes"
 	"bufio"
 	"encoding/binary"
+	"github.com/ecoball/go-ecoball/dsn/host/proof"
+	"github.com/ecoball/go-ecoball/dsn/common/crypto"
 )
 
 const (
@@ -32,6 +34,40 @@ const (
 	FcMethodFile = "reg_file"
 	EraDataPiece = 10
 )
+
+type FileContract struct {
+	PublicKey   []byte
+	Cid         string
+	LocalPath   string
+	FileSize    uint64
+	Redundancy  uint8
+	Funds       []byte
+	StartAt     uint64
+	Expiration  uint64
+	AccountName string
+	PayId       string
+}
+
+type HostAncContract struct {
+	PublicKey     []byte
+	TotalStorage  uint64
+	StartAt       uint64
+	Collateral    []byte
+	MaxCollateral []byte
+	AccountName   string
+}
+
+type StorageProof struct {
+	PublicKey    []byte
+	RepoSize     uint64
+	Cid          string
+	SegmentIndex uint64
+	Segment      [proof.SegmentSize]byte
+	HashSet      []crypto.Hash
+	AtHeight     uint64
+	AccountName  string
+}
+
 func int64ToBytes(n int64) []byte {
 	var buf bytes.Buffer
 	writer := bufio.NewWriter(&buf)
