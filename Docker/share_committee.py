@@ -85,7 +85,6 @@ while count < args.weight:
     command += image + " /root/go/src/github.com/ecoball/go-ecoball/Docker/start.py "
     command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
     command += " --log-dir=/var/ecoball_log/ecoball_" + str(count) + "/"
-    print(command)
     run(command)
     sleep(2)
 
@@ -93,14 +92,12 @@ while count < args.weight:
         # start ecowallet
         command = "sudo docker run -d --name=ecowallet -p 20679:20679 "
         command += image + " /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet"
-        print(command)
         run(command)
         sleep(2)
 
         # start eballscan
         command = "sudo docker run -d --name=eballscan --link=ecoball_0:ecoball_alias -p 20680:20680 "
         command += image + " /root/go/src/github.com/ecoball/eballscan/eballscan_service.sh ecoball_0"
-        print(command)
         run(command)
         sleep(2)
 
