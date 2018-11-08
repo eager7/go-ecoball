@@ -54,6 +54,7 @@ func InvokeContract(c *gin.Context) {
 		return
 	}
 
+	// wait for trx handle result
 	var result string
 	cmsg, err := event.Subscribe(oneTransaction.Hash)
 	select {
