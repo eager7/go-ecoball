@@ -25,6 +25,11 @@ type AccountName struct {
 	ChainHash innerCommon.Hash
 }
 
+type ContractName struct {
+	Name      innerCommon.AccountName
+	ChainHash innerCommon.Hash
+}
+
 type TokenName struct {
 	Name      string
 	ChainHash innerCommon.Hash

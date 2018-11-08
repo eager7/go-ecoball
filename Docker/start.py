@@ -35,7 +35,7 @@ parser.add_argument('--version', type=float, default=1.0, metavar='', help="syst
 parser.add_argument('--log-dir', default="/tmp/Log/", metavar='', help="log file location", dest="log_dir")
 parser.add_argument('--output-to-terminal', type=bool, default=True, metavar='', help=" debug output type", dest="output_to_terminal")
 parser.add_argument('--log-level', type=int, default=1, metavar='', help="debug level", dest="log_level")
-parser.add_argument('--consensus-algorithm', default="SOLO", metavar='', help="can set as SOLO, DPOS, ABABFT, SHARD", dest="consensus_algorithm")
+parser.add_argument('--consensus-algorithm', default="SHARD", metavar='', help="can set as SOLO, DPOS, ABABFT, SHARD", dest="consensus_algorithm")
 parser.add_argument('--time-slot', type=int, default=500, metavar='', help="block interval time, uint ms", dest="time_slot")
 
 #parse Arguments
@@ -131,7 +131,7 @@ config = {
     "enable_local_discovery": False,
     "disable_localdis_log": True,
     "dsn_storage": True,
-    "disable_sharding": True
+    "disable_sharding": False
 }
 
 with open(os.path.join(root_dir, '../build/ecoball.toml'), 'w') as f:
