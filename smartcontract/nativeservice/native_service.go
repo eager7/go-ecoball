@@ -290,11 +290,11 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		}
 
 		case dsnComm.FcMethodProof:
-			audit.HandleStorageProof(ns.params[0], ns.state)
+			audit.HandleStorageProof(params[0], ns.state)
 		case dsnComm.FcMethodAn:
-			audit.HandleStoreAnn(ns.params[0], ns.state)
+			audit.HandleStoreAnn(params[0], ns.state)
 		case dsnComm.FcMethodFile:
-			audit.HandleFileContract(ns.params[0], ns.state)
+			audit.HandleFileContract(params[0], ns.state)
 	default:
 		ns.Println(fmt.Sprintf("unknown method:%s", method))
 		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", method))
