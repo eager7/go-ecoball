@@ -19,7 +19,6 @@ import (
 )
 
 func TotalHandler(c *gin.Context)  {
-
 	dkey := []byte(stm.KeyStorageTotal)
 	total, err := ledger.L.StoreGet(config.ChainHash, common.NameToIndex(dsnComm.RootAccount), dkey)
 	var du stm.DiskResource
@@ -37,20 +36,7 @@ func TotalHandler(c *gin.Context)  {
 }
 
 func EraCoding(c *gin.Context)  {
-	// var req request.DsnAddFileReq
-	// buf := make([]byte,c.Request.ContentLength)
-	// _ , err := c.Request.Body.Read(buf)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, response.DsnEraCoding{ Code: response.CODEPARAMSERR, Msg: err.Error(), Cid: ""})
-	// }
-
-	// err = json.Unmarshal(buf,&req)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, response.DsnEraCoding{ Code: response.CODEPARAMSERR, Msg: err.Error(), Cid: ""})
-	// }
-
-
-	var req request.DsnAddFileReq
+	var req dsnComm.RscReq
 	err := c.BindJSON(&req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.DsnEraCoding{ Code: response.CODEPARAMSERR, Msg: err.Error(), Cid: ""})
@@ -66,7 +52,6 @@ func EraCoding(c *gin.Context)  {
 }
 
 func EraDecoding(c *gin.Context)  {
-	
 	cid , exsited:= c.GetQuery("cid")
 	if !exsited {
 		c.JSON(http.StatusInternalServerError, response.DsnEraDecoding{ Code: response.CODESERVERINNERERR, Msg: "can not find cid" })

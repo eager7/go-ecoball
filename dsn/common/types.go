@@ -68,6 +68,15 @@ type StorageProof struct {
 	AccountName  string
 }
 
+type RscReq struct {
+	Cid         string  `json:"cid"`
+	Redundency  int     `json:"redundency"`
+	IsDir       bool    `json:"dir"`
+	Chunk       uint64  `json:"chunk"`
+	FileSize    uint64  `json:"filesize"`
+}
+
+
 func int64ToBytes(n int64) []byte {
 	var buf bytes.Buffer
 	writer := bufio.NewWriter(&buf)

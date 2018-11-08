@@ -7,13 +7,10 @@ import (
 	"io/ioutil"
 	"github.com/ecoball/go-ecoball/dsn/host/erasure"
 	"github.com/ecoball/go-ecoball/dsn/host/ipfs/api"
-
-	"github.com/ecoball/go-ecoball/http/request"
+	dsncomm "github.com/ecoball/go-ecoball/dsn/common"
 )
 
-//var log = elog.NewLogger("dsn-era", elog.DebugLog)
-
-func RscCoding(req *request.DsnAddFileReq) (string, error) {
+func RscCoding(req *dsncomm.RscReq) (string, error) {
 	ctx := context.Background()
 	r, err := api.IpfsCatFile(ctx, req.Cid)
 	if err != nil {
