@@ -106,11 +106,11 @@ func TestTBLS(t *testing.T) {
 	abaTBLS4.PrivatePoly = *SetPriShare(abaTBLS4.epochNum, 3, abaTBLS2.threshold)
 	abaTBLS7.PrivatePoly = *SetPriShare(abaTBLS7.epochNum, 6, abaTBLS3.threshold)
 
-	fmt.Printf("ABATBLS1:\n %s,\n %s,\n %s\n",abaTBLS1.PrivatePoly.coeffs[0].String(),abaTBLS1.PrivatePoly.coeffs[1].String(),abaTBLS1.PrivatePoly.coeffs[2].String(),abaTBLS1.PrivatePoly.coeffs[3].String(),abaTBLS1.PrivatePoly.coeffs[4].String())
-	fmt.Printf("ABATBLS2:\n %s,\n %s,\n %s\n",abaTBLS2.PrivatePoly.coeffs[0].String(),abaTBLS2.PrivatePoly.coeffs[1].String(),abaTBLS2.PrivatePoly.coeffs[2].String(),abaTBLS2.PrivatePoly.coeffs[3].String(),abaTBLS2.PrivatePoly.coeffs[4].String())
-	fmt.Printf("ABATBLS3:\n %s,\n %s,\n %s\n",abaTBLS3.PrivatePoly.coeffs[0].String(),abaTBLS4.PrivatePoly.coeffs[1].String(),abaTBLS3.PrivatePoly.coeffs[2].String(),abaTBLS3.PrivatePoly.coeffs[3].String(),abaTBLS3.PrivatePoly.coeffs[4].String())
-	fmt.Printf("ABATBLS4:\n %s,\n %s,\n %s\n",abaTBLS4.PrivatePoly.coeffs[0].String(),abaTBLS4.PrivatePoly.coeffs[1].String(),abaTBLS4.PrivatePoly.coeffs[2].String(),abaTBLS4.PrivatePoly.coeffs[3].String(),abaTBLS4.PrivatePoly.coeffs[4].String())
-	fmt.Printf("ABATBLS7:\n %s,\n %s,\n %s\n",abaTBLS7.PrivatePoly.coeffs[0].String(),abaTBLS7.PrivatePoly.coeffs[1].String(),abaTBLS7.PrivatePoly.coeffs[2].String(),abaTBLS7.PrivatePoly.coeffs[3].String(),abaTBLS7.PrivatePoly.coeffs[4].String())
+	fmt.Printf("ABATBLS1:\n %s,\n %s,\n %s,\n %s,\n %s\n",abaTBLS1.PrivatePoly.coeffs[0].String(),abaTBLS1.PrivatePoly.coeffs[1].String(),abaTBLS1.PrivatePoly.coeffs[2].String(),abaTBLS1.PrivatePoly.coeffs[3].String(),abaTBLS1.PrivatePoly.coeffs[4].String())
+	fmt.Printf("ABATBLS2:\n %s,\n %s,\n %s,\n %s,\n %s\n",abaTBLS2.PrivatePoly.coeffs[0].String(),abaTBLS2.PrivatePoly.coeffs[1].String(),abaTBLS2.PrivatePoly.coeffs[2].String(),abaTBLS2.PrivatePoly.coeffs[3].String(),abaTBLS2.PrivatePoly.coeffs[4].String())
+	fmt.Printf("ABATBLS3:\n %s,\n %s,\n %s,\n %s,\n %s\n",abaTBLS3.PrivatePoly.coeffs[0].String(),abaTBLS4.PrivatePoly.coeffs[1].String(),abaTBLS3.PrivatePoly.coeffs[2].String(),abaTBLS3.PrivatePoly.coeffs[3].String(),abaTBLS3.PrivatePoly.coeffs[4].String())
+	fmt.Printf("ABATBLS4:\n %s,\n %s,\n %s,\n %s,\n %s\n",abaTBLS4.PrivatePoly.coeffs[0].String(),abaTBLS4.PrivatePoly.coeffs[1].String(),abaTBLS4.PrivatePoly.coeffs[2].String(),abaTBLS4.PrivatePoly.coeffs[3].String(),abaTBLS4.PrivatePoly.coeffs[4].String())
+	fmt.Printf("ABATBLS7:\n %s,\n %s,\n %s,\n %s,\n %s\n",abaTBLS7.PrivatePoly.coeffs[0].String(),abaTBLS7.PrivatePoly.coeffs[1].String(),abaTBLS7.PrivatePoly.coeffs[2].String(),abaTBLS7.PrivatePoly.coeffs[3].String(),abaTBLS7.PrivatePoly.coeffs[4].String())
 
 	abaTBLS1.PubKeyShare = SetPubPolyByPrivate(&abaTBLS1.PrivatePoly)
 	abaTBLS2.PubKeyShare = SetPubPolyByPrivate(&abaTBLS2.PrivatePoly)
@@ -693,7 +693,7 @@ func TestTBLS(t *testing.T) {
 	bigTmp = bigTmp.Add(bigTmp,abaTBLS3.PrivatePoly.coeffs[0])
 	bigTmp = bigTmp.Add(bigTmp,abaTBLS4.PrivatePoly.coeffs[0])
 	bigTmp = bigTmp.Add(bigTmp,abaTBLS7.PrivatePoly.coeffs[0])
-	bigTmp.Mod(bigTmp,p)
+	// bigTmp.Mod(bigTmp,p)
 	// check the private key
 	var qual []int
 	for indexJ := range abaTBLS.mapSignDKG {
@@ -725,8 +725,8 @@ func TestTBLS(t *testing.T) {
 	signPreTBLS := BLSSign(bigTmp, msg)
 	fmt.Println("signPreTBLS:\n",signPreTBLS)
 
-	// bigTmp.Add(bigTmp,new(big.Int).SetInt64(1))
-	// bigTmp.Add(bigTmp,new(big.Int).SetInt64(-1))
+	bigTmp.Add(bigTmp,new(big.Int).SetInt64(100))
+	bigTmp.Add(bigTmp,new(big.Int).SetInt64(-100))
 	priTmp := new(bn256.G1).ScalarBaseMult(bigTmp)
 	pointG1 := new(bn256.G1).ScalarBaseMult(new(big.Int).SetInt64(1))
 	pointG2 := new(bn256.G2).ScalarBaseMult(new(big.Int).SetInt64(1))

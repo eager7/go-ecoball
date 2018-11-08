@@ -63,6 +63,8 @@ time_slot = 500              # block interval time, uint ms
 start_node = "true"
 root_privkey = "34a44d65ec3f517d6e7550ccb17839d391b69805ddd955e8442c32d38013c54e"
 root_pubkey = "04de18b1a406bfe6fb95ef37f21c875ffc9f6f59e71fea8efad482b82746da148e0f154d708001810b52fb1762d737fec40508b492628f86c605391a891a61ad0b" # used to chain ID
+aba_token_privkey = "675e6cbc4190bc861a987eec5be717ebdd6ead16cb5f537df00637080f000917"
+aba_token_pubkey = "040eb444f2962e94722f84d3298b062051b7d488d14c0a8216f730e1f36177fa1e73fdcb16582aaa62efa7a0fa1737f282a276081252cb41429597c8c9159d43ee"
 user_privkey = "34a44d65ec3f517d6e7550ccb17839d391b69805ddd955e8442c32d38013c54e"
 user_pubkey = "04de18b1a406bfe6fb95ef37f21c875ffc9f6f59e71fea8efad482b82746da148e0f154d708001810b52fb1762d737fec40508b492628f86c605391a891a61ad0b"
 
@@ -138,6 +140,7 @@ var (
 	ConsensusAlgorithm string
 	StartNode          bool
 	Root               account.Account
+	ABAToken           account.Account
 	User               account.Account
 	Delegate           account.Account
 	Worker             account.Account
@@ -228,6 +231,7 @@ func initVariable() {
 	LogLevel = viper.GetInt("log_level")
 	ConsensusAlgorithm = viper.GetString("consensus_algorithm")
 	Root = account.Account{PrivateKey: common.FromHex(viper.GetString("root_privkey")), PublicKey: common.FromHex(viper.GetString("root_pubkey")), Alg: 0}
+	ABAToken = account.Account{PrivateKey: common.FromHex(viper.GetString("aba_token_privkey")), PublicKey: common.FromHex(viper.GetString("aba_token_pubkey")), Alg: 0}
 	User = account.Account{PrivateKey: common.FromHex(viper.GetString("user_privkey")), PublicKey: common.FromHex(viper.GetString("user_pubkey")), Alg: 0}
 	Worker1 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker1_privkey")), PublicKey: common.FromHex(viper.GetString("worker1_pubkey")), Alg: 0}
 	Worker2 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker2_privkey")), PublicKey: common.FromHex(viper.GetString("worker2_pubkey")), Alg: 0}

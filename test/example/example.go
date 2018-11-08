@@ -732,14 +732,14 @@ func TokenContract(ledger ledger.Ledger) {
 
 	time.Sleep(time.Second * 2)
 
-	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker1", "100", "100"}, 0, time.Now().UnixNano())
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker1", "1000", "1000"}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
 
-	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker2", "100", "100"}, 0, time.Now().UnixNano())
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker2", "1000", "1000"}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
@@ -1305,56 +1305,64 @@ func Actor() *actor.PID {
 }
 
 func TransferExample() {
-	time.Sleep(time.Second * 20)
+	time.Sleep(time.Second * 10)
 	root := common.NameToIndex("root")
 	worker := common.NameToIndex("testeru")
 	worker1 := common.NameToIndex("testerh")
 	worker2 := common.NameToIndex("testerl")
 	worker3 := common.NameToIndex("testerp")
 
-	for i := 0; i < 10; i ++ {
-		transfer, err := types.NewTransfer(root, worker, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
-		errors.CheckErrorPanic(err)
-		transfer.SetSignature(&config.Root)
-		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
-		time.Sleep(time.Second * 1)
-	}
-	for i := 0; i < 10; i ++ {
-		transfer, err := types.NewTransfer(worker, worker1, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
-		errors.CheckErrorPanic(err)
-		transfer.SetSignature(&config.Worker)
-		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
-		time.Sleep(time.Second * 1)
-	}
-	for i := 0; i < 10; i ++ {
-		transfer, err := types.NewTransfer(worker1, worker2, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
-		errors.CheckErrorPanic(err)
-		transfer.SetSignature(&config.Worker1)
-		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
-		time.Sleep(time.Second * 1)
-	}
-	for i := 0; i < 10; i ++ {
-		transfer, err := types.NewTransfer(worker2, worker3, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
-		errors.CheckErrorPanic(err)
-		transfer.SetSignature(&config.Worker2)
-		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
-		time.Sleep(time.Second * 1)
-	}
-	for i := 0; i < 10; i ++ {
-		transfer, err := types.NewTransfer(worker3, root, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
-		errors.CheckErrorPanic(err)
-		transfer.SetSignature(&config.Delegate)
-		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
-		time.Sleep(time.Second * 1)
-	}
-	/*contract, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, types.VmNative, "system control test", nil, nil, 0, time.Now().UnixNano())
-	errors.CheckErrorPanic(err)
-	errors.CheckErrorPanic(contract.SetSignature(&config.Root))
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
-	time.Sleep(time.Millisecond * 500)
+	for i := 0; i < 20; i ++ {
 
-	invoke, err := types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"delegate", common.AddressFromPubKey(config.Delegate.PublicKey).HexString()}, 0, time.Now().UnixNano())
-	invoke.SetSignature(&config.Root)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	time.Sleep(time.Millisecond * 500)*/
+		for i := 0; i < 1; i ++ {
+			transfer, err := types.NewTransfer(root, worker, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
+			errors.CheckErrorPanic(err)
+			transfer.SetSignature(&config.Root)
+			errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+			time.Sleep(time.Second * 1)
+		}
+		for i := 0; i < 1; i ++ {
+			transfer, err := types.NewTransfer(worker, worker1, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
+			errors.CheckErrorPanic(err)
+			transfer.SetSignature(&config.Worker)
+			errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+			time.Sleep(time.Second * 1)
+
+			log.Debug("invoke pledge contract")
+			invoke, err := types.NewInvokeContract(worker, root, config.ChainHash, state.Owner, "pledge", []string{"testeru", "testeru", "100", "100"}, 0, time.Now().UnixNano())
+			invoke.SetSignature(&config.Worker)
+			errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+			time.Sleep(time.Millisecond * 500)
+		}
+		for i := 0; i < 1; i ++ {
+			transfer, err := types.NewTransfer(worker1, worker2, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
+			errors.CheckErrorPanic(err)
+			transfer.SetSignature(&config.Worker1)
+			errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+			time.Sleep(time.Second * 1)
+		}
+		for i := 0; i < 1; i ++ {
+			transfer, err := types.NewTransfer(worker2, worker3, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
+			errors.CheckErrorPanic(err)
+			transfer.SetSignature(&config.Worker2)
+			errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+			time.Sleep(time.Second * 1)
+		}
+		for i := 0; i < 1; i ++ {
+			transfer, err := types.NewTransfer(worker3, root, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
+			errors.CheckErrorPanic(err)
+			transfer.SetSignature(&config.Delegate)
+			errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+			time.Sleep(time.Second * 1)
+		}
+		contract, err := types.NewDeployContract(common.NameToIndex("root"), common.NameToIndex("root"), config.ChainHash, state.Owner, types.VmNative, "system control test", nil, nil, 0, time.Now().UnixNano())
+		errors.CheckErrorPanic(err)
+		errors.CheckErrorPanic(contract.SetSignature(&config.Root))
+		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+		time.Sleep(time.Millisecond * 500)
+
+		time.Sleep(time.Second * 10)
+	}
+
+
 }

@@ -20,6 +20,7 @@ import subprocess
 import sys
 import argparse
 import time
+import os
 
 
 def run(shell_command):
@@ -59,6 +60,12 @@ if args.node_ip is None or args.host_ip is None:
     print('please input iP address of nodes and ip of host node and weight number. -h shows options.')
     sys.exit(1)
 
+#create directory
+root_dir = os.path.split(os.path.realpath(__file__))[0]
+log_dir = os.path.join(root_dir, 'ecoball_log/committee')
+if not os.path.exists(log_dir):
+     os.makedirs(log_dir)
+    
 start_port = 2000
 PORT = 20681
 image = "jatel/internal:ecoball_v1.0"
@@ -68,19 +75,20 @@ str_ip = " "
 for ip in args.node_ip:
     str_ip += (ip + " ")
 
-count = 1
-while count < 4 * args.weight:
+count = 0
+while count < args.weight:
     # start ecoball
     command = "sudo docker run -d " + "--name=ecoball_" + str(count) + " -p "
     command += str(PORT + count) + ":20678 "
     command += "-p " + str(start_port + ip_index * 4 * args.weight + count) + ":" + str(start_port + ip_index * 4 * args.weight + count)
-    command += " " + image + " /root/go/src/github.com/ecoball/go-ecoball/Docker/start.py "
+    command += " -v " + log_dir  + ":/var/ecoball_log "
+    command += image + " /root/go/src/github.com/ecoball/go-ecoball/Docker/start.py "
     command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
+    command += " --log-dir=/var/ecoball_log/ecoball_" + str(count) + "/"
     run(command)
-    print(command)
     sleep(2)
 
-    if args.deploy and 0 == count:
+    if args.deploy and count == args.weight - 1:
         # start ecowallet
         command = "sudo docker run -d --name=ecowallet -p 20679:20679 "
         command += image + " /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet"
@@ -93,14 +101,6 @@ while count < 4 * args.weight:
         run(command)
         sleep(2)
 
-    if 0 == count:
-        break
-
     count += 1
-
-    if count == 4 * args.weight:
-        sleep(5)
-        count = 0
     
-
-print("start all ecoball success!!!") 
+print("start all ecoball committee container on this physical machine(" + args.host_ip + ") successfully!!!") 

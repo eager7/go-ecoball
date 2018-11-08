@@ -126,15 +126,19 @@ func (abaT *ABATBLS)VerifyPreTBLS(indexJ int, epochNum int, msg []byte, sign []b
 	// step 2, save the valid signTBLS
 	abaTBLS.mapSignDKG[indexJ] = sign
 	abaTBLS.validSignNum++
+	// fmt.Println("abaTBLS.mapSignDKG:",abaTBLS.mapSignDKG)
+	// fmt.Println("abaTBLS.validSignNum:",abaTBLS.validSignNum)
 	return true
 }
 
 func (abaT *ABATBLS)GenerateTBLS() ( *bn256.G2, []byte) {
+	// fmt.Println("abaTBLS.index:",abaTBLS.index)
 	if abaTBLS.index != 0 {
 		// non-leader do not generate the TBLS signTBLS and block
 		return nil,nil
 	}
 	// If enough, then generate the TBLS signTBLS
+	// fmt.Println("abaTBLS.validSignNum:",abaTBLS.validSignNum)
 	if abaTBLS.validSignNum < abaTBLS.threshold {
 		return nil,nil
 	}
