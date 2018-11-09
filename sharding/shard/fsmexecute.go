@@ -41,7 +41,7 @@ func (s *shard) processSyncComplete() {
 
 	cm := lastCmBlock.GetObject().(cs.CMBlock)
 	s.ns.SyncCmBlockComplete(&cm)
-	
+
 	//lastvc, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
 	//if err != nil || lastvc == nil {
 	//	panic("get vc block error ")

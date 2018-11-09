@@ -64,7 +64,7 @@ func (p *SyncResponsePacket)Encode(blockType cs.HeaderType, shardID uint32) *Syn
 	fmt.Println("Encoding", p.Len)
 	for i := uint(0); i < p.Len; i++ {
 		fmt.Println("Encoding block ", p.Blocks[i] )
-		blockData, err := p.Blocks[i].Serialize()
+		blockData, err := cs.Serialize(p.Blocks[i])
 
 		if err != nil {
 			log.Error("SyncResponseData Serialize")
