@@ -33,5 +33,6 @@ func (a *Worker) Copy(b *Worker) {
 
 type ShardingTopo struct {
 	ShardId      uint16
+	Pubkey       string
 	ShardingInfo [][]Worker
 }
