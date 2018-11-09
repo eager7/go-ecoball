@@ -37,8 +37,18 @@ type Wallets struct {
 	NameList []string
 }
 
-type TransactionData struct {
-	Data []byte
+type RawTransactionData struct {
+	PublicKeys Keys
+	RawData    []byte
+}
+
+type OneSignTransaction struct {
+	PublicKey OneKey
+	SignData  []byte
+}
+
+type SignTransaction struct {
+	Signature []OneSignTransaction
 }
 
 type WalletNamePassword struct {

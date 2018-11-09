@@ -194,7 +194,7 @@ func (s *Sync) SyncResponseDecode(syncData *sc.SyncResponseData) (*sc.SyncRespon
 
 	var list []cs.Payload
 	for i := 0; i < int(len); i++ {
-		blockInterface, err := cs.BlockDeserialize(data[i], cs.HeaderType(blockType))
+		blockInterface, err := cs.BlockDeserialize(data[i])
 		if err != nil {
 			log.Error("minor block deserialize err")
 			return nil
@@ -527,6 +527,7 @@ func (s *Sync) DealSyncRequestHelperTest(request *sc.SyncRequestPacket) (*sc.Net
 
 	return csp
 }
+
 
 
 

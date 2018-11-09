@@ -48,11 +48,12 @@ func ApplyExec(ac *context.ApplyContext) (ret []byte, err error){
 
 func DispatchAction(tc *context.TranscationContext, action *types.Action, recurseDepth int32) (ret []byte, err error){
 	apply, _ := context.NewApplyContext(tc.St, tc, action, recurseDepth)
-	tc.Trace = append(tc.Trace, *action)
+	//tc.Trace = append(tc.Trace, *action)
 	ret, err = ApplyExec(apply)
 	if err != nil {
 		return nil, err
 	}
+	tc.Trace = append(tc.Trace, *(apply.Action))
 
 	return ret,nil
 }

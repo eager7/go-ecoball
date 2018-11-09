@@ -49,7 +49,7 @@ func NewContractService(s state.InterfaceState, tx *types.Transaction, action *t
 
 	switch contract.TypeVm {
 	case types.VmNative:
-	service, err := nativeservice.NewNativeService(s, tx, string(invoke.Method), invoke.Param, cpuLimit, netLimit, timeStamp)
+	service, err := nativeservice.NewNativeService(s, tx, context, cpuLimit, netLimit, timeStamp)
 	if err != nil {
 		return nil, err
 	}

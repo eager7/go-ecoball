@@ -17,8 +17,8 @@
 package http
 
 import (
+	"encoding/hex"
 	"net/http"
-	"strings"
 
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/walletserver/wallet"
@@ -203,22 +203,39 @@ func getPublicKeys(c *gin.Context) {
 
 	publicKeys := Keys{KeyList: []OneKey{}}
 	for _, k := range data {
-		publicKeys.KeyList = append(publicKeys.KeyList, OneKey{[]byte(k)})
+		key, err := hex.DecodeString(k)
+		if nil == err {
+			publicKeys.KeyList = append(publicKeys.KeyList, OneKey{key})
+		}
+		
 	}
 
 	c.JSON(http.StatusOK, publicKeys)
 }
 
 func signTransaction(c *gin.Context) {
-	keys := c.PostForm("keys")
-	data := c.PostForm("transaction")
-	key := strings.Split(keys, "\n")
-	signData, err := wallet.SignTransaction([]byte(data), key)
+	var oneTransaction RawTransactionData
+	if err := c.BindJSON(&oneTransaction); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	publicKeys := []string{}
+	for _, v := range oneTransaction.PublicKeys.KeyList {
+		publicKeys = append(publicKeys, hex.EncodeToString(v.Key))
+	}
+
+	signData, err := wallet.SignTransaction(oneTransaction.RawData, publicKeys)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	resultData := TransactionData{signData}
+
+	resultData := SignTransaction{Signature: []OneSignTransaction{}}
+	for _, v := range signData.Signature {
+		oneSign := OneSignTransaction{PublicKey: OneKey{Key: v.PublicKey}, SignData: v.SignData}
+		resultData.Signature = append(resultData.Signature, oneSign)
+	}
 
 	c.JSON(http.StatusOK, resultData)
 }

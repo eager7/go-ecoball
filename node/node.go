@@ -39,11 +39,13 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/dsn"
+	//"github.com/ecoball/go-ecoball/dsn"
 	"github.com/ecoball/go-ecoball/sharding"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
+	"github.com/ecoball/go-ecoball/test/example"
+	"github.com/ecoball/go-ecoball/dsn/audit"
 )
 
 var (
@@ -182,39 +184,15 @@ func runNode(c *cli.Context) error {
 		if ledger.L.StateDB(config.ChainHash).RequireVotingInfo() {
 			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{config.ChainHash})
 		}
+	case "SHARD":
+		log.Debug("Start Shard Mode")
+		go example.TransferExample()
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
 
 	//storage
-	/*ecoballGroup.Go(func() error {
-		errChan := make(chan error, 1)
-		go func() {
-			//initialize
-			if err := ipfs.Initialize(); nil != err {
-				log.Error("storage initialize failed: ", err)
-				errChan <- err
-			}
-
-			//start starage
-			if err := ipfs.DaemonRun(); nil != err {
-				log.Error("storage daemon run failed: ", err)
-				errChan <- err
-			}
-		}()
-
-		select {
-		case <-ctx.Done():
-		case <-shutdown:
-		case err := <-errChan:
-			log.Error("goroutine start storage error exit: ", err)
-			return err
-		}
-
-		return nil
-	})*/
-
-	//dsn.StartDsn(ctx, ledger.L)
+	audit.StartDsn(ctx, ledger.L)
 
 	//start blockchain browser
 	ecoballGroup.Go(func() error {
@@ -256,7 +234,7 @@ func runNode(c *cli.Context) error {
 		return nil
 	})
 	//capture single
-	go dsn.DsnHttpServ()
+	//go dsn.DsnHttpServ()
 	go wait(shutdown)
 
 	//Wait for each sub goroutine to exit

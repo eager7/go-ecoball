@@ -58,38 +58,33 @@ version = "1.0"              # system version
 log_dir = "/tmp/Log/"        # log file location
 output_to_terminal = "true"  # debug output type	 	
 log_level = 1                # debug level	
-consensus_algorithm = "SOLO" # can set as SOLO, DPOS, ABABFT
+consensus_algorithm = "SHARD" # can set as SOLO, DPOS, ABABFT, SHARD
 time_slot = 500              # block interval time, uint ms
 start_node = "true"
-root_privkey = "0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6"
-root_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c" # used to chain ID
-user_privkey = "0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6"
-user_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c"
-#user_privkey = "0x1eec266c518c0c5adfd3bbf0e4a40b22cad482a0eedfa836e90b5dcc4a643878"
-#user_pubkey = "0x045a8d217b04abc5fc44a724041eb5adeb8aff6f8559f759b6797026a638b2136e2e8ddb8eee52ef4f431a5af02b44732475648da1f9ddc7265e70a64f8ec24c17"
-
+root_privkey = "34a44d65ec3f517d6e7550ccb17839d391b69805ddd955e8442c32d38013c54e"
+root_pubkey = "04de18b1a406bfe6fb95ef37f21c875ffc9f6f59e71fea8efad482b82746da148e0f154d708001810b52fb1762d737fec40508b492628f86c605391a891a61ad0b" # used to chain ID
+aba_token_privkey = "675e6cbc4190bc861a987eec5be717ebdd6ead16cb5f537df00637080f000917"
+aba_token_pubkey = "040eb444f2962e94722f84d3298b062051b7d488d14c0a8216f730e1f36177fa1e73fdcb16582aaa62efa7a0fa1737f282a276081252cb41429597c8c9159d43ee"
+user_privkey = "34a44d65ec3f517d6e7550ccb17839d391b69805ddd955e8442c32d38013c54e"
+user_pubkey = "04de18b1a406bfe6fb95ef37f21c875ffc9f6f59e71fea8efad482b82746da148e0f154d708001810b52fb1762d737fec40508b492628f86c605391a891a61ad0b"
 
 
 #debug config info
-worker1_privkey = "0xc3e2cbed03aacc62d8f32045013364ea493f6d24e84f26bcef4edc2e9d260c0e"
-worker1_pubkey = "0x04e0c1852b110d1586bf6202abf6e519cc4161d00c3780c04cfde80fd66748cc189b6b0e2771baeb28189ec42a363461357422bf76b1e0724fc63fc97daf52769f"
+worker1_privkey = "cb0324ee8f7bd11dec57e39c4f560b9343c6c81c71012b96be29f26b92fef6f9"
+worker1_pubkey = "0425adbea1ddc21124279059057b4c9b5df4d40e49f2625504b45e0d43aea22c25621e42307eb8224f7ea0e65d40c0495d3cbd3f020f801f38b73cec5740bf1ec9"
 
-worker2_privkey = "0x5238ede4f91f6c4f5f1f195cbf674e08cb6a18ae351e474b8927db82d3e5ecf5"
-worker2_pubkey = "0x049e78e40b0dcca842b94cb2586d47ecc61888b52dce958b41aa38613c80f6607ee1de23eebb912431eccfe0fea81f8a38792ffecee38c490dde846c646ce1f0ee"
+worker2_privkey = "05cac9544f828b570724eb52b5903a68fbe0c8f23a15851cb717a5f7eda801cd"
+worker2_pubkey = "040cf9d46f4f5945ed7986cb8920feb5ac4eb06bb26cb048ed9dc2de4c54c19914bf4adf5ca0571a6f106bf4542fc7bfcfd164d8065598fc76042c074b24048960"
 
-worker3_privkey = "0x105cb8f936eec87d35e42fc0f656ab4b7fc9a007cbf4554f829c44e528df6ce4"
-worker3_pubkey = "0x0481bce0ad10bd3d8cdfd089ac5534379149ca5c3cdab28b5063f707d20f3a4a51f192ef7933e91e3fd0a8ea21d8dd735407780937c3c71753b486956fd481349f"
+worker3_privkey = "79b99bbd11bd14e8c0da65c20bae059d1eee06f92380fb88ff31a88c84d3fc6e"
+worker3_pubkey = "04717944fa32da2261eeda1e810c3b3c62216ed486785a9aa78e2cde0f18805882631033aed956d02721e9fae079e600bd512d4feb0375a14d882a63e48971d413"
 
-delegate_privkey = "0x29f56d8c1b2af3dc1bb711bc9d94bfd60964ffa9162caa6ec919fdd6774fd79e"
-delegate_pubkey  = "0x04945b2581d8f912688a9a9aad151660211ac1828b611631f14a837aeac85f6727b2459b93e49c9bf02e5b9b785e404909e730a4007fb3bdc6fc6965ba4c98dd87"
+delegate_privkey = "56bd8432606e6e2eb354794d89059f7f9e9a0de62166145b898136b496be6aed"
+delegate_pubkey  = "04070a106e034b11e03bab17aab0d2e75d7795bae8346f6f527f436cd714f7798efdeced276f326ed3406e3baab257487330e61896c838920328a4d745a87f06d1"
 
-worker_privkey = "0x68f2dcd39856206fa610546cc4f4611e5d4c3eb5e3f6bae3982348f949810745"
-worker_pubkey = "0x04b15d8efb9dcf3a086a69a0f6c334ebcb47d21293e36e1f22440185f1b7411a2cb3bcda2a91bf8ddeb71224ebd9233896766b355334b2c98b07f9ce9154c9dec9"
+worker_privkey = "8bbd547fe9d9e867721c6fa643fbe637fc3d955e588358a45c11d63dd5a25016"
+worker_pubkey = "041a0a2b0bfce1d624c125d2a9fcca16c5b2b96bc78ab827e1c23818df4a70a4441c9665850268d48ab23e102cf1dc6864596a19e748c0867dce400a3f219e3f62"
 
-#"0x40b866f2e0186ed3551ba59d17eda326a4f69b27f73e3a02666df39e8236d300"
-#"0x0430ebe5152caa9ea49bdc569faac380a0bcbb906d7e18911761a1f9d1d843dc26d172de4b429addbcfff06282c3767d21a35a25dddd26c1dd6cac9f9ac9ecef78"
-#"0x14f2f3205afc492c13181c956906b7f0729b3d46684fac00db55ddc066d3bd0d"
-#"0x04d3d4a5dbaed772257ac33aca8150a40ac3e68077247dda4f605bd429218cb9f9202d768885dffd278e847902fdf4962e157b5f68c268af5acbab2cc4470e9bc8"
 
 peer_list = [ "120202c924ed1a67fd1719020ce599d723d09d48362376836e04b0be72dfe825e24d810000", 
               "120202935fb8d28b70706de6014a937402a30ae74a56987ed951abbe1ac9eeda56f0160000" ]
@@ -113,9 +108,10 @@ disable_localdis_log   = true
 
 #dsn config
 dsn_storage = false
+dsn_path = "/tmp/storage"
 
 #sharding config info
-disable_sharding  = true
+disable_sharding  = false
 `
 
 type SwarmConfigInfo struct {
@@ -145,6 +141,7 @@ var (
 	ConsensusAlgorithm string
 	StartNode          bool
 	Root               account.Account
+	ABAToken           account.Account
 	User               account.Account
 	Delegate           account.Account
 	Worker             account.Account
@@ -235,6 +232,7 @@ func initVariable() {
 	LogLevel = viper.GetInt("log_level")
 	ConsensusAlgorithm = viper.GetString("consensus_algorithm")
 	Root = account.Account{PrivateKey: common.FromHex(viper.GetString("root_privkey")), PublicKey: common.FromHex(viper.GetString("root_pubkey")), Alg: 0}
+	ABAToken = account.Account{PrivateKey: common.FromHex(viper.GetString("aba_token_privkey")), PublicKey: common.FromHex(viper.GetString("aba_token_pubkey")), Alg: 0}
 	User = account.Account{PrivateKey: common.FromHex(viper.GetString("user_privkey")), PublicKey: common.FromHex(viper.GetString("user_pubkey")), Alg: 0}
 	Worker1 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker1_privkey")), PublicKey: common.FromHex(viper.GetString("worker1_pubkey")), Alg: 0}
 	Worker2 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker2_privkey")), PublicKey: common.FromHex(viper.GetString("worker2_pubkey")), Alg: 0}
@@ -262,6 +260,6 @@ func initVariable() {
 	EnableLocalDiscovery = viper.GetBool("enable_local_discovery")
 	DisableLocalDisLog = viper.GetBool("disable_localdis_log")
 	DsnStorage = viper.GetBool("dsn_storage")
-
+	IpfsDir = viper.GetString("dsn_path")
 	DisableSharding = viper.GetBool("disable_sharding")
 }

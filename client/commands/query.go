@@ -17,18 +17,18 @@
 package commands
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
-	"strconv"
+	//"net/url"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
-	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
+	innerCommon "github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/http/common/abi"
+	"github.com/ecoball/go-ecoball/http/request"
 	"github.com/urfave/cli"
 )
 
@@ -76,24 +76,32 @@ var (
 			},
 			{
 				Name:   "block",
-				Usage:  "get block's info by height",
+				Usage:  "get block's info by height and chain hash(the default is the main chain hash)",
 				Action: getBlockInfo,
 				Flags: []cli.Flag{
-					cli.Int64Flag{
+					cli.Uint64Flag{
 						Name:  "height, t",
 						Usage: "block height",
 						Value: 1,
+					},
+					cli.StringFlag{
+						Name:  "chainHash, c",
+						Usage: "chain hash",
 					},
 				},
 			},
 			{
 				Name:   "transaction",
-				Usage:  "get transaction's info by hash",
+				Usage:  "get transaction's info by hash and chain hash(the default is the main chain hash)",
 				Action: getTransaction,
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "hash, a",
 						Usage: "transaction hash",
+					},
+					cli.StringFlag{
+						Name:  "chainHash, c",
+						Usage: "chain hash",
 					},
 				},
 			},
@@ -102,7 +110,7 @@ var (
 )
 
 func getAllChainInfo(c *cli.Context) error {
-	var result clientCommon.SimpleResult
+	var result rpc.SimpleResult
 	err := rpc.NodeGet("/query/allChainInfo", &result)
 	if nil == err {
 		fmt.Println(result.Result)
@@ -125,14 +133,15 @@ func getAccount(c *cli.Context) error {
 	}
 
 	//chainHash
-	var chainHash common.Hash
+	var chainHash innerCommon.Hash
 	var err error
 	chainHashStr := c.String("chainHash")
 	if "" == chainHashStr {
 		chainHash, err = getMainChainHash()
-
 	} else {
-		json.Unmarshal([]byte(chainHashStr), &chainHash)
+		var hashTemp []byte
+		hashTemp, err = hex.DecodeString(chainHashStr)
+		copy(chainHash[:], hashTemp)
 	}
 
 	if nil != err {
@@ -141,13 +150,11 @@ func getAccount(c *cli.Context) error {
 	}
 
 	//http request
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("name", name)
-	values.Set("chainHash", chainHash.HexString())
-	err = rpc.NodePost("/query/getAccountInfo", values.Encode(), &result)
+	var result state.Account
+	requestData := request.AccountName{Name: name, ChainHash: chainHash}
+	err = rpc.NodePost("/query/getAccountInfo", &requestData, &result)
 	if nil == err {
-		fmt.Println(result.Result)
+		fmt.Println(result.JsonString(true))
 	}
 	return err
 }
@@ -167,14 +174,16 @@ func getTokenInfo(c *cli.Context) error {
 	}
 
 	//chainHash
-	var chainHash common.Hash
+	var chainHash innerCommon.Hash
 	var err error
 	chainHashStr := c.String("chainHash")
 	if "" == chainHashStr {
 		chainHash, err = getMainChainHash()
 
 	} else {
-		json.Unmarshal([]byte(chainHashStr), &chainHash)
+		var hashTemp []byte
+		hashTemp, err = hex.DecodeString(chainHashStr)
+		copy(chainHash[:], hashTemp)
 	}
 
 	if nil != err {
@@ -183,13 +192,11 @@ func getTokenInfo(c *cli.Context) error {
 	}
 
 	//http request
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("name", name)
-	values.Set("chainHash", chainHash.HexString())
-	err = rpc.NodePost("/query/getTokenInfo", values.Encode(), &result)
+	var result state.TokenInfo
+	requestData := request.TokenName{Name: name, ChainHash: chainHash}
+	err = rpc.NodePost("/query/getTokenInfo", &requestData, &result)
 	if nil == err {
-		fmt.Println(result.Result)
+		fmt.Println(result.JsonString(true))
 	}
 	return err
 }
@@ -201,18 +208,35 @@ func getBlockInfo(c *cli.Context) error {
 		return nil
 	}
 
-	//account address
-	height := c.Int64("height")
-	if height <= 0 {
-		fmt.Println("Invalid block height: ", height)
+	//block hight
+	height := c.Uint64("height")
+	if 0 == height {
+		fmt.Println("Invalid block height")
 		return errors.New("Invalid block height")
 	}
 
+	//chainHash
+	var chainHash innerCommon.Hash
+	var err error
+	chainHashStr := c.String("chainHash")
+	if "" == chainHashStr {
+		chainHash, err = getMainChainHash()
+
+	} else {
+		var hashTemp []byte
+		hashTemp, err = hex.DecodeString(chainHashStr)
+		copy(chainHash[:], hashTemp)
+	}
+
+	if nil != err {
+		fmt.Println(err)
+		return err
+	}
+
 	//http request
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("height", strconv.FormatInt(height, 10))
-	err := rpc.NodePost("/query/getBlockInfo", values.Encode(), &result)
+	var result rpc.SimpleResult
+	requestData := request.BlockHeight{Height: height, ChainHash: chainHash}
+	err = rpc.NodePost("/query/getBlockInfo", &requestData, &result)
 	if nil == err {
 		fmt.Println(result.Result)
 	}
@@ -226,18 +250,41 @@ func getTransaction(c *cli.Context) error {
 		return nil
 	}
 
-	//account address
-	hash := c.String("hash")
-	if hash == "" {
+	//transaction address
+	hashStr := c.String("hash")
+	if hashStr == "" {
 		fmt.Println("Please input a valid transaction hash")
 		return errors.New("Invalid transaction hash")
 	}
 
+	var hash innerCommon.Hash
+	err := json.Unmarshal([]byte(hashStr), &hash)
+	if nil != err {
+		fmt.Println(err)
+		return err
+	}
+
+	//chainHash
+	var chainHash innerCommon.Hash
+	chainHashStr := c.String("chainHash")
+	if "" == chainHashStr {
+		chainHash, err = getMainChainHash()
+
+	} else {
+		var hashTemp []byte
+		hashTemp, err = hex.DecodeString(chainHashStr)
+		copy(chainHash[:], hashTemp)
+	}
+
+	if nil != err {
+		fmt.Println(err)
+		return err
+	}
+
 	//http request
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("hash", hash)
-	err := rpc.NodePost("/query/getTransaction", values.Encode(), &result)
+	var result rpc.SimpleResult
+	requestData := request.TransactionHash{Hash: hash, ChainHash: chainHash}
+	err = rpc.NodePost("/query/getTransaction", &requestData, &result)
 	if nil == err {
 		fmt.Println(result.Result)
 	}
@@ -245,106 +292,35 @@ func getTransaction(c *cli.Context) error {
 }
 
 //other query method
-func getMainChainHash() (common.Hash, error) {
-	var result clientCommon.SimpleResult
+func getMainChainHash() (innerCommon.Hash, error) {
+	var result string
 	err := rpc.NodeGet("/query/mainChainHash", &result)
 	if nil != err {
-		return common.Hash{}, err
+		return innerCommon.Hash{}, err
 	}
 
-	var hash common.Hash
-	if err := json.Unmarshal([]byte(result.Result), &hash); nil != err {
-		return common.Hash{}, err
-	}
-
-	return hash, nil
+	hash := new(innerCommon.Hash)
+	return hash.FormHexString(result), nil
 }
 
-func getRequiredKeys(chainHash common.Hash, permission string, account string) ([]common.Address, error) {
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("permission", permission)
-	values.Set("chainHash", chainHash.HexString())
-	values.Set("name", account)
-	err := rpc.NodePost("/query/getRequiredKeys", values.Encode(), &result)
-
-	publicAddress := []common.Address{}
-	if nil != err {
-		return publicAddress, err
-	}
-
-	if err := json.Unmarshal([]byte(result.Result), &publicAddress); nil != err {
-		return publicAddress, err
-	}
-
-	return publicAddress, nil
-}
-
-func getContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error) {
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("contractName", index.String())
-	values.Set("chainId", chainID.HexString())
-	err := rpc.NodePost("/query/getContract", values.Encode(), &result)
+func getRequiredKeys(chainHash innerCommon.Hash, permission string, account string) ([]innerCommon.Address, error) {
+	//var result string
+	pubAdd := request.PubKeyAddress{Addresses: []innerCommon.Address{}}
+	requestData := request.PermissionPublicKeys{Name: account, Permission: permission, ChainHash: chainHash}
+	err := rpc.NodePost("/query/getRequiredKeys", &requestData, &pubAdd)
 	if nil == err {
-		deploy := new(types.DeployInfo)
-		if err := deploy.Deserialize(common.FromHex(result.Result)); err != nil {
-			return nil, err
-		}
-		return deploy, nil
+		return pubAdd.Addresses, nil
+	}
+
+	return []innerCommon.Address{}, err
+}
+
+func getContract(chainID innerCommon.Hash, index innerCommon.AccountName) (*types.DeployInfo, error) {
+	requestData := request.ContractName{Name: index, ChainHash: chainID}
+	contract := types.DeployInfo{TypeVm: 0, Describe: []byte{}, Code: []byte{}, Abi: []byte{}}
+	err := rpc.NodePost("/query/getContract", &requestData, &contract)
+	if nil == err {
+		return &contract, nil
 	}
 	return nil, err
-}
-
-func storeGet(chainID common.Hash, index common.AccountName, key []byte) (value []byte, err error) {
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("contractName", index.String())
-	values.Set("chainId", chainID.HexString())
-	values.Set("key", common.ToHex(key))
-	err = rpc.NodePost("/query/storeGet", values.Encode(), &result)
-	if nil == err {
-		return common.FromHex(result.Result), nil
-	}
-	return nil, err
-}
-
-func getContractTable(contractName string, accountName string, abiDef abi.ABI, tableName string) ([]byte, error) {
-	var fields []abi.FieldDef
-	for _, table := range abiDef.Tables {
-		if string(table.Name) == tableName {
-			for _, struction := range abiDef.Structs {
-				if struction.Name == table.Type {
-					fields = struction.Fields
-				}
-			}
-		}
-	}
-
-	if fields == nil {
-		return nil, errors.New("can not find struct of table: " + tableName)
-	}
-
-	table := make(map[string]string, len(fields))
-
-	for i, _ := range fields {
-		key := []byte(fields[i].Name)
-		if fields[i].Name == "balance" { // only for token contract, because KV struct can't support
-			key = []byte(accountName)
-		} else {
-			key = append(key, 0) // C lang string end with 0
-		}
-
-		storage, err := storeGet(config.ChainHash, common.NameToIndex(contractName), key)
-		if err != nil {
-			return nil, errors.New("can not get store " + fields[i].Name)
-		}
-		fmt.Println(fields[i].Name + ": " + string(storage))
-		table[fields[i].Name] = string(storage)
-	}
-
-	js, _ := json.Marshal(table)
-	fmt.Println("json format: ", string(js))
-
-	return nil, nil
 }

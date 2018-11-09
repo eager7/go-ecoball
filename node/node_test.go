@@ -19,16 +19,18 @@ import (
 	"os/signal"
 	"syscall"
 	"testing"
-	"github.com/ecoball/go-ecoball/http/rpc"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/net/context"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 )
 
 func TestRunMain(t *testing.T) {
 	_, ctx := errgroup.WithContext(context.Background())
 	net.InitNetWork(ctx)
-	os.RemoveAll("/tmp/node_test")
-	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), false)
+	simulate.LoadConfig()
+
+	//os.RemoveAll("/tmp/node_test")
+	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
 	errors.CheckErrorPanic(err)
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
 	ledger.L = L
@@ -51,10 +53,13 @@ func TestRunMain(t *testing.T) {
 		s.Start()
 		elog.Log.Info("send the start message to ababft")
 		event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{config.ChainHash})
+	case "SHARD":
+		elog.Log.Debug("Start Shard Mode")
+		go example.TransferExample()
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
-	rpc.StartRPCServer()
+	//rpc.StartRPCServer()
 	//start explorer
 	go spectator.Bystander(ledger.L)
 	if config.StartNode {
@@ -94,11 +99,12 @@ func TestRunNode(t *testing.T) {
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
-	go rpc.StartRPCServer()
+	//go rpc.StartRPCServer()
 	//start explorer
 	go spectator.Bystander(ledger.L)
 	if config.StartNode {
 		//go example.VotingProducer(ledger.L)
+		//go example.TokenContract(ledger.L)
 		go example.InvokeSingleContract(ledger.L)
 		//example.RecepitTest(ledger.L)
 	}

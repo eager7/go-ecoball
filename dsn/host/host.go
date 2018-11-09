@@ -1,31 +1,23 @@
 package host
 
-/*import (
+import (
 	"context"
 	"errors"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
 	"time"
-	//"crypto/sha256"
-	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	innerCommon "github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/dsn/common/ecoding"
-	"github.com/ecoball/go-ecoball/dsn/crypto"
-	//"github.com/ecoball/go-ecoball/common/event"
-	"strconv"
-
-	client "github.com/ecoball/go-ecoball/client/commands"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
-	"github.com/ecoball/go-ecoball/dsn/host/pb"
-	"github.com/ecoball/go-ecoball/dsn/ipfs"
-	"github.com/ecoball/go-ecoball/dsn/ipfs/api"
-	dproof "github.com/ecoball/go-ecoball/dsn/proof"
+	"github.com/ecoball/go-ecoball/dsn/host/ipfs"
+	"github.com/ecoball/go-ecoball/dsn/host/ipfs/api"
+	dproof "github.com/ecoball/go-ecoball/dsn/host/proof"
+	wc "github.com/ecoball/go-ecoball/client/walletclient"
 )
 
 var (
@@ -44,34 +36,14 @@ type StorageHostConf struct {
 	MaxCollateral string
 	AccountName   string
 	ChainId       string
-}
-
-type HostAncContract struct {
-	PublicKey     []byte
-	TotalStorage  uint64
-	StartAt       uint64
-	Collateral    []byte
-	MaxCollateral []byte
-	AccountName   string
-}
-
-type StorageProof struct {
-	PublicKey    []byte
-	RepoSize     uint64
-	Cid          string
-	SegmentIndex uint64
-	Segment      [dproof.SegmentSize]byte
-	HashSet      []crypto.Hash
-	AtHeight     uint64
-	AccountName  string
+	WalletName    string
 }
 
 type StorageHost struct {
 	isBlockSynced     bool
 	announced         bool
 	announceConfirmed bool
-	account           account.Account
-	ledger            ledger.Ledger
+	wc                *wc.WalletClient
 	conf              StorageHostConf
 	ctx               context.Context
 }
@@ -83,19 +55,24 @@ func InitDefaultConf() StorageHostConf {
 		Collateral:    "10",
 		MaxCollateral: "20",
 		AccountName:   "dsn",
+		WalletName:    "ecoball",
 		ChainId:       common.ToHex(chainId[:]),
 	}
 }
 
-func NewStorageHost(ctx context.Context, l ledger.Ledger, acc account.Account, conf StorageHostConf) *StorageHost {
+func NewStorageHost(ctx context.Context, conf StorageHostConf) *StorageHost {
 	return &StorageHost{
-		account: acc,
-		ledger:  l,
 		conf:    conf,
+		wc:      wc.NewWalletClient(conf.AccountName, conf.WalletName, 10),
 		ctx:     ctx,
 	}
 }
 
+func NewHostWithDefaultConf() *StorageHost {
+	conf := InitDefaultConf()
+	ctx := context.Background()
+	return NewStorageHost(ctx, conf)
+}
 func (h *StorageHost) Start() error {
 	if err := ipfs.Initialize(); err != nil {
 		return err
@@ -105,23 +82,8 @@ func (h *StorageHost) Start() error {
 		return err
 	}*/
 
-/*	go h.proofLoop()
+	go h.proofLoop()
 	return nil
-}
-
-func (h *StorageHost) checkCollateral() bool {
-	chainId := common.HexToHash(h.conf.ChainId)
-	accName := common.NameToIndex(h.conf.AccountName)
-	sacc, err := h.ledger.AccountGet(chainId, accName)
-	if err != nil {
-		return false
-	}
-	col, _ := strconv.Atoi(h.conf.Collateral)
-	//TODO much more checking
-	if sacc.Votes.Staked < uint64(col) {
-		return false
-	}
-	return true
 }
 
 func (h *StorageHost) getBlockSyncState(chainId common.Hash) bool {
@@ -154,7 +116,10 @@ func (h *StorageHost) Announce() error {
 	//if !colState {
 	//	return errCheckCol
 	//}
-
+	ok := h.wc.CheckCollateral()
+	if !ok {
+		return errors.New("Checking collateral failed")
+	}
 	announcement, err := h.createAnnouncement()
 	if err != nil {
 		return errCreateAnnouncement
@@ -166,17 +131,13 @@ func (h *StorageHost) Announce() error {
 	if err != nil {
 		return err
 	}
-	/*transaction.SetSignature(&config.Root)
-	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
-	if err != nil {
-		return err
-	}*/
-/*	err = client.InvokeContract(transaction)
+	id, err := h.wc.InvokeContract(transaction)
 	if err != nil {
 		return err
 	}
+
 	h.announced = true
-	log.Debug("Invoke host announcement")
+	log.Debug("Invoke host announcement,id: ", id)
 	return nil
 }
 
@@ -187,11 +148,12 @@ func (h *StorageHost) TotalStorage() uint64 {
 // createAnnouncement will take a storage host announcement and encode it, returning the
 // exact []byte that should be added to the arbitrary data of a transaction
 func (h *StorageHost) createAnnouncement() ([]byte, error) {
-	curBlockHeight := h.ledger.GetCurrentHeight(common.HexToHash(h.conf.ChainId))
-	var afc HostAncContract
-	afc.PublicKey = h.account.PublicKey
+	//curBlockHeight := h.ledger.GetCurrentHeight(common.HexToHash(h.conf.ChainId))
+	var afc dsnComm.HostAncContract
+	//afc.PublicKey = h.account.PublicKey
 	afc.TotalStorage = h.conf.TotalStorage
-	afc.StartAt = curBlockHeight
+	//afc.StartAt = curBlockHeight
+	afc.StartAt = uint64(time.Now().Unix())
 	cv := new(big.Int)
 	cv, ok := cv.SetString(h.conf.Collateral, 10)
 	if !ok {
@@ -212,7 +174,7 @@ func (h *StorageHost) createAnnouncement() ([]byte, error) {
 		return nil, err
 	}
 	return append(annBytes, sig[:]...), nil*/
-/*	return annBytes, nil
+	return annBytes, nil
 }
 
 func (h *StorageHost) createStorageProof() ([]byte, error) {
@@ -223,49 +185,60 @@ func (h *StorageHost) createStorageProof() ([]byte, error) {
 	if repoStat.NumObjects == 0 {
 		return nil, errors.New("have no object")
 	}
-	var proof StorageProof
-	proof.PublicKey = h.account.PublicKey
+	var proof dsnComm.StorageProof
+	//proof.PublicKey = h.account.PublicKey
 	proof.RepoSize = repoStat.RepoSize
-	proof.AtHeight = h.ledger.GetCurrentHeight(common.HexToHash(h.conf.ChainId))
+	//proof.AtHeight = h.ledger.GetCurrentHeight(common.HexToHash(h.conf.ChainId))
+	proof.AtHeight = uint64(time.Now().Unix())
 	allCids, err := api.IpfsBlockAllKey(h.ctx)
 	if err != nil {
 		return nil, err
 	}
-	j := rand.Intn(int(repoStat.NumObjects))
-	var proofCid string
-	for k, cid := range allCids {
-		if k == j {
-			proofCid = cid
+
+	for {
+		var proofCid string
+		j := rand.Intn(int(repoStat.NumObjects))
+		for k, cid := range allCids {
+			if k == j {
+				proofCid = cid
+			}
 		}
+		block, err := api.IpfsBlockGet(h.ctx, proofCid)
+		if err != nil {
+			continue
+		}
+		proof.Cid = proofCid
+		blockData, err := ioutil.ReadAll(block)
+		if err != nil {
+			continue
+		}
+		dataSize := len(blockData)
+		if dataSize < dproof.SegmentSize {
+			continue
+		}
+		var numberSegment int
+		if dataSize % dproof.SegmentSize == 0 {
+			numberSegment = dataSize / dproof.SegmentSize
+		} else {
+			numberSegment = dataSize / dproof.SegmentSize + 1
+		}
+		segmentIndex := rand.Intn(int(numberSegment))
+		base, cachedHashSet := dproof.MerkleProof(blockData, uint64(segmentIndex))
+		proof.SegmentIndex = uint64(segmentIndex)
+		proof.HashSet = cachedHashSet
+		copy(proof.Segment[:], base)
+		proof.AccountName = h.conf.AccountName
+		break
 	}
-	block, err := api.IpfsBlockGet(h.ctx, proofCid)
-	if err != nil {
-		return nil, err
-	}
-	proof.Cid = proofCid
-	blockData, err := ioutil.ReadAll(block)
-	if err != nil {
-		return nil, err
-	}
-	dataSize := len(blockData)
-	numberSegment := dataSize / dproof.SegmentSize
-	if numberSegment == 0 {
-		return nil, errors.New("no data")
-	}
-	segmentIndex := rand.Intn(int(numberSegment))
-	base, cachedHashSet := dproof.MerkleProof(blockData, uint64(segmentIndex))
-	proof.SegmentIndex = uint64(segmentIndex)
-	proof.HashSet = cachedHashSet
-	copy(proof.Segment[:], base)
-	proof.AccountName = h.conf.AccountName
+
 	proofBytes := encoding.Marshal(proof)
 	/*annHash := sha256.Sum256(proofBytes)
 	sig, err := h.account.Sign(annHash[:])
 	if err !=  nil {
 		return nil, err
 	}*/
-//return append(proofBytes, sig[:]...), nil
-/*	return proofBytes, nil
+	//return append(proofBytes, sig[:]...), nil
+	return proofBytes, nil
 }
 
 func (h *StorageHost) ProvideStorageProof() error {
@@ -287,12 +260,11 @@ func (h *StorageHost) ProvideStorageProof() error {
 	if err != nil {
 		return err
 	}
-	/*transaction.SetSignature(&config.Root)
-	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
+	id, err := h.wc.InvokeContract(transaction)
 	if err != nil {
 		return err
-	}*/
-/*	client.InvokeContract(transaction)
+	}
+	log.Info("storage proof, id: ", id)
 	return nil
 }
 
@@ -316,67 +288,3 @@ func (h *StorageHost) proofLoop() error {
 		}
 	}
 }
-
-func (an *HostAncContract) marshal() *pb.Announcement {
-	return &pb.Announcement{
-		PublicKey:     an.PublicKey,
-		StartAt:       an.StartAt,
-		Collateral:    an.Collateral,
-		MaxCollateral: an.MaxCollateral,
-	}
-}
-
-func (an *HostAncContract) Serialize() ([]byte, error) {
-	pm := an.marshal()
-	return pm.Marshal()
-}
-
-func (an *HostAncContract) Deserialize(data []byte) error {
-	//pm := new(pb.Announcement)
-	var pm pb.Announcement
-	err := pm.Unmarshal(data)
-	if err != nil {
-		return err
-	}
-	an.PublicKey = pm.PublicKey
-	an.StartAt = pm.StartAt
-	an.Collateral = pm.Collateral
-	an.MaxCollateral = pm.MaxCollateral
-	return nil
-}
-
-func (st *StorageProof) Serialize() ([]byte, error) {
-	var sp pb.Proof
-	sp.PublicKey = st.PublicKey
-	sp.RepoSize = st.RepoSize
-	sp.Cid = st.Cid
-	sp.SegmentIndex = st.SegmentIndex
-	copy(sp.Segment, st.Segment[:])
-	for k, v := range st.HashSet {
-		copy(sp.HashSet[k*crypto.HashSize:], v[:])
-	}
-	sp.AtHeight = st.AtHeight
-	return sp.Marshal()
-}
-
-func (st *StorageProof) Deserialize(data []byte) error {
-	var sp pb.Proof
-	err := sp.Unmarshal(data)
-	if err != nil {
-		return err
-	}
-	st.PublicKey = sp.PublicKey
-	st.RepoSize = sp.RepoSize
-	st.Cid = sp.Cid
-	st.SegmentIndex = sp.SegmentIndex
-	copy(st.Segment[:], sp.Segment)
-	i := 0
-	setCount := len(sp.HashSet) / crypto.HashSize
-	for i < setCount {
-		copy(st.HashSet[i][:], sp.HashSet[:(i+1)*crypto.HashSize])
-		i++
-	}
-	st.AtHeight = sp.AtHeight
-	return nil
-}
-*/

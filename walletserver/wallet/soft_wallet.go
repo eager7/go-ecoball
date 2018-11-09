@@ -23,8 +23,8 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"encoding/hex"
 
-	inner "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/crypto/aes"
 )
 
@@ -196,14 +196,14 @@ func (wi *WalletImpl) CreateKey() ([]byte, []byte, error) {
 
 func (wi *WalletImpl) RemoveKey(password []byte, publickey []byte) error {
 	wi.lockflag = locked
-	_, ok := wi.AccountsMap[string(publickey)]
+	_, ok := wi.AccountsMap[hex.EncodeToString(publickey)]
 
 	if !ok {
 		wi.lockflag = unlock
 		return errors.New("publickey is not exist")
 	}
 
-	delete(wi.KeyData.AccountsMap, string(publickey))
+	delete(wi.KeyData.AccountsMap, hex.EncodeToString(publickey))
 
 	errcode := wi.Lock()
 	if nil != errcode {
@@ -248,7 +248,7 @@ func (wi *WalletImpl) ImportKey(privateKey []byte) ([]byte, error) {
 	}
 
 	//wi.KeyData.Accounts = append(wi.KeyData.Accounts, account)
-	wi.KeyData.AccountsMap[string(pub)] = string(privateKey)
+	wi.KeyData.AccountsMap[hex.EncodeToString(pub)] = hex.EncodeToString(privateKey)
 
 	//lock wallet
 	errcode := wi.Lock()
@@ -289,12 +289,15 @@ func (wi *WalletImpl) CheckLocked() bool {
 
 func (wallet *WalletImpl) TrySignDigest(digest []byte, publicKey string) (signData []byte, bFind bool) {
 	privateKey := []byte{}
+	var err error
 	bFound := false
 	for public, private := range wallet.AccountsMap {
 		if strings.EqualFold(public, publicKey) {
-			privateKey = inner.FromHex(private)
-			bFound = true
-			break
+			privateKey, err = hex.DecodeString(private)
+			if nil == err{
+				bFound = true
+				break
+			}
 		}
 	}
 

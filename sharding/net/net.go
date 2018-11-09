@@ -7,7 +7,6 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
-	"github.com/gin-gonic/gin/json"
 	"math"
 	"math/rand"
 	"time"
@@ -279,7 +278,7 @@ func (n *net) TransitBlock(p *sc.CsPacket) {
 		sp.Packet = packet
 	case *cs.ViewChangeBlock:
 		vc := p.Packet.(*cs.ViewChangeBlock)
-		packet, err := json.Marshal(vc)
+		packet, err := vc.Serialize()
 		if err != nil {
 			log.Error("transit block packet Marshal error ", err)
 			return

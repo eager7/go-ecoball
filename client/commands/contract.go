@@ -20,10 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"time"
 
+	"encoding/hex"
 	"encoding/json"
 
 	"strings"
@@ -34,7 +34,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/http/common/abi"
 	"github.com/urfave/cli"
-	//innerCommon "github.com/ecoball/go-ecoball/http/common"
 )
 
 var (
@@ -98,6 +97,10 @@ var (
 					cli.StringFlag{
 						Name:  "invoker, i",
 						Usage: "Invoker account name",
+					},
+					cli.StringFlag{
+						Name:  "chainHash, c",
+						Usage: "chain hash(the default is the main chain hash)",
 					},
 				},
 			},
@@ -182,16 +185,19 @@ func setContract(c *cli.Context) error {
 
 	permission := c.String("permission")
 
-	//get main chain hash
-	chainHash, err := getMainChainHash()
-	if nil != err {
-		fmt.Println(err)
-		return err
+	//chainHash
+	var chainHash common.Hash
+	chainHashStr := c.String("chainHash")
+	if "" == chainHashStr {
+		chainHash, err = getMainChainHash()
+
+	} else {
+		var hashTemp []byte
+		hashTemp, err = hex.DecodeString(chainHashStr)
+		copy(chainHash[:], hashTemp)
 	}
 
-	//get all public keys
-	allPublickeys, err := getPublicKeys()
-	if err != nil {
+	if nil != err {
 		fmt.Println(err)
 		return err
 	}
@@ -203,40 +209,47 @@ func setContract(c *cli.Context) error {
 		return err
 	}
 
+	//public keys
+	allPublickeys, err := getPublicKeys()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
 	requiredKeys, err := getRequiredKeys(chainHash, permission, contractName)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	publickeys := ""
-	keyDatas := strings.Split(allPublickeys, ",")
-	for _, v := range keyDatas {
-		addr := common.AddressFromPubKey(common.FromHex(v))
-		for _, vv := range requiredKeys {
-			if addr == vv {
-				publickeys += v
-				publickeys += "\n"
-				break
-			}
-		}
-	}
-
-	if "" == publickeys {
+	publickeys := clientCommon.IntersectionKeys(allPublickeys, requiredKeys)
+	if 0 == len(publickeys.KeyList) {
 		fmt.Println("no publickeys")
 		return errors.New("no publickeys")
 	}
 
-	datas, errcode := signTransaction(chainHash, publickeys, transaction)
+	//sign
+	signData, errcode := signTransaction(chainHash, publickeys, transaction.Hash.Bytes())
 	if nil != errcode {
 		fmt.Println(errcode)
+		return errcode
+	}
+
+	for _, v := range signData.Signature {
+		transaction.AddSignature(v.PublicKey.Key, v.SignData)
 	}
 
 	//rpc call
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("transaction", datas)
-	err = rpc.NodePost("/invokeContract", values.Encode(), &result)
+	datas, err := transaction.Serialize()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	var result rpc.SimpleResult
+	trx_str := hex.EncodeToString(datas)
+
+	err = rpc.NodePost("/invokeContract", &trx_str, &result)
 	if nil == err {
 		fmt.Println(result.Result)
 	}
@@ -267,20 +280,32 @@ func invokeContract(c *cli.Context) error {
 	//contract parameter
 	contractParam := c.String("param")
 
-	var parameters []string
+	//chainHash
+	var chainHash common.Hash
+	var err error
+	chainHashStr := c.String("chainHash")
+	if "" == chainHashStr {
+		chainHash, err = getMainChainHash()
 
-	chainHash, err := getMainChainHash()
+	} else {
+		var hashTemp []byte
+		hashTemp, err = hex.DecodeString(chainHashStr)
+		copy(chainHash[:], hashTemp)
+	}
+
 	if nil != err {
 		fmt.Println(err)
 		return err
 	}
 
+	//public keys
 	allPublickeys, err := getPublicKeys()
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
+	var parameters []string
 	if "new_account" == contractMethod {
 		parameter := strings.Split(contractParam, ",")
 		for _, v := range parameter {
@@ -323,7 +348,6 @@ func invokeContract(c *cli.Context) error {
 		}
 
 		parameters = append(parameters, string(argbyte[:]))
-		getContractTable(contractName, "root", abiDef, "Account")
 	}
 
 	//contract address
@@ -348,33 +372,33 @@ func invokeContract(c *cli.Context) error {
 		return err
 	}
 
-	publickeys := ""
-	keyDatas := strings.Split(allPublickeys, ",")
-	for _, v := range keyDatas {
-		addr := common.AddressFromPubKey(common.FromHex(v))
-		for _, vv := range requiredKeys {
-			if addr == vv {
-				publickeys += v
-				publickeys += "\n"
-				break
-			}
-		}
-	}
-
-	if "" == publickeys {
+	publickeys := clientCommon.IntersectionKeys(allPublickeys, requiredKeys)
+	if 0 == len(publickeys.KeyList) {
 		fmt.Println("no publickeys")
 		return errors.New("no publickeys")
 	}
 
-	data, errcode := signTransaction(chainHash, publickeys, transaction)
+	//sign
+	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash.Bytes())
 	if nil != errcode {
 		fmt.Println(errcode)
+		return errcode
 	}
 
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("transaction", data)
-	err = rpc.NodePost("/invokeContract", values.Encode(), &result)
+	for _, v := range data.Signature {
+		transaction.AddSignature(v.PublicKey.Key, v.SignData)
+	}
+
+	datas, err := transaction.Serialize()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	var result rpc.SimpleResult
+	trx_str := hex.EncodeToString(datas)
+
+	err = rpc.NodePost("/invokeContract", &trx_str, &result)
 	if nil == err {
 		fmt.Println(result.Result)
 	}

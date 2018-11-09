@@ -4,11 +4,14 @@ MAINTAINER Docker ecoball <service@ecoball.org>
 
 #Install dependencies
 RUN apt-get update
-RUN apt-get install -y git gcc make wget golang-go python3 psmisc sudo vim
+RUN apt-get install -y git gcc make wget golang-go python3 psmisc sudo vim python3-pip
 
 #Setting environment variables
 ENV GOPATH /root/go
 ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$GOPATH/bin
+
+#Download pytoml
+RUN pip3 install pytoml
 
 #Download ecoball source code and build
 RUN git clone http://wanghengtao:caijing321@gitlab.quachain.net/ecoball/go-ecoball/  $GOPATH/src/github.com/ecoball/go-ecoball/

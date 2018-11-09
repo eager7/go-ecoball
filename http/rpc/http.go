@@ -64,12 +64,15 @@ func StartHttpServer() (err error) {
 	router.POST("/query/getContract", commands.GetContract)
 	router.POST("//query/storeGet", commands.StoreGet)
 
-	//transfer
-	router.POST("/transfer", commands.Transfer)
-
 	//contract
 	router.POST("/invokeContract", commands.InvokeContract)
 
+	//dsnstorage
+	router.GET("/dsn/total", commands.TotalHandler)
+	router.POST("/dsn/eracode", commands.EraCoding)
+	router.GET("/dsn/eradecode", commands.EraDecoding)
+	router.POST("/dsn/getipinfo", commands.DsnGetIpInfo)
+	router.GET("/dsn/dsnaddfilecid", commands.DsnaddfileCid)
 	http.ListenAndServe(":"+config.HttpLocalPort, router)
 	return nil
 }

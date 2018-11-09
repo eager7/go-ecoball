@@ -17,11 +17,9 @@
 package commands
 
 import (
-	"encoding/json"
+	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
-	"strings"
 	"time"
 
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
@@ -65,7 +63,7 @@ var (
 						Value: "active",
 					},
 					cli.StringFlag{
-						Name:  "chainHash, c",
+						Name:  "chainHash, s",
 						Usage: "chain hash(the default is the main chain hash)",
 					},
 					cli.Float64Flag{
@@ -145,7 +143,9 @@ func newAccount(c *cli.Context) error {
 		chainHash, err = getMainChainHash()
 
 	} else {
-		json.Unmarshal([]byte(chainHashStr), &chainHash)
+		var hashTemp []byte
+		hashTemp, err = hex.DecodeString(chainHashStr)
+		copy(chainHash[:], hashTemp)
 	}
 
 	if nil != err {
@@ -153,6 +153,7 @@ func newAccount(c *cli.Context) error {
 		return err
 	}
 
+	//public keys
 	allPublickeys, err := getPublicKeys()
 	if err != nil {
 		fmt.Println(err)
@@ -162,15 +163,14 @@ func newAccount(c *cli.Context) error {
 	creatorAccount := innercommon.NameToIndex(creator)
 	timeStamp := time.Now().UnixNano()
 
-	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, chainHash, "owner", "new_account",
+	transaction, err := types.NewInvokeContract(creatorAccount, creatorAccount, chainHash, "owner", "new_account",
 		[]string{name, innercommon.AddressFromPubKey(innercommon.FromHex(owner)).HexString()}, 0, timeStamp)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	invoke.Receipt.Cpu = max_cpu_usage_ms
-	invoke.Receipt.Net = max_net_usage
-	//invoke.SetSignature(&config.Root)
+	transaction.Receipt.Cpu = max_cpu_usage_ms
+	transaction.Receipt.Net = max_net_usage
 
 	requiredKeys, err := getRequiredKeys(chainHash, permission, creator)
 	if err != nil {
@@ -178,36 +178,32 @@ func newAccount(c *cli.Context) error {
 		return err
 	}
 
-	publickeys := ""
-	keyDatas := strings.Split(allPublickeys, ",")
-	for _, v := range keyDatas {
-		addr := innercommon.AddressFromPubKey(innercommon.FromHex(v))
-		for _, vv := range requiredKeys {
-			if addr == vv {
-				publickeys += v
-				publickeys += "\n"
-				break
-			}
-		}
-	}
-
-	if "" == publickeys {
+	publickeys := clientCommon.IntersectionKeys(allPublickeys, requiredKeys)
+	if 0 == len(publickeys.KeyList) {
 		fmt.Println("no publickeys")
 		return errors.New("no publickeys")
 	}
 
-	data, errcode := signTransaction(chainHash, publickeys, invoke)
+	//sign
+	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash.Bytes())
 	if nil != errcode {
 		fmt.Println(errcode)
+		return errcode
 	}
 
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("transaction", data)
-	err = rpc.NodePost("/invokeContract", values.Encode(), &result)
-	fmt.Println(result.Result)
-	if nil == err {
-		fmt.Println(result.Result)
+	for _, v := range data.Signature {
+		transaction.AddSignature(v.PublicKey.Key, v.SignData)
 	}
+
+	datas, err := transaction.Serialize()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	var result rpc.SimpleResult
+	trx_str := hex.EncodeToString(datas)
+	err = rpc.NodePost("/invokeContract", &trx_str, &result)
+	fmt.Println(result.Result)
 	return err
 }
