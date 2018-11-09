@@ -95,6 +95,7 @@ with open(os.path.join(root_dir, '../build/sharding.json'), 'w') as f:
 config = {
     "http_port": str(args.http_port),
     "wallet_http_port": str(args.wallet_http_port),
+    "onlooker_port": "9001",
     "version": str(args.version),
     "log_dir": args.log_dir,
     "output_to_terminal": args.output_to_terminal,
@@ -135,6 +136,7 @@ config = {
     "enable_local_discovery": False,
     "disable_localdis_log": True,
     "dsn_storage": False,
+    "dsn_path": "/tmp/storage",
     "disable_sharding": False
 }
 
