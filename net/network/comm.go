@@ -18,8 +18,7 @@
 package network
 
 import (
-	"fmt"
-	"strings"
+	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ecoball/go-ecoball/net/message"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
@@ -28,8 +27,8 @@ import (
 	ic "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
 )
 
-func (net *NetImpl)ConnectToPeer(ip, port string, pubKey []byte, isPermanent bool) error {
-	addrInfo := constructAddrInfo(ip, port)
+func (net *NetImpl)ConnectToPeer(ip, port, pubKey string, isPermanent bool) error {
+	addrInfo := util.ConstructAddrInfo(ip, port)
 	pi, err := constructPeerInfo(addrInfo, pubKey)
 	if err != nil {
 		return err
@@ -46,8 +45,8 @@ func (net *NetImpl)ConnectToPeer(ip, port string, pubKey []byte, isPermanent boo
 	return nil
 }
 
-func (net *NetImpl)ClosePeer(pubKey []byte) error {
-	id, err := IdFromProtoserPublickKey(pubKey)
+func (net *NetImpl)ClosePeer(pubKey string) error {
+	id, err := IdFromConfigEncodePublickKey(pubKey)
 	if err != nil {
 		return err
 	}
@@ -70,8 +69,8 @@ func (net *NetImpl)ClosePeer(pubKey []byte) error {
 	return net.host.Network().ClosePeer(id)
 }
 
-func (net *NetImpl)SendMsgToPeer(ip, port string, pubKey []byte, msg message.EcoBallNetMsg) error {
-	addrInfo := constructAddrInfo(ip, port)
+func (net *NetImpl)SendMsgToPeer(ip, port, pubKey string, msg message.EcoBallNetMsg) error {
+	addrInfo := util.ConstructAddrInfo(ip, port)
 	peer, err := constructPeerInfo(addrInfo, pubKey)
 	if err != nil {
 		return err
@@ -137,13 +136,13 @@ func (net *NetImpl)BroadcastMessage(msg message.EcoBallNetMsg) error {
 	return nil
 }
 
-func constructPeerInfo(addrInfo string, pubKey []byte) (peerstore.PeerInfo, error) {
+func constructPeerInfo(addrInfo, pubKey string) (peerstore.PeerInfo, error) {
 	pma, err := ma.NewMultiaddr(addrInfo)
 	if err != nil {
 		return peerstore.PeerInfo{}, err
 	}
 
-	id, err := IdFromProtoserPublickKey(pubKey)
+	id, err := IdFromConfigEncodePublickKey(pubKey)
 	if err != nil {
 		return peerstore.PeerInfo{}, err
 	}
@@ -153,15 +152,22 @@ func constructPeerInfo(addrInfo string, pubKey []byte) (peerstore.PeerInfo, erro
 	return peer, nil
 }
 
-func constructAddrInfo(ip, port string) string {
-	var addrInfo string
-	if strings.Contains(ip, ":") {
-		addrInfo = fmt.Sprintf("/ip4/%s/tcp/%s", ip, port)
-	} else {
-		addrInfo = fmt.Sprintf("/ip6/%s/tcp/%s", ip, port)
+func IdFromConfigEncodePublickKey(pubKey string) (peer.ID, error) {
+	key, err := ic.ConfigDecodeKey(pubKey)
+	if err != nil {
+		return "", err
+	}
+	pk, err := ic.UnmarshalPublicKey(key)
+	if err != nil {
+		return "", err
 	}
 
-	return addrInfo
+	id, err := peer.IDFromPublicKey(pk)
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
 }
 
 func IdFromProtoserPublickKey(pubKey []byte) (peer.ID, error) {

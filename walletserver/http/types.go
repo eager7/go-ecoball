@@ -17,8 +17,13 @@
 package http
 
 type KeyPair struct {
-	PrivateKey []byte
-	PublicKey  []byte
+	PrivateKey string
+	PublicKey  string
+}
+
+type PubPriKeyPair struct {
+	PrivateKey string
+	PublicKey  string
 }
 
 type KeyPairs struct {
@@ -29,8 +34,16 @@ type OneKey struct {
 	Key []byte
 }
 
+type OnePubKey struct{
+	Key string
+}
+
 type Keys struct {
 	KeyList []OneKey
+}
+
+type PubKeys struct {
+	KeyList []string
 }
 
 type Wallets struct {
@@ -62,12 +75,12 @@ type WalletName struct {
 
 type WalletImportKey struct {
 	Name   string
-	PriKey OneKey
+	PriKey string
 }
 
 type WalletRemoveKey struct {
 	NamePassword WalletNamePassword
-	PubKey       OneKey
+	PubKey       string
 }
 
 type WalletTimeout struct {

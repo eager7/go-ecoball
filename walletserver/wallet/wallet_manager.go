@@ -43,9 +43,9 @@ type WalletApi interface {
 	loadWallet() error
 	Lock() error
 	Unlock(password []byte) error
-	CreateKey() ([]byte, []byte, error)
+	CreateKey() (string, string, error)
 	RemoveKey(password []byte, publickey []byte) error
-	ImportKey(privateKey []byte) ([]byte, error)
+	ImportKey(privateKey []byte) (string, error)
 	ListPublicKey() ([]string, error)
 	CheckLocked() bool
 	CheckPassword(password []byte) bool
@@ -171,16 +171,16 @@ func Open(name string, password []byte) error {
 	return nil
 }
 
-func ImportKey(name string, privateKey []byte) ([]byte, error) {
+func ImportKey(name string, privateKey []byte) (string, error) {
 	checkTimeout()
 	wallet, ok := wallets[name]
 
 	if !ok {
-		return nil, errors.New("wallet is not exist")
+		return "", errors.New("wallet is not exist")
 	}
 
 	if wallet.CheckLocked() {
-		return nil, errors.New("wallet is locked")
+		return "", errors.New("wallet is locked")
 	}
 
 	return wallet.ImportKey(privateKey)
@@ -205,16 +205,16 @@ func RemoveKey(name string, password []byte, publickey []byte) error {
 	return wallet.RemoveKey(password, publickey)
 }
 
-func CreateKey(name string) ([]byte, []byte, error) {
+func CreateKey(name string) (string, string, error) {
 	checkTimeout()
 	wallet, ok := wallets[name]
 
 	if !ok {
-		return nil, nil, errors.New("wallet is not exist")
+		return "", "", errors.New("wallet is not exist")
 	}
 
 	if wallet.CheckLocked() {
-		return nil, nil, errors.New("wallet is locked")
+		return "", "", errors.New("wallet is locked")
 	}
 
 	return wallet.CreateKey()

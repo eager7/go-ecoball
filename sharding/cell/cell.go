@@ -134,7 +134,9 @@ func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 		}
 	}
 
-	c.createShardingTopo()
+	if bk.Height > 1 {
+		c.createShardingTopo()
+	}
 
 }
 

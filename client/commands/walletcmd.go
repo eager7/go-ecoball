@@ -16,7 +16,7 @@
 package commands
 
 import (
-	"encoding/hex"
+	//"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -259,12 +259,12 @@ func createKey(c *cli.Context) error {
 		return errors.New("Invalid password")
 	}
 
-	var result walletHttp.KeyPair
+	var result walletHttp.PubPriKeyPair
 	requestData := walletHttp.WalletName{Name: name}
 	err := rpc.WalletPost("/wallet/createKey", &requestData, &result)
 	if nil == err {
-		fmt.Println("PrivateKey:", hex.EncodeToString(result.PrivateKey))
-		fmt.Println("PublicKey:", hex.EncodeToString(result.PublicKey))
+		fmt.Println("PrivateKey:", result.PrivateKey)
+		fmt.Println("PublicKey:", result.PublicKey)
 	}
 	return err
 }
@@ -366,18 +366,11 @@ func importKey(c *cli.Context) error {
 		return errors.New("Invalid private key")
 	}
 
-	privateKey, err := hex.DecodeString(privateKeyStr)
-	if nil != err {
-		fmt.Println(err)
-		return err
-	}
-
-	var result walletHttp.OneKey
-	oneKey := walletHttp.OneKey{privateKey}
-	requestData := walletHttp.WalletImportKey{Name: name, PriKey: oneKey}
-	err = rpc.WalletPost("/wallet/importKey", &requestData, &result)
+	var result walletHttp.OnePubKey
+	requestData := walletHttp.WalletImportKey{Name: name, PriKey: privateKeyStr}
+	err := rpc.WalletPost("/wallet/importKey", &requestData, &result)
 	if nil == err {
-		fmt.Println("PublicKey:", hex.EncodeToString(result.Key))
+		fmt.Println("PublicKey:", result.Key)
 	}
 	return err
 }
@@ -407,17 +400,11 @@ func removeKey(c *cli.Context) error {
 		return errors.New("Invalid public key")
 	}
 
-	publicKey, err := hex.DecodeString(publicKeyStr)
-	if nil != err {
-		fmt.Println(err)
-		return err
-	}
-
 	var result rpc.SimpleResult
-	oneKey := walletHttp.OneKey{publicKey}
+	//oneKey := walletHttp.OneKey{publicKey}
 	oneWallet := walletHttp.WalletNamePassword{Name: name, Password: passwd}
-	requestData := walletHttp.WalletRemoveKey{NamePassword: oneWallet, PubKey: oneKey}
-	err = rpc.WalletPost("/wallet/removeKey", &requestData, &result)
+	requestData := walletHttp.WalletRemoveKey{NamePassword: oneWallet, PubKey: publicKeyStr}
+	err := rpc.WalletPost("/wallet/removeKey", &requestData, &result)
 	if nil == err {
 		fmt.Println(result.Result)
 	}
@@ -448,7 +435,7 @@ func listAccount(c *cli.Context) error {
 	err := rpc.WalletPost("/wallet/listKey", &requestData, &result)
 	if nil == err {
 		for _, v := range result.Pairs {
-			fmt.Println("PrivateKey:", string(v.PrivateKey), "\tPublicKey:", string(v.PublicKey))
+			fmt.Println("PrivateKey:", v.PrivateKey, "\tPublicKey:", v.PublicKey)
 		}
 	}
 	return err

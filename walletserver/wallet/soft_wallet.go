@@ -180,18 +180,18 @@ func (wi *WalletImpl) ListKeys() map[string]string {
 /**
 创建公私钥对
 */
-func (wi *WalletImpl) CreateKey() ([]byte, []byte, error) {
+func (wi *WalletImpl) CreateKey() (string, string, error) {
 	//create keys
 	_, pri, err := createKey()
 	if err != nil {
-		return nil, nil, err
+		return "", "", err
 	}
 
 	pub, errcode := wi.ImportKey(pri)
 	if errcode != nil {
-		return nil, nil, errcode
+		return "", "", errcode
 	}
-	return pub, pri, nil
+	return pub, hex.EncodeToString(pri), nil
 }
 
 func (wi *WalletImpl) RemoveKey(password []byte, publickey []byte) error {
@@ -230,13 +230,13 @@ func (wi *WalletImpl) RemoveKey(password []byte, publickey []byte) error {
 /**
 导入私钥
 **/
-func (wi *WalletImpl) ImportKey(privateKey []byte) ([]byte, error) {
+func (wi *WalletImpl) ImportKey(privateKey []byte) (string, error) {
 	wi.lockflag = locked
 
 	for publickey := range wi.AccountsMap {
 		if strings.EqualFold(wi.AccountsMap[publickey], string(privateKey)) {
 			wi.lockflag = unlock
-			return nil, errors.New("private has exist")
+			return "", errors.New("private has exist")
 		}
 	}
 
@@ -244,7 +244,7 @@ func (wi *WalletImpl) ImportKey(privateKey []byte) ([]byte, error) {
 	pub, err := getPublicKey(privateKey)
 	if err != nil {
 		wi.lockflag = unlock
-		return nil, errors.New("get publickey error: " + err.Error())
+		return "", errors.New("get publickey error: " + err.Error())
 	}
 
 	//wi.KeyData.Accounts = append(wi.KeyData.Accounts, account)
@@ -254,17 +254,17 @@ func (wi *WalletImpl) ImportKey(privateKey []byte) ([]byte, error) {
 	errcode := wi.Lock()
 	if nil != errcode {
 		wi.lockflag = unlock
-		return nil, errcode
+		return "", errcode
 	}
 
 	//write data
 	if err := wi.StoreWallet(); nil != err {
 		wi.lockflag = unlock
-		return nil, err
+		return "", err
 	}
 
 	wi.lockflag = unlock
-	return pub, nil
+	return hex.EncodeToString(pub), nil
 }
 
 func (wallet *WalletImpl) ListPublicKey() ([]string, error) {

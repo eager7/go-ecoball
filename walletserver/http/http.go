@@ -23,6 +23,9 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/walletserver/wallet"
 	"github.com/gin-gonic/gin"
+	"strings"
+	"github.com/ecoball/go-ecoball/core/types"
+	innerCommon "github.com/ecoball/go-ecoball/common"
 )
 
 func StartHttpServer() (err error) {
@@ -43,6 +46,10 @@ func StartHttpServer() (err error) {
 	router.GET("/wallet/getPublicKeys", getPublicKeys)
 	router.POST("/wallet/signTransaction", signTransaction)
 	router.POST("/wallet/setTimeout", setTimeout)
+
+	//for ecoscan
+	router.GET("/wallet/getPubKeys", getPubKeys)
+	router.POST("/wallet/signTransactionForScan", signTransactionForScan)
 
 	http.ListenAndServe(":"+config.WalletHttpPort, router)
 	return nil
@@ -78,7 +85,8 @@ func createKey(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	info := KeyPair{PrivateKey: pri, PublicKey: pub}
+
+	info := PubPriKeyPair{PrivateKey: pri, PublicKey: pub}
 	c.JSON(http.StatusOK, info)
 }
 
@@ -131,13 +139,21 @@ func importKey(c *gin.Context) {
 		return
 	}
 
-	publickey, err := wallet.ImportKey(oneWallet.Name, oneWallet.PriKey.Key)
+	priKey, err := hex.DecodeString(oneWallet.PriKey)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	publicKey := OneKey{publickey}
-	c.JSON(http.StatusOK, publicKey)
+
+	publickey, err := wallet.ImportKey(oneWallet.Name, priKey)
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	oneKey := OnePubKey{Key: publickey}
+
+	c.JSON(http.StatusOK, oneKey)
 }
 
 func removeKey(c *gin.Context) {
@@ -147,7 +163,13 @@ func removeKey(c *gin.Context) {
 		return
 	}
 
-	err := wallet.RemoveKey(oneWallet.NamePassword.Name, []byte(oneWallet.NamePassword.Password), oneWallet.PubKey.Key)
+	pubKey, err := hex.DecodeString(oneWallet.PubKey)
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = wallet.RemoveKey(oneWallet.NamePassword.Name, []byte(oneWallet.NamePassword.Password), pubKey)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -170,7 +192,7 @@ func listKey(c *gin.Context) {
 
 	var pairs = KeyPairs{Pairs: []KeyPair{}}
 	for k, v := range accounts {
-		onePair := KeyPair{PublicKey: []byte(k), PrivateKey: []byte(v)}
+		onePair := KeyPair{PublicKey: k, PrivateKey: v}
 		pairs.Pairs = append(pairs.Pairs, onePair)
 	}
 
@@ -254,4 +276,60 @@ func setTimeout(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
+}
+
+
+func getPubKeys(c *gin.Context) {
+	data, err := wallet.GetPublicKeys()
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if len(data) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "no publickeys"})
+		return
+	}
+
+	var publickeys string
+	for _, k := range data {
+		publickeys += k
+		publickeys += ","
+	}
+	publickeys = strings.TrimSuffix(publickeys, ",")
+	c.JSON(http.StatusOK, gin.H{"result": publickeys})
+}
+
+func signTransactionForScan(c *gin.Context) {
+	keys := c.PostForm("keys")
+	data := c.PostForm("data")
+	key := strings.Split(keys, ",")
+	
+	transaction := new(types.Transaction)
+	bytes, _ := hex.DecodeString(data)
+	if err := transaction.Deserialize(bytes); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	signData, err := wallet.SignTransaction(transaction.Hash.Bytes(), key)
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	for _, v := range signData.Signature{
+		sig := new(innerCommon.Signature)
+		sig.PubKey = innerCommon.CopyBytes(v.PublicKey)
+		sig.SigData = innerCommon.CopyBytes(v.SignData)
+		transaction.Signatures = append(transaction.Signatures, *sig)
+	}
+
+	datas, err := transaction.Serialize()
+	if nil != err{
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": hex.EncodeToString(datas)})
 }

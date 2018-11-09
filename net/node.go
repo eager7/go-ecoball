@@ -22,7 +22,7 @@ import (
 	"os"
 	"time"
 	"sync"
-	"strings"
+	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/message"
@@ -30,7 +30,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/sharding"
 	"github.com/ecoball/go-ecoball/sharding/common"
-	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
@@ -53,6 +52,8 @@ const (
 	ShardLeader
 	ShardBackup
 )
+
+const nBitsForKeypairDef  =  1024
 
 var (
 	log = elog.NewLogger("net", elog.DebugLog)
@@ -152,6 +153,28 @@ func filterRelayAddrs(addrs []ma.Multiaddr) []ma.Multiaddr {
 	return raddrs
 }
 
+func GetNodePrivateKey() (ic.PrivKey, error) {
+	var err error
+	var privKey ic.PrivKey
+	if config.SwarmConfig.PrivateKey == "" {
+		privKey, _, err = ic.GenerateKeyPair(ic.RSA, nBitsForKeypairDef)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		key, err := ic.ConfigDecodeKey(config.SwarmConfig.PrivateKey)
+		if err != nil {
+			return nil, err
+		}
+		privKey, err = ic.UnmarshalPrivateKey(key)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return privKey, nil
+}
+
 func composeAddrsFactory(f, g basichost.AddrsFactory) basichost.AddrsFactory {
 	return func(addrs []ma.Multiaddr) []ma.Multiaddr {
 		return f(g(addrs))
@@ -160,23 +183,30 @@ func composeAddrsFactory(f, g basichost.AddrsFactory) basichost.AddrsFactory {
 
 //func New(parent context.Context, privKey ic.PrivKey, listen []string) (*NetNode, error) {
 func New(parent context.Context) (*NetNode, error) {
-	var privKey ic.PrivKey
-	dsnCfg, err := fsrepo.ConfigAt(config.IpfsDir)
+	/*
+		var privKey ic.PrivKey
+
+		dsnCfg, err := fsrepo.ConfigAt(config.IpfsDir)
+		if err != nil {
+			privKey, _, err = ic.GenerateKeyPair(ic.RSA, 2048)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			privKey, err = dsnCfg.Identity.DecodePrivateKey("passphrase todo!")
+			if err != nil {
+				return nil, err
+			}
+		}
+	*/
+	privKey, err := GetNodePrivateKey()
 	if err != nil {
-		privKey, _, err = ic.GenerateKeyPair(ic.RSA, 2048)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		privKey, err = dsnCfg.Identity.DecodePrivateKey("passphrase todo!")
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	id, err := peer.IDFromPrivateKey(privKey)
 	if err != nil {
-		return nil, fmt.Errorf("error for getting id from key,", err)
+		return nil, fmt.Errorf("error for generate id from key,", err)
 	}
 	netNode := &NetNode{
 		ctx:         parent,
@@ -187,6 +217,9 @@ func New(parent context.Context) (*NetNode, error) {
 		shardingSubCh:make(<-chan interface{}, 1),
 		//pubSub:      ipfs.Floodsub,
 	}
+
+	netNode.shardingInfo.peersInfo = make([][]peer.ID, 0)
+	netNode.shardingInfo.info = make(map[uint16]map[peer.ID]ma.Multiaddr)
 
 	var libp2pOpts []libp2p.Option
 
@@ -277,18 +310,23 @@ func (nn *NetNode) connectToShardingPeers() {
 	host := nn.network.Host()
 	var wg sync.WaitGroup
 	for id, w := range works {
+		if id == host.ID() {
+			continue
+		}
 		wg.Add(1)
 		go func(p peer.ID, addr ma.Multiaddr) {
 			defer wg.Done()
 			host.Peerstore().AddAddrs(p, []ma.Multiaddr{addr}, peerstore.PermanentAddrTTL)
 			pi := peerstore.PeerInfo{p, []ma.Multiaddr{addr}}
 			if err := host.Connect(nn.ctx, pi); err != nil {
-				log.Error("failed to connetct peer,", pi)
+				log.Error("failed to connetct peer ", pi)
+			} else {
+				log.Debug("succeed to connect peer ", pi)
 			}
 		}(id, w)
 	}
 	wg.Wait()
-	log.Debug("connect to sharding peers exit...")
+	log.Debug("finish connecting to sharding peers exit...")
 }
 
 func (nn *NetNode) updateShardingInfo(info *common.ShardingTopo) {
@@ -306,28 +344,32 @@ func (nn *NetNode) updateShardingInfo(info *common.ShardingTopo) {
 				nn.shardingInfo.role = ShardBackup
 			}
 
-			id, err := network.IdFromProtoserPublickKey([]byte(member.Pubkey))
+			id, err := network.IdFromConfigEncodePublickKey(member.Pubkey)
 			if err != nil {
 				log.Error("error for getting id from public key")
 				continue
 			}
-			var addr ma.Multiaddr
-			if !strings.Contains(member.Address, ":") {
-				addr, err = ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%s", member.Address, member.Port))
-				if err != nil {
-					log.Error("error for create ip4 addr from member info")
-					continue
-				}
 
-			} else {
-				addr, err = ma.NewMultiaddr(fmt.Sprintf("/ip6/%s/tcp/%s", member.Address, member.Port))
-				if err != nil {
-					log.Error("error for create ip6 addr from member info")
-					continue
-				}
+			//var addr ma.Multiaddr
+			addInfo := util.ConstructAddrInfo(member.Address, member.Port)
+			addr, err := ma.NewMultiaddr(addInfo)
+			if err != nil {
+				log.Error("error for create ip addr from member info")
+				continue
 			}
-			nn.shardingInfo.info[uint16(sid)][id] = addr
-			nn.shardingInfo.peersInfo[sid] = append(nn.shardingInfo.peersInfo[sid], id)
+
+			if nn.shardingInfo.info[uint16(sid)] == nil {
+				idAddr := make(map[peer.ID]ma.Multiaddr)
+				idAddr[id] = addr
+				nn.shardingInfo.info[uint16(sid)] = idAddr
+
+
+				nn.shardingInfo.peersInfo = append(nn.shardingInfo.peersInfo, []peer.ID{})
+				nn.shardingInfo.peersInfo[sid] = append(nn.shardingInfo.peersInfo[sid], id)
+			} else {
+				nn.shardingInfo.info[uint16(sid)][id] = addr
+				nn.shardingInfo.peersInfo[sid] = append(nn.shardingInfo.peersInfo[sid], id)
+			}
 		}
 	}
 	nn.shardingInfo.rwlck.Unlock()
@@ -344,7 +386,7 @@ func (nn *NetNode) nativeMessageLoop() {
 					log.Error("unsupport info from sharding.")
 					continue
 				}
-				log.Debug("receive a update sharding message")
+				log.Debug("receive a update sharding message, my shard:", sinfo.ShardId)
 				go nn.updateShardingInfo(sinfo)
 			case msg := <-nn.broadCastCh:
 				log.Debug("broadCastCh receive msg:", msg.Type().String())

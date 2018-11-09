@@ -34,6 +34,7 @@ import (
 	"encoding/binary"
 	"reflect"
 	"github.com/ecoball/go-ecoball/account"
+	pb2 "github.com/ecoball/go-ecoball/net/message/pb"
 )
 
 type ActorABABFT struct {
@@ -61,8 +62,8 @@ type ActorABABFT struct {
 	currentHeaderData     types.Header
 	signaturePreBlockList []common.Signature // list for saving the signatures for the previous block
 	signatureBlkFList     []common.Signature // list for saving the signatures for the first round block
-	blockFirstRound       BlockFirstRound    // temporary parameters for the first round block
-	blockSecondRound      BlockSecondRound   // temporary parameters for the second round block
+	blockFirstRound       pb2.BlockFirstRound    // temporary parameters for the first round block
+	blockSecondRound      pb2.BlockSecondRound   // temporary parameters for the second round block
 	cacheSignaturePreBlk []pb.SignaturePreblock // cache the received signatures for the previous block
 	blockFirstCal *types.Block                    // cache the first-round block
 	TimeoutMSGs map[string]int      // cache the timeout message
@@ -139,7 +140,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		*/
 		return
 
-	case SignaturePreBlock:
+	case pb2.SignaturePreBlockA:
 		log.Info("receive the preblock signature:", actorC.status,msg.SignPreBlock.Round,msg.SignPreBlock)
 		// check the chain ID
 		chainIn := common.BytesToHash(msg.SignPreBlock.ChainID)
@@ -178,7 +179,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		*/
 		return
 
-	case BlockFirstRound:
+	case pb2.BlockFirstRound:
 		// check the chain ID
 		chainIn := msg.BlockFirst.Header.ChainID
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
@@ -216,9 +217,9 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		*/
 		return
 
-	case SignatureBlkF:
+	case pb2.SignatureBlkFA:
 		// check the chain ID
-		chainIn := common.BytesToHash(msg.signatureBlkF.ChainID)
+		chainIn := common.BytesToHash(msg.SignlkF.ChainID)
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
 			log.Info("the chain found, send this SignatureBlkF to the corresponding channel")
 			// msgChan <- ctx
@@ -254,7 +255,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		*/
 		return
 
-	case BlockSecondRound:
+	case pb2.BlockSecondRound:
 		// check the chain ID
 		chainIn := msg.BlockSecond.Header.ChainID
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
@@ -292,7 +293,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		*/
 		return
 
-	case REQSyn:
+	case pb2.REQSynA:
 		// check the chain ID
 		chainIn := common.BytesToHash(msg.Reqsyn.ChainID)
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
@@ -311,7 +312,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		*/
 		return
 
-	case REQSynSolo:
+	case pb2.REQSynSolo:
 		// check the chain ID
 		chainIn := common.BytesToHash(msg.Reqsyn.ChainID)
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
@@ -330,7 +331,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		*/
 		return
 
-	case BlockSyn:
+	case pb2.BlockSynA:
 		// check the chain ID
 		chainIn := common.BytesToHash(msg.Blksyn.ChainID)
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {
@@ -349,7 +350,7 @@ func (actorC *ActorABABFT) Receive(ctx actor.Context) {
 		*/
 		return
 
-	case TimeoutMsg:
+	case pb2.TimeoutMsg:
 		// check the chain ID
 		chainIn := common.BytesToHash(msg.Toutmsg.ChainID)
 		if msgChan, ok := actorC.serviceABABFT.mapMsgChan[chainIn]; ok {

@@ -95,6 +95,8 @@ peer_list = [ "120202c924ed1a67fd1719020ce599d723d09d48362376836e04b0be72dfe825e
 peer_index = [ "1", "2" ]
 
 #p2p swarm config info
+p2p_peer_privatekey  = "CAAS4QQwggJdAgEAAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAECgYB+gMqNMdvqX89PQ7flaq7vRsM3gm5a0GeJf7GddMOc+XXMPUrW4S6hTzdwKgim0PGrcRJXr154G2qHHMZPImEY3ZBgI1k7wawJFiTpFq6KEK7kN1yh0Baj3XmtDVysa0x3gzkuKmDEgyoaXilOMYkDU1egJHQpm7Q1gL7lY4/iAQJBAN4OcEl83zFG2J4Yb/QOP1eshKMdEPVYN45jZLgkG0EKcM4QCTBLDNbnCnDKcxbYwBJGiwCtf+XSAHGtG5KYDuUCQQDWQ+Mr8/aHV/zFDROsF+zbfNOebTMp9pIBYouPp3bVj/0atlv1cMdquOM6vMMoNzHjXDVelgp5pwunTfbPweODAkEAzwvhcPQI29Z2FfstL/+02hfW2Iw6irkFnDNa70NjUiLdCZX0K15fC2YD2yU5aH0Toja6VxhvH6fOmC/TfL1hbQJBAJXG1uI+o7Jwey1zurCt+NBlLbitNPq8dcuqC0zcD2GySYeGujmUIJIltBG3KeTO0HzSVCxOTfxEHQ1SnpkUO+kCQGrAkPrA0qIGsYHe3Kk+FbvY6orzyiPBhRaAQphAx96gg2lUxi4NeM3qxlakHq+Vh8Y+xr1b7VZ2mw9bfJViLkY="
+p2p_peer_publickey   = "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAE="
 p2p_listen_address   = ["/ip4/0.0.0.0/tcp/4013","/ip6/::/tcp/4013"]
 announce_address     = []
 no_announce_address  = []
@@ -119,16 +121,18 @@ disable_sharding  = false
 `
 
 type SwarmConfigInfo struct {
-	ListenAddress     []string
-	AnnounceAddr      []string
-	NoAnnounceAddr    []string
-	BootStrapAddr     []string
-	DisableNatPortMap bool
-	DisableRelay      bool
-	EnableRelayHop    bool
-	ConnLowWater      int
-	ConnHighWater     int
-	ConnGracePeriod   int
+	PrivateKey         string
+	PublicKey          string
+	ListenAddress      []string
+	AnnounceAddr       []string
+	NoAnnounceAddr     []string
+	BootStrapAddr      []string
+	DisableNatPortMap  bool
+	DisableRelay       bool
+	EnableRelayHop     bool
+	ConnLowWater       int
+	ConnHighWater      int
+	ConnGracePeriod    int
 }
 
 var (
@@ -253,10 +257,12 @@ func initVariable() {
 
 	//init p2p swarm configuration
 	SwarmConfig = SwarmConfigInfo{
-		ListenAddress:     viper.GetStringSlice("p2p_listen_address"),
-		AnnounceAddr:      viper.GetStringSlice("announce_address"),
-		NoAnnounceAddr:    viper.GetStringSlice("no_announce_address"),
-		BootStrapAddr:     viper.GetStringSlice("bootstrap_address"),
+		PrivateKey: viper.GetString("p2p_peer_privatekey"),
+		PublicKey: viper.GetString("p2p_peer_publickey"),
+		ListenAddress: viper.GetStringSlice("p2p_listen_address"),
+		AnnounceAddr: viper.GetStringSlice("announce_address"),
+		NoAnnounceAddr: viper.GetStringSlice("no_announce_address"),
+		BootStrapAddr: viper.GetStringSlice("bootstrap_address"),
 		DisableNatPortMap: viper.GetBool("disable_nat_port_map"),
 		DisableRelay:      viper.GetBool("disable_relay"),
 		EnableRelayHop:    viper.GetBool("enable_relay_hop"),

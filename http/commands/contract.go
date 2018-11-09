@@ -17,7 +17,7 @@
 package commands
 
 import (
-	"fmt"
+	//"fmt"
 	"net/http"
 	"encoding/hex"
 
@@ -47,7 +47,7 @@ func InvokeContract(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	fmt.Println(oneTransaction.JsonString())
+
 	//send to txpool
 	err = event.Send(event.ActorNil, event.ActorTxPool, &oneTransaction)
 	if nil != err {

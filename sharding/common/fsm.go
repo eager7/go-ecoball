@@ -64,7 +64,7 @@ func (f *Fsm) Execute(action int, msg interface{}) {
 		}
 	}
 
-	log.Error("wrong fsm state ", f.state, "action  ", action)
+	log.Debug("wrong fsm state ", f.state, "action  ", action)
 }
 
 func (f *Fsm) getState() int {
