@@ -43,6 +43,7 @@ import (
 	"sync"
 	"time"
 	"github.com/ecoball/go-ecoball/common/message"
+	"reflect"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -1118,7 +1119,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash) (shard.BlockInterface, error) {
 	dataBlock, err := c.BlockStore.Get(hash.Bytes())
 	if err != nil {
-		return nil, errors.New(log, fmt.Sprintf("GetBlock error:%s", err.Error()))
+		return nil, errors.New(log, fmt.Sprintf("GetBlock:%s error:%s", hash.HexString(), err.Error()))
 	}
 
 	return shard.BlockDeserialize(dataBlock)
@@ -1197,21 +1198,28 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	if err != nil {
 		return nil, nil, err
 	}
-	lastFinal, err := c.GetLastShardBlock(shard.HeFinalBlock)
-	if err != nil {
-		return nil, nil, err
-	}
-	if final, ok := lastFinal.GetObject().(*shard.FinalBlock); ok {
-		done := true
-		for _, m := range final.MinorBlocks {
-			hash := lastMinor.Hash()
-			mHash := m.Hash()
-			if mHash.Equals(&hash) {
-				done = false
-			}
+	fmt.Println(lastMinor.JsonString())
+	if lastMinor.GetHeight() != 1 {
+		lastFinal, err := c.GetLastShardBlock(shard.HeFinalBlock)
+		if err != nil {
+			return nil, nil, err
 		}
-		if done {
-			return lastMinor.GetObject().(*shard.MinorBlock), nil, nil
+		if final, ok := lastFinal.GetObject().(shard.FinalBlock); ok {
+			done := true
+			for _, m := range final.MinorBlocks {
+				hash := lastMinor.Hash()
+				mHash := m.Hash()
+				if mHash.Equals(&hash) {
+					done = false
+				}
+			}
+			if done {
+				block, _ := lastMinor.GetObject().(shard.MinorBlock)
+				return &block, nil, nil
+			}
+		} else {
+			log.Warn(reflect.TypeOf(lastFinal.GetObject()))
+			return nil, nil, errors.New(log, "the type is error")
 		}
 	}
 
@@ -1264,7 +1272,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	if err != nil {
 		return nil, nil, err
 	}
-	log.Info("new minor block:", block.GetHeight(), " hash:", block.Hash())
+	log.Info("new minor block:", block.GetHeight(), " hash:", block.Hash(), block.JsonString())
 	log.Warn(block.Hash().HexString(), block.StateDeltaHash.HexString(), common.JsonString(c.StateDB.FinalDB.Params, false), common.JsonString(s.Accounts, false))
 	return block, nil, nil
 }
@@ -1398,7 +1406,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	if err != nil {
 		return nil, err
 	}
-	log.Info("new final block:", block.Height, "hash:", block.Hash())
+	log.Info("new final block:", block.Height, "hash:", block.Hash(), block.JsonString())
 	log.Warn(block.Hash().HexString(), block.StateHashRoot.HexString(), common.JsonString(c.StateDB.FinalDB.Params, false), common.JsonString(s.Accounts, false))
 	return block, nil
 }
