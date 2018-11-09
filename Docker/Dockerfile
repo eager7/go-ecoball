@@ -14,9 +14,10 @@ ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$GOPATH/bi
 RUN pip3 install pytoml
 
 #install cockroachdb
-RUN wget -qO- https://binaries.cockroachdb.com/cockroach-v2.0.6.linux-amd64.tgz | tar  xvz
-RUN cp -i cockroach-v2.0.6.linux-amd64/cockroach /usr/local/bin
-RUN rm -fr "./cockroach-v2.0.6.linux-amd64"
+#RUN wget -qO- https://binaries.cockroachdb.com/cockroach-v2.0.6.linux-amd64.tgz | tar  xvz
+#RUN cp -i cockroach-v2.0.6.linux-amd64/cockroach /usr/local/bin
+#RUN rm -fr "./cockroach-v2.0.6.linux-amd64"
+COPY /usr/local/bin/cockroach /usr/local/bin
 
 #create directory
 RUN mkdir -p /ecoball/ecoball/ && mkdir -p /ecoball/ecowallet/ && mkdir /ecoball/eballscan/
