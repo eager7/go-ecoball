@@ -32,6 +32,8 @@ func (h HeaderType) String() string {
 		return "HeMinorBlock Type"
 	case HeFinalBlock:
 		return "HeFinalBlock Type"
+	case HeViewChange:
+		return "ViewChangeBlock Type"
 	default:
 		return "unknown type"
 	}
