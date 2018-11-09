@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/spectator/connect"
@@ -33,7 +34,7 @@ var (
 
 func Bystander(l ledger.Ledger) error {
 	notify.CoreLedger = l
-	listener, err := net.Listen("tcp", "0.0.0.0:9001")
+	listener, err := net.Listen("tcp", "0.0.0.0:"+config.OnlookerPort)
 	if nil != err {
 		log.Error("explorer server net.Listen error: ", err)
 		return errors.New("explorer server net.Listen error: " + fmt.Sprintf("%v", err))
