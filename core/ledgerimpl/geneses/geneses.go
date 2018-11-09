@@ -72,6 +72,13 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
 	}
 
+	dsn := common.NameToIndex("dsn")
+	dsnAddr := common.AddressFromPubKey(config.Dsn.PublicKey)
+	fmt.Println("preset insert dsn account:", dsnAddr.HexString())
+	if _, err := s.AddAccount(dsn, dsnAddr, timeStamp); err != nil {
+		return err
+	}
+
 	abaToken := common.NameToIndex("abatoken")
 	tokenAddr := common.AddressFromPubKey(config.ABAToken.PublicKey)
 	fmt.Println("preset insert a token account:", tokenAddr.HexString())
@@ -161,6 +168,13 @@ func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) e
 		return err
 	} else {
 		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
+	}
+
+	dsn := common.NameToIndex("dsn")
+	dsnAddr := common.AddressFromPubKey(config.Dsn.PublicKey)
+	fmt.Println("preset insert dsn account:", dsnAddr.HexString())
+	if _, err := s.AddAccount(dsn, dsnAddr, timeStamp); err != nil {
+		return err
 	}
 
 	abaToken := common.NameToIndex("abatoken")

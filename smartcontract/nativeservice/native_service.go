@@ -289,12 +289,12 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			ns.tx.Receipt.Accounts[1] = data1
 		}
 
-		case dsnComm.FcMethodProof:
-			audit.HandleStorageProof(params[0], ns.state)
-		case dsnComm.FcMethodAn:
-			audit.HandleStoreAnn(params[0], ns.state)
-		case dsnComm.FcMethodFile:
-			audit.HandleFileContract(params[0], ns.state)
+	case dsnComm.FcMethodProof:
+		audit.HandleStorageProof(params[0], ns.state)
+	case dsnComm.FcMethodAn:
+		audit.HandleStoreAnn(params[0], ns.state)
+	case dsnComm.FcMethodFile:
+		audit.HandleFileContract(params[0], ns.state)
 	default:
 		ns.Println(fmt.Sprintf("unknown method:%s", method))
 		return nil, errors.New(log, fmt.Sprintf("unknown method:%s", method))

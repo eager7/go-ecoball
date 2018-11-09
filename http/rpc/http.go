@@ -76,6 +76,7 @@ func StartHttpServer() (err error) {
 	router.POST("/dsn/eracode", commands.EraCoding)
 	router.GET("/dsn/eradecode", commands.EraDecoding)
 	router.POST("/dsn/getipinfo", commands.DsnGetIpInfo)
+	router.GET("/dsn/dsnaddfilecid", commands.DsnaddfileCid)
 	http.ListenAndServe(":"+config.HttpLocalPort, router)
 	return nil
 }

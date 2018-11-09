@@ -226,7 +226,7 @@ func (b *ViewChangeBlock) JsonString() string {
 		fmt.Println(err)
 		return ""
 	}
-	return string(data)
+	return b.hash.HexString() + string(data)
 }
 
 func (b ViewChangeBlock) GetObject() interface{} {

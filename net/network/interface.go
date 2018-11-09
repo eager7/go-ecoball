@@ -42,11 +42,11 @@ type EcoballNetwork interface {
 }
 
 type CommAPI interface {
-	ConnectToPeer(ip, port string, pubKey []byte, isPermanent bool) error
-	ClosePeer(pubKey []byte) error
+	ConnectToPeer(ip, port, pubKey string, isPermanent bool) error
+	ClosePeer(pubKey string) error
 
 	//Send a message to the peer with the ip/port/pubkey info
-	SendMsgToPeer(ip, port string, pubKey []byte, msg message.EcoBallNetMsg) error
+	SendMsgToPeer(ip, port, pubKey string, msg message.EcoBallNetMsg) error
 
 	//Gossip a message to random peers
 	GossipMsg(msg message.EcoBallNetMsg) error

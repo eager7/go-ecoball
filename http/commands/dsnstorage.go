@@ -16,6 +16,9 @@ import (
 	"github.com/ecoball/go-ecoball/dsn/host"
 	"github.com/ecoball/go-ecoball/http/request"
 	"github.com/oschwald/geoip2-golang"
+	"context"
+	"strconv"
+ 	dsncli "github.com/ecoball/go-ecoball/dsn/client"
 )
 
 func TotalHandler(c *gin.Context)  {
@@ -64,6 +67,25 @@ func EraDecoding(c *gin.Context)  {
 		}
 	}
 }
+
+
+func DsnaddfileCid(c *gin.Context)  {
+	
+	cid, _ := c.GetQuery("cid")
+	filesize, _ := c.GetQuery("filesize")
+	filesizeInt, _ := strconv.ParseInt(filesize, 10, 64)
+	cbtx := context.Background()
+	dclient := dsncli.NewRcWithDefaultConf(cbtx)
+	newCid, err := dclient.RscCodingReqWeb(filesizeInt, cid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.DsnAddFileResponse{	Code: response.CODESERVERINNERERR, Msg: err.Error(), Cid: newCid })
+		return 
+	}
+	c.JSON(http.StatusInternalServerError, response.DsnAddFileResponse{	Code: response.CODENOMAL, Msg:"success", Cid: newCid })
+
+}
+
+
 func DsnGetIpInfo(c *gin.Context)  {
 	var req request.DsnIpInfoReq
 	err := c.BindJSON(&req)

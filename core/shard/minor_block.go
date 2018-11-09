@@ -368,5 +368,5 @@ func (b *MinorBlock) JsonString() string {
 		fmt.Println(err)
 		return ""
 	}
-	return string(data)
+	return b.hash.HexString() + string(data)
 }

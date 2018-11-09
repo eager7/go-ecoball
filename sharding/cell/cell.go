@@ -134,12 +134,14 @@ func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 		}
 	}
 
-	c.createShardingTopo()
+	if bk.Height > 1 {
+		c.createShardingTopo()
+	}
 
 }
 
 func (c *Cell) createShardingTopo() {
-	topo := &sc.ShardingTopo{ShardId: c.Shardid}
+	topo := &sc.ShardingTopo{ShardId: c.Shardid, Pubkey: c.Self.Pubkey}
 
 	lastcm := c.GetLastCMBlock()
 	if lastcm == nil {

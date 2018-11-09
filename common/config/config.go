@@ -26,11 +26,12 @@ import (
 
 	"flag"
 
+	"path/filepath"
+	"strings"
+
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/utils"
-	"path/filepath"
-	"strings"
 )
 
 const VirtualBlockCpuLimit float64 = 200000000.0
@@ -55,6 +56,7 @@ var configDefault = `#toml configuration for EcoBall system
 http_port = "20678"          # client http port
 wallet_http_port = "20679"   # client wallet http port
 version = "1.0"              # system version
+onlooker_port = "9001"		 #port for browser
 log_dir = "/tmp/Log/"        # log file location
 output_to_terminal = "true"  # debug output type	 	
 log_level = 1                # debug level	
@@ -65,6 +67,8 @@ root_privkey = "34a44d65ec3f517d6e7550ccb17839d391b69805ddd955e8442c32d38013c54e
 root_pubkey = "04de18b1a406bfe6fb95ef37f21c875ffc9f6f59e71fea8efad482b82746da148e0f154d708001810b52fb1762d737fec40508b492628f86c605391a891a61ad0b" # used to chain ID
 aba_token_privkey = "675e6cbc4190bc861a987eec5be717ebdd6ead16cb5f537df00637080f000917"
 aba_token_pubkey = "040eb444f2962e94722f84d3298b062051b7d488d14c0a8216f730e1f36177fa1e73fdcb16582aaa62efa7a0fa1737f282a276081252cb41429597c8c9159d43ee"
+dsn_privkey = "23c45ee08031cfa233a0a1a42df1cd66f73b74ff68645b223e629ac1e0db1374"
+dsn_pubkey = "04f7d6be089dc5cfb263c708e123111510ea9d3e29cf8a9b2b3eef35838d6e8d55de92c303024d30b748ec450edc8228ac6d3c6431cacc67b32f9905bb3363cd00"
 user_privkey = "34a44d65ec3f517d6e7550ccb17839d391b69805ddd955e8442c32d38013c54e"
 user_pubkey = "04de18b1a406bfe6fb95ef37f21c875ffc9f6f59e71fea8efad482b82746da148e0f154d708001810b52fb1762d737fec40508b492628f86c605391a891a61ad0b"
 
@@ -91,6 +95,8 @@ peer_list = [ "120202c924ed1a67fd1719020ce599d723d09d48362376836e04b0be72dfe825e
 peer_index = [ "1", "2" ]
 
 #p2p swarm config info
+p2p_peer_privatekey  = "CAAS4QQwggJdAgEAAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAECgYB+gMqNMdvqX89PQ7flaq7vRsM3gm5a0GeJf7GddMOc+XXMPUrW4S6hTzdwKgim0PGrcRJXr154G2qHHMZPImEY3ZBgI1k7wawJFiTpFq6KEK7kN1yh0Baj3XmtDVysa0x3gzkuKmDEgyoaXilOMYkDU1egJHQpm7Q1gL7lY4/iAQJBAN4OcEl83zFG2J4Yb/QOP1eshKMdEPVYN45jZLgkG0EKcM4QCTBLDNbnCnDKcxbYwBJGiwCtf+XSAHGtG5KYDuUCQQDWQ+Mr8/aHV/zFDROsF+zbfNOebTMp9pIBYouPp3bVj/0atlv1cMdquOM6vMMoNzHjXDVelgp5pwunTfbPweODAkEAzwvhcPQI29Z2FfstL/+02hfW2Iw6irkFnDNa70NjUiLdCZX0K15fC2YD2yU5aH0Toja6VxhvH6fOmC/TfL1hbQJBAJXG1uI+o7Jwey1zurCt+NBlLbitNPq8dcuqC0zcD2GySYeGujmUIJIltBG3KeTO0HzSVCxOTfxEHQ1SnpkUO+kCQGrAkPrA0qIGsYHe3Kk+FbvY6orzyiPBhRaAQphAx96gg2lUxi4NeM3qxlakHq+Vh8Y+xr1b7VZ2mw9bfJViLkY="
+p2p_peer_publickey   = "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAE="
 p2p_listen_address   = ["/ip4/0.0.0.0/tcp/4013","/ip6/::/tcp/4013"]
 announce_address     = []
 no_announce_address  = []
@@ -115,6 +121,8 @@ disable_sharding  = false
 `
 
 type SwarmConfigInfo struct {
+	PrivateKey         string
+	PublicKey          string
 	ListenAddress      []string
 	AnnounceAddr       []string
 	NoAnnounceAddr     []string
@@ -128,31 +136,33 @@ type SwarmConfigInfo struct {
 }
 
 var (
-	ChainHash          common.Hash
-	TimeSlot           int
-	HttpLocalPort      string
-	WalletHttpPort     string
-	EcoVersion         string
-	RootDir            string
-	LogDir             string
-	OutputToTerminal   bool
-	LogLevel           int
-	IpfsDir            string
-	ConsensusAlgorithm string
-	StartNode          bool
-	Root               account.Account
-	ABAToken           account.Account
-	User               account.Account
-	Delegate           account.Account
-	Worker             account.Account
-	Worker1            account.Account
-	Worker2            account.Account
-	Worker3            account.Account
-	SwarmConfig        SwarmConfigInfo
-	EnableLocalDiscovery  bool
-	DisableLocalDisLog    bool
-	DsnStorage            bool
-	DisableSharding       bool
+	ChainHash            common.Hash
+	TimeSlot             int
+	HttpLocalPort        string
+	WalletHttpPort       string
+	OnlookerPort         string
+	EcoVersion           string
+	RootDir              string
+	LogDir               string
+	OutputToTerminal     bool
+	LogLevel             int
+	IpfsDir              string
+	ConsensusAlgorithm   string
+	StartNode            bool
+	Root                 account.Account
+	ABAToken             account.Account
+	Dsn					 account.Account
+	User                 account.Account
+	Delegate             account.Account
+	Worker               account.Account
+	Worker1              account.Account
+	Worker2              account.Account
+	Worker3              account.Account
+	SwarmConfig          SwarmConfigInfo
+	EnableLocalDiscovery bool
+	DisableLocalDisLog   bool
+	DsnStorage           bool
+	DisableSharding      bool
 )
 
 func SetConfig(filePath string) error {
@@ -225,6 +235,7 @@ func initVariable() {
 	TimeSlot = viper.GetInt("time_slot")
 	HttpLocalPort = viper.GetString("http_port")
 	WalletHttpPort = viper.GetString("wallet_http_port")
+	OnlookerPort = viper.GetString("onlooker_port")
 	EcoVersion = viper.GetString("version")
 	LogDir = viper.GetString("log_dir")
 	OutputToTerminal = viper.GetBool("output_to_terminal")
@@ -233,6 +244,7 @@ func initVariable() {
 	ConsensusAlgorithm = viper.GetString("consensus_algorithm")
 	Root = account.Account{PrivateKey: common.FromHex(viper.GetString("root_privkey")), PublicKey: common.FromHex(viper.GetString("root_pubkey")), Alg: 0}
 	ABAToken = account.Account{PrivateKey: common.FromHex(viper.GetString("aba_token_privkey")), PublicKey: common.FromHex(viper.GetString("aba_token_pubkey")), Alg: 0}
+	Dsn = account.Account{PrivateKey: common.FromHex(viper.GetString("dsn_privkey")), PublicKey: common.FromHex(viper.GetString("dsn_pubkey")), Alg: 0}
 	User = account.Account{PrivateKey: common.FromHex(viper.GetString("user_privkey")), PublicKey: common.FromHex(viper.GetString("user_pubkey")), Alg: 0}
 	Worker1 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker1_privkey")), PublicKey: common.FromHex(viper.GetString("worker1_pubkey")), Alg: 0}
 	Worker2 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker2_privkey")), PublicKey: common.FromHex(viper.GetString("worker2_pubkey")), Alg: 0}
@@ -245,16 +257,18 @@ func initVariable() {
 
 	//init p2p swarm configuration
 	SwarmConfig = SwarmConfigInfo{
+		PrivateKey: viper.GetString("p2p_peer_privatekey"),
+		PublicKey: viper.GetString("p2p_peer_publickey"),
 		ListenAddress: viper.GetStringSlice("p2p_listen_address"),
 		AnnounceAddr: viper.GetStringSlice("announce_address"),
 		NoAnnounceAddr: viper.GetStringSlice("no_announce_address"),
 		BootStrapAddr: viper.GetStringSlice("bootstrap_address"),
 		DisableNatPortMap: viper.GetBool("disable_nat_port_map"),
-		DisableRelay: viper.GetBool("disable_relay"),
-		EnableRelayHop: viper.GetBool("enable_relay_hop"),
-		ConnLowWater: viper.GetInt("conn_mgr_lowwater"),
-		ConnHighWater: viper.GetInt("conn_mgr_highwater"),
-		ConnGracePeriod: viper.GetInt("conn_mgr_graceperiod"),
+		DisableRelay:      viper.GetBool("disable_relay"),
+		EnableRelayHop:    viper.GetBool("enable_relay_hop"),
+		ConnLowWater:      viper.GetInt("conn_mgr_lowwater"),
+		ConnHighWater:     viper.GetInt("conn_mgr_highwater"),
+		ConnGracePeriod:   viper.GetInt("conn_mgr_graceperiod"),
 	}
 
 	EnableLocalDiscovery = viper.GetBool("enable_local_discovery")
