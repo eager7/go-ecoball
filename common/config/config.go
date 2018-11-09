@@ -108,6 +108,7 @@ disable_localdis_log   = true
 
 #dsn config
 dsn_storage = false
+dsn_path = "/tmp/storage"
 
 #sharding config info
 disable_sharding  = false
@@ -259,6 +260,6 @@ func initVariable() {
 	EnableLocalDiscovery = viper.GetBool("enable_local_discovery")
 	DisableLocalDisLog = viper.GetBool("disable_localdis_log")
 	DsnStorage = viper.GetBool("dsn_storage")
-
+	IpfsDir = viper.GetString("dsn_path")
 	DisableSharding = viper.GetBool("disable_sharding")
 }
