@@ -260,29 +260,44 @@ func (c *committee) processViewchangeConsensusPacket(p interface{}) {
 	c.cs.ProcessPacket(p.(*sc.CsPacket))
 }
 
-func (c *committee) commitViewchangeBlock(bl *cs.ViewChangeBlock) {
-	log.Debug("recv consensus view change block epoch ", bl.CMEpochNo, " height ", bl.FinalBlockHeight, " round  ", bl.Round)
-
-	simulate.TellBlock(bl)
-
-	c.ns.SaveLastViewchangeBlock(bl)
-	c.resetVcCounter(nil)
+func (c *committee) commitViewchangeBlock(vc *cs.ViewChangeBlock) {
+	log.Debug("recv consensus view change block epoch ", vc.CMEpochNo, " height ", vc.FinalBlockHeight, " round  ", vc.Round)
 
 	lastcm := c.ns.GetLastCMBlock()
 	if lastcm == nil {
-		c.fsm.Execute(ActProductCommitteeBlock, nil)
+		panic("cm block is nil")
 		return
 	}
 
-	if lastcm.Height > bl.CMEpochNo {
+	lastfinal := c.ns.GetLastFinalBlock()
+	if lastfinal == nil {
+		panic("final block is nil")
+		return
+	}
+
+	if lastcm.Height != vc.CMEpochNo {
+		return
+	}
+
+	if lastfinal.Height != vc.FinalBlockHeight {
+		return
+	}
+
+	simulate.TellBlock(vc)
+
+	c.ns.SaveLastViewchangeBlock(vc)
+	c.resetVcCounter(nil)
+
+	if lastcm.Height > lastfinal.EpochNo {
 		c.fsm.Execute(ActProductFinalBlock, nil)
 	} else {
-		if bl.FinalBlockHeight%sc.DefaultEpochFinalBlockNumber == 0 {
+		if lastfinal.Height%sc.DefaultEpochFinalBlockNumber == 0 {
 			c.fsm.Execute(ActProductCommitteeBlock, nil)
 		} else {
 			c.fsm.Execute(ActProductFinalBlock, nil)
 		}
 	}
+
 }
 
 func (c *committee) resetVcCounter(p interface{}) bool {
