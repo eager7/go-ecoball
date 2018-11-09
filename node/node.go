@@ -186,7 +186,7 @@ func runNode(c *cli.Context) error {
 		}
 	case "SHARD":
 		log.Debug("Start Shard Mode")
-		go example.TransferExample()
+		//go example.TransferExample()
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
