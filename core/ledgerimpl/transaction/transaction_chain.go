@@ -1119,7 +1119,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash) (shard.BlockInterface, error) {
 	dataBlock, err := c.BlockStore.Get(hash.Bytes())
 	if err != nil {
-		return nil, errors.New(log, fmt.Sprintf("GetBlock error:%s", err.Error()))
+		return nil, errors.New(log, fmt.Sprintf("GetBlock:%s error:%s", hash.HexString(), err.Error()))
 	}
 
 	return shard.BlockDeserialize(dataBlock)
@@ -1198,6 +1198,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	if err != nil {
 		return nil, nil, err
 	}
+	fmt.Println(lastMinor.JsonString())
 	if lastMinor.GetHeight() != 1 {
 		lastFinal, err := c.GetLastShardBlock(shard.HeFinalBlock)
 		if err != nil {
