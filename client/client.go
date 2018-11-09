@@ -69,6 +69,9 @@ func newClientApp() *cli.App {
 	//commands
 	app.Commands = []cli.Command{
 		commands.ContractCommands,
+		commands.PledgeCommands,
+		commands.RegisterProducerCommands,
+		commands.VoteCommands,
 		commands.TransferCommands,
 		commands.WalletCommands,
 		commands.QueryCommands,

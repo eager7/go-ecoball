@@ -34,7 +34,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/http/common/abi"
 	"github.com/urfave/cli"
-	"strconv"
 )
 
 var (
@@ -98,33 +97,6 @@ var (
 					cli.StringFlag{
 						Name:  "invoker, i",
 						Usage: "Invoker account name",
-					},
-					cli.StringFlag{
-						Name:  "chainHash, c",
-						Usage: "chain hash(the default is the main chain hash)",
-					},
-				},
-			},
-			{
-				Name:   "pledge",
-				Usage:  "invoke contract",
-				Action: pledge,
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "payer, p",
-						Usage: "payer",
-					},
-					cli.StringFlag{
-						Name:  "user, u",
-						Usage: "user",
-					},
-					cli.StringFlag{
-						Name:  "cpu, c",
-						Usage: "ABA pledged for cpu",
-					},
-					cli.StringFlag{
-						Name:  "net, n",
-						Usage: "ABA pledged for net",
 					},
 					cli.StringFlag{
 						Name:  "chainHash, c",
@@ -424,115 +396,3 @@ func invokeContract(c *cli.Context) error {
 	return err
 }
 
-func pledge(c *cli.Context) error {
-	//Check the number of flags
-	if c.NumFlags() == 0 {
-		cli.ShowSubcommandHelp(c)
-		return nil
-	}
-
-	//contract address
-	payer := c.String("payer")
-	if payer == "" {
-		fmt.Println("Please input a valid contract account name")
-		return errors.New("Invalid contract account name")
-	}
-
-	user := c.String("user")
-	if user == "" {
-		fmt.Println("Please input a valid contract account name")
-		return errors.New("Invalid contract account name")
-	}
-
-	cpu := c.Int64("cpu")
-	if cpu <= 0 {
-		fmt.Println("Invalid aba amount ", cpu)
-		return errors.New("Invalid aba amount")
-	}
-
-	net := c.Int64("net")
-	if net <= 0 {
-		fmt.Println("Invalid aba amount ", net)
-		return errors.New("Invalid aba amount")
-	}
-
-
-	//chainHash
-	var chainHash common.Hash
-	var err error
-	chainHashStr := c.String("chainHash")
-	if "" == chainHashStr {
-		chainHash, err = getMainChainHash()
-
-	} else {
-		var hashTemp []byte
-		hashTemp, err = hex.DecodeString(chainHashStr)
-		copy(chainHash[:], hashTemp)
-	}
-
-	if nil != err {
-		fmt.Println(err)
-		return err
-	}
-
-	//public keys
-	allPublickeys, err := getPublicKeys()
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	var parameters []string
-
-	parameters = append(parameters, payer)
-	parameters = append(parameters, user)
-	parameters = append(parameters, strconv.FormatInt(cpu, 10))
-	parameters = append(parameters, strconv.FormatInt(net, 10))
-
-	//time
-	time := time.Now().UnixNano()
-
-	transaction, err := types.NewInvokeContract(common.NameToIndex(payer), common.NameToIndex("root"), chainHash, "owner", "pledge", parameters, 0, time)
-	if nil != err {
-		fmt.Println(err)
-		return err
-	}
-
-	requiredKeys, err := getRequiredKeys(chainHash, "active", payer)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	publickeys := clientCommon.IntersectionKeys(allPublickeys, requiredKeys)
-	if 0 == len(publickeys.KeyList) {
-		fmt.Println("no publickeys")
-		return errors.New("no publickeys")
-	}
-
-	//sign
-	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash.Bytes())
-	if nil != errcode {
-		fmt.Println(errcode)
-		return errcode
-	}
-
-	for _, v := range data.Signature {
-		transaction.AddSignature(v.PublicKey.Key, v.SignData)
-	}
-
-	datas, err := transaction.Serialize()
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	var result rpc.SimpleResult
-	trx_str := hex.EncodeToString(datas)
-
-	err = rpc.NodePost("/invokeContract", &trx_str, &result)
-	if nil == err {
-		fmt.Println(result.Result)
-	}
-	return err
-}
