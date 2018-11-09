@@ -331,13 +331,36 @@ func (s *shard) processShardingPacket(csp interface{}) {
 			return
 		}
 
+		if last.Height >= vc.Height {
+			log.Debug("old vc packet height ", vc.Height, " last height ", last.Height)
+			return
+		} else if vc.Height > last.Height+1 {
+			log.Debug("vc packet height ", vc.Height, " last height ", last.Height, " need sync")
+			s.fsm.Execute(ActChainNotSync, nil)
+		}
+
 		if vc.FinalBlockHeight < lastfinal.Height {
-			log.Debug("old vc packet ", vc.FinalBlockHeight, " ", vc.Round)
+			log.Debug("wrong vc packet final height ", vc.FinalBlockHeight, " last final height", lastfinal.Height)
 			return
 		} else if vc.FinalBlockHeight == lastfinal.Height {
-			if last.Round >= vc.Round {
-				log.Debug("old vc packet ", vc.FinalBlockHeight, " ", vc.Round)
-				return
+			if last.FinalBlockHeight == vc.FinalBlockHeight {
+				if last.Round >= vc.Round {
+					log.Debug("old vc packet vc round ", vc.Round, " last round ", last.Round)
+					return
+				} else if vc.Round > last.Round+1 {
+					log.Debug("vc round ", vc.Round, " last round ", last.Round, " need sync")
+					s.fsm.Execute(ActChainNotSync, nil)
+					return
+				}
+			} else {
+				if vc.Round > 1 {
+					log.Debug("vc round ", vc.Round, " need sync")
+					s.fsm.Execute(ActChainNotSync, nil)
+					return
+				} else if vc.Round < 1 {
+					log.Debug("wrong round ", vc.Round)
+					return
+				}
 			}
 		} else {
 			log.Debug("last final ", lastfinal.Height, " recv view change final height ", vc.FinalBlockHeight, " need sync")

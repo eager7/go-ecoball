@@ -279,7 +279,7 @@ func (n *net) TransitBlock(p *sc.CsPacket) {
 		sp.Packet = packet
 	case *cs.ViewChangeBlock:
 		vc := p.Packet.(*cs.ViewChangeBlock)
-		packet, err := json.Marshal(vc)
+		packet, err := vc.Serialize()
 		if err != nil {
 			log.Error("transit block packet Marshal error ", err)
 			return
