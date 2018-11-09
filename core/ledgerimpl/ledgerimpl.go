@@ -84,11 +84,11 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address, shard 
 	log.Info("Chains:", l.ChainTxs)
 	return nil
 }
-func (l *LedgerImpl) NewTxBlock(chainID common.Hash, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, error) {
+func (l *LedgerImpl) NewTxBlock(chainID common.Hash, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, []*types.Transaction, error) {
 	//return l.ChainTx.NewBlock(l, txs, consensusData, timeStamp)
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
-		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+		return nil, nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
 	return chain.NewBlock(l, txs, consensusData, timeStamp)
 }
@@ -372,12 +372,12 @@ func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ shard.HeaderTy
 	return chain.GetShardBlockByHash(typ, hash)
 }
 
-func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64) (shard.BlockInterface, error) {
+func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
-	return chain.GetShardBlockByHeight(typ, height)
+	return chain.GetShardBlockByHeight(typ, height, shardID)
 }
 
 func (l *LedgerImpl) GetLastShardBlock(chainID common.Hash, typ shard.HeaderType) (shard.BlockInterface, error) {
@@ -404,10 +404,10 @@ func (l *LedgerImpl) NewCmBlock(chainID common.Hash, timeStamp int64, shards []s
 	return chain.NewCmBlock(timeStamp, shards)
 }
 
-func (l *LedgerImpl) NewMinorBlock(chainID common.Hash, txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, error) {
+func (l *LedgerImpl) NewMinorBlock(chainID common.Hash, txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
-		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+		return nil, nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
 	return chain.NewMinorBlock(txs, timeStamp)
 }

@@ -42,6 +42,16 @@ func (h *FinalBlockHeader) ComputeHash() error {
 	return nil
 }
 
+func (h *FinalBlockHeader) VerifySignature() (bool, error) {
+	/*for _, v := range h.Signatures {
+		b, err := secp256k1.Verify(h.Hash.Bytes(), v.SigData, v.PubKey)
+		if err != nil || b != true {
+			return false, err
+		}
+	}*/
+	return true, nil
+}
+
 func (h *FinalBlockHeader) proto() (*pb.FinalBlockHeader, error) {
 	/*if h.ConsData.Payload == nil {
 		return nil, errors.New(log, "the minor block header's consensus data is nil")
@@ -147,6 +157,9 @@ func (h *FinalBlockHeader) JsonString() string {
 
 func (h *FinalBlockHeader) Type() uint32 {
 	return uint32(HeFinalBlock)
+}
+func (h FinalBlockHeader) GetObject() interface{} {
+	return h
 }
 
 func (h *FinalBlockHeader) Hash() common.Hash {

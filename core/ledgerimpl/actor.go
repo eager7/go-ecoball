@@ -110,10 +110,15 @@ func (l *LedActor) Receive(ctx actor.Context) {
 				ctx.Sender().Tell(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
 				return
 			}
-			minorBlock, err := l.ledger.NewMinorBlock(msg.ChainID, txs, time.Now().UnixNano())
+			PACKAGE:
+			minorBlock, txs, err := l.ledger.NewMinorBlock(msg.ChainID, txs, time.Now().UnixNano())
 			if err != nil {
-				ctx.Sender().Tell(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
-				return
+				log.Warn(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
+				if txs != nil {
+					goto PACKAGE
+				} else {
+					ctx.Sender().Tell(err)
+				}
 			}
 			ctx.Sender().Tell(minorBlock)
 		case shard.HeCmBlock:

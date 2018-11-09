@@ -174,6 +174,9 @@ func (s *State) CheckPermission(index common.AccountName, name string, hash comm
  *  @param permission - the permission names
  */
 func (s *State) CheckAccountPermission(host common.AccountName, guest common.AccountName, permission string) error {
+	if guest == host {
+		return nil
+	}
 	acc, err := s.GetAccountByName(host)
 	if err != nil {
 		return err

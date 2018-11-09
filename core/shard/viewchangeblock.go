@@ -55,6 +55,16 @@ func (h *ViewChangeBlockHeader) ComputeHash() error {
 	return nil
 }
 
+func (h *ViewChangeBlockHeader) VerifySignature() (bool, error) {
+	/*for _, v := range h.Signatures {
+		b, err := secp256k1.Verify(h.Hash.Bytes(), v.SigData, v.PubKey)
+		if err != nil || b != true {
+			return false, err
+		}
+	}*/
+	return true, nil
+}
+
 func (h *ViewChangeBlockHeader) proto() (*pb.ViewChangeBlockHeader, error) {
 	return &pb.ViewChangeBlockHeader{
 		ChainID:          h.ChainID.Bytes(),
