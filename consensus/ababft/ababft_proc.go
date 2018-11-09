@@ -11,6 +11,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"github.com/ecoball/go-ecoball/core/pb"
+	pb2 "github.com/ecoball/go-ecoball/net/message/pb"
 )
 
 func ProcessSTART(actorC *ActorABABFT) {
@@ -86,7 +87,7 @@ func ProcessSTART(actorC *ActorABABFT) {
 			// no need every time to send a request for solo block
 
 			// send solo syn request
-			var requestsyn REQSynSolo
+			var requestsyn pb2.REQSynSolo
 			requestsyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
 			requestsyn.Reqsyn.ChainID = actorC.chainID.Bytes()
 			hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentHeightNum+1)))
@@ -155,8 +156,8 @@ func ProcessSTART(actorC *ActorABABFT) {
 
 	actorC.signaturePreBlockList = make([]common.Signature, len(actorC.PeersAddrList))
 	actorC.signatureBlkFList = make([]common.Signature, len(actorC.PeersAddrList))
-	actorC.blockFirstRound = BlockFirstRound{}
-	actorC.blockSecondRound = BlockSecondRound{}
+	actorC.blockFirstRound = pb2.BlockFirstRound{}
+	actorC.blockSecondRound = pb2.BlockSecondRound{}
 	actorC.currentHeightNum = int(actorC.currentHeader.Height)
 
 	// todo
@@ -232,7 +233,7 @@ func ProcessSTART(actorC *ActorABABFT) {
 		actorC.primaryTag = 0
 		actorC.status = 5
 		// broadcast the signaturePreblock and set up a timer for receiving the data
-		var signaturePreSend SignaturePreBlock
+		var signaturePreSend pb2.SignaturePreBlockA
 		signaturePreSend.SignPreBlock.PubKey = signaturePreblock.PubKey
 		signaturePreSend.SignPreBlock.SigData = signaturePreblock.SigData
 		signaturePreSend.SignPreBlock.ChainID = actorC.chainID.Bytes()
@@ -264,7 +265,7 @@ func ProcessSTART(actorC *ActorABABFT) {
 	return
 }
 
-func ProcessSignPreBlk(actorC *ActorABABFT, msg SignaturePreBlock) {
+func ProcessSignPreBlk(actorC *ActorABABFT, msg pb2.SignaturePreBlockA) {
 	var err error
 	if actorC.status == 102 {
 		event.Send(event.ActorNil,event.ActorConsensus,message.ABABFTStart{actorC.chainID})
@@ -298,7 +299,7 @@ func ProcessSignPreBlk(actorC *ActorABABFT, msg SignaturePreBlock) {
 
 				// require synchronization, the longest chain is ok
 				// send synchronization message
-				var requestSyn REQSyn
+				var requestSyn pb2.REQSynA
 				requestSyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
 				requestSyn.Reqsyn.ChainID = actorC.chainID.Bytes()
 				hashTS,_ := common.DoubleHash(Uint64ToBytes(actorC.verifiedHeight+1))
@@ -477,7 +478,7 @@ func ProcessPreBlkTimeout(actorC *ActorABABFT) {
 			actorC.status = 7
 			actorC.primaryTag = 0 // reset to zero, and the next primary will take the turn
 			// send out the timeout message
-			var timeoutMsg TimeoutMsg
+			var timeoutMsg pb2.TimeoutMsg
 			timeoutMsg.Toutmsg.ChainID = actorC.chainID.Bytes()
 			timeoutMsg.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum)
 			timeoutMsg.Toutmsg.PubKey = actorC.serviceABABFT.account.PublicKey
@@ -493,7 +494,7 @@ func ProcessPreBlkTimeout(actorC *ActorABABFT) {
 	return
 }
 
-func ProcessBlkF(actorC *ActorABABFT, msg BlockFirstRound) {
+func ProcessBlkF(actorC *ActorABABFT, msg pb2.BlockFirstRound) {
 	var err error
 	log.Info("current height and receive the first round block:",actorC.currentHeightNum, msg.BlockFirst.Header)
 
@@ -512,7 +513,7 @@ func ProcessBlkF(actorC *ActorABABFT, msg BlockFirstRound) {
 				// in case that somebody may skip the current generator, only the different height can call the synchronization
 				if (actorC.verifiedHeight+2) < blockFirstReceived.Header.Height {
 					// send synchronization message
-					var requestSyn REQSyn
+					var requestSyn pb2.REQSynA
 					requestSyn.Reqsyn.ChainID = actorC.chainID.Bytes()
 					requestSyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
 					hashTS,_ := common.DoubleHash(Uint64ToBytes(actorC.verifiedHeight+1))
@@ -602,10 +603,10 @@ func ProcessBlkF(actorC *ActorABABFT, msg BlockFirstRound) {
 					}
 				}
 				// 4. sign the received first-round block
-				var signBlkFSend SignatureBlkF
-				signBlkFSend.signatureBlkF.ChainID = actorC.chainID.Bytes()
-				signBlkFSend.signatureBlkF.PubKey = actorC.serviceABABFT.account.PublicKey
-				signBlkFSend.signatureBlkF.SigData,err = actorC.serviceABABFT.account.Sign(blockFirstReceived.Header.Hash.Bytes())
+				var signBlkFSend pb2.SignatureBlkFA
+				signBlkFSend.SignlkF.ChainID = actorC.chainID.Bytes()
+				signBlkFSend.SignlkF.PubKey = actorC.serviceABABFT.account.PublicKey
+				signBlkFSend.SignlkF.SigData,err = actorC.serviceABABFT.account.Sign(blockFirstReceived.Header.Hash.Bytes())
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -647,7 +648,7 @@ func ProcessTxTimeout(actorC *ActorABABFT) {
 		actorC.status = 8
 		actorC.primaryTag = 0
 		// send out the timeout message
-		var timeoutMsg TimeoutMsg
+		var timeoutMsg pb2.TimeoutMsg
 		timeoutMsg.Toutmsg.ChainID = actorC.chainID.Bytes()
 		timeoutMsg.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum)
 		timeoutMsg.Toutmsg.PubKey = actorC.serviceABABFT.account.PublicKey
@@ -665,13 +666,13 @@ func ProcessTxTimeout(actorC *ActorABABFT) {
 	return
 }
 
-func ProcessSignBlkF(actorC *ActorABABFT, msg SignatureBlkF) {
+func ProcessSignBlkF(actorC *ActorABABFT, msg pb2.SignatureBlkFA) {
 	var err error
 	// the prime will verify the signatures of first-round block from peers
 	if actorC.primaryTag == 1 && actorC.status == 4 {
 		// verify the signature
 		// 1. check the peer in the peers list
-		pubKeyIn := msg.signatureBlkF.PubKey
+		pubKeyIn := msg.SignlkF.PubKey
 		var foundPeer bool
 		foundPeer = false
 		var peerIndex int
@@ -693,7 +694,7 @@ func ProcessSignBlkF(actorC *ActorABABFT, msg SignatureBlkF) {
 			// already receive the signature
 			return
 		}
-		signDataIn := msg.signatureBlkF.SigData
+		signDataIn := msg.SignlkF.SigData
 		headerHashes := actorC.blockFirstRound.BlockFirst.Header.Hash.Bytes()
 		var resultVerify bool
 		resultVerify, err = secp256k1.Verify(headerHashes, signDataIn, pubKeyIn)
@@ -783,7 +784,7 @@ func ProcessSignTxTimeout(actorC *ActorABABFT) {
 			actorC.status = 7
 			actorC.primaryTag = 0 // reset to zero, and the next primary will take the turn
 			// 2. send out the timeout message
-			var timeoutMsg TimeoutMsg
+			var timeoutMsg pb2.TimeoutMsg
 			timeoutMsg.Toutmsg.ChainID = actorC.chainID.Bytes()
 			timeoutMsg.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum)
 			timeoutMsg.Toutmsg.PubKey = actorC.serviceABABFT.account.PublicKey
@@ -796,7 +797,7 @@ func ProcessSignTxTimeout(actorC *ActorABABFT) {
 	}
 }
 
-func ProcessBlkS(actorC *ActorABABFT, msg BlockSecondRound) {
+func ProcessBlkS(actorC *ActorABABFT, msg pb2.BlockSecondRound) {
 	var err error
 	log.Info("ababbt peer status:", actorC.primaryTag, actorC.status)
 	// check whether it is solo mode
@@ -848,7 +849,7 @@ func ProcessBlkS(actorC *ActorABABFT, msg BlockSecondRound) {
 				}
 			} else {
 				// send solo syn request
-				var reqSynSolo REQSynSolo
+				var reqSynSolo pb2.REQSynSolo
 				reqSynSolo.Reqsyn.ChainID = actorC.chainID.Bytes()
 				reqSynSolo.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
 				hashTS,_ := common.DoubleHash(Uint64ToBytes(uint64(actorC.currentHeightNum+1)))
@@ -874,7 +875,7 @@ func ProcessBlkS(actorC *ActorABABFT, msg BlockSecondRound) {
 				return
 			} else if (blockSecondReceived.Header.Height-2) > actorC.verifiedHeight {
 				// send synchronization message
-				var requestSyn REQSyn
+				var requestSyn pb2.REQSynA
 				requestSyn.Reqsyn.ChainID = actorC.chainID.Bytes()
 				requestSyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
 				hashTS,_ := common.DoubleHash(Uint64ToBytes(actorC.verifiedHeight+1))
@@ -969,7 +970,7 @@ func ProcessBlkSTimeout(actorC *ActorABABFT) {
 		actorC.status = 8
 		actorC.primaryTag = 0
 		// send out the timeout message
-		var timeoutMsg TimeoutMsg
+		var timeoutMsg pb2.TimeoutMsg
 		timeoutMsg.Toutmsg.ChainID = actorC.chainID.Bytes()
 		timeoutMsg.Toutmsg.RoundNumber = uint64(actorC.currentRoundNum)
 		timeoutMsg.Toutmsg.PubKey = actorC.serviceABABFT.account.PublicKey
@@ -983,7 +984,7 @@ func ProcessBlkSTimeout(actorC *ActorABABFT) {
 	return
 }
 
-func ProcessREQSyn(actorC *ActorABABFT, msg REQSyn) {
+func ProcessREQSyn(actorC *ActorABABFT, msg pb2.REQSynA) {
 	var err error
 	// receive the synchronization request
 	heightReq := msg.Reqsyn.RequestHeight // verified_height+1
@@ -1024,7 +1025,7 @@ func ProcessREQSyn(actorC *ActorABABFT, msg REQSyn) {
 	}
 
 	// 3. send the found /blocks
-	var blkSynSend BlockSyn
+	var blkSynSend pb2.BlockSynA
 	blkSynSend.Blksyn.ChainID = actorC.chainID.Bytes()
 	blkSynSend.Blksyn.BlksynV,err = blkSynV.Blk2BlkTx()
 	if err != nil {
@@ -1039,7 +1040,7 @@ func ProcessREQSyn(actorC *ActorABABFT, msg REQSyn) {
 	return
 }
 
-func ProcessREQSynSolo(actorC *ActorABABFT, msg REQSynSolo) {
+func ProcessREQSynSolo(actorC *ActorABABFT, msg pb2.REQSynSolo) {
 	var err error
 	log.Info("receive the solo block requirement:",msg.Reqsyn.RequestHeight)
 	// receive the solo synchronization request
@@ -1075,7 +1076,7 @@ func ProcessREQSynSolo(actorC *ActorABABFT, msg REQSynSolo) {
 	return
 }
 
-func ProcessBlkSyn(actorC *ActorABABFT, msg BlockSyn) {
+func ProcessBlkSyn(actorC *ActorABABFT, msg pb2.BlockSynA) {
 	var err error
 	if actorC.synStatus != 1 {
 		return
@@ -1194,7 +1195,7 @@ func ProcessBlkSyn(actorC *ActorABABFT, msg BlockSyn) {
 	} else if heightSynV >uint64(actorC.currentHeightNum) {
 		// the verified block has bigger height
 		// send synchronization message
-		var requestSyn REQSyn
+		var requestSyn pb2.REQSynA
 		requestSyn.Reqsyn.ChainID = actorC.chainID.Bytes()
 		requestSyn.Reqsyn.PubKey = actorC.serviceABABFT.account.PublicKey
 		hashTS,_ := common.DoubleHash(Uint64ToBytes(actorC.verifiedHeight+1))
@@ -1209,7 +1210,7 @@ func ProcessBlkSyn(actorC *ActorABABFT, msg BlockSyn) {
 	return
 }
 
-func ProcessTimeoutMsg(actorC *ActorABABFT, msg TimeoutMsg) {
+func ProcessTimeoutMsg(actorC *ActorABABFT, msg pb2.TimeoutMsg) {
 	var err error
 	// todo
 	// the waiting time maybe need to be longer after every time out

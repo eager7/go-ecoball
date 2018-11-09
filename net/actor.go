@@ -22,7 +22,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/rpc"
-	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 )
 
@@ -64,44 +63,44 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		peers := this.node.Nbrs()
 		log.Info(peers)
 		ctx.Sender().Request(&rpc.ListPeersRsp{Peer: peers}, ctx.Self())
-	case ababft.SignaturePreBlock:
+	case pb.SignaturePreBlockA:
 		// broadcast the signature for the previous block
-		info,_ := msg.(ababft.SignaturePreBlock)
+		info,_ := msg.(pb.SignaturePreBlockA)
 		msgType = pb.MsgType_APP_MSG_SIGNPRE
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-	case ababft.BlockFirstRound:
+	case pb.BlockFirstRound:
 		// broadcast the first round block
-		info,_ := msg.(ababft.BlockFirstRound)
+		info,_ := msg.(pb.BlockFirstRound)
 		msgType = pb.MsgType_APP_MSG_BLKF
 		buffer, _ = info.BlockFirst.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-	case ababft.REQSyn:
+	case pb.REQSynA:
 		// broadcast the synchronization request to update the ledger
-		info,_ := msg.(ababft.REQSyn)
+		info,_ := msg.(pb.REQSynA)
 		msgType = pb.MsgType_APP_MSG_REQSYN
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-	case ababft.REQSynSolo:
+	case pb.REQSynSolo:
 		// broadcast the synchronization request to update the ledger
-		info,_ := msg.(ababft.REQSynSolo)
+		info,_ := msg.(pb.REQSynSolo)
 		msgType = pb.MsgType_APP_MSG_REQSYNSOLO
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-	case ababft.TimeoutMsg:
-		info,_ := msg.(ababft.TimeoutMsg)
+	case pb.TimeoutMsg:
+		info,_ := msg.(pb.TimeoutMsg)
 		msgType = pb.MsgType_APP_MSG_TIMEOUT
 		// buffer, _ = msg.(*ababft.TimeoutMsg).Serialize()
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-	case ababft.SignatureBlkF:
+	case pb.SignatureBlkFA:
 		// broadcast the signature for the first-round block
-		info,_ := msg.(ababft.SignatureBlkF)
+		info,_ := msg.(pb.SignatureBlkFA)
 		msgType = pb.MsgType_APP_MSG_SIGNBLKF
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
@@ -114,9 +113,9 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		buffer, _ = msg.(*types.Block).Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-	case ababft.BlockSyn:
+	case pb.BlockSynA:
 		// broadcast the block according to the synchronization request
-		info,_ := msg.(ababft.BlockSyn)
+		info,_ := msg.(pb.BlockSynA)
 		msgType = pb.MsgType_APP_MSG_BLKSYN
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)

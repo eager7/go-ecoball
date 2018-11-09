@@ -19,7 +19,6 @@ package message
 import (
 	"github.com/ecoball/go-ecoball/core/types"
 	eactor "github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 )
 
@@ -46,7 +45,7 @@ func HdBlkMsg(data []byte) error {
 }
 
 func HdSignPreMsg(data []byte) error {
-	signpre_receive := ababft.SignaturePreBlock{}
+	signpre_receive := pb.SignaturePreBlockA{}
 	err := signpre_receive.Deserialize(data)
 	if err != nil {
 		return err
@@ -57,7 +56,7 @@ func HdSignPreMsg(data []byte) error {
 }
 
 func HdBlkFMsg(data []byte) error {
-	blockFirstRound := ababft.BlockFirstRound{}
+	blockFirstRound := pb.BlockFirstRound{}
 	err := blockFirstRound.BlockFirst.Deserialize(data)
 	if err != nil {
 		return err
@@ -68,7 +67,7 @@ func HdBlkFMsg(data []byte) error {
 }
 
 func HdReqSynMsg(data []byte) error {
-	reqsyn := ababft.REQSyn{}
+	reqsyn := pb.REQSynA{}
 	err := reqsyn.Deserialize(data)
 	if err != nil {
 		return err
@@ -79,7 +78,7 @@ func HdReqSynMsg(data []byte) error {
 }
 
 func HdReqSynSoloMsg(data []byte) error {
-	reqsyn := ababft.REQSynSolo{}
+	reqsyn := pb.REQSynSolo{}
 	err := reqsyn.Deserialize(data)
 	if err != nil {
 		return err
@@ -90,7 +89,7 @@ func HdReqSynSoloMsg(data []byte) error {
 }
 
 func HdToutMsg(data []byte) error {
-	toutmsg := ababft.TimeoutMsg{}
+	toutmsg := pb.TimeoutMsg{}
 	err := toutmsg.Deserialize(data)
 	if err != nil {
 		return err
@@ -101,7 +100,7 @@ func HdToutMsg(data []byte) error {
 }
 
 func HdSignBlkFMsg(data []byte) error {
-	signblkf_receive := ababft.SignatureBlkF{}
+	signblkf_receive := pb.SignatureBlkFA{}
 	err := signblkf_receive.Deserialize(data)
 	if err != nil {
 		return err
@@ -112,7 +111,7 @@ func HdSignBlkFMsg(data []byte) error {
 }
 
 func HdBlkSMsg(data []byte) error {
-	block_secondround := ababft.BlockSecondRound{}
+	block_secondround := pb.BlockSecondRound{}
 	err := block_secondround.BlockSecond.Deserialize(data)
 	if err != nil {
 		return err
@@ -123,7 +122,7 @@ func HdBlkSMsg(data []byte) error {
 }
 
 func HdBlkSynMsg(data []byte) error {
-	blksyn := ababft.BlockSyn{}
+	blksyn := pb.BlockSynA{}
 	err := blksyn.Deserialize(data)
 	if err != nil {
 		return err
