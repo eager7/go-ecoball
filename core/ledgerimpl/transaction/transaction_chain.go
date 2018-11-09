@@ -1198,26 +1198,28 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	if err != nil {
 		return nil, nil, err
 	}
-	lastFinal, err := c.GetLastShardBlock(shard.HeFinalBlock)
-	if err != nil {
-		return nil, nil, err
-	}
-	if final, ok := lastFinal.GetObject().(shard.FinalBlock); ok {
-		done := true
-		for _, m := range final.MinorBlocks {
-			hash := lastMinor.Hash()
-			mHash := m.Hash()
-			if mHash.Equals(&hash) {
-				done = false
+	if lastMinor.GetHeight() != 1 {
+		lastFinal, err := c.GetLastShardBlock(shard.HeFinalBlock)
+		if err != nil {
+			return nil, nil, err
+		}
+		if final, ok := lastFinal.GetObject().(shard.FinalBlock); ok {
+			done := true
+			for _, m := range final.MinorBlocks {
+				hash := lastMinor.Hash()
+				mHash := m.Hash()
+				if mHash.Equals(&hash) {
+					done = false
+				}
 			}
+			if done {
+				block, _ := lastMinor.GetObject().(shard.MinorBlock)
+				return &block, nil, nil
+			}
+		} else {
+			log.Warn(reflect.TypeOf(lastFinal.GetObject()))
+			return nil, nil, errors.New(log, "the type is error")
 		}
-		if done {
-			block, _ := lastMinor.GetObject().(shard.MinorBlock)
-			return &block, nil, nil
-		}
-	} else {
-		log.Warn(reflect.TypeOf(lastFinal.GetObject()))
-		return nil, nil, errors.New(log, "the type is error")
 	}
 
 	s, err := c.StateDB.FinalDB.CopyState()
