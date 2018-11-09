@@ -3,11 +3,12 @@ package simulate
 import (
 	"encoding/json"
 	"fmt"
-	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	sc "github.com/ecoball/go-ecoball/sharding/common"
 )
 
 type config struct {

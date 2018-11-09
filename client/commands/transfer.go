@@ -17,11 +17,9 @@
 package commands
 
 import (
-	"encoding/json"
+	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
-	"strings"
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/urfave/cli"
@@ -101,7 +99,9 @@ func transferAction(c *cli.Context) error {
 		chainHash, err = getMainChainHash()
 
 	} else {
-		err = json.Unmarshal([]byte(chainHashStr), &chainHash)
+		var hashTemp []byte
+		hashTemp, err = hex.DecodeString(chainHashStr)
+		copy(chainHash[:], hashTemp)
 	}
 
 	if nil != err {
@@ -109,6 +109,7 @@ func transferAction(c *cli.Context) error {
 		return err
 	}
 
+	//public keys
 	allPublickeys, err := getPublicKeys()
 	if err != nil {
 		fmt.Println(err)
@@ -131,34 +132,32 @@ func transferAction(c *cli.Context) error {
 		return err
 	}
 
-	publickeys := ""
-	keyDatas := strings.Split(allPublickeys, ",")
-	for _, v := range keyDatas {
-		addr := inner.AddressFromPubKey(inner.FromHex(v))
-		for _, vv := range requiredKeys {
-			if addr == vv {
-				publickeys += v
-				publickeys += "\n"
-				break
-			}
-		}
-	}
-
-	if "" == publickeys {
+	publickeys := clientCommon.IntersectionKeys(allPublickeys, requiredKeys)
+	if 0 == len(publickeys.KeyList) {
 		fmt.Println("no publickeys")
 		return errors.New("no publickeys")
 	}
 
-	data, errcode := signTransaction(chainHash, publickeys, transaction)
+	//sign
+	data, errcode := signTransaction(chainHash, publickeys, transaction.Hash.Bytes())
 	if nil != errcode {
 		fmt.Println(errcode)
 		return errcode
 	}
 
-	var result clientCommon.SimpleResult
-	values := url.Values{}
-	values.Set("transfer", data)
-	err = rpc.NodePost("/transfer", values.Encode(), &result)
+	for _, v := range data.Signature {
+		transaction.AddSignature(v.PublicKey.Key, v.SignData)
+	}
+
+	datas, err := transaction.Serialize()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	var result rpc.SimpleResult
+	trx_str := hex.EncodeToString(datas)
+	err = rpc.NodePost("/invokeContract", &trx_str, &result)
 	if nil == err {
 		fmt.Println(result.Result)
 	}

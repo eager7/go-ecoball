@@ -49,3 +49,8 @@ type CheckBlock struct {
 	Block  shard.BlockInterface
 	Result error
 }
+
+type DeleteTx struct {
+	ChainID common.Hash
+	Hash common.Hash
+}

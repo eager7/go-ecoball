@@ -396,7 +396,7 @@ func (actorC *ActorABABFT) verifyHeader(blockIn *types.Block, currentRoundNumIn 
 	// fmt.Println("after reset",err)
 
 	// generate the blockFirstCal for comparison
-	actorC.blockFirstCal,err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, conDataC, headerIn.TimeStamp)
+	actorC.blockFirstCal,_, err = actorC.serviceABABFT.ledger.NewTxBlock(actorC.chainID, txs, conDataC, headerIn.TimeStamp)
 	// fmt.Println("height:",blockIn.Height,blockFirstCal.Height)
 	// fmt.Println("merkle:",blockIn.Header.MerkleHash,blockFirstCal.Header.MerkleHash)
 	// fmt.Println("timestamp:",blockIn.Header.TimeStamp,blockFirstCal.Header.TimeStamp)

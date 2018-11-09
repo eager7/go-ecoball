@@ -53,6 +53,7 @@ type shard struct {
 func MakeShardTest(ns *cell.Cell) *shard {
 	instance := MakeShard(ns)
 	return instance.(*shard)
+
 }
 
 func MakeShard(ns *cell.Cell) sc.NodeInstance {
@@ -106,6 +107,7 @@ func (s *shard) Start() {
 	s.pvcRoutine()
 
 	go s.setSyncRequest()
+
 }
 
 func (s *shard) sRoutine() {
@@ -209,5 +211,7 @@ func (s *shard) setFullVoeTimer(bStart bool) {
 
 func (s *shard) setSyncRequest() {
 	log.Debug("set sync request ")
+
 	s.sync.SendSyncRequest()
+
 }

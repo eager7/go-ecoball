@@ -202,7 +202,6 @@ message Account {
     DeployInfo  Contract                = 2;
     repeated    Delegate   Delegates    = 10;
 
-    Ram         Ram                     = 7;
     Res         Cpu                     = 8;
     Res         Net                     = 9;
     Votes       Votes                   = 11;
@@ -410,6 +409,11 @@ message ViewChangeBlockHeader {
 
 message ViewChangeBlock {
     ViewChangeBlockHeader Header = 1;
+}
+
+message Payload {
+    uint32 type = 1;
+    bytes  data = 2;
 }
 
 message COSign {

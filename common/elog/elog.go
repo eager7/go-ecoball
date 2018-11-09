@@ -87,7 +87,7 @@ func fileOpen(path string) (*os.File, error) {
 		return nil, err
 	}
 
-	var currentTime = time.Now().Format("2006-01-02_15.04")
+	var currentTime = time.Now().Format("2006-01-02_15.04.05")
 	logfile, err := os.OpenFile(path+currentTime+"_LOG.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, err
@@ -239,6 +239,7 @@ func (l *loggerModule) Fatal(a ...interface{}) {
 	}
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ FATAL " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
+	debug.PrintStack()
 	l.logger.Fatal(a...)
 }
 

@@ -17,8 +17,14 @@
 package spectator
 
 import (
+	"errors"
+	"fmt"
+	"net"
+
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/spectator/connect"
+	"github.com/ecoball/go-ecoball/spectator/notify"
 )
 
 var (
@@ -26,8 +32,8 @@ var (
 )
 
 func Bystander(l ledger.Ledger) error {
-	/*notify.CoreLedger = l
-	listener, err := net.Listen("tcp", "127.0.0.1:9001")
+	notify.CoreLedger = l
+	listener, err := net.Listen("tcp", "0.0.0.0:9001")
 	if nil != err {
 		log.Error("explorer server net.Listen error: ", err)
 		return errors.New("explorer server net.Listen error: " + fmt.Sprintf("%v", err))
@@ -44,6 +50,5 @@ func Bystander(l ledger.Ledger) error {
 		connect.Onlookers.Add(conn)
 
 		go notify.ReceiveNotify(conn)
-	}*/
-	return nil
+	}
 }

@@ -263,13 +263,16 @@ func (ws *WasmService)getTokenStatus(proc *exec.Process, name, nameLen, token, t
 	var symbol [12]byte
 	var issuer [12]byte
 	issuerByte := common.IndexToName(tokenInfo.Issuer)
-	for i := 0; i < len(issuerByte); i++ {
-		issuer[i] = issuerByte[i]
-	}
+	//for i := 0; i < len(issuerByte); i++ {
+	//	issuer[i] = issuerByte[i]
+	//}
 
-	for i := 0; i < len(tokenInfo.Symbol); i++ {
-		symbol[i] = tokenInfo.Symbol[i]
-	}
+	//for i := 0; i < len(tokenInfo.Symbol); i++ {
+	//	symbol[i] = tokenInfo.Symbol[i]
+	//}
+
+	copy(issuer[:], issuerByte)
+	copy(symbol[:], tokenInfo.Symbol)
 
 	status := &TokenStatus{
 		Symbol:		symbol,
@@ -339,12 +342,12 @@ func (ws *WasmService)putTokenStatus(proc *exec.Process, name, nameLen, token, t
 	}
 
 	status := *(**TokenStatus)(unsafe.Pointer(&data))
-	issuerByte := make([]byte, len(status.Issuer))
-	for i := 0; i < len(status.Issuer); i++ {
-		issuerByte[i] =  status.Issuer[i]
-	}
+	//issuerByte := make([]byte, len(status.Issuer))
+	//for i := 0; i < len(status.Issuer); i++ {
+	//	issuerByte[i] =  status.Issuer[i]
+	//}
 
-	tokenInfo, err := ws.state.SetTokenInfo(string(nameSlice), big.NewInt(status.MaxSupply), big.NewInt(status.Supply), ws.action.ContractAccount, common.NameToIndex(string(issuerByte)))
+	tokenInfo, err := ws.state.SetTokenInfo(string(nameSlice), big.NewInt(status.MaxSupply), big.NewInt(status.Supply), ws.action.ContractAccount, common.NameToIndex(string(status.Issuer[:])))
 	if err != nil{
 		return -2
 	}

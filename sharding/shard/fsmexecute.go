@@ -51,6 +51,7 @@ func (s *shard) processSyncComplete() {
 	//vc := lastvc.GetObject().(cs.ViewChangeBlock)
 	//s.ns.SaveLastViewchangeBlock(&vc)
 
+
 	lastFinalBlock, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
 		panic("get final block error ")
