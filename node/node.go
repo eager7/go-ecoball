@@ -44,7 +44,6 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
-	"github.com/ecoball/go-ecoball/test/example"
 	"github.com/ecoball/go-ecoball/dsn/audit"
 )
 
