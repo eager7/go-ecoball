@@ -80,7 +80,7 @@ while count < 4 * args.weight:
     command += str(PORT + count) + ":20678 "
     command += "-p " + str(start_port + count) + ":" + str(start_port + count)
     command += " -v " + log_dir  + ":/var/ecoball_log "
-    command += image + " /root/go/src/github.com/ecoball/go-ecoball/Docker/start.py "
+    command += image + " /ecoball/ecoball/start.py "
     command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
     command += " --log-dir=/var/ecoball_log/ecoball_" + str(count) + "/"
     run(command)

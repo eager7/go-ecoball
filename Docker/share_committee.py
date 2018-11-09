@@ -81,7 +81,7 @@ while count < args.weight:
     command += str(PORT + count) + ":20678 "
     command += "-p " + str(start_port + count) + ":" + str(start_port + count)
     command += " -v " + log_dir  + ":/var/ecoball_log "
-    command += image + " /root/go/src/github.com/ecoball/go-ecoball/Docker/start.py "
+    command += image + " /ecoball/ecoball/start.py "
     command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
     command += " --log-dir=/var/ecoball_log/ecoball_" + str(count) + "/"
     run(command)
@@ -90,13 +90,13 @@ while count < args.weight:
     if args.deploy and count == args.weight - 1:
         # start ecowallet
         command = "sudo docker run -d --name=ecowallet -p 20679:20679 "
-        command += image + " /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet"
+        command += image + " /ecoball/ecowallet/ecowallet"
         run(command)
         sleep(2)
 
         # start eballscan
         command = "sudo docker run -d --name=eballscan --link=ecoball_0:ecoball_alias -p 20680:20680 "
-        command += image + " /root/go/src/github.com/ecoball/eballscan/eballscan_service.sh ecoball_0"
+        command += image + " /ecoball/eballscan/eballscan_service.sh ecoball_0"
         run(command)
         sleep(2)
 

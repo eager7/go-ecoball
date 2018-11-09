@@ -87,7 +87,7 @@ data = {
 
 root_dir = os.path.split(os.path.realpath(__file__))[0]
 
-with open(os.path.join(root_dir, '../build/sharding.json'), 'w') as f:
+with open(os.path.join(root_dir, 'sharding.json'), 'w') as f:
     json.dump(data, f)
 
 #Generate the configuration toml files required for ecoball
@@ -140,9 +140,9 @@ config = {
     "disable_sharding": False
 }
 
-with open(os.path.join(root_dir, '../build/ecoball.toml'), 'w') as f:
+with open(os.path.join(root_dir, 'ecoball.toml'), 'w') as f:
     pytoml.dump(config, f)
 
 #start ecoball
-run("cd " + os.path.join(root_dir, '../build/') + "&& ./ecoball run")
+run("cd " + os.path.join(root_dir) + "&& ./ecoball run")
 
