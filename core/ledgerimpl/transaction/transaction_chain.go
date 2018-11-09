@@ -43,6 +43,7 @@ import (
 	"sync"
 	"time"
 	"github.com/ecoball/go-ecoball/common/message"
+	"reflect"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -1201,7 +1202,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	if err != nil {
 		return nil, nil, err
 	}
-	if final, ok := lastFinal.GetObject().(*shard.FinalBlock); ok {
+	if final, ok := lastFinal.GetObject().(shard.FinalBlock); ok {
 		done := true
 		for _, m := range final.MinorBlocks {
 			hash := lastMinor.Hash()
@@ -1211,8 +1212,12 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 			}
 		}
 		if done {
-			return lastMinor.GetObject().(*shard.MinorBlock), nil, nil
+			block, _ := lastMinor.GetObject().(shard.MinorBlock)
+			return &block, nil, nil
 		}
+	} else {
+		log.Warn(reflect.TypeOf(lastFinal.GetObject()))
+		return nil, nil, errors.New(log, "the type is error")
 	}
 
 	s, err := c.StateDB.FinalDB.CopyState()
