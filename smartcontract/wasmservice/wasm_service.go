@@ -168,7 +168,7 @@ func (ws *WasmService) Execute() ([]byte, error) {
 
 	res, err := vm.ExecCode(index, args...)
 	if err != nil {
-		log.Error("err=%v", err)
+		log.Error(err)
 		return nil, err
 	}
 	switch fType.ReturnTypes[0] {
@@ -204,6 +204,9 @@ func importer(name string) (*wasm.Module, error) {
 
 func (ws *WasmService) RegisterApi() {
 	functions := wasm.InitNativeFuns()
+
+	functions.Register("memset", ws.memset)
+	functions.Register("memcpy", ws.memcpy)
 	//console
 	functions.Register("ABA_prints", ws.prints)
 	functions.Register("ABA_prints_l", ws.prints_l)

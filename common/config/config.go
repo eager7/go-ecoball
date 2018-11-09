@@ -26,11 +26,12 @@ import (
 
 	"flag"
 
+	"path/filepath"
+	"strings"
+
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/utils"
-	"path/filepath"
-	"strings"
 )
 
 const VirtualBlockCpuLimit float64 = 200000000.0
@@ -55,6 +56,7 @@ var configDefault = `#toml configuration for EcoBall system
 http_port = "20678"          # client http port
 wallet_http_port = "20679"   # client wallet http port
 version = "1.0"              # system version
+onlooker_port = "9001"		 #port for browser
 log_dir = "/tmp/Log/"        # log file location
 output_to_terminal = "true"  # debug output type	 	
 log_level = 1                # debug level	
@@ -108,50 +110,52 @@ disable_localdis_log   = true
 
 #dsn config
 dsn_storage = false
+dsn_path = "/tmp/storage"
 
 #sharding config info
 disable_sharding  = false
 `
 
 type SwarmConfigInfo struct {
-	ListenAddress      []string
-	AnnounceAddr       []string
-	NoAnnounceAddr     []string
-	BootStrapAddr      []string
-	DisableNatPortMap  bool
-	DisableRelay       bool
-	EnableRelayHop     bool
-	ConnLowWater       int
-	ConnHighWater      int
-	ConnGracePeriod    int
+	ListenAddress     []string
+	AnnounceAddr      []string
+	NoAnnounceAddr    []string
+	BootStrapAddr     []string
+	DisableNatPortMap bool
+	DisableRelay      bool
+	EnableRelayHop    bool
+	ConnLowWater      int
+	ConnHighWater     int
+	ConnGracePeriod   int
 }
 
 var (
-	ChainHash          common.Hash
-	TimeSlot           int
-	HttpLocalPort      string
-	WalletHttpPort     string
-	EcoVersion         string
-	RootDir            string
-	LogDir             string
-	OutputToTerminal   bool
-	LogLevel           int
-	IpfsDir            string
-	ConsensusAlgorithm string
-	StartNode          bool
-	Root               account.Account
-	ABAToken           account.Account
-	User               account.Account
-	Delegate           account.Account
-	Worker             account.Account
-	Worker1            account.Account
-	Worker2            account.Account
-	Worker3            account.Account
-	SwarmConfig        SwarmConfigInfo
-	EnableLocalDiscovery  bool
-	DisableLocalDisLog    bool
-	DsnStorage            bool
-	DisableSharding       bool
+	ChainHash            common.Hash
+	TimeSlot             int
+	HttpLocalPort        string
+	WalletHttpPort       string
+	OnlookerPort         string
+	EcoVersion           string
+	RootDir              string
+	LogDir               string
+	OutputToTerminal     bool
+	LogLevel             int
+	IpfsDir              string
+	ConsensusAlgorithm   string
+	StartNode            bool
+	Root                 account.Account
+	ABAToken             account.Account
+	User                 account.Account
+	Delegate             account.Account
+	Worker               account.Account
+	Worker1              account.Account
+	Worker2              account.Account
+	Worker3              account.Account
+	SwarmConfig          SwarmConfigInfo
+	EnableLocalDiscovery bool
+	DisableLocalDisLog   bool
+	DsnStorage           bool
+	DisableSharding      bool
 )
 
 func SetConfig(filePath string) error {
@@ -224,6 +228,7 @@ func initVariable() {
 	TimeSlot = viper.GetInt("time_slot")
 	HttpLocalPort = viper.GetString("http_port")
 	WalletHttpPort = viper.GetString("wallet_http_port")
+	OnlookerPort = viper.GetString("onlooker_port")
 	EcoVersion = viper.GetString("version")
 	LogDir = viper.GetString("log_dir")
 	OutputToTerminal = viper.GetBool("output_to_terminal")
@@ -244,21 +249,21 @@ func initVariable() {
 
 	//init p2p swarm configuration
 	SwarmConfig = SwarmConfigInfo{
-		ListenAddress: viper.GetStringSlice("p2p_listen_address"),
-		AnnounceAddr: viper.GetStringSlice("announce_address"),
-		NoAnnounceAddr: viper.GetStringSlice("no_announce_address"),
-		BootStrapAddr: viper.GetStringSlice("bootstrap_address"),
+		ListenAddress:     viper.GetStringSlice("p2p_listen_address"),
+		AnnounceAddr:      viper.GetStringSlice("announce_address"),
+		NoAnnounceAddr:    viper.GetStringSlice("no_announce_address"),
+		BootStrapAddr:     viper.GetStringSlice("bootstrap_address"),
 		DisableNatPortMap: viper.GetBool("disable_nat_port_map"),
-		DisableRelay: viper.GetBool("disable_relay"),
-		EnableRelayHop: viper.GetBool("enable_relay_hop"),
-		ConnLowWater: viper.GetInt("conn_mgr_lowwater"),
-		ConnHighWater: viper.GetInt("conn_mgr_highwater"),
-		ConnGracePeriod: viper.GetInt("conn_mgr_graceperiod"),
+		DisableRelay:      viper.GetBool("disable_relay"),
+		EnableRelayHop:    viper.GetBool("enable_relay_hop"),
+		ConnLowWater:      viper.GetInt("conn_mgr_lowwater"),
+		ConnHighWater:     viper.GetInt("conn_mgr_highwater"),
+		ConnGracePeriod:   viper.GetInt("conn_mgr_graceperiod"),
 	}
 
 	EnableLocalDiscovery = viper.GetBool("enable_local_discovery")
 	DisableLocalDisLog = viper.GetBool("disable_localdis_log")
 	DsnStorage = viper.GetBool("dsn_storage")
-
+	IpfsDir = viper.GetString("dsn_path")
 	DisableSharding = viper.GetBool("disable_sharding")
 }

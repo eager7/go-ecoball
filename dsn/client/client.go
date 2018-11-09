@@ -227,6 +227,31 @@ func (r *DsnClient) RscCodingReq(fpath, cid string) (string, error) {
 	return result.Cid, nil
 }
 
+func (r *DsnClient) RscCodingReqWeb(size int64, cid string) (string, error) {
+
+	var PieceSize uint64
+	if size < dsnComm.EraDataPiece * (256 * 1024) {
+		PieceSize = uint64(size / dsnComm.EraDataPiece)
+	} else {
+		PieceSize = uint64(256 * 1024)
+	}
+
+	req := dsnComm.RscReq{
+		Cid: cid,
+		Redundency: int(r.Conf.Redundancy),
+		IsDir: false,
+		Chunk: PieceSize,
+		FileSize: uint64(size),
+	}
+	var result response.DsnEraCoding
+	err := rpc.NodePost("/dsn/eracode", &req, &result)
+	if err != nil{
+		return "", err
+	}
+	return result.Cid, nil
+	
+}
+
 func (r *DsnClient) RscDecodingReq(cid string) error{
 	var result response.DsnEraDecoding
 	err := rpc.NodeGet("/dsn/eradecode", &result)
@@ -268,3 +293,4 @@ func (r *DsnClient) GetFile(path, out string) error {
 	newPath := path + "/file"
 	return r.ipfsClient.Get(newPath, out)
 }
+
