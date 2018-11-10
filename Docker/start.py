@@ -89,6 +89,8 @@ with open(os.path.join(root_dir, 'sharding.json'), 'w') as json_file:
 #Generate the configuration toml files required for ecoball
 with open(os.path.join(root_dir, 'ecoball.toml')) as ecoball_file:
     ecoball_config = pytoml.load(ecoball_file)
+
+with open(os.path.join(root_dir, 'ecoball.toml'), 'w') as ecoball_file: 
     config =json.loads(args.config)
     for one in config:
         ecoball_config[one] = config[one]
