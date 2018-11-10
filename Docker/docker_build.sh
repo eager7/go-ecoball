@@ -76,7 +76,13 @@ then
     exit 1
 fi
 
-echo -e "\033[;32mget ecoball succeed. \033[0m"
+if ! cp ${SOURCE_DIR}/../build/ecoball.toml ${SOURCE_DIR}
+then
+    echo  -e "\033[;31mcopy ecoball.toml failed!!! \033[0m"
+    exit 1
+fi
+
+echo -e "\033[;32mget ecoball and ecoball.toml succeed. \033[0m"
 echo
 echo
 
