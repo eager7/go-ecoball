@@ -275,7 +275,7 @@ func ListKeys(name string, password []byte) (map[string]string, error) {
 	}
 
 	if wallet.CheckLocked() {
-		return nil, errors.New("wallet is unlocked")
+		return nil, errors.New("wallet is locked")
 	}
 
 	if !wallet.CheckPassword(password) {
