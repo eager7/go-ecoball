@@ -16,6 +16,7 @@ RUN pip3 install pytoml
 #install cockroachdb ecoball ecowallet eballscan
 COPY cockroach /usr/local/bin
 COPY ecoball /ecoball/ecoball/
+COPY ecoball.toml /ecoball/ecoball/
 COPY start.py /ecoball/ecoball/
 COPY ecowallet /ecoball/ecowallet/
 COPY eballscan /ecoball/eballscan/
