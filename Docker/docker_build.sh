@@ -63,6 +63,7 @@ echo
 
 
 # build ecoball
+echo -e "\033[;34mbuild ecoball with the makefile. \033[0m"
 if ! make -C ${SOURCE_DIR}/../ ecoball
 then
     echo  -e "\033[;31mcompile ecoball failed!!! \033[0m"
@@ -81,6 +82,7 @@ echo
 
 
 # build ecowallet
+echo -e "\033[;34mbuild ecowallet with the makefile. \033[0m"
 if ! make -C ${SOURCE_DIR}/../ ecowallet
 then
     echo  -e "\033[;31mcompile ecowallet failed!!! \033[0m"
@@ -98,6 +100,7 @@ echo
 echo
 
 # build eballscan
+echo -e "\033[;34mbuild eballscan with the makefile. \033[0m"
 if ! make -C ${SOURCE_DIR}/../../eballscan eballscan
 then
     echo  -e "\033[;31mcompile eballscan failed!!! \033[0m"
