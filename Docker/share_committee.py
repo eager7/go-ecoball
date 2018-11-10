@@ -79,10 +79,6 @@ with open('shard_setup.toml') as setup_file:
 
 network = data["network"]
 network_str = json.dumps(network)
-ip_str = ""
-for ip in network:
-    ip_str += ip
-
 host_ip = get_host_ip()
 committee_count = network[host_ip][0]
 shard_count = network[host_ip][1]
@@ -105,7 +101,7 @@ while count < committee_count:
     command += "-p " + str(start_port + count) + ":" + str(start_port + count)
     command += " -v " + log_dir  + ":/var/ecoball_log "
     command += image + " /ecoball/ecoball/start.py "
-    command += "-i" + ip_str + "-o " + host_ip + " -n " + str(count) + " -e " + network_str
+    command += "-o " + host_ip + " -n " + str(count) + " -e " + network_str
     exist, config = get_config(count)
     if exist:
         command += " -c " + json.dumps(config)

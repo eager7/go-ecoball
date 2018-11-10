@@ -25,7 +25,6 @@ def run(shell_command):
 
 # Command Line Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--node-ip', metavar='', required=True, help="IP address of node", nargs='+', dest="node_ip")
 parser.add_argument('-o', '--host-ip', metavar='', required=True, help="IP address of host node", dest="host_ip")
 parser.add_argument('-n', '--number', type=int, required=True, metavar='', help="The index number of container instance", dest="number")
 parser.add_argument('-e', '--network', metavar='', required=True, help="Network host IP address list and the number of Committee and Shard on each physical machine")
@@ -34,13 +33,12 @@ parser.add_argument('-c', '--config', metavar='', help="Different configuration 
 #parse Arguments
 args = parser.parse_args()
 
-#Input parameter judgment
-if args.node_ip is None or args.host_ip is None or args.number is None:
-    print('please input iP address of node and host node and the index number of container instance. -h shows options.')
-    sys.exit(1)
-
 #Generate the configuration json files required for sharding
 network =json.loads(args.network)
+node_ip = []
+for ip in network:
+    node_ip.append(ip)
+
 Pubkey = "1109ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be"
 start_pubkey = 40
 start_port = 2000
@@ -49,7 +47,7 @@ shard = []
 list_count = []
 
 container_count = 0
-for ip in args.node_ip:
+for ip in node_ip:
     port_index = 0
     committee_count = network[ip][0]
     shard_count = network[ip][1]
@@ -68,7 +66,7 @@ for ip in args.node_ip:
     list_count.append(port_index)
 
 
-ip_index = args.node_ip.index(args.host_ip)
+ip_index = node_ip.index(args.host_ip)
 i = 0
 key_base = 0
 while i < ip_index:
