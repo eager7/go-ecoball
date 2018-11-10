@@ -17,6 +17,7 @@
 package rpc
 
 import (
+	"encoding/hex"
 	"net/http"
 	"strconv"
 	"strings"
@@ -35,6 +36,7 @@ import (
 	"github.com/ecoball/go-ecoball/http/commands"
 	"github.com/ecoball/go-ecoball/http/common/abi"
 	"github.com/gin-gonic/gin"
+	"github.com/ecoball/go-ecoball/core/state"
 )
 
 func StartHttpServer() (err error) {
@@ -48,6 +50,8 @@ func StartHttpServer() (err error) {
 	router.POST("/newDeployContract", newDeployContract)
 	//for invokContract
 	router.POST("/newContract", newContract)
+	router.POST("/getRequiredKeys", get_required_keys)
+	router.POST("/invokeContractForScan", invokeContractForScan)
 	//router.POST("/recieveFile", recieveFile)
 
 	//attach
@@ -156,7 +160,7 @@ func newInvokeContract(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": innerCommon.ToHex(data)})
+	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": hex.EncodeToString(data)})
 }
 
 func newContract(c *gin.Context) {
@@ -164,6 +168,7 @@ func newContract(c *gin.Context) {
 	contractName := c.PostForm("name")
 	contractMethod := c.PostForm("method")
 	contractParam := c.PostForm("params")
+	invoker := c.PostForm("invoker")
 
 	if "" == chainId_str || "" == contractName || "" == contractMethod ||
 		"" == contractParam {
@@ -225,7 +230,7 @@ func newContract(c *gin.Context) {
 
 	//time
 	time := time.Now().UnixNano()
-	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), chainId, "owner", contractMethod, parameters, 0, time)
+	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex(invoker), innerCommon.NameToIndex(contractName), chainId, "owner", contractMethod, parameters, 0, time)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
 		return
@@ -236,7 +241,7 @@ func newContract(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": innerCommon.ToHex(trx_data)})
+	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": hex.EncodeToString(trx_data)})
 }
 
 func newDeployContract(c *gin.Context) {
@@ -260,8 +265,14 @@ func newDeployContract(c *gin.Context) {
 		return
 	}
 
+	abiData, err := base64.StdEncoding.DecodeString(abi_data)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
 	var contractAbi abi.ABI
-	if err := json.Unmarshal([]byte(abi_data), &contractAbi); err != nil {
+	if err := json.Unmarshal(abiData, &contractAbi); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
 		return
 	}
@@ -284,5 +295,81 @@ func newDeployContract(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": innerCommon.ToHex(trx_data)})
+	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": hex.EncodeToString(trx_data)})
+}
+
+func get_required_keys(c *gin.Context) {
+	chainId := c.PostForm("chainId")
+	required_keys := c.PostForm("keys")
+	permission := c.PostForm("permission")
+	from := c.PostForm("name")
+
+	key_datas := strings.Split(required_keys, ",")
+
+	//signTransaction, err := wallet.SignTransaction(inner.FromHex(transaction_data), datas)
+	hash := new(innerCommon.Hash)
+	chainids := hash.FormHexString(chainId)
+	data, err := ledger.L.FindPermission(chainids, innerCommon.NameToIndex(from), permission)
+	if err != nil{
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
+	permission_datas := []state.Permission{}
+	if err := json.Unmarshal([]byte(data), &permission_datas); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return
+	}
+
+	public_address := []innerCommon.Address{}
+	for _, v := range permission_datas {
+		for _, value:= range v.Keys{
+			public_address = append(public_address, value.Actor)
+		}
+	}
+
+	publickeys := ""
+	for _, v := range key_datas {
+		pubKey, _ := hex.DecodeString(v)
+		addr := innerCommon.AddressFromPubKey(pubKey)
+		for _, vv := range public_address {
+			if addr == vv {
+				publickeys += v
+				publickeys += ","
+				break
+			}
+		}
+	}
+	if "" != publickeys {
+		publickeys = strings.TrimSuffix(publickeys, ",")
+		c.JSON(http.StatusOK, gin.H{"result": publickeys})
+		return
+	}
+
+	c.JSON(http.StatusBadRequest, gin.H{"result": "no required_keys"})
+}
+
+func invokeContractForScan(c *gin.Context) {
+	invoke := new(types.Transaction)//{
+	transaction_data := c.PostForm("transaction")
+	
+	bytes, err := hex.DecodeString(transaction_data)
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return 
+	}
+
+	if err := invoke.Deserialize(bytes); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return 
+	}
+	
+	//send to txpool
+	err = event.Send(event.ActorNil, event.ActorTxPool, invoke)
+	if nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
+		return 
+	}
+
+	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }

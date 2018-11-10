@@ -17,7 +17,7 @@
 package commands
 
 import (
-	"fmt"
+	//"fmt"
 	"net/http"
 	"encoding/hex"
 
@@ -25,6 +25,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/ecoball/go-ecoball/common/event"
+	"time"
 )
 
 func InvokeContract(c *gin.Context) {
@@ -46,7 +47,7 @@ func InvokeContract(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	fmt.Println(oneTransaction.JsonString())
+
 	//send to txpool
 	err = event.Send(event.ActorNil, event.ActorTxPool, &oneTransaction)
 	if nil != err {
@@ -56,12 +57,19 @@ func InvokeContract(c *gin.Context) {
 
 	// wait for trx handle result
 	var result string
-	cmsg, err := event.Subscribe(oneTransaction.Hash)
+	cmsg, err := event.SubscribeOnceEach(oneTransaction.Hash)
+	timeout := make(chan bool, 1)
+	go func() {
+		time.Sleep(time.Second * 30)
+		timeout <- true
+	}()
 	select {
 		case msg := <-cmsg:
-			result = msg.(string)
+			result = msg.(string) + "\nwarning: transaction executed locally, but may not be confirmed by the network yet"
+		case <-timeout:
+			result = "trx handle timeout"
 	}
-	event.UnSubscribe(cmsg, oneTransaction.Hash)
+	//event.UnSubscribe(cmsg, oneTransaction.Hash)
 
 	c.JSON(http.StatusOK, gin.H{"result": result})
 }

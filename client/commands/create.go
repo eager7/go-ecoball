@@ -141,7 +141,6 @@ func newAccount(c *cli.Context) error {
 	chainHashStr := c.String("chainHash")
 	if "" == chainHashStr {
 		chainHash, err = getMainChainHash()
-
 	} else {
 		var hashTemp []byte
 		hashTemp, err = hex.DecodeString(chainHashStr)

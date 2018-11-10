@@ -73,23 +73,21 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 	}
 
 	dsn := common.NameToIndex("dsn")
-	dsnAddr := common.AddressFromPubKey(config.Dsn.PublicKey)
-	fmt.Println("preset insert dsn account:", dsnAddr.HexString())
-	if _, err := s.AddAccount(dsn, dsnAddr, timeStamp); err != nil {
+	fmt.Println("preset insert dsn account:", addr.HexString())
+	if _, err := s.AddAccount(dsn, addr, timeStamp); err != nil {
 		return err
 	}
 
 	abaToken := common.NameToIndex("abatoken")
-	tokenAddr := common.AddressFromPubKey(config.ABAToken.PublicKey)
-	fmt.Println("preset insert a token account:", tokenAddr.HexString())
-	if _, err := s.AddAccount(abaToken, tokenAddr, timeStamp); err != nil {
+	fmt.Println("preset insert a token account:", addr.HexString())
+	if _, err := s.AddAccount(abaToken, addr, timeStamp); err != nil {
 		return err
 	}
 
-	// set root control token account
-	perm := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
-	perm.Accounts["root"] = state.AccFactor{Actor: common.NameToIndex("root"), Weight: 1, Permission: "active"}
-	s.AddPermission(abaToken, perm)
+	//// set root control token account
+	//perm := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
+	//perm.Accounts["root"] = state.AccFactor{Actor: common.NameToIndex("root"), Weight: 1, Permission: "active"}
+	//s.AddPermission(abaToken, perm)
 
 	//saving := common.NameToIndex("saving")
 	//savingAddr := common.AddressFromPubKey(config.Saving.PublicKey)
@@ -171,23 +169,21 @@ func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) e
 	}
 
 	dsn := common.NameToIndex("dsn")
-	dsnAddr := common.AddressFromPubKey(config.Dsn.PublicKey)
-	fmt.Println("preset insert dsn account:", dsnAddr.HexString())
-	if _, err := s.AddAccount(dsn, dsnAddr, timeStamp); err != nil {
+	fmt.Println("preset insert dsn account:", addr.HexString())
+	if _, err := s.AddAccount(dsn, addr, timeStamp); err != nil {
 		return err
 	}
 
 	abaToken := common.NameToIndex("abatoken")
-	tokenAddr := common.AddressFromPubKey(config.ABAToken.PublicKey)
-	fmt.Println("preset insert a token account:", tokenAddr.HexString())
-	if _, err := s.AddAccount(abaToken, tokenAddr, timeStamp); err != nil {
+	fmt.Println("preset insert a token account:", addr.HexString())
+	if _, err := s.AddAccount(abaToken, addr, timeStamp); err != nil {
 		return err
 	}
 
-	// set root control token account
-	perm := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
-	perm.Accounts["root"] = state.AccFactor{Actor: common.NameToIndex("root"), Weight: 1, Permission: "active"}
-	s.AddPermission(abaToken, perm)
+	//// set root control token account
+	//perm := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
+	//perm.Accounts["root"] = state.AccFactor{Actor: common.NameToIndex("root"), Weight: 1, Permission: "active"}
+	//s.AddPermission(abaToken, perm)
 
 	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), abaToken, root)
 	s.IssueToken(root, new(big.Int).SetUint64(90000), state.AbaToken)

@@ -149,6 +149,10 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 		if leader {
 			i := n.ns.CalcShardLeader(len(shard.Member), bfinal)
 			go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
+			if n.ns.GetWorksCounter() == 1 && len(shard.Member) > 1 {
+				j := n.ns.CalcShardBackup(len(shard.Member), bfinal)
+				go simulate.Sendto(shard.Member[j].Address, shard.Member[j].Port, sp)
+			}
 		} else if bakcup {
 			if len(shard.Member) > 1 {
 				i := n.ns.CalcShardBackup(len(shard.Member), bfinal)

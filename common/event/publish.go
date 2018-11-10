@@ -62,6 +62,30 @@ func (ds *Dispatcher) subscribe(msgs ...common.Hash) chan interface{} {
 	return nil
 }
 
+func (ds *Dispatcher) subscribeOnce(msgs ...common.Hash) chan interface{} {
+	var msgstr []string
+	for _, msg := range msgs {
+		msgstr = append(msgstr, msg.HexString())
+	}
+	if len(msgstr) > 0 {
+		return ds.ps.SubOnce(msgstr...)
+	}
+
+	return nil
+}
+
+func (ds *Dispatcher) subscribeOnceEach(msgs ...common.Hash) chan interface{} {
+	var msgstr []string
+	for _, msg := range msgs {
+		msgstr = append(msgstr, msg.HexString())
+	}
+	if len(msgstr) > 0 {
+		return ds.ps.SubOnceEach(msgstr...)
+	}
+
+	return nil
+}
+
 func (ds *Dispatcher) unsubscribe(chn chan interface{}, msgType ...common.Hash) {
 	var msgstr []string
 	for _, msg := range msgType {
@@ -82,6 +106,13 @@ func Subscribe (msgs ...common.Hash) (chan interface{}, error) {
 		return nil, fmt.Errorf(errorStr)
 	}
 	return dispatcher.subscribe(msgs...), nil
+}
+
+func SubscribeOnceEach (msgs ...common.Hash) (chan interface{}, error) {
+	if dispatcher == nil {
+		return nil, fmt.Errorf(errorStr)
+	}
+	return dispatcher.subscribeOnceEach(msgs...), nil
 }
 
 func UnSubscribe (chn chan interface{}, msgs ...common.Hash) error {

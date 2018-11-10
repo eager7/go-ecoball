@@ -3,6 +3,7 @@ package ababft
 import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"reflect"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 )
 
 func ConsensusABABFTThread(actorC *ActorABABFT) {
@@ -20,7 +21,7 @@ func ConsensusABABFTThread(actorC *ActorABABFT) {
 					ProcessSTART(actorC)
 					continue
 				}
-			case SignaturePreBlock:
+			case pb.SignaturePreBlockA:
 				{
 					ProcessSignPreBlk(actorC,msg)
 					continue
@@ -30,7 +31,7 @@ func ConsensusABABFTThread(actorC *ActorABABFT) {
 					ProcessPreBlkTimeout(actorC)
 					continue
 				}
-			case BlockFirstRound:
+			case pb.BlockFirstRound:
 				{
 					ProcessBlkF(actorC,msg)
 					continue
@@ -40,7 +41,7 @@ func ConsensusABABFTThread(actorC *ActorABABFT) {
 					ProcessTxTimeout(actorC)
 					continue
 				}
-			case SignatureBlkF:
+			case pb.SignatureBlkFA:
 				{
 					ProcessSignBlkF(actorC,msg)
 					continue
@@ -50,7 +51,7 @@ func ConsensusABABFTThread(actorC *ActorABABFT) {
 					ProcessSignTxTimeout(actorC)
 					continue
 				}
-			case BlockSecondRound:
+			case pb.BlockSecondRound:
 				{
 					ProcessBlkS(actorC,msg)
 					continue
@@ -60,22 +61,22 @@ func ConsensusABABFTThread(actorC *ActorABABFT) {
 					ProcessBlkSTimeout(actorC)
 					continue
 				}
-			case REQSyn:
+			case pb.REQSynA:
 				{
 					ProcessREQSyn(actorC,msg)
 					continue
 				}
-			case REQSynSolo:
+			case pb.REQSynSolo:
 				{
 					ProcessREQSynSolo(actorC,msg)
 					continue
 				}
-			case BlockSyn:
+			case pb.BlockSynA:
 				{
 					ProcessBlkSyn(actorC,msg)
 					continue
 				}
-			case TimeoutMsg:
+			case pb.TimeoutMsg:
 				{
 					ProcessTimeoutMsg(actorC,msg)
 					continue
