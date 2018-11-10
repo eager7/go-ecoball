@@ -91,11 +91,12 @@ ecoball_config = {}
 with open(os.path.join(root_dir, 'ecoball.toml')) as ecoball_file:
     ecoball_config = pytoml.load(ecoball_file)
 
-with open(os.path.join(root_dir, 'ecoball.toml'), 'w') as ecoball_file: 
-    config =json.loads(args.config)
-    for one in config:
-        ecoball_config[one] = config[one]
-    pytoml.dump(ecoball_config, ecoball_file)
+if args.config is not None:
+    with open(os.path.join(root_dir, 'ecoball.toml'), 'w') as ecoball_file: 
+        config =json.loads(args.config)
+        for one in config:
+            ecoball_config[one] = config[one]
+        pytoml.dump(ecoball_config, ecoball_file)
 
 #start ecoball
 run("cd " + os.path.join(root_dir) + "&& ./ecoball run")
