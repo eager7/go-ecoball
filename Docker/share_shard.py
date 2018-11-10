@@ -89,7 +89,7 @@ start_port = 2000
 PORT = 20681
 image = "jatel/internal:ecoball_v1.0"
 
-count = committee_count - 1
+count = committee_count
 while count < committee_count + shard_count:
     # start ecoball
     command = "sudo docker run -d " + "--name=ecoball_" + str(count) + " -p "
