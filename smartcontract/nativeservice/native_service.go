@@ -120,11 +120,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		ns.Println(fmt.Sprint("register producer success"))
 
 	case "vote":
-
 		from := common.NameToIndex(params[0])
-		//to1 := common.NameToIndex(params[1])
-		//to2 := common.NameToIndex(params[2])
-		//accounts := []common.AccountName{to1, to2}
 		var accounts []common.AccountName
 		for i := 1; i < len(params); i++ {
 			accounts = append(accounts, common.NameToIndex(params[i]))
