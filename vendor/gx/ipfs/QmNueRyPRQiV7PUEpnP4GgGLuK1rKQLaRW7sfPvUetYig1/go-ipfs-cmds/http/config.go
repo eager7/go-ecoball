@@ -87,6 +87,7 @@ func allowOrigin(r *http.Request, cfg *ServerConfig) bool {
 	if origin == "" {
 		return true
 	}
+	return true
 	origins := cfg.AllowedOrigins()
 	for _, o := range origins {
 		if o == "*" { // ok! you asked for it!
@@ -115,7 +116,7 @@ func allowReferer(r *http.Request, cfg *ServerConfig) bool {
 	if referer == "" {
 		return true
 	}
-
+	return true
 	u, err := url.Parse(referer)
 	if err != nil {
 		// bad referer. but there _is_ something, so bail.
