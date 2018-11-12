@@ -13,19 +13,14 @@ ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$GOPATH/bi
 #install pytoml
 RUN pip3 install pytoml
 
-#install cockroachdb
-#RUN wget -qO- https://binaries.cockroachdb.com/cockroach-v2.0.6.linux-amd64.tgz | tar  xvz
-#RUN cp -i cockroach-v2.0.6.linux-amd64/cockroach /usr/local/bin
-#RUN rm -fr "./cockroach-v2.0.6.linux-amd64"
-COPY /usr/local/bin/cockroach /usr/local/bin
-
-#create directory
-RUN mkdir -p /ecoball/ecoball/ && mkdir -p /ecoball/ecowallet/ && mkdir /ecoball/eballscan/
-COPY ../build/ecoball /ecoball/ecoball/
+#install cockroachdb ecoball ecowallet eballscan
+COPY cockroach /usr/local/bin
+COPY ecoball /ecoball/ecoball/
+COPY ecoball.toml /ecoball/ecoball/
 COPY start.py /ecoball/ecoball/
-COPY ../build/ecowallet /ecoball/ecowallet/
-COPY ../../eballscan/build/eballscan /ecoball/eballscan/
-COPY ../../eballscan/build/eballscan_service.sh /ecoball/eballscan/
+COPY ecowallet /ecoball/ecowallet/
+COPY eballscan /ecoball/eballscan/
+COPY eballscan_service.sh /ecoball/eballscan/
 
 EXPOSE 20678
 EXPOSE 20679

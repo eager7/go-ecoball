@@ -18,9 +18,11 @@
 ############################################################################
 import subprocess
 import sys
-import argparse
 import time
 import os
+import pytoml
+import socket
+import json
 
 
 def run(shell_command):
@@ -31,7 +33,7 @@ def run(shell_command):
 
     print('shared_start.py:', shell_command)
     if subprocess.call(shell_command, shell=True):
-        print('bootstrap.py: exiting because of error')
+        print('shared_start.py: exiting because of error')
         sys.exit(1)
 
 
@@ -44,20 +46,35 @@ def sleep(t):
     time.sleep(t)
     print('resume')
 
-    
-# Command Line Arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--node-ip', required=True, metavar='', help="IP address of node", nargs='+', dest="node_ip")
-parser.add_argument('-o', '--host-ip', required=True, metavar='', help="IP address of host node", dest="host_ip")
-parser.add_argument('-w', '--weight', type=int, metavar='', help="The number of weights", default=1, dest="weight")
 
-# parse Arguments
-args = parser.parse_args()
+def get_host_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
 
-# Input parameter judgment
-if args.node_ip is None or args.host_ip is None:
-    print('please input iP address of nodes and ip of host node and weight number. -h shows options.')
-    sys.exit(1)
+
+def get_config(num):
+    ip_index = host_ip + "_" + str(num)
+    for one in data:
+        if one == ip_index:
+            return True, data[ip_index]
+    return False, ""
+
+
+# get netwoek config
+with open('shard_setup.toml') as setup_file:
+    data = pytoml.load(setup_file)
+
+network = data["network"]
+network_str = json.dumps(network)
+
+host_ip = get_host_ip()
+committee_count = network[host_ip][0]
+shard_count = network[host_ip][1]
 
 #create directory
 root_dir = os.path.split(os.path.realpath(__file__))[0]
@@ -69,23 +86,21 @@ start_port = 2000
 PORT = 20681
 image = "jatel/internal:ecoball_v1.0"
 
-str_ip = " "
-for ip in args.node_ip:
-    str_ip += (ip + " ")
-
-count = args.weight
-while count < 4 * args.weight:
+count = committee_count
+while count < committee_count + shard_count:
     # start ecoball
     command = "sudo docker run -d " + "--name=ecoball_" + str(count) + " -p "
     command += str(PORT + count) + ":20678 "
     command += "-p " + str(start_port + count) + ":" + str(start_port + count)
     command += " -v " + log_dir  + ":/var/ecoball_log "
     command += image + " /ecoball/ecoball/start.py "
-    command += "-i" + str_ip + "-o " + args.host_ip + " -n " + str(count) + " -w " + str(args.weight)
-    command += " --log-dir=/var/ecoball_log/ecoball_" + str(count) + "/"
+    command += "-o " + host_ip + " -n " + str(count) + " -e " + "'" + network_str + "'"
+    exist, config = get_config(count)
+    if exist:
+        command += " -c " + "'" + json.dumps(config) + "'"
     run(command)
     sleep(2)
     count += 1
     
 
-print("start all ecoball shard container on this physical machine(" + args.host_ip + ") successfully!!!") 
+print("start all ecoball shard container on this physical machine(" + host_ip + ") successfully!!!") 

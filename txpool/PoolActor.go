@@ -28,6 +28,9 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/net/network"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/net/message/pb"
 )
 
 const magicNum = 999
@@ -110,15 +113,16 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 			return err
 		}
 		log.Info("the shard id is ", shardId)
+		var toShard uint64
 		if tx.Type == types.TxTransfer || tx.Addr == common.NameToIndex("root") {
-			toShard := uint64(tx.From)%magicNum%uint64(numShard) + 1
+			toShard = uint64(tx.From)%magicNum%uint64(numShard) + 1
 			log.Info("the handle shard id is ", toShard)
 			if uint64(shardId) == toShard {
 				log.Info("put the transfer tx:", tx.From, tx.Hash.HexString(), "to txPool")
 				handle = true
 			}
 		} else {
-			toShard := uint64(tx.Addr)%magicNum%uint64(numShard) + 1
+			toShard = uint64(tx.Addr)%magicNum%uint64(numShard) + 1
 			log.Info("the handle shard id is ", toShard)
 			log.Info("put the contract tx:", tx.Addr, tx.Hash.HexString(), "to txPool")
 			if uint64(shardId) == toShard {
@@ -133,6 +137,18 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 			//}
 			//log.Debug(ret, cpu, net, err)
 			p.txPool.Push(tx.ChainID, tx)
+		} else {
+			net, err := network.GetNetInstance()
+			if err != nil {
+				return errors.New(log, err.Error())
+			}
+			data, err := tx.Serialize()
+			if err != nil {
+				return err
+			}
+			if err := net.SendMsgDataToShard(uint16(toShard), pb.MsgType_APP_MSG_TRN, data); err != nil {
+				return errors.New(log, err.Error())
+			}
 		}
 	} else {
 		//ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
@@ -144,7 +160,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		p.txPool.Push(tx.ChainID, tx)
 	}
 
-	p.txPool.Push(tx.ChainID, tx)
+	//p.txPool.Push(tx.ChainID, tx)
 
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
 		log.Warn("broadcast transaction failed:", err.Error(), tx.Hash.HexString())
