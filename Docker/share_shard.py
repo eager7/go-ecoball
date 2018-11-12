@@ -96,8 +96,11 @@ while count < committee_count + shard_count:
     command += image + " /ecoball/ecoball/start.py "
     command += "-o " + host_ip + " -n " + str(count) + " -e " + "'" + network_str + "'"
     exist, config = get_config(count)
+     if not exist:
+        config = {"log_dir": "/var/ecoball_log/shard/ecoball_" + str(count)}
     if exist:
-        command += " -c " + "'" + json.dumps(config) + "'"
+        config["log_dir"] = "/var/ecoball_log/shard/ecoball_" + str(count)
+    command += " -c " + "'" + json.dumps(config) + "'"
     run(command)
     sleep(2)
     count += 1
