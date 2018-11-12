@@ -46,7 +46,7 @@ func dsnAddFile(ctx *cli.Context) error {
 	cbtx := context.Background()
 	file := os.Args[3]
 
-	walletName := "ecoball"
+	walletName := "dsnwallet"
 	accountName := "dsn"
 	collateral := 0
 
@@ -93,7 +93,7 @@ func dsnAddFile(ctx *cli.Context) error {
 
 func dsnCatFile (ctx *cli.Context) error {
 	cbtx := context.Background()
-	walletName := "ecoball"
+	walletName := "dsnwallet"
 	accountName := "dsn"
 	collateral := 0
 	wClient := wc.NewWalletClient(accountName, walletName, collateral)

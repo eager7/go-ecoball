@@ -30,7 +30,7 @@ func TotalHandler(c *gin.Context)  {
 	} else {
 		err = encoding.Unmarshal(total, &du)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{"result": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"result": err.Error()})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"result": "success", "total": du.TotalCapacity, "used": du.UsedCapacity, "hosts": du.Hosts})
 		}
@@ -63,7 +63,7 @@ func EraDecoding(c *gin.Context)  {
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, response.DsnEraDecoding{ Code: response.CODESERVERINNERERR, Msg: err.Error()})
 		} else {
-			c.JSON(http.StatusInternalServerError, response.DsnEraDecoding{ Code: response.CODESERVERINNERERR, Msg: "can not find cid", Reader: r })
+			c.JSON(http.StatusOK, response.DsnEraDecoding{ Code: response.CODESERVERINNERERR, Msg: "can not find cid", Reader: r })
 		}
 	}
 }
@@ -81,7 +81,7 @@ func DsnaddfileCid(c *gin.Context)  {
 		c.JSON(http.StatusInternalServerError, response.DsnAddFileResponse{	Code: response.CODESERVERINNERERR, Msg: err.Error(), Cid: newCid })
 		return 
 	}
-	c.JSON(http.StatusInternalServerError, response.DsnAddFileResponse{	Code: response.CODENOMAL, Msg:"success", Cid: newCid })
+	c.JSON(http.StatusOK, response.DsnAddFileResponse{	Code: response.CODENOMAL, Msg:"success", Cid: newCid })
 
 }
 
