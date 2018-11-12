@@ -226,6 +226,12 @@ func VotingProducer(ledger ledger.Ledger) {
 	time.Sleep(time.Millisecond * 500)
 	*/
 
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("root"), config.ChainHash, state.Active, "reg_prod", []string{"worker1"}, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 500)
+
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("root"), config.ChainHash, state.Active, "reg_prod", []string{"worker2"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker2)
@@ -242,13 +248,13 @@ func VotingProducer(ledger ledger.Ledger) {
 
 	//worker1, worker2 voting to be producer
 	time.Sleep(time.Second * 5)
-	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("root"), config.ChainHash, state.Active, "vote", []string{"worker1", "root", "worker2"}, 0, time.Now().UnixNano())
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("root"), config.ChainHash, state.Active, "vote", []string{"worker1", "root", "worker1", "worker2"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 500)
 
-	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("root"), config.ChainHash, state.Active, "vote", []string{"worker2", "root", "worker2"}, 0, time.Now().UnixNano())
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("root"), config.ChainHash, state.Active, "vote", []string{"worker2", "root", "worker1", "worker2"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker2)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
