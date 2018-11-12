@@ -28,6 +28,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/urfave/cli"
 	"strconv"
+	"strings"
 )
 
 var (
@@ -137,12 +138,8 @@ var (
 						Usage: "voter",
 					},
 					cli.StringFlag{
-						Name:  "producer1, f",
-						Usage: "first producer voted",
-					},
-					cli.StringFlag{
-						Name:  "producer2, s",
-						Usage: "second producer voted",
+						Name:  "producers, p",
+						Usage: "support vote to many producer, producers seperate by ,",
 					},
 					cli.StringFlag{
 						Name:  "chainHash, c",
@@ -708,14 +705,8 @@ func vote(c *cli.Context) error {
 		return errors.New("Invalid account name")
 	}
 
-	producer1 := c.String("producer1")
-	if producer1 == "" {
-		fmt.Println("Please input a valid account name")
-		return errors.New("Invalid account name")
-	}
-
-	producer2 := c.String("producer2")
-	if producer2 == "" {
+	producers := c.String("producers")
+	if producers == "" {
 		fmt.Println("Please input a valid account name")
 		return errors.New("Invalid account name")
 	}
@@ -748,8 +739,10 @@ func vote(c *cli.Context) error {
 	var parameters []string
 
 	parameters = append(parameters, voter)
-	parameters = append(parameters, producer1)
-	parameters = append(parameters, producer2)
+	producersVoted := strings.Split(producers, ",")
+	for _, producer := range producersVoted {
+		parameters = append(parameters, producer)
+	}
 
 	//time
 	time := time.Now().UnixNano()
