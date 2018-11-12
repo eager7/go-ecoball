@@ -77,12 +77,17 @@ func (c *committee) processSyncComplete(msg interface{}) {
 
 	/*haven't collect enough shard's minor block, the wait time will be longer than default configure when we enter
 	  WaitMinorBlock status, maybe we can recalculate the left time by check the minor block's timestamps */
-	if c.ns.IsMinorBlockThresholdInPool() {
+	if c.ns.IsLeader() {
 		c.fsm.Execute(ActProductFinalBlock, msg)
 		return
 	} else {
-		c.fsm.Execute(ActCollectMinorBlock, msg)
-		return
+		if c.ns.IsMinorBlockThresholdInPool() {
+			c.fsm.Execute(ActProductFinalBlock, msg)
+			return
+		} else {
+			c.fsm.Execute(ActCollectMinorBlock, msg)
+			return
+		}
 	}
 }
 
