@@ -33,9 +33,9 @@ Before starting shard mode, you need to configure shard start profile shard_setu
 "192.168.8.62" = [5, 0]
 
 
-#Different configuration items for ecoball.toml
-#The name from the host IP address plus a sequence number
-#for example, 127.0.0.1_0 represents the first docker container on the 127.0.0.1
+# Different configuration items for ecoball.toml
+# The name from the host IP address plus a sequence number
+# for example, 127.0.0.1_0 represents the first docker container on the 127.0.0.1
 ["192.168.8.58_0"]
 output_to_terminal = true
 
