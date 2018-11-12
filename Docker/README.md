@@ -5,55 +5,54 @@ Ecoball-Docker
 
 You need install docker and docker-compose
 
-# Run
+# Run shard
 
-## docker_service.sh start | stop
-
-If your operating system is ubuntu
+### docker_build.sh
+You need to use docker_build.sh first to create the image
 ```
-cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./docker_service.sh start
-```
-You will start twenty-one ecoball and one ecowallet and one eballscan
-
-If you want to stop all services
-```
-cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./docker_service.sh stop
+./docker_build.sh
 ```
 
-## docker-compose
+### shard_setup.toml
+Before starting shard mode, you need to configure shard start profile shard_setup.toml
+```
+#Configuration file for shard network startup
 
-Create the map directory
-```
-mkdir $GOPATH/src/github.com/ecoball/go-ecoball/Docker/ecoball_log
-```
-start services
-```
-cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-sudo docker-compose up -d
-```
-you will start one ecoball and one ecowallet and one eballscan
+#Network host IP address list and the number of Committee and Shard on each physical machine
+#The key string represents the host IP address 
+#The first value represents the number of Committee nodes
+#The second value represents the number of Shard nodes
+[network]
+"192.168.8.58" = [0, 5]
+"192.168.8.60" = [0, 5]
+"192.168.8.62" = [5, 0]
 
+
+#Different configuration items for ecoball.toml
+#The name from the host IP address plus a sequence number
+#for example, 127.0.0.1_0 represents the first docker container on the 127.0.0.1
+["192.168.8.58_0"]
+output_to_terminal = true
+
+
+["192.168.8.60_0"]
+output_to_terminal = true
+```
 
 ## share_shard.py
 Start shard node first when sharding starts
 ```
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./share_shard.py -i $IPOFALLNODES -o $HOSTIP -w $WEIGHT
+./share_shard.py 
 ```
-It will start 3 * $WEIGHT ecoball shard node.
-
-Log generation for each node is under ./ecoball_log/shard/$DOCKERNAME/ directory
+Log generation for each node is under ./ecoball_log/shard/$DOCKERNAME/ 
 
 ## share_committee.py
 
 Start committee node second when sharding starts
 ```
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./share_committee.py -i $IPOFALLNODES -o $HOSTIP -w $WEIGHT
+./share_committee.py 
 ```
-It will start 3 * $WEIGHT ecoball committee node.
-
-Log generation for each node is under ./ecoball_log/committee/$DOCKERNAME/ directory
+Log generation for each node is under ./ecoball_log/committee/$DOCKERNAME/ 
 
