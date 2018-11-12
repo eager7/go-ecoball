@@ -41,6 +41,7 @@ type LedgerImpl struct {
 }
 
 func NewLedger(path string, chainID common.Hash, addr common.Address, shard bool) (l ledger.Ledger, err error) {
+	log.Debug("Create Ledger in ", path)
 	ll := &LedgerImpl{path: path, ChainTxs: make(map[common.Hash]*transaction.ChainTx, 1)}
 	if err := ll.NewTxChain(chainID, addr, shard); err != nil {
 		return nil, err

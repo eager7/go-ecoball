@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
+	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 )
 
 func (net *NetImpl)SendMsgDataToShard(shardId uint16, msgId pb.MsgType, data []byte) error {
@@ -30,7 +31,7 @@ func (net *NetImpl)SendMsgDataToShard(shardId uint16, msgId pb.MsgType, data []b
 		return err
 	}
 	msg := message.New(msgId, data)
-	net.SendMsgToPeerWithId(p, msg)
+	net.SendMsgToPeerWithPeerInfo([]*peerstore.PeerInfo{p}, msg)
 
 	return nil
 }
@@ -42,7 +43,7 @@ func (net *NetImpl)SendMsgToShards(msg message.EcoBallNetMsg) error {
 
 	shardMembers := net.receiver.GetShardMemebersToReceiveCBlock()
 	for _, shard := range shardMembers {
-		net.SendMsgToPeersWithId(shard, msg)
+		net.SendMsgToPeerWithPeerInfo(shard, msg)
 	}
 
 	return nil
@@ -54,7 +55,7 @@ func (net *NetImpl)SendMsgToCommittee(msg message.EcoBallNetMsg) error {
 	}
 
 	cmMembers := net.receiver.GetCMMemebersToReceiveSBlock()
-	net.SendMsgToPeersWithId(cmMembers, msg)
+	net.SendMsgToPeerWithPeerInfo(cmMembers, msg)
 
 	return nil
 }

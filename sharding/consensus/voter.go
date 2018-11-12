@@ -52,7 +52,7 @@ func (c *Consensus) sendPrepareRsp() {
 func (c *Consensus) processPrecommit(csp *sc.CsPacket) {
 	log.Debug("process precommit")
 
-	if !c.checkCosign() {
+	if !c.checkCosign(StepPreCommit) {
 		log.Error("cosign error")
 		return
 	}
@@ -70,7 +70,7 @@ func (c *Consensus) sendPrecommitRsp(csp *sc.CsPacket) {
 func (c *Consensus) processCommit(csp *sc.CsPacket) {
 	log.Debug("process commit")
 
-	if !c.checkCosign() {
+	if !c.checkCosign(StepCommit) {
 		log.Error("cosign error")
 		return
 	}
