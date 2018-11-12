@@ -162,7 +162,7 @@ func newAccount(c *cli.Context) error {
 	creatorAccount := innercommon.NameToIndex(creator)
 	timeStamp := time.Now().UnixNano()
 
-	transaction, err := types.NewInvokeContract(creatorAccount, creatorAccount, chainHash, "owner", "new_account",
+	transaction, err := types.NewInvokeContract(creatorAccount, innercommon.NameToIndex("root"), chainHash, "owner", "new_account",
 		[]string{name, innercommon.AddressFromPubKey(innercommon.FromHex(owner)).HexString()}, 0, timeStamp)
 	if err != nil {
 		fmt.Println(err)

@@ -282,8 +282,16 @@ func CreateAccountBlock(chainID common.Hash) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
 
-	invoke, err = types.NewInvokeContract(root, root, chainID, state.Owner, "new_account", []string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, time.Now().UnixNano())
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "worker1", "1000", "1000"}, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), root, chainID, state.Owner, "new_account", []string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, time.Now().UnixNano())
+	invoke.SetSignature(&config.Worker1)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(interval)
 
@@ -332,6 +340,7 @@ func TokenTransferBlock(chainID common.Hash) {
 
 	time.Sleep(time.Second * 2)
 }
+
 func PledgeContract(chainID common.Hash) {
 	log.Info("-----------------------------PledgeContract")
 	root := common.NameToIndex("root")
@@ -363,6 +372,7 @@ func PledgeContract(chainID common.Hash) {
 	time.Sleep(interval)
 	time.Sleep(time.Second * 2)
 }
+
 func CreateNewChain(chainID common.Hash) {
 	log.Info("-----------------------------CreateNewChain")
 	invoke, err := types.NewInvokeContract(common.NameToIndex("root"), common.NameToIndex("root"), chainID, "active", "reg_chain", []string{"root", "solo", common.AddressFromPubKey(config.Root.PublicKey).HexString()}, 0, time.Now().UnixNano())
