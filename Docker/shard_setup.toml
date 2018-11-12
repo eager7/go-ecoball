@@ -1,18 +1,18 @@
-#Configuration file for shard network startup
+# Configuration file for shard network startup
 
-#Network host IP address list and the number of Committee and Shard on each physical machine
-#The key string represents the host IP address 
-#The first value represents the number of Committee nodes
-#The second value represents the number of Shard nodes
+# Network host IP address list and the number of Committee and Shard on each physical machine
+# The key string represents the host IP address 
+# The first value represents the number of Committee nodes
+# The second value represents the number of Shard nodes
 [network]
 "192.168.8.58" = [0, 5]
 "192.168.8.60" = [0, 5]
 "192.168.8.62" = [5, 0]
 
 
-#Different configuration items for ecoball.toml
-#The name from the host IP address plus a sequence number
-#for example, 127.0.0.1_0 represents the first docker container on the 127.0.0.1
+# Different configuration items for ecoball.toml
+# The name from the host IP address plus a sequence number
+# for example, 127.0.0.1_0 represents the first docker container on the 127.0.0.1
 ["192.168.8.58_0"]
 output_to_terminal = true
 
