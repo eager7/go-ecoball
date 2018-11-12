@@ -10,10 +10,15 @@ You need install docker and python3 and pip3
 ### ecoball.toml
 The ecoball.toml profile will be mirrored. Please configure the configuration items before mirroring.
 
+Add a new configuration item to the project's ecoball.toml, and be sure to copy the latest code-generated file ecoball.toml to the Docker directory.
+
 If the configuration items for a container require special customization, do the configuration in the shard_setup.toml file(Refer to the shard_setup.toml configuration file for details).
 
 ### docker_build.sh
 You need to use docker_build.sh first to create the image
+
+This script will call the Makefile of go-ecoball to generate the latest executable file ecoball, ecowallet, call the Makefile of eballscan to generate the executable file eballscan, and copy it under the Docker directory to do the image(Refer to the script header for details).
+
 ```
 ./docker_build.sh
 ```
@@ -45,7 +50,8 @@ output_to_terminal = true
 ```
 
 ## share_shard.py
-Start shard node first when sharding starts
+To start the sharding network, execute the share_shard.py script to start the shard container.
+
 ```
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
 ./share_shard.py 
@@ -54,10 +60,12 @@ Log generation for each node is under ./ecoball_log/shard/$DOCKERNAME/
 
 ## share_committee.py
 
-Start committee node second when sharding starts
+After starting the shard container, execute the share_commitment.py script to start the committee node.
+
+If the -d option is added, both the ecowallet container and eballscan container are started
 ```
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./share_committee.py 
+./share_committee.py [-d]
 ```
 Log generation for each node is under ./ecoball_log/committee/$DOCKERNAME/ 
 
