@@ -5,8 +5,9 @@
 #The first value represents the number of Committee nodes
 #The second value represents the number of Shard nodes
 [network]
-"192.168.8.58" = [3, 9]
-"192.168.8.60" = [3, 9]
+"192.168.8.58" = [0, 5]
+"192.168.8.60" = [0, 5]
+"192.168.8.62" = [5, 0]
 
 
 #Different configuration items for ecoball.toml
@@ -18,3 +19,4 @@ output_to_terminal = true
 
 ["192.168.8.60_0"]
 output_to_terminal = true
+
