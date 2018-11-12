@@ -465,9 +465,10 @@ func (nn *NetNode) GetShardLeader(shardId uint16) (peer.ID, error) {
 	nn.shardingInfo.rwlck.RLock()
 	defer nn.shardingInfo.rwlck.RUnlock()
 
-	if shardId > uint16(len(nn.shardingInfo.peersInfo) -1) {
-		return "", fmt.Errorf("invalid shard id")
+	if int(shardId) > (len(nn.shardingInfo.peersInfo) -1) {
+		return "", fmt.Errorf("invalid shard id:%d(shard len:%d)", shardId, len(nn.shardingInfo.peersInfo))
 	}
+
 	return nn.shardingInfo.peersInfo[shardId][0], nil
 }
 
