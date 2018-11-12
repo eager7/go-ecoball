@@ -580,7 +580,8 @@
   "gxVersion": "0.10.0",
   "language": "go",
   "license": "MIT",
-  "name": "ecoball",
-  "version": "0.1.0-dev"
+  "name": "go-ipfs",
+  "version": "0.4.18-dev"
+
 }
 
