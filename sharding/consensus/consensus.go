@@ -60,6 +60,11 @@ func (c *Consensus) StartVcConsensus(instance sc.ConsensusInstance, d time.Durat
 }
 
 func (c *Consensus) ProcessPacket(csp *sc.CsPacket) bool {
+	if c.instance == nil {
+		log.Debug("consensus instance not exist")
+		return false
+	}
+
 	candidate := c.instance.GetCandidate()
 	if candidate != nil {
 		if c.ns.Self.EqualNode(candidate) {
