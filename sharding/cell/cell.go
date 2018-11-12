@@ -499,9 +499,9 @@ func (c *Cell) CalcShardBackup(size int, bfinal bool) uint64 {
 
 	var height uint64
 	if bfinal {
-		height = final.Height + 1
+		height = final.Height + 1 + 1
 	} else {
-		height = final.Height
+		height = final.Height + 1
 	}
 
 	i := (height % sc.DefaultEpochFinalBlockNumber) % uint64(size)
