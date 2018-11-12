@@ -97,9 +97,9 @@ while count < committee_count + shard_count:
     command += "-o " + host_ip + " -n " + str(count) + " -e " + "'" + network_str + "'"
     exist, config = get_config(count)
     if not exist:
-        config = {"log_dir": "/var/ecoball_log/ecoball_" + str(count)}
+        config = {"log_dir": "/var/ecoball_log/ecoball_" + str(count) + "/"}
     if exist:
-        config["log_dir"] = "/var/ecoball_log/ecoball_" + str(count)
+        config["log_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
     command += " -c " + "'" + json.dumps(config) + "'"
     run(command)
     sleep(2)
