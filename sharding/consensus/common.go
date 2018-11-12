@@ -5,13 +5,13 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/net"
 )
 
-func (c *Consensus) checkCosign() bool {
+func (c *Consensus) checkCosign(step uint16) bool {
 	cosign := c.instance.GetCosign()
-	if c.step == StepPrePare {
+	if step == StepPreCommit {
 		log.Debug("cosign step1 ", cosign.Step1)
 		return c.ns.IsVoteEnough(cosign.Step1)
-	} else if c.step == StepPreCommit {
-		log.Debug("cosign step1 ", cosign.Step2)
+	} else if step == StepCommit {
+		log.Debug("cosign step1 ", cosign.Step1)
 		log.Debug("cosign step2 ", cosign.Step2)
 		return c.ns.IsVoteEnough(cosign.Step1) && c.ns.IsVoteEnough(cosign.Step2)
 	} else {

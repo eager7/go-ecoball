@@ -89,6 +89,16 @@ func (net *NetImpl)SendMsgToPeer(ip, port, pubKey string, msg message.EcoBallNet
 	return nil
 }
 
+func (net *NetImpl)SendMsgToPeerWithPeerInfo(info []*peerstore.PeerInfo, msg message.EcoBallNetMsg) error {
+	sendJob := &SendMsgJob{
+		info,
+		msg,
+	}
+	net.AddMsgJob(sendJob)
+
+	return nil
+}
+
 func (net *NetImpl)SendMsgToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
 	peer := &peerstore.PeerInfo{ID:id}
 	sendJob := &SendMsgJob{
