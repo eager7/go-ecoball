@@ -32,6 +32,7 @@ parser.add_argument('-c', '--config', metavar='', help="Different configuration 
 
 #parse Arguments
 args = parser.parse_args()
+args.network = '{"192.168.8.58": [0, 5], "192.168.8.60": [0, 5], "192.168.8.62": [5, 0]}'
 
 #Generate the configuration json files required for sharding
 network =json.loads(args.network)
@@ -71,6 +72,7 @@ i = 0
 key_base = 0
 while i < ip_index:
     key_base += list_count[i]
+    i += i
 
 
 data = {
