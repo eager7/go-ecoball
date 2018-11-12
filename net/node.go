@@ -461,49 +461,61 @@ func (nn *NetNode) IsLeaderOrBackup() bool {
 	return false
 }
 
-func (nn *NetNode) GetShardLeader(shardId uint16) (peer.ID, error) {
+func (nn *NetNode) GetShardLeader(shardId uint16) (*peerstore.PeerInfo, error) {
 	nn.shardingInfo.rwlck.RLock()
 	defer nn.shardingInfo.rwlck.RUnlock()
 
 	if int(shardId) > (len(nn.shardingInfo.peersInfo) -1) {
-		return "", fmt.Errorf("invalid shard id:%d(shard len:%d)", shardId, len(nn.shardingInfo.peersInfo))
+		return nil, fmt.Errorf("invalid shard id:%d(shard len:%d)", shardId, len(nn.shardingInfo.peersInfo))
 	}
 
-	return nn.shardingInfo.peersInfo[shardId][0], nil
+	id := nn.shardingInfo.peersInfo[shardId][0]
+	pi := &peerstore.PeerInfo{id, []ma.Multiaddr{nn.shardingInfo.info[shardId][id]}}
+	return pi, nil
 }
 
-func (nn *NetNode) GetShardMemebersToReceiveCBlock() [][]peer.ID {
+func (nn *NetNode) GetShardMemebersToReceiveCBlock() [][]*peerstore.PeerInfo {
 	nn.shardingInfo.rwlck.RLock()
 	defer nn.shardingInfo.rwlck.RUnlock()
 
 	if len(nn.shardingInfo.peersInfo) <= 1 {
-		return [][]peer.ID{}
+		return [][]*peerstore.PeerInfo{}
 	}
 
-	var peers = make([][]peer.ID, len(nn.shardingInfo.peersInfo)-1)
+	var peers = make([][]*peerstore.PeerInfo, len(nn.shardingInfo.peersInfo)-1)
 	// the algo may be changed according to the requirement
 	for id, shard := range nn.shardingInfo.peersInfo[1:] {
 		if nn.shardingInfo.role == CommitteeLeader {
-			peers[id] = append(peers[id], shard[0])
+			addrInfo := []ma.Multiaddr{nn.shardingInfo.info[uint16(id)][shard[0]]}
+			pi := &peerstore.PeerInfo{shard[0], addrInfo}
+			peers[id] = append(peers[id], pi)
 		} else if nn.shardingInfo.role == CommitteeBackup {
 			if len(shard) > 1 {
-				peers[id] = append(peers[id], shard[1])
+				addrInfo := []ma.Multiaddr{nn.shardingInfo.info[uint16(id)][shard[1]]}
+				pi := &peerstore.PeerInfo{shard[0], addrInfo}
+				peers[id] = append(peers[id], pi)
 			}
 		}
 	}
 	return peers
 }
 
-func (nn *NetNode) GetCMMemebersToReceiveSBlock() []peer.ID {
+func (nn *NetNode) GetCMMemebersToReceiveSBlock() []*peerstore.PeerInfo {
 	nn.shardingInfo.rwlck.RLock()
 	defer nn.shardingInfo.rwlck.RUnlock()
 
-	var peers = []peer.ID{}
+	var peers = []*peerstore.PeerInfo{}
 	if nn.shardingInfo.role == ShardLeader {
-		peers = append(peers, nn.shardingInfo.peersInfo[0][0])
+		id := nn.shardingInfo.peersInfo[0][0]
+		addrInfo := []ma.Multiaddr{nn.shardingInfo.info[0][id]}
+		pi := &peerstore.PeerInfo{id, addrInfo}
+		peers = append(peers, pi)
 	} else if nn.shardingInfo.role == ShardBackup {
 		if len(nn.shardingInfo.peersInfo[0]) > 1 {
-			peers = append(peers, nn.shardingInfo.peersInfo[0][1])
+			id := nn.shardingInfo.peersInfo[0][1]
+			addrInfo := []ma.Multiaddr{nn.shardingInfo.info[0][id]}
+			pi := &peerstore.PeerInfo{id, addrInfo}
+			peers = append(peers, pi)
 		}
 	}
 
