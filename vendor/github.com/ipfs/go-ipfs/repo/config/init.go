@@ -27,7 +27,7 @@ func Init(out io.Writer, nBitsForKeypair int) (*Config, error) {
 	conf := &Config{
 		API: API{
 			HTTPHeaders: map[string][]string{
-				"Server": {"ecoball/" + CurrentVersionNumber},
+				"Server": {"go-ipfs/" + CurrentVersionNumber},
 			},
 		},
 
