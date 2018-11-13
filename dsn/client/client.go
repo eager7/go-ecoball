@@ -20,6 +20,11 @@ import (
 	ipfsshell "github.com/ipfs/go-ipfs-api"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/ecoball/go-ecoball/http/response"
+	 serial "gx/ipfs/QmYyFh6g1C9uieTpH8CR8PpWBUQjvMDJTsRhJWx5qkXy39/go-ipfs-config/serialize"
+	 "path"
+	 ecoballConfig "github.com/ecoball/go-ecoball/common/config"
+	 ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	 manet "gx/ipfs/QmV6FjemM1K8oXjrvuq3wuVWWoU2TLDPmNnKrxHzY3v6Ai/go-multiaddr-net"
 )
 
 var (
@@ -72,10 +77,26 @@ func InitDefaultConf() RenterConf {
 }
 
 func NewRenter(ctx context.Context, conf RenterConf) *DsnClient {
+
+
+	cfg, err := serial.Load(path.Join(ecoballConfig.IpfsDir, "config"))
+	if err != nil {
+		return nil
+	}
+
+	apiMaddr, err := ma.NewMultiaddr(cfg.Addresses.API)
+	if err != nil {
+		return nil
+	}
+	_, ip_port, err := manet.DialArgs(apiMaddr)
+	if err != nil {
+		return nil
+	}
+	
 	r := DsnClient{
 		Conf: conf,
 		client: &http.Client{},
-		ipfsClient: ipfsshell.NewShell(conf.IpfsApiUrl),
+		ipfsClient: ipfsshell.NewShell(ip_port),
 		ctx: ctx,
 	}
 	return &r

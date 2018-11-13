@@ -22,6 +22,7 @@ import (
 
 var log = logging.Logger("net/identify")
 
+
 // ID is the protocol.ID of the Identify Service.
 const ID = "/ipfs/id/1.0.0"
 

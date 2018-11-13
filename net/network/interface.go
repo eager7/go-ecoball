@@ -22,7 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
-
+	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 )
 
 type EcoballNetwork interface {
@@ -76,9 +76,9 @@ type Receiver interface {
 	IsValidRemotePeer(peer.ID) bool
 	IsNotMyShard(p peer.ID) bool
 	IsLeaderOrBackup() bool
-	GetShardLeader(shardId uint16) (peer.ID, error)
-	GetShardMemebersToReceiveCBlock() [][]peer.ID
-	GetCMMemebersToReceiveSBlock() []peer.ID
+	GetShardLeader(shardId uint16) (*peerstore.PeerInfo, error)
+	GetShardMemebersToReceiveCBlock() [][]*peerstore.PeerInfo
+	GetCMMemebersToReceiveSBlock() []*peerstore.PeerInfo
 
 
 	ReceiveError(error)

@@ -71,6 +71,7 @@ i = 0
 key_base = 0
 while i < ip_index:
     key_base += list_count[i]
+    i += 1
 
 
 data = {
