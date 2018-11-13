@@ -17,44 +17,37 @@
 package data
 
 import (
-	"encoding/json"
-	"fmt"
+	//"encoding/json"
+	//"fmt"
 	"time"
 
-	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/muesli/cache2go"
 )
 
 const (
-	BLOCK_SPAN time.Duration = 10 * time.Second
+	ACCOUNT_SPAN time.Duration = 10 * time.Second
 )
 
 var (
-	Blocks          = cache2go.Cache("Blcoks")
-	log             = elog.NewLogger("data", elog.DebugLog)
-	
-	Length          int
+	Accounts          = cache2go.Cache("Accounts")
 )
 
-type BlockInfo struct {
-	Hash       string
-	PrevHash   string
-	MerkleHash string
-	StateHash  string
-	CountTxs   int
-	TimeStamp  int 
+type AccountInfo struct {
+	TimeStamp       int
+	Balance 		int
+	Token 			string
 }
-type BlockInfoh struct {
-	BlockInfo
-	Height int
+type AccountInfoh struct {
+	AccountInfo
+	Name string
 }
 
 
-func AddBlock(height int, info *BlockInfo) {
-	Blocks.Add(height, BLOCK_SPAN, info)
-
+func AddAccount(name string, info *AccountInfo) {
+	Accounts.Add(name, ACCOUNT_SPAN, info)
 }
-func PrintBlock() string {
+
+/*func PrintBlock() string {
 	Blocks.RLock()
 	defer Blocks.RUnlock()
 
@@ -81,6 +74,6 @@ func PrintBlock() string {
 	result := string(buf)
 	return result
 
-}
+}*/
 
 

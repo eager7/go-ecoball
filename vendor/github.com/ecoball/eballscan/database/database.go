@@ -18,7 +18,7 @@ package database
 
 import (
 	"database/sql"
-
+	"os"
 	"github.com/ecoball/go-ecoball/common/elog"
 	_ "github.com/lib/pq"
 )
@@ -30,8 +30,8 @@ var (
 
 func init() {
 	// Connect to the "blockchain" database.
-	/*var err error
-	cockroachDb, err = sql.Open("postgres", "postgresql://eballscan@localhost:26257/blockchain?sslmode=disable")
+	var err error
+	cockroachDb, err = sql.Open("postgres", "postgresql://root@localhost:26257/blockchain?sslmode=disable")
 	if err != nil {
 		log.Fatal("connecting to the database error: ", err)
 		os.Exit(1)
@@ -49,5 +49,41 @@ func init() {
 	if err != nil {
 		log.Fatal("initialize transaction error: ", err)
 		os.Exit(1)
-	}*/
+	}
+
+	err = initAccount()
+	if err != nil {
+		log.Fatal("initialize account error: ", err)
+		os.Exit(1)
+	}
+
+	err = initCommittee_block()
+	if err != nil {
+		log.Fatal("initialize Committee_block error: ", err)
+		os.Exit(1)
+	}
+
+	err = initFinal_block()
+	if err != nil {
+		log.Fatal("initialize final_block error: ", err)
+		os.Exit(1)
+	}
+
+	err = initMinor_block()
+	if err != nil {
+		log.Fatal("initialize Minor_block error: ", err)
+		os.Exit(1)
+	}
+
+	err = initNode()
+	if err != nil {
+		log.Fatal("initialize node error: ", err)
+		os.Exit(1)
+	}
+
+	err = initViewchangeblock()
+	if err != nil {
+		log.Fatal("initialize Viewchangeblock error: ", err)
+		os.Exit(1)
+	}
 }
