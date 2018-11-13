@@ -703,6 +703,8 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		event.PublishTrxRes(tx.Hash, "transfer success!")
 	case types.TxDeploy:
 		event.PublishTrxRes(tx.Hash, "contract deploy success!")
+	case types.TxInvoke:
+		event.PublishTrxRes(tx.Hash, "contract invoke success!")
 	default:
 		event.PublishTrxRes(tx.Hash, "the transaction's type error")
 	}
@@ -943,6 +945,10 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 	return nil
 }
 
+/**
+ *  @brief save the block into levelDB, the minor block just store, but not handle
+ *  @param block - the interface of block
+ */
 func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	if block == nil {
 		return errors.New(log, "the block is nil")
@@ -1116,6 +1122,11 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	return nil
 }
 
+/**
+ *  @brief get the shard block by hash
+ *  @param typ - the type of block
+ *  @param hash - the hash of block
+ */
 func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash) (shard.BlockInterface, error) {
 	dataBlock, err := c.BlockStore.Get(hash.Bytes())
 	if err != nil {
@@ -1125,6 +1136,12 @@ func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash) (s
 	return shard.BlockDeserialize(dataBlock)
 }
 
+/**
+ *  @brief get the shard block by height, if the block type is not minor block, the shardID is 0
+ *  @param typ - the type of block
+ *  @param height - the height of block
+ *  @param shardID - the shardId of minor block
+ */
 func (c *ChainTx) GetShardBlockByHeight(typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, error) {
 	c.lockBlock.RLock()
 	defer c.lockBlock.RUnlock()
@@ -1142,6 +1159,10 @@ func (c *ChainTx) GetShardBlockByHeight(typ shard.HeaderType, height uint64, sha
 	return nil, errors.New(log, fmt.Sprintf("can't find this block:[type]%s, [height]%d", typ.String(), height))
 }
 
+/**
+ *  @brief
+ *  @param
+ */
 func (c *ChainTx) GetFinalBlocksByEpochNo(epochNo uint64) (finalBlocks []shard.BlockInterface, num int, err error) {
 	c.lockBlock.RLock()
 	defer c.lockBlock.RUnlock()
@@ -1159,7 +1180,10 @@ func (c *ChainTx) GetFinalBlocksByEpochNo(epochNo uint64) (finalBlocks []shard.B
 
 	return finalBlocks, num,nil
 }
-
+/**
+ *  @brief get the last shard block by type, the minor block is local shard
+ *  @param typ - the type of block
+ */
 func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface, error) {
 	switch typ {
 	case shard.HeFinalBlock:
@@ -1184,6 +1208,10 @@ func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface,
 	return nil, errors.New(log, "can't find the last block")
 }
 
+/**
+ *  @brief get the last minor shard block by shard id
+ *  @param shardId - the shard id of shard
+ */
 func (c *ChainTx) GetLastShardBlockById(shardId uint32) (shard.BlockInterface, error) {
 	data, err := c.BlockStore.Get(common.Uint32ToBytes(shardId))
 	if err != nil {
@@ -1193,6 +1221,11 @@ func (c *ChainTx) GetLastShardBlockById(shardId uint32) (shard.BlockInterface, e
 	return c.GetShardBlockByHash(shard.HeMinorBlock, hash)
 }
 
+/**
+ *  @brief create a new minor block
+ *  @param timeStamp - the time of block create
+ *  @param txs - the transactions of block contains
+ */
 func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error) {
 	lastMinor, err := c.GetLastShardBlock(shard.HeMinorBlock)
 	if err != nil {
@@ -1277,6 +1310,11 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	return block, nil, nil
 }
 
+/**
+ *  @brief create a new committee block
+ *  @param timeStamp - the time of block create
+ *  @param shards - the shard info
+ */
 func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBlock, error) {
 	if c.LastHeader.CmHeader.Height > 3 {
 		// get cmBlock
@@ -1342,6 +1380,11 @@ func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBl
 	return block, nil
 }
 
+/**
+ *  @brief create a final block, this func will exec the transactions in minor block to rebuild state hash
+ *  @param timeStamp - the time of block create
+ *  @param minorBlocks - the minor block
+ */
 func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock) (*shard.FinalBlock, error) {
 	log.Debug("new final block")
 	var TrxCount uint32
@@ -1411,6 +1454,11 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	return block, nil
 }
 
+/**
+ *  @brief create a new final block, this func will read levelDB to get minor block
+ *  @param timeStamp - the time of block create
+ *  @param hashes - the minor blocks' hash of contains in final block
+ */
 func (c *ChainTx) NewFinalBlock(timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
 	var minorBlocks []*shard.MinorBlock
 	for _, hash := range hashes {
@@ -1427,6 +1475,11 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, hashes []common.Hash) (*shard.F
 	return c.newFinalBlock(timeStamp, minorBlocks)
 }
 
+/**
+ *  @brief create a new view change block
+ *  @param timeStamp - the time of block create
+ *  @param round - the number of round
+ */
 func (c *ChainTx) NewViewChangeBlock(timeStamp int64, round uint16) (*shard.ViewChangeBlock, error) {
 	header := shard.ViewChangeBlockHeader{
 		ChainID:          c.LastHeader.VCHeader.ChainID,
@@ -1447,6 +1500,10 @@ func (c *ChainTx) NewViewChangeBlock(timeStamp int64, round uint16) (*shard.View
 	return block, nil
 }
 
+/**
+ *  @brief update the local shard id
+ *  @param block - the interface of block
+ */
 func (c *ChainTx) updateShardId() (uint32, error) {
 	cm, err := c.GetLastShardBlock(shard.HeCmBlock)
 	if err != nil {
@@ -1469,6 +1526,10 @@ func (c *ChainTx) updateShardId() (uint32, error) {
 	return 0, nil
 }
 
+/**
+ *  @brief get the local shard id, the id will update when the node receive cm block
+ *  @return the shard id
+ */
 func (c *ChainTx) GetShardId() (uint32, error) {
 	if c.shardId == 0 {
 		return c.updateShardId()
@@ -1476,7 +1537,10 @@ func (c *ChainTx) GetShardId() (uint32, error) {
 		return c.shardId, nil
 	}
 }
-
+/**
+ *  @brief check the block's signature, hash, state hash and transaction
+ *  @param block - the interface of block
+ */
 func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 	hash := block.Hash()
 	if _, ok := c.BlockMap[hash]; ok {
@@ -1536,7 +1600,14 @@ func (c *ChainTx) CheckBlock(block shard.BlockInterface) error {
 
 	return nil
 }
-
+/**
+ *  @brief handle tx's receipt to sync state trie, if the tx is contract invoke, then handle the tx
+ *  @param s - the mpt trie object
+ *  @param delta - the tx's receipt data
+ *  @param tx - the transaction, used to contract invoke
+ *  @param timeStamp - the timeStamp
+ *  @param cpuLimit, netLimit - the limit of cpu and net
+ */
 func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, tx *types.Transaction, timeStamp int64, cpuLimit, netLimit float64) (err error) {
 	switch delta.Type {
 	case types.TxTransfer:
