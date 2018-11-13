@@ -15,6 +15,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/common"
 	"reflect"
+	"sync"
 )
 
 var (
@@ -33,6 +34,8 @@ type BlocksCache struct {
 type Sync struct {
 	cell *cell.Cell
 	cache BlocksCache
+	synchronizing bool
+	lock sync.Mutex
 }
 
 func MakeSync(c *cell.Cell) *Sync {
@@ -46,6 +49,7 @@ func MakeSync(c *cell.Cell) *Sync {
 			finalBlockComplete: false,
 			complete:false,
 		},
+		synchronizing: false,
 	}
 }
 
@@ -75,6 +79,10 @@ func MakeSyncRequestPacket(blockType int8, fromHeight int64, to int64, worker *s
 
 //Request order is important
 func (sync *Sync)SendSyncRequest()  {
+	sync.lock.Lock()
+	sync.synchronizing = true
+	sync.lock.Unlock()
+
 	log.Debug("SendSyncRequest, node type = ", sync.cell.NodeType)
 
 	//Special case treatment
@@ -178,10 +186,6 @@ func (sync *Sync)SendSyncRequestTo(blockType int8, fromHeight int64, toHeight in
 	net.Np.SendSyncMessage(csp)
 }
 
-/*func (sync *Sync)dealSyncRequest() {
-
-}*/
-
 func (s *Sync) SyncResponseDecode(syncData *sc.SyncResponseData) (*sc.SyncResponsePacket)   {
 
 	blockType := syncData.BlockType
@@ -189,13 +193,12 @@ func (s *Sync) SyncResponseDecode(syncData *sc.SyncResponseData) (*sc.SyncRespon
 	data := syncData.Data
 	lastHeight := syncData.LastHeight
 
-	fmt.Println("len = ", len)
-	fmt.Println("data = ", data)
+	//fmt.Println("len = ", len)
+	//fmt.Println("data = ", data)
 
 	var list []cs.Payload
 	for i := 0; i < int(len); i++ {
-		//cs.BlockDeserializeOld(data[i], blockType)
-		//log.Debug("Finish decode old")
+
 		blockInterface, err := cs.BlockDeserialize(data[i])
 		if err != nil {
 			log.Error("minor block deserialize err")
@@ -217,10 +220,7 @@ func (s *Sync) SyncResponseDecode(syncData *sc.SyncResponseData) (*sc.SyncRespon
 
 //TODO, make sure TellBlock will be all right
 func (s *Sync) tellLedgerSyncComplete() {
-	/*blocks := response.Blocks
-	for _, block := range blocks {
-		simulate.TellBlock(block.(cs.BlockInterface))
-	}*/
+	ledger := s.cell.Ledger
 	finalBlocks := s.cache.blocks[cs.HeFinalBlock]
 	l := len(finalBlocks)
 	if l > 0 {
@@ -235,9 +235,18 @@ func (s *Sync) tellLedgerSyncComplete() {
 				if curMinorBlock.GetHeight() > limit {
 					break
 				}
-				simulate.TellBlock(curMinorBlock)
+				ledger.SaveShardBlock(config.ChainHash, curMinorBlock)
 			}
 		}
+		for _, finalBlock := range finalBlocks {
+			ledger.SaveShardBlock(config.ChainHash, finalBlock)
+		}
+	}
+	for _, block := range s.cache.blocks[cs.HeCmBlock] {
+		ledger.SaveShardBlock(config.ChainHash, block)
+	}
+	for _, block := range s.cache.blocks[cs.HeViewChange] {
+		ledger.SaveShardBlock(config.ChainHash, block)
 	}
 }
 
@@ -278,28 +287,6 @@ func (s *Sync) DealSyncRequestHelper(request *sc.SyncRequestPacket) (*sc.NetPack
 			block := s.getConcreteBlockObject(o)
 			payload := block.(cs.Payload)
 			response.Blocks = append(response.Blocks, payload)
-			/*o1 := blockInterface.GetObject()
-
-			typeStr := reflect.TypeOf(o1).String()
-			if strings.Contains(typeStr, "CMBlock") {
-				o := o1.(cs.CMBlock)
-				payload := interface{}(&o).(cs.Payload)
-				response.Blocks = append(response.Blocks, payload)
-			} else if strings.Contains(typeStr, "MinorBlock") {
-				o := o1.(cs.MinorBlock)
-				payload := interface{}(&o).(cs.Payload)
-				response.Blocks = append(response.Blocks, payload)
-			} else if strings.Contains(typeStr, "FinalBlock") {
-				o := o1.(cs.FinalBlock)
-				payload := interface{}(&o).(cs.Payload)
-				response.Blocks = append(response.Blocks, payload)
-			} else if strings.Contains(typeStr, "ViewChangeBlock") {
-				o := o1.(cs.ViewChangeBlock)
-				payload := interface{}(&o).(cs.Payload)
-				response.Blocks = append(response.Blocks, payload)
-			} else {
-				log.Error("wrong block type, ", typeStr)
-			}*/
 		}
 	}
 
@@ -381,16 +368,14 @@ func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool  {
 				return false
 			}
 		}
+
 		//TODO, check cm block
 		blocks := s.cache.blocks[cs.HeCmBlock]
 		if !s.CheckSyncCompleteForCMBlock(&lastFinalBlock.CMBlockHash, &blocks) {
 			return false
 		}
 
-
 		return true
-
-
 
 	} else {
 		return false
@@ -457,7 +442,6 @@ func (s *Sync) FillSyncDataInCache(syncResponse *sc.SyncResponsePacket) {
 		s.FillSyncDataInCacheHelper(&list, s.cache.needHeightMinor[shardID], syncResponse)
 	}
 
-
 }
 
 func (s *Sync)  RecvSyncResponsePacket(packet *sc.CsPacket){
@@ -467,12 +451,19 @@ func (s *Sync)  RecvSyncResponsePacket(packet *sc.CsPacket){
 	s.FillSyncDataInCache(p)
 
 	if s.CheckSyncComplete(p) {
-		s.tellLedgerSyncComplete()
-		simulate.SyncComplete()
-		log.Info("invoke SyncComplete")
+		s.lock.Lock()
+
+		if s.synchronizing {
+			s.tellLedgerSyncComplete()
+			simulate.SyncComplete()
+			s.synchronizing = false
+			log.Info("invoke SyncComplete")
+		}
+
+		s.lock.Unlock()
 	} else {
 		log.Info("Data sync not complete")
-		s.SendSyncRequest()
+		//s.SendSyncRequest()
 	}
 }
 

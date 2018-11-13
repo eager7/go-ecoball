@@ -53,7 +53,6 @@ type shard struct {
 func MakeShardTest(ns *cell.Cell) *shard {
 	instance := MakeShard(ns)
 	return instance.(*shard)
-
 }
 
 func MakeShard(ns *cell.Cell) sc.NodeInstance {
