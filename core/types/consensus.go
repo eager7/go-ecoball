@@ -72,7 +72,7 @@ func NewConsensusPayload(Type ConType, payload ConsensusPayload) *ConsensusData 
 func InitConsensusData(timestamp int64) (*ConsensusData, error) {
 
 	switch config.ConsensusAlgorithm {
-	case "SOLO":
+	case "SOLO", "SHARD":
 		conType := ConSolo
 		conPayload := new(SoloData)
 		return NewConsensusPayload(conType, conPayload), nil
