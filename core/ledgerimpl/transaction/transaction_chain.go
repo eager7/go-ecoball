@@ -46,7 +46,7 @@ import (
 	"reflect"
 )
 
-var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
+var log = elog.NewLogger("Chain Tx", config.LogLevel)
 
 type StateDatabase struct {
 	FinalDB *state.State //final database in levelDB
@@ -1306,7 +1306,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		return nil, nil, err
 	}
 	log.Info("new minor block:", block.GetHeight(), " hash:", block.Hash(), block.JsonString())
-	log.Warn(block.Hash().HexString(), block.StateDeltaHash.HexString(), common.JsonString(c.StateDB.FinalDB.Params, false), common.JsonString(s.Accounts, false))
+	log.Notice(block.Hash().HexString(), block.StateDeltaHash.HexString(), common.JsonString(c.StateDB.FinalDB.Params, false), common.JsonString(s.Accounts, false))
 	return block, nil, nil
 }
 
@@ -1450,7 +1450,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 		return nil, err
 	}
 	log.Info("new final block:", block.Height, "hash:", block.Hash(), block.JsonString())
-	log.Warn(block.Hash().HexString(), block.StateHashRoot.HexString(), common.JsonString(c.StateDB.FinalDB.Params, false), common.JsonString(s.Accounts, false))
+	log.Notice(block.Hash().HexString(), block.StateHashRoot.HexString(), common.JsonString(c.StateDB.FinalDB.Params, false), common.JsonString(s.Accounts, false))
 	return block, nil
 }
 
