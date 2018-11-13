@@ -93,8 +93,9 @@ const (
 	onlineMode
 )
 
+
 func init() {
-	identify.ClientVersion = "ecoball/" + config.CurrentVersionNumber + "/" + config.CurrentCommit
+	identify.ClientVersion = "go-ipfs/" + config.CurrentVersionNumber + "/" + config.CurrentCommit
 }
 
 // IpfsNode is IPFS Core module. It represents an IPFS instance.
