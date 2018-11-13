@@ -19,12 +19,9 @@ package ipfs
 import (
 	"fmt"
 	"os"
-	"sort"
 	"path/filepath"
-	"github.com/ipfs/go-ipfs/core"
 	"github.com/ipfs/go-ipfs/repo/fsrepo"
 	"github.com/ipfs/go-ipfs/plugin/loader"
-	//"github.com/urfave/cli"
 	ecoballConfig "github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/dsn/host/cmd"
 )
@@ -42,26 +39,6 @@ func loadIpldPlugin() {
 	}
 }
 
-// printSwarmAddrs prints the addresses of the host
-func printSwarmAddrs(node *core.IpfsNode) {
-	if !node.OnlineMode() {
-		fmt.Println("Swarm not listening, running in offline mode.")
-		return
-	}
-
-	var lisAddrs []string
-	ifaceAddrs, err := node.PeerHost.Network().InterfaceListenAddresses()
-	if err != nil {
-		//log.Error("failed to read listening addresses: %s", err)
-	}
-	for _, addr := range ifaceAddrs {
-		lisAddrs = append(lisAddrs, addr.String())
-	}
-	sort.Sort(sort.StringSlice(lisAddrs))
-	for _, addr := range lisAddrs {
-		fmt.Printf("Swarm listening on %s\n", addr)
-	}
-}
 //initialize
 func Initialize() error {
 	if fsrepo.IsInitialized(ecoballConfig.IpfsDir) {
