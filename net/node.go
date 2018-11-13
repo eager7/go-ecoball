@@ -428,10 +428,14 @@ func (nn *NetNode) IsValidRemotePeer(p peer.ID) bool {
 		nn.shardingInfo.rwlck.RLock()
 		defer nn.shardingInfo.rwlck.RUnlock()
 
-		if nn.shardingInfo.info[nn.shardingInfo.shardId][p] == nil && nn.shardingInfo.info[0][p] == nil {
-			return false
+		for _, shard := range nn.shardingInfo.info {
+			if shard[p] != nil {
+				return true
+			}
 		}
-		return true
+
+		log.Error(nn.shardingInfo.shardId, p)
+		return false
 	}
 
 	return true
