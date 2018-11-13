@@ -1347,7 +1347,6 @@ func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBl
 		}
 		rewardEveryBlock := 10000 / totalNum		// reward(!0) every block
 
-
 		// calculate reward every producer
 		for i, s := range shards {
 			reward := num[i] * rewardEveryBlock / len(s.Member)		// reward(!0) every producer

@@ -35,6 +35,12 @@ var (
 				Action: dsnCatFile,
 	
 			},
+			{
+				Name:   "get",
+				Usage:  "get file",
+				Action: dsnGetFile,
+	
+			},
 		},
 		
 	}
@@ -87,6 +93,10 @@ func dsnAddFile(ctx *cli.Context) error {
 		return err
 	}
 	_, err = wClient.InvokeContract(transaction)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
 	return err
 }
 
@@ -114,15 +124,39 @@ func dsnCatFile (ctx *cli.Context) error {
 		fmt.Println(err.Error())
 		return err
 	}
+	
+	 payTrn, err := dclient.PayForFileSize(int64(len(d)))
+	 if err != nil {
+	 	fmt.Println(err.Error())
+	 	return err
+	}
+	trnID, err := wClient.Transer(payTrn)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	fmt.Println("payed for file, id: ", payTrn.Hash.HexString())
+	//Invoke file contract
+	transaction, err := dclient.InvokeFileContractWeb("cat" + cid, uint64(len(d)), cid, trnID)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	_, err = wClient.InvokeContract(transaction)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
 	fmt.Println(string(d))
 	return nil
 }
 
 func dsnGetFile(ctx *cli.Context) error {
+
 	cid := os.Args[3]
 	outPath := os.Args[4]
 	cbtx := context.Background()
-	walletName := "ecoball"
+	walletName := "dsnwallet"
 	accountName := "dsn"
 	collateral := 0
 	wClient := wc.NewWalletClient(accountName, walletName, collateral)
