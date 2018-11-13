@@ -78,7 +78,7 @@ func InitDefaultConf() RenterConf {
 
 func NewRenter(ctx context.Context, conf RenterConf) *DsnClient {
 
-
+    //读取服务端监听配置，此处ip监听必须和ipfs服务端监听一致，否则一但不是localhost,shell调用不能连接成功
 	cfg, err := serial.Load(path.Join(ecoballConfig.IpfsDir, "config"))
 	if err != nil {
 		return nil
@@ -92,7 +92,7 @@ func NewRenter(ctx context.Context, conf RenterConf) *DsnClient {
 	if err != nil {
 		return nil
 	}
-	
+    
 	r := DsnClient{
 		Conf: conf,
 		client: &http.Client{},
@@ -141,7 +141,7 @@ func (r *DsnClient)createFileContract(fname, cid, payid string) ([]byte, error) 
 	return fcBytes, nil
 }
 
-func (r *DsnClient)createFileContractWeb(fname string, size uint64, cid string) ([]byte, error) {
+func (r *DsnClient)createFileContractWeb(fname string, size uint64, cid, payid string) ([]byte, error) {
 
 	var fc dsnComm.FileContract
 	fc.LocalPath = fname
@@ -156,6 +156,7 @@ func (r *DsnClient)createFileContractWeb(fname string, size uint64, cid string) 
 	fc.Funds, _ = fee.GobEncode()
 	fc.Redundancy = r.Conf.Redundancy
 	fc.AccountName = r.Conf.AccountName
+	fc.PayId = payid
 	fcBytes := encoding.Marshal(fc)
 	/*annHash := sha256.Sum256(fcBytes)
 	sig, err := r.account.Sign(annHash[:])
@@ -184,6 +185,23 @@ func (r *DsnClient) PayForFile(fname string) (*types.Transaction, error) {
 	}
 	return tran, nil
 }
+
+func (r *DsnClient) PayForFileSize(size int64 ) (*types.Transaction, error) {
+	
+
+	fee := size * int64(r.Conf.Redundancy) / 1024 * 1024 + 1
+	//var bf big.Int
+	//fun := bf.SetInt64(fee)
+	bigValue := big.NewInt(fee)
+	timeNow := time.Now().UnixNano()
+	tran, err := types.NewTransfer(common.NameToIndex(r.Conf.AccountName),
+		innerCommon.NameToIndex(dsnComm.RootAccount), common.HexToHash(r.Conf.ChainId), "owner", bigValue, 0, timeNow)
+	if err != nil {
+		return nil, err
+	}
+	return tran, nil
+}
+
 func (r *DsnClient) InvokeFileContract(fname, cid, payId string) (*types.Transaction, error) {
 	/*if !r.isSynced {
 		return errUnSyncedStat
@@ -203,11 +221,11 @@ func (r *DsnClient) InvokeFileContract(fname, cid, payId string) (*types.Transac
 	return transaction, nil
 }
 
-func (r *DsnClient) InvokeFileContractWeb(fname string , size uint64, cid string) (*types.Transaction, error) {
+func (r *DsnClient) InvokeFileContractWeb(fname string , size uint64, cid, payId string) (*types.Transaction, error) {
 	/*if !r.isSynced {
 		return errUnSyncedStat
 	}*/
-	fc, err := r.createFileContractWeb(fname,size, cid)
+	fc, err := r.createFileContractWeb(fname,size, cid,payId)
 	if err != nil {
 		return  nil, errCreateContract
 	}

@@ -60,14 +60,14 @@ func InvokeContract(c *gin.Context) {
 	cmsg, err := event.SubscribeOnceEach(oneTransaction.Hash)
 	timeout := make(chan bool, 1)
 	go func() {
-		time.Sleep(time.Second * 30)
+		time.Sleep(time.Second * 10)
 		timeout <- true
 	}()
 	select {
 		case msg := <-cmsg:
 			result = msg.(string) + "\nwarning: transaction executed locally, but may not be confirmed by the network yet"
 		case <-timeout:
-			result = "trx handle timeout"
+			result = "trx handle timeout, maybe it had handled in other shard, please check it later"
 	}
 	//event.UnSubscribe(cmsg, oneTransaction.Hash)
 

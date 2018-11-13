@@ -24,9 +24,10 @@ import (
 	"github.com/ecoball/go-ecoball/core/store"
 	"sync"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
-var log = elog.NewLogger("state", elog.NoticeLog)
+var log = elog.NewLogger("state", config.LogLevel)
 var AbaToken = "ABA"
 
 type TypeState uint8
