@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/eballscan/syn"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/spectator/info"
+	"github.com/ecoball/eballscan/database"
 )
 
 var (
@@ -31,17 +32,17 @@ var (
 	Conn net.Conn
 )
 
-func Bystander() {
+func Bystander(address string) {
 	//Connect to server node
 	var err error
-	Conn, err = net.Dial("tcp", "127.0.0.1:9000")
+	Conn, err = net.Dial("tcp", address)
 	if err != nil {
-		log.Error("explorer server net.Dial error: ", err)
+		log.Error("explorer server net.Dial "+address+" error: ", err)
 		os.Exit(1)
 	}
 
 	//synchronous data
-	go syn.SynBlocks(Conn)
+	go syn_data(Conn)
 
 	//Get the notify data and process it
 	for {
@@ -51,11 +52,28 @@ func Bystander() {
 			continue
 		}
 
-		one := info.OneNotify{info.InfoNil, []byte{}}
+		one := info.OneNotify{info.InfoNil, []byte{}, 0}
 		if err := one.Deserialize(buf[:n]); nil != err {
 			log.Error("explorer server notify.Deserialize error: ", err)
 			continue
 		}
-		go notify.Dispatch(one)
+		notify.Dispatch(one)
 	}
+}
+
+func syn_data(Conn net.Conn){
+	heigt := syn.BlockHeight(database.MaxHeight)
+	syn.SynBlocks(Conn, &heigt)
+
+	committeeHeight := syn.CommitteeHeight(database.Max_Committee_Height)
+	syn.SynBlocks(Conn, &committeeHeight)
+
+	finalHeight := syn.FinalHeight(database.Max_Final_Height)
+	syn.SynBlocks(Conn, &finalHeight)
+
+	/*minorHeight := syn.MinorHeight(database.Max_Minor_Height)
+	syn.SynBlocks(Conn, &minorHeight)*/
+
+	viewChangeHeight := syn.ViewChangeHeight(database.Max_ViewChange_Height)
+	syn.SynBlocks(Conn, &viewChangeHeight)
 }

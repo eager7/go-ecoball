@@ -44,6 +44,7 @@ import (
 	"time"
 	"github.com/ecoball/go-ecoball/common/message"
 	"reflect"
+	shardCommon "github.com/ecoball/go-ecoball/sharding/common"
 )
 
 var log = elog.NewLogger("Chain Tx", config.LogLevel)
@@ -1160,26 +1161,45 @@ func (c *ChainTx) GetShardBlockByHeight(typ shard.HeaderType, height uint64, sha
 }
 
 /**
- *  @brief
- *  @param
+ *  @brief get the final block by epochNo
+ *  @param epochNo - the epochNo of block
  */
 func (c *ChainTx) GetFinalBlocksByEpochNo(epochNo uint64) (finalBlocks []shard.BlockInterface, num int, err error) {
+	if epochNo < 1 {
+		return nil, 0, errors.New(log, fmt.Sprintf("epochNo is invalid, %d < 1", epochNo))
+	}
+
+	// calculate height range in epoch
+	var heightMax,heightMin uint64
+	if epochNo > 1 {
+		heightMin = (epochNo - 2) * shardCommon.DefaultEpochFinalBlockNumber + 1
+		heightMax = (epochNo - 1) * shardCommon.DefaultEpochFinalBlockNumber
+	} else {
+		heightMin = 0
+		heightMax = 0
+	}
+
 	c.lockBlock.RLock()
 	defer c.lockBlock.RUnlock()
 	num = 0
+
 	for k, v := range c.BlockMap {
-		if v.Type == shard.HeCmBlock {
-			block, err := c.GetShardBlockByHash(v.Type, k)
-			if err != nil {
-				return nil, 0, errors.New(log, fmt.Sprintf("can't find this block:[type]%s, [epochNo]%d", v.Type.String(), epochNo))
+		if v.Type == shard.HeFinalBlock {
+			if v.Height >= heightMin && v.Height <= heightMax {
+				block, err := c.GetShardBlockByHash(shard.HeFinalBlock, k)
+				if err != nil {
+					return nil, 0, errors.New(log, fmt.Sprintf("can't find this block:[type]%s, [height]%d", shard.HeFinalBlock, v.Height))
+				}
+
+				finalBlocks = append(finalBlocks, block)
+				num++
 			}
-			finalBlocks = append(finalBlocks, block)
-			num++
 		}
 	}
 
 	return finalBlocks, num,nil
 }
+
 /**
  *  @brief get the last shard block by type, the minor block is local shard
  *  @param typ - the type of block
@@ -1345,11 +1365,12 @@ func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBl
 		for _, number := range num {
 			totalNum += number
 		}
+		log.Debug("totalNum: ", totalNum)
 		rewardEveryBlock := 10000 / totalNum		// reward(!0) every block
 
 		// calculate reward every producer
 		for i, s := range shards {
-			reward := num[i] * rewardEveryBlock / len(s.Member)		// reward(!0) every producer
+			reward := num[i + 1] * rewardEveryBlock / len(s.Member)		// reward(!0) every producer
 			for _, member := range s.Member {
 				log.Debug(string(member.PublicKey) + " get reward ", reward)
 			}

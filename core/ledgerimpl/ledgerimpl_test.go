@@ -178,7 +178,7 @@ func TestInterface(t *testing.T) {
 	event.EventStop()
 }
 
-func xTestShard(t *testing.T) {
+func TestShard(t *testing.T) {
 	os.RemoveAll("/tmp/shard_test")
 	simulate.LoadConfig()
 	l, err := ledgerimpl.NewLedger("/tmp/shard_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
@@ -230,6 +230,53 @@ func xTestShard(t *testing.T) {
 	elog.Log.Info("Final Block:", blockNew.JsonString())
 	errors.CheckEqualPanic(blockFinal.JsonString() == blockNew.JsonString())
 	event.EventStop()
+
+
+	//MinorBlock
+	blockNew, err = l.GetLastShardBlock(config.ChainHash, shard.HeMinorBlock)
+	errors.CheckErrorPanic(err)
+	blockMinor, _, err = l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockMinor))
+	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeMinorBlock, blockMinor.Hash())
+	errors.CheckErrorPanic(err)
+	elog.Log.Info("Minor Block:", blockNew.JsonString())
+	errors.CheckEqualPanic(blockMinor.JsonString() == blockNew.JsonString())
+
+
+	//FinalBlock
+	blockNew, err = l.GetLastShardBlock(config.ChainHash, shard.HeFinalBlock)
+	errors.CheckErrorPanic(err)
+	blockFinal, err = l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []common.Hash{blockMinor.Hash()})
+	//blockFinal, err = l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []*shard.MinorBlockHeader{&blockMinor.MinorBlockHeader})
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockFinal))
+	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeFinalBlock, blockFinal.Hash())
+	errors.CheckErrorPanic(err)
+	elog.Log.Info("Final Block:", blockNew.JsonString())
+	errors.CheckEqualPanic(blockFinal.JsonString() == blockNew.JsonString())
+	event.EventStop()
+
+	blockNew, err = l.GetLastShardBlock(config.ChainHash, shard.HeCmBlock)
+	errors.CheckErrorPanic(err)
+	shards = []shard.Shard{shard.Shard{
+		Member:     []shard.NodeInfo{shard.NodeInfo{
+			PublicKey: simulate.GetNodePubKey(),
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
+		}},
+		MemberAddr: []shard.NodeAddr{shard.NodeAddr{
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
+		}},
+	}}
+	blockCM, err = l.NewCmBlock(config.ChainHash, time.Now().UnixNano(), shards)
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockCM))
+	blockNew, err = l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, blockCM.Hash())
+	errors.CheckErrorPanic(err)
+	elog.Log.Info("Committee Block:", blockNew.JsonString())
+	errors.CheckEqualPanic(blockCM.JsonString() == blockNew.JsonString())
 }
 
 func TestExample(t *testing.T) {

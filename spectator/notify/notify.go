@@ -45,7 +45,7 @@ func ReceiveNotify(conn net.Conn) {
 func dispatch(conn net.Conn, one info.OneNotify) {
 	switch one.InfoType {
 	case info.SynBlock:
-		if err := HandleSynBlock(conn, one.Info); nil != err {
+		if err := HandleSynBlock(conn, one); nil != err {
 			log.Error("handleBlock error: ", err)
 		}
 	default:
