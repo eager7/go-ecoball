@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/spectator/info"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/core/shard"
 )
 
 var (
@@ -31,43 +32,137 @@ var (
 	log        = elog.NewLogger("notify", elog.DebugLog)
 )
 
-func HandleSynBlock(conn net.Conn, msg []byte) error {
-	var blockHight scanSyn.BlockHight
-	if err := blockHight.Deserialize(msg); nil != err {
-		return err
+func HandleSynBlock(conn net.Conn, one info.OneNotify) error {
+	if config.ConsensusAlgorithm == "SOLO"{
+		if one.BlockType == 0{
+			var blockHight scanSyn.BlockHeight
+			if err := blockHight.Deserialize(one.Info); nil != err {
+				return err
+			}
+			hight := uint64(blockHight)
+
+			nowHight := CoreLedger.GetCurrentHeight(config.ChainHash)
+			for hight < nowHight {
+				hight++
+		
+				block, err := CoreLedger.GetTxBlockByHeight(config.ChainHash, hight)
+				if nil != err {
+					log.Error("GetTxBlockByHeight error: ", err)
+					continue
+				}
+
+				if err := send_message(info.InfoBlock, conn, block); nil != err {
+					log.Error("send_message error: ", err)
+				}
+			}
+		}
 	}
 
-	hight := uint64(blockHight)
+	if config.ConsensusAlgorithm == "SHARD"{
+		switch one.BlockType {
+		case 1:
+			var Height scanSyn.CommitteeHeight
+			if err := Height.Deserialize(one.Info); nil != err {
+				return err
+			}
+			height := uint64(Height)
 
-	nowHight := CoreLedger.GetCurrentHeight(config.ChainHash)
-	for hight < nowHight {
-		hight++
+			synShardBlock(height, shard.HeCmBlock, conn)
+			break
+		case 2:
+			var Height scanSyn.FinalHeight
+			if err := Height.Deserialize(one.Info); nil != err {
+				return err
+			}
+			height := uint64(Height)
 
-		block, err := CoreLedger.GetTxBlockByHeight(config.ChainHash, hight)
+			synShardBlock(height, shard.HeFinalBlock, conn)
+			break
+		case 3:
+			break
+		case 4:
+			var Height scanSyn.ViewChangeHeight
+			if err := Height.Deserialize(one.Info); nil != err {
+				return err
+			}
+			height := uint64(Height)
+
+			synShardBlock(height, shard.HeViewChange, conn)
+			break
+		default:
+		}
+	}
+
+	return nil
+}
+
+func synShardBlock(height uint64, typ shard.HeaderType, conn net.Conn) error{
+	block, err := CoreLedger.GetLastShardBlock(config.ChainHash, typ)
+	if nil != err {
+		log.Error("GetLastShardBlock error: ", err)
+	}
+
+	for height < block.GetHeight(){
+		height++
+
+		block, err := CoreLedger.GetShardBlockByHeight(config.ChainHash, typ, height, 0)
 		if nil != err {
 			log.Error("GetTxBlockByHeight error: ", err)
 			continue
 		}
 
-		notify, err := info.NewOneNotify(info.InfoBlock, block)
-		if nil != err {
-			log.Error("NewOneNotify error: ", err)
-			continue
+		if err := send_message(info.ShardBlock, conn, block); nil != err {
+			log.Error("send_message error: ", err)
 		}
 
-		data, err := notify.Serialize()
-		if nil != err {
-			log.Error("Serialize error: ", err)
-			continue
-		}
+		if shard.HeFinalBlock == typ {
+			data, err := block.Serialize()
+			if nil != err {
+				continue
+			}
 
-		data = info.MessageDecorate(data)
-		if _, err := conn.Write(data); nil != err {
-			addr := conn.RemoteAddr().String()
-			log.Warn(addr, " disconnect")
-			break
+			final := new(shard.FinalBlock)
+			err = final.Deserialize(data)
+			if nil != err {
+				continue
+			}
+
+			if len(final.MinorBlocks) > 0 {
+				for _, v := range final.MinorBlocks{
+					minorblock, err := CoreLedger.GetShardBlockByHash(config.ChainHash, shard.HeMinorBlock, v.Hash())
+					if nil != err {
+						continue
+					}
+
+					if err := send_message(info.ShardBlock, conn, minorblock); nil != err{
+						log.Error("send_message error: ", err)
+					}
+				}
+			}
 		}
 	}
 
+	return nil
+}
+
+func send_message(oneType info.NotifyType, conn net.Conn, message info.NotifyInfo) error{
+	notify, err := info.NewOneNotify(oneType, message)
+	if nil != err {
+		log.Error("NewOneNotify error: ", err)
+		return err
+	}
+
+	data, err := notify.Serialize()
+	if nil != err {
+		log.Error("Serialize error: ", err)
+		return err
+	}
+
+	data = info.MessageDecorate(data)
+	if _, err := conn.Write(data); nil != err {
+		addr := conn.RemoteAddr().String()
+		log.Warn(addr, " disconnect")
+		return err
+	}
 	return nil
 }

@@ -145,7 +145,7 @@ func newInvokeContract(c *gin.Context) {
 	hash := new(innerCommon.Hash)
 	chainId := hash.FormHexString(chainId_str)
 
-	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, chainId, "owner", "new_account",
+	invoke, err := types.NewInvokeContract(creatorAccount, innerCommon.NameToIndex("root"), chainId, "owner", "new_account",
 		[]string{accountName, innerCommon.AddressFromPubKey(innerCommon.FromHex(owner)).HexString()}, 0, timeStamp)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
@@ -371,5 +371,21 @@ func invokeContractForScan(c *gin.Context) {
 		return 
 	}
 
-	c.JSON(http.StatusOK, gin.H{"result": "success"})
+	// wait for trx handle result
+	var result string
+	cmsg, err := event.SubscribeOnceEach(invoke.Hash)
+	timeout := make(chan bool, 1)
+	go func() {
+		time.Sleep(time.Second * 30)
+		timeout <- true
+	}()
+	select {
+		case msg := <-cmsg:
+			result = msg.(string) + "\nwarning: transaction executed locally, but may not be confirmed by the network yet"
+		case <-timeout:
+			result = "trx handle timeout"
+	}
+	//event.UnSubscribe(cmsg, oneTransaction.Hash)
+
+	c.JSON(http.StatusOK, gin.H{"result": result})
 }
