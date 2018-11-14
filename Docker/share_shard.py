@@ -66,7 +66,8 @@ def get_config(num):
 
 
 # get netwoek config
-with open('shard_setup.toml') as setup_file:
+root_dir = os.path.split(os.path.realpath(__file__))[0]
+with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
     data = pytoml.load(setup_file)
 
 network = data["network"]
@@ -77,7 +78,6 @@ committee_count = network[host_ip][0]
 shard_count = network[host_ip][1]
 
 #create directory
-root_dir = os.path.split(os.path.realpath(__file__))[0]
 log_dir = os.path.join(root_dir, 'ecoball_log/shard')
 if not os.path.exists(log_dir):
      os.makedirs(log_dir)
