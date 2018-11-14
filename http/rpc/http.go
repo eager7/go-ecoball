@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"net"
 	//"io/ioutil"
 	"encoding/base64"
 
@@ -78,23 +77,7 @@ func StartHttpServer() (err error) {
 	router.POST("/dsn/getipinfo", commands.DsnGetIpInfo)
 	router.GET("/dsn/dsnaddfilecid", commands.DsnaddfileCid)
 
-	addrs, err := net.InterfaceAddrs()
-
-	if err != nil {
-		return err
-	}
-
-	NodeIp := "" 
-	for _, address := range addrs {
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				NodeIp = ipnet.IP.String()
-				break
-			}
-		}
-	}
-
-	http.ListenAndServe(NodeIp+":"+config.HttpLocalPort, router)
+	http.ListenAndServe(":"+config.HttpLocalPort, router)
 	return nil
 }
 

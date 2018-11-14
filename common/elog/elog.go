@@ -69,9 +69,13 @@ type Logger interface {
 }
 
 type loggerModule struct {
-	logger *log.Logger
-	name   string
-	level  int
+	logger  *log.Logger
+	fd      *os.File
+	fileName string
+	name    string
+	level   int
+	maxSize int
+	curSize int
 }
 
 func fileOpen(path string) (*os.File, error) {
@@ -96,15 +100,15 @@ func fileOpen(path string) (*os.File, error) {
 }
 
 func NewLogger(moduleName string, level int) Logger {
-	InitFile()
+	file := InitFile()
 	logger := log.New(fileAndStdoutWrite, "", log.Ldate|log.Lmicroseconds|log.LstdFlags)
-	module := loggerModule{logger, moduleName, level}
+	module := loggerModule{logger: logger, name: moduleName, level: level, maxSize: 1024 * 1024 * 50, curSize: 0, fd: file}
 	return &module
 }
 
 var fileAndStdoutWrite io.Writer
 
-func InitFile() {
+func InitFile() *os.File {
 	//get configured output
 	var output io.Writer = os.Stdout
 	if !config.OutputToTerminal {
@@ -125,13 +129,7 @@ func InitFile() {
 
 	var writers = []io.Writer{output, logFile}
 	fileAndStdoutWrite = io.MultiWriter(writers...)
-}
-
-func checkPrint(printLevel int) bool {
-	if printLevel < config.LogLevel {
-		return false
-	}
-	return true
+	return logFile
 }
 
 func (l *loggerModule) GetLogger() *log.Logger {
@@ -232,7 +230,6 @@ func (l *loggerModule) ErrStack(a ...interface{}) {
 	debug.PrintStack()
 }
 
-
 func (l *loggerModule) Fatal(a ...interface{}) {
 	if l.level > FatalLog {
 		return
@@ -250,4 +247,30 @@ func (l *loggerModule) Panic(a ...interface{}) {
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ PANIC " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
 	l.logger.Panic(a...)
+}
+
+func (l *loggerModule) CheckLogFile(s string) {
+	if l.curSize > l.maxSize {
+		l.fd.Close()
+
+		//for i := h.backupCount - 1; i > 0; i-- {
+		//	sfn := fmt.Sprintf("%s.%d", h.fileName, i)
+		//	dfn := fmt.Sprintf("%s.%d", h.fileName, i+1)
+
+		//	os.Rename(sfn, dfn)
+		//}
+
+		dfn := fmt.Sprintf("%s.1", l.fileName)
+		os.Rename(l.fileName, dfn)
+
+		l.fd, _ = os.OpenFile(l.fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		l.curSize = 0
+		f, err := l.fd.Stat()
+		if err != nil {
+			return
+		}
+		l.curSize = int(f.Size())
+	} else {
+		l.curSize += len(s)
+	}
 }
