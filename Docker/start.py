@@ -78,7 +78,7 @@ node_index = ip + "_" + str(args.number)
 data = {
     "size": str(args.size),
     "Pubkey": all_config[node_index]["p2p_peer_publickey"],
-    "Address": args.host_ip,
+    "Address": "0.0.0.0",
     "Port": str(start_port + args.number),
     "Committee": committee,
     "Shard": shard
