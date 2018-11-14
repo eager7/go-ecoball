@@ -27,14 +27,16 @@ def run(shell_command):
 parser = argparse.ArgumentParser()
 parser.add_argument('-o', '--host-ip', metavar='', required=True, help="IP address of host node", dest="host_ip")
 parser.add_argument('-n', '--number', type=int, required=True, metavar='', help="The index number of container instance", dest="number")
-parser.add_argument('-e', '--network', metavar='', required=True, help="Network host IP address list and the number of Committee and Shard on each physical machine")
+parser.add_argument('-a', '--all-config', metavar='', required=True, help="All configuration information", dest="all_config")
+parser.add_argument('-s', '--size', type=int, default=5, help="Number of nodes per shard")
 parser.add_argument('-c', '--config', metavar='', help="Different configuration items for ecoball.toml")
 
 #parse Arguments
 args = parser.parse_args()
 
 #Generate the configuration json files required for sharding
-network =json.loads(args.network)
+all_config =json.loads(args.all_config)
+network = all_config["network"]
 node_ip = []
 for ip in network:
     node_ip.append(ip)
@@ -46,14 +48,14 @@ committee = []
 shard = []
 list_count = []
 
-container_count = 0
 for ip in node_ip:
     port_index = 0
     committee_count = network[ip][0]
     shard_count = network[ip][1]
     while port_index < committee_count + shard_count:
+        node_index = ip + "_" + str(port_index)
         node = {
-            "Pubkey": Pubkey + str(start_pubkey + container_count + port_index), 
+            "Pubkey": all_config[node_index]["p2p_peer_publickey"], 
             "Address": ip, 
             "Port": str(start_port + port_index)
         }
@@ -62,7 +64,6 @@ for ip in node_ip:
             committee.append(node)
         else:
             shard.append(node)
-    container_count += port_index
     list_count.append(port_index)
 
 
@@ -73,9 +74,10 @@ while i < ip_index:
     key_base += list_count[i]
     i += 1
 
-
+node_index = ip + "_" + str(args.number)
 data = {
-    "Pubkey": Pubkey + str(start_pubkey + key_base + args.number),
+    "size": str(args.size),
+    "Pubkey": all_config[node_index]["p2p_peer_publickey"],
     "Address": args.host_ip,
     "Port": str(start_port + args.number),
     "Committee": committee,

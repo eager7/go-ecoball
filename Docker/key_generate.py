@@ -72,6 +72,7 @@ data = {}
 with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
     data = pytoml.load(setup_file)
 
+start_port = 3000
 network = data["network"]
 for one_ip in network:
     count_list = network[one_ip]
@@ -93,11 +94,17 @@ for one_ip in network:
                 index = one_str.find("Public  Key:") 
                 if -1 != index:
                     public_str = one_str[index + len("Public  Key:"):].strip()
-            one_config = one_ip + "_" + str(count)
+            if 1 == i:
+                tail = count + count_list[0]
+            else:
+                tail = count
+            one_config = one_ip + "_" + str(tail)
             if one_config not in data:
                 data[one_config] = {}
             data[one_config]["p2p_peer_privatekey"] = private_str
             data[one_config]["p2p_peer_publickey"] = public_str
+            port = start_port + tail
+            data[one_config]["p2p_listen_address"] = ["/ip4/" + one_ip + "/tcp/" + str(port), "/ip6/::/tcp/4013"]
             count += 1
 
 #new config

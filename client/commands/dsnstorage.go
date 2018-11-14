@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"os"
+
 	"context"
 	"io/ioutil"
 	"errors"
@@ -22,9 +22,8 @@ var (
 				Action: dsnAddFile,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "add_-1, 1",
-						Usage: "add -1",
-						Value: "-1",
+						Name:  "path, p",
+						Usage: "file path name",
 					},
 				},
 
@@ -33,12 +32,29 @@ var (
 				Name:   "cat",
 				Usage:  "cat file",
 				Action: dsnCatFile,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "cid, c",
+						Usage: "input cid",
+					},
+				},
 	
 			},
 			{
 				Name:   "get",
 				Usage:  "get file",
 				Action: dsnGetFile,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "cid, c",
+						Usage: "input cid",
+						
+					},
+					cli.StringFlag{
+						Name:  "path, p",
+						Usage: "file path name",
+					},
+				},
 	
 			},
 		},
@@ -50,13 +66,15 @@ var (
 
 func dsnAddFile(ctx *cli.Context) error {
 
-	if len(os.Args) < 4{
-		return errors.New("please input dsnstorage add filepath")
+	path := ctx.String("path")
+	if path == "" {
+		fmt.Println("input dsnstorage add filepath")
+		return errors.New("Invalid filepath name")
 	}
 
-	cbtx := context.Background()
-	file := os.Args[3]
 
+	cbtx := context.Background()
+	file := path
 	walletName := "dsnwallet"
 	accountName := "dsn"
 	collateral := 0
@@ -108,10 +126,13 @@ func dsnAddFile(ctx *cli.Context) error {
 
 func dsnCatFile (ctx *cli.Context) error {
 
-	
-	if len(os.Args) < 4{
-		return errors.New("please input dsnstorage cat cid")
+
+	cid := ctx.String("cid")
+	if cid == "" {
+		fmt.Println("input dsnstorage cat -c cid")
+		return errors.New("please input dsnstorage cat -c cid")
 	}
+	
 
 	cbtx := context.Background()
 	walletName := "dsnwallet"
@@ -124,7 +145,7 @@ func dsnCatFile (ctx *cli.Context) error {
 	}
 	dclient := fc.NewRcWithDefaultConf(cbtx)
 	//dclient.CheckCollateral()
-	cid := os.Args[3]
+	//cid := os.Args[3]
 
 	r, err := dclient.CatFile(cid)
 	if err != nil {
@@ -165,12 +186,21 @@ func dsnCatFile (ctx *cli.Context) error {
 
 func dsnGetFile(ctx *cli.Context) error {
 
-	if len(os.Args) < 5{
-		return errors.New("please input dsnstorage get cid localfilepath")
+
+	outPath := ctx.String("path")
+	if outPath == "" {
+		fmt.Println("Invalid filepath name")
+		return errors.New("Invalid filepath name")
 	}
 
-	cid := os.Args[3]
-	outPath := os.Args[4]
+	
+	cid := ctx.String("cid")
+	if cid == "" {
+		fmt.Println("cid invalid")
+		return errors.New("please input  cid")
+	}
+
+
 	cbtx := context.Background()
 	walletName := "dsnwallet"
 	accountName := "dsn"

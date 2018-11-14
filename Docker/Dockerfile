@@ -19,7 +19,7 @@ COPY ecoball /ecoball/ecoball/
 COPY ecoball.toml /ecoball/ecoball/
 COPY start.py /ecoball/ecoball/
 COPY ecowallet /ecoball/ecowallet/
-COPY eballscan /ecoball/eballscan/
+COPY eballscan /ecoball/eballscan/build/
 COPY eballscan_service.sh /ecoball/eballscan/
 COPY swarm.key /tmp/storage
 EXPOSE 20678
