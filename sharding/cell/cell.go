@@ -186,13 +186,19 @@ func (c *Cell) SaveLastFinalBlock(bk *cs.FinalBlock) {
 	}
 
 	c.chain.setFinalBlock(bk)
-
+	inFinal := false
 	for _, minor := range bk.MinorBlocks {
 		log.Debug("minor block shard id ", minor.ShardId, " height ", minor.Height)
-		c.chain.setShardHeight(minor.ShardId, minor.Height)
 		if uint32(c.Shardid) == minor.ShardId {
+			inFinal = true
 			c.chain.saveMinorBlock(minor)
+		} else {
+			c.chain.setShardHeight(minor.ShardId, minor.Height)
 		}
+	}
+
+	if !inFinal {
+		c.chain.preMinorBlock = nil
 	}
 
 	c.minorBlockPool.clean()
