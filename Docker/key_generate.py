@@ -42,7 +42,7 @@ def run_shell_output(command, print_output=True, universal_newlines=True):
             line = p.stdout.readline()
             if not line:
                 break
-            print line.strip("/n")
+            print(line.strip("\n"))
             output_array.append(line)
         output ="".join(output_array)
     else:
@@ -50,7 +50,7 @@ def run_shell_output(command, print_output=True, universal_newlines=True):
     p.wait()
     errout = p.stderr.read()
     if print_output and errout:
-        print >> sys.stderr, errout
+        sys.stdout.write(errout)
     p.stdout.close()
     p.stderr.close()
     return output, p.returncode
@@ -64,7 +64,7 @@ if not os.path.exists(tool_dir):
 
 # Generate the latest tools
 gen_file = os.path.join(root_dir, "../test/rsakeygen/main.go")
-run("cd " + tool_dir + "&& go build " + gen_file + " -o key_gen")
+run("cd " + tool_dir + "&& go build -o key_gen " + gen_file)
 key_gen = os.path.join(tool_dir + "key_gen")
 
 #get config
