@@ -117,7 +117,7 @@ func (c *committee) reshardWorker(height uint64) (candidate *cs.NodeInfo, shards
 		candidate = &can
 	} else {
 		var can cs.NodeInfo
-		back := c.ns.GetBackup()
+		back := c.ns.GetCommitteeBackup()
 		if back != nil {
 			can.PublicKey = []byte(back.Pubkey)
 			can.Address = back.Address
