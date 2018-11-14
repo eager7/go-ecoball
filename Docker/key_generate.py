@@ -77,7 +77,7 @@ for one_ip in network:
     count_list = network[one_ip]
     for i in range(2):
         count = 0
-        while count < count_list[0]:
+        while count < count_list[i]:
             result_str, result_code = run_shell_output(key_gen)
             if result_code != 0:
                 print('key_generate.py: exiting because of error')
@@ -89,7 +89,7 @@ for one_ip in network:
                 index = one_str.find("Private Key:")
                 if -1 != index:
                     private_str = one_str[index + len("Private Key:"):].strip()
-                    break
+                    continue
                 index = one_str.find("Public  Key:") 
                 if -1 != index:
                     public_str = one_str[index + len("Public  Key:"):].strip()
