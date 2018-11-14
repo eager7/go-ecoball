@@ -68,7 +68,8 @@ def get_config(num):
 
 # Command Line Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-d', '--deploy-browser-wallet', action='store_true', help="Whether to deploy the browser and wallet", dest="deploy")
+parser.add_argument('-b', '--deploy-browser', action='store_true', help="Whether to deploy the browsert", dest="browser")
+parser.add_argument('-w', '--deploy-wallet', action='store_true', help="Whether to deploy the wallet", dest="wallet")
 
 # parse Arguments
 args = parser.parse_args()
@@ -115,16 +116,17 @@ while count < committee_count:
     run(command)
     sleep(2)
 
-    if args.deploy and count == committee_count - 1:
-        # start ecowallet
-        command = "sudo docker run -d --name=ecowallet -p 20679:20679 "
-        command += image + " /ecoball/ecowallet/ecowallet"
-        run(command)
-        sleep(2)
-
+    if args.browser and count == committee_count - 1:
         # start eballscan
         command = "sudo docker run -d --name=eballscan --link=ecoball_0:ecoball_alias -p 20680:20680 "
         command += image + " /ecoball/eballscan/eballscan_service.sh ecoball_0"
+        run(command)
+        sleep(2)
+
+    if args.wallet and count == committee_count - 1:
+        # start ecowallet
+        command = "sudo docker run -d --name=ecowallet -p 20679:20679 "
+        command += image + " /ecoball/ecowallet/ecowallet"
         run(command)
         sleep(2)
 
