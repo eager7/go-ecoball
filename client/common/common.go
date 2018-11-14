@@ -26,9 +26,9 @@ import (
 )
 
 var (
-	NodeIp     string
+	NodeIp     = "localhost"
 	NodePort   = "20678"
-	WalletIp   string
+	WalletIp   = "localhost"
 	WalletPort = "20679"
 )
 
