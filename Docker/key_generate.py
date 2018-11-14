@@ -104,7 +104,7 @@ for one_ip in network:
             data[one_config]["p2p_peer_privatekey"] = private_str
             data[one_config]["p2p_peer_publickey"] = public_str
             port = start_port + tail
-            data[one_config]["p2p_listen_address"] = ["/ip4/" + one_ip + "/tcp/" + str(port), "/ip6/::/tcp/4013"]
+            data[one_config]["p2p_listen_address"] = ["/ip4/0.0.0.0/tcp/" + str(port), "/ip6/::/tcp/4013"]
             count += 1
 
 #new config
