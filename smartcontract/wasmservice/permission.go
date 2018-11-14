@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-// C API: require_auth(char *account, int32 accountLen)
+// C API: ABA_require_auth(char *account, int32 accountLen)
 func (ws *WasmService)require_auth(proc *exec.Process, account, accountLen int32) int32{
 	account_msg := make([]byte, accountLen)
 	err := proc.ReadAt(account_msg, int(account), int(accountLen))
@@ -27,5 +27,5 @@ func (ws *WasmService)require_auth(proc *exec.Process, account, accountLen int32
 	fmt.Printf("%s has not %s active permission\n", ws.action.Permission.Actor.String(), accountSlice)
 	proc.Terminate()
 
-	return -1
+	return -2
 }

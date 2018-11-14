@@ -8,7 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/http/common/abi"
 )
 
-// C API: inline_action(char *account, int32 accountLen, char *action, int32 actionLen, char *actionData, int32 actionDataLen, char *actor, actorLen, char *perm, int32 permLen)
+// C API: ABA_inline_action(char *account, int32 accountLen, char *action, int32 actionLen, char *actionData, int32 actionDataLen, char *actor, actorLen, char *perm, int32 permLen)
 func (ws *WasmService)inline_action(proc *exec.Process, contract, contractLen, action, actionLen, actionData, actionDataLen, actor, actorLen, perm, permLen int32) int32{
 	contract_msg := make([]byte, contractLen)
 	err := proc.ReadAt(contract_msg, int(contract), int(contractLen))

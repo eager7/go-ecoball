@@ -127,7 +127,7 @@ func (ws *WasmService) issueToken(proc *exec.Process, to, toLen, amount, name, n
 	return 0
 }
 
-// C API: transfer(char *from, int32 fromLen, char *to, int32 toLen, int32 amount, char *name, int32 nameLen, char *perm, int32 permLen)
+// C API: ABA_transfer(char *from, int32 fromLen, char *to, int32 toLen, int32 amount, char *name, int32 nameLen, char *perm, int32 permLen)
 func (ws *WasmService)transfer(proc *exec.Process, from, fromLen, to, toLen, amount, name, nameLen, perm, permLen int32) int32{
 	if amount <= 0 {
 		return -1
@@ -204,7 +204,7 @@ func (ws *WasmService)transfer(proc *exec.Process, from, fromLen, to, toLen, amo
 
 	return 0
 }
-
+// C API: ABA_tokenExisted(char *name, int nameLen)
 func (ws *WasmService)tokenExisted(proc *exec.Process, name, nameLen int32) int32 {
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
@@ -238,8 +238,8 @@ type SliceMock struct {
 	len  int
 	cap  int
 }
-
-func (ws *WasmService)getTokenStatus(proc *exec.Process, name, nameLen, token, tokenLen int32) int32{
+// C API: ABA_getTokenStatus(char *name, int nameLen, char *stat, int statLen)
+func (ws *WasmService)getTokenStatus(proc *exec.Process, name, nameLen, stat, statLen int32) int32{
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
 	if err != nil{
@@ -281,8 +281,8 @@ func (ws *WasmService)getTokenStatus(proc *exec.Process, name, nameLen, token, t
 		Issuer:		issuer,
 	}
 
-	if int(tokenLen) > (int)(unsafe.Sizeof(*status)) {
-		tokenLen = int32(unsafe.Sizeof(*status))
+	if int(statLen) > (int)(unsafe.Sizeof(*status)) {
+		statLen = int32(unsafe.Sizeof(*status))
 	}
 
 	Len := unsafe.Sizeof(*status)
@@ -295,15 +295,15 @@ func (ws *WasmService)getTokenStatus(proc *exec.Process, name, nameLen, token, t
 	// convert TokenStatus to []byte
 	data := *(*[]byte)(unsafe.Pointer(bytes))
 
-	err = proc.WriteAt(data[:], int(token), int(tokenLen))
+	err = proc.WriteAt(data[:], int(stat), int(statLen))
 	if err != nil{
 		return -1
 	}
 
 	return 0
 }
-
-func (ws *WasmService)putTokenStatus(proc *exec.Process, name, nameLen, token, tokenLen int32) int32{
+// C API: ABA_putTokenStatus(char *name, int nameLen, char *stat, int statLen)
+func (ws *WasmService)putTokenStatus(proc *exec.Process, name, nameLen, stat, statLen int32) int32{
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
 	if err != nil{
@@ -335,8 +335,8 @@ func (ws *WasmService)putTokenStatus(proc *exec.Process, name, nameLen, token, t
 		//}
 	}
 
-	data := make([]byte, tokenLen)
-	err = proc.ReadAt(data, int(token), int(tokenLen))
+	data := make([]byte, statLen)
+	err = proc.ReadAt(data, int(stat), int(statLen))
 	if err != nil{
 		return -1
 	}
@@ -362,6 +362,7 @@ func (ws *WasmService)putTokenStatus(proc *exec.Process, name, nameLen, token, t
 	return 0
 }
 
+// C API: ABA_getTokenInfo(char *name, int nameLen, int maxSupply, int maxSupplyLen, int supply, int supplyLen, char *issuer, int issuerLen)
 func (ws *WasmService) getTokenInfo(proc *exec.Process, name, nameLen int32, maxSupply, maxSupplyLen, supply, supplyLen, issuer, issuerLen int32) int32 {
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
@@ -423,8 +424,7 @@ func (ws *WasmService) getTokenInfo(proc *exec.Process, name, nameLen int32, max
 
 	return 0
 }
-
-// C API: issueToken(char *name, int32 nameLen, int32 maxSupply, char *issuer, int32 issuerLen)
+// C API: ABA_putTokenInfo(char *name, int nameLen, int maxSupply, int maxSupplyLen, int supply, int supplyLen, char *issuer, int issuerLen)
 func (ws *WasmService) putTokenInfo(proc *exec.Process, name, nameLen int32, maxSupply, supply int64, issuer, issuerLen int32) int32 {
 	if maxSupply <= 0 {
 		return -1
@@ -490,6 +490,7 @@ func (ws *WasmService) putTokenInfo(proc *exec.Process, name, nameLen int32, max
 	return 0
 }
 
+// C API: ABA_getAccountBalance(char *account, int accountLen, char *name, int nameLen)
 func (ws *WasmService)getAccountBalance(proc *exec.Process, account, accountLen, name, nameLen int32) int64{
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
@@ -524,7 +525,7 @@ func (ws *WasmService)getAccountBalance(proc *exec.Process, account, accountLen,
 
 	return bal.Int64()
 }
-
+// C API: ABA_addAccountBalance(char *account, int accountLen, char *name, int nameLen, long long int amount)
 func (ws *WasmService)addAccountBalance(proc *exec.Process, account, accountLen, name, nameLen int32, amount int64) int32{
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
@@ -622,7 +623,7 @@ func (ws *WasmService)addAccountBalance(proc *exec.Process, account, accountLen,
 
 	return 0
 }
-
+// C API: ABA_subAccountBalance(char *account, int accountLen, char *name, int nameLen, long long int amount)
 func (ws *WasmService)subAccountBalance(proc *exec.Process, account, accountLen, name, nameLen int32, amount int64) int32{
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
