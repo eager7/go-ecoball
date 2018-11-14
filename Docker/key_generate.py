@@ -75,29 +75,30 @@ with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
 network = data["network"]
 for one_ip in network:
     count_list = network[one_ip]
-    count = 0
-    while count < count_list[0]:
-        result_str, result_code = run_shell_output(key_gen)
-        if result_code != 0:
-            print('key_generate.py: exiting because of error')
-            sys.exit(1)
-        result_list = result_str.split("/n")
-        private_str = ""
-        public_str = ""
-        for one_str in result_list:
-            index = one_str.find("Private Key:")
-            if -1 != index:
-                private_str = one_str[index + len("Private Key:"):].strip()
-                break
-            index = one_str.find("Public  Key:") 
-            if -1 != index:
-                public_str = one_str[index + len("Public  Key:"):].strip()
-        one_config = one_ip + "_" + str(count)
-        if not data.has_key(one_config):
-            data[one_config] = {}
-        data[one_config]["p2p_peer_privatekey"] = private_str
-        data[one_config]["p2p_peer_publickey"] = public_str
-        count += 1
+    for i in range(2):
+        count = 0
+        while count < count_list[0]:
+            result_str, result_code = run_shell_output(key_gen)
+            if result_code != 0:
+                print('key_generate.py: exiting because of error')
+                sys.exit(1)
+            result_list = result_str.split("\n")
+            private_str = ""
+            public_str = ""
+            for one_str in result_list:
+                index = one_str.find("Private Key:")
+                if -1 != index:
+                    private_str = one_str[index + len("Private Key:"):].strip()
+                    break
+                index = one_str.find("Public  Key:") 
+                if -1 != index:
+                    public_str = one_str[index + len("Public  Key:"):].strip()
+            one_config = one_ip + "_" + str(count)
+            if one_config not in data:
+                data[one_config] = {}
+            data[one_config]["p2p_peer_privatekey"] = private_str
+            data[one_config]["p2p_peer_publickey"] = public_str
+            count += 1
 
 #new config
 with open(os.path.join(root_dir, 'shard_setup.toml'), 'w') as setup_file:
