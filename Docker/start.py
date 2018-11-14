@@ -41,7 +41,6 @@ node_ip = []
 for ip in network:
     node_ip.append(ip)
 
-Pubkey = "1109ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be"
 start_pubkey = 40
 start_port = 2000
 committee = []
@@ -74,11 +73,11 @@ while i < ip_index:
     key_base += list_count[i]
     i += 1
 
-node_index = ip + "_" + str(args.number)
+node_index = args.host_ip + "_" + str(args.number)
 data = {
     "size": str(args.size),
     "Pubkey": all_config[node_index]["p2p_peer_publickey"],
-    "Address": "0.0.0.0",
+    "Address": args.host_ip,
     "Port": str(start_port + args.number),
     "Committee": committee,
     "Shard": shard
