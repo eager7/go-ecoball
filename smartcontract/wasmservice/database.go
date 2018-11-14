@@ -4,7 +4,7 @@ import(
 	"github.com/ecoball/go-ecoball/vm/wasmvm/exec"
 )
 
-//for c api: int db_put(char* key, uint32 k_len, char *value, uint32 v_len)
+//for c api: int ABA_db_put(char* key, uint32 k_len, char *value, uint32 v_len)
 func(ws *WasmService)db_put(proc *exec.Process, key, k_len, value, v_len int32)int32{
 	k_msg := make([]byte, k_len)
 	v_msg := make([]byte, v_len)

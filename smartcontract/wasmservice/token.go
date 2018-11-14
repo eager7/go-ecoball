@@ -204,7 +204,7 @@ func (ws *WasmService)transfer(proc *exec.Process, from, fromLen, to, toLen, amo
 
 	return 0
 }
-// C API: ABA_tokenExisted(char *name, int nameLen)
+// C API: ABA_token_Existed(char *name, int nameLen)
 func (ws *WasmService)tokenExisted(proc *exec.Process, name, nameLen int32) int32 {
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
@@ -238,7 +238,7 @@ type SliceMock struct {
 	len  int
 	cap  int
 }
-// C API: ABA_getTokenStatus(char *name, int nameLen, char *stat, int statLen)
+// C API: ABA_get_token_status(char *name, int nameLen, char *stat, int statLen)
 func (ws *WasmService)getTokenStatus(proc *exec.Process, name, nameLen, stat, statLen int32) int32{
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
@@ -302,7 +302,7 @@ func (ws *WasmService)getTokenStatus(proc *exec.Process, name, nameLen, stat, st
 
 	return 0
 }
-// C API: ABA_putTokenStatus(char *name, int nameLen, char *stat, int statLen)
+// C API: ABA_put_token_status(char *name, int nameLen, char *stat, int statLen)
 func (ws *WasmService)putTokenStatus(proc *exec.Process, name, nameLen, stat, statLen int32) int32{
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
@@ -490,7 +490,7 @@ func (ws *WasmService) putTokenInfo(proc *exec.Process, name, nameLen int32, max
 	return 0
 }
 
-// C API: ABA_getAccountBalance(char *account, int accountLen, char *name, int nameLen)
+// C API: ABA_get_token_balance(char *account, int accountLen, char *name, int nameLen)
 func (ws *WasmService)getAccountBalance(proc *exec.Process, account, accountLen, name, nameLen int32) int64{
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
@@ -525,7 +525,7 @@ func (ws *WasmService)getAccountBalance(proc *exec.Process, account, accountLen,
 
 	return bal.Int64()
 }
-// C API: ABA_addAccountBalance(char *account, int accountLen, char *name, int nameLen, long long int amount)
+// C API: ABA_add_token_balance(char *account, int accountLen, char *name, int nameLen, long long int amount)
 func (ws *WasmService)addAccountBalance(proc *exec.Process, account, accountLen, name, nameLen int32, amount int64) int32{
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
@@ -623,7 +623,7 @@ func (ws *WasmService)addAccountBalance(proc *exec.Process, account, accountLen,
 
 	return 0
 }
-// C API: ABA_subAccountBalance(char *account, int accountLen, char *name, int nameLen, long long int amount)
+// C API: ABA_sub_token_balance(char *account, int accountLen, char *name, int nameLen, long long int amount)
 func (ws *WasmService)subAccountBalance(proc *exec.Process, account, accountLen, name, nameLen int32, amount int64) int32{
 	name_msg := make([]byte, nameLen)
 	err := proc.ReadAt(name_msg, int(name), int(nameLen))
