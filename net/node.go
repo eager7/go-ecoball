@@ -81,7 +81,6 @@ type NetNode struct {
 	listen       []string
 	shardingSubCh   <-chan interface{}
 	shardingInfo *ShardingInfo
-	//pubSub      *floodsub.PubSub
 
 	network.Receiver
 }
@@ -358,7 +357,7 @@ func (nn *NetNode) updateShardingInfo(info *common.ShardingTopo) {
 				continue
 			}
 
-			if nn.shardingInfo.info[uint16(sid)] == nil {
+			if _, ok := nn.shardingInfo.info[uint16(sid)]; !ok {
 				idAddr := make(map[peer.ID]ma.Multiaddr)
 				idAddr[id] = addr
 				nn.shardingInfo.info[uint16(sid)] = idAddr
@@ -429,7 +428,7 @@ func (nn *NetNode) IsValidRemotePeer(p peer.ID) bool {
 		defer nn.shardingInfo.rwlck.RUnlock()
 
 		for _, shard := range nn.shardingInfo.info {
-			if shard[p] != nil {
+			if _, ok := shard[p]; !ok {
 				return true
 			}
 		}
@@ -446,7 +445,7 @@ func (nn *NetNode) IsNotMyShard(p peer.ID) bool {
 		nn.shardingInfo.rwlck.RLock()
 		defer nn.shardingInfo.rwlck.RUnlock()
 
-		if nn.shardingInfo.info[nn.shardingInfo.shardId][p] == nil {
+		if _, ok := nn.shardingInfo.info[nn.shardingInfo.shardId][p]; !ok {
 			return true
 		}
 	}
