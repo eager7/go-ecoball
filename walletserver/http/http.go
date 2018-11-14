@@ -19,6 +19,7 @@ package http
 import (
 	"encoding/hex"
 	"net/http"
+	"net"
 
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/walletserver/wallet"
@@ -51,7 +52,23 @@ func StartHttpServer() (err error) {
 	router.GET("/wallet/getPubKeys", getPubKeys)
 	router.POST("/wallet/signTransactionForScan", signTransactionForScan)
 
-	http.ListenAndServe(":"+config.WalletHttpPort, router)
+	addrs, err := net.InterfaceAddrs()
+
+	if err != nil {
+		return err
+	}
+
+	NodeIp := "" 
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				NodeIp = ipnet.IP.String()
+				break
+			}
+		}
+	}
+
+	http.ListenAndServe(NodeIp+":"+config.WalletHttpPort, router)
 	return nil
 }
 

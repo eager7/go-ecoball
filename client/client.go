@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strings"
 	"syscall"
+	"net"
 
 	"github.com/ecoball/go-ecoball/client/commands"
 	"github.com/ecoball/go-ecoball/client/common"
@@ -86,7 +87,32 @@ func newClientApp() *cli.App {
 	return app
 }
 
+func getLocalIP() error{
+	addrs, err := net.InterfaceAddrs()
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				common.NodeIp = ipnet.IP.String()
+				common.WalletIp = common.NodeIp
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 func main() {
+	if err := getLocalIP(); nil != err{
+		return
+	}
+
 	//interrupt handle
 	go interruptHandle()
 
