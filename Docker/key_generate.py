@@ -65,7 +65,7 @@ if not os.path.exists(tool_dir):
 # Generate the latest tools
 gen_file = os.path.join(root_dir, "../test/rsakeygen/main.go")
 run("cd " + tool_dir + "&& go build -o key_gen " + gen_file)
-key_gen = os.path.join(tool_dir + "key_gen")
+key_gen = os.path.join(tool_dir + "/key_gen")
 
 #get config
 data = {}
@@ -93,6 +93,8 @@ for one_ip in network:
             if -1 != index:
                 public_str = one_str[index + len("Public  Key:"):].strip()
         one_config = one_ip + "_" + str(count)
+        if not data.has_key(one_config):
+            data[one_config] = {}
         data[one_config]["p2p_peer_privatekey"] = private_str
         data[one_config]["p2p_peer_publickey"] = public_str
         count += 1
