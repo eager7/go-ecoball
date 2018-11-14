@@ -28,6 +28,9 @@ Before starting shard mode, you need to configure shard start profile shard_setu
 ```
 # Configuration file for shard network startup
 
+# Number of nodes per shard
+size = 5
+
 # Network host IP address list and the number of Committee and Shard on each physical machine
 # The key string represents the host IP address 
 # The first value represents the number of Committee nodes
@@ -47,6 +50,11 @@ output_to_terminal = true
 
 ["192.168.8.60_0"]
 output_to_terminal = true
+```
+## key_generate.py
+Once the configuration file shard_setup.toml is configured, execute key_generation.py to generate public and private keys for the startup container
+```
+./key_generate.py
 ```
 
 ## share_shard.py

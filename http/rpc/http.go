@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	//"os"
 	//"io/ioutil"
 	"encoding/base64"
 
@@ -77,6 +76,7 @@ func StartHttpServer() (err error) {
 	router.GET("/dsn/eradecode", commands.EraDecoding)
 	router.POST("/dsn/getipinfo", commands.DsnGetIpInfo)
 	router.GET("/dsn/dsnaddfilecid", commands.DsnaddfileCid)
+
 	http.ListenAndServe(":"+config.HttpLocalPort, router)
 	return nil
 }

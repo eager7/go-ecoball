@@ -4,7 +4,7 @@ MAINTAINER Docker ecoball <service@ecoball.org>
 
 #Install dependencies
 RUN apt-get update
-RUN apt-get install -y python3 python3-pip
+RUN apt-get install -y python3 python3-pip vim
 
 #Setting environment variables
 ENV GOPATH /root/go
@@ -19,7 +19,7 @@ COPY ecoball /ecoball/ecoball/
 COPY ecoball.toml /ecoball/ecoball/
 COPY start.py /ecoball/ecoball/
 COPY ecowallet /ecoball/ecowallet/
-COPY eballscan /ecoball/eballscan/
+COPY eballscan /ecoball/eballscan/build/
 COPY eballscan_service.sh /ecoball/eballscan/
 COPY swarm.key /tmp/storage
 EXPOSE 20678

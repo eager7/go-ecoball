@@ -66,23 +66,24 @@ def get_config(num):
 
 
 # get netwoek config
-with open('shard_setup.toml') as setup_file:
+root_dir = os.path.split(os.path.realpath(__file__))[0]
+with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
     data = pytoml.load(setup_file)
 
 network = data["network"]
-network_str = json.dumps(network)
+all_str = json.dumps(data)
 
 host_ip = get_host_ip()
 committee_count = network[host_ip][0]
 shard_count = network[host_ip][1]
 
 #create directory
-root_dir = os.path.split(os.path.realpath(__file__))[0]
 log_dir = os.path.join(root_dir, 'ecoball_log/shard')
 if not os.path.exists(log_dir):
      os.makedirs(log_dir)
 
 start_port = 2000
+p2p_start = 3000
 PORT = 20681
 image = "jatel/internal:ecoball_v1.0"
 
@@ -92,15 +93,19 @@ while count < committee_count + shard_count:
     command = "sudo docker run -d " + "--name=ecoball_" + str(count) + " -p "
     command += str(PORT + count) + ":20678 "
     command += "-p " + str(start_port + count) + ":" + str(start_port + count)
+    command += " -p " + str(p2p_start + count) + ":" + str(p2p_start + count)
     command += " -v " + log_dir  + ":/var/ecoball_log "
     command += image + " /ecoball/ecoball/start.py "
-    command += "-o " + host_ip + " -n " + str(count) + " -e " + "'" + network_str + "'"
+    command += "-o " + host_ip + " -n " + str(count) + " -a " + "'" + all_str + "'"
     exist, config = get_config(count)
     if not exist:
         config = {"log_dir": "/var/ecoball_log/ecoball_" + str(count) + "/"}
     if exist:
         config["log_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
     command += " -c " + "'" + json.dumps(config) + "'"
+    if "size" in data:
+        command += " -s " + str(data["size"])
+
     run(command)
     sleep(2)
     count += 1

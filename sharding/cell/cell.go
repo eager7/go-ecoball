@@ -409,20 +409,9 @@ func (c *Cell) GetLeader() *sc.Worker {
 	}
 }
 
-func (c *Cell) GetBackup() *sc.Worker {
-	if c.NodeType == sc.NodeCommittee {
-		if len(c.cm.member) > 1 {
-			return c.cm.member[1]
-		} else {
-			return nil
-		}
-	} else if c.NodeType == sc.NodeShard {
-		if len(c.shard) > 1 {
-			i := c.CalcShardLeader(len(c.shard), false)
-			return c.shard[i]
-		} else {
-			return nil
-		}
+func (c *Cell) GetCommitteeBackup() *sc.Worker {
+	if len(c.cm.member) > 1 {
+		return c.cm.member[1]
 	} else {
 		return nil
 	}
@@ -430,7 +419,7 @@ func (c *Cell) GetBackup() *sc.Worker {
 
 func (c *Cell) addCommitteWorker(worker *sc.Worker) {
 	log.Debug("add commit worker key ", worker.Pubkey, " address ", worker.Address, " port ", worker.Port)
-	backup := c.GetBackup()
+	backup := c.GetCommitteeBackup()
 	if backup != nil && backup.Equal(worker) {
 		c.cm.popLeader()
 	} else {
