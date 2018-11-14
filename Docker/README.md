@@ -74,3 +74,8 @@ You can stop all docker containers with docker_service.sh before creating a new 
 ```
 ./docker_service.sh stop
 ```
+
+Enter into docker container
+```
+docker exec -it ID /bin/bash
+```

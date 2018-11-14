@@ -44,7 +44,6 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
-	"github.com/ecoball/go-ecoball/test/example"
 	"github.com/ecoball/go-ecoball/dsn/audit"
 )
 
@@ -186,7 +185,7 @@ func runNode(c *cli.Context) error {
 		}
 	case "SHARD":
 		log.Debug("Start Shard Mode")
-		go example.TransferExample()
+		//go example.TransferExample()
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
