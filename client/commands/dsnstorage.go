@@ -49,6 +49,11 @@ var (
 
 
 func dsnAddFile(ctx *cli.Context) error {
+
+	if len(os.Args) < 4{
+		return errors.New("please input dsnstorage add filepath")
+	}
+
 	cbtx := context.Background()
 	file := os.Args[3]
 
@@ -102,6 +107,12 @@ func dsnAddFile(ctx *cli.Context) error {
 
 
 func dsnCatFile (ctx *cli.Context) error {
+
+	
+	if len(os.Args) < 4{
+		return errors.New("please input dsnstorage cat cid")
+	}
+
 	cbtx := context.Background()
 	walletName := "dsnwallet"
 	accountName := "dsn"
@@ -114,6 +125,7 @@ func dsnCatFile (ctx *cli.Context) error {
 	dclient := fc.NewRcWithDefaultConf(cbtx)
 	//dclient.CheckCollateral()
 	cid := os.Args[3]
+
 	r, err := dclient.CatFile(cid)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -153,6 +165,10 @@ func dsnCatFile (ctx *cli.Context) error {
 
 func dsnGetFile(ctx *cli.Context) error {
 
+	if len(os.Args) < 5{
+		return errors.New("please input dsnstorage get cid localfilepath")
+	}
+
 	cid := os.Args[3]
 	outPath := os.Args[4]
 	cbtx := context.Background()
@@ -165,5 +181,10 @@ func dsnGetFile(ctx *cli.Context) error {
 		return errors.New("Checking account's collateral failed")
 	}
 	dclient := fc.NewRcWithDefaultConf(cbtx)
-	return dclient.GetFile(cid, outPath)
+	err :=  dclient.GetFile(cid, outPath)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	return nil
 }
