@@ -160,7 +160,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		p.txPool.Push(tx.ChainID, tx)
 	}
 
-	p.txPool.Push(tx.ChainID, tx)
+	//p.txPool.Push(tx.ChainID, tx)
 
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
 		log.Warn("broadcast transaction failed:", err.Error(), tx.Hash.HexString())
