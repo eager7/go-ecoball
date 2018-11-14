@@ -131,6 +131,7 @@ func synShardBlock(height uint64, typ shard.HeaderType, conn net.Conn) error{
 				for _, v := range final.MinorBlocks{
 					minorblock, err := CoreLedger.GetShardBlockByHash(config.ChainHash, shard.HeMinorBlock, v.Hash())
 					if nil != err {
+						log.Error("GetShardBlockByHash error: ", err)
 						continue
 					}
 
