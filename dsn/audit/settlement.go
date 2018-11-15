@@ -43,7 +43,7 @@ func (s *Settler) Start() error {
 	return nil
 }
 
-func (s *Settler) payToHost(spf dsnComm.StorageProof, st state.InterfaceState) error {
+func (s *Settler) payToHost(spf *dsnComm.StorageProof, st state.InterfaceState) error {
 	reward := CalcHostReward(spf, st)
 	log.Info("pay for ", spf.AccountName, " ", reward.String())
 	timeNow := time.Now().UnixNano()
@@ -61,12 +61,12 @@ func (s *Settler) payToHost(spf dsnComm.StorageProof, st state.InterfaceState) e
 }
 
 // decodeAnnouncement decodes announcement bytes into a host announcement
-func (s *Settler) decodeAnnouncement(fullAnnouncement []byte) (dsnComm.HostAncContract, error) {
+func (s *Settler) decodeAnnouncement(fullAnnouncement []byte) (*dsnComm.HostAncContract, error) {
 	var announcement dsnComm.HostAncContract
 	dec := encoding.NewDecoder(bytes.NewReader(fullAnnouncement))
 	err := dec.Decode(&announcement)
 	if err != nil {
-		return announcement, err
+		return &announcement, err
 	}
 	/*var sig [dsnComm.SigSize]byte
 	err = dec.Decode(&sig)
@@ -81,15 +81,15 @@ func (s *Settler) decodeAnnouncement(fullAnnouncement []byte) (dsnComm.HostAncCo
 	if err != nil {
 		return announcement, err
 	}*/
-	return announcement, nil
+	return &announcement, nil
 }
 
-func (s *Settler) decodeProof(proof []byte) (dsnComm.StorageProof, error) {
+func (s *Settler) decodeProof(proof []byte) (*dsnComm.StorageProof, error) {
 	var sp dsnComm.StorageProof
 	dec := encoding.NewDecoder(bytes.NewReader(proof))
 	err := dec.Decode(&sp)
 	if err != nil {
-		return sp, err
+		return &sp, err
 	}
 	/*var sig [dsnComm.SigSize]byte
 	err = dec.Decode(&sig)
@@ -104,15 +104,15 @@ func (s *Settler) decodeProof(proof []byte) (dsnComm.StorageProof, error) {
 	if err != nil {
 		return sp, err
 	}*/
-	return sp, nil
+	return &sp, nil
 }
 
-func (s *Settler) decodeFileContract(data []byte) (dsnComm.FileContract, error) {
+func (s *Settler) decodeFileContract(data []byte) (*dsnComm.FileContract, error) {
 	var fc dsnComm.FileContract
 	dec := encoding.NewDecoder(bytes.NewReader(data))
 	err := dec.Decode(&fc)
 	if err != nil {
-		return fc, err
+		return &fc, err
 	}
 	/*var sig [dsnComm.SigSize]byte
 	err = dec.Decode(&sig)
@@ -127,10 +127,10 @@ func (s *Settler) decodeFileContract(data []byte) (dsnComm.FileContract, error) 
 	if err != nil {
 		return fc, err
 	}*/
-	return fc, nil
+	return &fc, nil
 }
 
-func (s *Settler)verifyStorageProof(proof dsnComm.StorageProof, st state.InterfaceState) (bool, error) {
+func (s *Settler)verifyStorageProof(proof *dsnComm.StorageProof, st state.InterfaceState) (bool, error) {
 	block, err := api.IpfsBlockGet(s.ctx, proof.Cid)
 	if err != nil {
 		return false, err
@@ -223,12 +223,14 @@ func updateStateHostAnn(an *dsnComm.HostAncContract, st state.InterfaceState) er
 		du.Hosts = append(du.Hosts, an.AccountName)
 	}
 	newDbuff := encoding.Marshal(du)
+	log.Debug("announce total set: ", dkey, du)
 	st.StoreSet(ecommon.NameToIndex(dsnComm.RootAccount), dkey, newDbuff)
 
 	vb := encoding.Marshal(HostAnceSource{
 		TotalStorage: an.TotalStorage,
 		StartAt: an.StartAt,
 	})
+	log.Debug("announce host set: ", sKey, du)
 	return st.StoreSet(ecommon.NameToIndex(an.AccountName), sKey, vb)
 }
 
@@ -285,7 +287,7 @@ func updateRenterFiles(fc *dsnComm.FileContract, st state.InterfaceState) error 
 	return nil
 }
 
-func CalcHostReward(spf dsnComm.StorageProof, st state.InterfaceState) *big.Int {
+func CalcHostReward(spf *dsnComm.StorageProof, st state.InterfaceState) *big.Int {
 	var dr DiskResource
 	totalKey := []byte(KeyStorageTotal)
 	drBuff, _ := st.StoreGet(ecommon.NameToIndex(dsnComm.RootAccount), totalKey)

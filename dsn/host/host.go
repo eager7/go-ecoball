@@ -116,10 +116,10 @@ func (h *StorageHost) Announce() error {
 	//if !colState {
 	//	return errCheckCol
 	//}
-	ok := h.wc.CheckCollateral()
+	/*ok := h.wc.CheckCollateral()
 	if !ok {
 		return errors.New("Checking collateral failed")
-	}
+	}*/
 	announcement, err := h.createAnnouncement()
 	if err != nil {
 		return errCreateAnnouncement
@@ -277,7 +277,10 @@ func (h *StorageHost) proofLoop() error {
 		case <-timerChan:
 			log.Debug("new storage proof...")
 			if !h.announced {
-				h.Announce()
+				err := h.Announce()
+				if err != nil {
+					log.Error(err.Error())
+				}
 				continue
 			}
 			if h.announced {
