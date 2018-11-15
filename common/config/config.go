@@ -26,12 +26,12 @@ import (
 
 	"flag"
 
-	"path/filepath"
 	"strings"
 
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/utils"
+	"path/filepath"
 )
 
 const VirtualBlockCpuLimit float64 = 200000000.0
@@ -57,6 +57,7 @@ http_port = "20678"          # client http port
 wallet_http_port = "20679"   # client wallet http port
 version = "1.0"              # system version
 onlooker_port = "9001"		 #port for browser
+root_dir = "/home/pct/"        		 # level file location
 log_dir = "/tmp/Log/"        # log file location
 output_to_terminal = "true"  # debug output type	 	
 log_level = 1                # debug level	
@@ -232,6 +233,7 @@ func initVariable() {
 	OnlookerPort = viper.GetString("onlooker_port")
 	EcoVersion = viper.GetString("version")
 	LogDir = viper.GetString("log_dir")
+	RootDir = viper.GetString("root_dir")
 	OutputToTerminal = viper.GetBool("output_to_terminal")
 	StartNode = viper.GetBool("start_node")
 	LogLevel = viper.GetInt("log_level")
