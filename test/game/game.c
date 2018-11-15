@@ -12,7 +12,7 @@
 
 const int board_length = 3;
 
-typedef struct game{
+typedef struct{
     int  board[9];
     //participants
     char player1[10];
@@ -21,14 +21,14 @@ typedef struct game{
     char host[10];
     //the winner of the game, contract will check it when the follow action is asked
     char winner[10];
-};
+}game;
 
 //function declaration
 int initialize_array(int* arr, int length);
-int regame(struct game* g, char* restarter);
+int regame(game* g, char* restarter);
 int is_empty_cell(int cell);
 int is_valid_movement(int row, int column, int* board);
-int get_winner(struct game* g,char* winner);
+int get_winner(game* g,char* winner);
 int transfertoken(char* account1, char* account2, char* amount);
 int is_valid_name(char* account_name);
 int create(char* player1, char* player2);
@@ -39,7 +39,6 @@ int follow(char* player1, char* player2, char* host, int row, int column);
 //initialize an array
 int initialize_array(int* arr, int length){
     for(int i = 0; i < length; i++){
-        ABA_printi(i);
         arr[i] = 0;
     }
 
@@ -47,7 +46,7 @@ int initialize_array(int* arr, int length){
 }
 
 //reset the game parameters
-int regame(struct game* g, char* restarter){
+int regame(game* g, char* restarter){
     initialize_array(g->board, board_length);
 	for(int i = 0; i < 10; i++){
         g->host[i] = 0;
@@ -80,7 +79,7 @@ int is_valid_movement(int row, int column, int* board){
     return -1;
 } 
 
-int get_winner(struct game* g,char* winner){
+int get_winner(game* g,char* winner){
     int rowi, columni;
     int vector[8];
     int row[3], column[3];
@@ -135,7 +134,7 @@ int get_winner(struct game* g,char* winner){
 
 //account1 transfer ABA to account2
 int transfertoken(char* account1, char* account2, char* amount){
-    char actionData[50], num[4];
+    char actionData[50];
 	//joint actionData
 	strcpy(actionData, "[\"");
     strcat(actionData, account1);
@@ -162,9 +161,8 @@ int is_valid_name(char* account_name){
 
 //create game : player1 and player2 is the participants and player1 is host
 int create(char* player1, char* player2){
-    struct game *g;
-	char gamekey[20], actionData1[40], actionData2[40];
-	int result;
+    game g;
+	char gamekey[20];
     
     //if account name valid 
     ABA_assert(is_valid_name(player1) != 0, "player1 name is too long or is null");
@@ -176,68 +174,49 @@ int create(char* player1, char* player2){
     ABA_assert(strcmp(player1,player2) == 0, "player1 shouldn't be the same as player2");
     
     //initialize game struct
-    init_mem();
-	g = (struct game*)malloc(sizeof(struct game));
-    initialize_array(g->board, 9);
-    strcpy(g->player1, player1);
-    strcpy(g->player2, player2);
-    strcpy(g->host, player1);
+    initialize_array(g.board, 9);
+    strcpy(g.player1, player1);
+    strcpy(g.player2, player2);
+    strcpy(g.host, player1);
     for(int i = 0; i < 10; i++){
-		g->winner[i] = 0;
+		g.winner[i] = 0;
     }
 
     //store game information
 	strcpy(gamekey,player1);
 	strcat(gamekey,player2);
-    ABA_db_put(gamekey, strlen(gamekey), g, sizeof(struct game));
+    ABA_db_put(gamekey, strlen(gamekey), &g, sizeof(game));
 
     //player1 and player2 transfer ABA to game contract
 	transfertoken(player1, "tictactoe", "2");
 	transfertoken(player2, "tictactoe", "2");
-	ABA_prints(g->player1);
-	ABA_prints(g->player2);
-	ABA_prints(g->host);
-	ABA_prints(g->winner);
-	for(int i = 0; i < 9; i++) {
-		ABA_printi(g->board[i]);
-	}
 
-	free(g);
     return 0;
 }
 //restart game : restarter restart the game and will be the host
 int restart(char* player1, char* player2, char* restarter){
     int result, len;
-    struct game *g;
-	char gamekey[20], actionData[40];
+    game g;
+	char gamekey[20];
 	
 	//if account name valid 
 	ABA_assert(is_valid_name(player1) != 0, "player1 name is too long or is null");
 	ABA_assert(is_valid_name(player2) != 0, "player2 name is too long or is null");
 	ABA_assert(is_valid_name(restarter) != 0, "restarter name is too long or is null");
 
-	init_mem();
-	g = (struct game*)malloc(sizeof(struct game));
 	result = (strcmp(player1, restarter) == 0) | (strcmp(player2, restarter) == 0);
     ABA_assert(result != 1, "restarter has insufficient permission");
 
 	strcpy(gamekey,player1);
 	strcat(gamekey,player2);
 	//if gmae exsit
-    result = ABA_db_get(gamekey, strlen(gamekey), g, sizeof(struct game));
-	ABA_prints(g->player1);
-	ABA_prints(g->player2);
-	ABA_prints(g->host);
-	ABA_prints(g->winner);
-	for(int i = 0; i < 9; i++) {
-		ABA_printi(g->board[i]);
-	}
+    result = ABA_db_get(gamekey, strlen(gamekey), &g, sizeof(game));
 
     ABA_assert(result != 0, "the game does not exsit");
 
     //reset game and update database
-    regame(g, restarter);
-    ABA_db_put(gamekey, strlen(gamekey), g, sizeof(struct game));
+    regame(&g, restarter);
+    ABA_db_put(gamekey, strlen(gamekey), &g, sizeof(game));
 
     //the restarter must transfer 1 ABA to another player to restart game
     if (strcmp(restarter, player1) == 0){
@@ -246,14 +225,12 @@ int restart(char* player1, char* player2, char* restarter){
     	transfertoken(player2, "tictactoe", "4");
     }
 
-	free(g);
-
     return 0;
 }
 //close game : initialize board and set host and winner null
 int close(char* player1, char* player2, char* closer){
-    int result, len;
-    struct game *g;
+    int result;
+    game g;
 	char gamekey[20];
 	
 	ABA_assert(is_valid_name(player1) != 0, "player1 name is too long or is null");
@@ -263,31 +240,20 @@ int close(char* player1, char* player2, char* closer){
 	result = (strcmp(player1, closer) == 0) | (strcmp(player2, closer) == 0);
     ABA_assert(result != 1, "closer has insufficient permission");
 
-	init_mem();
-	g = (struct game*)malloc(sizeof(struct game));
 	strcpy(gamekey, player1);
 	strcat(gamekey, player2);
-	
-	ABA_prints(gamekey);
 
-    result = ABA_db_get(gamekey, strlen(gamekey), g, sizeof(struct game));
-	ABA_prints(g->player1);
-	ABA_prints(g->player2);
-	ABA_prints(g->host);
-	ABA_prints(g->winner);
-	for(int i = 0; i < 9; i++) {
-		ABA_printi(g->board[i]);
-	}
+    result = ABA_db_get(gamekey, strlen(gamekey), &g, sizeof(game));
 
     ABA_assert(result != 0, "the game does not exsit");
 
-    initialize_array(g->board, board_length * board_length); 
+    initialize_array(g.board, board_length * board_length); 
 	for(int i = 0; i < 10; i++){
-        g->host[i] = 0;
-		g->winner[i] = 0;
+        g.host[i] = 0;
+		g.winner[i] = 0;
     }   
 
-    ABA_db_put(gamekey, strlen(gamekey), g, sizeof(struct game));
+    ABA_db_put(gamekey, strlen(gamekey), &g, sizeof(game));
 
     if (strcmp(closer, player1) == 0){
     	//player1 need 1 ABA to close the game
@@ -299,15 +265,13 @@ int close(char* player1, char* player2, char* closer){
 		transfertoken("tictactoe", player2, "1");
     }
 
-	free(g);
-
     return 0;
 }
 //down on the chessboard and check if one of players win the game
 int follow(char* player1, char* player2, char* host, int row, int column){
     int result, location;
-    struct game *g;
-    int cell_value,len;
+    game g;
+    int cell_value;
     char turn[10];
 	char winner[10];
 	char gamekey[20];
@@ -317,24 +281,15 @@ int follow(char* player1, char* player2, char* host, int row, int column){
 	ABA_assert(is_valid_name(player2) != 0, "player2 name is too long or is null");
 	ABA_assert(is_valid_name(host) != 0, "host name is too long or is null");
 
-	init_mem();
-	g = (struct game*)malloc(sizeof(struct game));
 	strcpy(gamekey,player1);
 	strcat(gamekey,player2);
 
-    result = ABA_db_get(gamekey, strlen(gamekey), g, sizeof(struct game));
-	ABA_prints(g->player1);
-	ABA_prints(g->player2);
-	ABA_prints(g->host);
-	ABA_prints(g->winner);
-	for(int i = 0; i < 9; i++) {
-		ABA_printi(g->board[i]);
-	}
+    result = ABA_db_get(gamekey, strlen(gamekey), &g, sizeof(game));
 
     ABA_assert(result != 0, "the game does not exsit");
-	ABA_assert(strcmp(g->host, "") == 0, "the game is over");
-    ABA_assert(strcmp(g->host, host) != 0, "it is not your turn to move");
-    ABA_assert(is_valid_movement(row, column, g->board) != 0, "it is not a valid movement");
+	ABA_assert(strcmp(g.host, "") == 0, "the game is over");
+    ABA_assert(strcmp(g.host, host) != 0, "it is not your turn to move");
+    ABA_assert(is_valid_movement(row, column, g.board) != 0, "it is not a valid movement");
 
     if (strcmp(player1, host) == 0) {
         strcpy(turn, player2);
@@ -345,45 +300,35 @@ int follow(char* player1, char* player2, char* host, int row, int column){
 	}
 
 	location = (row - 1) * board_length + column - 1;
-    g->board[location] = cell_value;
-    strcpy(g->host, turn);
-    result = get_winner(g, winner);
+    g.board[location] = cell_value;
+    strcpy(g.host, turn);
+    result = get_winner(&g, winner);
 	if (result == 9 && strcmp(winner,"") == 0) {
 		for(int i = 0; i < 10; i++){
-        	g->host[i] = 0;
+        	g.host[i] = 0;
     	}
 		ABA_prints("the game is over and none of player win");
-		ABA_db_put(gamekey, strlen(gamekey), g, sizeof(struct game));
+		ABA_db_put(gamekey, strlen(gamekey), &g, sizeof(game));
 		transfertoken("tictactoe", player1, "2");
 		transfertoken("tictactoe", player2, "2");
 
 		return 0;
 	}
 	
-	strcpy(g->winner, winner);
-	ABA_prints(winner);
+	strcpy(g.winner, winner);
     
     if (strcmp(winner,"") != 0) {
 		strcpy(output, "winner is ");
 		strcat(output, winner);
         ABA_prints(output);
 		for(int i = 0; i < 10; i++){
-        	g->host[i] = 0;
+        	g.host[i] = 0;
     	}
-		ABA_db_put(gamekey, strlen(gamekey), g, sizeof(struct game));
+		ABA_db_put(gamekey, strlen(gamekey), &g, sizeof(game));
     	transfertoken("tictactoe", winner, "4");
         return 0;
     }
-	ABA_db_put(gamekey, strlen(gamekey), g, sizeof(struct game));
-    ABA_prints("winner is inconclusive");
-	ABA_prints(g->player1);
-	ABA_prints(g->player2);
-	ABA_prints(g->host);
-	ABA_prints(g->winner);
-	for(int i = 0; i < 9; i++) {
-		ABA_printi(g->board[i]);
-	}
-	free(g);
+	ABA_db_put(gamekey, strlen(gamekey), &g, sizeof(game));
 
     return 0;
 }
