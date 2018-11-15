@@ -13,7 +13,6 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/common"
 	"reflect"
 	"sync"
 )
@@ -53,7 +52,7 @@ func MakeSync(c *cell.Cell) *Sync {
 	}
 }
 
-func MakeSyncRequestPacket(blockType int8, fromHeight int64, to int64, worker *sc.WorkerId, shardID uint32) (*sc.NetPacket) {
+func MakeSyncRequestPacket(blockType cs.HeaderType, fromHeight int64, to int64, worker *sc.WorkerId, shardID uint32) (*sc.NetPacket) {
 	csp := &sc.NetPacket{
 		PacketType: pb.MsgType_APP_MSG_SYNC_REQUEST,
 		BlockType: sc.SD_SYNC,
@@ -129,13 +128,16 @@ func (sync *Sync)SendSyncRequestWithType(blockType cs.HeaderType) {
 			sync.cache.needHeight[blockType] = uint64(height)
 		}
 		//For non-MinorBlock, shardID isn't important
-		sync.SendSyncRequestWithHeightType(int8(blockType), int64(height), 0)
+		sync.SendSyncRequestWithHeightType(blockType, int64(height), 0)
 	} else {
 
 		finalBlocks := sync.cache.blocks[cs.HeFinalBlock]
 		var markBlock cs.FinalBlock
+		var offset uint64
+
 		if len(finalBlocks) > 0 {
 			markBlock = finalBlocks[0].GetObject().(cs.FinalBlock)
+			offset = 0
 		} else {
 			//TODO, problem: no final block situation
 			lastBlock, err := sync.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
@@ -144,27 +146,31 @@ func (sync *Sync)SendSyncRequestWithType(blockType cs.HeaderType) {
 				return
 			}
 			markBlock = lastBlock.GetObject().(cs.FinalBlock)
+
+			offset = 1
 		}
 		//TODO, deal with non-Fix sharding
 		for _, minorBlock := range markBlock.MinorBlocks {
-			height := minorBlock.Height
+			height := minorBlock.Height + offset
 			shardID := minorBlock.ShardId
 			list := sync.cache.minorBlocks[shardID]
 			len := len(list)
 			if len > 0 {
-				tHeight := list[len-1].GetHeight()
+				tHeight := list[len-1].GetHeight() + 1
 				if tHeight > height {
 					height = tHeight
 				}
 			}
-			height = height + 1
-			sync.SendSyncRequestWithHeightType(int8(blockType), int64(height), shardID)
+			sync.cache.needHeightMinor[shardID] = height
+			sync.SendSyncRequestWithHeightType(blockType, int64(height), shardID)
 		}
 	}
 }
 
 
-func (sync *Sync)SendSyncRequestWithHeightType(blockType int8, fromHeight int64, shardID uint32)  {
+func (sync *Sync)SendSyncRequestWithHeightType(blockType cs.HeaderType, fromHeight int64, shardID uint32)  {
+	log.Debug("SendSyncRequestWithHeightType, blockType = ",
+		blockType, " from height = ", fromHeight, " shardID = ", shardID)
 	worker := &sc.WorkerId{
 		sync.cell.Self.Pubkey,
 		sync.cell.Self.Address,
@@ -175,7 +181,7 @@ func (sync *Sync)SendSyncRequestWithHeightType(blockType int8, fromHeight int64,
 	net.Np.SendSyncMessage(csp)
 }
 
-func (sync *Sync)SendSyncRequestTo(blockType int8, fromHeight int64, toHeight int64, shardID uint32)  {
+func (sync *Sync)SendSyncRequestTo(blockType cs.HeaderType, fromHeight int64, toHeight int64, shardID uint32)  {
 	worker := &sc.WorkerId{
 		sync.cell.Self.Pubkey,
 		sync.cell.Self.Address,
@@ -220,6 +226,7 @@ func (s *Sync) SyncResponseDecode(syncData *sc.SyncResponseData) (*sc.SyncRespon
 
 //TODO, make sure TellBlock will be all right
 func (s *Sync) tellLedgerSyncComplete() {
+	log.Debug("tellLedgerSyncComplete in")
 	ledger := s.cell.Ledger
 	finalBlocks := s.cache.blocks[cs.HeFinalBlock]
 	l := len(finalBlocks)
@@ -235,17 +242,25 @@ func (s *Sync) tellLedgerSyncComplete() {
 				if curMinorBlock.GetHeight() > limit {
 					break
 				}
+				log.Debug("SaveShardBlock minor, height = ",
+					curMinorBlock.GetHeight(), " shardID = ", shardID)
 				ledger.SaveShardBlock(config.ChainHash, curMinorBlock)
 			}
 		}
 		for _, finalBlock := range finalBlocks {
+			log.Debug("SaveShardBlock final, height = ",
+				finalBlock.GetHeight())
 			ledger.SaveShardBlock(config.ChainHash, finalBlock)
 		}
 	}
 	for _, block := range s.cache.blocks[cs.HeCmBlock] {
+		log.Debug("SaveShardBlock cm, height = ",
+			block.GetHeight())
 		ledger.SaveShardBlock(config.ChainHash, block)
 	}
 	for _, block := range s.cache.blocks[cs.HeViewChange] {
+		log.Debug("SaveShardBlock change view, height = ",
+			block.GetHeight())
 		ledger.SaveShardBlock(config.ChainHash, block)
 	}
 }
@@ -320,23 +335,48 @@ func (s *Sync)  RecvSyncRequestPacket(packet *sc.CsPacket) (*sc.NetPacket, *sc.W
 	return s.dealSyncRequest(requestPacket)
 }
 
-func (s *Sync) CheckSyncCompleteForMinorBlock(toHeight uint64, blocks *[]cs.BlockInterface, syncResponse *sc.SyncResponsePacket) bool {
+func (s *Sync) CheckSyncCompleteForMinorBlock(minBlock *cs.MinorBlockHeader, blocks *[]cs.BlockInterface, syncResponse *sc.SyncResponsePacket) bool {
 	len := len(*blocks)
-	if len > 0 && (*blocks)[len-1].GetHeight() >= toHeight {
-		return true
+
+	if len > 0 {
+		lastMinFinal := (*blocks)[len-1]
+
+		log.Debug("lastMin height = ", lastMinFinal.GetHeight(), " minBlock.Height = ", minBlock.Height)
+		if lastMinFinal.GetHeight() >= minBlock.GetHeight() {
+			return true
+		} else {
+			return false
+		}
 	} else {
-		return false
+		ledger := s.cell.Ledger
+		_, err := ledger.GetShardBlockByHash(config.ChainHash, cs.HeMinorBlock, minBlock.Hash())
+		if err != nil {
+			log.Debug("GetShardBlockByHash", err)
+			return false
+		} else {
+			return true
+		}
+
 	}
 }
 
-func (s *Sync) CheckSyncCompleteForCMBlock(hash *common.Hash, blocks *[]cs.BlockInterface) bool {
+func (s *Sync) CheckSyncCompleteForCMBlock(epoch uint64, blocks *[]cs.BlockInterface) bool {
 	list := *blocks
 	len := len(list)
-	for i := len-1; i >= 0; i-- {
-		h := list[i].Hash()
-		if h.Equals(hash) {
-			return  true
+	var lastCMBlock cs.CMBlock
+	if (len > 0) {
+		lastCMBlock =  (*blocks)[len-1].GetObject().(cs.CMBlock)
+	} else {
+		o, err := s.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
+		if err != nil {
+			log.Error("GetLastShardBlock error")
+		} else {
+			lastCMBlock = o.GetObject().(cs.CMBlock)
 		}
+	}
+	log.Debug("final epoch = ", epoch, " lastCMBlock.Height = ", lastCMBlock.Height)
+	if epoch <= lastCMBlock.Height {
+		return true
 	}
 	return false
  }
@@ -345,34 +385,61 @@ func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool  {
 	log.Debug("CheckSyncComplete blockType = ",
 		syncResponse.BlockType, " complete = ", syncResponse.Compelte)
 	log.Debug("Block type = ", uint8(syncResponse.BlockType))
+
 	var lastFinalBlock cs.FinalBlock
+	hasFinalBlock := false
 	if syncResponse.BlockType == cs.HeFinalBlock && syncResponse.Compelte {
 		log.Debug("CheckSyncComplete, set complete")
 		s.cache.finalBlockComplete = true
 		blocks := s.cache.blocks[cs.HeFinalBlock]
 		len := len(blocks)
 		log.Debug("final block cache len = ",len)
-		if len == 0 {
-			s.cache.finalBlockComplete = true
-			return true
-		} else {
+		if len > 0 {
 			lastFinalBlock = blocks[len-1].GetObject().(cs.FinalBlock)
+			hasFinalBlock = true
 		}
 	}
 	if s.cache.finalBlockComplete {
 
-		for _, minorBlock := range lastFinalBlock.MinorBlocks {
-			blocks := s.cache.minorBlocks[minorBlock.ShardId]
-			complete := s.CheckSyncCompleteForMinorBlock(minorBlock.GetHeight(), &blocks,  syncResponse)
-			if !complete {
+		if (hasFinalBlock) {
+			log.Debug("check complete, step 1")
+			for _, minorBlock := range lastFinalBlock.MinorBlocks {
+				blocks := s.cache.minorBlocks[minorBlock.ShardId]
+				complete := s.CheckSyncCompleteForMinorBlock(minorBlock, &blocks,  syncResponse)
+				if !complete {
+					return false
+				}
+			}
+			log.Debug("check complete, step 2")
+			//TODO, check cm block
+			blocks := s.cache.blocks[cs.HeCmBlock]
+
+			if !s.CheckSyncCompleteForCMBlock(lastFinalBlock.EpochNo, &blocks) {
 				return false
 			}
-		}
+			log.Debug("check complete, step 3")
+		} else {
 
-		//TODO, check cm block
-		blocks := s.cache.blocks[cs.HeCmBlock]
-		if !s.CheckSyncCompleteForCMBlock(&lastFinalBlock.CMBlockHash, &blocks) {
-			return false
+			/*
+			Case commitee start
+			 */
+			lastFinalBlock, err := s.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
+			if err != nil {
+				log.Error("GetLastShardBlock", err)
+				return true
+			}
+			if lastFinalBlock.GetHeight() == 1 {
+				return true
+			}
+
+
+			lenFinalBlock := len(s.cache.blocks[cs.HeCmBlock])
+			lenCMBlock := len(s.cache.blocks[cs.HeFinalBlock])
+			lenChangeViewBlock := len(s.cache.blocks[cs.HeViewChange])
+			if lenFinalBlock == 0 && lenCMBlock == 0 && lenChangeViewBlock == 0 {
+				log.Debug("Empty Cache")
+				return false
+			}
 		}
 
 		return true
@@ -404,13 +471,15 @@ func (s *Sync) getConcreteBlockObject(o interface{}) interface{}  {
 }
 
 func (s *Sync) FillSyncDataInCacheHelper(p *[]cs.BlockInterface, needHeight uint64, syncResponse *sc.SyncResponsePacket) {
-	list := *p
+	log.Debug("FillSyncDataInCacheHelper, needHeight = ", needHeight, " block type = ", syncResponse.BlockType)
+	log.Debug("Fill Block size = ", len(syncResponse.Blocks), " cache size = ", len(*p))
 	blockType := syncResponse.BlockType
 	for _, payload := range syncResponse.Blocks {
 		o := payload.GetObject()
 		var block cs.BlockInterface
 		block = s.getConcreteBlockObject(o).(cs.BlockInterface)
 
+		list := *p
 		len := len(list)
 		var needH uint64
 		if len > 0 {
@@ -436,10 +505,14 @@ func (s *Sync) FillSyncDataInCache(syncResponse *sc.SyncResponsePacket) {
 	if blockType != cs.HeMinorBlock {
 		list := s.cache.blocks[blockType]
 		s.FillSyncDataInCacheHelper(&list, s.cache.needHeight[blockType], syncResponse)
+		//TODO, not efficent
+		s.cache.blocks[blockType]=list
 	} else {
 		shardID := syncResponse.ShardID
 		list := s.cache.minorBlocks[shardID]
 		s.FillSyncDataInCacheHelper(&list, s.cache.needHeightMinor[shardID], syncResponse)
+		//TODO, not efficent
+		s.cache.minorBlocks[shardID] = list
 	}
 
 }

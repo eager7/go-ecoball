@@ -28,7 +28,7 @@ type SyncPacket struct {
 
 //toHeight = -1, means to newest height
 type SyncRequestPacket struct {
-	BlockType int8
+	BlockType cs.HeaderType
 	FromHeight int64
 	ToHeight int64
 	Worker *WorkerId

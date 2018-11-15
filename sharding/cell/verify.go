@@ -3,7 +3,6 @@ package cell
 import (
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
-	"fmt"
 	"encoding/json"
 )
 
@@ -153,13 +152,13 @@ func (c *Cell)VerifySyncRequestPacket(p *sc.NetPacket) *sc.CsPacket {
 
 //Mark Decode
 func (c *Cell) VerifySyncResponsePacket(p *sc.NetPacket) *sc.CsPacket {
-	fmt.Println("syncResponse p = ", p)
-	fmt.Println("syncResponse packet = ", p.Packet)
+	//fmt.Println("syncResponse p = ", p)
+	//fmt.Println("syncResponse packet = ", p.Packet)
 	var syncData *sc.SyncResponseData
 	err := json.Unmarshal(p.Packet, &syncData)
 	if err != nil {
 		log.Error("syncResponse decode error ", err)
-		fmt.Println("syncResponse decode error", err)
+		//fmt.Println("syncResponse decode error", err)
 		return nil
 	}
 	var csp sc.CsPacket
@@ -167,8 +166,6 @@ func (c *Cell) VerifySyncResponsePacket(p *sc.NetPacket) *sc.CsPacket {
 	csp.Packet = syncData
 	return &csp
 }
-
-
 
 func (c *Cell) VerifyMinorPacket(p *sc.NetPacket) *sc.CsPacket {
 	minor := new(cs.MinorBlock)
