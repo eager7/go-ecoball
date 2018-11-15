@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -30,8 +29,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ecoball/go-ecoball/common/config"
 	"runtime/debug"
+	"sync"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 const (
@@ -41,6 +41,8 @@ const (
 	colorBlue
 	colorMagenta
 )
+
+const defaultSize = 8500000 * 5 //50M
 
 var Log = NewLogger("default", NoticeLog)
 
@@ -69,67 +71,75 @@ type Logger interface {
 }
 
 type loggerModule struct {
-	logger  *log.Logger
-	fd      *os.File
-	fileName string
-	name    string
-	level   int
-	maxSize int
-	curSize int
+	logger      *log.Logger
+	fd          *os.File
+	fileName    string
+	backupCount int
+	moduleName  string
+	level       int
+	maxSize     int
+	curSize     int
+	mutex       sync.Mutex
 }
 
-func fileOpen(path string) (*os.File, error) {
+func fileOpen(path string) (*os.File, string, error) {
 	if fi, err := os.Stat(path); err == nil {
 		if !fi.IsDir() {
-			return nil, fmt.Errorf("open %s: not a directory", path)
+			return nil, "", fmt.Errorf("open %s: not a directory", path)
 		}
 	} else if os.IsNotExist(err) {
 		if err := os.MkdirAll(path, 0766); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 	} else {
-		return nil, err
+		return nil, "", err
 	}
 
 	var currentTime = time.Now().Format("2006-01-02_15.04.05")
-	logfile, err := os.OpenFile(path+currentTime+"_LOG.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	fileName := path + currentTime + "_LOG.log"
+	logfile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return logfile, nil
+	return logfile, fileName, nil
 }
 
 func NewLogger(moduleName string, level int) Logger {
-	file := InitFile()
-	logger := log.New(fileAndStdoutWrite, "", log.Ldate|log.Lmicroseconds|log.LstdFlags)
-	module := loggerModule{logger: logger, name: moduleName, level: level, maxSize: 1024 * 1024 * 50, curSize: 0, fd: file}
+	var filePath string
+	if config.LogDir == "" {
+		filePath = "./"
+	} else {
+		filePath = config.LogDir
+	}
+	file, Writer, fileName := initFile(filePath)
+	logger := log.New(Writer, "", log.Ldate|log.Lmicroseconds|log.LstdFlags)
+	module := loggerModule{
+		logger:      logger,
+		fd:          file,
+		fileName:    fileName,
+		backupCount: 10,
+		moduleName:  moduleName,
+		level:       level,
+		maxSize:     defaultSize,
+		curSize:     0,
+		mutex:       sync.Mutex{},
+	}
 	return &module
 }
 
-var fileAndStdoutWrite io.Writer
-
-func InitFile() *os.File {
-	//get configured output
-	var output io.Writer = os.Stdout
-	if !config.OutputToTerminal {
-		output = ioutil.Discard
+func initFile(filePath string) (*os.File, io.Writer, string) {
+	if filePath == "" {
+		filePath = "/tmp/Log/"
 	}
-
-	//get configured log directory
-	logDir := "./Log/"
-	if config.LogDir != "" && config.LogDir != logDir {
-		logDir = config.LogDir
-	}
-
-	logFile, err := fileOpen(logDir)
+	var fileAndStdoutWrite io.Writer
+	logFile, fileName, err := fileOpen(filePath)
 	if err != nil {
 		fmt.Println("open log file failed: ", err)
 		os.Exit(1)
 	}
 
-	var writers = []io.Writer{output, logFile}
-	fileAndStdoutWrite = io.MultiWriter(writers...)
-	return logFile
+	fileAndStdoutWrite = io.MultiWriter(os.Stdout, logFile)
+	return logFile, fileAndStdoutWrite, fileName
 }
 
 func (l *loggerModule) GetLogger() *log.Logger {
@@ -178,18 +188,20 @@ func (l *loggerModule) Notice(a ...interface{}) {
 	if l.level > NoticeLog {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorGreen) + "m" + "▶ NOTI " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorGreen) + "m" + "▶ NOTI " + "[" + l.moduleName + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
-
+	l.CheckLogFile(fmt.Sprintln(a...))
 	l.logger.Output(2, fmt.Sprintln(a...))
+
 }
 
 func (l *loggerModule) Debug(a ...interface{}) {
 	if l.level > DebugLog {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorBlue) + "m" + "▶ DEBU " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorBlue) + "m" + "▶ DEBU " + "[" + l.moduleName + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
+	l.CheckLogFile(fmt.Sprintln(a...))
 	l.logger.Output(2, fmt.Sprintln(a...))
 }
 
@@ -197,8 +209,9 @@ func (l *loggerModule) Info(a ...interface{}) {
 	if l.level > InfoLog {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorYellow) + "m" + "▶ INFO " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorYellow) + "m" + "▶ INFO " + "[" + l.moduleName + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
+	l.CheckLogFile(fmt.Sprintln(a...))
 	l.logger.Output(2, fmt.Sprintln(a...))
 }
 
@@ -206,8 +219,9 @@ func (l *loggerModule) Warn(a ...interface{}) {
 	if l.level > WarnLog {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorMagenta) + "m" + "▶ WARN " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorMagenta) + "m" + "▶ WARN " + "[" + l.moduleName + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
+	l.CheckLogFile(fmt.Sprintln(a...))
 	l.logger.Output(2, fmt.Sprintln(a...))
 }
 
@@ -215,8 +229,9 @@ func (l *loggerModule) Error(a ...interface{}) {
 	if l.level > ErrorLog {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ ERRO " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ ERRO " + "[" + l.moduleName + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
+	l.CheckLogFile(fmt.Sprintln(a...))
 	l.logger.Output(2, fmt.Sprintln(a...))
 }
 
@@ -224,7 +239,7 @@ func (l *loggerModule) ErrStack(a ...interface{}) {
 	if l.level > ErrorLog {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ ERRO " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ ERRO " + "[" + l.moduleName + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
 	l.logger.Output(3, fmt.Sprintln(a...))
 	debug.PrintStack()
@@ -234,7 +249,7 @@ func (l *loggerModule) Fatal(a ...interface{}) {
 	if l.level > FatalLog {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ FATAL " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ FATAL " + "[" + l.moduleName + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
 	debug.PrintStack()
 	l.logger.Fatal(a...)
@@ -244,21 +259,22 @@ func (l *loggerModule) Panic(a ...interface{}) {
 	if l.level > FatalLog {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ PANIC " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ PANIC " + "[" + l.moduleName + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
 	l.logger.Panic(a...)
 }
 
 func (l *loggerModule) CheckLogFile(s string) {
 	if l.curSize > l.maxSize {
+		l.mutex.Lock()
+		defer l.mutex.Unlock()
 		l.fd.Close()
+		for i := l.backupCount - 1; i > 0; i-- {
+			sfn := fmt.Sprintf("%s.%d", l.fileName, i)
+			dfn := fmt.Sprintf("%s.%d", l.fileName, i+1)
 
-		//for i := h.backupCount - 1; i > 0; i-- {
-		//	sfn := fmt.Sprintf("%s.%d", h.fileName, i)
-		//	dfn := fmt.Sprintf("%s.%d", h.fileName, i+1)
-
-		//	os.Rename(sfn, dfn)
-		//}
+			os.Rename(sfn, dfn)
+		}
 
 		dfn := fmt.Sprintf("%s.1", l.fileName)
 		os.Rename(l.fileName, dfn)
@@ -270,6 +286,9 @@ func (l *loggerModule) CheckLogFile(s string) {
 			return
 		}
 		l.curSize = int(f.Size())
+		Writer := io.MultiWriter(os.Stdout, l.fd)
+		l.logger = log.New(Writer, "", log.Ldate|log.Lmicroseconds|log.LstdFlags)
+
 	} else {
 		l.curSize += len(s)
 	}
