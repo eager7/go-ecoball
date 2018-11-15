@@ -3,13 +3,19 @@ package elog_test
 import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"testing"
+	"time"
 )
 
-func TestLogger_P(t *testing.T) {
+func TestLogger(t *testing.T) {
 	l := elog.NewLogger("Module", elog.NoticeLog)
-	l.Notice("Test")
-	l.Debug("Test")
-	l.Info("Test")
-	l.Warn("Test")
-	l.Error("Test")
+	now := time.Now().UnixNano()
+	for i := 0; i < 100000; i++ {
+		l.Notice("--------------------------------Test-----------------------------------")
+		l.Debug("--------------------------------Test-----------------------------------")
+		l.Info("--------------------------------Test-----------------------------------")
+		l.Warn("--------------------------------Test-----------------------------------")
+		l.Error("--------------------------------Test-----------------------------------")
+	}
+	end := time.Now().UnixNano()
+	l.Info("time:", (end - now)/1000000)
 }
