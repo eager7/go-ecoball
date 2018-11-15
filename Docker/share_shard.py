@@ -21,8 +21,8 @@ import sys
 import time
 import os
 import pytoml
-import socket
 import json
+import argparse
 
 
 def run(shell_command):
@@ -47,16 +47,6 @@ def sleep(t):
     print('resume')
 
 
-def get_host_ip():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(('8.8.8.8', 80))
-        ip = s.getsockname()[0]
-    finally:
-        s.close()
-    return ip
-
-
 def get_config(num):
     ip_index = host_ip + "_" + str(num)
     for one in data:
@@ -64,6 +54,11 @@ def get_config(num):
             return True, data[ip_index]
     return False, ""
 
+
+# Command Line Arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('-i', '--host-ip', metavar='', required=True, help="IP address of host node", dest="host_ip")
+args = parser.parse_args()
 
 # get netwoek config
 root_dir = os.path.split(os.path.realpath(__file__))[0]
@@ -73,7 +68,7 @@ with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
 network = data["network"]
 all_str = json.dumps(data)
 
-host_ip = get_host_ip()
+host_ip = args.host_ip
 committee_count = network[host_ip][0]
 shard_count = network[host_ip][1]
 
