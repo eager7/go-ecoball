@@ -288,7 +288,9 @@ func (c *committee) commitViewchangeBlock(vc *cs.ViewChangeBlock) {
 	c.ns.SaveLastViewchangeBlock(vc)
 	c.resetVcCounter(nil)
 
-	if lastcm.Height > lastfinal.EpochNo {
+	if lastcm.Height == 1 {
+		c.fsm.Execute(ActProductCommitteeBlock, nil)
+	} else if lastcm.Height > lastfinal.EpochNo {
 		c.fsm.Execute(ActProductFinalBlock, nil)
 	} else {
 		if lastfinal.Height%sc.DefaultEpochFinalBlockNumber == 0 {
