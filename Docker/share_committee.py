@@ -107,9 +107,11 @@ while count < committee_count:
     command += "-o " + host_ip + " -n " + str(count) + " -a " + "'" + all_str + "'"
     exist, config = get_config(count)
     if not exist:
-        config = {"log_dir": "/var/ecoball_log/ecoball_" + str(count) + "/"}
+        config = {"log_dir": "/var/ecoball_log/ecoball_" + str(count) + "/",
+        "root_dir": "/var/ecoball_log/ecoball_" + str(count) + "/"}
     if exist:
         config["log_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
+        config["root_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
     command += " -c " + "'" + json.dumps(config) + "'"
     if "size" in data:
         command += " -s " + str(data["size"])
