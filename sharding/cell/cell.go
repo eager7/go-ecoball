@@ -134,12 +134,14 @@ func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 		}
 	}
 
-	c.createShardingTopo()
+	if bk.Height > 1 {
+		c.createShardingTopo()
+	}
 
 }
 
 func (c *Cell) createShardingTopo() {
-	topo := &sc.ShardingTopo{ShardId: c.Shardid}
+	topo := &sc.ShardingTopo{ShardId: c.Shardid, Pubkey: c.Self.Pubkey}
 
 	lastcm := c.GetLastCMBlock()
 	if lastcm == nil {
@@ -184,13 +186,19 @@ func (c *Cell) SaveLastFinalBlock(bk *cs.FinalBlock) {
 	}
 
 	c.chain.setFinalBlock(bk)
-
+	inFinal := false
 	for _, minor := range bk.MinorBlocks {
 		log.Debug("minor block shard id ", minor.ShardId, " height ", minor.Height)
-		c.chain.setShardHeight(minor.ShardId, minor.Height)
 		if uint32(c.Shardid) == minor.ShardId {
+			inFinal = true
 			c.chain.saveMinorBlock(minor)
+		} else {
+			c.chain.setShardHeight(minor.ShardId, minor.Height)
 		}
+	}
+
+	if !inFinal {
+		c.chain.preMinorBlock = nil
 	}
 
 	c.minorBlockPool.clean()
@@ -407,20 +415,9 @@ func (c *Cell) GetLeader() *sc.Worker {
 	}
 }
 
-func (c *Cell) GetBackup() *sc.Worker {
-	if c.NodeType == sc.NodeCommittee {
-		if len(c.cm.member) > 1 {
-			return c.cm.member[1]
-		} else {
-			return nil
-		}
-	} else if c.NodeType == sc.NodeShard {
-		if len(c.shard) > 1 {
-			i := c.CalcShardLeader(len(c.shard), false)
-			return c.shard[i]
-		} else {
-			return nil
-		}
+func (c *Cell) GetCommitteeBackup() *sc.Worker {
+	if len(c.cm.member) > 1 {
+		return c.cm.member[1]
 	} else {
 		return nil
 	}
@@ -428,7 +425,7 @@ func (c *Cell) GetBackup() *sc.Worker {
 
 func (c *Cell) addCommitteWorker(worker *sc.Worker) {
 	log.Debug("add commit worker key ", worker.Pubkey, " address ", worker.Address, " port ", worker.Port)
-	backup := c.GetBackup()
+	backup := c.GetCommitteeBackup()
 	if backup != nil && backup.Equal(worker) {
 		c.cm.popLeader()
 	} else {
