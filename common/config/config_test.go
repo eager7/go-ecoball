@@ -37,4 +37,5 @@ func TestConfig(t *testing.T) {
 	fmt.Println("root:", common.AddressFromPubKey(config.Root.PublicKey).HexString())
 
 	fmt.Println("chain Id:", config.ChainHash.HexString())
+	fmt.Println("root dir:", config.RootDir)
 }
