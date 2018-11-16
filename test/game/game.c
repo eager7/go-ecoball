@@ -163,6 +163,7 @@ int is_valid_name(char* account_name){
 int create(char* player1, char* player2){
     game g;
 	char gamekey[20];
+    int result;
     
     //if account name valid 
     ABA_assert(is_valid_name(player1) != 0, "player1 name is too long or is null");
@@ -173,6 +174,15 @@ int create(char* player1, char* player2){
 	//player1 and player1 should be different account
     ABA_assert(strcmp(player1,player2) == 0, "player1 shouldn't be the same as player2");
     
+    //store game information
+	strcpy(gamekey,player1);
+	strcat(gamekey,player2);
+    result = ABA_db_get(gamekey, strlen(gamekey), &g, sizeof(game));
+    //if game exsit and is not over
+    if(result == 0) {
+        ABA_assert(strcmp(g.host, "") != 0, "the game has exit");
+    }
+    
     //initialize game struct
     initialize_array(g.board, 9);
     strcpy(g.player1, player1);
@@ -182,15 +192,10 @@ int create(char* player1, char* player2){
 		g.winner[i] = 0;
     }
 
-    //store game information
-	strcpy(gamekey,player1);
-	strcat(gamekey,player2);
-    ABA_db_put(gamekey, strlen(gamekey), &g, sizeof(game));
-
     //player1 and player2 transfer ABA to game contract
 	transfertoken(player1, "tictactoe", "2");
 	transfertoken(player2, "tictactoe", "2");
-
+    ABA_db_put(gamekey, strlen(gamekey), &g, sizeof(game));
     return 0;
 }
 //restart game : restarter restart the game and will be the host
@@ -246,6 +251,7 @@ int close(char* player1, char* player2, char* closer){
     result = ABA_db_get(gamekey, strlen(gamekey), &g, sizeof(game));
 
     ABA_assert(result != 0, "the game does not exsit");
+    ABA_assert(strcmp(g.host, "") == 0, "the game is over");
 
     initialize_array(g.board, board_length * board_length); 
 	for(int i = 0; i < 10; i++){
