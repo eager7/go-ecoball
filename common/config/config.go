@@ -57,7 +57,7 @@ http_port = "20678"          # client http port
 wallet_http_port = "20679"   # client wallet http port
 version = "1.0"              # system version
 onlooker_port = "9001"		 #port for browser
-root_dir = "/home/pct/"        		 # level file location
+root_dir = "/tmp/"        		 # level file location
 log_dir = "/tmp/Log/"        # log file location
 output_to_terminal = "true"  # debug output type	 	
 log_level = 1                # debug level	
@@ -209,6 +209,7 @@ func InitConfig(filePath, config string) error {
 }
 
 func init() {
+	//set ecoball.toml dir
 	if flag.Lookup("test.v") == nil {
 		fmt.Println("normal run")
 		IpfsDir = "/tmp/storage"
@@ -223,7 +224,13 @@ func init() {
 		fmt.Println("init config failed: ", err)
 		os.Exit(-1)
 	}
+	//set database dir
 	initVariable()
+	//fmt.Println(RootDir)
+	//if RootDir == "" {
+	//	RootDir, _ = filepath.Abs(filepath.Dir(os.Args[0]))
+	//	viper.Set("root_dir", RootDir)
+	//}
 }
 
 func initVariable() {
