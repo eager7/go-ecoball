@@ -18,7 +18,7 @@
  (import "env" "memset" (func $import$7 (param i32 i32 i32) (result i32)))
  (table 0 anyfunc)
  (memory $0 1)
- (data (i32.const 4) "pS\00\00")
+ (data (i32.const 4) "\90S\00\00")
  (data (i32.const 12) "\03\00\00\00")
  (data (i32.const 16) "[\"\00")
  (data (i32.const 32) "\",\"ABA\"]\00")
@@ -30,26 +30,27 @@
  (data (i32.const 192) "player1 is not a account\00")
  (data (i32.const 224) "player2 is not a account\00")
  (data (i32.const 256) "player1 shouldn\'t be the same as player2\00")
- (data (i32.const 304) "tictactoe\00")
- (data (i32.const 320) "2\00")
- (data (i32.const 336) "restarter name is too long or is null\00")
- (data (i32.const 384) "restarter has insufficient permission\00")
- (data (i32.const 432) "the game does not exsit\00")
- (data (i32.const 464) "4\00")
- (data (i32.const 480) "closer name is too long or is null\00")
- (data (i32.const 528) "closer has insufficient permission\00")
- (data (i32.const 576) "1\00")
- (data (i32.const 592) "3\00")
- (data (i32.const 608) "host name is too long or is null\00")
- (data (i32.const 656) "the game is over\00")
- (data (i32.const 688) "it is not your turn to move\00")
- (data (i32.const 720) "it is not a valid movement\00")
- (data (i32.const 752) "the game is over and none of player win\00")
- (data (i32.const 800) "winner is \00")
- (data (i32.const 816) "create\00")
- (data (i32.const 832) "close\00")
- (data (i32.const 848) "restart\00")
- (data (i32.const 864) "follow\00")
+ (data (i32.const 304) "the game has exit\00")
+ (data (i32.const 336) "tictactoe\00")
+ (data (i32.const 352) "2\00")
+ (data (i32.const 368) "restarter name is too long or is null\00")
+ (data (i32.const 416) "restarter has insufficient permission\00")
+ (data (i32.const 464) "the game does not exsit\00")
+ (data (i32.const 496) "4\00")
+ (data (i32.const 512) "closer name is too long or is null\00")
+ (data (i32.const 560) "closer has insufficient permission\00")
+ (data (i32.const 608) "the game is over\00")
+ (data (i32.const 640) "1\00")
+ (data (i32.const 656) "3\00")
+ (data (i32.const 672) "host name is too long or is null\00")
+ (data (i32.const 720) "it is not your turn to move\00")
+ (data (i32.const 752) "it is not a valid movement\00")
+ (data (i32.const 784) "the game is over and none of player win\00")
+ (data (i32.const 832) "winner is \00")
+ (data (i32.const 848) "create\00")
+ (data (i32.const 864) "close\00")
+ (data (i32.const 880) "restart\00")
+ (data (i32.const 896) "follow\00")
  (export "memory" (memory $0))
  (export "apply" (func $11))
  (func $0 (type $6) (param $var$0 i32) (param $var$1 i32) (result i32)
@@ -463,10 +464,11 @@
  (func $7 (type $6) (param $var$0 i32) (param $var$1 i32) (result i32)
   (local $var$2 i32)
   (local $var$3 i32)
+  (local $var$4 i32)
   (block $label$0 i32
    (i32.store offset=4
     (i32.const 0)
-    (tee_local $var$3
+    (tee_local $var$4
      (i32.sub
       (i32.load offset=4
        (i32.const 0)
@@ -526,10 +528,48 @@
     )
     (i32.const 256)
    )
+   (set_local $var$3
+    (i32.add
+     (get_local $var$4)
+     (i32.const 88)
+    )
+   )
+   (block $label$1
+    (br_if $label$1
+     (call $import$1
+      (tee_local $var$2
+       (call $12
+        (call $14
+         (get_local $var$4)
+         (get_local $var$0)
+        )
+        (get_local $var$1)
+       )
+      )
+      (call $13
+       (get_local $var$2)
+      )
+      (i32.add
+       (get_local $var$4)
+       (i32.const 32)
+      )
+      (i32.const 76)
+     )
+    )
+    (call $import$0
+     (i32.ne
+      (i32.load8_u
+       (get_local $var$3)
+      )
+      (i32.const 0)
+     )
+     (i32.const 304)
+    )
+   )
    (drop
     (call $import$7
      (i32.add
-      (get_local $var$3)
+      (get_local $var$4)
       (i32.const 32)
      )
      (i32.const 0)
@@ -540,7 +580,7 @@
     (call $14
      (i32.add
       (i32.add
-       (get_local $var$3)
+       (get_local $var$4)
        (i32.const 32)
       )
       (i32.const 36)
@@ -551,7 +591,7 @@
    (drop
     (call $14
      (i32.add
-      (get_local $var$3)
+      (get_local $var$4)
       (i32.const 78)
      )
      (get_local $var$1)
@@ -559,63 +599,52 @@
    )
    (drop
     (call $14
-     (i32.add
-      (get_local $var$3)
-      (i32.const 88)
-     )
+     (get_local $var$3)
      (get_local $var$0)
     )
    )
    (i32.store16
     (i32.add
-     (get_local $var$3)
+     (get_local $var$4)
      (i32.const 106)
     )
     (i32.const 0)
    )
    (i64.store offset=98 align=2
-    (get_local $var$3)
+    (get_local $var$4)
     (i64.const 0)
-   )
-   (drop
-    (call $import$2
-     (tee_local $var$2
-      (call $12
-       (call $14
-        (get_local $var$3)
-        (get_local $var$0)
-       )
-       (get_local $var$1)
-      )
-     )
-     (call $13
-      (get_local $var$2)
-     )
-     (i32.add
-      (get_local $var$3)
-      (i32.const 32)
-     )
-     (i32.const 76)
-    )
    )
    (drop
     (call $5
      (get_local $var$0)
-     (i32.const 304)
-     (i32.const 320)
+     (i32.const 336)
+     (i32.const 352)
     )
    )
    (drop
     (call $5
      (get_local $var$1)
-     (i32.const 304)
-     (i32.const 320)
+     (i32.const 336)
+     (i32.const 352)
+    )
+   )
+   (drop
+    (call $import$2
+     (get_local $var$2)
+     (call $13
+      (get_local $var$2)
+     )
+     (i32.add
+      (get_local $var$4)
+      (i32.const 32)
+     )
+     (i32.const 76)
     )
    )
    (i32.store offset=4
     (i32.const 0)
     (i32.add
-     (get_local $var$3)
+     (get_local $var$4)
      (i32.const 112)
     )
    )
@@ -662,7 +691,7 @@
      )
      (i32.const 10)
     )
-    (i32.const 336)
+    (i32.const 368)
    )
    (call $import$0
     (i32.and
@@ -681,7 +710,7 @@
       (i32.const 0)
      )
     )
-    (i32.const 384)
+    (i32.const 416)
    )
    (call $import$0
     (i32.ne
@@ -706,7 +735,7 @@
      )
      (i32.const 0)
     )
-    (i32.const 432)
+    (i32.const 464)
    )
    (i32.store
     (i32.add
@@ -772,8 +801,8 @@
      (drop
       (call $5
        (get_local $var$1)
-       (i32.const 304)
-       (i32.const 464)
+       (i32.const 336)
+       (i32.const 496)
       )
      )
      (br $label$1)
@@ -781,8 +810,8 @@
     (drop
      (call $5
       (get_local $var$0)
-      (i32.const 304)
-      (i32.const 464)
+      (i32.const 336)
+      (i32.const 496)
      )
     )
    )
@@ -836,7 +865,7 @@
      )
      (i32.const 10)
     )
-    (i32.const 480)
+    (i32.const 512)
    )
    (call $import$0
     (i32.and
@@ -855,7 +884,7 @@
       (i32.const 0)
      )
     )
-    (i32.const 528)
+    (i32.const 560)
    )
    (call $import$0
     (i32.ne
@@ -880,7 +909,15 @@
      )
      (i32.const 0)
     )
-    (i32.const 432)
+    (i32.const 464)
+   )
+   (call $import$0
+    (i32.eqz
+     (i32.load8_u offset=88
+      (get_local $var$4)
+     )
+    )
+    (i32.const 608)
    )
    (drop
     (call $import$7
@@ -935,32 +972,32 @@
      )
      (drop
       (call $5
-       (i32.const 304)
+       (i32.const 336)
        (get_local $var$0)
-       (i32.const 592)
+       (i32.const 656)
       )
      )
      (drop
       (call $5
-       (i32.const 304)
+       (i32.const 336)
        (get_local $var$1)
-       (i32.const 576)
+       (i32.const 640)
       )
      )
      (br $label$1)
     )
     (drop
      (call $5
-      (i32.const 304)
+      (i32.const 336)
       (get_local $var$0)
-      (i32.const 576)
+      (i32.const 640)
      )
     )
     (drop
      (call $5
-      (i32.const 304)
+      (i32.const 336)
       (get_local $var$1)
-      (i32.const 592)
+      (i32.const 656)
      )
     )
    )
@@ -1016,7 +1053,7 @@
      )
      (i32.const 10)
     )
-    (i32.const 608)
+    (i32.const 672)
    )
    (call $import$0
     (i32.ne
@@ -1044,7 +1081,7 @@
      )
      (i32.const 0)
     )
-    (i32.const 432)
+    (i32.const 464)
    )
    (call $import$0
     (i32.eqz
@@ -1052,7 +1089,7 @@
       (get_local $var$8)
      )
     )
-    (i32.const 656)
+    (i32.const 608)
    )
    (call $import$0
     (i32.ne
@@ -1067,7 +1104,7 @@
      )
      (i32.const 0)
     )
-    (i32.const 688)
+    (i32.const 720)
    )
    (set_local $var$7
     (i32.const 1)
@@ -1109,7 +1146,7 @@
    )
    (call $import$0
     (get_local $var$7)
-    (i32.const 720)
+    (i32.const 752)
    )
    (block $label$2
     (block $label$3
@@ -1216,7 +1253,7 @@
       (i32.const 0)
      )
      (call $import$5
-      (i32.const 752)
+      (i32.const 784)
      )
      (drop
       (call $import$2
@@ -1233,16 +1270,16 @@
      )
      (drop
       (call $5
-       (i32.const 304)
+       (i32.const 336)
        (get_local $var$0)
-       (i32.const 320)
+       (i32.const 352)
       )
      )
      (drop
       (call $5
-       (i32.const 304)
+       (i32.const 336)
        (get_local $var$1)
-       (i32.const 320)
+       (i32.const 352)
       )
      )
      (br $label$4)
@@ -1269,19 +1306,19 @@
      )
      (i32.store8 offset=10
       (get_local $var$8)
-      (i32.load8_u offset=810
+      (i32.load8_u offset=842
        (i32.const 0)
       )
      )
      (i32.store16 offset=8
       (get_local $var$8)
-      (i32.load16_u offset=808 align=1
+      (i32.load16_u offset=840 align=1
        (i32.const 0)
       )
      )
      (i64.store
       (get_local $var$8)
-      (i64.load offset=800 align=1
+      (i64.load offset=832 align=1
        (i32.const 0)
       )
      )
@@ -1320,12 +1357,12 @@
      )
      (drop
       (call $5
-       (i32.const 304)
+       (i32.const 336)
        (i32.add
         (get_local $var$8)
         (i32.const 60)
        )
-       (i32.const 464)
+       (i32.const 496)
       )
      )
      (br $label$4)
@@ -1360,7 +1397,7 @@
     (br_if $label$1
      (call $16
       (get_local $var$0)
-      (i32.const 816)
+      (i32.const 848)
      )
     )
     (drop
@@ -1378,7 +1415,7 @@
     (br_if $label$2
      (call $16
       (get_local $var$0)
-      (i32.const 832)
+      (i32.const 864)
      )
     )
     (drop
@@ -1399,7 +1436,7 @@
     (br_if $label$3
      (call $16
       (get_local $var$0)
-      (i32.const 848)
+      (i32.const 880)
      )
     )
     (drop
@@ -1421,7 +1458,7 @@
      (i32.eqz
       (call $16
        (get_local $var$0)
-       (i32.const 864)
+       (i32.const 896)
       )
      )
     )
