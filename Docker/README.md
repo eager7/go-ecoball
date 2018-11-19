@@ -99,7 +99,7 @@ If the -b option is added, the eballscan container is started
 If the -w option is added, the ecowallet container is started
 ```
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./share_committee.py -i ${HOST_IP}  [-d] [-W]
+./share_committee.py -i ${HOST_IP}  [-d] [-w]
 ```
 Log generation for each node is under ./ecoball_log/committee/$DOCKERNAME/ 
 

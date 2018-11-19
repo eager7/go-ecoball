@@ -47,7 +47,7 @@ def sleep(t):
     print('resume')
 
 
-def get_config(num):
+def get_config(num, host_ip, data):
     ip_index = host_ip + "_" + str(num)
     for one in data:
         if one == ip_index:
@@ -55,57 +55,61 @@ def get_config(num):
     return False, ""
 
 
-# Command Line Arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--host-ip', metavar='', required=True, help="IP address of host node", dest="host_ip")
-args = parser.parse_args()
+def main():
+    # Command Line Arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--host-ip', metavar='', required=True, help="IP address of host node", dest="host_ip")
+    args = parser.parse_args()
 
-# get netwoek config
-root_dir = os.path.split(os.path.realpath(__file__))[0]
-with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
-    data = pytoml.load(setup_file)
+    # get netwoek config
+    root_dir = os.path.split(os.path.realpath(__file__))[0]
+    with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
+        data = pytoml.load(setup_file)
 
-network = data["network"]
-all_str = json.dumps(data)
+    network = data["network"]
+    all_str = json.dumps(data)
 
-host_ip = args.host_ip
-committee_count = network[host_ip][0]
-shard_count = network[host_ip][1]
+    host_ip = args.host_ip
+    committee_count = network[host_ip][0]
+    shard_count = network[host_ip][1]
 
-#create directory
-log_dir = os.path.join(root_dir, 'ecoball_log/shard')
-if not os.path.exists(log_dir):
-     os.makedirs(log_dir)
+    #create directory
+    log_dir = os.path.join(root_dir, 'ecoball_log/shard')
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
-start_port = 2000
-p2p_start = 3000
-PORT = 20681
-image = "jatel/internal:ecoball_v1.0"
+    start_port = 2000
+    p2p_start = 3000
+    PORT = 20681
+    image = "jatel/internal:ecoball_v1.0"
 
-count = committee_count
-while count < committee_count + shard_count:
-    # start ecoball
-    command = "docker run -d " + "--name=ecoball_" + str(count) + " -p "
-    command += str(PORT + count) + ":20678 "
-    command += "-p " + str(start_port + count) + ":" + str(start_port + count)
-    command += " -p " + str(p2p_start + count) + ":" + str(p2p_start + count)
-    command += " -v " + log_dir  + ":/var/ecoball_log "
-    command += image + " /ecoball/ecoball/start.py "
-    command += "-o " + host_ip + " -n " + str(count) + " -a " + "'" + all_str + "'"
-    exist, config = get_config(count)
-    if not exist:
-        config = {"log_dir": "/var/ecoball_log/ecoball_" + str(count) + "/",
-        "root_dir": "/var/ecoball_log/ecoball_" + str(count) + "/"}
-    if exist:
-        config["log_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
-        config["root_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
-    command += " -c " + "'" + json.dumps(config) + "'"
-    if "size" in data:
-        command += " -s " + str(data["size"])
+    count = committee_count
+    while count < committee_count + shard_count:
+        # start ecoball
+        command = "docker run -d " + "--name=ecoball_" + str(count) + " -p "
+        command += str(PORT + count) + ":20678 "
+        command += "-p " + str(start_port + count) + ":" + str(start_port + count)
+        command += " -p " + str(p2p_start + count) + ":" + str(p2p_start + count)
+        command += " -v " + log_dir  + ":/var/ecoball_log "
+        command += image + " /ecoball/ecoball/start.py "
+        command += "-o " + host_ip + " -n " + str(count) + " -a " + "'" + all_str + "'"
+        exist, config = get_config(count, host_ip, data)
+        if not exist:
+            config = {"log_dir": "/var/ecoball_log/ecoball_" + str(count) + "/",
+            "root_dir": "/var/ecoball_log/ecoball_" + str(count) + "/"}
+        if exist:
+            config["log_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
+            config["root_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
+        command += " -c " + "'" + json.dumps(config) + "'"
+        if "size" in data:
+            command += " -s " + str(data["size"])
 
-    run(command)
-    sleep(2)
-    count += 1
-    
+        run(command)
+        sleep(2)
+        count += 1
+        
+    print("start all ecoball shard container on this physical machine(" + host_ip + ") successfully!!!") 
 
-print("start all ecoball shard container on this physical machine(" + host_ip + ") successfully!!!") 
+
+if __name__ == "__main__":
+    main()
