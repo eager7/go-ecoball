@@ -1,0 +1,116 @@
+{
+  "Identity": {
+    "PeerID": "QmenoBdiFLnzFEv9qD65vofY9Qujjb3WDFq4wwsJHfe8EA",
+    "PrivKey": "CAASpwkwggSjAgEAAoIBAQC6im3U3yMbNLx3GGAhQyqCxeSavx1S1th7cB68rKVaxV59yS6rikPksi1iovG0q4yM1qNWGG7INB95o5OPfPcwBw2fHWidfRXUWtYQqRq1+/rTrmildWHZbGk/9nbyRn/BXRd6DMjjbRnC8Djoa00irDsLE9JZqQtHUabRy/mukkdl+OsquRS/9cj6jDnYHD5k5lVSnSAgDkqr6G2GY14rO//KiSirSZWYKMvddc3ilTOaFwChhEq/t11/FQs1ajsHSL8PPQakKRmot7et1qXZnm34ua4Eeh+zmGy/uV6DGJRIPwJZsA7k9Ya9DRjupXdu5Gny0BxU+Va/P6pRmLMdAgMBAAECggEAXYrNSNIcaKgpWg9/JS7pQmq6GF999OyH4l53C2YIBVyz5Z/dJ2hOY4B2AeB0FIVyFa4MekAGTZ7Vqcm9VVb1HcBrtD6rF06Cg9qJPhGOs3OIdF4hW9dhGgajQM/3FccEiZKFE08V7fXn1TlhUCt+osR7VzK5aPy8CyeG3+3JZyBYQDsB5yMIyDbdxi9HdQAF0gpaWDvzo8o1JFbOnpf7LrXhVQv+7emQ4BVt8N+z16v01x5YCwe1AT5PXmn70X48I45J2x0NG6FQTZLBFyFrQ1j/Vz5IGxUY1lOn1kdiuRaSnoeI2YpcaMSr1UsqVJ80Ywadcl3YGpLs+IcxRq8oAQKBgQDcc6HdgSt/dZVbGDz2l/KyKHQq2XnCrcsqIUY6mSeOJQ1hGAQnuMheZNOyOa+FKXI8SVZ7nY3hZ0mQyqeGXpvu9CcWMzRx6900LtAssLvRUQ7aGCal5tP902tQrSQcm1axB5ezYBqK9vWcO4aWXy9KpYCrMPcDCxwPY4ddpSH1jQKBgQDYnu8XXfxiWhVaNvWrKat1KZ/vYElpKf2iy9ljneoZwYABkoJa+ym7PQE8fQgN9nVge7nrpD6zDz4PSQtZ//tPDVEqaBG9aGr2T4E6ZcdOY6LAHukI6lI4+AI/49nccubwDNnaTu8U2wv4Q0cyy7Xq9kwPk0VzFa5bdbx18cHn0QKBgDe1HLUtvAE0hG6FnHowAYtVv61IUYWJh2p5CBcstpsr78qWWA51mmSIFBrYiusagxyK58jLEpxgDm4BV/4TkFH87pekjt8u3DIglkiEzKFjW15vdey8fNuKfnbfmd2Ev45yvbn9UhfFumElhaggG4JAelhIQlNJjmixHPbkEMXNAoGBANQF7BtBAND7Pz8H4DliFdIdpc9UvUXTtc/sGqEoZYREIxhm4HRQta3wrg8YihOwkX6YW4fLQRtd5e5sHlI+/SmI7VLGfeaYF2lytBgGmqedWiUVnB3/y+66wOjsCcd+J4/55BmLfPM622Jp53xOa4bI//WWvjlAlWIrwQToVlShAoGAUNivT3qgVB2Uh20mwWzVJdpOyvvqqjL2hWBb5740nCWP+IL0Vvw/uTXTcxgJ00FFhetHKPgNy5yjIWe70BwriKVMaMSJnsuP9fhSsjEUy6YQCvPuhvmQIC27qMlLeegIH+j0E5oQbC8EmCzSDs27B99Ixc5ERTT7wbOSZJ/5DpI="
+  },
+  "Datastore": {
+    "StorageMax": "10GB",
+    "StorageGCWatermark": 90,
+    "GCPeriod": "1h",
+    "Spec": {
+      "mounts": [
+        {
+          "child": {
+            "path": "blocks",
+            "shardFunc": "/repo/flatfs/shard/v1/next-to-last/2",
+            "sync": true,
+            "type": "flatfs"
+          },
+          "mountpoint": "/blocks",
+          "prefix": "flatfs.datastore",
+          "type": "measure"
+        },
+        {
+          "child": {
+            "compression": "none",
+            "path": "datastore",
+            "type": "levelds"
+          },
+          "mountpoint": "/",
+          "prefix": "leveldb.datastore",
+          "type": "measure"
+        }
+      ],
+      "type": "mount"
+    },
+    "HashOnRead": false,
+    "BloomFilterSize": 0
+  },
+  "Addresses": {
+    "Swarm": [
+      "/ip4/0.0.0.0/tcp/4011",
+      "/ip6/::/tcp/4011"
+    ],
+    "Announce": [],
+    "NoAnnounce": [],
+    "API": "/ip4/0.0.0.0/tcp/5011",
+    "Gateway": "/ip4/0.0.0.0/tcp/8080"
+  },
+  "Mounts": {
+    "IPFS": "/ipfs",
+    "IPNS": "/ipns",
+    "FuseAllowOther": false
+  },
+  "Discovery": {
+    "MDNS": {
+      "Enabled": false,
+      "Interval": 10
+    }
+  },
+  "Routing": {
+    "Type": "dht"
+  },
+  "Ipns": {
+    "RepublishPeriod": "",
+    "RecordLifetime": "",
+    "ResolveCacheSize": 128
+  },
+  "Bootstrap": [],
+  "Gateway": {
+    "HTTPHeaders": {
+      "Access-Control-Allow-Headers": [
+        "X-Requested-With",
+        "Range"
+      ],
+      "Access-Control-Allow-Methods": [
+        "GET"
+      ],
+      "Access-Control-Allow-Origin": [
+        "*"
+      ]
+    },
+    "RootRedirect": "",
+    "Writable": false,
+    "PathPrefixes": []
+  },
+  "API": {
+    "HTTPHeaders": {
+      "Server": [
+        "go-ipfs/0.4.18-dev"
+      ]
+    }
+  },
+  "Swarm": {
+    "AddrFilters": null,
+    "DisableBandwidthMetrics": false,
+    "DisableNatPortMap": false,
+    "DisableRelay": false,
+    "EnableRelayHop": false,
+    "ConnMgr": {
+      "Type": "basic",
+      "LowWater": 600,
+      "HighWater": 900,
+      "GracePeriod": "20s"
+    }
+  },
+  "Reprovider": {
+    "Interval": "12h",
+    "Strategy": "all"
+  },
+  "Experimental": {
+    "FilestoreEnabled": false,
+    "UrlstoreEnabled": false,
+    "ShardingEnabled": false,
+    "Libp2pStreamMounting": false
+  }
+}
