@@ -156,10 +156,11 @@ func (s *shard) productMinorBlock(msg interface{}) {
 		lastMinor := s.ns.GetLastMinorBlock()
 		var height uint64
 		if lastMinor == nil {
-			height = 1
-		} else {
-			height = lastMinor.Height + 1
+			panic("minor block not exist")
+			return
 		}
+
+		height = lastMinor.Height + 1
 
 		simulate.TellLedgerProductMinorBlock(lastcm.Height, height)
 	} else {
@@ -171,7 +172,30 @@ func (s *shard) productMinorBlock(msg interface{}) {
 }
 
 func (s *shard) processLedgerMinorBlockMsg(p interface{}) {
+	if !s.ns.IsLeader() {
+		log.Error("not leader, ledger msg later, drop")
+		return
+	}
+
 	minor := p.(*cs.MinorBlock)
+
+	lastcm := s.ns.GetLastCMBlock()
+	if lastcm == nil {
+		panic("cm block not exist")
+		return
+	}
+
+	lastMinor := s.ns.GetLastMinorBlock()
+	if lastMinor == nil {
+		panic("minor block not exist")
+		return
+	}
+
+	if minor.Height != lastMinor.Height+1 ||
+		minor.CMEpochNo != lastcm.Height {
+		log.Error("block error, maybe ledger msg later ", minor.CMEpochNo, " ", minor.Height, " last ", lastcm.Height, " ", lastMinor.Height)
+		return
+	}
 
 	sign := s.ns.GetSignBit()
 	csi := newMinorBlockCsi(minor, sign)

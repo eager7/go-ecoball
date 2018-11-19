@@ -154,10 +154,11 @@ func (c *committee) productFinalBlock(msg interface{}) {
 		lastfinal := c.ns.GetLastFinalBlock()
 		var height uint64
 		if lastfinal == nil {
-			height = 1
-		} else {
-			height = lastfinal.Height + 1
+			panic("last final block not exist")
+			return
 		}
+
+		height = lastfinal.Height + 1
 
 		hashes := c.ns.GetMinorBlockHashesFromPool()
 		simulate.TellLedgerProductFinalBlock(lastcm.Height, height, hashes)
@@ -177,7 +178,30 @@ func (c *committee) productFinalBlock(msg interface{}) {
 }
 
 func (c *committee) processLedgerFinalBlockMsg(p interface{}) {
+	if !c.ns.IsLeader() {
+		log.Error("not leader, ledger msg later, drop")
+		return
+	}
+
 	final := p.(*cs.FinalBlock)
+
+	lastcm := c.ns.GetLastCMBlock()
+	if lastcm == nil {
+		panic("cm block not exist")
+		return
+	}
+
+	lastfinal := c.ns.GetLastFinalBlock()
+
+	if lastfinal == nil {
+		panic("last final block not exist")
+		return
+	}
+
+	if final.Height != lastfinal.Height+1 || final.EpochNo != lastcm.Height {
+		log.Error("block error, maybe ledger msg later ", final.EpochNo, " ", final.Height, " last ", lastcm.Height, " ", lastfinal.Height)
+		return
+	}
 
 	sign := c.ns.GetSignBit()
 	csi := newFinalBlockCsi(final, sign)
