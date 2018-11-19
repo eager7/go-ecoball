@@ -47,7 +47,7 @@ func (m *minorBlockSet) syncMinorBlocks(minors []*cs.MinorBlock) {
 		return
 	}
 
-	for i := 0; i < len(m.blocks); i++ {
+	for i := 0; i < len(minors); i++ {
 		m.blocks[i] = minors[i]
 	}
 }
@@ -79,4 +79,26 @@ func (m *minorBlockSet) count() uint16 {
 	}
 
 	return length
+}
+
+func (m *minorBlockSet) checkMinorBlockInPool(final *cs.FinalBlock) bool {
+	if m.count() != uint16(len(final.MinorBlocks)) {
+		log.Error("length error")
+		return false
+	}
+
+	for _, minor := range final.MinorBlocks {
+		mp := m.getMinorBlock(uint16(minor.ShardId))
+		if mp == nil {
+			log.Error("minor block not exist ", minor.ShardId)
+			return false
+		}
+
+		if mp.Hash() != minor.Hash() {
+			log.Error("minor block hash not same")
+			return false
+		}
+	}
+
+	return true
 }

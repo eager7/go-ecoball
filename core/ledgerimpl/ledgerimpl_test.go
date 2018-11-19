@@ -172,7 +172,7 @@ func TestInterface(t *testing.T) {
 
 	blockMinor, _, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, 0)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockMinor))
-	blockLastMinor, err := l.GetLastShardBlockById(config.ChainHash, 1)
+	blockLastMinor, err := l.GetLastShardBlockById(config.ChainHash, 0)
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(blockMinor.JsonString() == blockLastMinor.JsonString())
 	event.EventStop()
@@ -303,6 +303,27 @@ func TestExample(t *testing.T) {
 	block, err := l.GetLastShardBlock(config.ChainHash, shard.HeViewChange)
 	errors.CheckErrorPanic(err)
 	elog.Log.Debug("vc block:", block.JsonString())
+
+	event.EventStop()
+}
+
+func TestMinorBlock(t *testing.T) {
+	simulate.LoadConfig()
+	os.RemoveAll("/tmp/minor_test")
+	l, err := ledgerimpl.NewLedger("/tmp/minor_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	errors.CheckErrorPanic(err)
+	b, _, err := l.NewMinorBlock(config.ChainHash, nil, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	l.SaveShardBlock(config.ChainHash, b)
+
+	f, err := l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []common.Hash{b.Hash()})
+	errors.CheckErrorPanic(err)
+	l.SaveShardBlock(config.ChainHash, f)
+
+
+	b, _, err = l.NewMinorBlock(config.ChainHash, nil, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	l.SaveShardBlock(config.ChainHash, b)
 
 	event.EventStop()
 }

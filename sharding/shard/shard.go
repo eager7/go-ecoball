@@ -195,6 +195,6 @@ func (s *shard) setFullVoeTimer(bStart bool) {
 }
 
 func (s *shard) setSyncRequest() {
-	log.Debug("set sync request ")
+	log.Debug("miss some blocks, set sync request ")
 	s.sync.SyncRequest(0, 0)
 }
