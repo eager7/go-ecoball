@@ -172,7 +172,7 @@ func TestInterface(t *testing.T) {
 
 	blockMinor, _, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, 0)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockMinor))
-	blockLastMinor, err := l.GetLastShardBlockById(config.ChainHash, 1)
+	blockLastMinor, err := l.GetLastShardBlockById(config.ChainHash, 0)
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(blockMinor.JsonString() == blockLastMinor.JsonString())
 	event.EventStop()

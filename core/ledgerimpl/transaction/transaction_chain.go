@@ -48,7 +48,7 @@ import (
 
 const keyBlockMap = "block_map"
 
-var log = elog.NewLogger("Chain Tx", config.LogLevel)
+var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
 
 type StateDatabase struct {
 	FinalDB *state.State //final database in levelDB
@@ -1277,7 +1277,7 @@ func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface,
 func (c *ChainTx) GetLastShardBlockById(shardId uint32) (shard.BlockInterface, error) {
 	data, err := c.BlockStore.Get(common.Uint32ToBytes(shardId))
 	if err != nil {
-		return nil, err
+		return nil, errors.New(log, err.Error())
 	}
 	hash := common.NewHash(data)
 	return c.GetShardBlockByHash(shard.HeMinorBlock, hash)
@@ -1294,6 +1294,8 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		return nil, nil, err
 	}
 	fmt.Println(lastMinor.JsonString())
+	c.lockBlock.RLock()
+	defer c.lockBlock.RUnlock()
 	if m, ok := c.BlockMap[lastMinor.Hash().HexString()]; ok {
 		if m.Finalizer == false {
 			block, _ := lastMinor.GetObject().(shard.MinorBlock)
