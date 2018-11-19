@@ -45,13 +45,13 @@ func (c *chainData) getViewchangeBlock() *cs.ViewChangeBlock {
 
 func (c *chainData) saveMinorBlock(header *cs.MinorBlockHeader) {
 	if c.preMinorBlock == nil {
-		log.Debug("pre minor block not  exist ", header.Height)
-		panic("pre minor not exist ")
+		log.Error("pre minor block not  exist ", header.Height)
+		//panic("pre minor not exist ")
 	} else {
 		if c.preMinorBlock.Hash() != header.Hash() ||
 			c.preMinorBlock.Height != header.Height {
-			log.Debug("pre minor block error ", c.preMinorBlock.Hash(), " ", c.preMinorBlock.Height, "recv ", header.Hash(), " ", header.Height)
-			panic("pre minor not exist ")
+			log.Error("pre minor block error ", c.preMinorBlock.Hash(), " ", c.preMinorBlock.Height, "recv ", header.Hash(), " ", header.Height)
+			//panic("pre minor not exist ")
 		} else {
 			c.minorBlock = c.preMinorBlock
 			c.setShardHeight(c.minorBlock.ShardId, c.minorBlock.Height)

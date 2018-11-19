@@ -86,6 +86,16 @@ func (s *workerSet) isMember(self *sc.Worker) bool {
 	return false
 }
 
+func (s *workerSet) SelfIndex(self *sc.Worker) int {
+	for i, work := range s.member {
+		if work.Equal(self) {
+			return i
+		}
+	}
+	panic("not committee member")
+	return 0
+}
+
 func (s *workerSet) changeLeader(leader *sc.Worker) {
 	for i, work := range s.member {
 		if work.Equal(leader) {
