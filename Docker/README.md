@@ -4,7 +4,31 @@ Ecoball-Docker
 # Depends
 
 You need install docker and python3 and pip3
+```
+sudo apt-get install -y docker.io python3 python3-pip
+```
 
+You need to install python's pytoml module
+```
+pip3 install pytoml
+```
+
+You need to configure the docker environment
+Docker groups already exist by default, and they need to be created manually if they do not exist
+```
+sudo groupadd docker
+```
+
+Add the current user to the docker group
+```
+sudo gpasswd -a ${USER} docker
+```
+
+Refresh docker group members
+```
+newgrp docker
+```
+After doing the above, executing the docker command does not require a sudo referral
 # Run shard
 
 ### ecoball.toml
@@ -57,12 +81,12 @@ Once the configuration file shard_setup.toml is configured, execute key_generati
 ./key_generate.py
 ```
 
-## share_shard.py
+## share_shard.py 
 To start the sharding network, execute the share_shard.py script to start the shard container.
 
 ```
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./share_shard.py 
+./share_shard.py -i ${HOST_IP}
 ```
 Log generation for each node is under ./ecoball_log/shard/$DOCKERNAME/ 
 
@@ -75,7 +99,7 @@ If the -b option is added, the eballscan container is started
 If the -w option is added, the ecowallet container is started
 ```
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./share_committee.py [-d]
+./share_committee.py -i ${HOST_IP}  [-d] [-W]
 ```
 Log generation for each node is under ./ecoball_log/committee/$DOCKERNAME/ 
 
