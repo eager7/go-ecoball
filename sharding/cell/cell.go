@@ -343,7 +343,7 @@ func (c *Cell) isShardLeader() bool {
 		return false
 	}
 
-	i := c.CalcShardLeader(len(c.shard), false)
+	i := c.CalcShardLeader(len(c.shard))
 
 	if (&c.Self).Equal(c.shard[i]) {
 		return true
@@ -367,7 +367,7 @@ func (c *Cell) isShardBackup() bool {
 		return false
 	}
 
-	i := c.CalcShardBackup(len(c.shard), false)
+	i := c.CalcShardBackup(len(c.shard))
 
 	if (&c.Self).Equal(c.shard[i]) {
 		return true
@@ -376,12 +376,37 @@ func (c *Cell) isShardBackup() bool {
 	}
 }
 
+func (c *Cell) SelfIndex() int {
+	if c.NodeType == sc.NodeCommittee {
+		return c.cm.SelfIndex(&c.Self)
+	} else if c.NodeType == sc.NodeShard {
+		return c.shardSelfIndex()
+	} else {
+		return 0
+	}
+}
+
+func (c *Cell) shardSelfIndex() int {
+	for i, work := range c.shard {
+		if c.Self.Equal(work) {
+			return i
+		}
+	}
+
+	panic("not shard member")
+	return 0
+}
+
 func (c *Cell) IsCommitteeMember() bool {
 	return c.cm.isMember(&c.Self)
 }
 
 func (c *Cell) GetCmWorks() []*sc.Worker {
 	return c.cm.member
+}
+
+func (c *Cell) GetCmWorksCounter() int {
+	return len(c.cm.member)
 }
 
 func (c *Cell) GetWorks() []*sc.Worker {
@@ -408,7 +433,7 @@ func (c *Cell) GetLeader() *sc.Worker {
 	if c.NodeType == sc.NodeCommittee {
 		return c.cm.member[0]
 	} else if c.NodeType == sc.NodeShard {
-		i := c.CalcShardLeader(len(c.shard), false)
+		i := c.CalcShardLeader(len(c.shard))
 		return c.shard[i]
 	} else {
 		return nil
@@ -475,29 +500,19 @@ func (c *Cell) getShardHeight(shardid uint32) uint64 {
 	return c.chain.getShardHeight(shardid)
 }
 
-func (c *Cell) CalcShardLeader(size int, bfinal bool) uint64 {
+func (c *Cell) CalcShardLeader(size int) uint64 {
 	final := c.GetLastFinalBlock()
-	var height uint64
-	if bfinal {
-		height = final.Height + 1
-	} else {
-		height = final.Height
-	}
+
+	height := final.Height
 
 	i := (height % sc.DefaultEpochFinalBlockNumber) % uint64(size)
 	log.Debug("current leader i ", i)
 	return i
 }
 
-func (c *Cell) CalcShardBackup(size int, bfinal bool) uint64 {
+func (c *Cell) CalcShardBackup(size int) uint64 {
 	final := c.GetLastFinalBlock()
-
-	var height uint64
-	if bfinal {
-		height = final.Height + 1 + 1
-	} else {
-		height = final.Height + 1
-	}
+	height := final.Height + 1
 
 	i := (height % sc.DefaultEpochFinalBlockNumber) % uint64(size)
 	log.Debug("current backup i ", i)

@@ -28,6 +28,8 @@ func MakeNet(ns *cell.Cell) {
 }
 
 func (n *net) SendToPeer(packet *sc.NetPacket, worker *sc.Worker) {
+	log.Debug("send to peer")
+
 	if worker == nil {
 		log.Error("leader is nil")
 		return
@@ -55,27 +57,31 @@ func (n *net) GossipBlock(packet *sc.NetPacket) {
 		return
 	}
 
-	var index int
-	if n.ns.NodeType == sc.NodeCommittee {
-		index = 0
-	} else if n.ns.NodeType == sc.NodeShard {
-		index = int(n.ns.CalcShardLeader(len(works), false))
-	} else {
-		return
-	}
-
 	var peers []*sc.Worker
-	if index == 0 {
-		peers = works[1:]
-	} else {
-		peers = append(peers, works[0:index]...)
-		if index < len(works)-1 {
-			peers = append(peers, works[index+1:]...)
+	if packet.PacketType == pb.MsgType_APP_MSG_CONSENSUS_PACKET {
+		var index int
+		if n.ns.NodeType == sc.NodeCommittee {
+			index = 0
+		} else if n.ns.NodeType == sc.NodeShard {
+			index = int(n.ns.CalcShardLeader(len(works)))
+		} else {
+			return
 		}
+
+		if index == 0 {
+			peers = works[1:]
+		} else {
+			peers = append(peers, works[0:index]...)
+			if index < len(works)-1 {
+				peers = append(peers, works[index+1:]...)
+			}
+		}
+	} else {
+		peers = works
 	}
 
 	size := int(len(peers))
-	number := int(math.Sqrt(float64(size)))
+	number := int(math.Sqrt(float64(size))) + 1
 
 	arr := make([]int, 0, 3*size)
 	for i := 0; i < 3; i++ {
@@ -141,15 +147,39 @@ func (n *net) BroadcastBlock(packet *sc.NetPacket) {
 	}
 }
 
-func (n *net) SendBlockToShards(packet *sc.NetPacket) {
-	/*only leader and backup send*/
-	leader := n.ns.IsLeader()
-	bakcup := n.ns.IsBackup()
-	if !leader && !bakcup {
-		return
+func CalcCrossShardIndex(si int, ourSize int, shardSize int) (bSend bool, begin int, count int) {
+	bSend = false
+
+	if ourSize >= shardSize {
+		if si >= shardSize {
+			bSend = false
+			return
+		} else {
+			bSend = true
+			begin = si
+			count = 1
+			return
+		}
+	} else {
+		cover := shardSize / ourSize
+		part := shardSize % ourSize
+
+		if si < part {
+			begin = (cover + 1) * si
+			count = cover + 1
+		} else {
+			begin = cover*si + part
+			count = cover
+		}
+
+		return true, begin, count
 	}
 
-	log.Debug("send block to shard")
+}
+
+func (n *net) SendBlockToShards(packet *sc.NetPacket) {
+	si := n.ns.SelfIndex()
+	selfSize := n.ns.GetWorksCounter()
 
 	sp := &sc.NetPacket{}
 	sp.DupHeader(packet)
@@ -158,50 +188,39 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 
 	cm := n.ns.GetLastCMBlock()
 
-	var bfinal = false
-	if sp.BlockType == sc.SD_FINAL_BLOCK {
-		bfinal = true
-	}
-
-	for _, shard := range cm.Shards {
-		if leader {
-			i := n.ns.CalcShardLeader(len(shard.Member), bfinal)
-			go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
-			if n.ns.GetWorksCounter() == 1 && len(shard.Member) > 1 {
-				j := n.ns.CalcShardBackup(len(shard.Member), bfinal)
-				go simulate.Sendto(shard.Member[j].Address, shard.Member[j].Port, sp)
-			}
-		} else if bakcup {
-			if len(shard.Member) > 1 {
-				i := n.ns.CalcShardBackup(len(shard.Member), bfinal)
-				go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
-			}
+	for j, shard := range cm.Shards {
+		shardSize := len(shard.Member)
+		bSend, begin, count := CalcCrossShardIndex(si, int(selfSize), shardSize)
+		if !bSend {
+			return
 		}
+
+		log.Debug("send block to shard ", j+1)
+
+		for i := 0; i < count; i++ {
+			go simulate.Sendto(shard.Member[begin+i].Address, shard.Member[begin+i].Port, sp)
+		}
+
 	}
 
 }
 
 func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
-	/*only leader and backup send*/
-	leader := n.ns.IsLeader()
-	bakcup := n.ns.IsBackup()
-	if !leader && !bakcup {
-		return
-	}
-
-	log.Debug("send block to committee")
-
 	sp := &sc.NetPacket{}
 	sp.DupHeader(packet)
 	sp.PacketType = pb.MsgType_APP_MSG_SHARDING_PACKET
 	sp.Packet = packet.Packet
 
-	cm := n.ns.GetCmWorks()
-	if leader {
-		go simulate.Sendto(cm[0].Address, cm[0].Port, sp)
-	} else if bakcup {
-		if len(cm) > 1 {
-			go simulate.Sendto(cm[1].Address, cm[1].Port, sp)
+	si := n.ns.SelfIndex()
+	selfSize := n.ns.GetWorksCounter()
+
+	cmSize := n.ns.GetCmWorksCounter()
+	bSend, begin, count := CalcCrossShardIndex(si, int(selfSize), cmSize)
+	if bSend {
+		log.Debug("send block to committee")
+		cm := n.ns.GetCmWorks()
+		for i := 0; i < count; i++ {
+			go simulate.Sendto(cm[begin+i].Address, cm[begin+i].Port, sp)
 		}
 	}
 
@@ -212,27 +231,24 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 			continue
 		}
 
-		if leader {
-			i := n.ns.CalcShardLeader(len(shard.Member), false)
-			go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
-		} else if bakcup {
-			if len(shard.Member) > 1 {
-				i := n.ns.CalcShardBackup(len(shard.Member), false)
-				go simulate.Sendto(shard.Member[i].Address, shard.Member[i].Port, sp)
-			}
+		shardSize := len(shard.Member)
+		bSend, begin, count = CalcCrossShardIndex(si, int(selfSize), shardSize)
+		if !bSend {
+			continue
+		}
+
+		log.Debug("send block other shard, id:  ", i+1)
+		for i := 0; i < count; i++ {
+			go simulate.Sendto(shard.Member[i+begin].Address, shard.Member[i+begin].Port, sp)
 		}
 	}
 
 }
 
 func (n *net) TransitBlock(p *sc.CsPacket) {
-	log.Debug("transit block")
-
 	leader := n.ns.IsLeader()
-	bakcup := n.ns.IsBackup()
-	if !leader && !bakcup {
-		return
-	}
+
+	log.Debug("transit block")
 
 	sp := &sc.NetPacket{}
 	sp.CopyHeader(p)
@@ -275,5 +291,9 @@ func (n *net) TransitBlock(p *sc.CsPacket) {
 		return
 	}
 
-	n.BroadcastBlock(sp)
+	if leader {
+		n.BroadcastBlock(sp)
+	} else {
+		n.GossipBlock(sp)
+	}
 }
