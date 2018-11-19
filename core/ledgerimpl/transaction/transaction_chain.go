@@ -1153,7 +1153,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	log.Notice("save "+blockType+" block", block.JsonString())
 	log.Notice("Shard ", c.shardId, "Save Block", block.Type(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString())
 	if block.GetHeight() != 1 {
-		connect.Notify(info.ShardBlock, block)
+		go connect.Notify(info.ShardBlock, block)
 		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool); err != nil {
 			log.Warn(err)
 		}
@@ -1294,18 +1294,18 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		return nil, nil, err
 	}
 	fmt.Println(lastMinor.JsonString())
-	c.lockBlock.RLock()
-	defer c.lockBlock.RUnlock()
-	if m, ok := c.BlockMap[lastMinor.Hash().HexString()]; ok {
-		if m.Finalizer == false {
-			block, _ := lastMinor.GetObject().(shard.MinorBlock)
-			return &block, nil, nil
+	if lastMinor.GetHeight() != 1 {
+		c.lockBlock.RLock()
+		defer c.lockBlock.RUnlock()
+		if m, ok := c.BlockMap[lastMinor.Hash().HexString()]; ok {
+			if m.Finalizer == false {
+				block, _ := lastMinor.GetObject().(shard.MinorBlock)
+				return &block, nil, nil
+			}
+		} else {
+			return nil, nil, errors.New(log, "the minor block is not save successfully")
 		}
-	} else {
-		return nil, nil, errors.New(log, "the minor block is not save successfully")
-	}
-	/*if lastMinor.GetHeight() != 1 {
-		lastFinal, err := c.GetLastShardBlock(shard.HeFinalBlock)
+	/*	lastFinal, err := c.GetLastShardBlock(shard.HeFinalBlock)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1325,8 +1325,8 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		} else {
 			log.Warn(reflect.TypeOf(lastFinal.GetObject()))
 			return nil, nil, errors.New(log, "the type is error")
-		}
-	}*/
+		}*/
+	}
 
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
