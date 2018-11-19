@@ -89,6 +89,7 @@ while count < committee_count + shard_count:
     command += str(PORT + count) + ":20678 "
     command += "-p " + str(start_port + count) + ":" + str(start_port + count)
     command += " -p " + str(p2p_start + count) + ":" + str(p2p_start + count)
+    command += " -p 4011:4011 -p 5011:5011 -p 5353:5353"
     command += " -v " + log_dir  + ":/var/ecoball_log "
     command += image + " /ecoball/ecoball/start.py "
     command += "-o " + host_ip + " -n " + str(count) + " -a " + "'" + all_str + "'"
