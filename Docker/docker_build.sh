@@ -128,7 +128,7 @@ echo -e "\033[;32mAll executable files have been successful and ecoball images c
 echo
 echo
 echo -e "\033[;34mbuild image with the Dockerfile. \033[0m"
-if ! sudo docker build -t "jatel/internal:ecoball_v1.0" .
+if ! docker build -t "jatel/internal:ecoball_v1.0" .
 then
     echo  -e "\033[;31mbuild image failed!!! \033[0m"
     exit 1
