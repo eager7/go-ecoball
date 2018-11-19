@@ -39,3 +39,7 @@ func TestBlockAdd(t *testing.T) {
 		fmt.Println(block)
 	}
 }
+
+func TestNewMinorBlock(t *testing.T) {
+
+}

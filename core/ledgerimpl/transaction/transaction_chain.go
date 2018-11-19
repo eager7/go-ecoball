@@ -1087,6 +1087,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 			c.lockBlock.Lock()
 			if m, ok := c.BlockMap[minorBlock.Hash().HexString()]; ok {
 				m.Finalizer = true
+				c.BlockMap[minorBlock.Hash().HexString()] = m
 			}
 			c.lockBlock.Unlock()
 		}

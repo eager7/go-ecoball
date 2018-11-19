@@ -306,3 +306,24 @@ func TestExample(t *testing.T) {
 
 	event.EventStop()
 }
+
+func TestMinorBlock(t *testing.T) {
+	simulate.LoadConfig()
+	os.RemoveAll("/tmp/minor_test")
+	l, err := ledgerimpl.NewLedger("/tmp/minor_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	errors.CheckErrorPanic(err)
+	b, _, err := l.NewMinorBlock(config.ChainHash, nil, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	l.SaveShardBlock(config.ChainHash, b)
+
+	f, err := l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []common.Hash{b.Hash()})
+	errors.CheckErrorPanic(err)
+	l.SaveShardBlock(config.ChainHash, f)
+
+
+	b, _, err = l.NewMinorBlock(config.ChainHash, nil, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	l.SaveShardBlock(config.ChainHash, b)
+
+	event.EventStop()
+}
