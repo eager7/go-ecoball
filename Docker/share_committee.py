@@ -88,7 +88,7 @@ image = "jatel/internal:ecoball_v1.0"
 count = 0
 while count < committee_count:
     # start ecoball
-    command = "sudo docker run -d " + "--name=ecoball_" + str(count) + " -p "
+    command = "docker run -d " + "--name=ecoball_" + str(count) + " -p "
     command += str(PORT + count) + ":20678 "
     command += "-p " + str(start_port + count) + ":" + str(start_port + count)
     command += " -p " + str(p2p_start + count) + ":" + str(p2p_start + count)
@@ -110,14 +110,14 @@ while count < committee_count:
 
     if args.browser and count == committee_count - 1:
         # start eballscan
-        command = "sudo docker run -d --name=eballscan --link=ecoball_0:ecoball_alias -p 20680:20680 "
+        command = "docker run -d --name=eballscan --link=ecoball_0:ecoball_alias -p 20680:20680 "
         command += image + " /ecoball/eballscan/eballscan_service.sh ecoball_0"
         run(command)
         sleep(2)
 
     if args.wallet and count == committee_count - 1:
         # start ecowallet
-        command = "sudo docker run -d --name=ecowallet -p 20679:20679 "
+        command = "docker run -d --name=ecowallet -p 20679:20679 "
         command += image + " /ecoball/ecowallet/ecowallet"
         run(command)
         sleep(2)
