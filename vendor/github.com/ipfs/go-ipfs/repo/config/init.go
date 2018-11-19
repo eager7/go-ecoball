@@ -108,7 +108,7 @@ func addressesConfig() Addresses {
 		Announce:   []string{},
 		NoAnnounce: []string{},
 		API:        "/ip4/127.0.0.1/tcp/5011",
-		Gateway:    "/ip4/127.0.0.1/tcp/8080",
+		Gateway:    "/ip4/127.0.0.1/tcp/7011",
 	}
 }
 
