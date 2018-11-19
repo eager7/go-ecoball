@@ -232,6 +232,11 @@ func (c *committee) checkFinalPacket(p interface{}) bool {
 		}
 	}
 
+	if !c.ns.CheckMinorBlockInPool(final) {
+		log.Error("miss some minor block, need sync")
+		c.fsm.Execute(ActChainNotSync, nil)
+	}
+
 	return true
 
 }
