@@ -31,6 +31,7 @@ import (
 
 	"runtime/debug"
 	"sync"
+
 	"github.com/ecoball/go-ecoball/common/config"
 )
 
@@ -88,7 +89,7 @@ func fileOpen(path string) (*os.File, string, error) {
 			return nil, "", fmt.Errorf("open %s: not a directory", path)
 		}
 	} else if os.IsNotExist(err) {
-		if err := os.MkdirAll(path, 0766); err != nil {
+		if err := os.MkdirAll(path, 0777); err != nil {
 			return nil, "", err
 		}
 	} else {
