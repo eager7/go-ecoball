@@ -4,7 +4,7 @@ include common/config/config
 
 BASE_VERSION = 1.1.1
 
-all: ecoball ecoclient ecowallet proto plugins
+all: ecoball ecoclient ecowallet plugins
 
 .PHONY: proto plugins ecoball ecoclient ecowallet
 ecoball: plugins

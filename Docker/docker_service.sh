@@ -40,9 +40,9 @@ if [ 2 -ne $SERVICE ]; then
 fi
 
 #pull docker images
-IMAGENUM=`sudo docker images $IMAGE | wc -l`
+IMAGENUM=`docker images $IMAGE | wc -l`
 if [ 1 -eq $IMAGENUM ]; then
-    if ! sudo docker pull $IMAGE
+    if ! docker pull $IMAGE
     then
         echo  -e "\033[;31m pull $IMAGE failed!!! \033[0m"
         exit 1
@@ -61,21 +61,21 @@ fi
 case $1 in
     "start")
     #start main ecoball container 
-    if ! sudo docker run -d --name=ecoball -p 20678:20678 -v ${SOURCE_DIR}/ecoball_log:/var/ecoball_log $IMAGE /root/go/src/github.com/ecoball/go-ecoball/build/ecoball run
+    if ! docker run -d --name=ecoball -p 20678:20678 -v ${SOURCE_DIR}/ecoball_log:/var/ecoball_log $IMAGE /root/go/src/github.com/ecoball/go-ecoball/build/ecoball run
     then
         echo  -e "\033[;31m docker run start main ecoball failed!!! \033[0m"
         exit 1
     fi
 
     #start ecowallet container
-    if ! sudo docker run -d --name=ecowallet -p 20679:20679 $IMAGE /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet
+    if ! docker run -d --name=ecowallet -p 20679:20679 $IMAGE /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet
     then
         echo  -e "\033[;31m docker run start ecowallet failed!!! \033[0m"
         exit 1
     fi
 
     #start eballscan container
-    if ! sudo docker run -d --name=eballscan --link=ecoball:ecoball_alias -p 20680:20680 $IMAGE /root/go/src/github.com/ecoball/eballscan/eballscan_service.sh ecoball
+    if ! docker run -d --name=eballscan --link=ecoball:ecoball_alias -p 20680:20680 $IMAGE /root/go/src/github.com/ecoball/eballscan/eballscan_service.sh ecoball
     then
         echo  -e "\033[;31m docker run start eballscan failed!!! \033[0m"
         exit 1
@@ -87,7 +87,7 @@ case $1 in
         PORT=`expr $PORT + 1`
         TAIL=`expr $TAIL + 1`
 
-        if ! sudo docker run -d --name=ecoball_${TAIL} -p $PORT:20678 --volumes-from ecoball $IMAGE  /root/go/src/github.com/ecoball/go-ecoball/build/ecoball run
+        if ! docker run -d --name=ecoball_${TAIL} -p $PORT:20678 --volumes-from ecoball $IMAGE  /root/go/src/github.com/ecoball/go-ecoball/build/ecoball run
         then
             echo  -e "\033[;31m docker run start ecoball_${TAIL} failed!!! \033[0m"
             exit 1
@@ -99,16 +99,16 @@ case $1 in
 
     "stop")
     #stop container
-    for i in $(sudo docker ps | sed '1d' | awk '$2=="'"$IMAGE"'"{print $1}')
+    for i in $(docker ps | sed '1d' | awk '$2=="'"$IMAGE"'"{print $1}')
     do
-        sudo docker stop $i
+        docker stop $i
     done
     echo  -e "\033[47;34m stop all container success!!! \033[0m"
 
     #remove container
-    for i in $(sudo docker ps -a | sed '1d' | awk '$2=="'"$IMAGE"'"{print $1}')
+    for i in $(docker ps -a | sed '1d' | awk '$2=="'"$IMAGE"'"{print $1}')
     do
-        sudo docker rm $i
+        docker rm $i
     done
 
     echo  -e "\033[47;34m remove all container success!!! \033[0m"
