@@ -93,6 +93,7 @@ cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
 ./share_shard.py -i ${HOST_IP} [-d] [-w]
 ```
 Log generation for each node is under ./ecoball_log/shard/$DOCKERNAME/ 
+
 The wallet file is generated under ./wallet
 
 ## share_committee.py
@@ -107,6 +108,7 @@ cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
 ./share_committee.py -i ${HOST_IP}  [-d] [-w]
 ```
 Log generation for each node is under ./ecoball_log/committee/$DOCKERNAME/ 
+
 The wallet file is generated under ./wallet
 
 ### docker_service.sh
