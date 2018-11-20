@@ -7,7 +7,7 @@ BASE_VERSION = 1.1.1
 all: ecoball ecoclient ecowallet proto plugins
 
 .PHONY: proto plugins ecoball ecoclient ecowallet
-ecoball: proto plugins
+ecoball: plugins
 	@echo "\033[;32mbuild ecoball \033[0m"
 	mkdir -p build/
 	go install -v node/*.go
