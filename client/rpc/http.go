@@ -37,7 +37,7 @@ func newRequest(method, resource, address string, body io.Reader) (req *http.Req
 
 //post raw data
 func postRawResponse(resource, address string, data interface{}) ([]byte, error) {
-	
+
 	s, _ := json.Marshal(data)
 	b := bytes.NewBuffer(s)
 	req, err := newRequest("POST", resource, address, b)
@@ -53,6 +53,10 @@ func postRawResponse(resource, address string, data interface{}) ([]byte, error)
 		io.Copy(ioutil.Discard, res.Body)
 		res.Body.Close()
 	}()
+
+	if 404 == res.StatusCode {
+		return nil, errors.New(res.Status)
+	}
 
 	if res.StatusCode < 200 || res.StatusCode > 299 {
 		return nil, readAPIError(res.Body)
@@ -101,6 +105,10 @@ func getRawResponse(resource, address string) ([]byte, error) {
 		io.Copy(ioutil.Discard, res.Body)
 		res.Body.Close()
 	}()
+
+	if 404 == res.StatusCode {
+		return nil, errors.New(res.Status)
+	}
 
 	if res.StatusCode < 200 || res.StatusCode > 299 {
 		return nil, readAPIError(res.Body)
