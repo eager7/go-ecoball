@@ -16,14 +16,12 @@
 package wallet
 
 import (
-	"encoding/hex"
 	"crypto/sha512"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -74,26 +72,15 @@ const INVALID_TIME int64 = -1
 
 var (
 	wallets  = make(map[string]WalletApi) // 后台存储所有钱包
-	dir      string
+	Dir      string
 	timeout  int64 = INVALID_TIME
 	interval int64 = 0
 )
 
-func init() {
-	rootDir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
-	rootDir = strings.Replace(rootDir, "\\", "/", -1)
-	dir = path.Join(rootDir, "wallet/")
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dir, 0700); err != nil {
-			fmt.Println("could not create directory:", dir, err)
-		}
-	}
-}
-
 func Create(name string, password []byte) error {
 	checkTimeout()
 	//whether the wallet file exists
-	filename := path.Join(dir, name)
+	filename := path.Join(Dir, name)
 	_, err := os.Stat(filename)
 	if err == nil || os.IsExist(err) {
 		return errors.New("The file already exists")
@@ -137,7 +124,7 @@ func Create(name string, password []byte) error {
 */
 func Open(name string, password []byte) error {
 	checkTimeout()
-	filename := path.Join(dir, name)
+	filename := path.Join(Dir, name)
 	newWallet := &WalletImpl{
 		path:     filename,
 		lockflag: unlock,
