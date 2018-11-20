@@ -72,7 +72,7 @@ func main() {
 func startServive(c *cli.Context) error {
 	walletPath := c.String("path")
 
-	if "" != walletPath {
+	if "" == walletPath {
 		rootDir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 		rootDir = strings.Replace(rootDir, "\\", "/", -1)
 		wallet.Dir = path.Join(rootDir, "wallet/")
