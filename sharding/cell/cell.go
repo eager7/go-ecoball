@@ -241,6 +241,7 @@ func (c *Cell) GetLastMinorBlock() *cs.MinorBlock {
 
 func (c *Cell) SavePreMinorBlock(bk *cs.MinorBlock) {
 	c.chain.setPreMinorBlock(bk)
+	c.minorBlockPool.saveMinorBlock(bk)
 }
 
 func (c *Cell) GetPreMinorBlock() *cs.MinorBlock {
@@ -517,4 +518,8 @@ func (c *Cell) CalcShardBackup(size int) uint64 {
 	i := (height % sc.DefaultEpochFinalBlockNumber) % uint64(size)
 	log.Debug("current backup i ", i)
 	return i
+}
+
+func (c *Cell) CheckMinorBlockInPool(final *cs.FinalBlock) bool {
+	return c.minorBlockPool.checkMinorBlockInPool(final)
 }

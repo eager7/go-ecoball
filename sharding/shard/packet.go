@@ -119,6 +119,12 @@ func (s *shard) processShardingPacket(csp interface{}) {
 			}
 		}
 
+		if !s.ns.CheckMinorBlockInPool(final) {
+			log.Debug("miss minor block , need sync")
+			s.fsm.Execute(ActChainNotSync, nil)
+			return
+		}
+
 		simulate.TellBlock(final)
 		s.ns.SaveLastFinalBlock(final)
 		s.broadcastCommitteePacket(p)

@@ -8,8 +8,6 @@ import (
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"math"
-	"math/rand"
-	"time"
 )
 
 var (
@@ -38,6 +36,25 @@ func (n *net) SendToPeer(packet *sc.NetPacket, worker *sc.Worker) {
 	go simulate.Sendto(worker.Address, worker.Port, packet)
 }
 
+func CalcGossipIndex(size int, i int) (indexs []int) {
+	if size < 2 || size <= i {
+		return
+	}
+
+	number := int(math.Sqrt(float64(size)))
+
+	arr := make([]int, 0, 3*size)
+	for i := 0; i < 3; i++ {
+		for j := 0; j < size; j++ {
+			arr = append(arr, j)
+		}
+	}
+
+	indexs = append(indexs, arr[size+i+1:i+size+1+number]...)
+
+	return
+}
+
 func (n *net) GossipBlock(packet *sc.NetPacket) {
 	log.Debug("gossip block")
 
@@ -47,13 +64,7 @@ func (n *net) GossipBlock(packet *sc.NetPacket) {
 		return
 	}
 
-	if len(works) < 5 {
-		if len(works) > 1 {
-			rand.Seed(time.Now().UnixNano())
-			r := rand.Int31n(int32(len(works)))
-			log.Debug("gossip to peer address ", works[r].Address, " port ", works[r].Port)
-			go simulate.Sendto(works[r].Address, works[r].Port, packet)
-		}
+	if len(works) < 2 {
 		return
 	}
 
@@ -81,48 +92,15 @@ func (n *net) GossipBlock(packet *sc.NetPacket) {
 	}
 
 	size := int(len(peers))
-	number := int(math.Sqrt(float64(size))) + 1
-
-	arr := make([]int, 0, 3*size)
-	for i := 0; i < 3; i++ {
-		for j := 0; j < size; j++ {
-			arr = append(arr, j)
-		}
-	}
-
-	var indexs []int
+	pos := 0
 	for i, peer := range peers {
 		if n.ns.Self.Equal(peer) {
-			indexs = append(indexs, arr[i+size-number/2:i+size]...)
-			indexs = append(indexs, arr[i+size+1:i+size-number/2+number]...)
+			pos = i
 			break
 		}
 	}
 
-	//
-	//rand.Seed(time.Now().UnixNano())
-	//var indexs []int32
-	//for i := 0; i < number; i++ {
-	//	r := rand.Int31n(total)
-	//	if r == 0 {
-	//		continue
-	//	}
-	//
-	//	same := false
-	//	for _, index := range indexs {
-	//		if index == r {
-	//			same = true
-	//			break
-	//		}
-	//	}
-	//
-	//	if same {
-	//		continue
-	//	}
-	//
-	//	indexs = append(indexs, r)
-	//}
-
+	indexs := CalcGossipIndex(size, pos)
 	for _, index := range indexs {
 		log.Debug("gossip to peer address ", peers[index].Address, " port ", peers[index].Port)
 		go simulate.Sendto(peers[index].Address, peers[index].Port, packet)
