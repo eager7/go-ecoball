@@ -83,6 +83,7 @@ func startServive(c *cli.Context) error {
 	if _, err := os.Stat(wallet.Dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(wallet.Dir, 0777); err != nil {
 			fmt.Println("could not create directory:", wallet.Dir, err)
+			os.Exit(1)
 		}
 	}
 
