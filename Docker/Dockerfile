@@ -14,18 +14,30 @@ ENV PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$GOPATH/bi
 RUN pip3 install pytoml
 
 #install cockroachdb ecoball ecowallet eballscan
-COPY cockroach /usr/local/bin
+#ecoball
 COPY ecoball /ecoball/ecoball/
 COPY ecoball.toml /ecoball/ecoball/
 COPY start.py /ecoball/ecoball/
+
+#ipfs
+COPY swarm.key /tmp/storage/
+
+#ecowallet
 COPY ecowallet /ecoball/ecowallet/
+
+#eballscan
+COPY cockroach /usr/local/bin
 COPY eballscan /ecoball/eballscan/build/
 COPY eballscan_service.sh /ecoball/eballscan/
-COPY swarm.key /tmp/storage/
+
 EXPOSE 20678
 EXPOSE 20679
 EXPOSE 20680
+
+#eballscan
 EXPOSE 9001
+
+#cockroachdb
 EXPOSE 8081
 EXPOSE 26257
 
