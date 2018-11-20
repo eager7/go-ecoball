@@ -59,6 +59,8 @@ def main():
     # Command Line Arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--host-ip', metavar='', required=True, help="IP address of host node", dest="host_ip")
+    parser.add_argument('-b', '--deploy-browser', action='store_true', help="Whether to deploy the browsert", dest="browser")
+    parser.add_argument('-w', '--deploy-wallet', action='store_true', help="Whether to deploy the wallet", dest="wallet")
     args = parser.parse_args()
 
     # get netwoek config
@@ -106,6 +108,22 @@ def main():
 
         run(command)
         sleep(2)
+
+        if args.browser and count == committee_count + shard_count - 1:
+            # start eballscan
+            command = "docker run -d --name=eballscan --link=ecoball_0:ecoball_alias -p 20680:20680 "
+            command += image + " /ecoball/eballscan/eballscan_service.sh ecoball_0"
+            run(command)
+            sleep(2)
+
+        if args.wallet and count == committee_count + shard_count - 1:
+            # start ecowallet
+            command = "docker run -d --name=ecowallet -p 20679:20679 "
+            command += "-v " + root_dir + ":/var "
+            command += image + " /ecoball/ecowallet/ecowallet start -p /var"
+            run(command)
+            sleep(2)
+
         count += 1
         
     print("start all ecoball shard container on this physical machine(" + host_ip + ") successfully!!!") 
