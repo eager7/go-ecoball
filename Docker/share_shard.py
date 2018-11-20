@@ -111,8 +111,8 @@ def main():
 
         if args.browser and count == committee_count + shard_count - 1:
             # start eballscan
-            command = "docker run -d --name=eballscan --link=ecoball_0:ecoball_alias -p 20680:20680 "
-            command += image + " /ecoball/eballscan/eballscan_service.sh ecoball_0"
+            command = "docker run -d --name=eballscan --link=ecoball_" + str(committee_count) + ":ecoball_alias -p 20680:20680 "
+            command += image + " /ecoball/eballscan/eballscan_service.sh ecoball_" + str(committee_count)
             run(command)
             sleep(2)
 
