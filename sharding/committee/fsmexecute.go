@@ -35,14 +35,14 @@ func (c *committee) processSyncComplete(msg interface{}) {
 	cm := lastCmBlock.GetObject().(cs.CMBlock)
 	c.ns.SyncCmBlockComplete(&cm)
 
-	//lastvc, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
-	//if err != nil || lastvc == nil {
-	//	panic("get vc block error ")
-	//	return
-	//}
-	//
-	//vc := lastvc.GetObject().(cs.ViewChangeBlock)
-	//c.ns.SaveLastViewchangeBlock(&vc)
+	lastvc, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
+	if err != nil || lastvc == nil {
+		panic("get vc block error ")
+		return
+	}
+
+	vc := lastvc.GetObject().(cs.ViewChangeBlock)
+	c.ns.SaveLastViewchangeBlock(&vc)
 
 	lastFinalBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {

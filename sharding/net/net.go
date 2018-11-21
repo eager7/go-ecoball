@@ -38,6 +38,7 @@ func (n *net) SendToPeer(packet *sc.NetPacket, worker *sc.Worker) {
 
 func (n *net) GossipBlock(packet *sc.NetPacket) {
 	log.Debug("gossip block")
+
 	works := n.ns.GetWorks()
 	if works == nil {
 		log.Error("works is nil")
@@ -54,7 +55,24 @@ func (n *net) GossipBlock(packet *sc.NetPacket) {
 		return
 	}
 
-	peers := works[1:]
+	var index int
+	if n.ns.NodeType == sc.NodeCommittee {
+		index = 0
+	} else if n.ns.NodeType == sc.NodeShard {
+		index = int(n.ns.CalcShardLeader(len(works), false))
+	} else {
+		return
+	}
+
+	var peers []*sc.Worker
+	if index == 0 {
+		peers = works[1:]
+	} else {
+		peers = append(peers, works[0:index]...)
+		if index < len(works)-1 {
+			peers = append(peers, works[index+1:]...)
+		}
+	}
 
 	size := int(len(peers))
 	number := int(math.Sqrt(float64(size)))
@@ -160,14 +178,14 @@ func (n *net) SendSyncMessage(packet *sc.NetPacket){
 }
 
 func (n *net) SendBlockToShards(packet *sc.NetPacket) {
-	log.Debug("send block to shard")
-
 	/*only leader and backup send*/
 	leader := n.ns.IsLeader()
 	bakcup := n.ns.IsBackup()
 	if !leader && !bakcup {
 		return
 	}
+
+	log.Debug("send block to shard")
 
 	sp := &sc.NetPacket{}
 	sp.DupHeader(packet)
@@ -200,14 +218,14 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 }
 
 func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
-	log.Debug("send block to committee")
-
 	/*only leader and backup send*/
 	leader := n.ns.IsLeader()
 	bakcup := n.ns.IsBackup()
 	if !leader && !bakcup {
 		return
 	}
+
+	log.Debug("send block to committee")
 
 	sp := &sc.NetPacket{}
 	sp.DupHeader(packet)
