@@ -6,6 +6,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	cs "github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/net/network"
 	"reflect"
 )
 
@@ -72,4 +73,8 @@ func (s *ShardingActor) Receive(ctx actor.Context) {
 
 func (s *ShardingActor) SubscribeShardingTopo() <-chan interface{} {
 	return s.instance.SubscribeShardingTopo()
+}
+
+func (s *ShardingActor) SetNet(n network.EcoballNetwork) {
+	s.instance.SetNet(n)
 }

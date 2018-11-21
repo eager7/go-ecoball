@@ -4,11 +4,13 @@ import (
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/net/message/pb"
+	"github.com/ecoball/go-ecoball/net/network"
 )
 
 type NodeInstance interface {
 	Start()
 	MsgDispatch(msg interface{})
+	SetNet(n network.EcoballNetwork)
 }
 
 const (

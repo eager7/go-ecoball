@@ -1292,9 +1292,9 @@ func RecepitTest(ledger ledger.Ledger) {
 	err = newReceipt.Deserialize(data)
 	errors.CheckErrorPanic(err)
 
-	log.Debug(common.JsonString(receipt, false))
-	log.Info(common.JsonString(newReceipt, false))
-	errors.CheckEqualPanic(common.JsonString(receipt, false) == common.JsonString(newReceipt, false))
+	log.Debug(common.JsonString(receipt))
+	log.Info(common.JsonString(newReceipt))
+	errors.CheckEqualPanic(common.JsonString(receipt) == common.JsonString(newReceipt))
 
 	accstate := state.Account{}
 	err = accstate.Deserialize(newReceipt.Accounts[0])

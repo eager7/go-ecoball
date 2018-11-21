@@ -3,11 +3,11 @@ package shard
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/account"
 )
 
 type NodeInfo struct {
@@ -29,7 +29,7 @@ type CMBlockHeader struct {
 	Candidate    NodeInfo
 	ShardsHash   common.Hash
 
-	hash common.Hash
+	Hashes common.Hash
 	*types.COSign
 }
 
@@ -38,7 +38,7 @@ func (h *CMBlockHeader) ComputeHash() error {
 	if err != nil {
 		return err
 	}
-	h.hash, err = common.DoubleHash(data)
+	h.Hashes, err = common.DoubleHash(data)
 	if err != nil {
 		return err
 	}
@@ -56,20 +56,12 @@ func (h *CMBlockHeader) VerifySignature() (bool, error) {
 }
 
 func (h *CMBlockHeader) proto() (*pb.CMBlockHeader, error) {
-	//if h.ConsData.Payload == nil {
-	//	return nil, errors.New(log, "the cm block header's consensus data is nil")
-	//}
-	//pbCon, err := h.ConsData.ProtoBuf()
-	//if err != nil {
-	//	return nil, err
-	//}
 	return &pb.CMBlockHeader{
-		ChainID:   h.ChainID.Bytes(),
-		Version:   h.Version,
-		Height:    h.Height,
-		Timestamp: h.Timestamp,
-		PrevHash:  h.PrevHash.Bytes(),
-		//ConsData:     pbCon,
+		ChainID:      h.ChainID.Bytes(),
+		Version:      h.Version,
+		Height:       h.Height,
+		Timestamp:    h.Timestamp,
+		PrevHash:     h.PrevHash.Bytes(),
 		LeaderPubKey: common.CopyBytes(h.LeaderPubKey),
 		Nonce:        h.Nonce,
 		Candidate: &pb.NodeInfo{
@@ -78,7 +70,7 @@ func (h *CMBlockHeader) proto() (*pb.CMBlockHeader, error) {
 			Port:      h.Candidate.Port,
 		},
 		ShardsHash: h.ShardsHash.Bytes(),
-		Hash:       h.hash.Bytes(),
+		Hash:       h.Hashes.Bytes(),
 		COSign: &pb.COSign{
 			Step1: h.COSign.Step1,
 			Step2: h.COSign.Step2,
@@ -130,18 +122,11 @@ func (h *CMBlockHeader) Deserialize(data []byte) error {
 		Port:      pbHeader.Candidate.Port,
 	}
 	h.ShardsHash = common.NewHash(pbHeader.ShardsHash)
-	h.hash = common.NewHash(pbHeader.Hash)
+	h.Hashes = common.NewHash(pbHeader.Hash)
 	h.COSign = &types.COSign{
 		Step1: pbHeader.COSign.Step1,
 		Step2: pbHeader.COSign.Step2,
 	}
-	//dataCon, err := pbHeader.ConsData.Marshal()
-	//if err != nil {
-	//	return err
-	//}
-	//if err := h.ConsData.Deserialize(dataCon); err != nil {
-	//	return err
-	//}
 	return nil
 }
 
@@ -159,7 +144,7 @@ func (h *CMBlockHeader) Type() uint32 {
 }
 
 func (h *CMBlockHeader) Hash() common.Hash {
-	return h.hash
+	return h.Hashes
 }
 
 func (h *CMBlockHeader) GetHeight() uint64 {
@@ -250,9 +235,9 @@ func NewCmBlock(header CMBlockHeader, shards []Shard) (*CMBlock, error) {
 }
 
 func (b *CMBlock) SetSignature(account *account.Account) error {
-	sigData, err := account.Sign(b.hash.Bytes())
+	sigData, err := account.Sign(b.Hashes.Bytes())
 	if err != nil {
-	return err
+		return err
 	}
 	sig := common.Signature{}
 	sig.SigData = common.CopyBytes(sigData)
@@ -327,7 +312,7 @@ func (b *CMBlock) JsonString() string {
 		fmt.Println(err)
 		return ""
 	}
-	return b.hash.HexString() + string(data)
+	return "hash:" + b.Hashes.HexString() + string(data)
 }
 
 func (b CMBlock) GetObject() interface{} {

@@ -3,11 +3,11 @@ package shard
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/account"
 )
 
 type FinalBlockHeader struct {
@@ -25,9 +25,8 @@ type FinalBlockHeader struct {
 	MinorBlocksHash    common.Hash
 	StateHashRoot      common.Hash
 
-	hash common.Hash
+	Hashes common.Hash
 	*types.COSign
-	//ConsData           ConsensusData
 }
 
 func (h *FinalBlockHeader) ComputeHash() error {
@@ -35,7 +34,7 @@ func (h *FinalBlockHeader) ComputeHash() error {
 	if err != nil {
 		return err
 	}
-	h.hash, err = common.DoubleHash(data)
+	h.Hashes, err = common.DoubleHash(data)
 	if err != nil {
 		return err
 	}
@@ -53,13 +52,6 @@ func (h *FinalBlockHeader) VerifySignature() (bool, error) {
 }
 
 func (h *FinalBlockHeader) proto() (*pb.FinalBlockHeader, error) {
-	/*if h.ConsData.Payload == nil {
-		return nil, errors.New(log, "the minor block header's consensus data is nil")
-	}
-	pbCon, err := h.ConsData.ProtoBuf()
-	if err != nil {
-		return nil, err
-	}*/
 	pbHeader := &pb.FinalBlockHeader{
 		ChainID:            h.ChainID.Bytes(),
 		Version:            h.Version,
@@ -74,8 +66,7 @@ func (h *FinalBlockHeader) proto() (*pb.FinalBlockHeader, error) {
 		StateDeltaRootHash: h.StateDeltaRootHash.Bytes(),
 		MinorBlocksHash:    h.MinorBlocksHash.Bytes(),
 		StateHashRoot:      h.StateHashRoot.Bytes(),
-		//ConsData:           pbCon,
-		Hash: h.hash.Bytes(),
+		Hash:               h.Hashes.Bytes(),
 		COSign: &pb.COSign{
 			Step1: h.COSign.Step1,
 			Step2: h.COSign.Step2,
@@ -126,22 +117,14 @@ func (h *FinalBlockHeader) Deserialize(data []byte) error {
 	h.EpochNo = pbHeader.EpochNo
 	h.CMBlockHash = common.NewHash(pbHeader.CMBlockHash)
 	h.TrxRootHash = common.NewHash(pbHeader.TrxRootHash)
-	//h.ConsData = ConsensusData{}
 	h.StateDeltaRootHash = common.NewHash(pbHeader.StateDeltaRootHash)
 	h.MinorBlocksHash = common.NewHash(pbHeader.MinorBlocksHash)
 	h.StateHashRoot = common.NewHash(pbHeader.StateHashRoot)
-	h.hash = common.NewHash(pbHeader.Hash)
+	h.Hashes = common.NewHash(pbHeader.Hash)
 	h.COSign = &types.COSign{
 		Step1: pbHeader.COSign.Step1,
 		Step2: pbHeader.COSign.Step2,
 	}
-	/*dataCon, err := pbHeader.ConsData.Marshal()
-	if err != nil {
-		return err
-	}
-	if err := h.ConsData.Deserialize(dataCon); err != nil {
-		return err
-	}*/
 
 	return nil
 }
@@ -163,7 +146,7 @@ func (h FinalBlockHeader) GetObject() interface{} {
 }
 
 func (h *FinalBlockHeader) Hash() common.Hash {
-	return h.hash
+	return h.Hashes
 }
 func (h *FinalBlockHeader) GetHeight() uint64 {
 	return h.Height
@@ -188,7 +171,7 @@ func NewFinalBlock(header FinalBlockHeader, minorBlocks []*MinorBlockHeader) (*F
 }
 
 func (b *FinalBlock) SetSignature(account *account.Account) error {
-	sigData, err := account.Sign(b.hash.Bytes())
+	sigData, err := account.Sign(b.Hashes.Bytes())
 	if err != nil {
 		return err
 	}
@@ -271,5 +254,5 @@ func (b *FinalBlock) JsonString() string {
 		fmt.Println(err)
 		return ""
 	}
-	return b.hash.HexString() + string(data)
+	return "hash:" + b.Hashes.HexString() + string(data)
 }

@@ -1,9 +1,13 @@
 package net
 
 import (
+	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/elog"
 	cs "github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/net/dispatcher"
+	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
+	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
@@ -16,12 +20,13 @@ var (
 
 type net struct {
 	ns *cell.Cell
+	n  network.EcoballNetwork
 }
 
 var Np *net
 
-func MakeNet(ns *cell.Cell) {
-	Np = &net{ns: ns}
+func MakeNet(ns *cell.Cell, n network.EcoballNetwork) {
+	Np = &net{ns: ns, n: n}
 	return
 }
 
@@ -33,7 +38,7 @@ func (n *net) SendToPeer(packet *sc.NetPacket, worker *sc.Worker) {
 		return
 	}
 
-	go simulate.Sendto(worker.Address, worker.Port, packet)
+	n.sendto(worker.Address, worker.Port, worker.Pubkey, packet)
 }
 
 func CalcGossipIndex(size int, i int) (indexs []int) {
@@ -103,7 +108,7 @@ func (n *net) GossipBlock(packet *sc.NetPacket) {
 	indexs := CalcGossipIndex(size, pos)
 	for _, index := range indexs {
 		log.Debug("gossip to peer address ", peers[index].Address, " port ", peers[index].Port)
-		go simulate.Sendto(peers[index].Address, peers[index].Port, packet)
+		n.sendto(peers[index].Address, peers[index].Port, peers[index].Pubkey, packet)
 	}
 }
 
@@ -121,7 +126,7 @@ func (n *net) BroadcastBlock(packet *sc.NetPacket) {
 			continue
 		}
 
-		go simulate.Sendto(work.Address, work.Port, packet)
+		n.sendto(work.Address, work.Port, work.Pubkey, packet)
 	}
 }
 
@@ -176,7 +181,7 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 		log.Debug("send block to shard ", j+1)
 
 		for i := 0; i < count; i++ {
-			go simulate.Sendto(shard.Member[begin+i].Address, shard.Member[begin+i].Port, sp)
+			n.sendto(shard.Member[begin+i].Address, shard.Member[begin+i].Port, string(shard.Member[begin+i].PublicKey), sp)
 		}
 
 	}
@@ -198,7 +203,7 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 		log.Debug("send block to committee")
 		cm := n.ns.GetCmWorks()
 		for i := 0; i < count; i++ {
-			go simulate.Sendto(cm[begin+i].Address, cm[begin+i].Port, sp)
+			n.sendto(cm[begin+i].Address, cm[begin+i].Port, cm[begin+i].Pubkey, sp)
 		}
 	}
 
@@ -217,7 +222,7 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 
 		log.Debug("send block other shard, id:  ", i+1)
 		for i := 0; i < count; i++ {
-			go simulate.Sendto(shard.Member[i+begin].Address, shard.Member[i+begin].Port, sp)
+			n.sendto(shard.Member[i+begin].Address, shard.Member[i+begin].Port, string(shard.Member[i+begin].PublicKey), sp)
 		}
 	}
 
@@ -273,5 +278,58 @@ func (n *net) TransitBlock(p *sc.CsPacket) {
 		n.BroadcastBlock(sp)
 	} else {
 		n.GossipBlock(sp)
+	}
+}
+
+func (n *net) Subscribe(port string, chanSize uint16) (rcv <-chan interface{}, err error) {
+	if n.n == nil {
+		rcv, err = simulate.Subscribe(port, chanSize)
+		if err != nil {
+			log.Panic("simulate error ", err)
+			return
+		}
+		return
+	} else {
+		msg := []pb.MsgType{pb.MsgType_APP_MSG_SHARDING_PACKET, pb.MsgType_APP_MSG_CONSENSUS_PACKET}
+		rcv, err = dispatcher.Subscribe(msg...)
+		if err != nil {
+			log.Error("Subscribe error ", err)
+			panic("Subscribe error ")
+		}
+		return
+	}
+
+}
+
+func (n *net) sendto(addr string, port string, pubKey string, packet *sc.NetPacket) error {
+	if n.n == nil {
+		go simulate.Sendto(addr, port, packet)
+		return nil
+	} else {
+		data, err := json.Marshal(packet)
+		if err != nil {
+			log.Error("wrong packet")
+			return err
+		}
+
+		log.Debug("p2p net send to peer ", addr, " port ", port, " packet type ", packet.PacketType, " block type ", packet.BlockType)
+
+		msg := message.New(packet.PacketType, data)
+		n.n.SendMsgToPeer(addr, port, pubKey, msg)
+		return nil
+	}
+}
+
+func (n *net) RecvNetMsg(msg interface{}) (packet *sc.NetPacket, err error) {
+	err = nil
+	if n.n == nil {
+		packet = msg.(*sc.NetPacket)
+		return
+	} else {
+		emsg := msg.(message.EcoBallNetMsg)
+		var np sc.NetPacket
+		err = json.Unmarshal(emsg.Data(), &np)
+		packet = &np
+		return
 	}
 }

@@ -428,7 +428,7 @@ func (nn *NetNode) IsValidRemotePeer(p peer.ID) bool {
 		defer nn.shardingInfo.rwlck.RUnlock()
 
 		for _, shard := range nn.shardingInfo.info {
-			if _, ok := shard[p]; !ok {
+			if _, ok := shard[p]; ok {
 				return true
 			}
 		}

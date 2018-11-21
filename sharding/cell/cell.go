@@ -134,9 +134,7 @@ func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 		}
 	}
 
-	if bk.Height > 1 {
-		c.createShardingTopo()
-	}
+	c.createShardingTopo()
 
 }
 
@@ -150,8 +148,8 @@ func (c *Cell) createShardingTopo() {
 	}
 
 	total := len(lastcm.Shards) + 1
-
 	topo.ShardingInfo = make([][]sc.Worker, total)
+
 	for _, member := range c.cm.member {
 		var worker sc.Worker
 		worker = *member
