@@ -158,18 +158,10 @@ func Uint32SetBytes(data []byte) uint32 {
 	return index
 }
 
-func JsonString(v interface{}, format bool) string {
-	if format {
-		data, err := json.MarshalIndent(v, "", "    ")
-		if err != nil {
-			fmt.Println(err)
-		}
-		return string(data)
-	} else {
-		data, err := json.Marshal(v)
-		if err != nil {
-			fmt.Println(err)
-		}
-		return string(data)
+func JsonString(v interface{}) string {
+	data, err := json.Marshal(v)
+	if err != nil {
+		fmt.Println(err)
 	}
+	return string(data)
 }

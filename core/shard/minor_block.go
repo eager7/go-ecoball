@@ -3,13 +3,13 @@ package shard
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/account"
 )
 
 var log = elog.NewLogger("core-shard", elog.NoticeLog)
@@ -24,12 +24,11 @@ type MinorBlockHeader struct {
 	StateDeltaHash    common.Hash
 	CMBlockHash       common.Hash
 	ProposalPublicKey []byte
-	//ConsData          ConsensusData
-	ShardId   uint32
-	CMEpochNo uint64
+	ShardId           uint32
+	CMEpochNo         uint64
 
 	Receipt types.BlockReceipt
-	hash    common.Hash
+	Hashes  common.Hash
 	*types.COSign
 }
 
@@ -38,7 +37,7 @@ func (h *MinorBlockHeader) ComputeHash() error {
 	if err != nil {
 		return err
 	}
-	h.hash, err = common.DoubleHash(data)
+	h.Hashes, err = common.DoubleHash(data)
 	if err != nil {
 		return err
 	}
@@ -56,13 +55,6 @@ func (h *MinorBlockHeader) VerifySignature() (bool, error) {
 }
 
 func (h *MinorBlockHeader) proto() (*pb.MinorBlockHeader, error) {
-	/*if h.ConsData.Payload == nil {
-		return nil, errors.New(log, "the minor block header's consensus data is nil")
-	}
-	pbCon, err := h.ConsData.ProtoBuf()
-	if err != nil {
-		return nil, err
-	}*/
 	pbHeader := &pb.MinorBlockHeader{
 		ChainID:           h.ChainID.Bytes(),
 		Version:           h.Version,
@@ -73,14 +65,13 @@ func (h *MinorBlockHeader) proto() (*pb.MinorBlockHeader, error) {
 		StateDeltaHash:    h.StateDeltaHash.Bytes(),
 		CMBlockHash:       h.CMBlockHash.Bytes(),
 		ProposalPublicKey: h.ProposalPublicKey,
-		//ConsData:          pbCon,
-		ShardId:   h.ShardId,
-		CMEpochNo: h.CMEpochNo,
+		ShardId:           h.ShardId,
+		CMEpochNo:         h.CMEpochNo,
 		Receipt: &pb.BlockReceipt{
 			BlockCpu: h.Receipt.BlockCpu,
 			BlockNet: h.Receipt.BlockNet,
 		},
-		Hash: h.hash.Bytes(),
+		Hash: h.Hashes.Bytes(),
 		COSign: &pb.COSign{
 			Step1: h.COSign.Step1,
 			Step2: h.COSign.Step2,
@@ -131,22 +122,14 @@ func (h *MinorBlockHeader) Deserialize(data []byte) error {
 	h.StateDeltaHash = common.NewHash(pbHeader.StateDeltaHash)
 	h.CMBlockHash = common.NewHash(pbHeader.CMBlockHash)
 	h.ProposalPublicKey = common.CopyBytes(pbHeader.ProposalPublicKey)
-	//h.ConsData = ConsensusData{}
 	h.ShardId = pbHeader.ShardId
 	h.CMEpochNo = pbHeader.CMEpochNo
-	h.hash = common.NewHash(pbHeader.Hash)
+	h.Hashes = common.NewHash(pbHeader.Hash)
 	h.Receipt = types.BlockReceipt{BlockCpu: pbHeader.Receipt.BlockCpu, BlockNet: pbHeader.Receipt.BlockNet}
 	h.COSign = &types.COSign{
 		Step1: pbHeader.COSign.Step1,
 		Step2: pbHeader.COSign.Step2,
 	}
-	/*dataCon, err := pbHeader.ConsData.Marshal()
-	if err != nil {
-		return err
-	}
-	if err := h.ConsData.Deserialize(dataCon); err != nil {
-		return err
-	}*/
 
 	return nil
 }
@@ -169,7 +152,7 @@ func (h *MinorBlockHeader) Type() uint32 {
 }
 
 func (h *MinorBlockHeader) Hash() common.Hash {
-	return h.hash
+	return h.Hashes
 }
 func (h *MinorBlockHeader) GetHeight() uint64 {
 	return h.Height
@@ -225,7 +208,7 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *MinorBlockHeader, txs []
 }
 
 func (b *MinorBlock) SetSignature(account *account.Account) error {
-	sigData, err := account.Sign(b.hash.Bytes())
+	sigData, err := account.Sign(b.Hashes.Bytes())
 	if err != nil {
 		return err
 	}
@@ -275,7 +258,7 @@ func (b *MinorBlock) GetTransaction(hash common.Hash) (*types.Transaction, error
 			return tx, nil
 		}
 	}
-	return nil, errors.New(log, fmt.Sprintf("can't find the tx:", hash.HexString()))
+	return nil, errors.New(log, fmt.Sprintf("can't find the tx:%s", hash.HexString()))
 }
 
 func (b *MinorBlock) proto() (block *pb.MinorBlock, err error) {
@@ -368,5 +351,5 @@ func (b *MinorBlock) JsonString() string {
 		fmt.Println(err)
 		return ""
 	}
-	return b.hash.HexString() + string(data)
+	return "hash:" + b.Hashes.HexString() + string(data)
 }

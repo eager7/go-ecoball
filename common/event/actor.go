@@ -38,11 +38,11 @@ const (
 )
 
 type actors struct {
-	mux  sync.Mutex
+	mux  sync.RWMutex
 	list map[ActorIndex]*actor.PID
 }
 
-var actorList = actors{sync.Mutex{}, make(map[ActorIndex]*actor.PID)}
+var actorList = actors{sync.RWMutex{}, make(map[ActorIndex]*actor.PID)}
 
 func (a ActorIndex) String() string {
 	switch a {
@@ -76,8 +76,8 @@ func RegisterActor(index ActorIndex, pid *actor.PID) error {
 }
 
 func GetActor(index ActorIndex) (*actor.PID, error) {
-	actorList.mux.Lock()
-	defer actorList.mux.Unlock()
+	actorList.mux.RLock()
+	defer actorList.mux.RUnlock()
 	a, ok := actorList.list[index]
 	if !ok {
 		return nil, errors.New(fmt.Sprintf("not found this actor:%s", index.String()))
