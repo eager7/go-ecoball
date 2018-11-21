@@ -24,17 +24,17 @@ const (
 	DefaultFullVoteTimer  = 3
 
 	DefaultProductCmBlockTimer = 120  //second
-	DefaultCmBlockWindow       = 1000 //Millisecond
+	DefaultCmBlockWindow       = 1000 //Millisecond, time to product block
 
 	DefaultProductFinalBlockTimer = 180  //second
-	DefaultFinalBlockWindow       = 1000 //Millisecond
+	DefaultFinalBlockWindow       = 1000 //Millisecond, time to product block
 
 	DefaultProductViewChangeBlockTimer = 180  //second
-	DefaultViewchangeBlockWindow       = 1000 //Millisecond
+	DefaultViewchangeBlockWindow       = 1000 //Millisecond, time to product block
 
-	DefaultWaitMinorBlockTimer  = 180  //second
-	DefaultWaitMinorBlockWindow = 10   //second
-	DefaultMinorBlockWindow     = 1000 //Millisecond
+	DefaultWaitMinorBlockTimer  = 180  //second, time to collect shard blocks
+	DefaultWaitMinorBlockWindow = 12   //second, time wait for all shard blocks,  must be thrice of FullVoteTimer
+	DefaultMinorBlockWindow     = 1000 //Millisecond, time to product block
 
 	DefaultBlockWindow = 0 //Millisecond
 )

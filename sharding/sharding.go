@@ -19,6 +19,7 @@ package sharding
 import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	"github.com/ecoball/go-ecoball/sharding/committee"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
@@ -33,6 +34,7 @@ type ShardingInstance interface {
 	Start()
 	MsgDispatch(msg interface{})
 	SubscribeShardingTopo() <-chan interface{}
+	SetNet(n network.EcoballNetwork)
 }
 
 type Sharding struct {
@@ -66,4 +68,8 @@ func (s *Sharding) Start() {
 
 func (s *Sharding) SubscribeShardingTopo() <-chan interface{} {
 	return s.ns.Topoc
+}
+
+func (s *Sharding) SetNet(n network.EcoballNetwork) {
+	s.instance.SetNet(n)
 }

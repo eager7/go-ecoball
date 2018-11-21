@@ -17,7 +17,7 @@ var (
 	log = elog.NewLogger("sharding", elog.DebugLog)
 )
 
-var netMsgChain chan *sc.NetPacket
+var netMsgChain chan interface{}
 var listenPort string
 
 func Sendto(addr string, port string, packet *sc.NetPacket) error {
@@ -33,8 +33,8 @@ func Sendto(addr string, port string, packet *sc.NetPacket) error {
 
 }
 
-func Subscribe(port string, chanSize uint16) (<-chan *sc.NetPacket, error) {
-	netMsgChain = make(chan *sc.NetPacket, chanSize)
+func Subscribe(port string, chanSize uint16) (<-chan interface{}, error) {
+	netMsgChain = make(chan interface{}, chanSize)
 
 	listenPort = port
 	go recvRoutine()
