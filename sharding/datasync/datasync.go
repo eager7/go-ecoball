@@ -21,6 +21,9 @@ var (
 	log = elog.NewLogger("sync", elog.DebugLog)
 )
 
+/**
+TODO,maybe change cache to map:height->block base, will be easy to code?and more efficient
+ */
 type BlocksCache struct {
 	needHeight map[cs.HeaderType]uint64
 	needHeightMinor map[uint32]uint64
@@ -84,7 +87,7 @@ func (sync *Sync)SendSyncRequest()  {
 
 	log.Debug("SendSyncRequest, node type = ", sync.cell.NodeType)
 
-	//Special case treatment
+	//TODO, Special case treatment, not working when start a new shard node from scratch
 	if sync.cell.NodeType == sc.NodeShard {
 		log.Debug("Node is ", sc.NodeShard)
 		lastBlock, err := sync.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
@@ -149,7 +152,7 @@ func (sync *Sync)SendSyncRequestWithType(blockType cs.HeaderType) {
 
 			offset = 1
 		}
-		//TODO, deal with non-Fix sharding
+		//TODO, deal with non-Fix sharding. Or final block missing minor block?
 		for _, minorBlock := range markBlock.MinorBlocks {
 			height := minorBlock.Height + offset
 			shardID := minorBlock.ShardId
@@ -224,10 +227,28 @@ func (s *Sync) SyncResponseDecode(syncData *sc.SyncResponseData) (*sc.SyncRespon
 	return csp
 }
 
+func (s *Sync) clearCache() {
+	 s.cache = BlocksCache {
+		needHeight: make(map[cs.HeaderType]uint64, 0),
+		needHeightMinor: make(map[uint32]uint64, 0),
+		blocks: make(map[cs.HeaderType][]cs.BlockInterface, 0),
+		minorBlocks: make(map[uint32][]cs.BlockInterface, 0),
+		finalBlockComplete: false,
+		complete:false,
+	}
+}
+
 //TODO, make sure TellBlock will be all right
 func (s *Sync) tellLedgerSyncComplete() {
 	log.Debug("tellLedgerSyncComplete in")
 	ledger := s.cell.Ledger
+
+	for _, block := range s.cache.blocks[cs.HeCmBlock] {
+		log.Debug("SaveShardBlock cm, height = ",
+			block.GetHeight())
+		ledger.SaveShardBlock(config.ChainHash, block)
+	}
+
 	finalBlocks := s.cache.blocks[cs.HeFinalBlock]
 	l := len(finalBlocks)
 	if l > 0 {
@@ -253,11 +274,7 @@ func (s *Sync) tellLedgerSyncComplete() {
 			ledger.SaveShardBlock(config.ChainHash, finalBlock)
 		}
 	}
-	for _, block := range s.cache.blocks[cs.HeCmBlock] {
-		log.Debug("SaveShardBlock cm, height = ",
-			block.GetHeight())
-		ledger.SaveShardBlock(config.ChainHash, block)
-	}
+
 	for _, block := range s.cache.blocks[cs.HeViewChange] {
 		log.Debug("SaveShardBlock change view, height = ",
 			block.GetHeight())
@@ -330,7 +347,7 @@ func (s *Sync) dealSyncRequest(request *sc.SyncRequestPacket) (*sc.NetPacket, *s
 	return csp, worker
 }
 
-func (s *Sync)  RecvSyncRequestPacket(packet *sc.CsPacket) (*sc.NetPacket, *sc.WorkerId){
+func (s *Sync) RecvSyncRequestPacket(packet *sc.CsPacket) (*sc.NetPacket, *sc.WorkerId){
 	requestPacket := packet.Packet.(*sc.SyncRequestPacket)
 	return s.dealSyncRequest(requestPacket)
 }
@@ -381,6 +398,8 @@ func (s *Sync) CheckSyncCompleteForCMBlock(epoch uint64, blocks *[]cs.BlockInter
 	return false
  }
 
+
+ //TODO, probably missing some corner case?
 func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool  {
 	log.Debug("CheckSyncComplete blockType = ",
 		syncResponse.BlockType, " complete = ", syncResponse.Compelte)
@@ -428,10 +447,10 @@ func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool  {
 				log.Error("GetLastShardBlock", err)
 				return true
 			}
+			//TODO, check cm block
 			if lastFinalBlock.GetHeight() == 1 {
 				return true
 			}
-
 
 			lenFinalBlock := len(s.cache.blocks[cs.HeCmBlock])
 			lenCMBlock := len(s.cache.blocks[cs.HeFinalBlock])
@@ -528,6 +547,7 @@ func (s *Sync)  RecvSyncResponsePacket(packet *sc.CsPacket){
 
 		if s.synchronizing {
 			s.tellLedgerSyncComplete()
+			s.clearCache();
 			simulate.SyncComplete()
 			s.synchronizing = false
 			log.Info("invoke SyncComplete")
@@ -559,9 +579,6 @@ func (s *Sync) DealSyncRequestHelperTest(request *sc.SyncRequestPacket) (*sc.Net
 			Timestamp:    time.Now().UnixNano(),
 
 			COSign:       nil,
-
-
-
 		}
 		cosign := &types.COSign{}
 		cosign.Step1 = 1
