@@ -23,22 +23,6 @@ NUM=20
 PORT=20680
 TAIL=0
 
-#install docker
-if [ ! -e /usr/bin/docker ]; then
-    sudo apt-get update
-    sudo apt-get install docker
-fi
-
-#start docker service
-SERVICE=`ps -ef | grep /usr/bin/dockerd | wc -l`
-if [ 2 -ne $SERVICE ]; then
-    if ! sudo service docker start
-    then
-        echo  -e "\033[;31m docker service start failed!!! \033[0m"
-        exit 1
-    fi
-fi
-
 #pull docker images
 IMAGENUM=`docker images $IMAGE | wc -l`
 if [ 1 -eq $IMAGENUM ]; then

@@ -86,7 +86,8 @@ def main():
         if args.wallet and count == committee_count - 1:
             # start ecowallet
             command = "docker run -d --name=ecowallet -p 20679:20679 "
-            command += image + " /ecoball/ecowallet/ecowallet"
+            command += "-v " + root_dir + ":/var "
+            command += image + " /ecoball/ecowallet/ecowallet start -p /var"
             share_shard.run(command)
             share_shard.sleep(2)
 

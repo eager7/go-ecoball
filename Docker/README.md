@@ -84,11 +84,17 @@ Once the configuration file shard_setup.toml is configured, execute key_generati
 ## share_shard.py 
 To start the sharding network, execute the share_shard.py script to start the shard container.
 
+If the -b option is added, the eballscan container is started
+
+If the -w option is added, the ecowallet container is started
+
 ```
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./share_shard.py -i ${HOST_IP}
+./share_shard.py -i ${HOST_IP} [-d] [-w]
 ```
 Log generation for each node is under ./ecoball_log/shard/$DOCKERNAME/ 
+
+The wallet file is generated under ./wallet
 
 ## share_committee.py
 
@@ -102,6 +108,8 @@ cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
 ./share_committee.py -i ${HOST_IP}  [-d] [-w]
 ```
 Log generation for each node is under ./ecoball_log/committee/$DOCKERNAME/ 
+
+The wallet file is generated under ./wallet
 
 ### docker_service.sh
 You can stop all docker containers with docker_service.sh before creating a new image.
