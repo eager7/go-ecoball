@@ -19,9 +19,6 @@
 
 SOURCE_DIR=$(cd `dirname $0` && pwd)
 IMAGE="jatel/internal:ecoball_v1.0"
-NUM=20
-PORT=20680
-TAIL=0
 
 #pull docker images
 IMAGENUM=`docker images $IMAGE | wc -l`
@@ -44,38 +41,10 @@ fi
 
 case $1 in
     "start")
-    #start main ecoball container 
-    if ! docker run -d --name=ecoball -p 20678:20678 -v ${SOURCE_DIR}/ecoball_log:/var/ecoball_log $IMAGE /root/go/src/github.com/ecoball/go-ecoball/build/ecoball run
-    then
-        echo  -e "\033[;31m docker run start main ecoball failed!!! \033[0m"
-        exit 1
-    fi
-
-    #start ecowallet container
-    if ! docker run -d --name=ecowallet -p 20679:20679 $IMAGE /root/go/src/github.com/ecoball/go-ecoball/build/ecowallet
-    then
-        echo  -e "\033[;31m docker run start ecowallet failed!!! \033[0m"
-        exit 1
-    fi
-
-    #start eballscan container
-    if ! docker run -d --name=eballscan --link=ecoball:ecoball_alias -p 20680:20680 $IMAGE /root/go/src/github.com/ecoball/eballscan/eballscan_service.sh ecoball
-    then
-        echo  -e "\033[;31m docker run start eballscan failed!!! \033[0m"
-        exit 1
-    fi
-
-    #run ecoball docker images
-    for((i=1;i<=$NUM;i++))
-    do   
-        PORT=`expr $PORT + 1`
-        TAIL=`expr $TAIL + 1`
-
-        if ! docker run -d --name=ecoball_${TAIL} -p $PORT:20678 --volumes-from ecoball $IMAGE  /root/go/src/github.com/ecoball/go-ecoball/build/ecoball run
-        then
-            echo  -e "\033[;31m docker run start ecoball_${TAIL} failed!!! \033[0m"
-            exit 1
-        fi
+    #Start all stopped containers
+    for i in $(docker ps -a --filter 'exited=137' | sed '1d' | awk '$2=="'"$IMAGE"'"{print $1}')
+    do
+        docker start $i
     done
 
     echo  -e "\033[47;34m start all ecoball and wallet and eballscan success!!! \033[0m"
@@ -88,7 +57,9 @@ case $1 in
         docker stop $i
     done
     echo  -e "\033[47;34m stop all container success!!! \033[0m"
+    ;;
 
+    "remove")
     #remove container
     for i in $(docker ps -a | sed '1d' | awk '$2=="'"$IMAGE"'"{print $1}')
     do
@@ -99,7 +70,7 @@ case $1 in
     ;;
 
     *)
-    echo "please input docker_service start|stop"
+    echo "please input docker_service start|stop|remove"
     ;;
     
 esac

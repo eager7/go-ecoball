@@ -112,9 +112,20 @@ Log generation for each node is under ./ecoball_log/committee/$DOCKERNAME/
 The wallet file is generated under ./wallet
 
 ### docker_service.sh
-You can stop all docker containers with docker_service.sh before creating a new image.
+You can stop and remove all docker containers with docker_service.sh before creating a new image.
+
+Stop all running containers
 ```
 ./docker_service.sh stop
+```
+
+Delete containers that have been stopped
+```
+./docker_service.sh remove
+```
+Restart all stopped containers
+```
+./docker_service.sh start
 ```
 
 Enter into docker container
