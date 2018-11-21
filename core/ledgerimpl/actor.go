@@ -76,7 +76,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		end := time.Now().UnixNano()
 		log.Info("save block["+msg.ChainID.HexString()+"block hash:"+msg.Hash.HexString()+"]:", (end-begin)/1000, "us")
 	case shard.BlockInterface:
-		log.Info("receive a block:", msg.Hash().HexString())
+		log.Info("receive a ", shard.HeaderType(msg.Type()).String(), "block:", msg.Hash().HexString())
 		chain, ok := l.ledger.ChainTxs[msg.GetChainID()]
 		if !ok {
 			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.GetChainID().HexString()))
@@ -88,7 +88,12 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			break
 		}
 		end := time.Now().UnixNano()
-		log.Info("save block["+msg.Hash().HexString()+"]:", (end-begin)/1000, "us")
+		t := (end-begin)/1000
+		log.Info("save ", shard.HeaderType(msg.Type()).String(), "block["+msg.Hash().HexString()+"]:", t, "us")
+		if t > 5000 {
+			log.Error("save block maybe trouble")
+			//os.Exit(-1)
+		}
 	case *dpos.DposBlock:
 		//TODO
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {

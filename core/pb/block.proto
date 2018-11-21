@@ -299,7 +299,19 @@ message Cid {
     bytes   hash    = 3;
 }
 
+message BlockCacheKey {
+    uint32  Type    = 1;
+    uint32  ShardID = 2;
+    uint64  Height  = 3;
+}
 
+message BlockCache {
+    uint32  ShardID     = 1;
+    bool    Finalizer   = 2;
+    uint64  Height      = 3;
+    uint32  HeaderType  = 4;
+    bytes   Hash        = 5;
+}
 //Shard Block
 message MinorBlockHeader {
     bytes       ChainID             = 1;

@@ -17,13 +17,13 @@
 package shard
 
 import (
-	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/core/pb"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"github.com/ecoball/go-ecoball/account"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type ViewChangeBlockHeader struct {
@@ -38,17 +38,16 @@ type ViewChangeBlockHeader struct {
 	Round            uint16
 	Candidate        NodeInfo
 
-	hash common.Hash
+	Hashes common.Hash
 	*types.COSign
 }
-
 
 func (h *ViewChangeBlockHeader) ComputeHash() error {
 	data, err := h.unSignatureData()
 	if err != nil {
 		return err
 	}
-	h.hash, err = common.DoubleHash(data)
+	h.Hashes, err = common.DoubleHash(data)
 	if err != nil {
 		return err
 	}
@@ -80,7 +79,7 @@ func (h *ViewChangeBlockHeader) proto() (*pb.ViewChangeBlockHeader, error) {
 			Address:   h.Candidate.Address,
 			Port:      h.Candidate.Port,
 		},
-		Hash: h.hash.Bytes(),
+		Hash: h.Hashes.Bytes(),
 		COSign: &pb.COSign{
 			Step1: h.COSign.Step1,
 			Step2: h.COSign.Step2,
@@ -132,7 +131,7 @@ func (h *ViewChangeBlockHeader) Deserialize(data []byte) error {
 		Address:   pbHeader.Candidate.Address,
 		Port:      pbHeader.Candidate.Port,
 	}
-	h.hash = common.NewHash(pbHeader.Hash)
+	h.Hashes = common.NewHash(pbHeader.Hash)
 	h.COSign = &types.COSign{
 		Step1: pbHeader.COSign.Step1,
 		Step2: pbHeader.COSign.Step2,
@@ -155,7 +154,7 @@ func (h *ViewChangeBlockHeader) Type() uint32 {
 }
 
 func (h *ViewChangeBlockHeader) Hash() common.Hash {
-	return h.hash
+	return h.Hashes
 }
 
 func (h *ViewChangeBlockHeader) GetHeight() uint64 {
@@ -216,7 +215,6 @@ func (b *ViewChangeBlock) Deserialize(data []byte) error {
 		return err
 	}
 
-
 	return nil
 }
 
@@ -226,7 +224,7 @@ func (b *ViewChangeBlock) JsonString() string {
 		fmt.Println(err)
 		return ""
 	}
-	return b.hash.HexString() + string(data)
+	return "hash:" + b.Hashes.HexString() + string(data)
 }
 
 func (b ViewChangeBlock) GetObject() interface{} {
@@ -243,7 +241,7 @@ func NewVCBlock(header ViewChangeBlockHeader) (*ViewChangeBlock, error) {
 }
 
 func (b *ViewChangeBlock) SetSignature(account *account.Account) error {
-	sigData, err := account.Sign(b.hash.Bytes())
+	sigData, err := account.Sign(b.Hashes.Bytes())
 	if err != nil {
 		return err
 	}

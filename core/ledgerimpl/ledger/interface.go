@@ -55,10 +55,10 @@ type Ledger interface {
 	GetShardBlockByHash(chainID common.Hash, typ shard.HeaderType, hash common.Hash) (shard.BlockInterface, error)
 	GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, error)
 	GetLastShardBlock(chainID common.Hash, typ shard.HeaderType) (shard.BlockInterface, error)
-	GetLastShardBlockById(chainID common.Hash, shardId uint32) (shard.BlockInterface, error)
 	NewCmBlock(chainID common.Hash, timeStamp int64, shards []shard.Shard) (*shard.CMBlock, error)
 	NewMinorBlock(chainID common.Hash, txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error)
 	NewFinalBlock(chainID common.Hash, timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error)
 	NewViewChangeBlock(chainID common.Hash, timeStamp int64, round uint16) (*shard.ViewChangeBlock, error)
 	GetShardId(chainID common.Hash) (uint32, error)
+	CheckShardBlock(chainID common.Hash, block shard.BlockInterface) error
 }
