@@ -31,8 +31,6 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/ecoball/go-ecoball/consensus/dpos"
-	"github.com/ecoball/go-ecoball/spectator"
-
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
@@ -194,7 +192,7 @@ func runNode(c *cli.Context) error {
 	audit.StartDsn(ctx, ledger.L)
 
 	//start blockchain browser
-	ecoballGroup.Go(func() error {
+	/*ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
 			if err := spectator.Bystander(ledger.L); nil != err {
@@ -211,7 +209,7 @@ func runNode(c *cli.Context) error {
 		}
 
 		return nil
-	})
+	})*/
 
 	//start http server
 	ecoballGroup.Go(func() error {

@@ -181,6 +181,11 @@ func (c *committee) processPacket(packet *sc.CsPacket) {
 		c.recvConsensusPacket(packet)
 	case pb.MsgType_APP_MSG_SHARDING_PACKET:
 		c.recvShardPacket(packet)
+	case pb.MsgType_APP_MSG_SYNC_REQUEST:
+		csp, worker := c.sync.RecvSyncRequestPacket(packet)
+		net.Np.SendSyncResponse(csp, worker)
+	case pb.MsgType_APP_MSG_SYNC_RESPONSE:
+		c.sync.RecvSyncResponsePacket(packet)
 	default:
 		log.Error("wrong packet")
 	}
@@ -205,6 +210,8 @@ func (c *committee) setFullVoeTimer(bStart bool) {
 }
 
 func (c *committee) setSyncRequest() {
-	log.Debug("miss some blocks, set sync request ")
-	c.sync.SyncRequest(0, 0)
+
+	log.Debug("set sync request ")
+	c.sync.SendSyncRequest()
+
 }

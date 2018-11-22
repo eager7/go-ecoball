@@ -306,7 +306,16 @@ func invokeContract(c *cli.Context) error {
 	}
 
 	var parameters []string
-	if "pledge" == contractMethod || "cancel_pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
+	if "new_account" == contractMethod {
+		parameter := strings.Split(contractParam, ",")
+		for _, v := range parameter {
+			if strings.Contains(v, "0x") {
+				parameters = append(parameters, common.AddressFromPubKey(common.FromHex(v)).HexString())
+			} else {
+				parameters = append(parameters, v)
+			}
+		}
+	} else if "pledge" == contractMethod || "cancel_pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
 		parameters = strings.Split(contractParam, ",")
 	} else if "set_account" == contractMethod {
 		parameters = strings.Split(contractParam, "--")

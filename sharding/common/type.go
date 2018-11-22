@@ -11,12 +11,14 @@ type NodeInstance interface {
 	MsgDispatch(msg interface{})
 }
 
+//BlockType
 const (
 	SD_CM_BLOCK = iota + 1
 	SD_FINAL_BLOCK
 	SD_MINOR_BLOCK
 	SD_VIEWCHANGE_BLOCK
 	SD_END
+	SD_SYNC
 )
 
 type NetPacket struct {
@@ -73,4 +75,10 @@ type ConsensusInstance interface {
 	PrecommitRsp() uint32
 	GetCandidate() *cs.NodeInfo
 	GetCosign() *types.COSign
+}
+
+type WorkerId struct {
+	Pubkey  string
+	Address string
+	Port    string
 }

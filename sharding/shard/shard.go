@@ -47,6 +47,12 @@ type shard struct {
 	fullVoteTimer *sc.Stimer
 	cs            *consensus.Consensus
 	sync          *datasync.Sync
+
+}
+
+func MakeShardTest(ns *cell.Cell) *shard {
+	instance := MakeShard(ns)
+	return instance.(*shard)
 }
 
 func MakeShard(ns *cell.Cell) sc.NodeInstance {
@@ -99,7 +105,8 @@ func (s *shard) Start() {
 	go s.sRoutine()
 	s.pvcRoutine()
 
-	s.setSyncRequest()
+	go s.setSyncRequest()
+
 }
 
 func (s *shard) sRoutine() {
@@ -171,10 +178,17 @@ func (s *shard) processPacket(packet *sc.CsPacket) {
 		s.recvConsensusPacket(packet)
 	case pb.MsgType_APP_MSG_SHARDING_PACKET:
 		s.recvShardingPacket(packet)
+	case pb.MsgType_APP_MSG_SYNC_REQUEST:
+		csp, worker := s.sync.RecvSyncRequestPacket(packet)
+		net.Np.SendSyncResponse(csp, worker)
+	case pb.MsgType_APP_MSG_SYNC_RESPONSE:
+		s.sync.RecvSyncResponsePacket(packet)
+
 	default:
 		log.Error("wrong packet")
 	}
 }
+
 
 func (s *shard) processFullVoteTimeout() {
 	s.cs.ProcessFullVoteTimeout()
@@ -195,6 +209,9 @@ func (s *shard) setFullVoeTimer(bStart bool) {
 }
 
 func (s *shard) setSyncRequest() {
-	log.Debug("miss some blocks, set sync request ")
-	s.sync.SyncRequest(0, 0)
+
+	log.Debug("set sync request ")
+
+	s.sync.SendSyncRequest()
+
 }

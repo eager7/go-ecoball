@@ -186,6 +186,7 @@ func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) e
 	//s.AddPermission(abaToken, perm)
 
 	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), abaToken, root)
+
 	s.IssueToken(root, new(big.Int).SetUint64(90000), state.AbaToken)
 
 	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
