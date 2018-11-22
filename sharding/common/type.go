@@ -19,8 +19,8 @@ const (
 	SD_FINAL_BLOCK
 	SD_MINOR_BLOCK
 	SD_VIEWCHANGE_BLOCK
-	SD_END
 	SD_SYNC
+	SD_END
 )
 
 type NetPacket struct {
