@@ -68,7 +68,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		acc, err := ns.state.AddAccount(index, addr, ns.timeStamp)
 		if err != nil {
 			ns.Println(err.Error())
-			return nil, err
+			return nil, errors.New(log, err.Error())
 		}
 
 		ns.Println(fmt.Sprint("create account success"))
@@ -85,11 +85,11 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := json.Unmarshal([]byte(params[1]), &perm); err != nil {
 			fmt.Println(params[1])
 			ns.Println(err.Error())
-			return nil, err
+			return nil, errors.New(log, err.Error())
 		}
 		if err := ns.state.AddPermission(index, perm); err != nil {
 			ns.Println(err.Error())
-			return nil, err
+			return nil, errors.New(log, err.Error())
 		}
 
 		ns.Println(fmt.Sprint("set account success"))
@@ -112,7 +112,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		index := common.NameToIndex(params[0])
 		if err := ns.state.RegisterProducer(index); err != nil {
 			ns.Println(err.Error())
-			return nil, err
+			return nil, errors.New(log, err.Error())
 		}
 		// generate trx receipt
 		ns.tx.Receipt.Producer = uint64(index)
@@ -136,7 +136,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		hash := common.SingleHash(data)
 		if err := ns.state.RegisterChain(index, hash, ns.tx.Hash, addr); err != nil {
 			ns.Println(err.Error())
-			return nil, err
+			return nil, errors.New(log, err.Error())
 		}
 		if  ns.state.StateType()== state.FinalType {
 			if consensus == "solo" {

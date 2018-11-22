@@ -629,7 +629,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		ret, err = smartcontract.DispatchAction(trxContext, actionNew, 0)
 		if err != nil {
 			event.PublishTrxRes(tx.Hash, err.Error())
-			return nil, 0, 0, err
+			return nil, 0, 0, errors.New(log, err.Error())
 		}
 
 		// update state change in trx receipt
@@ -640,7 +640,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		js, err := json.Marshal(trxContext.Trace)
 		if err != nil {
 			event.PublishTrxRes(tx.Hash, err.Error())
-			return nil, 0, 0, err
+			return nil, 0, 0, errors.New(log, err.Error())
 		}
 		//fmt.Println("json format: ", string(js))
 
@@ -1057,7 +1057,7 @@ func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash) (s
 	dataBlock, err := c.BlockStore.Get(hash.Bytes())
 	if err != nil {
 		log.Warn(hash, typ.String())
-		return nil, errors.New(log, fmt.Sprintf("GetBlock:%s error:%s", hash.HexString(), err.Error()))
+		return nil, err
 	}
 
 	return shard.BlockDeserialize(dataBlock)
