@@ -38,11 +38,12 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	//"github.com/ecoball/go-ecoball/dsn"
+	"github.com/ecoball/go-ecoball/dsn/audit"
+	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/sharding"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
-	"github.com/ecoball/go-ecoball/dsn/audit"
 )
 
 var (
@@ -150,6 +151,12 @@ func runNode(c *cli.Context) error {
 
 	//network depends on sharding
 	net.StartNetWork(sdactor)
+
+	instance, err := network.GetNetInstance()
+	if err != nil {
+		log.Fatal(err)
+	}
+	sdactor.SetNet(instance)
 
 	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)

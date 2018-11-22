@@ -63,12 +63,15 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 	params := ns.tx.Payload.GetObject().(types.InvokeInfo).Param
 	switch method {
 	case "new_account":
+		if len(params) != 2 {
+			return nil, errors.New(log, "the param is error, please input two param for new_account")
+		}
 		index := common.NameToIndex(params[0])
 		addr := common.AddressFormHexString(params[1])
 		acc, err := ns.state.AddAccount(index, addr, ns.timeStamp)
 		if err != nil {
 			ns.Println(err.Error())
-			return nil, err
+			return nil, errors.New(log, err.Error())
 		}
 
 		ns.Println(fmt.Sprint("create account success"))
@@ -80,16 +83,19 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		}
 		ns.tx.Receipt.Accounts[0] = data
 	case "set_account":
+		if len(params) != 2 {
+			return nil, errors.New(log, "the param is error, please input two param for set_account")
+		}
 		index := common.NameToIndex(params[0])
 		perm := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
 		if err := json.Unmarshal([]byte(params[1]), &perm); err != nil {
 			fmt.Println(params[1])
 			ns.Println(err.Error())
-			return nil, err
+			return nil, errors.New(log, err.Error())
 		}
 		if err := ns.state.AddPermission(index, perm); err != nil {
 			ns.Println(err.Error())
-			return nil, err
+			return nil, errors.New(log, err.Error())
 		}
 
 		ns.Println(fmt.Sprint("set account success"))
@@ -109,10 +115,13 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		ns.tx.Receipt.Accounts[0] = data
 
 	case "reg_prod":
+		if len(params) != 1 {
+			return nil, errors.New(log, "the param is error, please input two param for reg_prod")
+		}
 		index := common.NameToIndex(params[0])
 		if err := ns.state.RegisterProducer(index); err != nil {
 			ns.Println(err.Error())
-			return nil, err
+			return nil, errors.New(log, err.Error())
 		}
 		// generate trx receipt
 		ns.tx.Receipt.Producer = uint64(index)
@@ -129,6 +138,9 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 
 		ns.Println(fmt.Sprint("vote success"))
 	case "reg_chain":
+		if len(params) != 3 {
+			return nil, errors.New(log, "the param is error, please input two param for reg_chain")
+		}
 		index := common.NameToIndex(params[0])
 		consensus := params[1]
 		addr := common.AddressFormHexString(params[2])
@@ -136,7 +148,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		hash := common.SingleHash(data)
 		if err := ns.state.RegisterChain(index, hash, ns.tx.Hash, addr); err != nil {
 			ns.Println(err.Error())
-			return nil, err
+			return nil, errors.New(log, err.Error())
 		}
 		if  ns.state.StateType()== state.FinalType {
 			if consensus == "solo" {
@@ -151,6 +163,9 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		}
 
 	case "pledge":
+		if len(params) != 4 {
+			return nil, errors.New(log, "the param is error, please input two param for pledge")
+		}
 		from := common.NameToIndex(params[0])
 		to := common.NameToIndex(params[1])
 		cpu, err := strconv.ParseUint(params[2], 10, 64)
@@ -222,6 +237,9 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		}
 
 	case "cancel_pledge":
+		if len(params) != 4 {
+			return nil, errors.New(log, "the param is error, please input two param for cancel_pledge")
+		}
 		from := common.NameToIndex(params[0])
 		to := common.NameToIndex(params[1])
 		cpu, err := strconv.ParseUint(params[2], 10, 64)

@@ -160,13 +160,13 @@ func (l *LedgerImpl) CheckTransaction(chainID common.Hash, tx *types.Transaction
 	return nil
 }
 
-func (l *LedgerImpl) GetTransaction(chainID, transactionId common.Hash)(*types.Transaction, error){
+func (l *LedgerImpl) GetTransaction(chainID, hash common.Hash)(*types.Transaction, error){
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
 
-	trx, err := chain.GetTransaction(transactionId.Bytes())
+	trx, err := chain.GetTransaction(hash)
 	if nil != err {
 		return nil, err
 	}
@@ -389,14 +389,6 @@ func (l *LedgerImpl) GetLastShardBlock(chainID common.Hash, typ shard.HeaderType
 	return chain.GetLastShardBlock(typ)
 }
 
-func (l *LedgerImpl) GetLastShardBlockById(chainID common.Hash, shardId uint32) (shard.BlockInterface, error) {
-	chain, ok := l.ChainTxs[chainID]
-	if !ok {
-		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.GetLastShardBlockById(shardId)
-}
-
 func (l *LedgerImpl) NewCmBlock(chainID common.Hash, timeStamp int64, shards []shard.Shard) (*shard.CMBlock, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
@@ -435,4 +427,12 @@ func (l *LedgerImpl) GetShardId(chainID common.Hash) (uint32, error) {
 		return 0, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
 	return chain.GetShardId()
+}
+
+func (l *LedgerImpl) CheckShardBlock(chainID common.Hash, block shard.BlockInterface) error {
+	chain, ok := l.ChainTxs[chainID]
+	if !ok {
+		return errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.CheckShardBlock(block)
 }

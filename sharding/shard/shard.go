@@ -5,12 +5,12 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/net/message/pb"
+	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/datasync"
 	"github.com/ecoball/go-ecoball/sharding/net"
-	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 )
 
@@ -40,7 +40,7 @@ type shard struct {
 	fsm    *sc.Fsm
 	actorc chan interface{}
 	ppc    chan *sc.CsPacket
-	pvc    <-chan *sc.NetPacket
+	pvc    <-chan interface{}
 
 	stateTimer    *sc.Stimer
 	retransTimer  *sc.Stimer
@@ -85,8 +85,6 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 			{productMinoBlock, ActChainNotSync, nil, s.doBlockSync, nil, blockSync},
 		})
 
-	net.MakeNet(ns)
-
 	return s
 }
 
@@ -95,13 +93,13 @@ func (s *shard) MsgDispatch(msg interface{}) {
 }
 
 func (s *shard) Start() {
-	recvc, err := simulate.Subscribe(s.ns.Self.Port, sc.DefaultShardMaxMember)
-	if err != nil {
-		log.Panic("simulate error ", err)
-		return
-	}
+	return
+}
 
-	s.pvc = recvc
+func (s *shard) SetNet(n network.EcoballNetwork) {
+	net.MakeNet(s.ns, n)
+	s.pvc, _ = net.Np.Subscribe(s.ns.Self.Port, sc.DefaultShardMaxMember)
+
 	go s.sRoutine()
 	s.pvcRoutine()
 
@@ -144,8 +142,13 @@ func (s *shard) pvcRoutine() {
 	for i := 0; i < sc.DefaultShardMaxMember; i++ {
 		go func() {
 			for {
-				packet := <-s.pvc
-				s.verifyPacket(packet)
+				msg := <-s.pvc
+				packet, err := net.Np.RecvNetMsg(msg)
+				if err != nil {
+					log.Error("recv net msg error ", err)
+				} else {
+					s.verifyPacket(packet)
+				}
 			}
 		}()
 	}

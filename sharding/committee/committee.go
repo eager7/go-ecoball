@@ -5,12 +5,12 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/net/message/pb"
+	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
 	"github.com/ecoball/go-ecoball/sharding/datasync"
 	"github.com/ecoball/go-ecoball/sharding/net"
-	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
 )
 
@@ -43,7 +43,7 @@ type committee struct {
 	fsm           *sc.Fsm
 	actorc        chan interface{}
 	ppc           chan *sc.CsPacket
-	pvc           <-chan *sc.NetPacket
+	pvc           <-chan interface{}
 	stateTimer    *sc.Stimer
 	retransTimer  *sc.Stimer
 	fullVoteTimer *sc.Stimer
@@ -99,8 +99,6 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 			{productViewChangeBlock, ActChainNotSync, nil, cm.doBlockSync, nil, blockSync},
 		})
 
-	net.MakeNet(ns)
-
 	return cm
 }
 
@@ -109,13 +107,13 @@ func (c *committee) MsgDispatch(msg interface{}) {
 }
 
 func (c *committee) Start() {
-	recvc, err := simulate.Subscribe(c.ns.Self.Port, sc.DefaultCommitteMaxMember)
-	if err != nil {
-		log.Panic("simulate error ", err)
-		return
-	}
+	return
+}
 
-	c.pvc = recvc
+func (c *committee) SetNet(n network.EcoballNetwork) {
+	net.MakeNet(c.ns, n)
+	c.pvc, _ = net.Np.Subscribe(c.ns.Self.Port, sc.DefaultCommitteMaxMember)
+
 	go c.cmRoutine()
 	c.pvcRoutine()
 
@@ -157,8 +155,13 @@ func (c *committee) pvcRoutine() {
 	for i := 0; i < sc.DefaultCommitteMaxMember; i++ {
 		go func() {
 			for {
-				packet := <-c.pvc
-				c.verifyPacket(packet)
+				msg := <-c.pvc
+				packet, err := net.Np.RecvNetMsg(msg)
+				if err != nil {
+					log.Error("recv net msg error ", err)
+				} else {
+					c.verifyPacket(packet)
+				}
 			}
 		}()
 	}
