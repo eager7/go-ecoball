@@ -448,7 +448,7 @@ func (c *Cell) GetCommitteeBackup() *sc.Worker {
 }
 
 func (c *Cell) addCommitteWorker(worker *sc.Worker) {
-	log.Debug("add commit worker key ", worker.Pubkey, " address ", worker.Address, " port ", worker.Port)
+	log.Debug("add committee worker key ", worker.Pubkey, " address ", worker.Address, " port ", worker.Port)
 	backup := c.GetCommitteeBackup()
 	if backup != nil && backup.Equal(worker) {
 		c.cm.popLeader()

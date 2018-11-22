@@ -47,7 +47,6 @@ type shard struct {
 	fullVoteTimer *sc.Stimer
 	cs            *consensus.Consensus
 	sync          *datasync.Sync
-
 }
 
 func MakeShardTest(ns *cell.Cell) *shard {
@@ -99,17 +98,15 @@ func (s *shard) Start() {
 func (s *shard) SetNet(n network.EcoballNetwork) {
 	net.MakeNet(s.ns, n)
 	s.pvc, _ = net.Np.Subscribe(s.ns.Self.Port, sc.DefaultShardMaxMember)
-
-	go s.sRoutine()
 	s.pvcRoutine()
 
-	go s.setSyncRequest()
-
+	go s.sRoutine()
 }
 
 func (s *shard) sRoutine() {
 	log.Debug("start shard routine")
 	s.ns.LoadLastBlock()
+	go s.setSyncRequest()
 
 	s.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 
@@ -191,7 +188,6 @@ func (s *shard) processPacket(packet *sc.CsPacket) {
 		log.Error("wrong packet")
 	}
 }
-
 
 func (s *shard) processFullVoteTimeout() {
 	s.cs.ProcessFullVoteTimeout()

@@ -113,16 +113,16 @@ func (c *committee) Start() {
 func (c *committee) SetNet(n network.EcoballNetwork) {
 	net.MakeNet(c.ns, n)
 	c.pvc, _ = net.Np.Subscribe(c.ns.Self.Port, sc.DefaultCommitteMaxMember)
-
-	go c.cmRoutine()
 	c.pvcRoutine()
 
-	c.setSyncRequest()
+	go c.cmRoutine()
+
 }
 
 func (c *committee) cmRoutine() {
 	log.Debug("start committee routine")
 	c.ns.LoadLastBlock()
+	go c.setSyncRequest()
 
 	c.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 
