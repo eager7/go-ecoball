@@ -86,7 +86,6 @@ func (n *net) GossipBlock(packet *sc.NetPacket) {
 			return
 		}
 
-
 		if index == 0 {
 			peers = works[1:]
 		} else {
@@ -163,12 +162,12 @@ func CalcCrossShardIndex(si int, ourSize int, shardSize int) (bSend bool, begin 
 
 }
 
-func (n *net) SendSyncResponse(packet *sc.NetPacket, work *sc.WorkerId){
+func (n *net) SendSyncResponse(packet *sc.NetPacket, work *sc.WorkerId) {
 	log.Debug("send sync response")
-	go simulate.Sendto(work.Address, work.Port, packet)
+	go n.sendto(work.Address, work.Port, work.Pubkey, packet)
 }
 
-func (n *net) SendSyncMessage(packet *sc.NetPacket){
+func (n *net) SendSyncMessage(packet *sc.NetPacket) {
 	log.Debug("send sync message")
 
 	works := n.ns.GetWorks()
@@ -180,10 +179,10 @@ func (n *net) SendSyncMessage(packet *sc.NetPacket){
 	rand.Seed(time.Now().UnixNano())
 	log.Info("worker size = ", len(works))
 	var r int32
-	if (len(works) <= 1) {
+	if len(works) <= 1 {
 		r = 0
 	} else {
-		r = rand.Int31n(int32(len(works)-1))
+		r = rand.Int31n(int32(len(works) - 1))
 	}
 
 	var i int32 = 0
@@ -192,13 +191,12 @@ func (n *net) SendSyncMessage(packet *sc.NetPacket){
 			continue
 		}
 		if i == r {
-			go simulate.Sendto(work.Address, work.Port, packet)
+			go n.sendto(work.Address, work.Port, work.Pubkey, packet)
 			break
 		}
 		i++
 	}
 }
-
 
 func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 	si := n.ns.SelfIndex()
