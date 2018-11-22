@@ -109,7 +109,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		switch msg.Type {
 		case shard.HeMinorBlock:
 			if txpool.T == nil {
-				ctx.Sender().Tell(errors.New(log, "create final block err the txPool is nil"))
+				ctx.Sender().Tell(errors.New(log, "create minor block err the txPool is nil"))
 				return
 			}
 			txs, err := txpool.T.GetTxsList(msg.ChainID)
@@ -120,7 +120,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			PACKAGE:
 			minorBlock, txs, err := l.ledger.NewMinorBlock(msg.ChainID, txs, time.Now().UnixNano())
 			if err != nil {
-				log.Warn(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
+				log.Warn(errors.New(log, fmt.Sprintf("create minor block err:%s", err.Error())))
 				if txs != nil {
 					goto PACKAGE
 				} else {
