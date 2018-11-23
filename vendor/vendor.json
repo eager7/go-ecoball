@@ -1419,6 +1419,12 @@
 			"revisionTime": "2018-08-14T18:34:19Z"
 		},
 		{
+			"checksumSHA1": "eC/XVln77aRfE/VocbN0NWdlRdg=",
+			"path": "go.uber.org/zap/buffer",
+			"revision": "67bc79d13d155c02fd008f721863ff8cc5f30659",
+			"revisionTime": "2018-08-14T18:34:19Z"
+		},
+		{
 			"checksumSHA1": "MuxOAtZEsJitlWBzhmpm2vGiHok=",
 			"path": "go.uber.org/zap/internal/bufferpool",
 			"revision": "67bc79d13d155c02fd008f721863ff8cc5f30659",
