@@ -81,7 +81,9 @@ def main():
         os.makedirs(log_dir)
 
     start_port = 2000
-    p2p_start = 3000
+    ipfs_start = 5000
+    ipfs_gateway = 7000
+    p2p_start = 9901
     PORT = 20681
     image = "zhongxh/internal:ecoball_v1.0"
 
@@ -90,7 +92,8 @@ def main():
         # start ecoball
         command = "docker run -d " + "--name=ecoball_" + str(count) + " -p "
         command += str(PORT + count) + ":20678 "
-        command += "-p " + str(start_port + count) + ":" + str(start_port + count)
+        command += "-p " + str(ipfs_start + count) + ":5011 " 
+        command += "-p " + str(ipfs_gateway + count) + ":7011 " 
         command += " -p " + str(p2p_start + count) + ":" + str(p2p_start + count)
         command += " -v " + log_dir  + ":/var/ecoball_log "
         command += image + " /ecoball/ecoball/start.py "
