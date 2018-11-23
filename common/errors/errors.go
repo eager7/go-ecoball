@@ -84,7 +84,7 @@ func (err ErrCode) Value() int {
 }
 
 func New(log elog.Logger, err string) error {
-	log.ErrStack(err)
+	log.ErrStack()
 	return errors.New(err)
 }
 

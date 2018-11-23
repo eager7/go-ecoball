@@ -57,9 +57,8 @@ http_port = "20678"          # client http port
 wallet_http_port = "20679"   # client wallet http port
 version = "1.0"              # system version
 onlooker_port = "9001"		 #port for browser
-root_dir = "/tmp/"        		 # level file location
-log_dir = "/tmp/Log/"        # log file location
 output_to_terminal = "true"  # debug output type	 	
+root_dir = "/tmp/"        		 # level file location
 log_level = 1                # debug level	
 consensus_algorithm = "SHARD" # can set as SOLO, DPOS, ABABFT, SHARD
 time_slot = 500              # block interval time, uint ms
@@ -115,6 +114,26 @@ dsn_path = "/tmp/storage"
 
 #sharding config info
 disable_sharding  = false
+
+log_dir = "/tmp/Log/"        	 		# log file location
+[logbunny]
+debug_level=0                           # 0: debug 1: info 2: warn 3: error 4: panic 5: fatal
+logger_type=0                           # 0: zap 1: logrus
+with_caller=false
+logger_encoder=1                        # 0: json 1: console
+skip=4                                  # call depth, zap log is 3, logger is 4
+time_pattern="2006-01-02 15:04:05.000"
+#file name, file location is log_dir + name
+debug_log_filename="debug.log"   		# or 'stdout' / 'stderr'
+info_log_filename="info.log"     		# or 'stdout' / 'stderr'
+warn_log_filename="warn.log"     		# or 'stdout' / 'stderr'
+error_log_filename="error.log"   		# or 'stdout' / 'stderr'
+fatal_log_filename="fatal.log"  	 	# or 'stdout' / 'stderr'
+#debug_log_filename="stdout"            # or 'stdout' / 'stderr'
+#info_log_filename="stdout"             # or 'stdout' / 'stderr'
+#error_log_filename="stdout"            # or 'stdout' / 'stderr'
+http_port=":50015"                      # RESTFul API to change logout level dynamically
+rolling_time_pattern="0 0 0 * * *"      # rolling the log everyday at 00:00:00
 `
 
 type SwarmConfigInfo struct {
@@ -209,28 +228,27 @@ func InitConfig(filePath, config string) error {
 }
 
 func init() {
+	fmt.Println("init config")
 	//set ecoball.toml dir
+	var configDir string
 	if flag.Lookup("test.v") == nil {
 		fmt.Println("normal run")
 		IpfsDir = "/tmp/storage"
-		RootDir, _ = filepath.Abs(filepath.Dir(os.Args[0]))
-		RootDir = strings.Replace(RootDir, "\\", "/", -1)
+		configDir, _ = filepath.Abs(filepath.Dir(os.Args[0]))
+		configDir = strings.Replace(configDir, "\\", "/", -1)
 	} else {
 		fmt.Println("run under go test")
 		IpfsDir = "/tmp/storage"
-		RootDir = "/tmp/"
+		configDir = "/tmp/"
 	}
-	if err := SetConfig(RootDir); err != nil {
+	fmt.Println("program run dir:", configDir)
+	if err := SetConfig(configDir); err != nil {
 		fmt.Println("init config failed: ", err)
 		os.Exit(-1)
 	}
-	//set database dir
 	initVariable()
-	//fmt.Println(RootDir)
-	//if RootDir == "" {
-	//	RootDir, _ = filepath.Abs(filepath.Dir(os.Args[0]))
-	//	viper.Set("root_dir", RootDir)
-	//}
+	fmt.Println("log dir:", LogDir)
+	fmt.Println("root dir:", RootDir)
 }
 
 func initVariable() {

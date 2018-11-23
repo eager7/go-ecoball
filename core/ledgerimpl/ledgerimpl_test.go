@@ -292,7 +292,7 @@ func TestMinorBlock(t *testing.T) {
 	event.EventStop()
 }
 
-func TestSaveBlock(t *testing.T) {
+func xTestSaveBlock(t *testing.T) {
 	simulate.LoadConfig()
 	os.RemoveAll("/tmp/block_save_test")
 	l, err := ledgerimpl.NewLedger("/tmp/block_save_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
