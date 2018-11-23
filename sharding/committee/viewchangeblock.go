@@ -276,12 +276,14 @@ func (c *committee) commitViewchangeBlock(vc *cs.ViewChangeBlock) {
 	}
 
 	if lastcm.Height != vc.CMEpochNo {
+
 		return
 	}
 
 	if lastfinal.Height != vc.FinalBlockHeight {
 		return
 	}
+
 
 	simulate.TellBlock(vc)
 
@@ -291,6 +293,7 @@ func (c *committee) commitViewchangeBlock(vc *cs.ViewChangeBlock) {
 	if lastcm.Height == 1 {
 		c.fsm.Execute(ActProductCommitteeBlock, nil)
 	} else if lastcm.Height > lastfinal.EpochNo {
+
 		c.fsm.Execute(ActProductFinalBlock, nil)
 	} else {
 		if lastfinal.Height%sc.DefaultEpochFinalBlockNumber == 0 {

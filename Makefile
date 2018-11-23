@@ -4,9 +4,9 @@ include common/config/config
 
 BASE_VERSION = 1.1.1
 
-all: ecoball ecoclient ecowallet plugins
+all: ecoball ecoclient ecowallet plugins tools
 
-.PHONY: proto plugins ecoball ecoclient ecowallet
+.PHONY: proto plugins ecoball ecoclient ecowallet tools
 ecoball: plugins
 	@echo "\033[;32mbuild ecoball \033[0m"
 	mkdir -p build/
@@ -32,7 +32,6 @@ proto:
 	make -C core/pb
 	make -C client/protos
 	make -C net/message/pb
-	make -C net/gossip/protos
 
 plugins:
 	@echo "\033[;32mbuild ipld plugin file \033[0m"
@@ -40,6 +39,11 @@ plugins:
 	make -C dsn/host/ipfs/plugin
 	chmod +x dsn/host/ipfs/plugin/ecoball.so
 	mv dsn/host/ipfs/plugin/ecoball.so build/storage/plugins
+tools:
+	@echo "\033[;32mbuild tools \033[0m"
+	mkdir -p tools/c2wasm/build
+	go build -v -o c2wasm tools/c2wasm/src/main.go
+	mv c2wasm tools/c2wasm/build
 
 .PHONY: clean
 clean:
@@ -48,8 +52,6 @@ clean:
 	-rm ./build/ecoball.toml
 	make -C core/pb/ clean
 	make -C client/protos clean
-	make -C  net/message/pb/ clean
-	make -C  net/gossip/protos/ clean
 
 .PHONY: test
 

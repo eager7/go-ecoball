@@ -42,7 +42,7 @@ def main():
     for ip in network:
         node_ip.append(ip)
 
-    start_port = 2000
+    start_port = 9901
     committee = []
     shard = []
     list_count = []

@@ -1,6 +1,7 @@
 package cell
 
 import (
+	"encoding/json"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 )
@@ -15,7 +16,7 @@ func (c *Cell) VerifyCmPacket(p *sc.NetPacket) *sc.CsPacket {
 
 	last := c.GetLastCMBlock()
 	if last != nil {
-		if last.Height+1 != cm.Height {
+		if last.Height >= cm.Height {
 			log.Debug("old cm block last ", last.Height, " block ", cm.Height)
 			return nil
 		}
@@ -44,7 +45,7 @@ func (c *Cell) VerifyFinalPacket(p *sc.NetPacket) *sc.CsPacket {
 		return nil
 	}
 
-	if final.EpochNo != cm.Height {
+	if cm.Height > final.EpochNo {
 		log.Error("block epoch error ", cm.Height, " block ", final.EpochNo)
 		return nil
 	}
@@ -91,7 +92,7 @@ func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
 		return nil
 	}
 
-	if cm.Height != vc.CMEpochNo {
+	if cm.Height > vc.CMEpochNo {
 		log.Error("vc block epoch error last ", cm.Height, " block ", vc.CMEpochNo)
 		return nil
 	}
@@ -102,7 +103,7 @@ func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
 		return nil
 	}
 
-	if final.Height != vc.FinalBlockHeight {
+	if final.Height > vc.FinalBlockHeight {
 		log.Error("vc block height error last ", final.Height, " block ", vc.FinalBlockHeight)
 		return nil
 	}
@@ -118,6 +119,51 @@ func (c *Cell) VerifyViewChangePacket(p *sc.NetPacket) *sc.CsPacket {
 	csp.CopyHeader(p)
 	csp.Packet = vc
 
+	return &csp
+}
+
+//For test
+/*func VerifySyncRequestPacketTest(p *sc.NetPacket) *sc.CsPacket {
+	var requestPacket *sc.SyncRequestPacket
+	err := json.Unmarshal(p.Packet, &requestPacket)
+	if err != nil {
+		log.Error("syncResponse unmarshal error ", err)
+		return nil
+	}
+	var csp sc.CsPacket
+	csp.CopyHeader(p)
+	csp.Packet = &requestPacket
+	return &csp
+}*/
+
+//Mark Decode
+func (c *Cell) VerifySyncRequestPacket(p *sc.NetPacket) *sc.CsPacket {
+	var requestPacket *sc.SyncRequestPacket
+	err := json.Unmarshal(p.Packet, &requestPacket)
+	if err != nil {
+		log.Error("syncResponse unmarshal error ", err)
+		return nil
+	}
+	var csp sc.CsPacket
+	csp.CopyHeader(p)
+	csp.Packet = requestPacket
+	return &csp
+}
+
+//Mark Decode
+func (c *Cell) VerifySyncResponsePacket(p *sc.NetPacket) *sc.CsPacket {
+	//fmt.Println("syncResponse p = ", p)
+	//fmt.Println("syncResponse packet = ", p.Packet)
+	var syncData *sc.SyncResponseData
+	err := json.Unmarshal(p.Packet, &syncData)
+	if err != nil {
+		log.Error("syncResponse decode error ", err)
+		//fmt.Println("syncResponse decode error", err)
+		return nil
+	}
+	var csp sc.CsPacket
+	csp.CopyHeader(p)
+	csp.Packet = syncData
 	return &csp
 }
 
@@ -137,7 +183,7 @@ func (c *Cell) VerifyMinorPacket(p *sc.NetPacket) *sc.CsPacket {
 		return nil
 	}
 
-	if cm.Height != minor.CMEpochNo {
+	if cm.Height > minor.CMEpochNo {
 		log.Error("minor block epoch error ", minor.CMEpochNo, " current epoch ", cm.Height)
 		return nil
 	}

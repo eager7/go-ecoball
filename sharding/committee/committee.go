@@ -113,16 +113,16 @@ func (c *committee) Start() {
 func (c *committee) SetNet(n network.EcoballNetwork) {
 	net.MakeNet(c.ns, n)
 	c.pvc, _ = net.Np.Subscribe(c.ns.Self.Port, sc.DefaultCommitteMaxMember)
-
-	go c.cmRoutine()
 	c.pvcRoutine()
 
-	c.setSyncRequest()
+	go c.cmRoutine()
+
 }
 
 func (c *committee) cmRoutine() {
 	log.Debug("start committee routine")
 	c.ns.LoadLastBlock()
+	go c.setSyncRequest()
 
 	c.stateTimer.Reset(sc.DefaultSyncBlockTimer * time.Second)
 
@@ -184,6 +184,11 @@ func (c *committee) processPacket(packet *sc.CsPacket) {
 		c.recvConsensusPacket(packet)
 	case pb.MsgType_APP_MSG_SHARDING_PACKET:
 		c.recvShardPacket(packet)
+	case pb.MsgType_APP_MSG_SYNC_REQUEST:
+		csp, worker := c.sync.RecvSyncRequestPacket(packet)
+		net.Np.SendSyncResponse(csp, worker)
+	case pb.MsgType_APP_MSG_SYNC_RESPONSE:
+		c.sync.RecvSyncResponsePacket(packet)
 	default:
 		log.Error("wrong packet")
 	}
@@ -209,5 +214,5 @@ func (c *committee) setFullVoeTimer(bStart bool) {
 
 func (c *committee) setSyncRequest() {
 	log.Debug("miss some blocks, set sync request ")
-	c.sync.SyncRequest(0, 0)
+	c.sync.SendSyncRequest()
 }

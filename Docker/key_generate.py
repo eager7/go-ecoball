@@ -63,7 +63,7 @@ def main():
     with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
         data = pytoml.load(setup_file)
 
-    start_port = 3000
+    start_port = 9901
     network = data["network"]
     for one_ip in network:
         count_list = network[one_ip]

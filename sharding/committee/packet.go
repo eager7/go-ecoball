@@ -16,6 +16,10 @@ func (c *committee) verifyPacket(p *sc.NetPacket) {
 		c.verifyConsensusPacket(p)
 	} else if p.PacketType == pb.MsgType_APP_MSG_SHARDING_PACKET {
 		c.verifyShardingPacket(p)
+	} else if p.PacketType == pb.MsgType_APP_MSG_SYNC_REQUEST {
+		c.verifySyncRequest(p)
+    } else if p.PacketType == pb.MsgType_APP_MSG_SYNC_RESPONSE {
+		c.verifySyncResponse(p)
 	} else {
 		log.Error("wrong packet type ", p.PacketType)
 		return
@@ -60,6 +64,39 @@ func (c *committee) verifyShardingPacket(p *sc.NetPacket) {
 		c.ppc <- csp
 	}
 }
+
+
+func (c *committee) verifySyncResponse(p *sc.NetPacket) {
+	var csp *sc.CsPacket
+
+	if p.BlockType == sc.SD_SYNC {
+		csp = c.ns.VerifySyncResponsePacket(p)
+	} else {
+		log.Error("wrong block type")
+		return
+	}
+
+	if csp != nil {
+		c.ppc <- csp
+	}
+}
+
+//TODO
+func (c *committee) verifySyncRequest(p *sc.NetPacket) {
+	var csp *sc.CsPacket
+
+	if p.BlockType == sc.SD_SYNC {
+		csp = c.ns.VerifySyncRequestPacket(p)
+	} else {
+		log.Error("wrong block type")
+		return
+	}
+
+	if csp != nil {
+		c.ppc <- csp
+	}
+}
+
 
 func (c *committee) setRetransTimer(bStart bool, d time.Duration) {
 	log.Debug("set retrans timer ", bStart)

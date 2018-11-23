@@ -18,7 +18,7 @@
 ############################################################################
 
 SOURCE_DIR=$(cd `dirname $0` && pwd)
-IMAGE="jatel/internal:ecoball_v1.0"
+IMAGE="zhongxh/internal:ecoball_v1.0"
 
 #pull docker images
 IMAGENUM=`docker images $IMAGE | wc -l`

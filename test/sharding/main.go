@@ -28,6 +28,8 @@ func main() {
 	actor, _ := sharding.NewShardingActor(L)
 
 	topo := actor.SubscribeShardingTopo()
+	actor.SetNet(nil)
+
 
 	go example.TransferExample()
 	go simulate.SyncComplete()

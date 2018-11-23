@@ -235,9 +235,11 @@ func ConstructAddrInfo(ip, port string) string {
 	tcpPort, _ := strconv.Atoi(port) //workround the conflict with sharding
 
 	if strings.Contains(ip, ":") {
-		addrInfo = fmt.Sprintf("/ip6/%s/tcp/%d", ip, tcpPort+1000)
+		addrInfo = fmt.Sprintf("/ip6/%s/tcp/%d", ip, tcpPort)
+	//	addrInfo = fmt.Sprintf("/ip6/%s/tcp/%d", ip, tcpPort+1000)
 	} else {
-		addrInfo = fmt.Sprintf("/ip4/%s/tcp/%d", ip, tcpPort+1000)
+		addrInfo = fmt.Sprintf("/ip4/%s/tcp/%d", ip, tcpPort)
+	//	addrInfo = fmt.Sprintf("/ip4/%s/tcp/%d", ip, tcpPort+1000)
 	}
 
 	return addrInfo

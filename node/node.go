@@ -30,20 +30,19 @@ import (
 	"github.com/ecoball/go-ecoball/txpool"
 	"github.com/urfave/cli"
 
-	"github.com/ecoball/go-ecoball/consensus/dpos"
-	"github.com/ecoball/go-ecoball/spectator"
-
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
+	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	//"github.com/ecoball/go-ecoball/dsn"
 	"github.com/ecoball/go-ecoball/dsn/audit"
 	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/sharding"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
+	"github.com/ecoball/go-ecoball/spectator"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
 )

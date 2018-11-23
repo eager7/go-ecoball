@@ -13,11 +13,13 @@ type NodeInstance interface {
 	SetNet(n network.EcoballNetwork)
 }
 
+//BlockType
 const (
 	SD_CM_BLOCK = iota + 1
 	SD_FINAL_BLOCK
 	SD_MINOR_BLOCK
 	SD_VIEWCHANGE_BLOCK
+	SD_SYNC
 	SD_END
 )
 
@@ -75,4 +77,10 @@ type ConsensusInstance interface {
 	PrecommitRsp() uint32
 	GetCandidate() *cs.NodeInfo
 	GetCosign() *types.COSign
+}
+
+type WorkerId struct {
+	Pubkey  string
+	Address string
+	Port    string
 }
