@@ -91,7 +91,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		t := (end-begin)/1000
 		log.Info("save ", shard.HeaderType(msg.Type()).String(), "block["+msg.Hash().HexString()+"]:", t, "us")
 		if t > 5000 {
-			log.Error("save block maybe trouble")
+			log.Error("save block maybe trouble:", t)
 			//os.Exit(-1)
 		}
 	case *dpos.DposBlock:
