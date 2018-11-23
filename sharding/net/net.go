@@ -328,7 +328,8 @@ func (n *net) Subscribe(port string, chanSize uint16) (rcv <-chan interface{}, e
 		}
 		return
 	} else {
-		msg := []pb.MsgType{pb.MsgType_APP_MSG_SHARDING_PACKET, pb.MsgType_APP_MSG_CONSENSUS_PACKET}
+		msg := []pb.MsgType{pb.MsgType_APP_MSG_SHARDING_PACKET, pb.MsgType_APP_MSG_CONSENSUS_PACKET,
+			pb.MsgType_APP_MSG_SYNC_REQUEST, pb.MsgType_APP_MSG_SYNC_RESPONSE}
 		rcv, err = dispatcher.Subscribe(msg...)
 		if err != nil {
 			log.Error("Subscribe error ", err)
@@ -361,9 +362,13 @@ func (n *net) sendto(addr string, port string, pubKey string, packet *sc.NetPack
 func (n *net) RecvNetMsg(msg interface{}) (packet *sc.NetPacket, err error) {
 	err = nil
 	if n.n == nil {
+		log.Debug("recv net message ")
+
 		packet = msg.(*sc.NetPacket)
 		return
 	} else {
+		log.Debug("recv p2p net message ")
+
 		emsg := msg.(message.EcoBallNetMsg)
 		var np sc.NetPacket
 		err = json.Unmarshal(emsg.Data(), &np)
