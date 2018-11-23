@@ -51,7 +51,7 @@ def main():
     start_port = 2000
     p2p_start = 3000
     PORT = 20681
-    image = "jatel/internal:ecoball_v1.0"
+    image = "zhongxh/internal:ecoball_v1.0"
 
     count = 0
     while count < committee_count:
