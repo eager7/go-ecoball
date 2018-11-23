@@ -81,6 +81,18 @@ func MakeSyncRequestPacket(blockType cs.HeaderType, fromHeight int64, to int64, 
 
 //Request order is important
 func (sync *Sync)SendSyncRequest()  {
+	//special case: commitee worker length = 1
+	works := sync.cell.GetWorks()
+	if len(works) == 1 {
+		log.Debug("Commitee worker len = 1, don't send sync request")
+		simulate.SyncComplete()
+		return
+	}
+
+	if sync.cell.NodeType == sc.NodeCommittee {
+		time.Sleep(3 * time.Second)
+	}
+
 	sync.lock.Lock()
 	sync.synchronizing = true
 	sync.lock.Unlock()
