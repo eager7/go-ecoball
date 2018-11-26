@@ -19,7 +19,7 @@ const (
 	DefaultThresholdOfConsensus  = 667 /*thousandth*/
 
 	/*timer of fsm state .second*/
-	DefaultSyncBlockTimer = 1
+	DefaultSyncBlockTimer = 10
 	DefaultRetransTimer   = 1
 	DefaultFullVoteTimer  = 3
 

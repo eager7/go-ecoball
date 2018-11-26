@@ -70,11 +70,11 @@ logger_encoder=1                        # 0: json 1: console
 skip=4                                  # call depth, zap log is 3, logger is 4
 time_pattern="2006-01-02 15:04:05.000"
 #file name, file location is log_dir + name
-debug_log_filename="debug.log"   		# or 'stdout' / 'stderr'
-info_log_filename="info.log"     		# or 'stdout' / 'stderr'
-warn_log_filename="warn.log"     		# or 'stdout' / 'stderr'
-error_log_filename="error.log"   		# or 'stdout' / 'stderr'
-fatal_log_filename="fatal.log"  	 	# or 'stdout' / 'stderr'
+debug_log_filename="ecoball.log"   		# or 'stdout' / 'stderr'
+info_log_filename="ecoball.log"     	# or 'stdout' / 'stderr'
+warn_log_filename="ecoball.log"     	# or 'stdout' / 'stderr'
+error_log_filename="ecoball.log"   		# or 'stdout' / 'stderr'
+fatal_log_filename="ecoball.log"  	 	# or 'stdout' / 'stderr'
 #debug_log_filename="stdout"            # or 'stdout' / 'stderr'
 #info_log_filename="stdout"             # or 'stdout' / 'stderr'
 #error_log_filename="stdout"            # or 'stdout' / 'stderr'
