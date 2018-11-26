@@ -42,7 +42,7 @@ fi
 case $1 in
     "start")
     #Start all stopped containers
-    for i in $(docker ps -a --filter 'exited=137' | sed '1d' | awk '$2=="'"$IMAGE"'"{print $1}')
+    for i in $(docker ps -a --filter 'exited=137' | sed '1d' | awk '$2=="'"$IMAGE"'"{print $12 | "sort -r -n"}')
     do
         docker start $i
     done
