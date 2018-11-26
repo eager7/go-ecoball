@@ -77,7 +77,7 @@ def main():
         if "size" in data:
             command += " -s " + str(data["size"])
         share_shard.run(command)
-        share_shard.sleep(2)
+        # share_shard.sleep(2)
 
         if args.browser and count == committee_count - 1:
             # start eballscan

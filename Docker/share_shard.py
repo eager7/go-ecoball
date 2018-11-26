@@ -110,7 +110,7 @@ def main():
             command += " -s " + str(data["size"])
 
         run(command)
-        sleep(2)
+        # sleep(2)
 
         if args.browser and count == committee_count + shard_count - 1:
             # start eballscan
