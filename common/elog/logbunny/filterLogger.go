@@ -6,7 +6,6 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"strconv"
 )
 
 const (
@@ -117,8 +116,8 @@ func (log *filterLogger) Debug(msg string, fields ...*Field) {
 	if log.withCaller {
 		fields = append(fields, caller())
 	}
-	log.Log(DebugLevel, "\x1b[" + strconv.Itoa(colorBlue) + "m"  + msg + "\x1b[0m ", fields...)
-	//log.Log(DebugLevel, msg, fields...)
+	//log.Log(DebugLevel, "\x1b[" + strconv.Itoa(colorBlue) + "m"  + msg + "\x1b[0m ", fields...)
+	log.Log(DebugLevel, msg, fields...)
 	for _, v := range fields {
 		_fieldPool.Put(v)
 	}
@@ -128,7 +127,8 @@ func (log *filterLogger) Info(msg string, fields ...*Field) {
 	if log.withCaller {
 		fields = append(fields, caller())
 	}
-	log.Log(InfoLevel, "\x1b[" + strconv.Itoa(colorYellow) + "m"  + msg + "\x1b[0m ", fields...)
+	//log.Log(InfoLevel, "\x1b[" + strconv.Itoa(colorYellow) + "m"  + msg + "\x1b[0m ", fields...)
+	log.Log(InfoLevel, msg, fields...)
 	for _, v := range fields {
 		_fieldPool.Put(v)
 	}
@@ -138,8 +138,8 @@ func (log *filterLogger) Warn(msg string, fields ...*Field) {
 	if log.withCaller {
 		fields = append(fields, caller())
 	}
-	log.Log(WarnLevel, "\x1b[" + strconv.Itoa(colorMagenta) + "m"  + msg + "\x1b[0m ", fields...)
-	//log.Log(WarnLevel, msg, fields...)
+	//log.Log(WarnLevel, "\x1b[" + strconv.Itoa(colorMagenta) + "m"  + msg + "\x1b[0m ", fields...)
+	log.Log(WarnLevel, msg, fields...)
 	for _, v := range fields {
 		_fieldPool.Put(v)
 	}
@@ -149,8 +149,8 @@ func (log *filterLogger) Error(msg string, fields ...*Field) {
 	if log.withCaller {
 		fields = append(fields, caller())
 	}
-	log.Log(ErrorLevel, "\x1b[" + strconv.Itoa(colorRed) + "m"  + msg + "\x1b[0m ", fields...)
-	//log.Log(ErrorLevel, msg, fields...)
+	//log.Log(ErrorLevel, "\x1b[" + strconv.Itoa(colorRed) + "m"  + msg + "\x1b[0m ", fields...)
+	log.Log(ErrorLevel, msg, fields...)
 	for _, v := range fields {
 		_fieldPool.Put(v)
 	}
@@ -160,8 +160,8 @@ func (log *filterLogger) Panic(msg string, fields ...*Field) {
 	if log.withCaller {
 		fields = append(fields, caller())
 	}
-	log.Log(PanicLevel, "\x1b[" + strconv.Itoa(colorRed) + "m"  + msg + "\x1b[0m ", fields...)
-	//log.Log(PanicLevel, msg, fields...)
+	//log.Log(PanicLevel, "\x1b[" + strconv.Itoa(colorRed) + "m"  + msg + "\x1b[0m ", fields...)
+	log.Log(PanicLevel, msg, fields...)
 	for _, v := range fields {
 		_fieldPool.Put(v)
 	}
@@ -171,8 +171,8 @@ func (log *filterLogger) Fatal(msg string, fields ...*Field) {
 	if log.withCaller {
 		fields = append(fields, caller())
 	}
-	log.Log(FatalLevel, "\x1b[" + strconv.Itoa(colorRed) + "m"  + msg + "\x1b[0m ", fields...)
-	//log.Log(FatalLevel, msg, fields...)
+	//log.Log(FatalLevel, "\x1b[" + strconv.Itoa(colorRed) + "m"  + msg + "\x1b[0m ", fields...)
+	log.Log(FatalLevel, msg, fields...)
 	for _, v := range fields {
 		_fieldPool.Put(v)
 	}
