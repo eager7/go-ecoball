@@ -144,7 +144,7 @@ func (h *MinorBlockHeader) JsonString() string {
 		fmt.Println(err)
 		return ""
 	}
-	return string(data)
+	return "hash:" + h.Hashes.HexString() + string(data)
 }
 
 func (h *MinorBlockHeader) Type() uint32 {

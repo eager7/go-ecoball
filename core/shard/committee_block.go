@@ -136,7 +136,7 @@ func (h *CMBlockHeader) JsonString() string {
 		fmt.Println(err)
 		return ""
 	}
-	return string(data)
+	return "hash:" + h.Hashes.HexString() + string(data)
 }
 
 func (h *CMBlockHeader) Type() uint32 {

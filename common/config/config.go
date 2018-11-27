@@ -44,12 +44,13 @@ var PeerList []string
 var PeerIndex []string
 
 const (
-	StringBlock  = "/Block"
-	StringHeader = "/Header"
-	StringTxs    = "/Txs"
-	StringState  = "/State"
-	ListPeers    = "peer_list"
-	IndexPeers   = "peer_index"
+	StringBlock      = "/Block"
+	StringBlockCache = "/BlockCache"
+	StringHeader     = "/Header"
+	StringTxs        = "/Txs"
+	StringState      = "/State"
+	ListPeers        = "peer_list"
+	IndexPeers       = "peer_index"
 )
 
 var configDefault = `#toml configuration for EcoBall system
@@ -137,18 +138,18 @@ rolling_time_pattern="0 0 0 * * *"      # rolling the log everyday at 00:00:00
 `
 
 type SwarmConfigInfo struct {
-	PrivateKey         string
-	PublicKey          string
-	ListenAddress      []string
-	AnnounceAddr       []string
-	NoAnnounceAddr     []string
-	BootStrapAddr      []string
-	DisableNatPortMap  bool
-	DisableRelay       bool
-	EnableRelayHop     bool
-	ConnLowWater       int
-	ConnHighWater      int
-	ConnGracePeriod    int
+	PrivateKey        string
+	PublicKey         string
+	ListenAddress     []string
+	AnnounceAddr      []string
+	NoAnnounceAddr    []string
+	BootStrapAddr     []string
+	DisableNatPortMap bool
+	DisableRelay      bool
+	EnableRelayHop    bool
+	ConnLowWater      int
+	ConnHighWater     int
+	ConnGracePeriod   int
 }
 
 var (
@@ -276,12 +277,12 @@ func initVariable() {
 
 	//init p2p swarm configuration
 	SwarmConfig = SwarmConfigInfo{
-		PrivateKey: viper.GetString("p2p_peer_privatekey"),
-		PublicKey: viper.GetString("p2p_peer_publickey"),
-		ListenAddress: viper.GetStringSlice("p2p_listen_address"),
-		AnnounceAddr: viper.GetStringSlice("announce_address"),
-		NoAnnounceAddr: viper.GetStringSlice("no_announce_address"),
-		BootStrapAddr: viper.GetStringSlice("bootstrap_address"),
+		PrivateKey:        viper.GetString("p2p_peer_privatekey"),
+		PublicKey:         viper.GetString("p2p_peer_publickey"),
+		ListenAddress:     viper.GetStringSlice("p2p_listen_address"),
+		AnnounceAddr:      viper.GetStringSlice("announce_address"),
+		NoAnnounceAddr:    viper.GetStringSlice("no_announce_address"),
+		BootStrapAddr:     viper.GetStringSlice("bootstrap_address"),
 		DisableNatPortMap: viper.GetBool("disable_nat_port_map"),
 		DisableRelay:      viper.GetBool("disable_relay"),
 		EnableRelayHop:    viper.GetBool("enable_relay_hop"),

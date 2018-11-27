@@ -146,7 +146,7 @@ func (h *ViewChangeBlockHeader) JsonString() string {
 		fmt.Println(err)
 		return ""
 	}
-	return string(data)
+	return "hash:" + h.Hashes.HexString() + string(data)
 }
 
 func (h *ViewChangeBlockHeader) Type() uint32 {

@@ -90,7 +90,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		end := time.Now().UnixNano()
 		t := (end-begin)/1000
 		log.Info("save ", shard.HeaderType(msg.Type()).String(), "block["+msg.Hash().HexString()+"]:", t, "us")
-		if t > 5000 {
+		if t > 50000 {
 			log.Error("save block maybe trouble:", t)
 			//os.Exit(-1)
 		}

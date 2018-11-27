@@ -238,6 +238,7 @@ func (l *loggerOpt) Panic(a ...interface{}) {
 		msg := "\x1b[" + strconv.Itoa(colorYellow) + "m" + "▶ " + fmt.Sprintln(a...) + "\x1b[0m"
 		l.logger.Panic(msg)
 	}
+	panic(fmt.Sprintln(a...))
 }
 
 func (l *loggerOpt) ErrStack() {

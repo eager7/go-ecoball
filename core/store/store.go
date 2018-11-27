@@ -32,6 +32,14 @@ var log = elog.NewLogger("store", elog.DebugLog)
 
 const PathBlock = "/DataBase/block"
 
+var (
+	ErrNotFound         = leveldb.ErrNotFound
+	ErrReadOnly         = leveldb.ErrReadOnly
+	ErrSnapshotReleased = leveldb.ErrSnapshotReleased
+	ErrIterReleased     = leveldb.ErrIterReleased
+	ErrClosed           = leveldb.ErrClosed
+)
+
 type LevelDBStore struct {
 	db    *leveldb.DB
 	batch *leveldb.Batch

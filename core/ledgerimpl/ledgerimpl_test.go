@@ -235,9 +235,8 @@ func TestShard(t *testing.T) {
 	//create a new minor block and the height will auto increment
 	blockMinor, _, err = l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
-	if blockMinor.Height != 3 {
-		t.Fatal("the height error")
-	}
+	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockMinor))
+
 
 	event.EventStop()
 
