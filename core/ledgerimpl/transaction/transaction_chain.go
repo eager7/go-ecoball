@@ -792,6 +792,11 @@ func (c *ChainTx) RestoreCurrentShardHeader() (result bool, err error) {
 	return result, nil
 }
 
+/**
+ *  @brief create the geneses block of shard, include cm block, minor block, final block and vc block
+ *  @param chainID - the chain id
+ *  @param addr - the root of this chain
+ */
 func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address) error {
 	if c.LastHeader.CmHeader != nil || c.LastHeader.MinorHeader != nil || c.LastHeader.FinalHeader != nil || c.LastHeader.VCHeader != nil {
 		log.Debug("geneses shard block is existed")
@@ -1265,45 +1270,6 @@ func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface,
  *  @param txs - the transactions of block contains
  */
 func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error) {
-	/*
-		lastMinor, err := c.GetLastShardBlock(shard.HeMinorBlock)
-		if err != nil {
-			return nil, nil, err
-		}
-		fmt.Println(lastMinor.JsonString())
-		if lastMinor.GetHeight() != 1 {
-			c.lockBlock.RLock()
-			defer c.lockBlock.RUnlock()
-			if m, ok := c.BlockMap[lastMinor.Hash().HexString()]; ok {
-				if m.Finalizer == false {
-					block, _ := lastMinor.GetObject().(shard.MinorBlock)
-					return &block, nil, nil
-				}
-			} else {
-				return nil, nil, errors.New(log, "the minor block is not save successfully")
-			}*/
-	/*	lastFinal, err := c.GetLastShardBlock(shard.HeFinalBlock)
-		if err != nil {
-			return nil, nil, err
-		}
-		if final, ok := lastFinal.GetObject().(shard.FinalBlock); ok {
-			done := true
-			for _, m := range final.MinorBlocks {
-				hash := lastMinor.Hash()
-				mHash := m.Hash()
-				if mHash.Equals(&hash) {
-					done = false
-				}
-			}
-			if done {
-				block, _ := lastMinor.GetObject().(shard.MinorBlock)
-				return &block, nil, nil
-			}
-		} else {
-			log.Warn(reflect.TypeOf(lastFinal.GetObject()))
-			return nil, nil, errors.New(log, "the type is error")
-		}*/
-	//}
 	if c.LastHeader.Finalizer == false {
 		lastMinor, finalizer, err := c.GetLastShardBlock(shard.HeMinorBlock)
 		if err != nil {
