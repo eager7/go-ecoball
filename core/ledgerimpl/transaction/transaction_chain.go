@@ -959,7 +959,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 			return errors.New(log, fmt.Sprintf("type asserts error:%s", shard.HeFinalBlock.String()))
 		}
 		for _, minorHeader := range final.MinorBlocks { //Handle Minor Headers
-			blockInterface, err := c.GetShardBlockByHash(shard.HeMinorBlock, minorHeader.Hashes)
+			blockInterface, _, err := c.GetShardBlockByHash(shard.HeMinorBlock, minorHeader.Hashes, false)
 			if err != nil {
 				return err
 			}
@@ -1119,22 +1119,49 @@ func (c *ChainTx) recombinationBlockStore(block shard.BlockInterface) error {
  *  @brief get the shard block by hash
  *  @param typ - the type of block
  *  @param hash - the hash of block
+ *  @param expectFinalize - if the block has a high probability of finalizer, get it first from BlockStore, otherwise get it first from BlockStoreCache
  */
-func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash) (shard.BlockInterface, error) {
-	dataBlock, err := c.BlockStore.Get(hash.Bytes())
-	if err != nil {
-		if err == store.ErrNotFound {
-			dataBlock, err = c.BlockStoreCache.Get(hash.Bytes())
-			if err != nil {
-				return nil, err
+func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash, expectFinalize bool) (block shard.BlockInterface, finalizer bool, err error) {
+	if expectFinalize {
+		dataBlock, err := c.BlockStore.Get(hash.Bytes())
+		if err != nil {
+			if err == store.ErrNotFound {
+				dataBlock, err = c.BlockStoreCache.Get(hash.Bytes())
+				if err != nil {
+					return nil, false, err
+				}
+				finalizer = false
+			} else {
+				log.Warn(hash.HexString(), typ.String())
+				return nil, false, err
 			}
-		} else {
-			log.Warn(hash.HexString(), typ.String())
-			return nil, err
+		}
+		finalizer = true
+		block, err = shard.BlockDeserialize(dataBlock)
+		if err != nil {
+			return nil, false, err
+		}
+	} else {
+		dataBlock, err := c.BlockStoreCache.Get(hash.Bytes())
+		if err != nil {
+			if err == store.ErrNotFound {
+				dataBlock, err = c.BlockStore.Get(hash.Bytes())
+				if err != nil {
+					return nil, false, err
+				}
+				finalizer = true
+			} else {
+				log.Warn(hash.HexString(), typ.String())
+				return nil, false, err
+			}
+		}
+		finalizer = false
+		block, err = shard.BlockDeserialize(dataBlock)
+		if err != nil {
+			return nil, false, err
 		}
 	}
-
-	return shard.BlockDeserialize(dataBlock)
+	return block, finalizer, nil
 }
 
 /**
@@ -1143,21 +1170,21 @@ func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash) (s
  *  @param height - the height of block
  *  @param shardID - the shardId of minor block
  */
-func (c *ChainTx) GetShardBlockByHeight(typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, error) {
+func (c *ChainTx) GetShardBlockByHeight(typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, bool, error) {
 	keyPb := pb.BlockCacheKey{Type: uint32(typ), ShardID: shardID, Height: height}
 	key, err := keyPb.Marshal()
 	if err != nil {
-		return nil, errors.New(log, err.Error())
+		return nil, false, errors.New(log, err.Error())
 	}
 	data, err := c.MapStore.Get(key)
 	if err != nil {
-		return nil, errors.New(log, err.Error())
+		return nil, false, errors.New(log, err.Error())
 	}
 	var blockCachePb pb.BlockCache
 	if err := blockCachePb.Unmarshal(data); err != nil {
-		return nil, errors.New(log, err.Error())
+		return nil, false, errors.New(log, err.Error())
 	}
-	return c.GetShardBlockByHash(typ, common.NewHash(blockCachePb.Hash))
+	return c.GetShardBlockByHash(typ, common.NewHash(blockCachePb.Hash), true)
 }
 
 /**
@@ -1208,28 +1235,28 @@ func (c *ChainTx) GetFinalBlocksByEpochNo(epochNo uint64) (finalBlocks []shard.B
  *  @brief get the last shard block by type, the minor block is local shard
  *  @param typ - the type of block
  */
-func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface, error) {
+func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface, bool, error) {
 	switch typ {
 	case shard.HeFinalBlock:
 		if c.LastHeader.FinalHeader != nil {
-			return c.GetShardBlockByHash(typ, c.LastHeader.FinalHeader.Hashes)
+			return c.GetShardBlockByHash(typ, c.LastHeader.FinalHeader.Hashes, true)
 		}
 	case shard.HeMinorBlock:
 		if c.LastHeader.MinorHeader != nil {
-			return c.GetShardBlockByHash(typ, c.LastHeader.MinorHeader.Hashes)
+			return c.GetShardBlockByHash(typ, c.LastHeader.MinorHeader.Hashes, true)
 		}
 	case shard.HeCmBlock:
 		if c.LastHeader.CmHeader != nil {
-			return c.GetShardBlockByHash(typ, c.LastHeader.CmHeader.Hashes)
+			return c.GetShardBlockByHash(typ, c.LastHeader.CmHeader.Hashes, true)
 		}
 	case shard.HeViewChange:
 		if c.LastHeader.VCHeader != nil {
-			return c.GetShardBlockByHash(typ, c.LastHeader.VCHeader.Hashes)
+			return c.GetShardBlockByHash(typ, c.LastHeader.VCHeader.Hashes, true)
 		}
 	default:
-		return nil, errors.New(log, fmt.Sprintf("unknown block type:%d", typ))
+		return nil, false, errors.New(log, fmt.Sprintf("unknown block type:%d", typ))
 	}
-	return nil, errors.New(log, "can't find the last block")
+	return nil, false, errors.New(log, "can't find the last block")
 }
 
 /**
@@ -1278,9 +1305,12 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		}*/
 	//}
 	if c.LastHeader.Finalizer == false {
-		lastMinor, err := c.GetLastShardBlock(shard.HeMinorBlock)
+		lastMinor, finalizer, err := c.GetLastShardBlock(shard.HeMinorBlock)
 		if err != nil {
 			return nil, nil, err
+		}
+		if  finalizer != false {
+			return nil, nil, errors.New(log, "the last minor block's finalizer state error")
 		}
 		block, _ := lastMinor.GetObject().(shard.MinorBlock)
 		log.Info("new minor block:", block.GetHeight(), block.JsonString())
@@ -1488,7 +1518,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 func (c *ChainTx) NewFinalBlock(timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
 	var minorBlocks []*shard.MinorBlock
 	for _, hash := range hashes {
-		if b, err := c.GetShardBlockByHash(shard.HeMinorBlock, hash); err != nil {
+		if b, _, err := c.GetShardBlockByHash(shard.HeMinorBlock, hash, false); err != nil {
 			log.Warn(err)
 		} else {
 			if B, ok := b.GetObject().(shard.MinorBlock); ok {
@@ -1531,7 +1561,7 @@ func (c *ChainTx) NewViewChangeBlock(timeStamp int64, round uint16) (*shard.View
  *  @param block - the interface of block
  */
 func (c *ChainTx) updateShardId() (uint32, error) {
-	cm, err := c.GetLastShardBlock(shard.HeCmBlock)
+	cm, _, err := c.GetLastShardBlock(shard.HeCmBlock)
 	if err != nil {
 		return 0, err
 	}

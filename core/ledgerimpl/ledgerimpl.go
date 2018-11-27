@@ -367,26 +367,26 @@ func (l *LedgerImpl) SaveShardBlock(chainID common.Hash, block shard.BlockInterf
 	return chain.SaveShardBlock(block)
 }
 
-func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ shard.HeaderType, hash common.Hash) (shard.BlockInterface, error) {
+func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ shard.HeaderType, hash common.Hash, finalizer bool) (shard.BlockInterface, bool, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
-		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+		return nil, false, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
-	return chain.GetShardBlockByHash(typ, hash)
+	return chain.GetShardBlockByHash(typ, hash, finalizer)
 }
 
-func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, error) {
+func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, bool, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
-		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+		return nil, false, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
 	return chain.GetShardBlockByHeight(typ, height, shardID)
 }
 
-func (l *LedgerImpl) GetLastShardBlock(chainID common.Hash, typ shard.HeaderType) (shard.BlockInterface, error) {
+func (l *LedgerImpl) GetLastShardBlock(chainID common.Hash, typ shard.HeaderType) (shard.BlockInterface, bool, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
-		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+		return nil, false, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
 	return chain.GetLastShardBlock(typ)
 }

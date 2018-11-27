@@ -98,7 +98,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	p.txPool.txsCache.Add(tx.Hash, nil)
 
 	if !config.DisableSharding {
-		lastCMBlock, err := p.txPool.ledger.GetLastShardBlock(tx.ChainID, shard.HeCmBlock)
+		lastCMBlock, _, err := p.txPool.ledger.GetLastShardBlock(tx.ChainID, shard.HeCmBlock)
 		if err != nil {
 			return err
 		}
