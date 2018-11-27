@@ -28,6 +28,7 @@ import (
 	"math/big"
 	"sync"
 	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.NoticeLog)
@@ -276,7 +277,8 @@ func (l *LedgerImpl) RequireResources(chainID common.Hash, index common.AccountN
 	if !ok {
 		return 0, 0, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
-	return chain.StateDB.FinalDB.RequireResources(index, l.ChainTxs[chainID].CurrentHeader.Receipt.BlockCpu, l.ChainTxs[chainID].CurrentHeader.Receipt.BlockNet, timeStamp)
+	//return chain.StateDB.FinalDB.RequireResources(index, l.ChainTxs[chainID].CurrentHeader.Receipt.BlockCpu, l.ChainTxs[chainID].CurrentHeader.Receipt.BlockNet, timeStamp)
+	return chain.StateDB.FinalDB.RequireResources(index, config.BlockCpuLimit, config.BlockNetLimit, timeStamp)
 }
 func (l *LedgerImpl) GetProducerList(chainID common.Hash) ([]common.AccountName, error) {
 	chain, ok := l.ChainTxs[chainID]

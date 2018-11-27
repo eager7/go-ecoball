@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 )
 
-const AbaTotal = 200000
+const AbaTotal = 2100000000
 
 type TokenInfo struct {
 	Symbol 		 string					`json:"symbol"`

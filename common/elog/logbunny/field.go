@@ -16,7 +16,7 @@ var (
 	_callerSkip = 2
 )
 
-// Fieldtype defined the field type matching
+// Field type defined the field type matching
 type fieldType int
 
 const (
@@ -213,8 +213,8 @@ func Caller() *Field {
 	if !ok {
 		return nil
 	}
-	filenames := strings.Split(filename, "/")
-	filename = filenames[len(filenames)-1]
+	fileNames := strings.Split(filename, "/")
+	filename = fileNames[len(fileNames)-1]
 
 	f := _fieldPool.Get().(*Field)
 	f.key = "caller_info"

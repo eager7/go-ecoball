@@ -37,7 +37,7 @@ import (
 const VirtualBlockCpuLimit float64 = 200000000.0
 const VirtualBlockNetLimit float64 = 1048576000.0
 const BlockCpuLimit float64 = 200000.0
-const BlockNetLimit float64 = 1048576.0
+const BlockNetLimit float64 = 1048576.0 //1M
 
 // peer list
 var PeerList []string

@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 )
 
 var interval = time.Millisecond * 100
@@ -95,6 +96,15 @@ func Ledger(path string) ledger.Ledger {
 	errors.CheckErrorPanic(err)
 	return l
 }
+
+func ShardLedger(path string) ledger.Ledger {
+	simulate.LoadConfig()
+	os.RemoveAll(path)
+	l, err := ledgerimpl.NewLedger(path, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	errors.CheckErrorPanic(err)
+	return l
+}
+
 
 func SaveBlock(ledger ledger.Ledger, txs []*types.Transaction, chainID common.Hash) *types.Block {
 	con, err := types.InitConsensusData(TimeStamp())

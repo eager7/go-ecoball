@@ -701,7 +701,7 @@ func (a *Account) SetDelegateInfo(index common.AccountName, cpuStaked, netStaked
 func (a *Account) updateResource(cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) {
 	a.Cpu.Limit = float64(a.Cpu.Staked+a.Cpu.Delegated) / float64(cpuStakedSum) * cpuLimit
 	a.Cpu.Available = a.Cpu.Limit - a.Cpu.Used
-	a.Net.Limit = float64(a.Cpu.Staked+a.Net.Delegated) / float64(netStakedSum) * netLimit
+	a.Net.Limit = float64(a.Net.Staked+a.Net.Delegated) / float64(netStakedSum) * netLimit
 	a.Net.Available = a.Net.Limit - a.Net.Used
 }
 func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64, timeStamp int64, cpuLimit, netLimit float64) error {
