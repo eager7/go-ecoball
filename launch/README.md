@@ -23,15 +23,6 @@ Add a new configuration item to the project's ecoball.toml, and be sure to copy 
 
 If the configuration items for a container require special customization, do the configuration in the shard_setup.toml file(Refer to the shard_setup.toml configuration file for details).
 
-### docker_build.sh
-You need to use docker_build.sh first to create the image
-
-This script will call the Makefile of go-ecoball to generate the latest executable file ecoball, ecowallet, call the Makefile of eballscan to generate the executable file eballscan, and copy it under the Docker directory to do the image(Refer to the script header for details).
-
-```
-./docker_build.sh
-```
-
 ### shard_setup.toml
 Before starting shard mode, you need to configure shard start profile shard_setup.toml
 ```
@@ -49,28 +40,24 @@ size = 2
 
 ```
 ## key_generate.py
-Once the configuration file shard_setup.toml is configured, execute key_generation.py to generate public and private keys for the startup
+Once the configuration file shard_setup.toml is configured, execute key_generation.py to generate public, private keys, http port and onlooker port for the startup
 ```
 ./key_generate.py
 ```
 
 ## run.py
 
-After starting the shard container, execute the share_commitment.py script to start the committee node.
+start all node, first shard node, and then committee node
 
-If the -b option is added, the eballscan container is started
-
-If the -w option is added, the ecowallet container is started
 ```
-cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./share_committee.py -i ${HOST_IP}  [-b] [-w]
+cd $GOPATH/src/github.com/ecoball/go-ecoball/launch
+./run.py -i ${HOST_IP}  [-b] [-w]
 ```
-Log generation for each node is under ./ecoball_log/committee/$DOCKERNAME/ 
+Log generation for each node is under ecoball/committee/ecoball_*/log 
 
-The wallet file is generated under ./wallet
 
 ### stop.py
-You can stop and remove all docker containers with docker_service.sh before creating a new image.
+You can stop all node
 
 Stop all ecoball
 ```
