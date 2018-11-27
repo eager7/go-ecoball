@@ -102,7 +102,7 @@ func (sync *Sync)SendSyncRequest()  {
 	//TODO, Special case treatment, not working when start a new shard node from scratch
 	if sync.cell.NodeType == sc.NodeShard {
 		log.Debug("Node is ", sc.NodeShard)
-		lastBlock, err := sync.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
+		lastBlock, _, err := sync.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
 		if err != nil {
 			log.Error("GetLastShardBlock ", err)
 		}
@@ -134,7 +134,7 @@ func (sync *Sync)SendSyncRequestWithType(blockType cs.HeaderType) {
 		}
 
 		if height < 0 {
-			lastBlock, err := sync.cell.Ledger.GetLastShardBlock(config.ChainHash, blockType)
+			lastBlock, _, err := sync.cell.Ledger.GetLastShardBlock(config.ChainHash, blockType)
 			if err != nil {
 				log.Error("get last block faield", err)
 				return
@@ -155,7 +155,7 @@ func (sync *Sync)SendSyncRequestWithType(blockType cs.HeaderType) {
 			offset = 0
 		} else {
 			//TODO, problem: no final block situation
-			lastBlock, err := sync.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
+			lastBlock, _, err := sync.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 			if err != nil {
 				log.Error("GetLastShardBlock, ", err)
 				return
@@ -305,7 +305,7 @@ func (s *Sync) DealSyncRequestHelper(request *sc.SyncRequestPacket) (*sc.NetPack
 	var response sc.SyncResponsePacket
 
 	fmt.Println("from = ", from)
-	lastBlock, err := s.cell.Ledger.GetLastShardBlock(config.ChainHash, blockType)
+	lastBlock, _, err := s.cell.Ledger.GetLastShardBlock(config.ChainHash, blockType)
 	if err != nil {
 		log.Error("GetLastShardBlock error", err)
 		return nil
@@ -322,7 +322,7 @@ func (s *Sync) DealSyncRequestHelper(request *sc.SyncRequestPacket) (*sc.NetPack
 	}
 
 	for i := from; i <= to; i++ {
-		blockInterface, err := s.cell.Ledger.GetShardBlockByHeight(config.ChainHash, blockType, uint64(i), shardID)
+		blockInterface, _, err := s.cell.Ledger.GetShardBlockByHeight(config.ChainHash, blockType, uint64(i), shardID)
 		log.Debug("Block Type = ", blockType, " index = ", i)
 		if err == nil {
 			//TODO, need to simplize, and refactor
@@ -378,7 +378,7 @@ func (s *Sync) CheckSyncCompleteForMinorBlock(minBlock *cs.MinorBlockHeader, blo
 		}
 	} else {
 		ledger := s.cell.Ledger
-		_, err := ledger.GetShardBlockByHash(config.ChainHash, cs.HeMinorBlock, minBlock.Hash())
+		_, _, err := ledger.GetShardBlockByHash(config.ChainHash, cs.HeMinorBlock, minBlock.Hash(), true)
 		//log.Debug("minorBlock hash = ", minBlock.Hash(), " err = ", nil, " o.hash = ", o.Hash())
 		//log.Debug("minorBlock height = ", minBlock.Height, " err = ", nil, " o.height = ", o.GetHeight())
 		if err != nil {
@@ -398,7 +398,7 @@ func (s *Sync) CheckSyncCompleteForCMBlock(epoch uint64, blocks *[]cs.BlockInter
 	if (len > 0) {
 		lastCMBlock =  (*blocks)[len-1].GetObject().(cs.CMBlock)
 	} else {
-		o, err := s.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
+		o, _, err := s.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 		if err != nil {
 			log.Error("GetLastShardBlock error")
 		} else {
@@ -457,7 +457,7 @@ func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool  {
 			/*
 			Case commitee start
 			 */
-			lastFinalBlock, err := s.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
+			lastFinalBlock, _, err := s.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 			if err != nil {
 				log.Error("GetLastShardBlock", err)
 				return true
