@@ -315,25 +315,20 @@ func xTestSaveBlock(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockCM))
 
-	for i := 0; i < 1000; i ++ {
-		var txs []*types.Transaction
-		for i := 0; i < 10; i ++ {
-			transfer, err := types.NewTransfer(common.NameToIndex("root"), common.NameToIndex("testeru"), config.ChainHash, "active", new(big.Int).SetUint64(1), 101, time.Now().UnixNano())
-			errors.CheckErrorPanic(err)
-			transfer.SetSignature(&config.Worker1)
-			txs = append(txs, transfer)
-		}
-
-		b, _, err := l.NewMinorBlock(config.ChainHash, txs, time.Now().UnixNano())
-		errors.CheckErrorPanic(err)
-		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorLedger, b))
-		time.Sleep(time.Millisecond * 500)
-
-		f, err := l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []common.Hash{b.Hash()})
-		errors.CheckErrorPanic(err)
-		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorLedger, f))
-		time.Sleep(time.Millisecond * 500)
+	var txs []*types.Transaction
+	for i := 0; i < 2000; i ++ {
+		txs = append(txs, example.TestTransfer())
 	}
+
+	b, _, err := l.NewMinorBlock(config.ChainHash, txs, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorLedger, b))
+	time.Sleep(time.Millisecond * 2000)
+
+	f, err := l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []common.Hash{b.Hash()})
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorLedger, f))
+	time.Sleep(time.Second * 5)
 
 	event.EventStop()
 }
