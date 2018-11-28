@@ -877,7 +877,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		StateHashRoot:      c.StateDB.FinalDB.GetHashRoot(),
 		COSign:             &types.COSign{},
 	}
-	blockFinal, err := shard.NewFinalBlock(headerFinal, nil)
+	blockFinal, err := shard.NewFinalBlock(headerFinal, []*shard.MinorBlockHeader{&headerMinor})
 	if err != nil {
 		return err
 	}
@@ -1140,8 +1140,9 @@ func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash, ex
 				log.Warn(hash.HexString(), typ.String())
 				return nil, false, err
 			}
+		} else {
+			finalizer = true
 		}
-		finalizer = true
 		block, err = shard.BlockDeserialize(dataBlock)
 		if err != nil {
 			return nil, false, err
@@ -1159,8 +1160,9 @@ func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash, ex
 				log.Warn(hash.HexString(), typ.String())
 				return nil, false, err
 			}
+		} else {
+			finalizer = false
 		}
-		finalizer = false
 		block, err = shard.BlockDeserialize(dataBlock)
 		if err != nil {
 			return nil, false, err
