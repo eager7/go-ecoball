@@ -33,7 +33,7 @@ func (s *shard) processBlockSyncTimeout(msg interface{}) {
 func (s *shard) processSyncComplete() {
 	log.Debug("recv sync complete")
 
-	lastCmBlock, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
+	lastCmBlock, _, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 	if err != nil || lastCmBlock == nil {
 		panic("get cm block error ")
 		return
@@ -42,7 +42,7 @@ func (s *shard) processSyncComplete() {
 	cm := lastCmBlock.GetObject().(cs.CMBlock)
 	s.ns.SyncCmBlockComplete(&cm)
 
-	lastvc, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
+	lastvc, _, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
 	if err != nil || lastvc == nil {
 		panic("get vc block error ")
 		return
@@ -51,7 +51,7 @@ func (s *shard) processSyncComplete() {
 	vc := lastvc.GetObject().(cs.ViewChangeBlock)
 	s.ns.SaveLastViewchangeBlock(&vc)
 
-	lastFinalBlock, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
+	lastFinalBlock, _, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
 		panic("get final block error ")
 		return
@@ -60,13 +60,26 @@ func (s *shard) processSyncComplete() {
 	final := lastFinalBlock.GetObject().(cs.FinalBlock)
 	s.ns.SaveLastFinalBlock(&final)
 
-	lastMinor, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
+	lastMinor, bFinalize, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
 	if err != nil || lastMinor == nil {
 		panic("get minor block error ")
 		return
 	}
 
 	minor := lastMinor.GetObject().(cs.MinorBlock)
+
+	if !bFinalize {
+		last, finalize, err := s.ns.Ledger.GetShardBlockByHash(config.ChainHash, cs.HeMinorBlock, minor.PrevHash, true)
+		if err != nil || finalize != true {
+			log.Error("get last finalize minor block error", err)
+			panic("get last finalize minor block error")
+			return
+		}
+
+		minor = last.GetObject().(cs.MinorBlock)
+
+	}
+
 	s.ns.SaveLastMinorBlock(&minor)
 
 	if cm.Height == 1 && final.Height == 1 {

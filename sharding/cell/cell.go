@@ -69,7 +69,7 @@ func (c *Cell) LoadConfig() {
 }
 
 func (c *Cell) LoadLastBlock() {
-	lastCmBlock, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
+	lastCmBlock, _, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 	if err != nil || lastCmBlock == nil {
 		panic("get cm block error ")
 		return
@@ -78,7 +78,7 @@ func (c *Cell) LoadLastBlock() {
 	cm := lastCmBlock.GetObject().(cs.CMBlock)
 	c.SyncCmBlockComplete(&cm)
 
-	lastvc, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
+	lastvc, _, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
 	if err != nil || lastvc == nil {
 		panic("get vc block error ")
 		return
@@ -87,7 +87,7 @@ func (c *Cell) LoadLastBlock() {
 	vc := lastvc.GetObject().(cs.ViewChangeBlock)
 	c.SaveLastViewchangeBlock(&vc)
 
-	lastFinalBlock, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
+	lastFinalBlock, _, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
 		panic("get final block error ")
 		return
@@ -97,13 +97,25 @@ func (c *Cell) LoadLastBlock() {
 	c.SaveLastFinalBlock(&final)
 
 	if c.NodeType == sc.NodeShard {
-		lastMinor, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
+		lastMinor, bFinal, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
 		if err != nil || lastMinor == nil {
 			panic("get minor block error ")
 			return
 		}
 
 		minor := lastMinor.GetObject().(cs.MinorBlock)
+
+		if !bFinal {
+			last, final, err := c.Ledger.GetShardBlockByHash(config.ChainHash, cs.HeMinorBlock, minor.PrevHash, true)
+			if err != nil || final != true {
+				log.Error("get last finalize minor block error", err)
+				panic("get last finalize minor block error")
+				return
+			}
+
+			minor = last.GetObject().(cs.MinorBlock)
+		}
+
 		c.SaveLastMinorBlock(&minor)
 	}
 
@@ -230,6 +242,7 @@ func (c *Cell) GetLastViewchangeBlock() *cs.ViewChangeBlock {
 }
 
 func (c *Cell) SaveLastMinorBlock(bk *cs.MinorBlock) {
+	log.Debug("save last minor block ", bk.Height)
 	c.chain.setMinorBlock(bk)
 }
 
@@ -266,7 +279,7 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *cs.CMBlock) {
 	}
 
 	for ; i < lastCmblock.Height; i++ {
-		block, err := c.Ledger.GetShardBlockByHeight(config.ChainHash, cs.HeCmBlock, i, 0)
+		block, _, err := c.Ledger.GetShardBlockByHeight(config.ChainHash, cs.HeCmBlock, i, 0)
 		if err != nil {
 			log.Error("get block error ", err)
 			return

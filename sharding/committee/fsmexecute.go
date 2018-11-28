@@ -26,7 +26,7 @@ func (c *committee) recvShardPacket(packet *sc.CsPacket) {
 func (c *committee) processSyncComplete(msg interface{}) {
 	log.Debug("recv sync complete")
 
-	lastCmBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
+	lastCmBlock, _, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 	if err != nil || lastCmBlock == nil {
 		panic("get cm block error ")
 		return
@@ -35,7 +35,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 	cm := lastCmBlock.GetObject().(cs.CMBlock)
 	c.ns.SyncCmBlockComplete(&cm)
 
-	lastvc, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
+	lastvc, _, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
 	if err != nil || lastvc == nil {
 		panic("get vc block error ")
 		return
@@ -44,7 +44,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 	vc := lastvc.GetObject().(cs.ViewChangeBlock)
 	c.ns.SaveLastViewchangeBlock(&vc)
 
-	lastFinalBlock, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
+	lastFinalBlock, _, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
 		panic("get final block error ")
 		return
