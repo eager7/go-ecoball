@@ -877,7 +877,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		StateHashRoot:      c.StateDB.FinalDB.GetHashRoot(),
 		COSign:             &types.COSign{},
 	}
-	blockFinal, err := shard.NewFinalBlock(headerFinal, nil)
+	blockFinal, err := shard.NewFinalBlock(headerFinal, []*shard.MinorBlockHeader{&headerMinor})
 	if err != nil {
 		return err
 	}
