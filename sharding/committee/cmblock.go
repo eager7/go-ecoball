@@ -51,7 +51,7 @@ func (b *cmBlockCsi) CheckBlock(bl interface{}, bLeader bool) bool {
 	}
 
 	if !sc.Same(update.LeaderPubKey, b.bk.LeaderPubKey) {
-		log.Error("leader public key not same")
+		log.Error("leader public key not same ", update.LeaderPubKey, " ", b.bk.LeaderPubKey)
 		return false
 	}
 
@@ -192,7 +192,9 @@ func (c *committee) createCommitteeBlock() *cs.CMBlock {
 		header.Candidate.Port = candidate.Port
 	}
 
-	header.LeaderPubKey = []byte(c.ns.Self.Pubkey)
+	leader := c.ns.GetLeader()
+
+	header.LeaderPubKey = []byte(leader.Pubkey)
 
 	cmb, err := cs.NewCmBlock(header, shards)
 	if err != nil {
