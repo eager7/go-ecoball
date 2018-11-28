@@ -40,7 +40,7 @@ type Sync struct {
 	lock sync.Mutex
 	receiveCh chan *sc.CsPacket
 	sendCh chan int
-	retryTimer *time.Timer
+	retryTimer *sc.Stimer
 }
 
 func MakeSync(c *cell.Cell) *Sync {
@@ -57,24 +57,30 @@ func MakeSync(c *cell.Cell) *Sync {
 		synchronizing: false,
 		receiveCh : make(chan *sc.CsPacket, 10),
 		sendCh : make(chan int, 2),
+		retryTimer: sc.NewStimer(0, false),
 	}
 }
 
 func (sync *Sync)Start()  {
+	go sync.working()
+}
+
+func (sync *Sync)working() {
 	for  {
 		select {
-			case packet := <- sync.receiveCh:
-				log.Debug("Receive Sync Packet")
-				sync.RecvSyncResponsePacketHelper(packet)
-			case <- sync.sendCh:
-				log.Debug("Send Request")
-				sync.SendSyncRequestHelper()
-			case <- sync.retryTimer.C:
-				log.Debug("Retry sync")
-				sync.SendSyncRequest()
+		case packet := <- sync.receiveCh:
+			log.Debug("Receive Sync Packet")
+			sync.RecvSyncResponsePacketHelper(packet)
+		case <- sync.sendCh:
+			log.Debug("Send Request")
+			sync.SendSyncRequestHelper()
+		case <- sync.retryTimer.T.C:
+			log.Debug("Retry sync")
+			sync.SendSyncRequest()
 		}
 	}
 }
+
 
 func MakeSyncRequestPacket(blockType cs.HeaderType, fromHeight int64, to int64, worker *sc.WorkerId, shardID uint32) (*sc.NetPacket) {
 	csp := &sc.NetPacket{
@@ -106,7 +112,8 @@ func (sync *Sync)SendSyncRequest()  {
 
 //Request order is important
 func (sync *Sync)SendSyncRequestHelper()  {
-	sync.retryTimer = time.NewTimer(3 * time.Second)
+
+	sync.retryTimer.Reset(3 * time.Second)
 
 	//special case: commitee worker length = 1
 	works := sync.cell.GetWorks()
