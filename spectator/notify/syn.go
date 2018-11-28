@@ -97,7 +97,7 @@ func HandleSynBlock(conn net.Conn, one info.OneNotify) error {
 }
 
 func synShardBlock(height uint64, typ shard.HeaderType, conn net.Conn) error{
-	block, err := CoreLedger.GetLastShardBlock(config.ChainHash, typ)
+	block, _, err := CoreLedger.GetLastShardBlock(config.ChainHash, typ)
 	if nil != err {
 		log.Error("GetLastShardBlock error: ", err)
 	}
@@ -105,7 +105,7 @@ func synShardBlock(height uint64, typ shard.HeaderType, conn net.Conn) error{
 	for height < block.GetHeight(){
 		height++
 
-		block, err := CoreLedger.GetShardBlockByHeight(config.ChainHash, typ, height, 0)
+		block, _, err := CoreLedger.GetShardBlockByHeight(config.ChainHash, typ, height, 0)
 		if nil != err {
 			log.Error("GetTxBlockByHeight error: ", err)
 			continue
@@ -129,7 +129,7 @@ func synShardBlock(height uint64, typ shard.HeaderType, conn net.Conn) error{
 
 			if len(final.MinorBlocks) > 0 {
 				for _, v := range final.MinorBlocks{
-					minorblock, err := CoreLedger.GetShardBlockByHash(config.ChainHash, shard.HeMinorBlock, v.Hash())
+					minorblock, _, err := CoreLedger.GetShardBlockByHash(config.ChainHash, shard.HeMinorBlock, v.Hash(), true)
 					if nil != err {
 						log.Error("GetShardBlockByHash error: ", err)
 						continue
