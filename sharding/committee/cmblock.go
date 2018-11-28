@@ -192,6 +192,8 @@ func (c *committee) createCommitteeBlock() *cs.CMBlock {
 		header.Candidate.Port = candidate.Port
 	}
 
+	header.LeaderPubKey = []byte(c.ns.Self.Pubkey)
+
 	cmb, err := cs.NewCmBlock(header, shards)
 	if err != nil {
 		log.Error("new cm block err ", err)
