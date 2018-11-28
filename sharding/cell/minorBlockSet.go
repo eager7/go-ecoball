@@ -82,7 +82,7 @@ func (m *minorBlockSet) count() uint16 {
 }
 
 func (m *minorBlockSet) checkMinorBlockInPool(final *cs.FinalBlock) bool {
-	if m.count() != uint16(len(final.MinorBlocks)) {
+	if m.count() < uint16(len(final.MinorBlocks)) {
 		log.Error("length error")
 		return false
 	}

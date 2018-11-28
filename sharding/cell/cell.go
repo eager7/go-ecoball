@@ -97,7 +97,7 @@ func (c *Cell) LoadLastBlock() {
 	c.SaveLastFinalBlock(&final)
 
 	if c.NodeType == sc.NodeShard {
-		lastMinor, bFinal, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
+		lastMinor, bFinalize, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
 		if err != nil || lastMinor == nil {
 			panic("get minor block error ")
 			return
@@ -105,9 +105,9 @@ func (c *Cell) LoadLastBlock() {
 
 		minor := lastMinor.GetObject().(cs.MinorBlock)
 
-		if !bFinal {
-			last, final, err := c.Ledger.GetShardBlockByHash(config.ChainHash, cs.HeMinorBlock, minor.PrevHash, true)
-			if err != nil || final != true {
+		if !bFinalize {
+			last, finalize, err := c.Ledger.GetShardBlockByHash(config.ChainHash, cs.HeMinorBlock, minor.PrevHash, true)
+			if err != nil || finalize != true {
 				log.Error("get last finalize minor block error", err)
 				panic("get last finalize minor block error")
 				return

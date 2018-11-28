@@ -178,6 +178,10 @@ func (s *shard) processLedgerMinorBlockMsg(p interface{}) {
 	}
 
 	minor := p.(*cs.MinorBlock)
+	if minor == nil {
+		log.Error("receive empty minor block from ledger")
+		return
+	}
 
 	lastcm := s.ns.GetLastCMBlock()
 	if lastcm == nil {
