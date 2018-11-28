@@ -937,7 +937,6 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 			c.LastHeader.CmHeader = &cm.CMBlockHeader
 			defer c.updateShardId()
 		}
-
 	case shard.HeMinorBlock:
 		minor, ok := block.GetObject().(shard.MinorBlock)
 		if !ok {
@@ -948,6 +947,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 				return err
 			}
 			c.LastHeader.MinorHeader = &minor.MinorBlockHeader
+			c.LastHeader.Finalizer = false
 		}
 		for _, tx := range minor.Transactions {
 			c.MapStore.BatchPut(tx.Hash.Bytes(), minor.Hashes.Bytes())
@@ -1333,7 +1333,6 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	if err != nil {
 		return nil, nil, err
 	}
-	c.LastHeader.Finalizer = false
 	log.Info("new minor block:", block.GetHeight(), block.JsonString())
 	return block, nil, nil
 }
