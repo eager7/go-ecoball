@@ -63,6 +63,7 @@ func MakeShard(ns *cell.Cell) sc.NodeInstance {
 		fullVoteTimer: sc.NewStimer(0, false),
 		sync:          datasync.MakeSync(ns),
 	}
+	s.sync.Start()
 
 	s.cs = consensus.MakeConsensus(s.ns, s.setRetransTimer, s.setFullVoeTimer, s.consensusCb)
 

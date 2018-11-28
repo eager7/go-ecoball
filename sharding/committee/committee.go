@@ -64,6 +64,7 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 		fullVoteTimer: sc.NewStimer(0, false),
 		sync:          datasync.MakeSync(ns),
 	}
+	cm.sync.Start()
 
 	cm.cs = consensus.MakeConsensus(cm.ns, cm.setRetransTimer, cm.setFullVoeTimer, cm.consensusCb)
 
