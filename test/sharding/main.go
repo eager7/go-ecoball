@@ -32,7 +32,7 @@ func main() {
 
 
 	go example.TransferExample()
-	go simulate.SyncComplete()
+	//go simulate.SyncComplete()
 
 	go func() {
 		for {
