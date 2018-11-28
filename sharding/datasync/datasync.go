@@ -38,6 +38,9 @@ type Sync struct {
 	cache BlocksCache
 	synchronizing bool
 	lock sync.Mutex
+	receiveCh chan *sc.CsPacket
+	sendCh chan int
+	retryTimer *time.Timer
 }
 
 func MakeSync(c *cell.Cell) *Sync {
@@ -52,6 +55,24 @@ func MakeSync(c *cell.Cell) *Sync {
 			complete:false,
 		},
 		synchronizing: false,
+		receiveCh : make(chan *sc.CsPacket, 10),
+		sendCh : make(chan int, 2),
+	}
+}
+
+func (sync *Sync)Start()  {
+	for  {
+		select {
+			case packet := <- sync.receiveCh:
+				log.Debug("Receive Sync Packet")
+				sync.RecvSyncResponsePacketHelper(packet)
+			case <- sync.sendCh:
+				log.Debug("Send Request")
+				sync.SendSyncRequestHelper()
+			case <- sync.retryTimer.C:
+				log.Debug("Retry sync")
+				sync.SendSyncRequest()
+		}
 	}
 }
 
@@ -79,8 +100,14 @@ func MakeSyncRequestPacket(blockType cs.HeaderType, fromHeight int64, to int64, 
 	return csp
 }
 
-//Request order is important
 func (sync *Sync)SendSyncRequest()  {
+	sync.sendCh <- 1
+}
+
+//Request order is important
+func (sync *Sync)SendSyncRequestHelper()  {
+	sync.retryTimer = time.NewTimer(3 * time.Second)
+
 	//special case: commitee worker length = 1
 	works := sync.cell.GetWorks()
 	if len(works) == 1 {
@@ -551,8 +578,11 @@ func (s *Sync) FillSyncDataInCache(syncResponse *sc.SyncResponsePacket) {
 
 }
 
-func (s *Sync)  RecvSyncResponsePacket(packet *sc.CsPacket){
+func (s *Sync)  RecvSyncResponsePacket(packet *sc.CsPacket) {
+	s.receiveCh <- packet
+}
 
+func (s *Sync)  RecvSyncResponsePacketHelper(packet *sc.CsPacket) {
 
 	data := packet.Packet.(*sc.SyncResponseData)
 
@@ -566,7 +596,8 @@ func (s *Sync)  RecvSyncResponsePacket(packet *sc.CsPacket){
 
 		if s.synchronizing {
 			s.tellLedgerSyncComplete()
-			s.clearCache();
+			s.clearCache()
+			s.retryTimer.Stop()
 			simulate.SyncComplete()
 			s.synchronizing = false
 			log.Info("invoke SyncComplete")
