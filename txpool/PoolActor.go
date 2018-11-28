@@ -124,8 +124,8 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		} else {
 			toShard = uint64(tx.Addr)%magicNum%uint64(numShard) + 1
 			log.Info("the handle shard id is ", toShard)
-			log.Info("put the contract tx:", tx.Addr, tx.Hash.HexString(), "to txPool")
 			if uint64(shardId) == toShard {
+				log.Info("put the contract tx:", tx.Addr, tx.Hash.HexString(), "to txPool")
 				handle = true
 			}
 		}
