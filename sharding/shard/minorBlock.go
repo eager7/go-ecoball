@@ -134,6 +134,9 @@ func (s *shard) createMinorBlock() *cs.MinorBlock {
 	minor.CMEpochNo = lastcm.Height
 	minor.ShardId = uint32(s.ns.Shardid)
 
+	leader := s.ns.GetLeader()
+	minor.ProposalPublicKey = []byte(leader.Pubkey)
+
 	cosign := &types.COSign{}
 	cosign.Step1 = 1
 	cosign.Step2 = 0
