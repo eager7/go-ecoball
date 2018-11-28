@@ -149,6 +149,8 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 			if err := net.SendMsgDataToShard(uint16(toShard), pb.MsgType_APP_MSG_TRN, data); err != nil {
 				return errors.New(log, err.Error())
 			}
+
+			event.PublishTrxRes(tx.Hash, "trx handled in other shard, please check it later")
 		}
 	} else {
 		//ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
