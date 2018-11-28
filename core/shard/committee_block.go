@@ -8,6 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/core/trie"
 )
 
 type NodeInfo struct {
@@ -195,6 +196,18 @@ func (s *Shard) proto() *pb.Shard {
 	return &pbShard
 }
 
+func (s *Shard) Hash() (common.Hash, error) {
+	data, err := s.proto().Marshal()
+	if err != nil {
+		return common.Hash{}, errors.New(log, err.Error())
+	}
+	hash, err := common.DoubleHash(data)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	return hash, nil
+}
+
 func (s *Shard) Deserialize(data []byte) error {
 	var pbShard pb.Shard
 	if err := pbShard.Unmarshal(data); err != nil {
@@ -225,6 +238,16 @@ type CMBlock struct {
 }
 
 func NewCmBlock(header CMBlockHeader, shards []Shard) (*CMBlock, error) {
+	var hashes []common.Hash
+	for _, s := range shards {
+		if hash, err := s.Hash(); err != nil {
+			return nil, err
+		} else {
+			hashes = append(hashes, hash)
+		}
+	}
+	merkleHash, _ := trie.GetMerkleRoot(hashes)
+	header.ShardsHash = merkleHash
 	if err := header.ComputeHash(); err != nil {
 		return nil, err
 	}
