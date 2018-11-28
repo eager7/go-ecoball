@@ -50,7 +50,7 @@ clean:
 	@echo "\033[;31mclean project \033[0m"
 	-rm -rf build/
 	-rm ./build/ecoball.toml
-	make -C core/pb/ clean
+	#make -C core/pb/ clean
 	make -C client/protos clean
 
 .PHONY: test

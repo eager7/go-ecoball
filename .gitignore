@@ -20,4 +20,5 @@ glide.lock
 *.iml
 *.test/
 *.pb.go
+*.pyc
 *.toml
