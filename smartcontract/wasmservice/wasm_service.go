@@ -168,6 +168,7 @@ func (ws *WasmService) Execute() ([]byte, error) {
 
 	res, err := vm.ExecCode(index, args...)
 	if err != nil {
+		log.Error("action contract: ", ws.action.ContractAccount)
 		log.Error("err=%v", err)
 		return nil, err
 	}

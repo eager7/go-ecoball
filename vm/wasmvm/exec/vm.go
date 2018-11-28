@@ -120,7 +120,7 @@ func NewVM(module *wasm.Module) (*VM, error) {
 	vm.newFuncTable()
 	vm.module = module
 	vm.Limit = 10000
-    vm.RecoverPanic = true
+    //vm.RecoverPanic = true
 	nNatives := 0
 	for i, fn := range module.FunctionIndexSpace {
 		// Skip native methods as they need not be
