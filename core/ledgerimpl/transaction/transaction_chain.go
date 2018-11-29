@@ -1245,11 +1245,24 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		if finalizer != false {
 			return nil, nil, errors.New(log, "the last minor block's finalizer state error")
 		}
-		block, _ := lastMinor.GetObject().(shard.MinorBlock)
-		log.Info("new minor block:", block.GetHeight(), block.JsonString())
-		return &block, nil, nil
+		lastCm, _, err := c.GetLastShardBlock(shard.HeCmBlock)
+		if err != nil {
+			return nil, nil, err
+		}
+		cmBlock, _ := lastCm.GetObject().(shard.CMBlock)
+		minorBlock, _ := lastMinor.GetObject().(shard.MinorBlock)
+		if minorBlock.CMEpochNo == cmBlock.Height {
+			return &minorBlock, nil, nil
+			log.Info("new minor block:", minorBlock.GetHeight(), minorBlock.JsonString())
+		} else {
+			return c.newMinorBlock(minorBlock.Transactions, timeStamp)
+		}
 	}
 
+	return c.newMinorBlock(txs, timeStamp)
+}
+
+func (c *ChainTx)newMinorBlock(txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error) {
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, nil, err
