@@ -1250,6 +1250,258 @@ func InvokeSingleContract(ledger ledger.Ledger) {
 
 }
 
+func InvokeTicContract(ledger ledger.Ledger) {
+	log.Info("-----------------------------Create Account-----------------------------")
+	root := common.NameToIndex("root")
+	tokenContract, err := types.NewDeployContract(root, root, config.ChainHash, state.Active, types.VmNative, "system control", nil, nil, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(tokenContract.SetSignature(&config.Root))
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, tokenContract))
+	time.Sleep(time.Second * 2)
+
+	invoke, err := types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"tictactoe", common.AddressFromPubKey(config.Worker.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"user1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"user2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	// transfer
+	log.Info("-----------------------------Token Transfer-----------------------------")
+	transfer, err := types.NewTransfer(root, common.NameToIndex("tictactoe"), config.ChainHash, "active", new(big.Int).SetUint64(1000), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	errors.CheckErrorPanic(err)
+	time.Sleep(interval)
+
+
+	transfer, err = types.NewTransfer(root, common.NameToIndex("user1"), config.ChainHash, "active", new(big.Int).SetUint64(1000), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	//balance, _ := ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("user1"), state.AbaToken)
+	//fmt.Println("After root tranfser, worker account balance: ", balance)
+	//
+	transfer, err = types.NewTransfer(root, common.NameToIndex("user2"), config.ChainHash, "active", new(big.Int).SetUint64(1000), 101, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	errors.CheckErrorPanic(err)
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	// pledge
+	log.Info("-----------------------------account pledge-----------------------------")
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "abatoken", "1000", "1000"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "tictactoe", "1000", "1000"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "user1", "1000", "1000"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "pledge", []string{"root", "user2", "1000", "1000"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+
+	// set permission
+	log.Info("-----------------------------set permission-----------------------------")
+	perm := state.NewPermission(state.Active, state.Owner, 1, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("tictactoe"), Weight: 1, Permission: "active"}})
+	param, err := json.Marshal(perm)
+	errors.CheckErrorPanic(err)
+	invoke, err = types.NewInvokeContract(common.NameToIndex("user1"), root, config.ChainHash, state.Owner, "set_account", []string{"user1", string(param)}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+
+	perm = state.NewPermission(state.Active, state.Owner, 1, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("tictactoe"), Weight: 1, Permission: "active"}})
+	param, err = json.Marshal(perm)
+	errors.CheckErrorPanic(err)
+	invoke, err = types.NewInvokeContract(common.NameToIndex("user2"), root, config.ChainHash, state.Owner, "set_account", []string{"user2", string(param)}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Worker2)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(interval)
+
+	time.Sleep(time.Second * 2)
+
+
+
+
+	log.Info("-----------------------------Start Deploy Contract-----------------------------")
+
+	path := os.Getenv("GOPATH")
+	// tic contract data
+	file2, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/game/game.wasm", os.O_RDONLY, 0666)
+	if err != nil {
+		fmt.Println("open file inline_action.wasm failed")
+		return
+	}
+
+	defer file2.Close()
+	data2, err := ioutil.ReadAll(file2)
+	if err != nil {
+		fmt.Println("read contract filr err: ", err.Error())
+		return
+	}
+
+	// abi file of tic contract
+	abifile2, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/game/game.abi", os.O_RDONLY, 0666)
+	if err != nil {
+		fmt.Println("open file simple_token.abi failed")
+		return
+	}
+
+	defer abifile2.Close()
+	abidata2, err := ioutil.ReadAll(abifile2)
+	if err != nil {
+		fmt.Println("read contract filr err: ", err.Error())
+		return
+	}
+
+
+	var contractAbi2 abi.ABI
+	if err = json.Unmarshal(abidata2, &contractAbi2); err != nil {
+		fmt.Errorf("ABI Unmarshal failed")
+		return
+	}
+
+	abibyte2, err := abi.MarshalBinary(contractAbi2)
+	if err != nil {
+		fmt.Errorf("ABI MarshalBinary failed")
+		return
+	}
+
+
+	// token contract data
+	file, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/game/token_api.wasm", os.O_RDONLY, 0666)
+	if err != nil {
+		fmt.Println("open file inline_action.wasm failed")
+		return
+	}
+
+	defer file.Close()
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		fmt.Println("read contract filr err: ", err.Error())
+		return
+	}
+
+	// abi file of token contract
+	abifile, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/game/token_api.abi", os.O_RDONLY, 0666)
+	if err != nil {
+		fmt.Println("open file simple_token.abi failed")
+		return
+	}
+
+	defer abifile.Close()
+	abidata, err := ioutil.ReadAll(abifile)
+	if err != nil {
+		fmt.Println("read contract filr err: ", err.Error())
+		return
+	}
+
+	var contractAbi abi.ABI
+	if err = json.Unmarshal(abidata, &contractAbi); err != nil {
+		fmt.Errorf("ABI Unmarshal failed")
+		return
+	}
+
+	abibyte, err := abi.MarshalBinary(contractAbi)
+	if err != nil {
+		fmt.Errorf("ABI MarshalBinary failed")
+		return
+	}
+
+	// deploy tic contract
+	contract, err := types.NewDeployContract(common.NameToIndex("tictactoe"), common.NameToIndex("tictactoe"), config.ChainHash, state.Owner, types.VmWasm, "test", data2, abibyte2, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(contract.SetSignature(&config.Worker))
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	time.Sleep(time.Millisecond * 1500)
+
+	// deploy token contract
+	contract, err = types.NewDeployContract(common.NameToIndex("abatoken"), common.NameToIndex("abatoken"), config.ChainHash, state.Owner, types.VmWasm, "test", data, abibyte, 0, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	errors.CheckErrorPanic(contract.SetSignature(&config.Root))
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
+	time.Sleep(time.Millisecond * 1500)
+
+
+	contractGet, err := ledger.GetContract(config.ChainHash, common.NameToIndex("tictactoe"))
+	if err != nil {
+		fmt.Errorf("can not find contract abi file")
+		return
+	}
+
+	var abiDef abi.ABI
+	err = abi.UnmarshalBinary(contractGet.Abi, &abiDef)
+	if err != nil {
+		fmt.Errorf("can not find UnmarshalBinary abi file")
+		return
+	}
+
+	//transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": "-100"}`)
+
+	log.Info("-----------------------------Start Invoke Contract-----------------------------")
+	// first contract create
+	create := []byte(`{"player1":"user1","player2":"user2"}`)
+
+	argbyte, err := abi.CheckParam(abiDef, "create", create)
+	if err != nil {
+		fmt.Errorf("can not find UnmarshalBinary abi file")
+		return
+	}
+
+	var parameters []string
+
+	parameters = append(parameters, string(argbyte[:]))
+
+	invoke, err = types.NewInvokeContract(common.NameToIndex("user1"), common.NameToIndex("tictactoe"), config.ChainHash, state.Owner, "create", parameters, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 2500)
+}
+
 func QueryContractData(ledger ledger.Ledger) {
 	time.Sleep(time.Second * 30)
 

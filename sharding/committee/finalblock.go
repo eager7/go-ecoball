@@ -128,6 +128,9 @@ func (c *committee) createFinalBlock() *cs.FinalBlock {
 	final.Height = height
 	final.EpochNo = lastcm.Height
 
+	leader := c.ns.GetLeader()
+	final.ProposalPubKey = []byte(leader.Pubkey)
+
 	cosign := &types.COSign{}
 	cosign.Step1 = 1
 	cosign.Step2 = 0
