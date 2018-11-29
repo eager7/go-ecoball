@@ -1255,14 +1255,14 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 			return &minorBlock, nil, nil
 			log.Info("new minor block:", minorBlock.GetHeight(), minorBlock.JsonString())
 		} else {
-			return c.newMinorBlock(minorBlock.Transactions, timeStamp)
+			return c.newMinorBlock(&minorBlock.MinorBlockHeader, minorBlock.Transactions, timeStamp)
 		}
 	}
 
-	return c.newMinorBlock(txs, timeStamp)
+	return c.newMinorBlock(nil, txs, timeStamp)
 }
 
-func (c *ChainTx)newMinorBlock(txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error) {
+func (c *ChainTx)newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error) {
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, nil, err
@@ -1306,6 +1306,12 @@ func (c *ChainTx)newMinorBlock(txs []*types.Transaction, timeStamp int64) (*shar
 		CMEpochNo:         c.LastHeader.CmHeader.Height,
 		Receipt:           types.BlockReceipt{},
 		COSign:            &types.COSign{},
+	}
+	if h != nil {
+		header.ChainID = h.ChainID
+		header.Version = h.Version
+		header.Height = h.Height
+		header.PrevHash = h.PrevHash
 	}
 	block, err := shard.NewMinorBlock(header, c.LastHeader.MinorHeader, txs, cpu, net)
 	if err != nil {
