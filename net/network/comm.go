@@ -158,10 +158,10 @@ func (net *NetImpl)BroadcastMessage(msg message.EcoBallNetMsg) error {
 	return nil
 }
 
-func (net *NetImpl)getPeerStoreConnectStatus()  []peer.ID {
+func (net *NetImpl)GetPeerStoreConnectStatus()  []peer.ID {
 
 	return net.host.Network().Peers()
-	
+
 }
 
 

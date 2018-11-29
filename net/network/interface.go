@@ -63,6 +63,7 @@ type CommAPI interface {
 	/*Broadcast message to the connected peers*/
 	BroadcastMessage(message.EcoBallNetMsg) error
 	
+	/*get all connected peers id*/
 	getPeerStoreConnectStatus() []peer.ID
 }
 
