@@ -32,6 +32,7 @@ proto:
 	make -C core/pb
 	make -C client/protos
 	make -C net/message/pb
+	make -C net/gossip/protos
 
 plugins:
 	@echo "\033[;32mbuild ipld plugin file \033[0m"
@@ -52,6 +53,9 @@ clean:
 	-rm ./build/ecoball.toml
 	#make -C core/pb/ clean
 	make -C client/protos clean
+	make -C  net/message/pb/ clean
+    make -C  net/gossip/protos/ clean
+
 
 .PHONY: test
 
