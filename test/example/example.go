@@ -1483,7 +1483,7 @@ func InvokeTicContract(ledger ledger.Ledger) {
 	//transfer := []byte(`{"from": "gm2tsojvgene", "to": "hellozhongxh", "quantity": "100.0000 EOS", "memo": "-100"}`)
 
 	log.Info("-----------------------------Start Invoke Contract-----------------------------")
-	// first contract create
+	// invoke tic contract create method
 	create := []byte(`{"player1":"user1","player2":"user2"}`)
 
 	argbyte, err := abi.CheckParam(abiDef, "create", create)
@@ -1493,13 +1493,42 @@ func InvokeTicContract(ledger ledger.Ledger) {
 	}
 
 	var parameters []string
-
 	parameters = append(parameters, string(argbyte[:]))
 
 	invoke, err = types.NewInvokeContract(common.NameToIndex("user1"), common.NameToIndex("tictactoe"), config.ChainHash, state.Owner, "create", parameters, 0, time.Now().UnixNano())
 	invoke.SetSignature(&config.Worker1)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
+
+
+	balance, _ := ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("user1"), "ABA")
+	fmt.Println("After create, user1 account balance: ", balance)
+	balance, _ = ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("user2"), "ABA")
+	fmt.Println("After create, user2 account balance: ", balance)
+
+	// invoke tic contract restart method
+	restart := []byte(`{"player1":"user1","player2":"user2","restart":"user2"}`)
+
+	argbyte2, err := abi.CheckParam(abiDef, "create", restart)
+	if err != nil {
+		fmt.Errorf("can not find UnmarshalBinary abi file")
+		return
+	}
+
+	var parameters2 []string
+
+	parameters2 = append(parameters2, string(argbyte2[:]))
+
+	invoke, err = types.NewInvokeContract(common.NameToIndex("user1"), common.NameToIndex("tictactoe"), config.ChainHash, state.Owner, "restart", parameters2, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Worker1)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 2500)
+
+
+	balance2, _ := ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("user1"), "ABA")
+	fmt.Println("After restart, user1 account balance: ", balance2)
+	balance2, _ = ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("user2"), "ABA")
+	fmt.Println("After restart, user2 account balance: ", balance2)
 }
 
 func QueryContractData(ledger ledger.Ledger) {

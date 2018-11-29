@@ -123,9 +123,9 @@ func (sync *Sync)SendSyncRequestHelper()  {
 		return
 	}
 
-	if sync.cell.NodeType == sc.NodeCommittee {
+	/*if sync.cell.NodeType == sc.NodeCommittee {
 		time.Sleep(3 * time.Second)
-	}
+	}*/
 
 	sync.lock.Lock()
 	sync.synchronizing = true

@@ -51,13 +51,19 @@ type CommAPI interface {
 	//Gossip a message to random peers
 	GossipMsg(msg message.EcoBallNetMsg) error
 
+	/*Send a message Sync to a connected peer*/
+	SendMsgSyncToPeerWithId(peer.ID, message.EcoBallNetMsg) error
+
 	/*Send a message to a connected peer*/
 	SendMsgToPeerWithId(peer.ID, message.EcoBallNetMsg) error
+	
 	/*Send a message to some connected peers*/
 	SendMsgToPeersWithId([]peer.ID, message.EcoBallNetMsg) error
 
 	/*Broadcast message to the connected peers*/
 	BroadcastMessage(message.EcoBallNetMsg) error
+	
+	getPeerStoreConnectStatus() []peer.ID
 }
 
 type ShardingMsgAPI interface {
