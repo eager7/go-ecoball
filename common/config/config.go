@@ -58,7 +58,6 @@ http_port = "20678"          # client http port
 wallet_http_port = "20679"   # client wallet http port
 version = "1.0"              # system version
 onlooker_port = "9001"		 #port for browser
-output_to_terminal = "true"  # debug output type	 	
 root_dir = "/tmp/"        		 # level file location
 log_level = 1                # debug level	
 consensus_algorithm = "SHARD" # can set as SOLO, DPOS, ABABFT, SHARD
@@ -117,11 +116,12 @@ dsn_path = "/tmp/storage"
 disable_sharding  = false
 
 log_dir = "/tmp/Log/"        	 		# log file location
+output_to_terminal = "true"  			# debug output type	 	
 [logbunny]
 debug_level=0                           # 0: debug 1: info 2: warn 3: error 4: panic 5: fatal
 logger_type=0                           # 0: zap 1: logrus
 with_caller=false
-logger_encoder=0                        # 0: json 1: console
+logger_encoder=1                        # 0: json 1: console
 skip=4                                  # call depth, zap log is 3, logger is 4
 time_pattern="2006-01-02 15:04:05.000"
 #file name, file location is log_dir + name

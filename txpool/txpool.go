@@ -25,6 +25,8 @@ import (
 	"github.com/hashicorp/golang-lru"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/common/event"
 )
 
 var log = elog.NewLogger("TxPool", elog.NoticeLog)
@@ -35,6 +37,7 @@ type TxPool struct {
 	ledger    ledger.Ledger
 	PendingTxs map[common.Hash]*types.TxsList //UnPackaged list of legitimate transactions
 	txsCache  *lru.Cache
+	StateDB   map[common.Hash]*state.State
 }
 
 //start transaction pool
@@ -44,14 +47,20 @@ func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
 		return nil, errors.New(log, fmt.Sprintf("New Lru error:%s", err.Error()))
 	}
 	//transaction pool
-	pool = &TxPool{ledger: ledger, txsCache: csc}
+	pool = &TxPool{ledger: ledger, txsCache: csc, StateDB: make(map[common.Hash]*state.State, 0)}
 	pool.PendingTxs = make(map[common.Hash]*types.TxsList, 1)
 	pool.AddTxsList(config.ChainHash)
+	s, err := ledger.StateDB(config.ChainHash).CopyState()
+	if err != nil {
+		return nil, err
+	}
+	pool.StateDB[config.ChainHash] = s
 	//transaction pool actor
 	if _, err = NewTxPoolActor(pool, 3); nil != err {
 		pool = nil
 	}
 	T = pool
+	event.InitMsgDispatcher()
 	return
 }
 

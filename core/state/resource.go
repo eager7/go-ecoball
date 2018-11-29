@@ -705,6 +705,9 @@ func (a *Account) updateResource(cpuStakedSum, netStakedSum uint64, cpuLimit, ne
 	a.Net.Available = a.Net.Limit - a.Net.Used
 }
 func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64, timeStamp int64, cpuLimit, netLimit float64) error {
+	if timeStamp < a.TimeStamp {
+		return errors.New(log, "the time is not in the right format, it's back in time")
+	}
 	t := (timeStamp - a.TimeStamp) / (1000 * 1000)
 	interval := 100.0 * float64(t) / (24.0 * 60.0 * 60.0 * 1000)
 	if interval >= 100 {

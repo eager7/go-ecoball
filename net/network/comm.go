@@ -99,6 +99,18 @@ func (net *NetImpl)SendMsgToPeerWithPeerInfo(info []*peerstore.PeerInfo, msg mes
 	return nil
 }
 
+//sync send msg to pper by id
+func (net *NetImpl)SendMsgSyncToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
+
+	peer := peerstore.PeerInfo{ID:id}
+	if err:= net.sendMessage(peer,msg); err != nil {
+		log.Error("send message to ", peer.ID.Pretty(), err)
+	}
+
+	return nil
+}
+
+//async send msg to pper by id
 func (net *NetImpl)SendMsgToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
 	peer := &peerstore.PeerInfo{ID:id}
 	sendJob := &SendMsgJob{
@@ -145,6 +157,14 @@ func (net *NetImpl)BroadcastMessage(msg message.EcoBallNetMsg) error {
 
 	return nil
 }
+
+func (net *NetImpl)GetPeerStoreConnectStatus()  []peer.ID {
+
+	return net.host.Network().Peers()
+
+}
+
+
 
 func constructPeerInfo(addrInfo, pubKey string) (peerstore.PeerInfo, error) {
 	pma, err := ma.NewMultiaddr(addrInfo)
