@@ -18,22 +18,24 @@ package transaction
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/geneses"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/trie"
 	"github.com/ecoball/go-ecoball/core/types"
 	dsnStore "github.com/ecoball/go-ecoball/dsn/host/block"
-	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
@@ -41,7 +43,6 @@ import (
 	"github.com/ecoball/go-ecoball/spectator/info"
 	"math/big"
 	"time"
-	"github.com/ecoball/go-ecoball/common/event"
 )
 
 const keyLastCm = "lastCmHeader"
@@ -578,41 +579,33 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	case types.TxTransfer:
 		payload, ok := tx.Payload.GetObject().(types.TransferInfo)
 		if !ok {
-			//event.PublishTrxRes(tx.Hash, "transaction type error[transfer]")
 			return nil, 0, 0, errors.New(log, "transaction type error[transfer]")
 		}
 		if err := s.AccountSubBalance(tx.From, state.AbaToken, payload.Value); err != nil {
-			//event.PublishTrxRes(tx.Hash, err.Error())
 			return nil, 0, 0, err
 		}
 		if err := s.AccountAddBalance(tx.Addr, state.AbaToken, payload.Value); err != nil {
-			//event.PublishTrxRes(tx.Hash, err.Error())
 			return nil, 0, 0, err
 		}
 		tx.Receipt.TokenName = state.AbaToken
 		tx.Receipt.Amount = payload.Value
 	case types.TxDeploy:
 		if err := s.CheckPermission(tx.Addr, state.Active, tx.Hash, tx.Signatures); err != nil {
-			//event.PublishTrxRes(tx.Hash, err.Error())
 			return nil, 0, 0, err
 		}
 		payload, ok := tx.Payload.GetObject().(types.DeployInfo)
 		if !ok {
-			//event.PublishTrxRes(tx.Hash, "transaction type error[deploy]")
 			return nil, 0, 0, errors.New(log, "transaction type error[deploy]")
 		}
 		if err := s.SetContract(tx.Addr, payload.TypeVm, payload.Describe, payload.Code, payload.Abi); err != nil {
-			//event.PublishTrxRes(tx.Hash, err.Error())
 			return nil, 0, 0, err
 		}
 
-		// generate trx receipt
-		acc := state.Account{
+		acc := state.Account{ // generate trx receipt
 			Index:    tx.Addr,
 			Contract: payload,
 		}
 		if data, err := acc.Serialize(); err != nil {
-			//event.PublishTrxRes(tx.Hash, err.Error())
 			return nil, 0, 0, err
 		} else {
 			tx.Receipt.Accounts[0] = data
@@ -621,27 +614,19 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	case types.TxInvoke:
 		actionNew, _ := types.NewAction(tx)
 		trxContext, _ := context.NewTranscationContext(s, tx, cpuLimit, netLimit, timeStamp)
-		ret, err = smartcontract.DispatchAction(trxContext, actionNew, 0)
+		_, err = smartcontract.DispatchAction(trxContext, actionNew, 0)
 		if err != nil {
-			//event.PublishTrxRes(tx.Hash, err.Error())
 			return nil, 0, 0, errors.New(log, err.Error())
 		}
-
 		// update state change in trx receipt
 		for i, acc := range trxContext.Accounts {
 			tx.Receipt.Accounts[i] = trxContext.AccountDelta[acc]
 		}
-
-		//js, err := json.Marshal(trxContext.Trace)
-		//if err != nil {
-			//event.PublishTrxRes(tx.Hash, err.Error())
-		//	return nil, 0, 0, errors.New(log, err.Error())
-		//}
-		//fmt.Println("json format: ", string(js))
-
-		//event.PublishTrxRes(tx.Hash, string(js))
+		ret, err = json.Marshal(trxContext.Trace)
+		if err != nil {
+			return nil, 0, 0, errors.New(log, err.Error())
+		}
 	default:
-		//event.PublishTrxRes(tx.Hash, "the transaction's type error")
 		return nil, 0, 0, errors.New(log, "the transaction's type error")
 	}
 	end := time.Now().UnixNano()
@@ -653,7 +638,6 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	}
 	data, err := tx.Serialize()
 	if err != nil {
-		//event.PublishTrxRes(tx.Hash, err.Error())
 		return nil, 0, 0, err
 	}
 	if tx.Receipt.Net == 0 {
@@ -669,25 +653,12 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		tx.Receipt.Result = common.CopyBytes(ret)
 	}
 	if err := s.RecoverResources(tx.From, timeStamp, cpuLimit, netLimit); err != nil {
-		//event.PublishTrxRes(tx.Hash, err.Error())
 		return nil, 0, 0, err
 	}
 	if err := s.SubResources(tx.From, cpu, net, cpuLimit, netLimit); err != nil {
-		//event.PublishTrxRes(tx.Hash, err.Error())
 		return nil, 0, 0, err
 	}
 	log.Debug("result:", ret, "cpu:", cpu, "us net:", net/1000, "byte")
-
-	switch tx.Type {
-	case types.TxTransfer:
-		//event.PublishTrxRes(tx.Hash, "transfer success!")
-	case types.TxDeploy:
-		//event.PublishTrxRes(tx.Hash, "contract deploy success!")
-	case types.TxInvoke:
-		//event.PublishTrxRes(tx.Hash, "contract invoke success!")
-	default:
-		//event.PublishTrxRes(tx.Hash, "the transaction's type error")
-	}
 
 	return ret, cpu, net, nil
 }
@@ -1271,7 +1242,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		if err != nil {
 			return nil, nil, err
 		}
-		if  finalizer != false {
+		if finalizer != false {
 			return nil, nil, errors.New(log, "the last minor block's finalizer state error")
 		}
 		block, _ := lastMinor.GetObject().(shard.MinorBlock)
