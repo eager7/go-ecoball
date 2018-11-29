@@ -197,7 +197,7 @@ func (l *LedgerImpl) ShardPreHandleTransaction(chainID common.Hash, s *state.Sta
 	if !ok {
 		return nil, 0, 0, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
-	if err := chain.CheckTransactionWithDB(chain.StateDB.TempDB, tx); err != nil {
+	if err := chain.CheckTransactionWithDB(chain.StateDB.FinalDB, tx); err != nil {
 		return nil, 0, 0, err
 	}
 	log.Notice("ShardPreHandleTransaction:", tx.Type.String(), tx.Hash.HexString())

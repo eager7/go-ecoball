@@ -121,7 +121,7 @@ output_to_terminal = "true"  			# debug output type
 debug_level=0                           # 0: debug 1: info 2: warn 3: error 4: panic 5: fatal
 logger_type=0                           # 0: zap 1: logrus
 with_caller=false
-logger_encoder=0                        # 0: json 1: console
+logger_encoder=1                        # 0: json 1: console
 skip=4                                  # call depth, zap log is 3, logger is 4
 time_pattern="2006-01-02 15:04:05.000"
 #file name, file location is log_dir + name

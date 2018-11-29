@@ -76,7 +76,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		end := time.Now().UnixNano()
 		log.Info("save block["+msg.ChainID.HexString()+"block hash:"+msg.Hash.HexString()+"]:", (end-begin)/1000, "us")
 	case shard.BlockInterface:
-		log.Info("receive a ", shard.HeaderType(msg.Type()).String(), "block:", msg.Hash().HexString())
+		log.Info("receive a ", shard.HeaderType(msg.Type()).String(), "block:", msg.Hash().HexString(), "height:", msg.GetHeight())
 		chain, ok := l.ledger.ChainTxs[msg.GetChainID()]
 		if !ok {
 			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.GetChainID().HexString()))

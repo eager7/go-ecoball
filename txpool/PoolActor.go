@@ -77,10 +77,8 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 			p.txPool.Delete(msg.ChainID, v.Hash)
 		}
 	case *shard.FinalBlock:
-		if s, ok := p.txPool.StateDB[msg.ChainID]; ok {
-			if c, err := s.CopyState(); err != nil {
-				p.txPool.StateDB[msg.ChainID] = c
-			}
+		if s, err := p.txPool.ledger.StateDB(msg.ChainID).CopyState(); err != nil {
+			p.txPool.StateDB[msg.ChainID] = s
 		}
 	case *shard.CMBlock:
 	case message.DeleteTx:
@@ -103,7 +101,12 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		log.Warn("transaction already in the txn pool" + tx.Hash.HexString())
 		return nil
 	}
-	if ret, err := p.preHandleTransaction(tx); err != nil {
+	txClone, err := tx.Clone()
+	if err != nil {
+		event.PublishTrxRes(tx.Hash, err.Error())
+		return err
+	}
+	if ret, err := p.preHandleTransaction(txClone); err != nil {
 		event.PublishTrxRes(tx.Hash, err.Error())
 		return err
 	} else {

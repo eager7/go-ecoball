@@ -64,7 +64,7 @@ type CommAPI interface {
 	BroadcastMessage(message.EcoBallNetMsg) error
 	
 	/*get all connected peers id*/
-	getPeerStoreConnectStatus() []peer.ID
+	GetPeerStoreConnectStatus() []peer.ID
 }
 
 type ShardingMsgAPI interface {

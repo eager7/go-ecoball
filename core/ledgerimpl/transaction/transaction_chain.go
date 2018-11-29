@@ -636,11 +636,11 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	} else {
 		cpu = tx.Receipt.Cpu
 	}
-	data, err := tx.Serialize()
-	if err != nil {
-		return nil, 0, 0, err
-	}
 	if tx.Receipt.Net == 0 {
+		data, err := tx.Serialize()
+		if err != nil {
+			return nil, 0, 0, err
+		}
 		net = float64(len(data))
 		tx.Receipt.Net = net
 	} else {
@@ -1299,6 +1299,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		return nil, nil, err
 	}
 	log.Info("new minor block:", block.GetHeight(), block.JsonString())
+	//log.Warn(common.JsonString(c.StateDB.FinalDB.Params), common.JsonString(c.StateDB.FinalDB.Accounts))
 	return block, nil, nil
 }
 
@@ -1439,6 +1440,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 		return nil, err
 	}
 	log.Info("new final block:", block.Height, block.JsonString())
+	//log.Warn(common.JsonString(c.StateDB.FinalDB.Params), common.JsonString(c.StateDB.FinalDB.Accounts))
 	return block, nil
 }
 

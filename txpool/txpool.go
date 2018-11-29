@@ -50,7 +50,11 @@ func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
 	pool = &TxPool{ledger: ledger, txsCache: csc, StateDB: make(map[common.Hash]*state.State, 0)}
 	pool.PendingTxs = make(map[common.Hash]*types.TxsList, 1)
 	pool.AddTxsList(config.ChainHash)
-	pool.StateDB[config.ChainHash] = ledger.StateDB(config.ChainHash)
+	s, err := ledger.StateDB(config.ChainHash).CopyState()
+	if err != nil {
+		return nil, err
+	}
+	pool.StateDB[config.ChainHash] = s
 	//transaction pool actor
 	if _, err = NewTxPoolActor(pool, 3); nil != err {
 		pool = nil
