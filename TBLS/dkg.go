@@ -96,7 +96,7 @@ func genSijMsg(epochNum int, index int, abaTBLS *ABATBLS) {
 				log.Debug("sijMsgPB serialization error:", err)
 			}
 			msgSend := message2.New(msgType, msgData) // EcoBallNetMsg
-			abaTBLS.netObject.SendMsgToPeer(workers[i].Address, workers[i].Port, []byte(workers[i].Pubkey), msgSend)
+			abaTBLS.netObject.SendMsgToPeer(workers[i].Address, workers[i].Port, workers[i].Pubkey, msgSend)
 		} else {
 			sijMsg := computeSij( &abaTBLS.PrivatePoly, abaTBLS.PubKeyShare, i, epochNum)
 			abaTBLS.dealer.deal[index].keyShare.index = index
@@ -216,7 +216,7 @@ func ProcessSijTimeout(abaTBLS *ABATBLS) {
 			log.Debug("MSG_DKGNLQUAL serialization error:", err)
 		}
 		msgSend := message2.New(msgType, msgData) // EcoBallNetMsg
-		abaTBLS.netObject.SendMsgToPeer(abaTBLS.workers[0].Address, abaTBLS.workers[0].Port, []byte(abaTBLS.workers[0].Pubkey), msgSend)
+		abaTBLS.netObject.SendMsgToPeer(abaTBLS.workers[0].Address, abaTBLS.workers[0].Port, abaTBLS.workers[0].Pubkey, msgSend)
 	} else {
 		abaTBLS.dealer.tagQUAL[0] = true
 		for i:=0;i<len(abaTBLS.workers);i++ {
