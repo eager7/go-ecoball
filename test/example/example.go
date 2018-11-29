@@ -1509,7 +1509,7 @@ func InvokeTicContract(ledger ledger.Ledger) {
 	// invoke tic contract restart method
 	restart := []byte(`{"player1":"user1","player2":"user2","restart":"user2"}`)
 
-	argbyte2, err := abi.CheckParam(abiDef, "create", restart)
+	argbyte2, err := abi.CheckParam(abiDef, "restart", restart)
 	if err != nil {
 		fmt.Errorf("can not find UnmarshalBinary abi file")
 		return
