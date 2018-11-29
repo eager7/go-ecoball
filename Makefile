@@ -54,7 +54,7 @@ clean:
 	#make -C core/pb/ clean
 	make -C client/protos clean
 	make -C  net/message/pb/ clean
-    make -C  net/gossip/protos/ clean
+	make -C  net/gossip/protos/ clean
 
 
 .PHONY: test
