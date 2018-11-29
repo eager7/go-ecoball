@@ -8,7 +8,7 @@
 #include <runtime.h>
 #include <system.h>
 #include <types.h>
-#include <action.h>
+//#include <action.h>
 
 const int board_length = 3;
 
@@ -184,17 +184,25 @@ int create(char* player1, char* player2){
     }
     
     //initialize game struct
+    ABA_prints("initialize game struct start");
     initialize_array(g.board, 9);
+    ABA_prints("initialize game struct 1");
     strcpy(g.player1, player1);
+    ABA_prints("initialize game struct 2");
     strcpy(g.player2, player2);
+    ABA_prints("initialize game struct 3");
     strcpy(g.host, player1);
+    ABA_prints("initialize game struct 4");
     for(int i = 0; i < 10; i++){
 		g.winner[i] = 0;
     }
+    ABA_prints("initialize game struct end");
 
     //player1 and player2 transfer ABA to game contract
+    ABA_prints("begin invoke transfertoken");
 	transfertoken(player1, "tictactoe", "2");
 	transfertoken(player2, "tictactoe", "2");
+	ABA_prints("end inyoke transfertoken");
     ABA_db_put(gamekey, strlen(gamekey), &g, sizeof(game));
     return 0;
 }

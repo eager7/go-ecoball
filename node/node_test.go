@@ -103,9 +103,9 @@ func TestRunNode(t *testing.T) {
 	//start explorer
 	go spectator.Bystander(ledger.L)
 	if config.StartNode {
-		go example.CreateAccountBlock(config.ChainHash)
+		//go example.CreateAccountBlock(config.ChainHash)
 		//go example.TokenContract(ledger.L)
-		//go example.InvokeSingleContract(ledger.L)
+		go example.InvokeTicContract(ledger.L)
 		//example.RecepitTest(ledger.L)
 	}
 
