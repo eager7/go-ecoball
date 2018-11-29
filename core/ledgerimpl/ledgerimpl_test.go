@@ -316,7 +316,7 @@ func xTestSaveBlock(t *testing.T) {
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockCM))
 
 	var txs []*types.Transaction
-	for i := 0; i < 2000; i ++ {
+	for i := 0; i < 2; i ++ {
 		txs = append(txs, example.TestTransfer())
 	}
 

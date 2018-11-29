@@ -31,6 +31,8 @@ import (
 	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/net/message/pb"
+	"fmt"
+	"time"
 )
 
 const magicNum = 999
@@ -56,6 +58,7 @@ func NewTxPoolActor(pool *TxPool, n uint8) (pid *actor.PID, err error) {
 }
 
 func (p *PoolActor) Receive(ctx actor.Context) {
+	log.Notice("receive type message:", reflect.TypeOf(ctx.Message()))
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 	case *actor.Restarting:
@@ -74,6 +77,11 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 			p.txPool.Delete(msg.ChainID, v.Hash)
 		}
 	case *shard.FinalBlock:
+		if s, ok := p.txPool.StateDB[msg.ChainID]; ok {
+			if c, err := s.CopyState(); err != nil {
+				p.txPool.StateDB[msg.ChainID] = c
+			}
+		}
 	case *shard.CMBlock:
 	case message.DeleteTx:
 		p.txPool.Delete(msg.ChainID, msg.Hash)
@@ -94,6 +102,12 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	if p.txPool.txsCache.Contains(tx.Hash) {
 		log.Warn("transaction already in the txn pool" + tx.Hash.HexString())
 		return nil
+	}
+	if ret, err := p.preHandleTransaction(tx); err != nil {
+		event.PublishTrxRes(tx.Hash, err.Error())
+		return err
+	} else {
+		event.PublishTrxRes(tx.Hash, string(ret))
 	}
 	p.txPool.txsCache.Add(tx.Hash, nil)
 
@@ -130,12 +144,6 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 			}
 		}
 		if handle || config.DisableSharding {
-			//ret, cpu, net, err := p.txPool.ledger.ShardPreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
-			//if err != nil {
-			//	log.Warn(tx.JsonString())
-			//	return err
-			//}
-			//log.Debug(ret, cpu, net, err)
 			p.txPool.Push(tx.ChainID, tx)
 		} else {
 			net, err := network.GetNetInstance()
@@ -151,22 +159,12 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 			}
 		}
 	} else {
-		//ret, cpu, net, err := p.txPool.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
-		//if err != nil {
-		//	log.Warn(tx.JsonString())
-		//	return err
-		//}
-		//log.Debug(ret, cpu, net, err)
 		p.txPool.Push(tx.ChainID, tx)
 	}
-
-	//p.txPool.Push(tx.ChainID, tx)
 
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
 		log.Warn("broadcast transaction failed:", err.Error(), tx.Hash.HexString())
 	}
-
-	//ctx.Sender().Request(cpu, ctx.Self())
 
 	return nil
 }
@@ -176,4 +174,16 @@ func (p *PoolActor) handleNewBlock(block *types.Block) {
 		log.Info("Delete tx:", v.Hash.HexString())
 		p.txPool.Delete(block.ChainID, v.Hash)
 	}
+}
+
+func (p *PoolActor) preHandleTransaction(tx *types.Transaction) ([]byte, error) {
+	s, ok := p.txPool.StateDB[tx.ChainID]
+	if !ok {
+		return nil, errors.New(log, fmt.Sprintf("can't find the chain:%s", tx.ChainID.HexString()))
+	}
+	ret, _, _, err := p.txPool.ledger.ShardPreHandleTransaction(tx.ChainID, s, tx, time.Now().UnixNano())
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 }
