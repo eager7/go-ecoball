@@ -34,21 +34,25 @@ def main():
     args = parser.parse_args()
 
     # get netwoek config
-    root_dir = os.path.split(os.path.realpath(__file__))[0]
-    with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
-        data = pytoml.load(setup_file)
+    try:
+        root_dir = os.path.split(os.path.realpath(__file__))[0]
+        with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
+            data = pytoml.load(setup_file)
 
-    network = data["network"]
-    all_str = json.dumps(data)
-    host_ip = args.host_ip
-    committee_count = network[host_ip][0]
+        network = data["network"]
+        all_str = json.dumps(data)
+        host_ip = args.host_ip
+        committee_count = network[host_ip][0]
+
+    except Exception as e:
+        print("shard_setup.toml has some error: ", e)
+        return
 
     #create directory
     log_dir = os.path.join(root_dir, 'ecoball_log/committee')
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
         
- 
     p2p_start = 9901
     ipfs_start = 5000
     ipfs_gateway = 7000
