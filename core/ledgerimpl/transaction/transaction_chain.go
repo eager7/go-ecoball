@@ -1611,17 +1611,16 @@ func (c *ChainTx) CheckShardBlock(block shard.BlockInterface) error {
 }
 
 func (c *ChainTx) blockExisted(hash common.Hash) bool {
-	if data, err := c.BlockStore.Get(hash.Bytes()); err != nil {
+	if _, err := c.BlockStore.Get(hash.Bytes()); err != nil {
 		if err == store.ErrNotFound {
-			return false
-		} else {
-			panic(err)
+			if _, err := c.BlockStoreCache.Get(hash.Bytes()); err == nil {
+				return true
+			}
 		}
-	} else if data == nil {
-		return false
 	} else {
 		return true
 	}
+	return false
 }
 
 /**
