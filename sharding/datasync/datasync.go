@@ -120,6 +120,8 @@ func (sync *Sync)SendSyncRequestHelper()  {
 	if len(works) == 1 {
 		log.Debug("Commitee worker len = 1, don't send sync request")
 		simulate.SyncComplete()
+		log.Debug("retryTimer stop")
+		sync.retryTimer.Stop()
 		return
 	}
 
@@ -604,6 +606,7 @@ func (s *Sync)  RecvSyncResponsePacketHelper(packet *sc.CsPacket) {
 		if s.synchronizing {
 			s.tellLedgerSyncComplete()
 			s.clearCache()
+			log.Debug("retryTimer stop")
 			s.retryTimer.Stop()
 			simulate.SyncComplete()
 			s.synchronizing = false

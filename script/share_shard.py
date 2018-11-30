@@ -85,7 +85,7 @@ def main():
     ipfs_gateway = 7000
     p2p_start = 9901
     PORT = 20681
-    image = "zhongxh/internal:ecoball_v1.0"
+    image = "registry.quachain.net:5000/ecoball:1.0.0"
 
     count = committee_count
     while count < committee_count + shard_count:
