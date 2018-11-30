@@ -26,7 +26,7 @@ import (
 )
 
 func TestTxPool(t *testing.T) {
-	ledger := example.Ledger("/tmp/txPool")
+	ledger := example.ShardLedger("/tmp/txPool")
 	_, err := txpool.Start(ledger)
 	errors.CheckErrorPanic(err)
 

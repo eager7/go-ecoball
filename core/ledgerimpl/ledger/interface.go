@@ -50,7 +50,7 @@ type Ledger interface {
 
 	GetTransaction(chainID, transactionId common.Hash) (*types.Transaction, error)
 
-	ShardPreHandleTransaction(chainID common.Hash, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error)
+	ShardPreHandleTransaction(chainID common.Hash, s *state.State, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error)
 	/**
 	 *  @brief save the block into levelDB, the minor block just store, but not handle
 	 *  @param chainID - the chain id

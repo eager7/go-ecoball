@@ -72,7 +72,11 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-		outputWriter[level] = []io.Writer{logFileWriter, os.Stdout}
+		if config.OutputToTerminal {
+			outputWriter[level] = []io.Writer{logFileWriter, os.Stdout}
+		} else {
+			outputWriter[level] = []io.Writer{logFileWriter}
+		}
 	}
 
 	zapCfg := &logbunny.Config{

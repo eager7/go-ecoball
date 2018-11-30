@@ -32,6 +32,19 @@ const VersionTx = 1
 
 type TxType uint32
 
+func (t TxType) String() string {
+	switch t {
+	case TxDeploy:
+		return "deploy transaction"
+	case TxInvoke:
+		return "invoke transaction"
+	case TxTransfer:
+		return "transfer transaction"
+	default:
+		return "unknown type"
+	}
+}
+
 const (
 	TxDeploy   TxType = 0x01
 	TxInvoke   TxType = 0x02
@@ -282,15 +295,14 @@ func (t *Transaction) JsonString() string {
 	return string(data)
 }
 
-func (t TxType) String() string {
-	switch t {
-	case TxDeploy:
-		return "deploy transaction"
-	case TxInvoke:
-		return "invoke transaction"
-	case TxTransfer:
-		return "transfer transaction"
-	default:
-		return "unknown type"
+func (t *Transaction) Clone() (*Transaction, error) {
+	tx := new(Transaction)
+	data, err := t.Serialize()
+	if err != nil {
+		return nil, err
 	}
+	if err := tx.Deserialize(data); err != nil {
+		return nil, err
+	}
+	return tx, nil
 }
