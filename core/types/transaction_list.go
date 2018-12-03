@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"sync"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 /**
@@ -96,8 +97,14 @@ func (t *TxsList) Copy(txs *TxsList) {
 func (t *TxsList) GetTransactions() (txs []*Transaction) {
 	t.mux.RLock()
 	defer t.mux.RUnlock()
+	size := 0.0
 	for _, v := range t.Txs {
 		txs = append(txs, v)
+		data, _ := v.Serialize()
+		size += float64(len(data))
+		if size >= config.BlockNetLimit {
+			break
+		}
 	}
 	return txs
 }

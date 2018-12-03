@@ -51,10 +51,6 @@ func NewLedgerActor(l *LedActor) (*actor.PID, error) {
 	return pid, nil
 }
 
-func (l *LedActor) SetLedger(ledger *LedgerImpl) {
-	l.ledger = ledger
-}
-
 func (l *LedActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
@@ -88,7 +84,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			break
 		}
 		end := time.Now().UnixNano()
-		t := (end-begin)/1000
+		t := (end - begin) / 1000
 		log.Info("save ", shard.HeaderType(msg.Type()).String(), "block["+msg.Hash().HexString()+"]:", t, "us")
 		if t > 50000 {
 			log.Error("save block maybe trouble:", t)
@@ -117,7 +113,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 				ctx.Sender().Tell(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
 				return
 			}
-			PACKAGE:
+		PACKAGE:
 			minorBlock, txs, err := l.ledger.NewMinorBlock(msg.ChainID, txs, time.Now().UnixNano())
 			if err != nil {
 				log.Warn(errors.New(log, fmt.Sprintf("create minor block err:%s", err.Error())))
