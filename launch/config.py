@@ -102,6 +102,8 @@ def main():
                 data[one_config]["p2p_listen_address"] = ["/ip4/0.0.0.0/tcp/" + str(port), "/ip6/::/tcp/4013"]
                 data[one_config]["http_port"] = str(http_start_port + tail)
                 data[one_config]["onlooker_port"] = str(onlooker_start_port + tail)
+                data[one_config]["log_dir"] = "./log/"
+                data[one_config]["root_dir"] = "./log/"
                 count += 1
 
     #new config

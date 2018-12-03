@@ -24,7 +24,7 @@ import pytoml
 import json
 import argparse
 import shutil
-
+import platform
 
 def run(shell_command):
     '''
@@ -32,9 +32,9 @@ def run(shell_command):
     If it fails, exit the program with an exit code of 1.
     '''
 
-    print('shared_start.py:', shell_command)
+    print('run.py:', shell_command)
     if subprocess.call(shell_command, shell=True):
-        print('shared_start.py: exiting because of error')
+        print('run.py: exiting because of error')
         sys.exit(1)
 
 
@@ -69,7 +69,6 @@ def main():
         data = pytoml.load(setup_file)
 
     network = data["network"]
-    all_str = json.dumps(data)
 
     node_ip = []
     for ip in network:
@@ -94,7 +93,16 @@ def main():
     goPath = os.getenv("GOPATH")
 
     print("build ecoball with the makefile")
-    run("make -C " + goPath + "/src/github.com/ecoball/go-ecoball/" + " ecoball")
+    sysstr = platform.system()
+    if sysstr == "Windows":
+        run("cd ../ &&" + "build_windows.bat")
+    elif sysstr == "Linux":
+        run("make -C " + goPath + "/src/github.com/ecoball/go-ecoball/" + " ecoball")
+    else:
+        print ("Other System tasks: %s" % sysstr)
+
+    http_start_port = 20681
+    onlooker_start_port = 9001
 
     count = committee_count + shard_count - 1
     while count >= 0:
@@ -110,16 +118,18 @@ def main():
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
 
-        shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/build/ecoball", os.path.join(run_dir, 'ecoball_' + str(count)))
+        #shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/build/ecoball", os.path.join(run_dir, 'ecoball_' + str(count)))
+        if sysstr == "Windows":
+            shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/build/ecoball.exe", os.path.join(run_dir, 'ecoball_' + str(count)) + ".exe")
+        elif sysstr == "Linux":            
+            shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/build/ecoball", os.path.join(run_dir, 'ecoball_' + str(count)))
         shutil.copy2("start.py", os.path.join(run_dir, 'start.py'))
+        shutil.copy2("shard_setup.toml", os.path.join(run_dir, 'shard_setup.toml'))
         shutil.copy2("ecoball.toml", os.path.join(run_dir, 'ecoball.toml'))
 
-        # start ecoball
+        # start ecoball		
         command = run_dir + "/start.py "
-        command += "-o " + host_ip + " -n " + str(count) + " -a " + "'" + all_str + "'"
-        exist, config = get_config(count, host_ip, data)
-        if exist:
-            command += " -c " + "'" + json.dumps(config) + "'"
+        command += "-o " + host_ip + " -n " + str(count)
         if "size" in data:
             command += " -s " + str(data["size"])
 
