@@ -40,7 +40,7 @@ size = 2
 
 ```
 ## config.py
-Once the configuration file shard_setup.toml is configured, execute key_generation.py to generate public, private keys, http port and onlooker port for the startup
+Once the configuration file shard_setup.toml is configured, execute config.py to generate public, private keys, http port and onlooker port for the startup
 ```
 ./config.py
 ```
