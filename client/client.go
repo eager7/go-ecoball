@@ -64,6 +64,16 @@ func newClientApp() *cli.App {
 			Name:  "console",
 			Usage: "open ecoball client console",
 		},
+		cli.StringFlag{
+			Name:  "ip, i",
+			Usage: "node's ip address",
+			Value: "localhost",
+		},
+		cli.StringFlag{
+			Name:  "port, p",
+			Usage: "node's RPC port",
+			Value: "20678",
+		},
 	}
 
 	//commands
@@ -102,6 +112,23 @@ func main() {
 				commandMap[command.Name] = append(commandMap[command.Name], subCommand.Name)
 			}
 		}
+	}
+
+	// common flags
+	app.Before = func(c *cli.Context) error {
+		//ip address
+		ip := c.String("ip")
+		if "" != ip {
+			common.NodeIp = ip
+		}
+
+		//port
+		port := c.String("port")
+		if "" != port {
+			common.NodePort = port
+		}
+
+		return nil
 	}
 
 	//console
