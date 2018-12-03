@@ -18,16 +18,13 @@
 ############################################################################
 
 SOURCE_DIR=$(cd `dirname $0` && pwd)
-IMAGE="zhongxh/internal:ecoball_v1.0"
+IMAGE="registry.quachain.net:5000/ecoball:1.0.0"
 
 #pull docker images
 IMAGENUM=`docker images $IMAGE | wc -l`
 if [ 1 -eq $IMAGENUM ]; then
-    if ! docker pull $IMAGE
-    then
-        echo  -e "\033[;31m pull $IMAGE failed!!! \033[0m"
-        exit 1
-    fi
+    echo  -e "\033[;31m $IMAGE does not exist!!! \033[0m"
+    exit 1
 fi
 
 #create ecoball log directory
