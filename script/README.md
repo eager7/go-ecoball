@@ -29,23 +29,11 @@ Refresh docker group members
 newgrp docker
 ```
 After doing the above, executing the docker command does not require a sudo referral
+
 # Run shard
 
-### ecoball.toml
-The ecoball.toml profile will be mirrored. Please configure the configuration items before mirroring.
-
-Add a new configuration item to the project's ecoball.toml, and be sure to copy the latest code-generated file ecoball.toml to the Docker directory.
-
-If the configuration items for a container require special customization, do the configuration in the shard_setup.toml file(Refer to the shard_setup.toml configuration file for details).
-
-### docker_build.sh
-You need to use docker_build.sh first to create the image
-
-This script will call the Makefile of go-ecoball to generate the latest executable file ecoball, ecowallet, call the Makefile of eballscan to generate the executable file eballscan, and copy it under the Docker directory to do the image(Refer to the script header for details).
-
-```
-./docker_build.sh
-```
+### pull the mirror
+Before executing the startup script, you need to get the latest image
 
 ### shard_setup.toml
 Before starting shard mode, you need to configure shard start profile shard_setup.toml
