@@ -22,7 +22,7 @@ import os
 import sys
 import pytoml
 import share_shard
-
+import platform
 
 def run_shell_output(command, print_output=True, universal_newlines=True):
     p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, universal_newlines=universal_newlines)
@@ -57,8 +57,13 @@ def main():
     goPath = os.getenv("GOPATH")
     
     gen_file = goPath + "/src/github.com/ecoball/go-ecoball/test/rsakeygen/main.go"
-    share_shard.run("cd " + tool_dir + "&& go build -o key_gen " + gen_file)
-    key_gen = os.path.join(tool_dir + "/key_gen")
+    sysstr = platform.system()
+    if sysstr == "Windows":
+        share_shard.run("cd " + tool_dir + "&& go build -o key_gen.exe " + gen_file)
+        key_gen = os.path.join(tool_dir + "/key_gen.exe")
+    elif sysstr == "Linux":
+        share_shard.run("cd " + tool_dir + "&& go build -o key_gen " + gen_file)
+        key_gen = os.path.join(tool_dir + "/key_gen")
 
     #get config
     data = {}
