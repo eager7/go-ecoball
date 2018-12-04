@@ -130,6 +130,10 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 
 		m := f.(map[string]interface{})
 
+		if len(fields) != len(m) {
+			return nil, errors.New(log, "args size error" )
+		}
+
 		for i, field := range fields {
 			v := m[field.Name]
 			if v != nil {

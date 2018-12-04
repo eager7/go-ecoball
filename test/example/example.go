@@ -1488,7 +1488,7 @@ func InvokeTicContract(ledger ledger.Ledger) {
 
 	argbyte, err := abi.CheckParam(abiDef, "create", create)
 	if err != nil {
-		fmt.Errorf("can not find UnmarshalBinary abi file")
+		fmt.Errorf("can not find UnmarshalBinary abi file: ", err.Error())
 		return
 	}
 
@@ -1511,7 +1511,7 @@ func InvokeTicContract(ledger ledger.Ledger) {
 
 	argbyte2, err := abi.CheckParam(abiDef, "restart", restart)
 	if err != nil {
-		fmt.Errorf("can not find UnmarshalBinary abi file")
+		fmt.Errorf("can not find UnmarshalBinary abi file: ", err.Error())
 		return
 	}
 
