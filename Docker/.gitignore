@@ -4,3 +4,5 @@ ecoball
 ecoball_log
 ecowallet
 tools
+eballscan_service.sh
+shard_setup.toml
