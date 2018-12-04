@@ -114,7 +114,7 @@ def main():
     #start ecoball
     sysstr = platform.system()
     if sysstr == "Windows":
-        run("cd " + os.path.join(root_dir) + "&& start /b ecoball_" + str(args.number) + ".exe" + " run > null 2>&1")
+        run("cd " + os.path.join(root_dir) + "&& start /b ecoball_" + str(args.number) + ".exe" + " run > NUL 2>&1")
     elif sysstr == "Linux":
         run("cd " + os.path.join(root_dir) + "&& ./ecoball_" + str(args.number) + " run > /dev/null 2>&1 &")
 

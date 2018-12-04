@@ -123,9 +123,9 @@ def main():
             shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/build/ecoball.exe", os.path.join(run_dir, 'ecoball_' + str(count)) + ".exe")
         elif sysstr == "Linux":            
             shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/build/ecoball", os.path.join(run_dir, 'ecoball_' + str(count)))
-        shutil.copy2("start.py", os.path.join(run_dir, 'start.py'))
-        shutil.copy2("shard_setup.toml", os.path.join(run_dir, 'shard_setup.toml'))
-        shutil.copy2("ecoball.toml", os.path.join(run_dir, 'ecoball.toml'))
+        shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/launch/start.py", os.path.join(run_dir, 'start.py'))
+        shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/launch/shard_setup.toml", os.path.join(run_dir, 'shard_setup.toml'))
+        shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/launch/ecoball.toml", os.path.join(run_dir, 'ecoball.toml'))
 
         # start ecoball		
         command = run_dir + "/start.py "
