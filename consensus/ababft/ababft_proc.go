@@ -113,7 +113,7 @@ func ProcessSTART(actorC *ActorABABFT) {
 	var peersListAccountTS = make([]string, actorC.NumPeers)
 	for i := 0; i < actorC.NumPeers; i++ {
 		// peersListAccountTS = append(peersListAccountTS,common.IndexToName(newPeers[i]))
-		peersListAccountTS[i] = newPeers[i].String()
+		peersListAccountTS[i] = newPeers[i].Index.String()
 	}
 	log.Debug("ababft now enter into the ababft mode:peersListAccountTS", peersListAccountTS)
 	// sort newPeers

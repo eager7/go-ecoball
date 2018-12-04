@@ -38,6 +38,7 @@ type Account struct {
 	Contract    types.DeployInfo      `json:"contract"`
 	Delegates   []Delegate            `json:"delegate"`
 	Resource    `json:"resource"`
+	Elector     Elector
 
 	Hash   common.Hash `json:"hash"`
 	trie   Trie
@@ -279,7 +280,14 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 			Staked:    a.Votes.Staked,
 			Producers: producers,
 		},
-		Hash: a.Hash.Bytes(),
+		Elector: &pb.Elector{
+			Index:   a.Elector.Index.Number(),
+			Amount:  a.Elector.Amount,
+			Address: a.Elector.Address,
+			Port:    a.Elector.Port,
+			Payee:   a.Elector.Payee.Number(),
+		},
+		Hash:    a.Hash.Bytes(),
 	}
 	return &pbAcc, nil
 }
@@ -310,6 +318,11 @@ func (a *Account) Deserialize(data []byte) error {
 	a.Net.Available = pbAcc.Net.Available
 	a.Net.Limit = pbAcc.Net.Limit
 	a.Votes.Staked = pbAcc.Votes.Staked
+	a.Elector.Index = common.AccountName(pbAcc.Elector.Index)
+	a.Elector.Payee = common.AccountName(pbAcc.Elector.Payee)
+	a.Elector.Address = pbAcc.Elector.Address
+	a.Elector.Port = pbAcc.Elector.Port
+	a.Elector.Amount = pbAcc.Elector.Amount
 	a.Votes.Producers = make(map[common.AccountName]uint64, 1)
 	for _, v := range pbAcc.Votes.Producers {
 		a.Votes.Producers[common.AccountName(v.AccountName)] = v.Amount

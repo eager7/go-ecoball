@@ -17,7 +17,6 @@
 package config
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -32,6 +31,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/utils"
 	"path/filepath"
+	"fmt"
 )
 
 const VirtualBlockCpuLimit float64 = 200000000.0
@@ -229,27 +229,21 @@ func InitConfig(filePath, config string) error {
 }
 
 func init() {
-	fmt.Println("init config")
 	//set ecoball.toml dir
 	var configDir string
 	if flag.Lookup("test.v") == nil {
-		fmt.Println("normal run")
 		IpfsDir = "/tmp/storage"
 		configDir, _ = filepath.Abs(filepath.Dir(os.Args[0]))
 		configDir = strings.Replace(configDir, "\\", "/", -1)
 	} else {
-		fmt.Println("run under go test")
 		IpfsDir = "/tmp/storage"
 		configDir = "/tmp/"
 	}
-	fmt.Println("program run dir:", configDir)
 	if err := SetConfig(configDir); err != nil {
 		fmt.Println("init config failed: ", err)
 		os.Exit(-1)
 	}
 	initVariable()
-	fmt.Println("log dir:", LogDir)
-	fmt.Println("root dir:", RootDir)
 }
 
 func initVariable() {

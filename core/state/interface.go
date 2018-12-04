@@ -19,11 +19,11 @@ type InterfaceState interface {
 	CancelDelegate(from, to common.AccountName, cpuStaked, netStaked uint64, cpuLimit, netLimit float64) error
 	RecoverResources(index common.AccountName, timeStamp int64, cpuLimit, netLimit float64) error
 	RequireResources(index common.AccountName, cpuLimit, netLimit float64, timeStamp int64) (float64, float64, error)
-	RegisterProducer(index common.AccountName) error
+	RegisterProducer(index common.AccountName, addr string, port uint32, payee common.AccountName) error
 	UnRegisterProducer(index common.AccountName) error
 	ElectionToVote(index common.AccountName, accounts []common.AccountName) error
 	RequireVotingInfo() bool
-	GetProducerList() ([]common.AccountName, error)
+	GetProducerList() ([]Elector, error)
 	AccountGetBalance(index common.AccountName, token string) (*big.Int, error)
 	AccountSubBalance(index common.AccountName, token string, value *big.Int) error
 	AccountAddBalance(index common.AccountName, token string, value *big.Int) error

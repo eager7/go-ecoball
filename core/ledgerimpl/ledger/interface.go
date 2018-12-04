@@ -32,7 +32,7 @@ type Ledger interface {
 	CheckPermission(chainID common.Hash, index common.AccountName, name string, hash common.Hash, sig []common.Signature) error
 	GetChainList(chainID common.Hash) ([]state.Chain, error)
 	RequireResources(chainID common.Hash, index common.AccountName, timeStamp int64) (float64, float64, error)
-	GetProducerList(chainID common.Hash) ([]common.AccountName, error)
+	GetProducerList(chainID common.Hash) ([]state.Elector, error)
 	//AccountGetBalance(index common.AccountName, token string) (uint64, error)
 	AccountAddBalance(chainID common.Hash, index common.AccountName, token string, value uint64) error
 	//AccountSubBalance(index common.AccountName, token string, value uint64) error

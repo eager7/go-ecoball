@@ -206,9 +206,17 @@ message Account {
     Res         Net                     = 9;
     Votes       Votes                   = 11;
 
+    Elector     Elector                 = 12;
+
     bytes       Hash                    = 6;
 }
-
+message Elector {
+    uint64      Index   = 1;
+    uint64      Amount  = 2;
+    string      Address = 3;
+    uint32      Port    = 4;
+    uint64      Payee   = 5;
+}
 /**
 ** Tokens Info
 */

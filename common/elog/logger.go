@@ -67,7 +67,6 @@ func init() {
 
 	outputWriter := make(map[logbunny.LogLevel][]io.Writer)
 	for level, file := range logFilename {
-		fmt.Println("create log file:", file)
 		logFileWriter, err := newLogFile(file, logOpt.rollingTimePattern)
 		if err != nil {
 			panic(err)

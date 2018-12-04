@@ -286,7 +286,7 @@ func (l *LedgerImpl) RequireResources(chainID common.Hash, index common.AccountN
 	//return chain.StateDB.FinalDB.RequireResources(index, l.ChainTxs[chainID].CurrentHeader.Receipt.BlockCpu, l.ChainTxs[chainID].CurrentHeader.Receipt.BlockNet, timeStamp)
 	return chain.StateDB.FinalDB.RequireResources(index, config.BlockCpuLimit, config.BlockNetLimit, timeStamp)
 }
-func (l *LedgerImpl) GetProducerList(chainID common.Hash) ([]common.AccountName, error) {
+func (l *LedgerImpl) GetProducerList(chainID common.Hash) ([]state.Elector, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))

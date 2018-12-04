@@ -114,12 +114,18 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		}
 		ns.tx.Receipt.Accounts[0] = data
 
-	case "reg_prod":
-		if len(params) != 1 {
-			return nil, errors.New(log, "the param is error, please input two param for reg_prod")
+	case "reg_prod": //注册成为候选节点，需要4个参数，分别为注册账号，地址，端口号，以及付款账号，如: root,192.168.1.1,1001,root
+		if len(params) != 4 {
+			return nil, errors.New(log, "the param is error, please input four param for reg_prod like [root,192.168.1.1,1001,root]")
 		}
 		index := common.NameToIndex(params[0])
-		if err := ns.state.RegisterProducer(index); err != nil {
+		port, err := strconv.ParseUint(params[2], 10, 64)
+		if err != nil {
+			ns.Println(err.Error())
+			return nil, err
+		}
+		payee := common.NameToIndex(params[3])
+		if err := ns.state.RegisterProducer(index, params[1], uint32(port), payee); err != nil {
 			ns.Println(err.Error())
 			return nil, errors.New(log, err.Error())
 		}
@@ -162,7 +168,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			}
 		}
 
-	case "pledge":
+	case "pledge": //抵押代币以获取CPU，net资源，需要4个参数，分别为支付代币账号，获取资源账号，cpu数量，net数量，如： root,root,100,100
 		if len(params) != 4 {
 			return nil, errors.New(log, "the param is error, please input two param for pledge")
 		}
