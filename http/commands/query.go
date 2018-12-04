@@ -20,7 +20,6 @@ import (
 	//"fmt"
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	innerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
@@ -92,28 +91,29 @@ func GetAccountInfo(c *gin.Context) {
 }
 
 func GetTokenInfo(c *gin.Context) {
-	name := c.PostForm("name")
-	chainHashStr := c.PostForm("chainHash")
-	hash := new(innerCommon.Hash)
+	var oneToken request.TokenName
+	if err := c.BindJSON(&oneToken); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
 
-	data, err := ledger.L.GetTokenInfo(hash.FormHexString(chainHashStr), name)
+	data, err := ledger.L.GetTokenInfo(oneToken.ChainHash, oneToken.Name)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"result": data.JsonString(true)})
+	c.JSON(http.StatusOK, *data)
 }
 
 func GetBlockInfo(c *gin.Context) {
-	heightStr := c.PostForm("height")
-	height, err := strconv.ParseUint(heightStr, 10, 64)
-	if err != nil {
+	var oneHeight request.BlockHeight
+	if err := c.BindJSON(&oneHeight); nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	blockInfo, errcode := ledger.L.GetTxBlockByHeight(config.ChainHash, height)
+	blockInfo, errcode := ledger.L.GetTxBlockByHeight(oneHeight.ChainHash, oneHeight.Height)
 	if errcode != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": errcode.Error()})
 		return
@@ -123,9 +123,13 @@ func GetBlockInfo(c *gin.Context) {
 }
 
 func GetTransaction(c *gin.Context) {
-	hashHex := c.PostForm("hash")
-	hash := new(innerCommon.Hash)
-	trx, errcode := ledger.L.GetTransaction(config.ChainHash, hash.FormHexString(hashHex))
+	var oneHash request.TransactionHash
+	if err := c.BindJSON(&oneHash); nil != err {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	trx, errcode := ledger.L.GetTransaction(oneHash.ChainHash, oneHash.Hash)
 	if errcode != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": errcode.Error()})
 		return
