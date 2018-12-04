@@ -24,7 +24,7 @@ import pytoml
 import json
 import argparse
 import shutil
-
+import platform
 
 def run(shell_command):
     '''
@@ -74,10 +74,14 @@ def main():
         committee_count += network[ip][0]
         shard_count += network[ip][1]
 
+    sysstr = platform.system()
     count = 0
     while count < committee_count + shard_count:
         # stop ecoball
-        command = "killall " + "ecoball_" + str(count)
+        if sysstr == "Windows":
+            command = "taskkill /im " + "ecoball_" + str(count) + ".exe /F"
+        elif sysstr == "Linux":
+            command = "killall " + "ecoball_" + str(count)        
         run(command)
         sleep(1)
         count += 1

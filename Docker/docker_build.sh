@@ -32,6 +32,8 @@ the network unstable script will take a long time or will fail to execute, the s
 
 
 EOF
+REPO="registry.quachain.net:5000"
+IMAGE="${REPO}/ecoball:1.0.0"
 
 SOURCE_DIR=$(cd `dirname $0` && pwd)
 
@@ -128,10 +130,10 @@ echo -e "\033[;32mAll executable files have been successful and ecoball images c
 echo
 echo
 echo -e "\033[;34mbuild image with the Dockerfile. \033[0m"
-if ! docker build -t "zhongxh/internal:ecoball_v1.0" .
+if ! docker build -t $IMAGE .
 then
     echo  -e "\033[;31mbuild image failed!!! \033[0m"
     exit 1
 fi
 
-echo -e "\033[;32mbuild image zhongxh/internal:ecoball_v1.0 succeed. \033[0m"
+echo -e "\033[;32mbuild image succeed. \033[0m"
