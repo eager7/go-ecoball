@@ -1,6 +1,6 @@
 Ecoball
 ========
-
+All script in this catalogue supporrt linux(recommended) and windows, they can auto recognise OS
 # Depends
 
 You need install python3 and pip3
@@ -39,10 +39,10 @@ size = 2
 "192.168.9.43" = [2, 4]
 
 ```
-## key_generate.py
-Once the configuration file shard_setup.toml is configured, execute key_generation.py to generate public, private keys, http port and onlooker port for the startup
+## config.py
+Once the configuration file shard_setup.toml is configured, execute config.py to generate public, private keys, http port and onlooker port for the startup
 ```
-./key_generate.py
+./config.py
 ```
 
 ## run.py
@@ -58,7 +58,7 @@ Log generation for each node is under ecoball/committee/ecoball_*/log
 
 ### stop.py
 You can stop all node
-
+s
 Stop all ecoball
 ```
 ./stop.py

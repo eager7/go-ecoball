@@ -22,7 +22,7 @@ import os
 import sys
 import pytoml
 import share_shard
-
+import platform
 
 def run_shell_output(command, print_output=True, universal_newlines=True):
     p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, universal_newlines=universal_newlines)
@@ -57,8 +57,13 @@ def main():
     goPath = os.getenv("GOPATH")
     
     gen_file = goPath + "/src/github.com/ecoball/go-ecoball/test/rsakeygen/main.go"
-    share_shard.run("cd " + tool_dir + "&& go build -o key_gen " + gen_file)
-    key_gen = os.path.join(tool_dir + "/key_gen")
+    sysstr = platform.system()
+    if sysstr == "Windows":
+        share_shard.run("cd " + tool_dir + "&& go build -o key_gen.exe " + gen_file)
+        key_gen = os.path.join(tool_dir + "/key_gen.exe")
+    elif sysstr == "Linux":
+        share_shard.run("cd " + tool_dir + "&& go build -o key_gen " + gen_file)
+        key_gen = os.path.join(tool_dir + "/key_gen")
 
     #get config
     data = {}
@@ -102,6 +107,8 @@ def main():
                 data[one_config]["p2p_listen_address"] = ["/ip4/0.0.0.0/tcp/" + str(port), "/ip6/::/tcp/4013"]
                 data[one_config]["http_port"] = str(http_start_port + tail)
                 data[one_config]["onlooker_port"] = str(onlooker_start_port + tail)
+                data[one_config]["log_dir"] = "./log/"
+                data[one_config]["root_dir"] = "./log/"
                 count += 1
 
     #new config

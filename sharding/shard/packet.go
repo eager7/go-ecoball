@@ -277,7 +277,6 @@ func (s *shard)  recvSyncResponsePacket(packet *sc.CsPacket){
 }
 */
 
-
 func (s *shard) processShardingPacket(csp interface{}) {
 
 	p := csp.(*sc.CsPacket)
@@ -285,15 +284,18 @@ func (s *shard) processShardingPacket(csp interface{}) {
 	case sc.SD_CM_BLOCK:
 		cm := p.Packet.(*cs.CMBlock)
 		last := s.ns.GetLastCMBlock()
-		if last != nil {
-			if last.Height >= cm.Height {
-				log.Debug("old cm packet ", cm.Height)
-				return
-			} else if cm.Height > last.Height+1 {
-				log.Debug("cm block last ", last.Height, " recv ", cm.Height, " need sync")
-				s.fsm.Execute(ActChainNotSync, nil)
-				return
-			}
+		if last == nil {
+			panic("last cm block not exist")
+			return
+		}
+
+		if last.Height >= cm.Height {
+			log.Debug("old cm packet ", cm.Height)
+			return
+		} else if cm.Height > last.Height+1 {
+			log.Debug("cm block last ", last.Height, " recv ", cm.Height, " need sync")
+			s.fsm.Execute(ActChainNotSync, nil)
+			return
 		}
 
 		simulate.TellBlock(cm)
@@ -303,16 +305,34 @@ func (s *shard) processShardingPacket(csp interface{}) {
 		s.fsm.Execute(ActProductMinorBlock, nil)
 	case sc.SD_FINAL_BLOCK:
 		final := p.Packet.(*cs.FinalBlock)
-		last := s.ns.GetLastFinalBlock()
-		if last != nil {
-			if last.Height >= final.Height {
-				log.Debug("old final packet ", final.Height)
-				return
-			} else if final.Height > last.Height+1 {
-				log.Debug("final block last ", last.Height, " recv ", final.Height, " need sync")
-				s.fsm.Execute(ActChainNotSync, nil)
-				return
-			}
+		lastcm := s.ns.GetLastCMBlock()
+		if lastcm == nil {
+			panic("last cm block not exist")
+			return
+		}
+
+		lastfinal := s.ns.GetLastFinalBlock()
+		if lastfinal == nil {
+			panic("last final block not exist")
+			return
+		}
+
+		if lastcm.Height > final.EpochNo {
+			log.Debug("old final packet epoch", final.EpochNo, " last epoch ", lastcm.Height)
+			return
+		} else if lastcm.Height < final.EpochNo {
+			log.Debug("final block epoch ", final.EpochNo, " last epoch ", lastcm.Height, " need sync")
+			s.fsm.Execute(ActChainNotSync, nil)
+			return
+		}
+
+		if lastfinal.Height >= final.Height {
+			log.Debug("old final packet ", final.Height)
+			return
+		} else if final.Height > lastfinal.Height+1 {
+			log.Debug("final block last ", lastfinal.Height, " recv ", final.Height, " need sync")
+			s.fsm.Execute(ActChainNotSync, nil)
+			return
 		}
 
 		if !s.ns.CheckMinorBlockInPool(final) {

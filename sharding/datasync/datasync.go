@@ -119,9 +119,9 @@ func (sync *Sync)SendSyncRequestHelper()  {
 	works := sync.cell.GetWorks()
 	if len(works) == 1 {
 		log.Debug("Commitee worker len = 1, don't send sync request")
-		simulate.SyncComplete()
-		log.Debug("retryTimer stop")
+		log.Debug("retryTimer stop 1")
 		sync.retryTimer.Stop()
+		simulate.SyncComplete()
 		return
 	}
 
@@ -144,6 +144,8 @@ func (sync *Sync)SendSyncRequestHelper()  {
 		}
 		log.Debug("SendSyncRequest, get Height = ", lastBlock.GetHeight())
 		if lastBlock.GetHeight() == 1 {
+			log.Debug("retryTimer stop 2")
+			sync.retryTimer.Stop()
 			simulate.SyncComplete()
 			log.Info("invoke SyncComplete cause Height = 1")
 			return
@@ -606,7 +608,7 @@ func (s *Sync)  RecvSyncResponsePacketHelper(packet *sc.CsPacket) {
 		if s.synchronizing {
 			s.tellLedgerSyncComplete()
 			s.clearCache()
-			log.Debug("retryTimer stop")
+			log.Debug("retryTimer stop 0")
 			s.retryTimer.Stop()
 			simulate.SyncComplete()
 			s.synchronizing = false
