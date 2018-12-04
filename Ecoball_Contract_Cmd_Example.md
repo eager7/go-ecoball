@@ -1,4 +1,132 @@
-# 一、系统合约
+# 一、基础操作
+## 1、创建钱包
+```
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient wallet create --name ubuntu --password ubuntu
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 10:41:21 | 200 |     313.948µs |       127.0.0.1 | POST     /wallet/create
+success
+```
+## 2、打开钱包
+```
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient wallet open --name ubuntu --password ubuntu
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+exist: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/wallet/ubuntu
+[GIN] 2018/10/30 - 10:41:36 | 200 |     972.339µs |       127.0.0.1 | POST     /wallet/openWallet
+success
+
+```
+## 3、导入私钥
+这里导入4个私钥，注意先导入root账户的私钥
+```
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient wallet import key -n ubuntu -k 0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 10:47:10 | 200 |    3.044481ms |       127.0.0.1 | POST     /wallet/importKey
+publickey:0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient wallet import key -n ubuntu -k 0xc3e2cbed03aacc62d8f32045013364ea493f6d24e84f26bcef4edc2e9d260c0e
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 10:44:11 | 200 |    2.991919ms |       127.0.0.1 | POST     /wallet/importKey
+publickey:0x04e0c1852b110d1586bf6202abf6e519cc4161d00c3780c04cfde80fd66748cc189b6b0e2771baeb28189ec42a363461357422bf76b1e0724fc63fc97daf52769f
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ 
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient wallet import key -n ubuntu -k 0x5238ede4f91f6c4f5f1f195cbf674e08cb6a18ae351e474b8927db82d3e5ecf5
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 10:44:33 | 200 |    4.873582ms |       127.0.0.1 | POST     /wallet/importKey
+publickey:0x049e78e40b0dcca842b94cb2586d47ecc61888b52dce958b41aa38613c80f6607ee1de23eebb912431eccfe0fea81f8a38792ffecee38c490dde846c646ce1f0ee
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient wallet import key -n ubuntu -k 0x105cb8f936eec87d35e42fc0f656ab4b7fc9a007cbf4554f829c44e528df6ce4
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 10:44:55 | 200 |    2.379846ms |       127.0.0.1 | POST     /wallet/importKey
+publickey:0x0481bce0ad10bd3d8cdfd089ac5534379149ca5c3cdab28b5063f707d20f3a4a51f192ef7933e91e3fd0a8ea21d8dd735407780937c3c71753b486956fd481349f
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient wallet import key -n ubuntu -k 0x68f2dcd39856206fa610546cc4f4611e5d4c3eb5e3f6bae3982348f949810745
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 10:45:35 | 200 |    2.831333ms |       127.0.0.1 | POST     /wallet/importKey
+publickey:0x04b15d8efb9dcf3a086a69a0f6c334ebcb47d21293e36e1f22440185f1b7411a2cb3bcda2a91bf8ddeb71224ebd9233896766b355334b2c98b07f9ce9154c9dec9
+
+```
+
+## 4、创建账户
+这里创建4个账户，分别是worker, worker1, worker2, worker3
+```
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient create account -c root -n worker -o 0x04b15d8efb9dcf3a086a69a0f6c334ebcb47d21293e36e1f22440185f1b7411a2cb3bcda2a91bf8ddeb71224ebd9233896766b355334b2c98b07f9ce9154c9dec9
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 10:47:18 | 200 |      43.909µs |       127.0.0.1 | GET      /wallet/getPublicKeys
+[GIN] 2018/10/30 - 10:47:18 | 200 |     237.783µs |       127.0.0.1 | POST     /wallet/signTransaction
+success
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient create account -c root -n worker1 -o 0x04e0c1852b110d1586bf6202abf6e519cc4161d00c3780c04cfde80fd66748cc189b6b0e2771baeb28189ec42a363461357422bf76b1e0724fc63fc97daf52769f
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 10:48:00 | 200 |      44.242µs |       127.0.0.1 | GET      /wallet/getPublicKeys
+[GIN] 2018/10/30 - 10:48:00 | 200 |     221.309µs |       127.0.0.1 | POST     /wallet/signTransaction
+success
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient create account -c root -n worker2 -o 0x049e78e40b0dcca842b94cb2586d47ecc61888b52dce958b41aa38613c80f6607ee1de23eebb912431eccfe0fea81f8a38792ffecee38c490dde846c646ce1f0ee
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 10:48:25 | 200 |      73.584µs |       127.0.0.1 | GET      /wallet/getPublicKeys
+[GIN] 2018/10/30 - 10:48:25 | 200 |     212.123µs |       127.0.0.1 | POST     /wallet/signTransaction
+success
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient create account -c root -n worker3 -o 0x0481bce0ad10bd3d8cdfd089ac5534379149ca5c3cdab28b5063f707d20f3a4a51f192ef7933e91e3fd0a8ea21d8dd735407780937c3c71753b486956fd481349f
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 10:48:55 | 200 |      63.897µs |       127.0.0.1 | GET      /wallet/getPublicKeys
+[GIN] 2018/10/30 - 10:48:55 | 200 |     393.202µs |       127.0.0.1 | POST     /wallet/signTransaction
+success
+
+```
+## 5、 抵押ABA，换取CPU和NET资源
+使用root账户给新创建的账户抵押
+```
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient contract invoke -n root -m pledge -p root,worker,500,500
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 10:49:28 | 200 |     384.297µs |       127.0.0.1 | GET      /wallet/getPublicKeys
+[GIN] 2018/10/30 - 10:49:28 | 200 |     228.723µs |       127.0.0.1 | POST     /wallet/signTransaction
+success
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient contract invoke -n root -m pledge -p root,worker1,500,500
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 11:12:55 | 200 |     141.683µs |       127.0.0.1 | GET      /wallet/getPublicKeys
+[GIN] 2018/10/30 - 11:12:55 | 200 |      194.47µs |       127.0.0.1 | POST     /wallet/signTransaction
+success
+
+```
+
+## 6、转账
+```
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient transfer --from root --to worker --value 1000
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 14:33:55 | 200 |      57.749µs |       127.0.0.1 | GET      /wallet/getPublicKeys
+[GIN] 2018/10/30 - 14:33:55 | 200 |     184.881µs |       127.0.0.1 | POST     /wallet/signTransaction
+success
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient transfer --from root --to worker1 --value 1000
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 14:34:22 | 200 |     158.679µs |       127.0.0.1 | GET      /wallet/getPublicKeys
+[GIN] 2018/10/30 - 14:34:22 | 200 |     246.873µs |       127.0.0.1 | POST     /wallet/signTransaction
+success
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient transfer --from root --to worker2 --value 1000
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 14:34:25 | 200 |      39.374µs |       127.0.0.1 | GET      /wallet/getPublicKeys
+[GIN] 2018/10/30 - 14:34:25 | 200 |     223.414µs |       127.0.0.1 | POST     /wallet/signTransaction
+success
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ 
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ 
+ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient transfer --from root --to worker3 --value 1000
+normal run
+Using config file: /home/ubuntu/go/src/github.com/ecoball/go-ecoball/build/ecoball.toml
+[GIN] 2018/10/30 - 14:35:05 | 200 |      67.723µs |       127.0.0.1 | GET      /wallet/getPublicKeys
+[GIN] 2018/10/30 - 14:35:05 | 200 |     726.774µs |       127.0.0.1 | POST     /wallet/signTransaction
+success
+
+```
+# 二、调用系统合约
 所有系统命令都以system开头，可以通过ecoclient system查询子命令
 ```
 ubuntu@ubuntu:~/go/src/github.com/ecoball/go-ecoball/build$ ./ecoclient system
@@ -142,7 +270,7 @@ warning: transaction executed locally, but may not be confirmed by the network y
 
 ```
 
-# 二、用户合约
+# 三、用户合约
 ## 1、部署合约
 在worker账户部署token合约
 ```
