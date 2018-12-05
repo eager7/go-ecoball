@@ -23,11 +23,13 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/urfave/cli"
+	"github.com/ecoball/go-ecoball/common/profile"
 )
 
 var log = elog.NewLogger("Node", elog.DebugLog)
 
 func main() {
+	profile.CpuProfile()
 	app := cli.NewApp()
 
 	//set attribute of EcoBall
@@ -56,4 +58,6 @@ func main() {
 
 	//run
 	app.Run(os.Args)
+	profile.MemProfile()
+	profile.StopProfile()
 }

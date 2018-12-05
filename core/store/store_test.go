@@ -19,9 +19,13 @@ package store_test
 import (
 	"bytes"
 	"fmt"
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/store"
+	"os"
 	"testing"
 )
+
+var s store.Storage
 
 func TestStore(t *testing.T) {
 	s, err := store.NewBlockStore("/tmp/test")
@@ -74,5 +78,17 @@ func TestStore(t *testing.T) {
 	for k, v := range re {
 		fmt.Println(k, v)
 	}
+}
 
+func BenchmarkLevelDB(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		s.Put([]byte("key"), []byte("value"))
+		v, _ := s.Get([]byte("key"))
+		elog.Log.Debug(string(v))
+	}
+}
+
+func init() {
+	os.RemoveAll("/tmp/store_benchmark")
+	s, _ = store.NewBlockStore("/tmp/store_benchmark")
 }

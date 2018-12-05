@@ -1262,7 +1262,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 	return c.newMinorBlock(nil, txs, timeStamp)
 }
 
-func (c *ChainTx)newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error) {
+func (c *ChainTx) newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error) {
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, nil, err

@@ -36,6 +36,7 @@ import (
 )
 
 const magicNum = 999
+var CurrentTxN = 0
 
 type PoolActor struct {
 	txPool *TxPool
@@ -63,7 +64,8 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 	case *actor.Started:
 	case *actor.Restarting:
 	case *types.Transaction:
-		log.Info("receive tx:", msg.Hash.HexString())
+		log.Info("receive tx:", CurrentTxN, "Hash:", msg.Hash.HexString())
+		CurrentTxN++
 		go p.handleTransaction(msg)
 	case *types.Block:
 		log.Debug("new block delete transactions")

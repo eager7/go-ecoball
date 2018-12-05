@@ -6,6 +6,8 @@ import argparse
 import json
 import os
 import pytoml
+import signal
+from time import sleep
 
 # Sharding scheme: initial startup of 5 committee, 3 Shared, each Shared 5 nodes.
 # Buy five servers, one server one committee docker instance and three share docker instance
@@ -102,6 +104,17 @@ def main():
     #start ecoball
     run("cd " + os.path.join(root_dir) + "&& ./ecoball run")
 
-   
+
+def signal_handler(a, b):
+    print('receive SIGTERM')
+    run("touch /var/ecoball_log/test")
+    run("killall ecoball")
+    sys.exit(0)
+
+
 if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
     main()
+    while 1:
+        sleep(10)

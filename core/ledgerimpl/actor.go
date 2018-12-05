@@ -102,6 +102,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		}
 	case message.ProducerBlock:
 		log.Debug("receive create block request")
+		begin := time.Now().UnixNano()
 		switch msg.Type {
 		case shard.HeMinorBlock:
 			if txpool.T == nil {
@@ -123,6 +124,9 @@ func (l *LedActor) Receive(ctx actor.Context) {
 					ctx.Sender().Tell(err)
 				}
 			}
+			end := time.Now().UnixNano()
+			t := (end - begin) / 1000
+			log.Info("create ", shard.HeaderType(msg.Type).String(), "block["+minorBlock.Hashes.HexString()+"]:", t, "us")
 			ctx.Sender().Tell(minorBlock)
 		case shard.HeCmBlock:
 			log.Warn("the minor block nonsupport create by actor")
@@ -132,6 +136,9 @@ func (l *LedActor) Receive(ctx actor.Context) {
 				ctx.Sender().Tell(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
 				return
 			}
+			end := time.Now().UnixNano()
+			t := (end - begin) / 1000
+			log.Info("create ", shard.HeaderType(msg.Type).String(), "block["+block.Hashes.HexString()+"]:", t, "us")
 			ctx.Sender().Tell(block)
 		default:
 			log.Error("unknown type:", msg.Type.String())

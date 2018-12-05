@@ -5,6 +5,7 @@ MAINTAINER Docker ecoball <service@ecoball.org>
 #Install dependencies
 RUN apt-get update
 RUN apt-get install -y python3 python3-pip vim
+RUN apt-get install psmisc
 
 #Setting environment variables
 ENV GOPATH /root/go
