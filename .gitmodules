@@ -1,0 +1,3 @@
+[submodule "eballscan"]
+	path = eballscan
+	url = https://github.com/ecoball/eballscan

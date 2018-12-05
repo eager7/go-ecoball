@@ -64,44 +64,42 @@ def main():
     args = parser.parse_args()
 
     # get netwoek config
-    root_dir = os.path.split(os.path.realpath(__file__))[0]
-    with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
-        data = pytoml.load(setup_file)
+    try:
+        root_dir = os.path.split(os.path.realpath(__file__))[0]
+        with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
+            data = pytoml.load(setup_file)
 
-    network = data["network"]
-    all_str = json.dumps(data)
+        network = data["network"]
+        all_str = json.dumps(data)
 
-    host_ip = args.host_ip
-    committee_count = network[host_ip][0]
-    shard_count = network[host_ip][1]
+        host_ip = args.host_ip
+        committee_count = network[host_ip][0]
+        shard_count = network[host_ip][1]
+
+    except Exception as e:
+        print("shard_setup.toml has some error: ", e)
+        return
 
     #create directory
-    shard_log_dir = os.path.join(root_dir, 'ecoball_log/shard')
-    if not os.path.exists(shard_log_dir):
-        os.makedirs(shard_log_dir)        
+    log_dir = os.path.join(root_dir, 'ecoball_log/shard')
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
-    committee_log_dir = os.path.join(root_dir, 'ecoball_log/committee')
-    if not os.path.exists(committee_log_dir):
-        os.makedirs(committee_log_dir)
-
-    p2p_start = 9901
     ipfs_start = 5000
     ipfs_gateway = 7000
+    p2p_start = 9901
     PORT = 20681
-    image = "zhongxh/internal:ecoball_v1.0"
+    image = "registry.quachain.net:5000/ecoball:1.0.0"
 
-    count = committee_count + shard_count - 1
-    while count >= 0:
+    count = committee_count
+    while count < committee_count + shard_count:
         # start ecoball
         command = "docker run -d " + "--name=ecoball_" + str(count) + " -p "
         command += str(PORT + count) + ":20678 "
         command += "-p " + str(ipfs_start + count) + ":5011 " 
         command += "-p " + str(ipfs_gateway + count) + ":7011 " 
         command += " -p " + str(p2p_start + count) + ":" + str(p2p_start + count)
-        if count < committee_count:
-            command += " -v " + committee_log_dir  + ":/var/ecoball_log "
-        else:
-            command += " -v " + shard_log_dir  + ":/var/ecoball_log "
+        command += " -v " + log_dir  + ":/var/ecoball_log "
         command += image + " /ecoball/ecoball/start.py "
         command += "-o " + host_ip + " -n " + str(count) + " -a " + "'" + all_str + "'"
         exist, config = get_config(count, host_ip, data)
@@ -118,23 +116,23 @@ def main():
         run(command)
         # sleep(2)
 
-        count -= 1
+        if args.browser and count == committee_count + shard_count - 1:
+            # start eballscan
+            command = "docker run -d --name=eballscan --link=ecoball_" + str(committee_count) + ":ecoball_alias -p 20680:20680 "
+            command += image + " /ecoball/eballscan/eballscan_service.sh ecoball_" + str(committee_count)
+            run(command)
+            sleep(2)
 
-    if args.browser:
-        # start eballscan
-        command = "docker run -d --name=eballscan --link=ecoball_" + str(committee_count) + ":ecoball_alias -p 20680:20680 "
-        command += image + " /ecoball/eballscan/eballscan_service.sh ecoball_" + str(committee_count)
-        run(command)
-        sleep(2)
+        if args.wallet and count == committee_count + shard_count - 1:
+            # start ecowallet
+            command = "docker run -d --name=ecowallet -p 20679:20679 "
+            command += "-v " + root_dir + ":/var "
+            command += image + " /ecoball/ecowallet/ecowallet start -p /var"
+            run(command)
+            sleep(2)
 
-    if args.wallet:
-        # start ecowallet
-        command = "docker run -d --name=ecowallet -p 20679:20679 "
-        command += "-v " + root_dir + ":/var "
-        command += image + " /ecoball/ecowallet/ecowallet start -p /var"
-        run(command)
-        sleep(2)
-    
+        count += 1
+        
     print("start all ecoball shard container on this physical machine(" + host_ip + ") successfully!!!") 
 
 
