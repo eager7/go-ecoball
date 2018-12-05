@@ -119,4 +119,3 @@ rd %BUILD_PATH%
 echo clean success!!!!
 
 :FAILED
-pause>nul
