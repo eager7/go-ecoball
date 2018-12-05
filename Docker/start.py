@@ -107,7 +107,6 @@ def main():
 
 def signal_handler(a, b):
     print('receive SIGTERM')
-    run("touch /var/ecoball_log/test")
     run("killall ecoball")
     sys.exit(0)
 
