@@ -13,6 +13,8 @@ import (
 
 var log = elog.Log
 
+var num = 0
+
 const (
 	Committee       = "20681 "
 	Shard1          = "20682 "
@@ -35,7 +37,8 @@ func runCmd(shell string) (string, error) {
 		log.Warn(string(out))
 		return "", err
 	}
-	log.Notice("exec ", cmd.Args, "success")
+	log.Notice("exec [", num, "]", cmd.Args, "success")
+	num++
 	return string(out), err
 }
 
@@ -84,11 +87,11 @@ func SendPledgeTx(from, to, shard string) {
 
 func BenchMarkTransaction() {
 	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 250; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for i := 0; i < 10; i++ {
+			for i := 0; i < 4; i++ {
 				SendTransaction("root", "root", Shard3)
 			}
 		}()
