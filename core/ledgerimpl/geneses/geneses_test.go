@@ -135,12 +135,12 @@ func PledgeContract(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 func VotingContract(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 	elog.Log.Info("VotingContract-----------------------5-------------------------------\n\n")
 	var txs []*types.Transaction
-	invoke, err := types.NewInvokeContract(worker1, root, chainID, "active", "reg_prod", []string{"worker1"}, 0, time.Now().UnixNano())
+	invoke, err := types.NewInvokeContract(worker1, root, chainID, "active", "reg_prod", []string{"worker1", "192.168.8.35", "9002", "worker1"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(worker2, root, chainID, "active", "reg_prod", []string{"worker2"}, 0, time.Now().UnixNano())
+	invoke, err = types.NewInvokeContract(worker2, root, chainID, "active", "reg_prod", []string{"worker2", "192.168.8.35", "9002", "worker2"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker2)
 	txs = append(txs, invoke)
