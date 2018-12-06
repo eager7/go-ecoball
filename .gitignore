@@ -23,3 +23,5 @@ glide.lock
 *.pyc
 *.toml
 Docker/cockroach
+/eballscan/build/*
+

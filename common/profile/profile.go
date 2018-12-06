@@ -1,12 +1,12 @@
 package profile
 
 import (
+	"fmt"
 	"github.com/ecoball/go-ecoball/common/config"
 	"log"
 	"os"
 	"runtime"
 	"runtime/pprof"
-	"fmt"
 	"runtime/trace"
 )
 
@@ -18,9 +18,12 @@ func CpuProfile() {
 	if err != nil {
 		log.Fatal("could not create CPU profile: ", err)
 	}
+	runtime.SetBlockProfileRate(0)
+	runtime.SetMutexProfileFraction(0)
 	if err := pprof.StartCPUProfile(fc); err != nil {
 		log.Fatal("could not start CPU profile: ", err)
 	}
+
 }
 
 func MemProfile() {

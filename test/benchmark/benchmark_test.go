@@ -10,3 +10,9 @@ func TestCmd(t *testing.T) {
 	//SendTransaction("root", "root", Shard1)
 	BenchMarkTransaction()
 }
+
+func BenchmarkSendTransaction(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		SendTransaction("root", "root", Shard3)
+	}
+}
