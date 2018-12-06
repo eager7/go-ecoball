@@ -75,7 +75,7 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 		p.txPool.AddTxsList(msg.ChainID)
 	case *shard.MinorBlock:
 		for _, v := range msg.Transactions {
-			log.Info("Delete tx:", v.Hash.HexString())
+			//log.Info("Delete tx:", v.Hash.HexString())
 			p.txPool.Delete(msg.ChainID, v.Hash)
 		}
 	case *shard.FinalBlock:
