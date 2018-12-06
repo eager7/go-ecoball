@@ -108,6 +108,8 @@ def main():
 def signal_handler(a, b):
     print('receive SIGTERM')
     run("killall ecoball")
+    print('sleep 3s for collect runtime information')
+    sleep(3)
     sys.exit(0)
 
 
