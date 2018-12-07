@@ -428,7 +428,8 @@ func (a *Account) updateResource(cpuStakedSum, netStakedSum uint64, cpuLimit, ne
 }
 func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64, timeStamp int64, cpuLimit, netLimit float64) error {
 	if timeStamp < a.TimeStamp {
-		return errors.New(log, "the time is not in the right format, it's back in time")
+		log.Warn("the transaction could be earlier deal")
+		return nil
 	}
 	t := (timeStamp - a.TimeStamp) / (1000 * 1000)
 	interval := 100.0 * float64(t) / (24.0 * 60.0 * 60.0 * 1000)

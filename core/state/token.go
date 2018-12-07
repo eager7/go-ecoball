@@ -322,7 +322,7 @@ func (a *Account) TokenExisted(token string) bool {
  *  @param amount - value of token
  */
 func (a *Account) AddBalance(name string, amount *big.Int) error {
-	log.Debug("add token", name, "balance:", amount, a.Index)
+	//log.Debug("add token", name, "balance:", amount, a.Index)
 	if amount.Sign() == 0 {
 		return errors.New(log, "amount is zero")
 	}

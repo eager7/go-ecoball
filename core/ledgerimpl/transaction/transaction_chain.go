@@ -652,12 +652,13 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	if tx.Receipt.Result == nil {
 		tx.Receipt.Result = common.CopyBytes(ret)
 	}
+	/*
 	if err := s.RecoverResources(tx.From, timeStamp, cpuLimit, netLimit); err != nil {
 		return nil, 0, 0, err
 	}
 	if err := s.SubResources(tx.From, cpu, net, cpuLimit, netLimit); err != nil {
 		return nil, 0, 0, err
-	}
+	}*/
 	log.Debug("result:", ret, "cpu:", cpu, "us net:", net/1000, "byte")
 
 	return ret, cpu, net, nil
@@ -1068,7 +1069,7 @@ func (c *ChainTx) storeBlock(shardID uint32, header shard.HeaderInterface, block
 		log.Warn(err)
 	}
 
-	log.Notice("Shard ", c.shardId, "Save", shard.HeaderType(block.Type()).String(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString(), "block:", block.JsonString())
+	log.Notice("Shard ", c.shardId, "Save", shard.HeaderType(block.Type()).String(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString(), header.JsonString())
 
 	return nil
 }
@@ -1271,7 +1272,7 @@ func (c *ChainTx) newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transact
 	var hashes []common.Hash
 	var cpu, net float64
 	for i := 0; i < len(txs); i++ {
-		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
+		//log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
 		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].JsonString())
 			event.Send(event.ActorLedger, event.ActorTxPool, message.DeleteTx{ChainID: txs[i].ChainID, Hash: txs[i].Hash})
@@ -1317,7 +1318,7 @@ func (c *ChainTx) newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transact
 	if err != nil {
 		return nil, nil, err
 	}
-	log.Info("new minor block:", block.GetHeight(), block.JsonString())
+	log.Info("new minor block:", block.GetHeight(), block.MinorBlockHeader.JsonString())
 	//log.Warn(common.JsonString(c.StateDB.FinalDB.Params), common.JsonString(c.StateDB.FinalDB.Accounts))
 	return block, nil, nil
 }
@@ -1458,7 +1459,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	if err != nil {
 		return nil, err
 	}
-	log.Info("new final block:", block.Height, block.JsonString())
+	log.Info("new final block:", block.Height, block.FinalBlockHeader.JsonString())
 	//log.Warn(common.JsonString(c.StateDB.FinalDB.Params), common.JsonString(c.StateDB.FinalDB.Accounts))
 	return block, nil
 }
@@ -1634,19 +1635,21 @@ func (c *ChainTx) blockExisted(hash common.Hash) bool {
 func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, tx *types.Transaction, timeStamp int64, cpuLimit, netLimit float64) (err error) {
 	switch delta.Type {
 	case types.TxTransfer:
-		log.Info("handle delta in ", s.Type.String(), common.JsonString(delta))
+		//log.Info("handle delta in ", s.Type.String(), common.JsonString(delta))
 		if err := s.AccountSubBalance(delta.Receipt.From, state.AbaToken, delta.Receipt.Amount); err != nil {
 			return err
 		}
 		if err := s.AccountAddBalance(delta.Receipt.To, state.AbaToken, delta.Receipt.Amount); err != nil {
 			return err
 		}
+		/*
 		if err := s.RecoverResources(delta.Receipt.From, timeStamp, cpuLimit, netLimit); err != nil {
 			return err
 		}
 		if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
 			return err
 		}
+		*/
 	case types.TxDeploy:
 		if len(delta.Receipt.Accounts) != 1 {
 			return errors.New(log, "deploy delta's account len is not 1")

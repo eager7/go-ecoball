@@ -78,7 +78,8 @@ func init() {
 }
 
 func SendTransaction(from, to, shard string) {
-	runCmd(ClientExecute + shard + "transfer -f " + from + " -t " + to + " -v 1")
+	ret, _ := runCmd(ClientExecute + shard + "transfer -f " + from + " -t " + to + " -v 1")
+	log.Debug(ret)
 }
 
 func SendPledgeTx(from, to, shard string) {
