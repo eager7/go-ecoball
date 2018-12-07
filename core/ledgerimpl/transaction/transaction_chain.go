@@ -652,13 +652,13 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	if tx.Receipt.Result == nil {
 		tx.Receipt.Result = common.CopyBytes(ret)
 	}
-	/*
+
 	if err := s.RecoverResources(tx.From, timeStamp, cpuLimit, netLimit); err != nil {
 		return nil, 0, 0, err
 	}
 	if err := s.SubResources(tx.From, cpu, net, cpuLimit, netLimit); err != nil {
 		return nil, 0, 0, err
-	}*/
+	}
 	//log.Debug("result:", ret, "cpu:", cpu, "us net:", net/1000, "byte")
 
 	return ret, cpu, net, nil
@@ -1642,14 +1642,14 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, tx
 		if err := s.AccountAddBalance(delta.Receipt.To, state.AbaToken, delta.Receipt.Amount); err != nil {
 			return err
 		}
-		/*
+		
 		if err := s.RecoverResources(delta.Receipt.From, timeStamp, cpuLimit, netLimit); err != nil {
 			return err
 		}
 		if err := s.SubResources(delta.Receipt.From, delta.Receipt.Cpu, delta.Receipt.Net, cpuLimit, netLimit); err != nil {
 			return err
 		}
-		*/
+
 	case types.TxDeploy:
 		if len(delta.Receipt.Accounts) != 1 {
 			return errors.New(log, "deploy delta's account len is not 1")
