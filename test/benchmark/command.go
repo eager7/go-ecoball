@@ -20,7 +20,8 @@ const (
 	Shard1          = "20682 "
 	Shard2          = "20683 "
 	Shard3          = "20684 "
-	ClientExecute   = "./ecoclient  --port="
+	ClientExecutePort   = "./ecoclient  --port="
+	ClientExecute   = "./ecoclient "
 	WalletCreate    = ClientExecute + "wallet create -n wallet.dat -p password"
 	WalletOpen      = ClientExecute + "wallet open -n wallet.dat -p password"
 	WalletImport    = ClientExecute + "wallet import -n wallet.dat -k "
@@ -37,7 +38,7 @@ func runCmd(shell string) (string, error) {
 		log.Warn(string(out))
 		return "", err
 	}
-	log.Notice("exec [", num, "]", cmd.Args, "success")
+	//log.Notice("exec [", num, "]", cmd.Args, "success")
 	num++
 	return string(out), err
 }
@@ -75,15 +76,17 @@ func ImportKey(private string) {
 
 func init() {
 	RunCmd(WalletImport + hex.EncodeToString(config.Root.PrivateKey))
+	RunCmd(WalletImport + hex.EncodeToString(config.Worker.PrivateKey))
+	RunCmd(WalletImport + hex.EncodeToString(config.Worker1.PrivateKey))
+	RunCmd(WalletImport + hex.EncodeToString(config.Worker2.PrivateKey))
 }
 
 func SendTransaction(from, to, shard string) {
-	ret, _ := runCmd(ClientExecute + shard + "transfer -f " + from + " -t " + to + " -v 1")
-	log.Debug(ret)
+	runCmd(ClientExecutePort + shard + "transfer -f " + from + " -t " + to + " -v 1")
 }
 
 func SendPledgeTx(from, to, shard string) {
-	runCmd(ClientExecute + shard + "contract invoke -n root -i root -m pledge -p " + from + "," + to + ",100,100")
+	runCmd(ClientExecutePort + shard + "contract invoke -n root -i root -m pledge -p " + from + "," + to + ",100,100")
 }
 
 func BenchMarkTransaction() {
