@@ -10,14 +10,14 @@ all: ecoball ecoclient ecowallet plugins tools
 ecoball: plugins
 	@echo "\033[;32mbuild ecoball \033[0m"
 	mkdir -p build/
-	go install -v node/*.go
+	#go install -v node/*.go
 	go build -v -o ecoball node/*.go
 	mv ecoball build/
 
 ecoclient: 
 	@echo "\033[;32mbuild ecoclient \033[0m"
 	mkdir -p build/
-	go install -v client/client.go
+	#go install -v client/client.go
 	go build -v -o ecoclient client/client.go
 	mv ecoclient build/
 
