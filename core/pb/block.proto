@@ -329,6 +329,7 @@ message MinorBlockHeader {
     bytes       PrevHash            = 5;
     bytes       TrxHashRoot         = 6;
     bytes       StateDeltaHash      = 7;
+    bytes       StateRootHash       = 17;
     bytes       CMBlockHash         = 8;
     bytes       ProposalPublicKey   = 9;
     ConsensusData ConsData          = 10;

@@ -9,6 +9,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/ecoball/go-ecoball/core/trie"
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
@@ -21,6 +22,7 @@ type MinorBlockHeader struct {
 	Timestamp         int64
 	PrevHash          common.Hash
 	TrxHashRoot       common.Hash
+	StateRootHash     common.Hash
 	StateDeltaHash    common.Hash
 	CMBlockHash       common.Hash
 	ProposalPublicKey []byte
@@ -63,6 +65,7 @@ func (h *MinorBlockHeader) proto() (*pb.MinorBlockHeader, error) {
 		PrevHash:          h.PrevHash.Bytes(),
 		TrxHashRoot:       h.TrxHashRoot.Bytes(),
 		StateDeltaHash:    h.StateDeltaHash.Bytes(),
+		StateRootHash:     h.StateRootHash.Bytes(),
 		CMBlockHash:       h.CMBlockHash.Bytes(),
 		ProposalPublicKey: h.ProposalPublicKey,
 		ShardId:           h.ShardId,
@@ -120,6 +123,7 @@ func (h *MinorBlockHeader) Deserialize(data []byte) error {
 	h.PrevHash = common.NewHash(pbHeader.PrevHash)
 	h.TrxHashRoot = common.NewHash(pbHeader.TrxHashRoot)
 	h.StateDeltaHash = common.NewHash(pbHeader.StateDeltaHash)
+	h.StateRootHash = common.NewHash(pbHeader.StateRootHash)
 	h.CMBlockHash = common.NewHash(pbHeader.CMBlockHash)
 	h.ProposalPublicKey = common.CopyBytes(pbHeader.ProposalPublicKey)
 	h.ShardId = pbHeader.ShardId
@@ -177,6 +181,18 @@ func (a *AccountMinor) proto() (*pb.AccountMinor, error) {
 	}, nil
 }
 
+func (a *AccountMinor) Hash() (common.Hash, error) {
+	if p, err := a.proto(); err != nil {
+		return common.Hash{}, err
+	} else {
+		if data, err := p.Marshal(); err != nil {
+			return common.Hash{}, errors.New(log, err.Error())
+		} else {
+			return common.DoubleHash(data)
+		}
+	}
+}
+
 type MinorBlock struct {
 	MinorBlockHeader
 	Transactions []*types.Transaction
@@ -184,16 +200,24 @@ type MinorBlock struct {
 }
 
 func NewMinorBlock(header MinorBlockHeader, prevHeader *MinorBlockHeader, txs []*types.Transaction, cpu, net float64) (*MinorBlock, error) {
-	if err := header.ComputeHash(); err != nil {
-		return nil, err
-	}
+	var hashes []common.Hash
 	var sDelta []*AccountMinor
 	for _, tx := range txs {
-		delta := AccountMinor{
-			Type:    tx.Type,
-			Receipt: tx.Receipt,
+		delta := AccountMinor{Type: tx.Type, Receipt: tx.Receipt}
+		if h, err := delta.Hash(); err != nil {
+			return nil, err
+		} else {
+			hashes = append(hashes, h)
 		}
 		sDelta = append(sDelta, &delta)
+	}
+	merkleHash, err := trie.GetMerkleRoot(hashes)
+	if err != nil {
+		return nil, err
+	}
+	header.StateDeltaHash = merkleHash
+	if err := header.ComputeHash(); err != nil {
+		return nil, err
 	}
 	block := &MinorBlock{
 		MinorBlockHeader: header,

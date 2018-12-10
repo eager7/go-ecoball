@@ -805,7 +805,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		Timestamp:         timeStamp,
 		PrevHash:          prevHash,
 		TrxHashRoot:       common.Hash{},
-		StateDeltaHash:    c.StateDB.FinalDB.GetHashRoot(),
+		StateRootHash:    c.StateDB.FinalDB.GetHashRoot(),
 		CMBlockHash:       common.Hash{},
 		ProposalPublicKey: nil,
 		ShardId:           0,
@@ -1300,7 +1300,7 @@ func (c *ChainTx) newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transact
 		Timestamp:         timeStamp,
 		PrevHash:          c.LastHeader.MinorHeader.Hashes,
 		TrxHashRoot:       merkleHash,
-		StateDeltaHash:    s.GetHashRoot(),
+		StateRootHash:     s.GetHashRoot(),
 		CMBlockHash:       c.LastHeader.CmHeader.Hashes,
 		ProposalPublicKey: simulate.GetNodePubKey(),
 		ShardId:           shardID,
@@ -1403,7 +1403,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	var hashesMinor []common.Hash
 	for _, m := range minorBlocks {
 		hashesTxs = append(hashesTxs, m.TrxHashRoot)
-		hashesState = append(hashesState, m.StateDeltaHash)
+		hashesState = append(hashesState, m.StateRootHash)
 		hashesMinor = append(hashesMinor, m.Hashes)
 	}
 	TrxRootHash, err := trie.GetMerkleRoot(hashesTxs)
@@ -1582,8 +1582,8 @@ func (c *ChainTx) CheckShardBlock(block shard.BlockInterface) error {
 		if err != nil {
 			return err
 		}
-		if !newBlock.StateDeltaHash.Equals(&minorBlock.StateDeltaHash) {
-			return errors.New(log, fmt.Sprintf("the state hash is not equal:%s, %s", minorBlock.StateDeltaHash.HexString(), newBlock.StateDeltaHash.HexString()))
+		if !newBlock.StateRootHash.Equals(&minorBlock.StateRootHash) {
+			return errors.New(log, fmt.Sprintf("the state hash is not equal:%s, %s", minorBlock.StateRootHash.HexString(), newBlock.StateRootHash.HexString()))
 		}
 	case uint32(shard.HeCmBlock):
 	case uint32(shard.HeFinalBlock):
