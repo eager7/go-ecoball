@@ -257,7 +257,7 @@ func New(parent context.Context) (*NetNode, error) {
 	peerStore.AddPubKey(id, privKey.GetPublic())
 	h, err := constructPeerHost(parent, id, peerStore, libp2pOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("error for constructing host,", err)
+		return nil, fmt.Errorf("error for constructing host,%s", err)
 	}
 
 	network := network.NewNetwork(parent, h)
@@ -285,7 +285,7 @@ func (nn *NetNode) Start() error {
 	host := nn.network.Host()
 	if err := host.Network().Listen(multiaddrs...); err != nil {
 		host.Close()
-		return fmt.Errorf("error for listening,",err)
+		return fmt.Errorf("error for listening,%s",err)
 	}
 
 	addrs, err := host.Network().InterfaceListenAddresses()
