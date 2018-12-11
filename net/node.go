@@ -205,7 +205,7 @@ func New(parent context.Context) (*NetNode, error) {
 
 	id, err := peer.IDFromPrivateKey(privKey)
 	if err != nil {
-		return nil, fmt.Errorf("error for generate id from key,", err)
+		return nil, fmt.Errorf("error for generate id from key,%s", err.Error())
 	}
 	netNode := &NetNode{
 		ctx:         parent,
