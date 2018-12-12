@@ -438,9 +438,13 @@ message Payload {
 }
 
 message COSign {
-    uint32 Step1 = 1;
-    uint32 Step2 = 2;
+    bytes           TPubKey = 1;
+    uint32	        Step1   = 2;
+    repeated bytes	Sign1   = 3;
+    uint32	        Step2   = 4;
+    repeated bytes	Sign2   = 5;
 }
+
 
 message P2PRtSyncMsg {
     bytes  req   = 1;

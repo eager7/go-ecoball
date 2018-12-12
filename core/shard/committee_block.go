@@ -7,8 +7,8 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/core/trie"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type NodeInfo struct {
@@ -65,17 +65,10 @@ func (h *CMBlockHeader) proto() (*pb.CMBlockHeader, error) {
 		PrevHash:     h.PrevHash.Bytes(),
 		LeaderPubKey: common.CopyBytes(h.LeaderPubKey),
 		Nonce:        h.Nonce,
-		Candidate: &pb.NodeInfo{
-			PublicKey: h.Candidate.PublicKey,
-			Address:   h.Candidate.Address,
-			Port:      h.Candidate.Port,
-		},
-		ShardsHash: h.ShardsHash.Bytes(),
-		Hash:       h.Hashes.Bytes(),
-		COSign: &pb.COSign{
-			Step1: h.COSign.Step1,
-			Step2: h.COSign.Step2,
-		},
+		Candidate:    &pb.NodeInfo{PublicKey: h.Candidate.PublicKey, Address: h.Candidate.Address, Port: h.Candidate.Port},
+		ShardsHash:   h.ShardsHash.Bytes(),
+		Hash:         h.Hashes.Bytes(),
+		COSign:       h.COSign.Proto(),
 	}, nil
 }
 
@@ -85,7 +78,10 @@ func (h *CMBlockHeader) unSignatureData() ([]byte, error) {
 		return nil, err
 	}
 	pbHeader.Hash = nil
-	pbHeader.COSign = nil
+	pbHeader.COSign.Sign1 = nil
+	pbHeader.COSign.Sign2 = nil
+	pbHeader.COSign.Step1 = 0
+	pbHeader.COSign.Step2 = 0
 	data, err := pbHeader.Marshal()
 	if err != nil {
 		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
@@ -125,9 +121,14 @@ func (h *CMBlockHeader) Deserialize(data []byte) error {
 	h.ShardsHash = common.NewHash(pbHeader.ShardsHash)
 	h.Hashes = common.NewHash(pbHeader.Hash)
 	h.COSign = &types.COSign{
-		Step1: pbHeader.COSign.Step1,
-		Step2: pbHeader.COSign.Step2,
+		TPubKey: pbHeader.COSign.TPubKey,
+		Step1:   pbHeader.COSign.Step1,
+		Sign1:   nil,
+		Step2:   pbHeader.COSign.Step2,
+		Sign2:   nil,
 	}
+	h.COSign.Sign1 = append(h.COSign.Sign1, pbHeader.COSign.Sign1...)
+	h.COSign.Sign2 = append(h.COSign.Sign2, pbHeader.COSign.Sign2...)
 	return nil
 }
 

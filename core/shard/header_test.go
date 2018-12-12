@@ -7,10 +7,10 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/test/example"
 	"testing"
 	"time"
-	"github.com/ecoball/go-ecoball/core/types"
 )
 
 func TestMinorBlockHeader(t *testing.T) {
@@ -27,9 +27,12 @@ func TestMinorBlockHeader(t *testing.T) {
 		ShardId:           1,
 		CMEpochNo:         2,
 		Receipt:           types.BlockReceipt{},
-		COSign:            &types.COSign{
-			Step1: 10,
-			Step2: 20,
+		COSign: &types.COSign{
+			TPubKey: []byte("tPubKey"),
+			Step1:   10,
+			Sign1:   [][]byte{[]byte("sign1"), []byte("sign11")},
+			Step2:   20,
+			Sign2:   [][]byte{[]byte("sign2"), []byte("sign22")},
 		},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
@@ -52,11 +55,11 @@ func TestMinorBlockHeader(t *testing.T) {
 
 func TestCmBlockHeader(t *testing.T) {
 	header := shard.CMBlockHeader{
-		ChainID:      config.ChainHash,
-		Version:      0,
-		Height:       10,
-		Timestamp:    2340,
-		PrevHash:     common.Hash{},
+		ChainID:   config.ChainHash,
+		Version:   0,
+		Height:    10,
+		Timestamp: 2340,
+		PrevHash:  common.Hash{},
 		//ConsData:     example.ConsensusData(),
 		LeaderPubKey: []byte("12345678909876554432"),
 		Nonce:        23450,
@@ -66,9 +69,12 @@ func TestCmBlockHeader(t *testing.T) {
 			Port:      "5678",
 		},
 		ShardsHash: config.ChainHash,
-		COSign:            &types.COSign{
-			Step1: 10,
-			Step2: 20,
+		COSign: &types.COSign{
+			TPubKey: []byte("tPubKey"),
+			Step1:   10,
+			Sign1:   [][]byte{[]byte("sign1"), []byte("sign11")},
+			Step2:   20,
+			Sign2:   [][]byte{[]byte("sign2"), []byte("sign22")},
 		},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
@@ -108,12 +114,12 @@ func TestCmBlockHeader(t *testing.T) {
 
 func TestFinalBlockHeader(t *testing.T) {
 	header := shard.FinalBlockHeader{
-		ChainID:            config.ChainHash,
-		Version:            10,
-		Height:             120,
-		Timestamp:          3450,
-		TrxCount:           670,
-		PrevHash:           config.ChainHash,
+		ChainID:   config.ChainHash,
+		Version:   10,
+		Height:    120,
+		Timestamp: 3450,
+		TrxCount:  670,
+		PrevHash:  config.ChainHash,
 		//ConsData:           example.ConsensusData(),
 		ProposalPubKey:     []byte("123678435634w453226435"),
 		EpochNo:            570,
@@ -122,9 +128,12 @@ func TestFinalBlockHeader(t *testing.T) {
 		StateDeltaRootHash: config.ChainHash,
 		MinorBlocksHash:    config.ChainHash,
 		StateHashRoot:      config.ChainHash,
-		COSign:            &types.COSign{
-			Step1: 10,
-			Step2: 20,
+		COSign: &types.COSign{
+			TPubKey: []byte("tPubKey"),
+			Step1:   10,
+			Sign1:   [][]byte{[]byte("sign1"), []byte("sign11")},
+			Step2:   20,
+			Sign2:   [][]byte{[]byte("sign2"), []byte("sign22")},
 		},
 	}
 	errors.CheckErrorPanic(header.ComputeHash())
@@ -145,13 +154,15 @@ func TestFinalBlockHeader(t *testing.T) {
 		StateDeltaHash:    common.Hash{},
 		CMBlockHash:       common.Hash{},
 		ProposalPublicKey: []byte("1234567890"),
-		//ConsData:          example.ConsensusData(),
 		ShardId:           1,
 		CMEpochNo:         2,
 		Receipt:           types.BlockReceipt{},
-		COSign:            &types.COSign{
-			Step1: 10,
-			Step2: 20,
+		COSign: &types.COSign{
+			TPubKey: []byte("tPubKey"),
+			Step1:   10,
+			Sign1:   [][]byte{[]byte("sign1"), []byte("sign11")},
+			Step2:   20,
+			Sign2:   [][]byte{[]byte("sign2"), []byte("sign22")},
 		},
 	}
 	block := shard.FinalBlock{
@@ -177,13 +188,18 @@ func TestVCBlockHeader(t *testing.T) {
 		FinalBlockHeight: 1,
 		Round:            0,
 		Candidate:        shard.NodeInfo{},
-		COSign:           &types.COSign{},
+		COSign: &types.COSign{
+			TPubKey: []byte("tPubKey"),
+			Step1:   10,
+			Sign1:   [][]byte{[]byte("sign1"), []byte("sign11")},
+			Step2:   20,
+			Sign2:   [][]byte{[]byte("sign2"), []byte("sign22")},
+		},
 	}
 	data, err := headerVC.Serialize()
 	headerVC2 := new(shard.ViewChangeBlockHeader)
 	errors.CheckErrorPanic(headerVC2.Deserialize(data))
 	errors.CheckEqualPanic(headerVC.JsonString() == headerVC2.JsonString())
-
 
 	blockVC, err := shard.NewVCBlock(headerVC)
 	errors.CheckErrorPanic(err)

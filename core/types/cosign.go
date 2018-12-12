@@ -16,6 +16,11 @@
 
 package types
 
+import (
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/pb"
+)
+
 //type COSign struct {
 //	//Step1         TBLS_SIG
 //	BitValidateor1 [32]uint8
@@ -29,4 +34,17 @@ type COSign struct {
 	Sign1   [][]byte
 	Step2   uint32
 	Sign2   [][]byte
+}
+
+func (c *COSign) Proto() *pb.COSign {
+	p := pb.COSign{
+		TPubKey: common.CopyBytes(c.TPubKey),
+		Step1:   c.Step1,
+		Sign1:   nil,
+		Step2:   c.Step2,
+		Sign2:   nil,
+	}
+	p.Sign1 = append(p.Sign1, c.Sign1...)
+	p.Sign2 = append(p.Sign2, c.Sign2...)
+	return &p
 }

@@ -79,11 +79,8 @@ func (h *ViewChangeBlockHeader) proto() (*pb.ViewChangeBlockHeader, error) {
 			Address:   h.Candidate.Address,
 			Port:      h.Candidate.Port,
 		},
-		Hash: h.Hashes.Bytes(),
-		COSign: &pb.COSign{
-			Step1: h.COSign.Step1,
-			Step2: h.COSign.Step2,
-		},
+		Hash:   h.Hashes.Bytes(),
+		COSign: h.COSign.Proto(),
 	}, nil
 }
 
@@ -93,7 +90,10 @@ func (h *ViewChangeBlockHeader) unSignatureData() ([]byte, error) {
 		return nil, err
 	}
 	pbHeader.Hash = nil
-	pbHeader.COSign = nil
+	pbHeader.COSign.Sign1 = nil
+	pbHeader.COSign.Sign2 = nil
+	pbHeader.COSign.Step1 = 0
+	pbHeader.COSign.Step2 = 0
 	data, err := pbHeader.Marshal()
 	if err != nil {
 		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
@@ -133,10 +133,14 @@ func (h *ViewChangeBlockHeader) Deserialize(data []byte) error {
 	}
 	h.Hashes = common.NewHash(pbHeader.Hash)
 	h.COSign = &types.COSign{
-		Step1: pbHeader.COSign.Step1,
-		Step2: pbHeader.COSign.Step2,
+		TPubKey: pbHeader.COSign.TPubKey,
+		Step1:   pbHeader.COSign.Step1,
+		Sign1:   nil,
+		Step2:   pbHeader.COSign.Step2,
+		Sign2:   nil,
 	}
-
+	h.COSign.Sign1 = append(h.COSign.Sign1, pbHeader.COSign.Sign1...)
+	h.COSign.Sign2 = append(h.COSign.Sign2, pbHeader.COSign.Sign2...)
 	return nil
 }
 
