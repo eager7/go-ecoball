@@ -19,35 +19,35 @@
 package network
 
 import (
-	"io"
-	"time"
-	"sync"
-	"fmt"
-	"strings"
 	"context"
-	"math/rand"
-	"github.com/ipfs/go-ipfs/thirdparty/math2"
+	"fmt"
 	cfg "github.com/ipfs/go-ipfs/repo/config"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	"github.com/ipfs/go-ipfs/thirdparty/math2"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	"gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
 	procctx "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/context"
 	"gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/periodic"
+	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"io"
+	"math/rand"
+	"strings"
+	"sync"
+	"time"
 )
 
 const (
-	minPeerThreshold   = 4
-	bootStrapInterval  = 30 * time.Second
-	bootStrapTimeOut   = bootStrapInterval / 3
+	minPeerThreshold  = 4
+	bootStrapInterval = 30 * time.Second
+	bootStrapTimeOut  = bootStrapInterval / 3
 )
 
 type BootStrapper struct {
-	closer   io.Closer
-	bspeers  []cfg.BootstrapPeer
+	closer  io.Closer
+	bsPeers []cfg.BootstrapPeer
 }
 
-func (net *NetImpl)bootstrap(bsAddress []string) (*BootStrapper){
+func (net *NetImpl) bootstrap(bsAddress []string) *BootStrapper {
 	bsPeers, err := cfg.ParseBootstrapPeers(bsAddress)
 	if err != nil {
 		log.Error("failed to parse bootstrap address", err)
@@ -84,7 +84,7 @@ func (net *NetImpl)bootstrap(bsAddress []string) (*BootStrapper){
 	return &BootStrapper{proc, bsPeers}
 }
 
-func (net *NetImpl)bootstrapConnect(ctx context.Context, bsPeers []cfg.BootstrapPeer, numToDial int) error {
+func (net *NetImpl) bootstrapConnect(ctx context.Context, bsPeers []cfg.BootstrapPeer, numToDial int) error {
 	ctx, cancel := context.WithTimeout(ctx, bootStrapTimeOut)
 	defer cancel()
 
@@ -131,7 +131,7 @@ func (net *NetImpl)bootstrapConnect(ctx context.Context, bsPeers []cfg.Bootstrap
 			count++
 		}
 	}
-	if len(peers) >0 && count == len(peers) {
+	if len(peers) > 0 && count == len(peers) {
 		return fmt.Errorf("failed to bootstrap. %s", err)
 	}
 

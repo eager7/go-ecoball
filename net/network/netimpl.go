@@ -16,40 +16,40 @@
 package network
 
 import (
-	"time"
-	"fmt"
-	"io"
 	"context"
-	"sync"
+	"fmt"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
-	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
-	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
-	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
-	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
-	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/discovery"
+	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
+	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
+	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+	"io"
+	"sync"
+	"time"
 )
 
 const (
-	sendWorkerCount        = 4
+	sendWorkerCount = 4
 
-	sendMessageTimeout     = time.Minute * 10
+	sendMessageTimeout = time.Minute * 10
 
-	discoveryConnTimeout   = time.Second * 30
+	discoveryConnTimeout = time.Second * 30
 
-	gossipMsgTTL           = time.Second * 100
+	gossipMsgTTL = time.Second * 100
 
-	ServiceTag                 = "_net-discovery._udp"
+	ServiceTag = "_net-discovery._udp"
 
-	ProtocolP2pV1  protocol.ID = "/ecoball/app/1.0.0"
+	ProtocolP2pV1 protocol.ID = "/ecoball/app/1.0.0"
 )
 
 var (
-	log = elog.NewLogger("network", elog.DebugLog)
+	log     = elog.NewLogger("network", elog.DebugLog)
 	netImpl *NetImpl
 )
 
@@ -58,12 +58,12 @@ func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
 		return netImpl
 	}
 	netImpl = &NetImpl{
-		ctx:          ctx,
-		host:         host,
-		engine:       NewMsgEngine(ctx, host.ID()),
-		strmap:       make(map[peer.ID]*messageSender),
-		gossipStore:  NewMsgStore(ctx, gossipMsgTTL),
-		quitsendJb:   make(chan bool, 1),
+		ctx:         ctx,
+		host:        host,
+		engine:      NewMsgEngine(ctx, host.ID()),
+		strmap:      make(map[peer.ID]*messageSender),
+		gossipStore: NewMsgStore(ctx, gossipMsgTTL),
+		quitsendJb:  make(chan bool, 1),
 	}
 
 	netImpl.routingTable = NewRouteTable(netImpl)
@@ -84,18 +84,18 @@ func GetNetInstance() (EcoballNetwork, error) {
 // impl transforms the network interface, which sends and receives
 // NetMessage objects, into the ecoball network interface.
 type NetImpl struct {
-	ctx          context.Context
-	host         host.Host
+	ctx  context.Context
+	host host.Host
 
 	// inbound messages from the network are forwarded to the receiver
-	receiver     Receiver
+	receiver Receiver
 	// outbound message engine
-	engine       *MsgEngine
-	quitsendJb   chan bool	
-	strmap       map[peer.ID]*messageSender
-	strmlk       sync.Mutex
+	engine     *MsgEngine
+	quitsendJb chan bool
+	strmap     map[peer.ID]*messageSender
+	strmlk     sync.Mutex
 
-	gossipStore  MsgStore
+	gossipStore MsgStore
 
 	mdnsService  discovery.Service
 	bootstrapper *BootStrapper
@@ -189,7 +189,7 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 		net.routingTable.update(p)
 		if received.Type() == pb.MsgType_APP_MSG_GOSSIP {
 			net.preHandleGossipMsg(received, p)
-			msg, err := net.unwarpGossipMsg(received)
+			msg, err := net.unWarpGossipMsg(received)
 			if err != nil {
 				log.Error(err)
 			} else {
@@ -227,7 +227,7 @@ func (net *NetImpl) AddMsgJob(job *SendMsgJob) {
 }
 
 func (net *NetImpl) startSendWorkers() {
-	for i:=0; i<sendWorkerCount; i++ {
+	for i := 0; i < sendWorkerCount; i++ {
 		i := i
 		go net.sendWorker(i)
 	}
@@ -245,7 +245,7 @@ func (net *NetImpl) sendWorker(id int) {
 					continue
 				}
 				//log.Debug(fmt.Sprintf("worker %d is going to send a message to %s", id, wriapper.pi.ID.Pretty()))
-				if err:= net.sendMessage(wriapper.pi, wriapper.emsg); err != nil {
+				if err := net.sendMessage(wriapper.pi, wriapper.eMsg); err != nil {
 					log.Error("send message to ", wriapper.pi.ID.Pretty(), err)
 				}
 			case <-net.ctx.Done():
@@ -276,7 +276,7 @@ func (net *NetImpl) Start() {
 			var err error
 			net.mdnsService, err = net.StartLocalDiscovery()
 			if err != nil {
-				log.Error("start p2p local discovery",err)
+				log.Error("start p2p local discovery", err)
 			} else {
 				log.Debug("start p2p local discovery")
 			}
@@ -293,11 +293,10 @@ func (net *NetImpl) Stop() {
 	if config.DisableSharding {
 		net.routingTable.Stop()
 
-		if net.mdnsService != nil  {
+		if net.mdnsService != nil {
 			net.mdnsService.Close()
 		}
 	}
-
 
 	if net.bootstrap != nil {
 		net.bootstrapper.closer.Close()

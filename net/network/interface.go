@@ -20,9 +20,9 @@ import (
 	"context"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
-	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
-	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 )
 
 type EcoballNetwork interface {
@@ -32,7 +32,6 @@ type EcoballNetwork interface {
 	SetDelegate(Receiver)
 
 	SelectRandomPeers(peerCount uint16) []peer.ID
-
 
 	Start()
 	Stop()
@@ -56,13 +55,13 @@ type CommAPI interface {
 
 	/*Send a message to a connected peer*/
 	SendMsgToPeerWithId(peer.ID, message.EcoBallNetMsg) error
-	
+
 	/*Send a message to some connected peers*/
 	SendMsgToPeersWithId([]peer.ID, message.EcoBallNetMsg) error
 
 	/*Broadcast message to the connected peers*/
 	BroadcastMessage(message.EcoBallNetMsg) error
-	
+
 	/*get all connected peers id*/
 	GetPeerStoreConnectStatus() []peer.ID
 }
@@ -86,7 +85,6 @@ type Receiver interface {
 	GetShardLeader(shardId uint16) (*peerstore.PeerInfo, error)
 	GetShardMemebersToReceiveCBlock() [][]*peerstore.PeerInfo
 	GetCMMemebersToReceiveSBlock() []*peerstore.PeerInfo
-
 
 	ReceiveError(error)
 	PeerConnected(peer.ID)

@@ -19,17 +19,17 @@
 package network
 
 import (
-	"time"
-	"sync"
 	"context"
 	"github.com/ecoball/go-ecoball/net/message"
+	"sync"
+	"time"
 )
 
 func NewMsgStore(ctx context.Context, ttl time.Duration) MsgStore {
 	store := &MsgStoreImpl{
-		messages:   make(map[uint64]*gmsg, 0),
-		ttl:        ttl,
-		stopCh:     make(chan struct{}),
+		messages: make(map[uint64]*gmsg, 0),
+		ttl:      ttl,
+		stopCh:   make(chan struct{}),
 	}
 
 	go store.expireRoting(ctx)
@@ -37,12 +37,12 @@ func NewMsgStore(ctx context.Context, ttl time.Duration) MsgStore {
 }
 
 type gmsg struct {
-	data     interface{}
-	created  time.Time
-	expired  bool
+	data    interface{}
+	created time.Time
+	expired bool
 }
 
-type  MsgStore interface {
+type MsgStore interface {
 	Add(msg interface{}) bool
 	CheckValid(msg interface{}) bool
 	Stop()
@@ -59,14 +59,14 @@ type MsgStoreImpl struct {
 
 func (msi *MsgStoreImpl) Add(msg interface{}) bool {
 	m, ok := msg.(message.EcoBallNetMsg)
-	if !ok || !msi.CheckValid(msg){
+	if !ok || !msi.CheckValid(msg) {
 		return false
 	}
 
 	msi.lock.Lock()
 	defer msi.lock.Unlock()
 
-	msi.messages[m.Nonce()] = &gmsg{data: msg, created:time.Now()}
+	msi.messages[m.Nonce()] = &gmsg{data: msg, created: time.Now()}
 
 	return true
 }
@@ -109,7 +109,7 @@ func (msi *MsgStoreImpl) expireRoting(ctx context.Context) {
 	}
 }
 
-func (msi *MsgStoreImpl)  hasExpiredMsg() bool {
+func (msi *MsgStoreImpl) hasExpiredMsg() bool {
 	expired := func(m *gmsg) bool {
 		if !m.expired && time.Since(m.created) > msi.ttl {
 			return true
@@ -129,7 +129,7 @@ func (msi *MsgStoreImpl)  hasExpiredMsg() bool {
 	return false
 }
 
-func (msi *MsgStoreImpl)  expireMsg() bool {
+func (msi *MsgStoreImpl) expireMsg() bool {
 	msi.lock.Lock()
 	defer msi.lock.Unlock()
 
@@ -144,8 +144,8 @@ func (msi *MsgStoreImpl)  expireMsg() bool {
 	return false
 }
 
-func (msi *MsgStoreImpl)  expirePollInterval() time.Duration {
-	inv :=  (msi.ttl/100 * 5)
+func (msi *MsgStoreImpl) expirePollInterval() time.Duration {
+	inv := msi.ttl / 100 * 5
 
 	if inv == 0 {
 		inv = 5
@@ -153,4 +153,3 @@ func (msi *MsgStoreImpl)  expirePollInterval() time.Duration {
 
 	return inv
 }
-

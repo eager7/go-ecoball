@@ -18,24 +18,24 @@
 package network
 
 import (
-	"fmt"
 	"errors"
-	"github.com/ecoball/go-ecoball/net/util"
+	"fmt"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
-	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
-	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"github.com/ecoball/go-ecoball/net/util"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
+	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 )
 
 const (
-	GossipPeerCount =  5
+	GossipPeerCount = 5
 )
 
 type RoutingFilter func(id peer.ID) bool
 
 var (
-	NullFilter =  func(peer.ID) bool {
+	NullFilter = func(peer.ID) bool {
 		return false
 	}
 )
@@ -51,7 +51,7 @@ func CombineRoutingFilters(filters ...RoutingFilter) RoutingFilter {
 	}
 }
 
-func (net *NetImpl)GossipMsg(msg message.EcoBallNetMsg) error {
+func (net *NetImpl) GossipMsg(msg message.EcoBallNetMsg) error {
 	// wrap the message by the gossip msg type
 	gossipMsg, err := net.warpMsgByGossip(msg)
 	if err != nil {
@@ -65,16 +65,16 @@ func (net *NetImpl)GossipMsg(msg message.EcoBallNetMsg) error {
 	return fmt.Errorf("duplicated msg in gossip store")
 }
 
-func (net *NetImpl)sendMsgToRandomPeers(peerCounts int, msg message.EcoBallNetMsg) (err error) {
+func (net *NetImpl) sendMsgToRandomPeers(peerCounts int, msg message.EcoBallNetMsg) (err error) {
 	peers := net.getRandomPeers(peerCounts, net.receiver.IsNotMyShard)
 	if len(peers) == 0 {
 		err = errors.New("failed to select random peers")
 		log.Error(err)
 		return err
 	}
-	peerInfo := []*peerstore.PeerInfo{}
+	var peerInfo []*peerstore.PeerInfo
 	for _, id := range peers {
-		peerInfo = append(peerInfo, &peerstore.PeerInfo{ID:id})
+		peerInfo = append(peerInfo, &peerstore.PeerInfo{ID: id})
 	}
 	sendJob := &SendMsgJob{
 		peerInfo,
@@ -85,10 +85,10 @@ func (net *NetImpl)sendMsgToRandomPeers(peerCounts int, msg message.EcoBallNetMs
 	return nil
 }
 
-func (net *NetImpl)forwardMsg(msg message.EcoBallNetMsg, peers[]peer.ID) {
-	peerInfo := []*peerstore.PeerInfo{}
+func (net *NetImpl) forwardMsg(msg message.EcoBallNetMsg, peers []peer.ID) {
+	var peerInfo []*peerstore.PeerInfo
 	for _, id := range peers {
-		peerInfo = append(peerInfo, &peerstore.PeerInfo{ID:id})
+		peerInfo = append(peerInfo, &peerstore.PeerInfo{ID: id})
 	}
 	if len(peerInfo) == 0 {
 		return
@@ -100,7 +100,7 @@ func (net *NetImpl)forwardMsg(msg message.EcoBallNetMsg, peers[]peer.ID) {
 	net.AddMsgJob(sendJob)
 }
 
-func (net *NetImpl)warpMsgByGossip(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
+func (net *NetImpl) warpMsgByGossip(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
 	pbMsg := msg.ToProtoV1()
 	wrapData, err := pbMsg.Marshal()
 	if err != nil {
@@ -111,7 +111,7 @@ func (net *NetImpl)warpMsgByGossip(msg message.EcoBallNetMsg) (message.EcoBallNe
 	return gossipMsg, nil
 }
 
-func (net *NetImpl)unwarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
+func (net *NetImpl) unWarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
 	if msg.Type() != pb.MsgType_APP_MSG_GOSSIP {
 		return nil, fmt.Errorf("unwrap an invalid gossip message")
 	}
@@ -125,8 +125,8 @@ func (net *NetImpl)unwarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallNe
 	}
 }
 
-func (net *NetImpl)getRandomPeers(k int, filter RoutingFilter) []peer.ID {
-	filtedConns := []inet.Conn{}
+func (net *NetImpl) getRandomPeers(k int, filter RoutingFilter) []peer.ID {
+	var filtedConns []inet.Conn
 	conns := net.host.Network().Conns()
 	for _, conn := range conns {
 		if !filter(conn.RemotePeer()) {

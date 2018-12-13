@@ -108,9 +108,9 @@ func FromNet(r io.Reader) (EcoBallNetMsg, error) {
 }
 
 func FromPBReader(pbr ggio.Reader) (EcoBallNetMsg, error) {
-	pb := new(pb.Message)
-	if err := pbr.ReadMsg(pb); err != nil {
+	pbMsg := new(pb.Message)
+	if err := pbr.ReadMsg(pbMsg); err != nil {
 		return nil, err
 	}
-	return NewMessageFromProto(*pb)
+	return NewMessageFromProto(*pbMsg)
 }

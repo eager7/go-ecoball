@@ -38,8 +38,8 @@ type SendMsgJob struct {
 }
 
 type MsgWrapper struct {
-	pi        pstore.PeerInfo
-	emsg      message.EcoBallNetMsg
+	pi   pstore.PeerInfo
+	eMsg message.EcoBallNetMsg
 }
 
 type MsgEngine struct {
@@ -50,7 +50,7 @@ type MsgEngine struct {
 	//enqueue a msg job from servise
 	inbox       chan interface{}
 
-	quitworker  chan bool
+	quitWorker chan bool
 }
 
 func NewMsgEngine(ctx context.Context, id peer.ID) *MsgEngine {
@@ -64,36 +64,36 @@ func NewMsgEngine(ctx context.Context, id peer.ID) *MsgEngine {
 	return me
 }
 
-func (me *MsgEngine)Outbox() <-chan (<-chan *MsgWrapper) {
-	return me.outbox
+func (m *MsgEngine)Outbox() <-chan (<-chan *MsgWrapper) {
+	return m.outbox
 }
 
-func (me *MsgEngine)PushJob(job *SendMsgJob) {
-	for _, peer := range job.Peers {
-		if peer.ID == me.id {
+func (m *MsgEngine)PushJob(job *SendMsgJob) {
+	for _, p := range job.Peers {
+		if p.ID == m.id {
 			continue
 		}
-		me.inbox <- &MsgWrapper{*peer, job.Msg}
+		m.inbox <- &MsgWrapper{*p, job.Msg}
 	}
 }
 
-func (me *MsgEngine)Stop() {
-	me.quitworker <- true
+func (m *MsgEngine)Stop() {
+	m.quitWorker <- true
 }
 
-func (me *MsgEngine) taskWorker(ctx context.Context) {
-	defer close(me.outbox)
+func (m *MsgEngine) taskWorker(ctx context.Context) {
+	defer close(m.outbox)
 	for {
 		oneTimeUse := make(chan *MsgWrapper, 1)
 		select {
 		case <-ctx.Done():
 			return
-		case <- me.quitworker:
+		case <- m.quitWorker:
 			return
-		case me.outbox <- oneTimeUse:
+		case m.outbox <- oneTimeUse:
 		}
 
-		envelope, err := me.nextMsgWrapper(ctx)
+		envelope, err := m.nextMsgWrapper(ctx)
 		if err != nil {
 			close(oneTimeUse)
 			return // ctx cancelled
@@ -103,12 +103,12 @@ func (me *MsgEngine) taskWorker(ctx context.Context) {
 	}
 }
 
-func (me *MsgEngine) nextMsgWrapper(ctx context.Context) (*MsgWrapper, error) {
+func (m *MsgEngine) nextMsgWrapper(ctx context.Context) (*MsgWrapper, error) {
 	for {
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case mw := <-me.inbox:
+		case mw := <-m.inbox:
 			w, ok := mw.(*MsgWrapper)
 			if ok {
 				return w, nil
