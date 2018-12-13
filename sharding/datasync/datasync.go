@@ -136,11 +136,16 @@ func (sync *Sync)SendSyncRequestHelper()  {
 	log.Debug("SendSyncRequest, node type = ", sync.cell.NodeType)
 
 	//TODO, Special case treatment, not working when start a new shard node from scratch
-	if sync.cell.NodeType == sc.NodeShard {
-		log.Debug("Node is ", sc.NodeShard)
-		lastBlock, _, err := sync.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
-		if err != nil {
-			log.Error("GetLastShardBlock ", err)
+	if sync.cell.NodeType == sc.NodeShard || sync.cell.NodeType == sc.NodeCandidate {
+		log.Debug("Node is ", sync.cell.NodeType)
+		//lastBlock, _, err := sync.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
+		//if err != nil {
+		//	log.Error("GetLastShardBlock ", err)
+		//}
+		lastBlock := sync.cell.GetLastCMBlock()
+		if lastBlock == nil {
+			panic("last cm block not exist")
+			return
 		}
 		log.Debug("SendSyncRequest, get Height = ", lastBlock.GetHeight())
 		if lastBlock.GetHeight() == 1 {
@@ -343,11 +348,18 @@ func (s *Sync) DealSyncRequestHelper(request *sc.SyncRequestPacket) (*sc.NetPack
 	var response sc.SyncResponsePacket
 
 	fmt.Println("from = ", from)
+
+	if blockType == cs.HeMinorBlock {
+		blockType = cs.HeFinalBlock
+	}
 	lastBlock, _, err := s.cell.Ledger.GetLastShardBlock(config.ChainHash, blockType)
+	blockType = cs.HeaderType(request.BlockType)
+
 	if err != nil {
 		log.Error("GetLastShardBlock error", err)
 		return nil
 	}
+
 	response.LastHeight = uint64(to)
 	if to < 0 {
 		to = int64(lastBlock.GetHeight())
@@ -358,6 +370,8 @@ func (s *Sync) DealSyncRequestHelper(request *sc.SyncRequestPacket) (*sc.NetPack
 	} else {
 		response.Compelte = true
 	}
+
+	log.Debug("from = ", from, " to = ", to, " blockType = ", blockType)
 
 	for i := from; i <= to; i++ {
 		blockInterface, _, err := s.cell.Ledger.GetShardBlockByHeight(config.ChainHash, blockType, uint64(i), shardID)

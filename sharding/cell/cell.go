@@ -20,6 +20,7 @@ type Cell struct {
 	Self     sc.Worker
 	cm       *workerSet
 	shard    []*sc.Worker
+	candidate    []*sc.Worker
 	//ss        *shardSet
 	//nodes     *workerMap
 	//candidate workerSet
@@ -61,6 +62,21 @@ func (c *Cell) LoadConfig() {
 		}
 	}
 
+	//if nodeType == sc.NodeNil {
+		can := simulate.GetCandidate()
+		for _, member := range can {
+			var worker sc.Worker
+			worker.Pubkey = member.Pubkey
+			worker.Address = member.Address
+			worker.Port = member.Port
+
+			c.addCandidateWorker(&worker)
+			if c.Self.Equal(&worker) {
+				nodeType = sc.NodeCandidate
+			}
+		}
+	//}
+
 	if nodeType == sc.NodeNil {
 		nodeType = sc.NodeShard
 	}
@@ -96,7 +112,7 @@ func (c *Cell) LoadLastBlock() {
 	final := lastFinalBlock.GetObject().(cs.FinalBlock)
 	c.SaveLastFinalBlock(&final)
 
-	if c.NodeType == sc.NodeShard {
+	if c.NodeType == sc.NodeShard || c.NodeType == sc.NodeCandidate {
 		lastMinor, bFinalize, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
 		if err != nil || lastMinor == nil {
 			panic("get minor block error ")
@@ -159,7 +175,7 @@ func (c *Cell) createShardingTopo() {
 		return
 	}
 
-	total := len(lastcm.Shards) + 1
+	total := len(lastcm.Shards) + 2
 	topo.ShardingInfo = make([][]sc.Worker, total)
 
 	for _, member := range c.cm.member {
@@ -174,6 +190,12 @@ func (c *Cell) createShardingTopo() {
 			(&worker).InitWork(&member)
 			topo.ShardingInfo[i+1] = append(topo.ShardingInfo[i+1], worker)
 		}
+	}
+
+	for _, member := range c.candidate {
+		var worker sc.Worker
+		worker = *member
+		topo.ShardingInfo[total - 1] = append(topo.ShardingInfo[total - 1], worker)
 	}
 
 	log.Debug("send sharding topo to channel ", topo.ShardId, " len ", len(topo.ShardingInfo))
@@ -426,9 +448,15 @@ func (c *Cell) GetWorks() []*sc.Worker {
 		return c.cm.member
 	} else if c.NodeType == sc.NodeShard {
 		return c.shard
+	} else if c.NodeType == sc.NodeCandidate {
+		return c.candidate
 	} else {
 		return nil
 	}
+}
+
+func (c *Cell) GetCandidateWorks() []*sc.Worker {
+	return c.candidate
 }
 
 func (c *Cell) GetWorksCounter() uint32 {
@@ -436,6 +464,8 @@ func (c *Cell) GetWorksCounter() uint32 {
 		return uint32(len(c.cm.member))
 	} else if c.NodeType == sc.NodeShard {
 		return uint32(len(c.shard))
+	} else if c.NodeType == sc.NodeCandidate {
+		return uint32(len(c.candidate))
 	} else {
 		return 0
 	}
@@ -468,6 +498,12 @@ func (c *Cell) addCommitteWorker(worker *sc.Worker) {
 	} else {
 		c.cm.addMember(worker)
 	}
+}
+
+func (c *Cell) addCandidateWorker(worker *sc.Worker) {
+	log.Debug("add candidate worker key ", worker.Pubkey, " address ", worker.Address, " port ", worker.Port)
+
+	c.candidate = append(c.candidate, worker)
 }
 
 func (c *Cell) saveShardsInfoFromCMBlock(cmb *cs.CMBlock) {

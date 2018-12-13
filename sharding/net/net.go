@@ -221,9 +221,19 @@ func (n *net) SendBlockToShards(packet *sc.NetPacket) {
 		for i := 0; i < count; i++ {
 			n.sendto(shard.Member[begin+i].Address, shard.Member[begin+i].Port, string(shard.Member[begin+i].PublicKey), sp)
 		}
-
 	}
 
+	candidates := n.ns.GetCandidateWorks()
+	shardSize := len(candidates)
+	bSend, begin, count := CalcCrossShardIndex(si, int(selfSize), shardSize)
+	if !bSend {
+		return
+	}
+
+	log.Debug("send block to candidate ")
+	for i := 0; i < count; i++ {
+		n.sendto(candidates[begin].Address, candidates[begin].Port, string(candidates[begin].Pubkey), sp)
+	}
 }
 
 func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
@@ -264,6 +274,17 @@ func (n *net) SendBlockToCommittee(packet *sc.NetPacket) {
 		}
 	}
 
+	candidates := n.ns.GetCandidateWorks()
+	shardSize := len(candidates)
+	bSend, begin, count = CalcCrossShardIndex(si, int(selfSize), shardSize)
+	if !bSend {
+		return
+	}
+
+	log.Debug("send block to candidate ")
+	for i := 0; i < count; i++ {
+		n.sendto(candidates[begin].Address, candidates[begin].Port, string(candidates[begin].Pubkey), sp)
+	}
 }
 
 func (n *net) TransitBlock(p *sc.CsPacket) {

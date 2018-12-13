@@ -18,6 +18,7 @@ type config struct {
 	Size      string
 	Committee []sc.Worker
 	Shard     []sc.Worker
+	Candidate []sc.Worker
 }
 
 func readConfigFile() *config {
@@ -71,6 +72,10 @@ func GetCommittee() []sc.Worker {
 
 func GetShards() []sc.Worker {
 	return cfg.Shard
+}
+
+func GetCandidate() []sc.Worker {
+	return cfg.Candidate
 }
 
 func GetShardSize() int {
