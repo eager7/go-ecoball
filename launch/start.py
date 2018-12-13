@@ -96,7 +96,7 @@ def main():
         "Port": str(start_port + args.number),
         "Committee": committee,
         "Shard": shard,
-        # "Candidate": candidate
+        "Candidate": candidate
     }
 
     root_dir = os.path.split(os.path.realpath(__file__))[0]
