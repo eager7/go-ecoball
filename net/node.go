@@ -255,15 +255,15 @@ func New(parent context.Context) (*NetNode, error) {
 	peerStore := peerstore.NewPeerstore()
 	peerStore.AddPrivKey(id, privateKey)
 	peerStore.AddPubKey(id, privateKey.GetPublic())
-	h, err := constructPeerHost(parent, id, peerStore, libP2pOpts...)
+	h, err := constructPeerHost(parent, id, peerStore, libP2pOpts...) //basic_host.go
 	if err != nil {
 		return nil, fmt.Errorf("error for constructing host, %s", err.Error())
 	}
 
-	network := network.NewNetwork(parent, h)
-	network.SetDelegate(netNode)
+	n := network.NewNetwork(parent, h)
+	n.SetDelegate(netNode)
 
-	netNode.network = network
+	netNode.network = n
 	netNode.listen = config.SwarmConfig.ListenAddress
 
 	dispatcher.InitMsgDispatcher()
@@ -282,13 +282,13 @@ func (nn *NetNode) Start() error {
 		multiaddrs[idx] = addr
 	}
 
-	host := nn.network.Host()
-	if err := host.Network().Listen(multiaddrs...); err != nil {
-		host.Close()
+	h := nn.network.Host()
+	if err := h.Network().Listen(multiaddrs...); err != nil {
+		h.Close()
 		return fmt.Errorf("error for listening,%s", err)
 	}
 
-	addrs, err := host.Network().InterfaceListenAddresses()
+	addrs, err := h.Network().InterfaceListenAddresses()
 	if err != nil {
 		return err
 	}
@@ -377,7 +377,7 @@ func (nn *NetNode) updateShardingInfo(info *common.ShardingTopo) {
 	nn.connectToShardingPeers()
 }
 
-func (nn *NetNode) getShardAddress(id peer.ID) peerstore.PeerInfo {
+func (nn *NetNode) GetShardAddress(id peer.ID) peerstore.PeerInfo {
 	nn.shardingInfo.rwLock.RLock()
 	defer nn.shardingInfo.rwLock.RUnlock()
 	for _, addr := range nn.shardingInfo.info {
@@ -411,7 +411,7 @@ func (nn *NetNode) nativeMessageLoop() {
 }
 
 func (nn *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
-	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), nn.getShardAddress(p))
+	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), nn.GetShardAddress(p))
 	if incoming.Type() >= pb.MsgType_APP_MSG_UNDEFINED {
 		log.Error("receive a invalid message ", incoming.Type().String())
 		return

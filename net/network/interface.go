@@ -83,6 +83,7 @@ type Receiver interface {
 	IsNotMyShard(p peer.ID) bool
 	IsLeaderOrBackup() bool
 	GetShardLeader(shardId uint16) (*peerstore.PeerInfo, error)
+	GetShardAddress(id peer.ID) peerstore.PeerInfo
 	GetShardMemebersToReceiveCBlock() [][]*peerstore.PeerInfo
 	GetCMMemebersToReceiveSBlock() []*peerstore.PeerInfo
 

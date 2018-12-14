@@ -207,9 +207,9 @@ func (net *NetImpl) preHandleGossipMsg(gmsg message.EcoBallNetMsg, sender peer.I
 	peers := net.getRandomPeers(GossipPeerCount, net.receiver.IsNotMyShard)
 
 	var fwPeers []peer.ID
-	for _, peer := range peers {
-		if peer != sender {
-			fwPeers = append(fwPeers, peer)
+	for _, p := range peers {
+		if p != sender {
+			fwPeers = append(fwPeers, p)
 		}
 	}
 
@@ -234,19 +234,17 @@ func (net *NetImpl) startSendWorkers() {
 }
 
 func (net *NetImpl) sendWorker(id int) {
-	//log.Debug("network send message worker ", id, " start.")
 	defer log.Debug("network send message worker ", id, " shutting down.")
 	for {
 		select {
 		case nextWrapper := <-net.engine.Outbox():
 			select {
-			case wriapper, ok := <-nextWrapper:
+			case wrapper, ok := <-nextWrapper:
 				if !ok {
 					continue
 				}
-				//log.Debug(fmt.Sprintf("worker %d is going to send a message to %s", id, wriapper.pi.ID.Pretty()))
-				if err := net.sendMessage(wriapper.pi, wriapper.eMsg); err != nil {
-					log.Error("send message to ", wriapper.pi.ID.Pretty(), err)
+				if err := net.sendMessage(wrapper.pi, wrapper.eMsg); err != nil {
+					log.Error("send message to ", wrapper.pi, err)
 				}
 			case <-net.ctx.Done():
 				return
@@ -260,7 +258,7 @@ func (net *NetImpl) sendWorker(id int) {
 func (net *NetImpl) StartLocalDiscovery() (discovery.Service, error) {
 	service, err := discovery.NewMdnsService(net.ctx, net.host, 10*time.Second, ServiceTag)
 	if err != nil {
-		return nil, fmt.Errorf("net discovery error,", err)
+		return nil, fmt.Errorf("net discovery error, %s", err)
 	}
 	service.RegisterNotifee((*netNotifiee)(net))
 

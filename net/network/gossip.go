@@ -18,7 +18,6 @@
 package network
 
 import (
-	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
@@ -26,6 +25,7 @@ import (
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 const (
@@ -68,9 +68,7 @@ func (net *NetImpl) GossipMsg(msg message.EcoBallNetMsg) error {
 func (net *NetImpl) sendMsgToRandomPeers(peerCounts int, msg message.EcoBallNetMsg) (err error) {
 	peers := net.getRandomPeers(peerCounts, net.receiver.IsNotMyShard)
 	if len(peers) == 0 {
-		err = errors.New("failed to select random peers")
-		log.Error(err)
-		return err
+		return errors.New(log,"failed to select random peers")
 	}
 	var peerInfo []*peerstore.PeerInfo
 	for _, id := range peers {
@@ -113,12 +111,12 @@ func (net *NetImpl) warpMsgByGossip(msg message.EcoBallNetMsg) (message.EcoBallN
 
 func (net *NetImpl) unWarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
 	if msg.Type() != pb.MsgType_APP_MSG_GOSSIP {
-		return nil, fmt.Errorf("unwrap an invalid gossip message")
+		return nil, errors.New(log, "unwrap an invalid gossip message")
 	}
 	oriPbMsg := pb.Message{}
 	err := oriPbMsg.Unmarshal(msg.Data())
 	if err != nil {
-		return nil, fmt.Errorf("error for unmarshal a gossip message data")
+		return nil, errors.New(log, "error for unmarshal a gossip message data")
 	} else {
 		msg, _ := message.NewMessageFromProto(oriPbMsg)
 		return msg, nil
@@ -126,20 +124,20 @@ func (net *NetImpl) unWarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallN
 }
 
 func (net *NetImpl) getRandomPeers(k int, filter RoutingFilter) []peer.ID {
-	var filtedConns []inet.Conn
+	var filterConns []inet.Conn
 	conns := net.host.Network().Conns()
 	for _, conn := range conns {
 		if !filter(conn.RemotePeer()) {
-			filtedConns = append(filtedConns, conn)
+			filterConns = append(filterConns, conn)
 		}
 	}
-	if len(filtedConns) < k {
-		k = len(filtedConns)
+	if len(filterConns) < k {
+		k = len(filterConns)
 	}
-	indices := util.GetRandomIndices(k, len(filtedConns)-1)
+	indices := util.GetRandomIndices(k, len(filterConns)-1)
 	peers := make([]peer.ID, len(indices))
 	for i, j := range indices {
-		pid := filtedConns[j].RemotePeer()
+		pid := filterConns[j].RemotePeer()
 		peers[i] = pid
 	}
 
