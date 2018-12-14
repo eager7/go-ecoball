@@ -58,9 +58,6 @@ var (
 			},
 		},
 		Action: transferAction,
-		OnUsageError: func(c *cli.Context, err error, isSubcommand bool) error {
-			return cli.NewExitError("", 1)
-		},
 	}
 )
 
