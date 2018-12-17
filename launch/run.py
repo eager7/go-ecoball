@@ -21,10 +21,10 @@ import sys
 import time
 import os
 import pytoml
-import json
 import argparse
 import shutil
 import platform
+
 
 def run(shell_command):
     '''
@@ -58,9 +58,8 @@ def get_config(num, host_ip, data):
 
 def main():
     # Command Line Arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-b', '--deploy-browser', action='store_true', help="Whether to deploy the browsert", dest="browser")
-    parser.add_argument('-w', '--deploy-wallet', action='store_true', help="Whether to deploy the wallet", dest="wallet")
+    parser = argparse.ArgumentParser()    
+    parser.add_argument('-s', '--skip-build-code', action='store_true', help="Whether to build code", dest="skip_build")
     args = parser.parse_args()
 
     # get netwoek config
@@ -76,35 +75,36 @@ def main():
 
     committee_count = 0
     shard_count = 0
+    candidate_count = 0
     for ip in node_ip:
         host_ip = ip
         committee_count += network[ip][0]
         shard_count += network[ip][1]
+        if len(network[ip]) > 2:
+            candidate_count += network[ip][2]
 
     #create directory
-    shard_dir = os.path.join(root_dir, 'ecoball/shard')
+    shard_dir = os.path.join(root_dir, 'ecoball_log/shard')
     if not os.path.exists(shard_dir):
         os.makedirs(shard_dir)        
 
-    committee_dir = os.path.join(root_dir, 'ecoball/committee')
+    committee_dir = os.path.join(root_dir, 'ecoball_log/committee')
     if not os.path.exists(committee_dir):
         os.makedirs(committee_dir)
 
     goPath = os.getenv("GOPATH")
 
-    print("build ecoball with the makefile")
     sysstr = platform.system()
-    if sysstr == "Windows":
-        run("cd ../ &&" + "build_windows.bat")
-    elif sysstr == "Linux":
-        run("make -C " + goPath + "/src/github.com/ecoball/go-ecoball/" + " ecoball")
-    else:
-        print ("Other System tasks: %s" % sysstr)
+    if not args.skip_build:
+        print("build ecoball with the makefile")        
+        if sysstr == "Windows":
+            run("cd ../ &&" + "build_windows.bat")
+        elif sysstr == "Linux":
+            run("make -C " + goPath + "/src/github.com/ecoball/go-ecoball/" + " ecoball")
+        else:
+            print ("Other System tasks: %s" % sysstr)
 
-    http_start_port = 20681
-    onlooker_start_port = 9001
-
-    count = committee_count + shard_count - 1
+    count = committee_count + shard_count + candidate_count - 1
     while count >= 0:
         # mkdir and copy ecoball
         if count < committee_count:
@@ -123,9 +123,9 @@ def main():
             shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/build/ecoball.exe", os.path.join(run_dir, 'ecoball_' + str(count)) + ".exe")
         elif sysstr == "Linux":            
             shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/build/ecoball", os.path.join(run_dir, 'ecoball_' + str(count)))
-        shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/launch/start.py", os.path.join(run_dir, 'start.py'))
-        shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/launch/shard_setup.toml", os.path.join(run_dir, 'shard_setup.toml'))
-        shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/launch/ecoball.toml", os.path.join(run_dir, 'ecoball.toml'))
+        shutil.copy2("start.py", os.path.join(run_dir, 'start.py'))
+        shutil.copy2("shard_setup.toml", os.path.join(run_dir, 'shard_setup.toml'))
+        shutil.copy2("ecoball.toml", os.path.join(run_dir, 'ecoball.toml'))
 
         # start ecoball		
         command = run_dir + "/start.py "
@@ -136,6 +136,42 @@ def main():
         run(command)
 
         count -= 1
+
+    # test candidate node
+    # sleep(15)
+
+    # count = committee_count + shard_count + 1
+    # while count < committee_count + shard_count + candidate_count:
+    #     # mkdir and copy ecoball
+    #     if count < committee_count:
+    #         run_dir = os.path.join(committee_dir, 'ecoball_' + str(count))
+    #     else:
+    #         run_dir = os.path.join(shard_dir, 'ecoball_'+ str(count))
+    #     if not os.path.exists(run_dir):
+    #         os.makedirs(run_dir)
+
+    #     log_dir = os.path.join(run_dir, 'log')
+    #     if not os.path.exists(log_dir):
+    #         os.makedirs(log_dir)
+
+    #     #shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/build/ecoball", os.path.join(run_dir, 'ecoball_' + str(count)))
+    #     if sysstr == "Windows":
+    #         shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/build/ecoball.exe", os.path.join(run_dir, 'ecoball_' + str(count)) + ".exe")
+    #     elif sysstr == "Linux":            
+    #         shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/build/ecoball", os.path.join(run_dir, 'ecoball_' + str(count)))
+    #     shutil.copy2("start.py", os.path.join(run_dir, 'start.py'))
+    #     shutil.copy2("shard_setup.toml", os.path.join(run_dir, 'shard_setup.toml'))
+    #     shutil.copy2("ecoball.toml", os.path.join(run_dir, 'ecoball.toml'))
+
+    #     # start ecoball		
+    #     command = run_dir + "/start.py "
+    #     command += "-o " + host_ip + " -n " + str(count)
+    #     if "size" in data:
+    #         command += " -s " + str(data["size"])
+
+    #     run(command)
+
+    #     count += 1        
 
 
 if __name__ == "__main__":

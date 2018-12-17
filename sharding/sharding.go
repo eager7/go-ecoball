@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/committee"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/shard"
+	"github.com/ecoball/go-ecoball/sharding/candidate"
 )
 
 var (
@@ -58,6 +59,9 @@ func (s *Sharding) Start() {
 		s.instance = committee.MakeCommittee(s.ns)
 	} else if s.ns.NodeType == sc.NodeShard {
 		s.instance = shard.MakeShard(s.ns)
+	} else if s.ns.NodeType == sc.NodeCandidate {
+		log.Debug("I am a candidate node")
+		s.instance = candidate.MakeCandidateShard(s.ns)
 	} else {
 		log.Error("unsupport node type")
 		return

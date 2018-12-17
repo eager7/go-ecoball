@@ -56,13 +56,16 @@ def main():
     start_port = 9901
     committee = []
     shard = []
+    candidate = []
     list_count = []
 
     for ip in node_ip:
         port_index = 0
         committee_count = network[ip][0]
         shard_count = network[ip][1]
-        while port_index < committee_count + shard_count:
+        if len(network[ip]) > 2:
+            candidate_count = network[ip][2]
+        while port_index < committee_count + shard_count + candidate_count:
             node_index = ip + "_" + str(port_index)
             node = {
                 "Pubkey": all_config[node_index]["p2p_peer_publickey"], 
@@ -72,6 +75,8 @@ def main():
             port_index += 1
             if port_index <= committee_count:
                 committee.append(node)
+            elif port_index > committee_count + shard_count:
+                candidate.append(node)
             else:
                 shard.append(node)
         list_count.append(port_index)
@@ -90,7 +95,8 @@ def main():
         "Address": args.host_ip,
         "Port": str(start_port + args.number),
         "Committee": committee,
-        "Shard": shard
+        "Shard": shard,
+        "Candidate": candidate
     }
 
     root_dir = os.path.split(os.path.realpath(__file__))[0]
