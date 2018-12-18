@@ -271,31 +271,29 @@ func New(parent context.Context) (*NetNode, error) {
 }
 
 func (nn *NetNode) Start() error {
-	multiaddrs := make([]ma.Multiaddr, len(nn.listen))
+	multiAddresses := make([]ma.Multiaddr, len(nn.listen))
 	for idx, v := range nn.listen {
 		addr, err := ma.NewMultiaddr(v)
 		if err != nil {
 			return err
 		}
 
-		multiaddrs[idx] = addr
+		multiAddresses[idx] = addr
 	}
 
 	h := nn.network.Host()
-	if err := h.Network().Listen(multiaddrs...); err != nil {
+	if err := h.Network().Listen(multiAddresses...); err != nil {
 		h.Close()
 		return fmt.Errorf("error for listening,%s", err)
 	}
 
-	addrs, err := h.Network().InterfaceListenAddresses()
+	addresses, err := h.Network().InterfaceListenAddresses()
 	if err != nil {
 		return err
 	}
 
-	log.Info("net node listening on:", addrs)
-
+	log.Info("net node listening on:", addresses)
 	nn.network.Start()
-
 	nn.nativeMessageLoop()
 
 	return nil
@@ -411,7 +409,7 @@ func (nn *NetNode) nativeMessageLoop() {
 }
 
 func (nn *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
-	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), nn.GetShardAddress(p), string(incoming.Data()))
+	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), nn.GetShardAddress(p))
 	if incoming.Type() >= pb.MsgType_APP_MSG_UNDEFINED {
 		log.Error("receive a invalid message ", incoming.Type().String())
 		return

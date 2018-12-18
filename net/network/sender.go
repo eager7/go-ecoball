@@ -77,18 +77,18 @@ func (ms *messageSender) prep() error {
 		ms.net.host.Peerstore().AddAddrs(ms.p.ID, ms.p.Addrs, connectedAddrTTL)
 	}
 
-	nstr, err := ms.newStreamToPeer(ms.net.ctx, ms.p.ID, ProtocolP2pV1)
+	stream, err := ms.newStreamToPeer(ms.net.ctx, ms.p.ID, ProtocolP2pV1)
 	if err != nil {
 		return errors.New(log, err.Error())
 	}
 
-	ms.s = nstr
+	ms.s = stream
 
 	return nil
 }
 
 func (ms *messageSender) newStreamToPeer(ctx context.Context, p peer.ID, pids ...protocol.ID) (inet.Stream, error) {
-	log.Info(ms.net.host.Peerstore().Addrs(p), common.JsonString(pids))
+	log.Info("create new stream", ms.net.host.Peerstore().Addrs(p), common.JsonString(pids))
 	return ms.net.host.NewStream(ctx, p, pids...) //basic_host.go
 }
 
@@ -107,7 +107,7 @@ func (ms *messageSender) SendMsg(ctx context.Context, msg message.EcoBallNetMsg)
 		return err
 	}
 
-	log.Debug(fmt.Sprintf("send msg %s to peer:", msg.Type().String()), ms.p, "data:", string(msg.Data()))
+	log.Debug(fmt.Sprintf("success send msg %s to peer:", msg.Type().String()), ms.p)
 
 	return nil
 }
