@@ -103,9 +103,11 @@ func (ms *messageSender) SendMsg(ctx context.Context, msg message.EcoBallNetMsg)
 	if err := msgToStream(ctx, ms.s, msg); err != nil {
 		go inet.FullClose(ms.s)
 		ms.s = nil
+		log.Warn(err)
+		return err
 	}
 
-	log.Debug(fmt.Sprintf("send msg %s to peer", msg.Type().String()), ms.p)
+	log.Debug(fmt.Sprintf("send msg %s to peer:", msg.Type().String()), ms.p, "data:", string(msg.Data()))
 
 	return nil
 }

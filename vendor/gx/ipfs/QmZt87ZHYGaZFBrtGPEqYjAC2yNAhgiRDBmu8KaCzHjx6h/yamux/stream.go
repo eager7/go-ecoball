@@ -304,7 +304,6 @@ func (s *Stream) Reset() error {
 	default:
 		panic("unhandled state")
 	}
-	fmt.Println(string(debug.Stack()))
 	s.state = streamReset
 	s.stateLock.Unlock()
 
@@ -360,7 +359,6 @@ func (s *Stream) forceClose() {
 		// Already successfully closed. It just hasn't been removed from
 		// the list of streams yet.
 	default:
-		fmt.Println(string(debug.Stack()))
 		s.state = streamReset
 	}
 	s.stateLock.Unlock()

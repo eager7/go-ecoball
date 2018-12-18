@@ -151,7 +151,7 @@ func runNode(c *cli.Context) error {
 	}
 
 	//network depends on sharding
-	net.StartNetWork(sdactor)
+	net.StartNetWork(sdactor.SubscribeShardingTopo())
 
 	instance, err := network.GetNetInstance()
 	if err != nil {

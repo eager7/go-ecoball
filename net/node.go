@@ -28,7 +28,6 @@ import (
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/net/util"
-	"github.com/ecoball/go-ecoball/sharding"
 	"github.com/ecoball/go-ecoball/sharding/common"
 	mamask "gx/ipfs/QmSMZwvs3n4GBikZ7hKzT17c3bk65FmyZo2JqtJ16swqCv/multiaddr-filter"
 	mafilter "gx/ipfs/QmSW4uNHbvQia8iZDXzbwjiyHQtnyo9aFqfQAMasj3TJ6Y/go-maddr-filter"
@@ -315,6 +314,7 @@ func (nn *NetNode) connectToShardingPeers() {
 		}
 		wg.Add(1)
 		go func(p peer.ID, addr ma.Multiaddr) {
+			log.Info("start host connect thread:", p, addr)
 			defer wg.Done()
 			h.Peerstore().AddAddrs(p, []ma.Multiaddr{addr}, peerstore.PermanentAddrTTL)
 			pi := peerstore.PeerInfo{ID: p, Addrs: []ma.Multiaddr{addr}}
@@ -411,7 +411,7 @@ func (nn *NetNode) nativeMessageLoop() {
 }
 
 func (nn *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
-	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), nn.GetShardAddress(p))
+	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), nn.GetShardAddress(p), string(incoming.Data()))
 	if incoming.Type() >= pb.MsgType_APP_MSG_UNDEFINED {
 		log.Error("receive a invalid message ", incoming.Type().String())
 		return
@@ -597,14 +597,13 @@ func InitNetWork(ctx context.Context) {
 	}
 }
 
-func StartNetWork(sdActor *sharding.ShardingActor) {
+func StartNetWork(cShard <-chan interface{}) {
 	netActor := NewNetActor(netNode)
 	actorId, _ := netActor.Start()
 	netNode.SetActorPid(actorId)
 
-	if sdActor != nil {
-		ch := sdActor.SubscribeShardingTopo()
-		netNode.SetShardingSubCh(ch)
+	if cShard != nil {
+		netNode.SetShardingSubCh(cShard)
 	}
 
 	if err := netNode.Start(); err != nil {

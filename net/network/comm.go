@@ -71,7 +71,7 @@ func (net *NetImpl) ClosePeer(pubKey string) error {
 
 func (net *NetImpl) SendMsgToPeer(ip, port, pubKey string, msg message.EcoBallNetMsg) error {
 	addrInfo := util.ConstructAddrInfo(ip, port)
-	peer, err := constructPeerInfo(addrInfo, pubKey)
+	p, err := constructPeerInfo(addrInfo, pubKey)
 	if err != nil {
 		return err
 	}
@@ -80,10 +80,7 @@ func (net *NetImpl) SendMsgToPeer(ip, port, pubKey string, msg message.EcoBallNe
 			return fmt.Errorf("connection have not created for %s", peer.ID.Pretty())
 		}
 	*/
-	sendJob := &SendMsgJob{
-		[]*peerstore.PeerInfo{&peer},
-		msg,
-	}
+	sendJob := &SendMsgJob{Peers: []*peerstore.PeerInfo{&p}, Msg: msg}
 	net.AddMsgJob(sendJob)
 
 	return nil
@@ -174,7 +171,7 @@ func constructPeerInfo(addrInfo, pubKey string) (peerstore.PeerInfo, error) {
 		return peerstore.PeerInfo{}, err
 	}
 
-	p := peerstore.PeerInfo{id, []ma.Multiaddr{pma}}
+	p := peerstore.PeerInfo{ID: id, Addrs: []ma.Multiaddr{pma}}
 
 	return p, nil
 }

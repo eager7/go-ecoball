@@ -166,6 +166,7 @@ func (net *NetImpl) handleNewStream(s inet.Stream) {
 }
 
 func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
+	log.Info("handleNewStreamMsg")
 	defer s.Close()
 	if net.receiver == nil {
 		s.Reset()
