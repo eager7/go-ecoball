@@ -13,6 +13,7 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/test/example"
 	"time"
+	"fmt"
 )
 
 const (
@@ -102,10 +103,14 @@ func main() {
 
 		instance, err := network.GetNetInstance()
 		errors.CheckErrorPanic(err)
-		msg := message.New(pb.MsgType_APP_MSG_STRING, []byte("my name is shard1"))
+		var i int
 		for {
+			//instance.ConnectToPeer("192.168.8.35", "9003", pubKey2, false)
+			i += 1
+			msg := message.New(pb.MsgType_APP_MSG_STRING, []byte(fmt.Sprintf("my name is shard1: %d", i)))
 			instance.SendMsgToPeer("192.168.8.35", "9003", pubKey2, msg) //send msg to shard2
-			time.Sleep(time.Second * 2)
+			//instance.ClosePeer(pubKey2)
+			time.Sleep(time.Second * 1)
 		}
 	} else {
 		errors.CheckErrorPanic(json.Unmarshal([]byte(toPoShard2), toPo)) //set node as shard 1

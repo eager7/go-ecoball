@@ -18,18 +18,18 @@ package util
 import (
 	"bufio"
 	"bytes"
+	cryptorand "crypto/rand"
 	"encoding/binary"
 	"errors"
-	"io"
-	"time"
-	"sync"
 	"fmt"
+	"io"
 	"math/big"
 	"math/rand"
-	cryptorand "crypto/rand"
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 // Equals returns whether a and b are the same
@@ -82,7 +82,7 @@ func ReadWithTimeout(reader io.Reader, n uint32, timeout time.Duration) ([]byte,
 		return data, err
 	case <-time.After(timeout):
 		select {
-		case result <- errors.New("Timeout!"):
+		case result <- errors.New("timeout"):
 		default:
 		}
 		err := <-result
@@ -236,10 +236,10 @@ func ConstructAddrInfo(ip, port string) string {
 
 	if strings.Contains(ip, ":") {
 		addrInfo = fmt.Sprintf("/ip6/%s/tcp/%d", ip, tcpPort)
-	//	addrInfo = fmt.Sprintf("/ip6/%s/tcp/%d", ip, tcpPort+1000)
+		//	addrInfo = fmt.Sprintf("/ip6/%s/tcp/%d", ip, tcpPort+1000)
 	} else {
 		addrInfo = fmt.Sprintf("/ip4/%s/tcp/%d", ip, tcpPort)
-	//	addrInfo = fmt.Sprintf("/ip4/%s/tcp/%d", ip, tcpPort+1000)
+		//	addrInfo = fmt.Sprintf("/ip4/%s/tcp/%d", ip, tcpPort+1000)
 	}
 
 	return addrInfo

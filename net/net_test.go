@@ -12,15 +12,6 @@ import (
 	"testing"
 )
 
-type shardInstance struct {
-	c chan interface{}
-}
-
-func (s *shardInstance) Start()                                    {}
-func (s *shardInstance) MsgDispatch(msg interface{})               {}
-func (s *shardInstance) SubscribeShardingTopo() <-chan interface{} { return s.c }
-func (s *shardInstance) SetNet(n network.EcoballNetwork)           {}
-
 func TestNet(t *testing.T) {
 	elog.Log.Debug("net test program...")
 

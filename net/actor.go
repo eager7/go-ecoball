@@ -36,14 +36,14 @@ func NewNetActor(node *NetNode) *NetActor {
 	}
 }
 
-func (this *NetActor) Start() (*actor.PID, error) {
-	this.props = actor.FromProducer(func() actor.Actor { return this })
-	netPid, err := actor.SpawnNamed(this.props, "net")
+func (n *NetActor) Start() (*actor.PID, error) {
+	n.props = actor.FromProducer(func() actor.Actor { return n })
+	netPid, err := actor.SpawnNamed(n.props, "net")
 	eactor.RegisterActor(eactor.ActorP2P, netPid)
 	return netPid, err
 }
 
-func (this *NetActor) Receive(ctx actor.Context) {
+func (n *NetActor) Receive(ctx actor.Context) {
 	var buffer []byte
 	var msgType pb.MsgType
 	msg := ctx.Message()
@@ -55,12 +55,12 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		buffer, _ = msg.(*types.Transaction).Serialize()
 		netMsg := message.New(msgType, buffer)
 		log.Debug("new transactions")
-		this.node.broadCastCh <- netMsg
+		n.node.broadCastCh <- netMsg
 	case *rpc.ListMyIdReq:
-		id := this.node.SelfId()
+		id := n.node.SelfId()
 		ctx.Sender().Request(&rpc.ListMyIdRsp{Id:id}, ctx.Self())
 	case *rpc.ListPeersReq:
-		peers := this.node.Nbrs()
+		peers := n.node.Neighbors()
 		log.Info(peers)
 		ctx.Sender().Request(&rpc.ListPeersRsp{Peer: peers}, ctx.Self())
 	case pb.SignaturePreBlockA:
@@ -69,42 +69,42 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		msgType = pb.MsgType_APP_MSG_SIGNPRE
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.node.broadCastCh <- netMsg
+		n.node.broadCastCh <- netMsg
 	case pb.BlockFirstRound:
 		// broadcast the first round block
 		info,_ := msg.(pb.BlockFirstRound)
 		msgType = pb.MsgType_APP_MSG_BLKF
 		buffer, _ = info.BlockFirst.Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.node.broadCastCh <- netMsg
+		n.node.broadCastCh <- netMsg
 	case pb.REQSynA:
 		// broadcast the synchronization request to update the ledger
 		info,_ := msg.(pb.REQSynA)
 		msgType = pb.MsgType_APP_MSG_REQSYN
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.node.broadCastCh <- netMsg
+		n.node.broadCastCh <- netMsg
 	case pb.REQSynSolo:
 		// broadcast the synchronization request to update the ledger
 		info,_ := msg.(pb.REQSynSolo)
 		msgType = pb.MsgType_APP_MSG_REQSYNSOLO
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.node.broadCastCh <- netMsg
+		n.node.broadCastCh <- netMsg
 	case pb.TimeoutMsg:
 		info,_ := msg.(pb.TimeoutMsg)
 		msgType = pb.MsgType_APP_MSG_TIMEOUT
 		// buffer, _ = msg.(*ababft.TimeoutMsg).Serialize()
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.node.broadCastCh <- netMsg
+		n.node.broadCastCh <- netMsg
 	case pb.SignatureBlkFA:
 		// broadcast the signature for the first-round block
 		info,_ := msg.(pb.SignatureBlkFA)
 		msgType = pb.MsgType_APP_MSG_SIGNBLKF
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.node.broadCastCh <- netMsg
+		n.node.broadCastCh <- netMsg
 	//case ababft.BlockSecondRound:
 	case *types.Block:
 		// broadcast the first round block
@@ -112,14 +112,14 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		// buffer, _ = msg.(*ababft.BlockSecondRound).blockSecond.Serialize()
 		buffer, _ = msg.(*types.Block).Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.node.broadCastCh <- netMsg
+		n.node.broadCastCh <- netMsg
 	case pb.BlockSynA:
 		// broadcast the block according to the synchronization request
 		info,_ := msg.(pb.BlockSynA)
 		msgType = pb.MsgType_APP_MSG_BLKSYN
 		buffer, _ = info.Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.node.broadCastCh <- netMsg
+		n.node.broadCastCh <- netMsg
 	default:
 		log.Error("Error Xmit message ", reflect.TypeOf(ctx.Message()))
 	}

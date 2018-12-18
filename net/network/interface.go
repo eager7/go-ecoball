@@ -74,19 +74,14 @@ type ShardingMsgAPI interface {
 
 // Implement Receiver to receive messages from the EcoBallNetwork
 type Receiver interface {
-	ReceiveMessage(
-		ctx context.Context,
-		sender peer.ID,
-		incoming message.EcoBallNetMsg)
-
+	ReceiveMessage(ctx context.Context, sender peer.ID, incoming message.EcoBallNetMsg)
 	IsValidRemotePeer(peer.ID) bool
 	IsNotMyShard(p peer.ID) bool
 	IsLeaderOrBackup() bool
 	GetShardLeader(shardId uint16) (*peerstore.PeerInfo, error)
 	GetShardAddress(id peer.ID) peerstore.PeerInfo
-	GetShardMemebersToReceiveCBlock() [][]*peerstore.PeerInfo
-	GetCMMemebersToReceiveSBlock() []*peerstore.PeerInfo
-
+	GetShardMembersToReceiveCBlock() [][]*peerstore.PeerInfo
+	GetCMMembersToReceiveSBlock() []*peerstore.PeerInfo
 	ReceiveError(error)
 	PeerConnected(peer.ID)
 	PeerDisconnected(peer.ID)

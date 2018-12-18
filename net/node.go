@@ -94,7 +94,7 @@ func constructPeerHost(ctx context.Context, id peer.ID, ps peerstore.Peerstore, 
 	return libp2p.New(ctx, options...)
 }
 
-func makeAddrsFactory(cfg config.SwarmConfigInfo) (basichost.AddrsFactory, error) {
+func makeAddressesFactory(cfg config.SwarmConfigInfo) (basichost.AddrsFactory, error) {
 	var annAdds []ma.Multiaddr
 	for _, addr := range cfg.AnnounceAddr {
 		mAddr, err := ma.NewMultiaddr(addr)
@@ -222,7 +222,7 @@ func New(parent context.Context) (*NetNode, error) {
 
 	var libP2pOpts []libp2p.Option
 
-	addsFactory, err := makeAddrsFactory(config.SwarmConfig)
+	addsFactory, err := makeAddressesFactory(config.SwarmConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -492,7 +492,7 @@ func (nn *NetNode) GetShardLeader(shardId uint16) (*peerstore.PeerInfo, error) {
 	return pi, nil
 }
 
-func (nn *NetNode) GetShardMemebersToReceiveCBlock() [][]*peerstore.PeerInfo {
+func (nn *NetNode) GetShardMembersToReceiveCBlock() [][]*peerstore.PeerInfo {
 	nn.shardingInfo.rwLock.RLock()
 	defer nn.shardingInfo.rwLock.RUnlock()
 
@@ -518,7 +518,7 @@ func (nn *NetNode) GetShardMemebersToReceiveCBlock() [][]*peerstore.PeerInfo {
 	return peers
 }
 
-func (nn *NetNode) GetCMMemebersToReceiveSBlock() []*peerstore.PeerInfo {
+func (nn *NetNode) GetCMMembersToReceiveSBlock() []*peerstore.PeerInfo {
 	nn.shardingInfo.rwLock.RLock()
 	defer nn.shardingInfo.rwLock.RUnlock()
 
@@ -556,7 +556,7 @@ func (nn *NetNode) SelfRawId() peer.ID {
 	return nn.self
 }
 
-func (nn *NetNode) Nbrs() []string {
+func (nn *NetNode) Neighbors() []string {
 	var peers []string
 
 	host := nn.network.Host()

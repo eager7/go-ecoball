@@ -25,6 +25,7 @@ import (
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	ic "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 func (net *NetImpl) ConnectToPeer(ip, port, pubKey string, isPermanent bool) error {
@@ -41,6 +42,7 @@ func (net *NetImpl) ConnectToPeer(ip, port, pubKey string, isPermanent bool) err
 	if err := net.host.Connect(net.ctx, pi); err != nil {
 		return err
 	}
+	log.Debug("connect peer finished:", ip, port, common.AddressFromPubKey([]byte(pubKey)).HexString(), isPermanent)
 
 	return nil
 }

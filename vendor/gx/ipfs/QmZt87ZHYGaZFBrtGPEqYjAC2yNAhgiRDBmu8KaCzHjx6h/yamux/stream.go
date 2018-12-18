@@ -6,8 +6,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	"runtime/debug"
-	"fmt"
 )
 
 type streamState int
@@ -102,7 +100,6 @@ START:
 		s.recvLock.Unlock()
 	case streamReset:
 		s.stateLock.Unlock()
-		fmt.Println(string(debug.Stack()))
 		return 0, ErrConnectionReset
 	}
 	s.stateLock.Unlock()
@@ -173,7 +170,6 @@ START:
 		return 0, ErrStreamClosed
 	case streamReset:
 		s.stateLock.Unlock()
-		fmt.Println(string(debug.Stack()))
 		return 0, ErrConnectionReset
 	}
 	s.stateLock.Unlock()
@@ -403,7 +399,6 @@ func (s *Stream) processFlags(flags uint16) error {
 		}
 	}
 	if flags&flagRST == flagRST {
-		fmt.Println(string(debug.Stack()))
 		s.state = streamReset
 		closeStream = true
 		s.notifyWaiting()

@@ -178,6 +178,7 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 		received, err := message.FromPBReader(reader)
 		if err != nil {
 			if err != io.EOF {
+				log.Warn("reset stream of ", s)
 				s.Reset()
 				go net.receiver.ReceiveError(err)
 				log.Error(fmt.Sprintf("error from %s, %s", s.Conn().RemotePeer(), err))
