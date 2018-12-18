@@ -446,7 +446,7 @@ func (nn *NetNode) IsValidRemotePeer(p peer.ID) bool {
 			}
 		}
 
-		log.Error(nn.shardingInfo.shardId, p)
+		log.Error(nn.shardingInfo.shardId, p, nn.network.Host().Peerstore().Addrs(p))
 		return false
 	}
 
