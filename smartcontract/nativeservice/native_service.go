@@ -170,7 +170,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 
 	case "pledge": //抵押代币以获取CPU，net资源，需要4个参数，分别为支付代币账号，获取资源账号，cpu数量，net数量，如： root,root,100,100
 		if len(params) != 4 {
-			return nil, errors.New(log, "the param is error, please input two param for pledge")
+			return nil, errors.New(log, "the param is error, please input 4 param for pledge")
 		}
 		from := common.NameToIndex(params[0])
 		to := common.NameToIndex(params[1])
