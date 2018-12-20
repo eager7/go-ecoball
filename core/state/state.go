@@ -19,36 +19,16 @@ package state
 import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/store"
-	"sync"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/common/config"
+	"sync"
 )
 
 var log = elog.NewLogger("state", config.LogLevel)
 var AbaToken = "ABA"
-
-type TypeState uint8
-
-const (
-	FinalType TypeState = 1
-	TempType  TypeState = 2
-	CopyType  TypeState = 3
-)
-
-func (t TypeState) String() string {
-	switch t {
-	case FinalType:
-		return "FinalType"
-	case TempType:
-		return "TempType"
-	case CopyType:
-		return "CopyType"
-	}
-	return "unknown type"
-}
 
 type State struct {
 	Type   TypeState
@@ -58,13 +38,11 @@ type State struct {
 	diskDb *store.LevelDBStore
 
 	tokenMutex sync.RWMutex
-	Tokens	map[string]*TokenInfo	//map[token name]TokenInfo
+	Tokens     map[string]*TokenInfo //map[token name]TokenInfo
 
-	accMutex sync.RWMutex
-	Accounts map[string]*Account	// map[account name]*Account
+	Accounts AccountCache
 
-	paraMutex sync.RWMutex
-	Params    map[string]uint64
+	Params ParamsMap
 
 	prodMutex sync.RWMutex
 	Producers map[common.AccountName]uint64
@@ -94,8 +72,8 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 		st.trie, _ = st.db.OpenTrie(common.Hash{})
 	}
 	st.Tokens = make(map[string]*TokenInfo, 1)
-	st.Accounts = make(map[string]*Account, 1)
-	st.Params = make(map[string]uint64, 1)
+	st.Accounts.Initialize()
+	st.Params.Initialize()
 	st.Producers = make(map[common.AccountName]uint64, 1)
 	st.Chains = make(map[common.Hash]Chain, 1)
 	return st, nil
@@ -111,9 +89,7 @@ func (s *State) StateType() TypeState {
 func (s *State) CopyState() (*State, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	params := make(map[string]uint64, 1)
 	tokens := make(map[string]*TokenInfo, 1)
-	accounts := make(map[string]*Account, 1)
 	prods := make(map[common.AccountName]uint64, 1)
 	chains := make(map[common.Hash]Chain, 1)
 
@@ -135,14 +111,12 @@ func (s *State) CopyState() (*State, error) {
 			}
 		}
 	*/
-	s.accMutex.RLock()
-	defer s.accMutex.RUnlock()
-	for _, v := range s.Accounts {
+	/*for _, v := range s.Accounts {
 		data, _ := v.Serialize()
 		acc := new(Account)
 		acc.Deserialize(data)
 		accounts[acc.Index.String()] = acc
-	}
+	}*/
 
 	s.tokenMutex.RLock()
 	defer s.tokenMutex.RUnlock()
@@ -153,15 +127,17 @@ func (s *State) CopyState() (*State, error) {
 		tokens[token.Symbol] = token
 	}
 
-	return &State{
+	stateCp := &State{
 		path:      s.path,
 		trie:      s.db.CopyTrie(s.trie),
-		Tokens: 	tokens,
-		Accounts:  accounts,
-		Params:    params,
+		Tokens:    tokens,
+		Accounts:  AccountCache{},
+		Params:    s.Params.Clone(),
 		Producers: prods,
 		Chains:    chains,
-	}, nil
+	}
+	stateCp.Accounts.Initialize()
+	return stateCp, nil
 }
 
 /**
@@ -275,10 +251,8 @@ func (s *State) GetContractAbi(index common.AccountName) ([]byte, error) {
  *  @param index - the account index
  */
 func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
-	s.accMutex.RLock()
-	defer s.accMutex.RUnlock()
-	acc, ok := s.Accounts[index.String()]
-	if ok {
+	acc := s.Accounts.Get(index)
+	if acc != nil {
 		return acc, nil
 	}
 	key := common.IndexToBytes(index)
@@ -347,9 +321,7 @@ func (s *State) CommitAccount(acc *Account) error {
 	if err := s.trie.TryUpdate(common.IndexToBytes(acc.Index), d); err != nil {
 		return err
 	}
-	s.accMutex.Lock()
-	defer s.accMutex.Unlock()
-	s.Accounts[acc.Index.String()] = acc
+	s.Accounts.Add(acc)
 	return nil
 }
 
@@ -364,9 +336,7 @@ func (s *State) commitParam(key string, value uint64) error {
 	if err := s.trie.TryUpdate([]byte(key), common.Uint64ToBytes(value)); err != nil {
 		return err
 	}
-	s.paraMutex.Lock()
-	defer s.paraMutex.Unlock()
-	s.Params[key] = value
+	s.Params.Add(key, value)
 	return nil
 }
 
@@ -375,24 +345,22 @@ func (s *State) commitParam(key string, value uint64) error {
  *  @param key - param name
  */
 func (s *State) getParam(key string) (uint64, error) {
-	s.paraMutex.Lock()
-	defer s.paraMutex.Unlock()
-	value, ok := s.Params[key]
-	if ok {
+	value, err := s.Params.Get(key)
+	if err == nil {
 		return value, nil
 	}
 	s.mutex.Lock()
 	data, err := s.trie.TryGet([]byte(key))
 	s.mutex.Unlock()
 	if err != nil {
-		s.Params[key] = 0
+		s.Params.Add(key, 0)
 		return 0, errors.New(log, fmt.Sprintf("mpt tree get error:%s", err.Error()))
 	}
 	if len(data) == 0 {
 		return 0, nil
 	}
 	value = common.Uint64SetBytes(data)
-	s.Params[key] = value
+	s.Params.Add(key, value)
 	return value, nil
 }
 
@@ -446,11 +414,7 @@ func (s *State) Reset(hash common.Hash) error {
 	if err != nil {
 		return err
 	}
-	s.accMutex.Lock()
-	defer s.accMutex.Unlock()
-	for k := range s.Accounts {
-		delete(s.Accounts, k)
-	}
+	s.Accounts.Purge()
 	s.prodMutex.Lock()
 	defer s.prodMutex.Unlock()
 	for k := range s.Producers {
@@ -461,11 +425,7 @@ func (s *State) Reset(hash common.Hash) error {
 	for t := range s.Tokens {
 		delete(s.Tokens, t)
 	}
-		s.paraMutex.Lock()
-	defer s.paraMutex.Unlock()
-	for k := range s.Params {
-		delete(s.Params, k)
-	}
+	s.Params.Purge()
 	log.Info("Open Trie Hash:", hash.HexString())
 	return nil
 }

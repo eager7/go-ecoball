@@ -196,7 +196,8 @@ func TestStateDBCopy(t *testing.T) {
 
 	copy, err := s.CopyState()
 	errors.CheckErrorPanic(err)
-	errors.CheckEqualPanic(s.Accounts["pct"].JsonString() == copy.Accounts["pct"].JsonString())
+	origin, _ := copy.GetAccountByName(common.NameToIndex("pct"))
+	errors.CheckEqualPanic(s.Accounts.Get(common.NameToIndex("pct")).JsonString() == origin.JsonString())
 
 	copy.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetUint64(300))
 	balance, err := copy.AccountGetBalance(indexAcc, state.AbaToken)

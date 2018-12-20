@@ -1,22 +1,22 @@
 package state
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"math/big"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"encoding/json"
+	"math/big"
 )
 
 const AbaTotal = 2100000000
 
 type TokenInfo struct {
-	Symbol 		 string					`json:"symbol"`
-	MaxSupply 	 *big.Int				`json:"max_supply"`
-	Supply		 *big.Int 				`json:"supply"`
-	Creator 	 common.AccountName     `json:"issuer"`
-	Issuer       common.AccountName     `json:"issuer"`
+	Symbol    string             `json:"symbol"`
+	MaxSupply *big.Int           `json:"max_supply"`
+	Supply    *big.Int           `json:"supply"`
+	Creator   common.AccountName `json:"issuer"`
+	Issuer    common.AccountName `json:"issuer"`
 }
 
 type Token struct {
@@ -24,13 +24,13 @@ type Token struct {
 	Balance *big.Int `json:"balance, omitempty"`
 }
 
-func NewToken(symbol string, maxSupply, supply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error){
+func NewToken(symbol string, maxSupply, supply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error) {
 	stat := &TokenInfo{
-		Symbol: 	symbol,
-		MaxSupply:	maxSupply,
-		Supply:		supply,
-		Creator:	creator,
-		Issuer:		issuer,
+		Symbol:    symbol,
+		MaxSupply: maxSupply,
+		Supply:    supply,
+		Creator:   creator,
+		Issuer:    issuer,
 	}
 
 	return stat, nil
@@ -40,11 +40,11 @@ func (info *TokenInfo) Serialize() ([]byte, error) {
 	maxSupply, err := info.MaxSupply.GobEncode()
 	supply, err := info.Supply.GobEncode()
 	p := &pb.TokenInfo{
-		Symbol:		info.Symbol,
-		MaxSupply:	maxSupply,
-		Supply:		supply,
-		Creator:	uint64(info.Creator),
-		Issuer:		uint64(info.Issuer),
+		Symbol:    info.Symbol,
+		MaxSupply: maxSupply,
+		Supply:    supply,
+		Creator:   uint64(info.Creator),
+		Issuer:    uint64(info.Issuer),
 	}
 	b, err := p.Marshal()
 	if err != nil {
@@ -53,7 +53,7 @@ func (info *TokenInfo) Serialize() ([]byte, error) {
 	return b, nil
 }
 
-func (info *TokenInfo) Deserialize(data []byte) (error) {
+func (info *TokenInfo) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New(log, "input data's length is zero")
 	}
@@ -268,7 +268,7 @@ func (s *State) SetTokenInfo(symbol string, maxSupply, supply *big.Int, creator,
 	return token, nil
 }
 
-func (s *State) IssueToken(to common.AccountName, amount *big.Int, symbol string) error{
+func (s *State) IssueToken(to common.AccountName, amount *big.Int, symbol string) error {
 	token, err := s.GetTokenInfo(symbol)
 	if err != nil {
 		return err
