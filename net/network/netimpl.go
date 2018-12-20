@@ -248,7 +248,7 @@ func (net *NetImpl) sendWorker(id int) {
 					continue
 				}
 				if err := net.sendMessage(wrapper.pi, wrapper.eMsg); err != nil {
-					log.Error("send message to ", wrapper.pi, err)
+					log.Error("send message to ", wrapper.pi, net.host.Peerstore().Addrs(wrapper.pi.ID), err)
 				}
 			case <-net.ctx.Done():
 				return
