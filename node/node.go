@@ -134,7 +134,7 @@ func runNode(c *cli.Context) error {
 	net.InitNetWork(ctx)
 
 	if !config.DisableSharding {
-		simulate.LoadConfig()
+		simulate.LoadConfig("./sharding.json")
 	}
 
 	log.Info("Build Geneses Block")

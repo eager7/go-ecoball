@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	simulate.LoadConfig()
+	simulate.LoadConfig("/tmp/sharding.json")
 
 	os.RemoveAll("shard")
 	L, err := ledgerimpl.NewLedger("shard", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
