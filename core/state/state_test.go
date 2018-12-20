@@ -22,8 +22,14 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/store"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
+	"github.com/ecoball/go-ecoball/test/example"
+	"github.com/ecoball/go-ecoball/txpool"
 	"math/big"
 	"os"
 	"testing"
@@ -238,4 +244,87 @@ func checkBalance(value uint64, index common.AccountName, s *state.State) {
 	errors.CheckErrorPanic(err)
 	elog.Log.Info(balance)
 	errors.CheckEqualPanic(balance.Uint64() == value)
+}
+
+func TestResource(t *testing.T) {
+	l := example.ShardLedger("/tmp/test_resource")
+	txpool.Start(l)
+
+	root := common.NameToIndex("root")
+	user := common.NameToIndex("user3")
+
+	shards := []shard.Shard{{
+		Member: []shard.NodeInfo{{
+			PublicKey: simulate.GetNodePubKey(),
+			Address:   simulate.GetNodeInfo().Address,
+			Port:      simulate.GetNodeInfo().Port,
+		}},
+		MemberAddr: []shard.NodeAddr{{
+			Address: simulate.GetNodeInfo().Address,
+			Port:    simulate.GetNodeInfo().Port,
+		}},
+	}}
+	committee, err := l.NewCmBlock(config.ChainHash, time.Now().UnixNano(), shards)
+	errors.CheckErrorPanic(err)
+	event.Send(event.ActorNil, event.ActorLedger, committee)
+	time.Sleep(time.Millisecond * 500)
+
+	//minor block 1
+	invoke, err := types.NewInvokeContract(root, root, config.ChainHash, state.Owner, "new_account", []string{"user3", common.AddressFromPubKey(config.Delegate.PublicKey).HexString()}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 100)
+
+	txs, err := txpool.T.GetTxsList(config.ChainHash)
+	errors.CheckErrorPanic(err)
+	minor, _, err := l.NewMinorBlock(config.ChainHash, txs, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	event.Send(event.ActorNil, event.ActorLedger, minor)
+	time.Sleep(time.Millisecond * 500)
+
+	final, err := l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []common.Hash{minor.Hashes})
+	errors.CheckErrorPanic(err)
+	event.Send(event.ActorNil, event.ActorLedger, final)
+	time.Sleep(time.Millisecond * 500)
+
+	acc, err := l.AccountGet(config.ChainHash, user)
+	errors.CheckErrorPanic(err)
+	elog.Log.Debug(acc.JsonString())
+
+	//minor block 2
+	transfer, err := types.NewTransfer(root, user, config.ChainHash, state.Active, new(big.Int).SetUint64(100), 0, time.Now().UnixNano())
+	transfer.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+	time.Sleep(time.Millisecond * 100)
+
+	invoke, err = types.NewInvokeContract(root, root, config.ChainHash, state.Active, "pledge", []string{"root", "user3", "1000", "1000"}, 0, time.Now().UnixNano())
+	invoke.SetSignature(&config.Root)
+	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+	time.Sleep(time.Millisecond * 100)
+
+	txs, err = txpool.T.GetTxsList(config.ChainHash)
+	errors.CheckErrorPanic(err)
+	minor, _, err = l.NewMinorBlock(config.ChainHash, txs, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	event.Send(event.ActorNil, event.ActorLedger, minor)
+	time.Sleep(time.Millisecond * 500)
+
+	final, err = l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []common.Hash{minor.Hashes})
+	errors.CheckErrorPanic(err)
+	event.Send(event.ActorNil, event.ActorLedger, final)
+	time.Sleep(time.Millisecond * 500)
+
+	acc, err = l.AccountGet(config.ChainHash, user)
+	errors.CheckErrorPanic(err)
+	elog.Log.Debug(acc.JsonString())
+
+	//minor block 3
+	for i := 0; i < 10; i ++ {
+		transfer, err = types.NewTransfer(user, root, config.ChainHash, state.Active, new(big.Int).SetUint64(1), 0, time.Now().UnixNano())
+		transfer.SetSignature(&config.Delegate)
+		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
+		time.Sleep(time.Millisecond * 100)
+	}
+
+	time.Sleep(time.Second * 1)
 }

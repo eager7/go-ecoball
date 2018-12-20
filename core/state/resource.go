@@ -211,6 +211,7 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
  *  @param timeStamp - current time
  */
 func (s *State) RecoverResources(index common.AccountName, timeStamp int64, cpuLimit, netLimit float64) error {
+	log.Debug("recover resource:", timeStamp)
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -247,12 +248,14 @@ func (s *State) RequireResources(index common.AccountName, cpuLimit, netLimit fl
 	if err != nil {
 		return 0, 0, err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
-	acc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit)
-	log.Debug("cpu:", acc.Cpu.Used, acc.Cpu.Available, acc.Cpu.Limit)
-	log.Debug("net:", acc.Net.Used, acc.Net.Available, acc.Net.Limit)
-	return acc.Cpu.Available, acc.Net.Available, nil
+	nAcc, err := acc.Clone()
+	if err != nil {
+		return 0, 0, err
+	}
+	nAcc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit)
+	log.Debug("cpu:", nAcc.Cpu.Used, nAcc.Cpu.Available, nAcc.Cpu.Limit)
+	log.Debug("net:", nAcc.Net.Used, nAcc.Net.Available, nAcc.Net.Limit)
+	return nAcc.Cpu.Available, nAcc.Net.Available, nil
 }
 
 /**

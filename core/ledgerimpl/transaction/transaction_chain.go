@@ -659,7 +659,6 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	if err := s.SubResources(tx.From, cpu, net, cpuLimit, netLimit); err != nil {
 		return nil, 0, 0, err
 	}
-	//log.Debug("result:", ret, "cpu:", cpu, "us net:", net/1000, "byte")
 
 	return ret, cpu, net, nil
 }
@@ -1318,7 +1317,7 @@ func (c *ChainTx) newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transact
 	if err != nil {
 		return nil, nil, err
 	}
-	log.Debug("new minor block:", block.GetHeight(), block.MinorBlockHeader.JsonString())
+	log.Notice("new minor block:", block.GetHeight(), block.MinorBlockHeader.JsonString())
 	//log.Warn(common.JsonString(c.StateDB.FinalDB.Params), common.JsonString(c.StateDB.FinalDB.Accounts))
 	return block, nil, nil
 }
@@ -1459,7 +1458,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("new final block:", block.Height, block.FinalBlockHeader.JsonString())
+	log.Notice("new final block:", block.Height, block.FinalBlockHeader.JsonString())
 	//log.Warn(common.JsonString(c.StateDB.FinalDB.Params), common.JsonString(c.StateDB.FinalDB.Accounts))
 	return block, nil
 }
@@ -1668,58 +1667,6 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, tx
 			return err
 		}
 	case types.TxInvoke:
-		/*if delta.Receipt.NewToken != nil {
-			token := new(state.TokenInfo)
-			if err := token.Deserialize(delta.Receipt.NewToken); err != nil {
-				return err
-			}
-			if err := s.CommitToken(token); err != nil {
-				return err
-			}
-		}
-		for _, data := range delta.Receipt.Accounts {
-			acc := new(state.Account)
-			if err := acc.Deserialize(data); err != nil {
-				return err
-			}
-			accState, err := s.GetAccountByName(acc.Index)
-			if err != nil {
-				return err
-			}
-			if accState == nil {
-				accState = acc
-			}
-			if acc.Tokens != nil {
-				for k, v := range acc.Tokens {
-					accState.Tokens[k] = v
-				}
-			}
-			if acc.Permissions != nil {
-				for k, v := range acc.Permissions {
-					accState.Permissions[k] = v
-				}
-			}
-			if acc.Cpu.Limit != 0 {
-				accState.Cpu.Limit = acc.Cpu.Limit
-				//accState.Cpu.Available = acc.Cpu.Available
-				accState.Cpu.Staked = acc.Cpu.Staked
-				//accState.Cpu.Used = acc.Cpu.Used
-				accState.Cpu.Delegated = acc.Cpu.Delegated
-
-			}
-			if acc.Net.Limit != 0 {
-				accState.Net.Limit = acc.Net.Limit
-				accState.Net.Delegated = acc.Net.Delegated
-				accState.Net.Staked = acc.Net.Staked
-				//accState.Net.Available = acc.Net.Available
-			}
-			if acc.TimeStamp != 0 {
-				accState.TimeStamp = acc.TimeStamp
-			}
-			//if acc.Delegates
-			s.CommitAccount(accState)
-		}*/
-		log.Info("handle tx in ", s.Type.String(), common.JsonString(delta))
 		_, _, _, err := c.HandleTransaction(s, tx, timeStamp, cpuLimit, netLimit)
 		if err != nil {
 			return err

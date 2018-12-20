@@ -383,16 +383,16 @@ func (a *Account) JsonString() string {
 	return string(data)
 }
 
-func (a *Account) Clone() *Account {
+func (a *Account) Clone() (*Account, error) {
 	n := new(Account)
 	data, err := a.Serialize()
 	if err != nil {
 		log.Warn(err)
-		return nil
+		return nil, err
 	}
 	if err := n.Deserialize(data); err != nil {
 		log.Warn(err)
-		return nil
+		return nil, err
 	}
-	return n
+	return n, nil
 }
