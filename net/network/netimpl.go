@@ -169,6 +169,7 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 	log.Info("handleNewStreamMsg")
 	defer s.Close()
 	if net.receiver == nil {
+		log.Error("reset stream")
 		s.Reset()
 		return
 	}
@@ -179,6 +180,7 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 		if err != nil {
 			if err != io.EOF {
 				log.Warn("reset stream of ", s)
+				log.Error("reset stream")
 				s.Reset()
 				go net.receiver.ReceiveError(err)
 				log.Error(fmt.Sprintf("error from %s, %s", s.Conn().RemotePeer(), err))

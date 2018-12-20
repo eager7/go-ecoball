@@ -1318,7 +1318,7 @@ func (c *ChainTx) newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transact
 	if err != nil {
 		return nil, nil, err
 	}
-	log.Info("new minor block:", block.GetHeight(), block.MinorBlockHeader.JsonString())
+	log.Debug("new minor block:", block.GetHeight(), block.MinorBlockHeader.JsonString())
 	//log.Warn(common.JsonString(c.StateDB.FinalDB.Params), common.JsonString(c.StateDB.FinalDB.Accounts))
 	return block, nil, nil
 }
@@ -1459,7 +1459,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	if err != nil {
 		return nil, err
 	}
-	log.Info("new final block:", block.Height, block.FinalBlockHeader.JsonString())
+	log.Debug("new final block:", block.Height, block.FinalBlockHeader.JsonString())
 	//log.Warn(common.JsonString(c.StateDB.FinalDB.Params), common.JsonString(c.StateDB.FinalDB.Accounts))
 	return block, nil
 }

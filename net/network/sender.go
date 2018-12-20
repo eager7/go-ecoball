@@ -49,6 +49,7 @@ func NewMsgSender(pi peerstore.PeerInfo, p2pNet *NetImpl) *messageSender {
 func (ms *messageSender) invalidate() {
 	ms.invalid = true
 	if ms.s != nil {
+		log.Error("reset stream")
 		ms.s.Reset()
 		ms.s = nil
 	}
