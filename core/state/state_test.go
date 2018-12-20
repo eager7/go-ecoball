@@ -190,7 +190,7 @@ func TestStateDBCopy(t *testing.T) {
 
 	copy, err := s.CopyState()
 	errors.CheckErrorPanic(err)
-	errors.CheckEqualPanic(s.Accounts["pct"].JsonString(false) == copy.Accounts["pct"].JsonString(false))
+	errors.CheckEqualPanic(s.Accounts["pct"].JsonString() == copy.Accounts["pct"].JsonString())
 
 	copy.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetUint64(300))
 	balance, err := copy.AccountGetBalance(indexAcc, state.AbaToken)

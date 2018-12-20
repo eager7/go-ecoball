@@ -354,7 +354,6 @@ func (a *Account) SubBalance(token string, amount *big.Int) error {
 	balance := t.GetBalance()
 	value := new(big.Int).Sub(balance, amount)
 	if value.Sign() < 0 {
-		a.Show()
 		return errors.New(log, "the balance is not enough")
 	}
 	t.SetBalance(value)
