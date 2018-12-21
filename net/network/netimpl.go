@@ -30,7 +30,6 @@ import (
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"io"
-	"sync"
 	"time"
 )
 
@@ -64,8 +63,7 @@ type NetImpl struct {
 	// outbound message engine
 	engine *MsgEngine
 
-	strmap map[peer.ID]*messageSender
-	strmlk sync.Mutex
+	SenderMap SenderMap
 
 	gossipStore MsgStore
 
@@ -84,14 +82,13 @@ func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
 		host:         host,
 		receiver:     nil,
 		engine:       NewMsgEngine(ctx, host.ID()),
-		strmap:       make(map[peer.ID]*messageSender),
-		strmlk:       sync.Mutex{},
+		SenderMap:    SenderMap{},
 		gossipStore:  NewMsgStore(ctx, gossipMsgTTL),
 		mdnsService:  nil,
 		bootStrapper: nil,
 		routingTable: nil,
 	}
-
+	netImpl.SenderMap.Initialize()
 	netImpl.routingTable = NewRouteTable(netImpl)
 
 	host.SetStreamHandler(ProtocolP2pV1, netImpl.handleNewStream)
@@ -124,45 +121,13 @@ func (net *NetImpl) SetDelegate(r Receiver) {
 }
 
 func (net *NetImpl) sendMessage(p pstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
-	ms, err := net.messageSenderToPeer(p)
+	sender, err := net.NewMessageSender(p)
 	if err != nil {
 		return err
 	}
-	err = ms.SendMsg(net.ctx, outgoing)
+	err = sender.SendMsg(net.ctx, outgoing)
 
 	return err
-}
-
-func (net *NetImpl) messageSenderToPeer(p pstore.PeerInfo) (*messageSender, error) {
-	net.strmlk.Lock()
-	ms, ok := net.strmap[p.ID]
-	if ok {
-		net.strmlk.Unlock()
-		return ms, nil
-	}
-	ms = NewMsgSender(p, net)
-	net.strmap[p.ID] = ms
-	net.strmlk.Unlock()
-
-	if err := ms.prepOrInvalidate(); err != nil {
-		net.strmlk.Lock()
-		defer net.strmlk.Unlock()
-
-		if msCur, ok := net.strmap[p.ID]; ok {
-			// Changed. Use the new one, old one is invalid and
-			// not in the map so we can just throw it away.
-			if ms != msCur {
-				return msCur, nil
-			}
-			// Not changed, remove the now invalid stream from the
-			// map.
-			delete(net.strmap, p.ID)
-		}
-		// Invalid but not in map. Must have been removed by a disconnect.
-		return nil, err
-	}
-	// All ready to go.
-	return ms, nil
 }
 
 func (net *NetImpl) handleNewStream(s inet.Stream) {

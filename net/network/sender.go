@@ -25,6 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/net/message"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"sync"
 	"time"
 )
@@ -128,4 +129,19 @@ func msgToStream(ctx context.Context, s inet.Stream, msg message.EcoBallNetMsg) 
 		log.Warn("error resetting deadline: ", err)
 	}
 	return nil
+}
+
+func (net *NetImpl) NewMessageSender(p pstore.PeerInfo) (*messageSender, error) {
+	sender := net.SenderMap.Get(p.ID)
+	if sender != nil {
+		return sender, nil
+	}
+	sender = NewMsgSender(p, net)
+
+	if err := sender.prepOrInvalidate(); err != nil {
+		return nil, err
+	}
+	net.SenderMap.Add(p.ID, sender)
+
+	return sender, nil
 }

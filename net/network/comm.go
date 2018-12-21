@@ -53,21 +53,16 @@ func (net *NetImpl) ClosePeer(pubKey string) error {
 		return err
 	}
 
-	conn := net.host.Network().ConnsToPeer(id)
-
 	var streams []inet.Stream
-	for _, conn := range conn {
+	for _, conn := range net.host.Network().ConnsToPeer(id) {
 		streams = append(streams, conn.GetStreams()...)
 	}
-
-	net.strmlk.Lock()
-	defer net.strmlk.Unlock()
 
 	for _, stream := range streams {
 		stream.Close()
 	}
 
-	delete(net.strmap, id)
+	net.SenderMap.Del(id)
 	log.Info("close the peer", id.String())
 	return net.host.Network().ClosePeer(id)
 }
