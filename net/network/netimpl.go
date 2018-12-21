@@ -53,34 +53,6 @@ var (
 	netImpl *NetImpl
 )
 
-func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
-	if netImpl != nil {
-		return netImpl
-	}
-	netImpl = &NetImpl{
-		ctx:         ctx,
-		host:        host,
-		engine:      NewMsgEngine(ctx, host.ID()),
-		strmap:      make(map[peer.ID]*messageSender),
-		gossipStore: NewMsgStore(ctx, gossipMsgTTL),
-		quitsendJb:  make(chan bool, 1),
-	}
-
-	netImpl.routingTable = NewRouteTable(netImpl)
-
-	host.SetStreamHandler(ProtocolP2pV1, netImpl.handleNewStream)
-	host.Network().Notify((*netNotifiee)(netImpl))
-
-	return netImpl
-}
-
-func GetNetInstance() (EcoballNetwork, error) {
-	if netImpl == nil {
-		return nil, fmt.Errorf("network has not been initialized")
-	}
-	return netImpl, nil
-}
-
 // impl transforms the network interface, which sends and receives
 // NetMessage objects, into the ecoball network interface.
 type NetImpl struct {
@@ -90,17 +62,49 @@ type NetImpl struct {
 	// inbound messages from the network are forwarded to the receiver
 	receiver Receiver
 	// outbound message engine
-	engine     *MsgEngine
-	quitsendJb chan bool
-	strmap     map[peer.ID]*messageSender
-	strmlk     sync.Mutex
+	engine *MsgEngine
+
+	strmap map[peer.ID]*messageSender
+	strmlk sync.Mutex
 
 	gossipStore MsgStore
 
 	mdnsService  discovery.Service
-	bootstrapper *BootStrapper
+	bootStrapper *BootStrapper
 
 	routingTable *NetRouteTable
+}
+
+func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
+	if netImpl != nil {
+		return netImpl
+	}
+	netImpl = &NetImpl{
+		ctx:          ctx,
+		host:         host,
+		receiver:     nil,
+		engine:       NewMsgEngine(ctx, host.ID()),
+		strmap:       make(map[peer.ID]*messageSender),
+		strmlk:       sync.Mutex{},
+		gossipStore:  NewMsgStore(ctx, gossipMsgTTL),
+		mdnsService:  nil,
+		bootStrapper: nil,
+		routingTable: nil,
+	}
+
+	netImpl.routingTable = NewRouteTable(netImpl)
+
+	host.SetStreamHandler(ProtocolP2pV1, netImpl.handleNewStream)
+	host.Network().Notify(netImpl)
+
+	return netImpl
+}
+
+func GetNetInstance() (EcoballNetwork, error) {
+	if netImpl == nil {
+		return nil, fmt.Errorf("network has not been initialized")
+	}
+	return netImpl, nil
 }
 
 func (net *NetImpl) GetPeerID() (peer.ID, error) {
@@ -226,54 +230,19 @@ func (net *NetImpl) preHandleGossipMsg(gmsg message.EcoBallNetMsg, sender peer.I
 	net.forwardMsg(gmsg, fwPeers)
 }
 
-func (net *NetImpl) AddMsgJob(job *SendMsgJob) {
-	net.engine.PushJob(job)
-}
-
-func (net *NetImpl) startSendWorkers() {
-	for i := 0; i < sendWorkerCount; i++ {
-		i := i
-		go net.sendWorker(i)
-	}
-}
-
-func (net *NetImpl) sendWorker(id int) {
-	defer log.Debug("network send message worker ", id, " shutting down.")
-	for {
-		select {
-		case nextWrapper := <-net.engine.Outbox():
-			select {
-			case wrapper, ok := <-nextWrapper:
-				if !ok {
-					continue
-				}
-				if err := net.sendMessage(wrapper.pi, wrapper.eMsg); err != nil {
-					log.Error("send message to ", wrapper.pi, net.host.Peerstore().Addrs(wrapper.pi.ID), err)
-				}
-			case <-net.ctx.Done():
-				return
-			}
-		case <-net.ctx.Done():
-			return
-		}
-	}
-}
-
 func (net *NetImpl) StartLocalDiscovery() (discovery.Service, error) {
 	service, err := discovery.NewMdnsService(net.ctx, net.host, 10*time.Second, ServiceTag)
 	if err != nil {
 		return nil, fmt.Errorf("net discovery error, %s", err)
 	}
-	service.RegisterNotifee((*netNotifiee)(net))
+	service.RegisterNotifee(net)
 
 	return service, nil
 }
 
-// Start network
 func (net *NetImpl) Start() {
 	if config.DisableSharding {
 		net.routingTable.Start()
-
 		if config.EnableLocalDiscovery {
 			var err error
 			net.mdnsService, err = net.StartLocalDiscovery()
@@ -285,30 +254,21 @@ func (net *NetImpl) Start() {
 		}
 	}
 
-	net.bootstrapper = net.bootstrap(config.SwarmConfig.BootStrapAddr)
-
+	net.bootStrapper = net.bootstrap(config.SwarmConfig.BootStrapAddr)
 	net.startSendWorkers()
 }
 
-// Stop network
 func (net *NetImpl) Stop() {
 	if config.DisableSharding {
 		net.routingTable.Stop()
-
 		if net.mdnsService != nil {
 			net.mdnsService.Close()
 		}
 	}
-
 	if net.bootstrap != nil {
-		net.bootstrapper.closer.Close()
+		net.bootStrapper.closer.Close()
 	}
-
-	net.host.Network().StopNotify((*netNotifiee)(net))
-
+	net.host.Network().StopNotify(net)
 	net.engine.Stop()
-
 	net.gossipStore.Stop()
-
-	net.quitsendJb <- true
 }

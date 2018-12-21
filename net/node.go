@@ -38,6 +38,7 @@ import (
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	circuit "gx/ipfs/QmcQ56iqKP8ZRhRGLe5EReJVvrJZDaGzkuatrPv4Z1B6cG/go-libp2p-circuit"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+	"gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
 	"os"
 	"sync"
 	"time"
@@ -73,12 +74,39 @@ type netNode struct {
 	network.Receiver
 }
 
-func constructPeerHost(ctx context.Context, id peer.ID, ps peerstore.Peerstore, options ...libp2p.Option) (host.Host, error) {
-	key := ps.PrivKey(id)
-	if key == nil {
-		return nil, fmt.Errorf("missing private key for node ID: %s", id.Pretty())
+func constructPeerHost(ctx context.Context, id peer.ID, private crypto.PrivKey) (host.Host, error) {
+	addsFactory, err := address.MakeAddressesFactory(config.SwarmConfig)
+	if err != nil {
+		return nil, err
 	}
-	options = append([]libp2p.Option{libp2p.Identity(key), libp2p.Peerstore(ps)}, options...)
+	addsFactory = address.ComposeAddressesFactory(addsFactory, address.FilterRelayAddresses)
+
+	var options []libp2p.Option
+	options = append(options, libp2p.Identity(private))
+	options = append(options, libp2p.AddrsFactory(addsFactory))
+	if !config.SwarmConfig.DisableNatPortMap {
+		options = append(options, libp2p.NATPortMap())
+	}
+	if !config.SwarmConfig.DisableRelay {
+		var opts []circuit.RelayOpt
+		if config.SwarmConfig.EnableRelayHop {
+			opts = append(opts, circuit.OptHop)
+		}
+		options = append(options, libp2p.EnableRelay(opts...))
+	}
+
+	period := time.Duration(config.SwarmConfig.ConnGracePeriod) * time.Second
+	grace, err := time.ParseDuration(period.String())
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+	mgr := connmgr.NewConnManager(config.SwarmConfig.ConnLowWater, config.SwarmConfig.ConnHighWater, grace)
+	options = append(options, libp2p.ConnectionManager(mgr))
+
+	ps := peerstore.NewPeerstore()
+	ps.AddPrivKey(id, private)
+	ps.AddPubKey(id, private.GetPublic())
+	options = append(options, libp2p.Peerstore(ps))
 	return libp2p.New(ctx, options...)
 }
 
@@ -99,57 +127,20 @@ func NewNetNode(parent context.Context) (*netNode, error) {
 		broadCastCh:   make(chan message.EcoBallNetMsg, 4*1024),
 		handlers:      message.MakeHandlers(),
 		actorId:       nil,
-		listen:        nil,
+		listen:        config.SwarmConfig.ListenAddress,
 		shardingSubCh: make(<-chan interface{}, 1),
 		shardingInfo:  new(network.ShardingInfo),
 		Receiver:      nil,
 	}
-
 	netNode.shardingInfo.Initialize()
 
-	var libP2pOpts []libp2p.Option
-
-	addsFactory, err := address.MakeAddressesFactory(config.SwarmConfig)
+	h, err := constructPeerHost(parent, id, private) //basic_host.go
 	if err != nil {
-		return nil, err
-	}
-	addsFactory = address.ComposeAddressesFactory(addsFactory, address.FilterRelayAddresses)
-
-	libP2pOpts = append(libP2pOpts, libp2p.AddrsFactory(addsFactory))
-
-	if !config.SwarmConfig.DisableNatPortMap {
-		libP2pOpts = append(libP2pOpts, libp2p.NATPortMap())
+		return nil, errors.New(fmt.Sprintf("error for constructing host, %s", err.Error()))
 	}
 
-	if !config.SwarmConfig.DisableRelay {
-		var opts []circuit.RelayOpt
-		if config.SwarmConfig.EnableRelayHop {
-			opts = append(opts, circuit.OptHop)
-		}
-		libP2pOpts = append(libP2pOpts, libp2p.EnableRelay(opts...))
-	}
-
-	period := time.Duration(config.SwarmConfig.ConnGracePeriod) * time.Second
-	grace, err := time.ParseDuration(period.String())
-	if err != nil {
-		return nil, err
-	}
-	mgr := connmgr.NewConnManager(config.SwarmConfig.ConnLowWater, config.SwarmConfig.ConnHighWater, grace)
-	libP2pOpts = append(libP2pOpts, libp2p.ConnectionManager(mgr))
-
-	peerStore := peerstore.NewPeerstore()
-	peerStore.AddPrivKey(id, private)
-	peerStore.AddPubKey(id, private.GetPublic())
-	h, err := constructPeerHost(parent, id, peerStore, libP2pOpts...) //basic_host.go
-	if err != nil {
-		return nil, fmt.Errorf("error for constructing host, %s", err.Error())
-	}
-
-	n := network.NewNetwork(parent, h)
-	n.SetDelegate(netNode)
-
-	netNode.network = n
-	netNode.listen = config.SwarmConfig.ListenAddress
+	netNode.network = network.NewNetwork(parent, h)
+	netNode.network.SetDelegate(netNode)
 
 	dispatcher.InitMsgDispatcher()
 

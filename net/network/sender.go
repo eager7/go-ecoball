@@ -19,27 +19,24 @@
 package network
 
 import (
-	"sync"
-	"fmt"
-	"time"
 	"context"
-	"github.com/ecoball/go-ecoball/net/message"
-	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
-	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
-	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
-	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
+	"fmt"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/net/message"
+	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
+	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"sync"
+	"time"
 )
 
 const connectedAddrTTL = time.Minute * 10
 
 type messageSender struct {
-	s         inet.Stream
-	lk        sync.Mutex
-	p         peerstore.PeerInfo
-	net       *NetImpl
-	invalid   bool
+	s       inet.Stream
+	lk      sync.Mutex
+	p       peerstore.PeerInfo
+	net     *NetImpl
+	invalid bool
 }
 
 func NewMsgSender(pi peerstore.PeerInfo, p2pNet *NetImpl) *messageSender {
@@ -74,11 +71,11 @@ func (ms *messageSender) prep() error {
 	}
 
 	addr := ms.net.host.Peerstore().Addrs(ms.p.ID)
-	if len(addr) == 0 && len(ms.p.Addrs) >0 {
+	if len(addr) == 0 && len(ms.p.Addrs) > 0 {
 		ms.net.host.Peerstore().AddAddrs(ms.p.ID, ms.p.Addrs, connectedAddrTTL)
 	}
 
-	stream, err := ms.newStreamToPeer(ms.net.ctx, ms.p.ID, ProtocolP2pV1)
+	stream, err := ms.net.host.NewStream(ms.net.ctx, ms.p.ID, ProtocolP2pV1) //basic_host.go
 	if err != nil {
 		return errors.New(err.Error())
 	}
@@ -86,11 +83,6 @@ func (ms *messageSender) prep() error {
 	ms.s = stream
 
 	return nil
-}
-
-func (ms *messageSender) newStreamToPeer(ctx context.Context, p peer.ID, pids ...protocol.ID) (inet.Stream, error) {
-	log.Info("create new stream", ms.net.host.Peerstore().Addrs(p), common.JsonString(pids))
-	return ms.net.host.NewStream(ctx, p, pids...) //basic_host.go
 }
 
 func (ms *messageSender) SendMsg(ctx context.Context, msg message.EcoBallNetMsg) error {

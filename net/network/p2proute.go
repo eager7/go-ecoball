@@ -57,8 +57,12 @@ type NetRouteTable struct {
 
 func NewRouteTable(n *NetImpl) *NetRouteTable {
 	table := &NetRouteTable{
-		net: n,
-		rt:  initRoutingTable(n.host),
+		net:         n,
+		rt:          initRoutingTable(n.host),
+		rtLock:      sync.Mutex{},
+		msgSubCh:    nil,
+		stop:        nil,
+		PeerRouting: nil,
 	}
 
 	return table
@@ -67,17 +71,13 @@ func NewRouteTable(n *NetImpl) *NetRouteTable {
 func initRoutingTable(host host.Host) (table *kb.RoutingTable) {
 	peerID := kb.ConvertPeerID(host.ID())
 
-	rt := kb.NewRoutingTable(
-		KValue,
-		peerID,
-		time.Minute, //TOD, should come from config file
-		host.Peerstore())
-	cmgr := host.ConnManager()
+	rt := kb.NewRoutingTable(KValue, peerID, time.Minute, host.Peerstore())
+	manager := host.ConnManager()
 	rt.PeerAdded = func(p peer.ID) {
-		cmgr.TagPeer(p, "kbucket", 5)
+		manager.TagPeer(p, "kbucket", 5)
 	}
 	rt.PeerRemoved = func(p peer.ID) {
-		cmgr.UntagPeer(p, "kbucket")
+		manager.UntagPeer(p, "kbucket")
 	}
 
 	return rt
@@ -86,8 +86,8 @@ func initRoutingTable(host host.Host) (table *kb.RoutingTable) {
 func (nrt *NetRouteTable) SyncRouteTable() {
 	syncedPeers := make(map[peer.ID]bool)
 	//sync with bootstrap peer
-	if nrt.net.bootstrapper != nil {
-		for _, bsp := range nrt.net.bootstrapper.bsPeers {
+	if nrt.net.bootStrapper != nil {
+		for _, bsp := range nrt.net.bootStrapper.bsPeers {
 			if nrt.net.host.Network().Connectedness(bsp.ID()) == inet.Connected {
 				nrt.SyncWithPeer(bsp.ID())
 				syncedPeers[bsp.ID()] = true
@@ -180,11 +180,11 @@ func (nrt *NetRouteTable) OnSyncRouteAck(msg message.EcoBallNetMsg) {
 		}
 		nrt.net.host.Peerstore().AddAddr(pa.Id, addr, pstore.PermanentAddrTTL)
 		pi := &pstore.PeerInfo{
-			pa.Id,
-			[]ma.Multiaddr{addr},
+			ID:    pa.Id,
+			Addrs: []ma.Multiaddr{addr},
 		}
-		cntness := nrt.net.host.Network().Connectedness(pi.ID)
-		if (pi.ID != nrt.net.host.ID()) && !(cntness == inet.Connected || cntness == inet.CanConnect) {
+		connectedness := nrt.net.host.Network().Connectedness(pi.ID)
+		if (pi.ID != nrt.net.host.ID()) && !(connectedness == inet.Connected || connectedness == inet.CanConnect) {
 			go func(pi *pstore.PeerInfo) {
 				if pi.ID == nrt.net.host.ID() {
 					return
@@ -201,11 +201,11 @@ func (nrt *NetRouteTable) OnSyncRouteAck(msg message.EcoBallNetMsg) {
 
 func (nrt *NetRouteTable) Start() {
 	var err error
-	msgs := []pb.MsgType{
+	msg := []pb.MsgType{
 		pb.MsgType_APP_MSG_P2PRTSYN,
 		pb.MsgType_APP_MSG_P2PRTSYNACK,
 	}
-	nrt.msgSubCh, err = dispatcher.Subscribe(msgs...)
+	nrt.msgSubCh, err = dispatcher.Subscribe(msg...)
 	if err != nil {
 		log.Error(err)
 		return
@@ -290,12 +290,6 @@ func (nrt *NetRouteTable) remove(p peer.ID) {
 	nrt.rt.Remove(p)
 }
 
-/*
-func (nrt *NetRouteTable) nearestPeersToQuery(id peer.ID, count int) []peer.ID {
-	closer := nrt.rt.NearestPeers(kb.ConvertKey(id.String()), count)
-	return closer
-}
-*/
 func getRandomPeers(k int, peers []peer.ID) []peer.ID {
 
 	if len(peers) < k {

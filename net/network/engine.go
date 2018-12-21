@@ -30,11 +30,9 @@ const (
 	InBoxChanBufSize  = 1024
 )
 
-type SendFunc func(pstore.PeerInfo, message.EcoBallNetMsg) error
-
 type SendMsgJob struct {
-	Peers    []*pstore.PeerInfo
-	Msg      message.EcoBallNetMsg
+	Peers []*pstore.PeerInfo
+	Msg   message.EcoBallNetMsg
 }
 
 type MsgWrapper struct {
@@ -43,32 +41,31 @@ type MsgWrapper struct {
 }
 
 type MsgEngine struct {
-	ctx         context.Context
-	id          peer.ID
+	ctx context.Context
+	id  peer.ID
 	//contains outgoing messages to peers
-	outbox      chan (<-chan *MsgWrapper)
-	//enqueue a msg job from servise
-	inbox       chan interface{}
+	outbox chan (<-chan *MsgWrapper)
+	//enqueue a msg job from service
+	inbox chan interface{}
 
 	quitWorker chan bool
 }
 
 func NewMsgEngine(ctx context.Context, id peer.ID) *MsgEngine {
 	me := &MsgEngine{
-		ctx:       ctx,
-		id:        id,
-		outbox:    make(chan (<-chan *MsgWrapper), OutBoxChanBufSize),
-		inbox:     make(chan interface{}, InBoxChanBufSize),
+		ctx:    ctx,
+		id:     id,
+		outbox: make(chan (<-chan *MsgWrapper), OutBoxChanBufSize),
+		inbox:  make(chan interface{}, InBoxChanBufSize),
 	}
 	go me.taskWorker(ctx)
 	return me
 }
 
-func (m *MsgEngine)Outbox() <-chan (<-chan *MsgWrapper) {
+func (m *MsgEngine) Outbox() <-chan (<-chan *MsgWrapper) {
 	return m.outbox
 }
-
-func (m *MsgEngine)PushJob(job *SendMsgJob) {
+func (m *MsgEngine) PushJob(job *SendMsgJob) {
 	for _, p := range job.Peers {
 		if p.ID == m.id {
 			continue
@@ -76,11 +73,9 @@ func (m *MsgEngine)PushJob(job *SendMsgJob) {
 		m.inbox <- &MsgWrapper{*p, job.Msg}
 	}
 }
-
-func (m *MsgEngine)Stop() {
+func (m *MsgEngine) Stop() {
 	m.quitWorker <- true
 }
-
 func (m *MsgEngine) taskWorker(ctx context.Context) {
 	defer close(m.outbox)
 	for {
@@ -88,7 +83,7 @@ func (m *MsgEngine) taskWorker(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case <- m.quitWorker:
+		case <-m.quitWorker:
 			return
 		case m.outbox <- oneTimeUse:
 		}
@@ -102,7 +97,6 @@ func (m *MsgEngine) taskWorker(ctx context.Context) {
 		close(oneTimeUse)
 	}
 }
-
 func (m *MsgEngine) nextMsgWrapper(ctx context.Context) (*MsgWrapper, error) {
 	for {
 		select {
@@ -113,6 +107,37 @@ func (m *MsgEngine) nextMsgWrapper(ctx context.Context) (*MsgWrapper, error) {
 			if ok {
 				return w, nil
 			}
+		}
+	}
+}
+
+func (net *NetImpl) AddMsgJob(job *SendMsgJob) {
+	net.engine.PushJob(job)
+}
+func (net *NetImpl) startSendWorkers() {
+	for i := 0; i < sendWorkerCount; i++ {
+		i := i
+		go net.sendWorker(i)
+	}
+}
+func (net *NetImpl) sendWorker(id int) {
+	defer log.Debug("network send message worker ", id, " shutting down.")
+	for {
+		select {
+		case nextWrapper := <-net.engine.Outbox():
+			select {
+			case wrapper, ok := <-nextWrapper:
+				if !ok {
+					continue
+				}
+				if err := net.sendMessage(wrapper.pi, wrapper.eMsg); err != nil {
+					log.Error("send message to ", wrapper.pi, net.host.Peerstore().Addrs(wrapper.pi.ID), err)
+				}
+			case <-net.ctx.Done():
+				return
+			}
+		case <-net.ctx.Done():
+			return
 		}
 	}
 }
