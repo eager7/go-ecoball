@@ -23,16 +23,15 @@ import (
 	inCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/net/address"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ecoball/go-ecoball/sharding/common"
-	mamask "gx/ipfs/QmSMZwvs3n4GBikZ7hKzT17c3bk65FmyZo2JqtJ16swqCv/multiaddr-filter"
-	mafilter "gx/ipfs/QmSW4uNHbvQia8iZDXzbwjiyHQtnyo9aFqfQAMasj3TJ6Y/go-maddr-filter"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
-	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/host/basic"
 	"gx/ipfs/QmYAL9JsqVVPFWwM1ZzHNsofmTzRYQHJ2KqQaBmFJjJsNx/go-libp2p-connmgr"
 	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
@@ -42,7 +41,6 @@ import (
 	"os"
 	"sync"
 	"time"
-	"github.com/ecoball/go-ecoball/net/address"
 )
 
 const (
@@ -53,7 +51,6 @@ const (
 	ShardBackup
 )
 
-
 var (
 	log = elog.NewLogger("net", elog.DebugLog)
 
@@ -61,14 +58,6 @@ var (
 
 	defaultNode *netNode
 )
-
-type ShardingInfo struct {
-	shardId   uint16
-	role      int
-	peersInfo [][]peer.ID
-	info      map[uint16]map[peer.ID]ma.Multiaddr // to accelerate the finding speed
-	rwLock    sync.RWMutex
-}
 
 type netNode struct {
 	ctx           context.Context
@@ -79,7 +68,7 @@ type netNode struct {
 	actorId       *actor.PID
 	listen        []string
 	shardingSubCh <-chan interface{}
-	shardingInfo  *ShardingInfo
+	shardingInfo  *network.ShardingInfo
 
 	network.Receiver
 }
@@ -93,72 +82,6 @@ func constructPeerHost(ctx context.Context, id peer.ID, ps peerstore.Peerstore, 
 	return libp2p.New(ctx, options...)
 }
 
-func makeAddressesFactory(cfg config.SwarmConfigInfo) (basichost.AddrsFactory, error) {
-	var annAdds []ma.Multiaddr
-	for _, addr := range cfg.AnnounceAddr {
-		mAddr, err := ma.NewMultiaddr(addr)
-		if err != nil {
-			return nil, err
-		}
-		annAdds = append(annAdds, mAddr)
-	}
-
-	filters := mafilter.NewFilters()
-	noAnnAdds := map[string]bool{}
-	for _, addr := range cfg.NoAnnounceAddr {
-		f, err := mamask.NewMask(addr)
-		if err == nil {
-			filters.AddDialFilter(f)
-			continue
-		}
-		mAddr, err := ma.NewMultiaddr(addr)
-		if err != nil {
-			return nil, err
-		}
-		noAnnAdds[mAddr.String()] = true
-	}
-
-	return func(allAddrs []ma.Multiaddr) []ma.Multiaddr {
-		var adds []ma.Multiaddr
-		if len(annAdds) > 0 {
-			adds = annAdds
-		} else {
-			adds = allAddrs
-		}
-
-		var out []ma.Multiaddr
-		for _, mAddr := range adds {
-			// check for exact matches
-			ok, _ := noAnnAdds[mAddr.String()]
-			// check for /ipcidr matches
-			if !ok && !filters.AddrBlocked(mAddr) {
-				out = append(out, mAddr)
-			}
-		}
-		return out
-	}, nil
-}
-
-func filterRelayAddrs(addrs []ma.Multiaddr) []ma.Multiaddr {
-	var rAdds []ma.Multiaddr
-	for _, addr := range addrs {
-		_, err := addr.ValueForProtocol(circuit.P_CIRCUIT)
-		if err == nil {
-			continue
-		}
-		rAdds = append(rAdds, addr)
-	}
-	return rAdds
-}
-
-
-
-func composeAddrsFactory(f, g basichost.AddrsFactory) basichost.AddrsFactory {
-	return func(addrs []ma.Multiaddr) []ma.Multiaddr {
-		return f(g(addrs))
-	}
-}
-
 func NewNetNode(parent context.Context) (*netNode, error) {
 	private, err := address.GetNodePrivateKey()
 	if err != nil {
@@ -167,29 +90,31 @@ func NewNetNode(parent context.Context) (*netNode, error) {
 
 	id, err := peer.IDFromPrivateKey(private)
 	if err != nil {
-		return nil, fmt.Errorf("error for generate id from key,%s", err.Error())
+		return nil, errors.New(fmt.Sprintf("error for generate id from key,%s", err.Error()))
 	}
 	netNode := &netNode{
 		ctx:           parent,
 		self:          id,
-		broadCastCh:   make(chan message.EcoBallNetMsg, 4*1024), //TODO move to config
+		network:       nil,
+		broadCastCh:   make(chan message.EcoBallNetMsg, 4*1024),
 		handlers:      message.MakeHandlers(),
-		shardingInfo:  new(ShardingInfo),
+		actorId:       nil,
+		listen:        nil,
 		shardingSubCh: make(<-chan interface{}, 1),
+		shardingInfo:  new(network.ShardingInfo),
+		Receiver:      nil,
 	}
 
-	netNode.shardingInfo.peersInfo = make([][]peer.ID, 0)
-	netNode.shardingInfo.info = make(map[uint16]map[peer.ID]ma.Multiaddr)
+	netNode.shardingInfo.Initialize()
 
 	var libP2pOpts []libp2p.Option
 
-	addsFactory, err := makeAddressesFactory(config.SwarmConfig)
+	addsFactory, err := address.MakeAddressesFactory(config.SwarmConfig)
 	if err != nil {
 		return nil, err
 	}
-	if !config.SwarmConfig.DisableRelay {
-		addsFactory = composeAddrsFactory(addsFactory, filterRelayAddrs)
-	}
+	addsFactory = address.ComposeAddressesFactory(addsFactory, address.FilterRelayAddresses)
+
 	libP2pOpts = append(libP2pOpts, libp2p.AddrsFactory(addsFactory))
 
 	if !config.SwarmConfig.DisableNatPortMap {
@@ -262,9 +187,9 @@ func (nn *netNode) Start() error {
 
 //连接本shard内的节点
 func (nn *netNode) connectToShardingPeers() {
-	nn.shardingInfo.rwLock.RLock()
-	defer nn.shardingInfo.rwLock.RUnlock()
-	works := nn.shardingInfo.info[nn.shardingInfo.shardId]
+	nn.shardingInfo.RwLock.RLock()
+	defer nn.shardingInfo.RwLock.RUnlock()
+	works := nn.shardingInfo.Info[nn.shardingInfo.ShardId]
 	h := nn.network.Host()
 	var wg sync.WaitGroup
 	for id, w := range works {
@@ -290,19 +215,19 @@ func (nn *netNode) connectToShardingPeers() {
 
 func (nn *netNode) updateShardingInfo(info *common.ShardingTopo) {
 	log.Info(inCommon.JsonString(info))
-	nn.shardingInfo.rwLock.Lock()
-	nn.shardingInfo.shardId = info.ShardId
+	nn.shardingInfo.RwLock.Lock()
+	nn.shardingInfo.ShardId = info.ShardId
 	for sid, shard := range info.ShardingInfo {
 		for i, member := range shard {
 			log.Info(sid, i)
 			if sid == 0 && i == 0 {
-				nn.shardingInfo.role = CommitteeLeader
+				nn.shardingInfo.Role = CommitteeLeader
 			} else if sid == 0 && i == 1 {
-				nn.shardingInfo.role = CommitteeBackup
+				nn.shardingInfo.Role = CommitteeBackup
 			} else if sid > 0 && i == 0 {
-				nn.shardingInfo.role = ShardLeader
+				nn.shardingInfo.Role = ShardLeader
 			} else if sid > 0 && i == 1 {
-				nn.shardingInfo.role = ShardBackup
+				nn.shardingInfo.Role = ShardBackup
 			}
 
 			id, err := network.IdFromConfigEncodePublicKey(member.Pubkey)
@@ -315,31 +240,31 @@ func (nn *netNode) updateShardingInfo(info *common.ShardingTopo) {
 			addInfo := util.ConstructAddrInfo(member.Address, member.Port)
 			addr, err := ma.NewMultiaddr(addInfo)
 			if err != nil {
-				log.Error("error for create ip addr from member info", err)
+				log.Error("error for create ip addr from member Info", err)
 				continue
 			}
 
-			if _, ok := nn.shardingInfo.info[uint16(sid)]; !ok {
+			if _, ok := nn.shardingInfo.Info[uint16(sid)]; !ok {
 				idAddr := make(map[peer.ID]ma.Multiaddr)
 				idAddr[id] = addr
-				nn.shardingInfo.info[uint16(sid)] = idAddr
+				nn.shardingInfo.Info[uint16(sid)] = idAddr
 
-				nn.shardingInfo.peersInfo = append(nn.shardingInfo.peersInfo, []peer.ID{})
-				nn.shardingInfo.peersInfo[sid] = append(nn.shardingInfo.peersInfo[sid], id)
+				nn.shardingInfo.PeersInfo = append(nn.shardingInfo.PeersInfo, []peer.ID{})
+				nn.shardingInfo.PeersInfo[sid] = append(nn.shardingInfo.PeersInfo[sid], id)
 			} else {
-				nn.shardingInfo.info[uint16(sid)][id] = addr
-				nn.shardingInfo.peersInfo[sid] = append(nn.shardingInfo.peersInfo[sid], id)
+				nn.shardingInfo.Info[uint16(sid)][id] = addr
+				nn.shardingInfo.PeersInfo[sid] = append(nn.shardingInfo.PeersInfo[sid], id)
 			}
 		}
 	}
-	nn.shardingInfo.rwLock.Unlock()
+	nn.shardingInfo.RwLock.Unlock()
 	nn.connectToShardingPeers()
 }
 
 func (nn *netNode) GetShardAddress(id peer.ID) peerstore.PeerInfo {
-	nn.shardingInfo.rwLock.RLock()
-	defer nn.shardingInfo.rwLock.RUnlock()
-	for _, addr := range nn.shardingInfo.info {
+	nn.shardingInfo.RwLock.RLock()
+	defer nn.shardingInfo.RwLock.RUnlock()
+	for _, addr := range nn.shardingInfo.Info {
 		for i, m := range addr {
 			if i.String() == id.String() {
 				return peerstore.PeerInfo{ID: i, Addrs: []ma.Multiaddr{m}}
@@ -356,7 +281,7 @@ func (nn *netNode) nativeMessageLoop() {
 			case info := <-nn.shardingSubCh:
 				sInfo, ok := info.(*common.ShardingTopo)
 				if !ok {
-					log.Error("unsupported info from sharding.")
+					log.Error("unsupported Info from sharding.")
 					continue
 				}
 				log.Debug("receive a update sharding message, my shard:", sInfo.ShardId)
@@ -398,16 +323,16 @@ func (nn *netNode) ReceiveError(err error) {
 
 func (nn *netNode) IsValidRemotePeer(p peer.ID) bool {
 	if !config.DisableSharding {
-		nn.shardingInfo.rwLock.RLock()
-		defer nn.shardingInfo.rwLock.RUnlock()
+		nn.shardingInfo.RwLock.RLock()
+		defer nn.shardingInfo.RwLock.RUnlock()
 
-		for _, shard := range nn.shardingInfo.info {
+		for _, shard := range nn.shardingInfo.Info {
 			if _, ok := shard[p]; ok {
 				return true
 			}
 		}
 
-		log.Error(nn.shardingInfo.shardId, p, nn.network.Host().Peerstore().Addrs(p))
+		log.Error(nn.shardingInfo.ShardId, p, nn.network.Host().Peerstore().Addrs(p))
 		return false
 	}
 
@@ -416,10 +341,10 @@ func (nn *netNode) IsValidRemotePeer(p peer.ID) bool {
 
 func (nn *netNode) IsNotMyShard(p peer.ID) bool {
 	if !config.DisableSharding {
-		nn.shardingInfo.rwLock.RLock()
-		defer nn.shardingInfo.rwLock.RUnlock()
+		nn.shardingInfo.RwLock.RLock()
+		defer nn.shardingInfo.RwLock.RUnlock()
 
-		if _, ok := nn.shardingInfo.info[nn.shardingInfo.shardId][p]; !ok {
+		if _, ok := nn.shardingInfo.Info[nn.shardingInfo.ShardId][p]; !ok {
 			return true
 		}
 	}
@@ -428,10 +353,10 @@ func (nn *netNode) IsNotMyShard(p peer.ID) bool {
 }
 
 func (nn *netNode) IsLeaderOrBackup() bool {
-	nn.shardingInfo.rwLock.RLock()
-	defer nn.shardingInfo.rwLock.RUnlock()
+	nn.shardingInfo.RwLock.RLock()
+	defer nn.shardingInfo.RwLock.RUnlock()
 
-	if nn.shardingInfo.role != OtherMember {
+	if nn.shardingInfo.Role != OtherMember {
 		return true
 	}
 
@@ -439,36 +364,36 @@ func (nn *netNode) IsLeaderOrBackup() bool {
 }
 
 func (nn *netNode) GetShardLeader(shardId uint16) (*peerstore.PeerInfo, error) {
-	nn.shardingInfo.rwLock.RLock()
-	defer nn.shardingInfo.rwLock.RUnlock()
+	nn.shardingInfo.RwLock.RLock()
+	defer nn.shardingInfo.RwLock.RUnlock()
 
-	if int(shardId) > (len(nn.shardingInfo.peersInfo) - 1) {
-		return nil, fmt.Errorf("invalid shard id:%d(shard len:%d)", shardId, len(nn.shardingInfo.peersInfo))
+	if int(shardId) > (len(nn.shardingInfo.PeersInfo) - 1) {
+		return nil, fmt.Errorf("invalid shard id:%d(shard len:%d)", shardId, len(nn.shardingInfo.PeersInfo))
 	}
 
-	id := nn.shardingInfo.peersInfo[shardId][0]
-	pi := &peerstore.PeerInfo{ID: id, Addrs: []ma.Multiaddr{nn.shardingInfo.info[shardId][id]}}
+	id := nn.shardingInfo.PeersInfo[shardId][0]
+	pi := &peerstore.PeerInfo{ID: id, Addrs: []ma.Multiaddr{nn.shardingInfo.Info[shardId][id]}}
 	return pi, nil
 }
 
 func (nn *netNode) GetShardMembersToReceiveCBlock() [][]*peerstore.PeerInfo {
-	nn.shardingInfo.rwLock.RLock()
-	defer nn.shardingInfo.rwLock.RUnlock()
+	nn.shardingInfo.RwLock.RLock()
+	defer nn.shardingInfo.RwLock.RUnlock()
 
-	if len(nn.shardingInfo.peersInfo) <= 1 {
+	if len(nn.shardingInfo.PeersInfo) <= 1 {
 		return [][]*peerstore.PeerInfo{}
 	}
 
-	var peers = make([][]*peerstore.PeerInfo, len(nn.shardingInfo.peersInfo)-1)
+	var peers = make([][]*peerstore.PeerInfo, len(nn.shardingInfo.PeersInfo)-1)
 	// the algo may be changed according to the requirement
-	for id, shard := range nn.shardingInfo.peersInfo[1:] {
-		if nn.shardingInfo.role == CommitteeLeader {
-			addrInfo := []ma.Multiaddr{nn.shardingInfo.info[uint16(id)][shard[0]]}
+	for id, shard := range nn.shardingInfo.PeersInfo[1:] {
+		if nn.shardingInfo.Role == CommitteeLeader {
+			addrInfo := []ma.Multiaddr{nn.shardingInfo.Info[uint16(id)][shard[0]]}
 			pi := &peerstore.PeerInfo{ID: shard[0], Addrs: addrInfo}
 			peers[id] = append(peers[id], pi)
-		} else if nn.shardingInfo.role == CommitteeBackup {
+		} else if nn.shardingInfo.Role == CommitteeBackup {
 			if len(shard) > 1 {
-				addrInfo := []ma.Multiaddr{nn.shardingInfo.info[uint16(id)][shard[1]]}
+				addrInfo := []ma.Multiaddr{nn.shardingInfo.Info[uint16(id)][shard[1]]}
 				pi := &peerstore.PeerInfo{ID: shard[0], Addrs: addrInfo}
 				peers[id] = append(peers[id], pi)
 			}
@@ -478,19 +403,19 @@ func (nn *netNode) GetShardMembersToReceiveCBlock() [][]*peerstore.PeerInfo {
 }
 
 func (nn *netNode) GetCMMembersToReceiveSBlock() []*peerstore.PeerInfo {
-	nn.shardingInfo.rwLock.RLock()
-	defer nn.shardingInfo.rwLock.RUnlock()
+	nn.shardingInfo.RwLock.RLock()
+	defer nn.shardingInfo.RwLock.RUnlock()
 
 	var peers []*peerstore.PeerInfo
-	if nn.shardingInfo.role == ShardLeader {
-		id := nn.shardingInfo.peersInfo[0][0]
-		addrInfo := []ma.Multiaddr{nn.shardingInfo.info[0][id]}
+	if nn.shardingInfo.Role == ShardLeader {
+		id := nn.shardingInfo.PeersInfo[0][0]
+		addrInfo := []ma.Multiaddr{nn.shardingInfo.Info[0][id]}
 		pi := &peerstore.PeerInfo{id, addrInfo}
 		peers = append(peers, pi)
-	} else if nn.shardingInfo.role == ShardBackup {
-		if len(nn.shardingInfo.peersInfo[0]) > 1 {
-			id := nn.shardingInfo.peersInfo[0][1]
-			addrInfo := []ma.Multiaddr{nn.shardingInfo.info[0][id]}
+	} else if nn.shardingInfo.Role == ShardBackup {
+		if len(nn.shardingInfo.PeersInfo[0]) > 1 {
+			id := nn.shardingInfo.PeersInfo[0][1]
+			addrInfo := []ma.Multiaddr{nn.shardingInfo.Info[0][id]}
 			pi := &peerstore.PeerInfo{ID: id, Addrs: addrInfo}
 			peers = append(peers, pi)
 		}

@@ -22,10 +22,26 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
+	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+	"sync"
 )
 
-func (net *NetImpl)SendMsgDataToShard(shardId uint16, msgId pb.MsgType, data []byte) error {
+type ShardingInfo struct {
+	ShardId   uint16
+	Role      int
+	PeersInfo [][]peer.ID
+	Info      map[uint16]map[peer.ID]multiaddr.Multiaddr // to accelerate the finding speed
+	RwLock    sync.RWMutex
+}
+
+func (s *ShardingInfo) Initialize() {
+	s.PeersInfo = make([][]peer.ID, 0)
+	s.Info = make(map[uint16]map[peer.ID]multiaddr.Multiaddr)
+}
+
+func (net *NetImpl) SendMsgDataToShard(shardId uint16, msgId pb.MsgType, data []byte) error {
 	p, err := net.receiver.GetShardLeader(shardId)
 	if err != nil {
 		return err
@@ -36,7 +52,7 @@ func (net *NetImpl)SendMsgDataToShard(shardId uint16, msgId pb.MsgType, data []b
 	return nil
 }
 
-func (net *NetImpl)SendMsgToShards(msg message.EcoBallNetMsg) error {
+func (net *NetImpl) SendMsgToShards(msg message.EcoBallNetMsg) error {
 	if !net.receiver.IsLeaderOrBackup() {
 		return fmt.Errorf("sender is not a committee leader or backup")
 	}
@@ -49,7 +65,7 @@ func (net *NetImpl)SendMsgToShards(msg message.EcoBallNetMsg) error {
 	return nil
 }
 
-func (net *NetImpl)SendMsgToCommittee(msg message.EcoBallNetMsg) error {
+func (net *NetImpl) SendMsgToCommittee(msg message.EcoBallNetMsg) error {
 	if !net.receiver.IsLeaderOrBackup() {
 		return fmt.Errorf("sender is not a committee leader or backup")
 	}
