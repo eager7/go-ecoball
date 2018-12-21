@@ -41,8 +41,6 @@ int create(char *issuer, long long int max_supply, char *token_id){
     // balance = ABA_get_token_balance("root", strlen("root"), "ABA", strlen("ABA"));
     // ABA_assert( balance != 67100, "get root's balance is wrong!" );
 
-    ABA_prints(issuer);
-
     ABA_assert( max_supply <= 0, "max_supply must be postive!" );
     ABA_assert( isTokenString(token_id),  "token id must be all upper character");
     ABA_assert( ABA_is_account(issuer, strlen(issuer)) != 0, "The issuer account does not exist" );
@@ -134,7 +132,7 @@ int transfer(char *from, char *to, long long int amount, char *token_id){
     ABA_assert( result != 0, "param is wrong, add balance failed" );
 
     // const char *strActionData = "[\"worker1\", \"worker2\", \"15\", \"XXX\"]";
-    // ABA_inline_action("worker2", strlen("worker2"), "transfer", strlen("transfer"), strActionData, strlen(strActionData), "worker1", strlen("worker1"), "active", strlen("active"));
+    // inline_action("worker2", strlen("worker2"), "transfer", strlen("transfer"), strActionData, strlen(strActionData), "worker1", strlen("worker1"), "active", strlen("active"));
 
     result = ABA_add_token_balance(from, strlen(from), token_id, strlen(token_id), amount);
     ABA_assert( result != 0, "param is wrong, add balance failed" );

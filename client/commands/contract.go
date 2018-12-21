@@ -26,8 +26,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"strings"
-
 	clientCommon "github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/ecoball/go-ecoball/common"
@@ -306,49 +304,26 @@ func invokeContract(c *cli.Context) error {
 	}
 
 	var parameters []string
-	if "new_account" == contractMethod {
-		parameter := strings.Split(contractParam, ",")
-		for _, v := range parameter {
-			if strings.Contains(v, "0x") {
-				parameters = append(parameters, common.AddressFromPubKey(common.FromHex(v)).HexString())
-			} else {
-				parameters = append(parameters, v)
-			}
-		}
-	} else if "pledge" == contractMethod || "cancel_pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
-		parameters = strings.Split(contractParam, ",")
-	} else if "set_account" == contractMethod {
-		parameters = strings.Split(contractParam, "--")
-	} else if "reg_chain" == contractMethod {
-		parameter := strings.Split(contractParam, ",")
-		if len(parameter) == 3 {
-			parameters = append(parameters, parameter[0])
-			parameters = append(parameters, parameter[1])
-			parameters = append(parameters, common.AddressFromPubKey(common.FromHex(parameter[2])).HexString())
-		} else {
-			return errors.New("Invalid parameters")
-		}
-	} else {
-		contract, err := getContract(chainHash, common.NameToIndex(contractName))
-		if err != nil {
-			return errors.New("getContract failed")
-		}
 
-		var abiDef abi.ABI
-		err = abi.UnmarshalBinary(contract.Abi, &abiDef)
-		if err != nil {
-			return errors.New("can not find UnmarshalBinary abi file")
-		}
-
-		//log.Debug("contractParam: ", contractParam)
-		argbyte, err := abi.CheckParam(abiDef, contractMethod, []byte(contractParam))
-		if err != nil {
-			fmt.Println(err.Error())
-			return errors.New("checkParam error")
-		}
-
-		parameters = append(parameters, string(argbyte[:]))
+	contract, err := getContract(chainHash, common.NameToIndex(contractName))
+	if err != nil {
+		return errors.New("getContract failed")
 	}
+
+	var abiDef abi.ABI
+	err = abi.UnmarshalBinary(contract.Abi, &abiDef)
+	if err != nil {
+		return errors.New("can not find UnmarshalBinary abi file")
+	}
+
+	//log.Debug("contractParam: ", contractParam)
+	argbyte, err := abi.CheckParam(abiDef, contractMethod, []byte(contractParam))
+	if err != nil {
+		fmt.Println(err.Error())
+		return errors.New("checkParam error")
+	}
+
+	parameters = append(parameters, string(argbyte[:]))
 
 	//contract address
 	invoker := c.String("invoker")
