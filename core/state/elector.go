@@ -60,14 +60,11 @@ func (s *State) UnRegisterProducer(index common.AccountName) error {
 	if err := s.initProducersList(); err != nil {
 		return err
 	}
-	s.prodMutex.Lock()
-	if _, ok := s.Producers[index]; !ok {
-		s.prodMutex.Unlock()
+	if producer := s.Producers.Get(index); producer == nil {
 		return errors.New(log, fmt.Sprintf("the account:%s is not registed", index.String()))
 	} else {
-		delete(s.Producers, index)
+		s.Producers.Del(index)
 	}
-	s.prodMutex.Unlock()
 	return s.commitProducersList()
 }
 
@@ -89,14 +86,11 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	if err := s.initProducersList(); err != nil {
 		return err
 	}
-	s.prodMutex.RLock()
 	for _, acc := range accounts {
-		if _, ok := s.Producers[acc]; !ok {
-			s.prodMutex.RUnlock()
+		if producer := s.Producers.Get(acc); producer == nil {
 			return errors.New(log, fmt.Sprintf("the account:%s is not register", acc.String()))
 		}
 	}
-	s.prodMutex.RUnlock()
 	if err := s.changeElectedProducers(acc, accounts); err != nil {
 		return err
 	}
@@ -145,26 +139,23 @@ func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountNa
 	if err := s.initProducersList(); err != nil {
 		return err
 	}
-	s.prodMutex.Lock()
 	for index := range acc.Votes.Producers { //为防止重复投票，在更新票数前先把之前投的票作废
-		if _, ok := s.Producers[index]; ok {
-			s.Producers[index] = s.Producers[index] - acc.Votes.Producers[index]
+		if producer := s.Producers.Get(index); producer != nil {
+			s.Producers.Add(index, producer.Amount - acc.Votes.Producers[index])
 		}
 		delete(acc.Votes.Producers, index)
 	}
 	for _, a := range accounts {
 		if err := s.checkAccountCertification(a, VotesLimit); err != nil {
-			s.prodMutex.Unlock()
 			return err
 		}
 		acc.Votes.Producers[a] = acc.Votes.Staked
-		if _, ok := s.Producers[a]; !ok {
-			s.prodMutex.Unlock()
+		if producer := s.Producers.Get(a); producer == nil {
 			return errors.New(log, fmt.Sprintf("the account:%s is not a candidata node", a.String()))
+		} else {
+			s.Producers.Add(a, producer.Amount + acc.Votes.Staked)
 		}
-		s.Producers[a] += acc.Votes.Staked
 	}
-	s.prodMutex.Unlock()
 	return s.commitProducersList()
 }
 
@@ -177,17 +168,14 @@ func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
 	if err := s.initProducersList(); err != nil {
 		return err
 	}
-	s.prodMutex.Lock()
 	for k := range acc.Votes.Producers {
 		acc.Votes.Producers[k] = acc.Votes.Staked
-		if _, ok := s.Producers[k]; ok {
-			s.Producers[k] = s.Producers[k] - votesOld + acc.Votes.Staked
+		if producer := s.Producers.Get(k); producer != nil {
+			s.Producers.Add(k, producer.Amount - votesOld + acc.Votes.Staked)
 		} else {
-			s.prodMutex.Unlock()
 			return errors.New(log, fmt.Sprintf("the account:%s is exit candidata nodes list", k.String()))
 		}
 	}
-	s.prodMutex.Unlock()
 	return s.commitProducersList()
 }
 
@@ -210,25 +198,16 @@ func (s *State) checkAccountCertification(index common.AccountName, votes uint64
  *  @brief 将候选人列表存到levelDB中，以备程序重启时可以重新获取数据
  */
 func (s *State) commitProducersList() error {
-	//if err := s.initProducersList(); err != nil {
-	//	return err
-	//}
-	s.prodMutex.Lock()
-	defer s.prodMutex.Unlock()
 	var Keys []common.AccountName
-	for k := range s.Producers {
-		Keys = append(Keys, k)
+	for producer := range s.Producers.Iterator() {
+		Keys = append(Keys, producer.Index)
 	}
 	sort.Slice(Keys, func(i, j int) bool {
 		return uint64(Keys[i]) > uint64(Keys[j])
 	})
-	var List []Producer
+	var List []*Producer
 	for _, v := range Keys {
-		list := Producer{
-			Index:  v,
-			Amount: s.Producers[v],
-		}
-		List = append(List, list)
+		List = append(List, s.Producers.Get(v))
 	}
 
 	data, err := json.Marshal(List)
@@ -264,17 +243,15 @@ func (s *State) GetProducerList() ([]Elector, error) {
 		return nil, err
 	}
 	var electors []Elector
-	s.prodMutex.RLock()
-	defer s.prodMutex.RUnlock()
-	for index, amount := range s.Producers {
-		acc, err := s.GetAccountByName(index)
+	for producer := range s.Producers.Iterator() {
+		acc, err := s.GetAccountByName(producer.Index)
 		if err != nil {
 			return nil, err
 		}
 		acc.mutex.RLock()
 		elector := Elector{
-			Index:   index,
-			Amount:  amount,
+			Index:   producer.Index,
+			Amount:  producer.Amount,
 			Address: acc.Elector.Address,
 			Port:    acc.Elector.Port,
 			Payee:   acc.Elector.Payee,
@@ -289,9 +266,7 @@ func (s *State) GetProducerList() ([]Elector, error) {
  *  @brief 在程序刚启动时，从数据库中读取参选节点列表，恢复到Producers映射中，映射里只保存账号名和票数，其余信息需要从对应账号获取
  */
 func (s *State) initProducersList() error {
-	if len(s.Producers) == 0 {
-		s.prodMutex.Lock()
-		defer s.prodMutex.Unlock()
+	if s.Producers.Len() == 0 {
 		s.mutex.RLock()
 		defer s.mutex.RUnlock()
 		data, err := s.trie.TryGet([]byte(prodsList))
@@ -304,7 +279,7 @@ func (s *State) initProducersList() error {
 				return errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
 			}
 			for _, v := range Producers {
-				s.Producers[v.Index] = v.Amount
+				s.Producers.Add(v.Index, v.Amount)
 			}
 		}
 	}
@@ -319,17 +294,13 @@ func (s *State) RegisterProducer(index common.AccountName, addr string, port uin
 	if err := s.initProducersList(); err != nil {
 		return err
 	}
-	s.prodMutex.Lock()
-	if _, ok := s.Producers[index]; ok {
-		s.prodMutex.Unlock()
+	if producer := s.Producers.Get(index); producer != nil {
 		return errors.New(log, fmt.Sprintf("the account:%s was already registed", index.String()))
 	}
 	if err := s.checkAccountCertification(index, VotesLimit); err != nil {
-		s.prodMutex.Unlock()
 		return err
 	}
-	s.Producers[index] = 0
-	s.prodMutex.Unlock()
+	s.Producers.Add(index, 0)
 	if err := s.commitProducersList(); err != nil {
 		return err
 	}

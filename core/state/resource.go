@@ -19,12 +19,6 @@ var flag = false
 const VotesLimit = 200
 const ChainLimit = 200
 
-type Chain struct {
-	Hash    common.Hash
-	TxHash  common.Hash
-	Address common.Address
-	Index   common.AccountName
-}
 type Resource struct {
 	Net struct {
 		Staked    uint64  `json:"staked_aba, omitempty"`     //total stake delegated from account to self, uint ABA
@@ -197,9 +191,7 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 		return err
 	}
 	if acc.Votes.Staked < VotesLimit {
-		s.prodMutex.Lock()
-		delete(s.Producers, acc.Index)
-		s.prodMutex.Unlock()
+		s.Producers.Del(acc.Index)
 	}
 	s.commitProducersList()
 	return s.CommitAccount(acc)
@@ -266,41 +258,30 @@ func (s *State) RegisterChain(index common.AccountName, hash, txHash common.Hash
 	if _, err := s.GetChainList(); err != nil {
 		return err
 	}
-	s.chainMutex.Lock()
-	if _, ok := s.Chains[hash]; ok {
-		s.chainMutex.Unlock()
+	if chain := s.Chains.Get(hash); chain != nil {
 		return errors.New(log, fmt.Sprintf("the chain:%s was already registed", hash.HexString()))
 	}
 	if err := s.checkAccountCertification(index, ChainLimit); err != nil {
-		s.chainMutex.Unlock()
 		return nil
 	}
-	s.Chains[hash] = Chain{
-		Hash:    hash,
-		TxHash:  txHash,
-		Address: addr,
-		Index:   index,
-	}
-	s.chainMutex.Unlock()
+	s.Chains.Add(hash, Chain{Hash: hash, TxHash: txHash, Address: addr, Index: index})
 
 	return s.commitChains()
 }
 func (s *State) commitChains() error {
-	if len(s.Chains) == 0 {
+	if s.Chains.Len() == 0 {
 		return nil
 	}
 
-	s.chainMutex.Lock()
-	defer s.chainMutex.Unlock()
 	var Keys []string
-	for k := range s.Chains {
-		Keys = append(Keys, k.HexString())
+	for chain := range s.Chains.Iterator() {
+		Keys = append(Keys, chain.Hash.HexString())
 	}
 	sort.Strings(Keys)
-	var List []Chain
+	var List []*Chain
 	for _, v := range Keys {
 		hash := common.HexToHash(v)
-		List = append(List, s.Chains[hash])
+		List = append(List, s.Chains.Get(hash))
 	}
 
 	data, err := json.Marshal(List)
@@ -315,9 +296,7 @@ func (s *State) commitChains() error {
 	return nil
 }
 func (s *State) GetChainList() ([]Chain, error) {
-	s.chainMutex.Lock()
-	defer s.chainMutex.Unlock()
-	if len(s.Chains) == 0 {
+	if s.Chains.Len() == 0 {
 		data, err := s.trie.TryGet([]byte(chainList))
 		if err != nil {
 			return nil, errors.New(log, fmt.Sprintf("can't get chainList from DB:%s", err.Error()))
@@ -328,20 +307,13 @@ func (s *State) GetChainList() ([]Chain, error) {
 				return nil, errors.New(log, fmt.Sprintf("can't unmarshal Chains List from json string:%s", err.Error()))
 			}
 			for _, v := range Chains {
-				s.Chains[v.Hash] = v
+				s.Chains.Add(v.Hash, v)
 			}
 		}
 	}
 	var list []Chain
-	for _, v := range s.Chains {
-		c := Chain{
-			Hash:    v.Hash,
-			TxHash:  v.TxHash,
-			Address: v.Address,
-			Index:   v.Index,
-		}
-		list = append(list, c)
-		log.Debug(c.Hash.HexString(), c.Index.String())
+	for chain := range s.Chains.Iterator() {
+		list = append(list, chain)
 	}
 	return list, nil
 }

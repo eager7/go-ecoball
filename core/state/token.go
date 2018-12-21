@@ -149,10 +149,7 @@ func (s *State) AccountAddBalance(index common.AccountName, token string, value 
 }
 
 func (s *State) TokenExisted(name string) bool {
-	s.tokenMutex.RLock()
-	defer s.tokenMutex.RUnlock()
-	_, ok := s.Tokens[name]
-	if ok {
+	if token := s.Tokens.Get(name); token != nil {
 		return true
 	}
 
@@ -178,13 +175,10 @@ func (s *State) TokenExisted(name string) bool {
 
 func (s *State) GetTokenInfo(symbol string) (*TokenInfo, error) {
 	if err := common.TokenNameCheck(symbol); err != nil {
-		return nil, err
+		return nil, errors.New(log, err.Error())
 	}
 
-	s.tokenMutex.RLock()
-	defer s.tokenMutex.RUnlock()
-	token, ok := s.Tokens[symbol]
-	if ok {
+	if token := s.Tokens.Get(symbol); token != nil {
 		return token, nil
 	}
 
@@ -199,8 +193,8 @@ func (s *State) GetTokenInfo(symbol string) (*TokenInfo, error) {
 		return nil, errors.New(log, fmt.Sprintf("no this token named:%s", symbol))
 	}
 
-	token = &TokenInfo{}
-	if err = token.Deserialize(data); err != nil {
+	token := &TokenInfo{}
+	if err := token.Deserialize(data); err != nil {
 		return nil, err
 	}
 	return token, nil
@@ -223,9 +217,7 @@ func (s *State) CommitToken(token *TokenInfo) error {
 	if err := s.trie.TryUpdate([]byte(token.Symbol), d); err != nil {
 		return err
 	}
-	s.tokenMutex.Lock()
-	defer s.tokenMutex.Unlock()
-	s.Tokens[token.Symbol] = token
+	s.Tokens.Add(token.Symbol, *token)
 	return nil
 }
 
@@ -369,7 +361,7 @@ func (a *Account) SubBalance(token string, amount *big.Int) error {
 func (a *Account) Balance(token string) (*big.Int, error) {
 	t, ok := a.Tokens[token]
 	if !ok {
-		return nil, errors.New(log, fmt.Sprintf("can't find token account:%s, in account:%s", token, a.Index.String()))
+		return nil, errors.New(log, fmt.Sprintf("the:%s balance is zero, in account:%s", token, a.Index.String()))
 	}
 	return t.GetBalance(), nil
 }

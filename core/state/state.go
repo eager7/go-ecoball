@@ -37,18 +37,11 @@ type State struct {
 	db     Database
 	diskDb *store.LevelDBStore
 
-	tokenMutex sync.RWMutex
-	Tokens     map[string]*TokenInfo //map[token name]TokenInfo
-
-	Accounts AccountCache
-
-	Params ParamsMap
-
-	prodMutex sync.RWMutex
-	Producers map[common.AccountName]uint64
-
-	chainMutex sync.RWMutex
-	Chains     map[common.Hash]Chain
+	Tokens    TokensMap
+	Accounts  AccountCache
+	Params    ParamsMap
+	Producers ProducersMap
+	Chains    ChainsMap
 
 	mutex sync.RWMutex
 }
@@ -71,11 +64,11 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	if err != nil {
 		st.trie, _ = st.db.OpenTrie(common.Hash{})
 	}
-	st.Tokens = make(map[string]*TokenInfo, 1)
+	st.Tokens.Initialize()
 	st.Accounts.Initialize()
 	st.Params.Initialize()
-	st.Producers = make(map[common.AccountName]uint64, 1)
-	st.Chains = make(map[common.Hash]Chain, 1)
+	st.Producers.Initialize()
+	st.Chains.Initialize()
 	return st, nil
 }
 
@@ -89,52 +82,15 @@ func (s *State) StateType() TypeState {
 func (s *State) CopyState() (*State, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	tokens := make(map[string]*TokenInfo, 1)
-	prods := make(map[common.AccountName]uint64, 1)
-	chains := make(map[common.Hash]Chain, 1)
-
-	/*
-		s.paraMutex.Lock()
-		defer s.paraMutex.Unlock()
-		if str, err := json.Marshal(s.Params); err != nil {
-			return nil, err
-		} else {
-			if err := json.Unmarshal(str, &params); err != nil {
-				return nil, err
-			}
-		}
-		if str, err := json.Marshal(s.Producers); err != nil {
-			return nil, err
-		} else {
-			if err := json.Unmarshal(str, &prods); err != nil {
-				return nil, err
-			}
-		}
-	*/
-	/*for _, v := range s.Accounts {
-		data, _ := v.Serialize()
-		acc := new(Account)
-		acc.Deserialize(data)
-		accounts[acc.Index.String()] = acc
-	}*/
-
-	s.tokenMutex.RLock()
-	defer s.tokenMutex.RUnlock()
-	for _, v := range s.Tokens {
-		data, _ := v.Serialize()
-		token := new(TokenInfo)
-		token.Deserialize(data)
-		tokens[token.Symbol] = token
-	}
 
 	stateCp := &State{
 		path:      s.path,
 		trie:      s.db.CopyTrie(s.trie),
-		Tokens:    tokens,
+		Tokens:    s.Tokens.Clone(),
 		Accounts:  AccountCache{},
 		Params:    s.Params.Clone(),
-		Producers: prods,
-		Chains:    chains,
+		Producers: s.Producers.Clone(),
+		Chains:    s.Chains.Clone(),
 	}
 	stateCp.Accounts.Initialize()
 	return stateCp, nil
@@ -345,9 +301,9 @@ func (s *State) commitParam(key string, value uint64) error {
  *  @param key - param name
  */
 func (s *State) getParam(key string) (uint64, error) {
-	value, err := s.Params.Get(key)
-	if err == nil {
-		return value, nil
+	param := s.Params.Get(key)
+	if param != nil {
+		return param.Value, nil
 	}
 	s.mutex.Lock()
 	data, err := s.trie.TryGet([]byte(key))
@@ -359,7 +315,7 @@ func (s *State) getParam(key string) (uint64, error) {
 	if len(data) == 0 {
 		return 0, nil
 	}
-	value = common.Uint64SetBytes(data)
+	value := common.Uint64SetBytes(data)
 	s.Params.Add(key, value)
 	return value, nil
 }
@@ -415,16 +371,9 @@ func (s *State) Reset(hash common.Hash) error {
 		return err
 	}
 	s.Accounts.Purge()
-	s.prodMutex.Lock()
-	defer s.prodMutex.Unlock()
-	for k := range s.Producers {
-		delete(s.Producers, k)
-	}
-	s.tokenMutex.Lock()
-	defer s.tokenMutex.Unlock()
-	for t := range s.Tokens {
-		delete(s.Tokens, t)
-	}
+	s.Producers.Purge()
+	s.Chains.Purge()
+	s.Tokens.Purge()
 	s.Params.Purge()
 	log.Info("Open Trie Hash:", hash.HexString())
 	return nil
