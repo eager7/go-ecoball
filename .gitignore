@@ -21,6 +21,6 @@ glide.lock
 *.test/
 *.pb.go
 *.pyc
-*.toml
+./ecoball.toml
 /eballscan/build/*
 
