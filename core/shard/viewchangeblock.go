@@ -96,7 +96,7 @@ func (h *ViewChangeBlockHeader) unSignatureData() ([]byte, error) {
 	pbHeader.COSign.Step2 = 0
 	data, err := pbHeader.Marshal()
 	if err != nil {
-		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
+		return nil, errors.New(fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
 	}
 	return data, nil
 }
@@ -108,7 +108,7 @@ func (h *ViewChangeBlockHeader) Serialize() ([]byte, error) {
 	}
 	data, err := pbHeader.Marshal()
 	if err != nil {
-		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
+		return nil, errors.New(fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
 	}
 	return data, nil
 }
@@ -203,11 +203,11 @@ func (b *ViewChangeBlock) Serialize() ([]byte, error) {
 
 func (b *ViewChangeBlock) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New(log, "input data's length is zero")
+		return errors.New("input data's length is zero")
 	}
 	var pbBlock pb.ViewChangeBlock
 	if err := pbBlock.Unmarshal(data); err != nil {
-		return errors.New(log, err.Error())
+		return errors.New(err.Error())
 	}
 	dataHeader, err := pbBlock.Header.Marshal()
 	if err != nil {

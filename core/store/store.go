@@ -81,7 +81,7 @@ func NewLevelDBStore(dirPath string, cache int, handles int) (*LevelDBStore, err
 		db, err = leveldb.RecoverFile(dirPath, nil)
 	}
 	if err != nil {
-		return nil, errors.New(log, fmt.Sprintf("OpenFile[%s] Failed:%s", dirPath, err.Error()))
+		return nil, errors.New(fmt.Sprintf("OpenFile[%s] Failed:%s", dirPath, err.Error()))
 	}
 
 	return &LevelDBStore{

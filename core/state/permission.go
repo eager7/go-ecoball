@@ -102,7 +102,7 @@ func (p *Permission) checkPermission(state *State, signatures []common.Signature
 		}
 	}
 
-	return errors.New(log, fmt.Sprintf("weight is not enough, keys weight:%d, accounts weight:%d", weightKey, weightAcc))
+	return errors.New(fmt.Sprintf("weight is not enough, keys weight:%d, accounts weight:%d", weightKey, weightAcc))
 }
 
 /**
@@ -221,7 +221,7 @@ func (a *Account) AddPermission(perm Permission) {
  */
 func (a *Account) checkPermission(state *State, name string, signatures []common.Signature) error {
 	if perm, ok := a.Permissions[name]; !ok {
-		return errors.New(log, fmt.Sprintf("can't find this permission in account:%s", name))
+		return errors.New(fmt.Sprintf("can't find this permission in account:%s", name))
 	} else {
 		if "" != perm.Parent {
 			if err := a.checkPermission(state, perm.Parent, signatures); err == nil {
@@ -244,7 +244,7 @@ func (a *Account) checkPermission(state *State, name string, signatures []common
  */
 func (a *Account) checkAccountPermission(state *State, guest string, permission string) error {
 	if perm, ok := a.Permissions[permission]; !ok {
-		return errors.New(log, fmt.Sprintf("account %s has not %s permission of account:%s", guest, permission, a.Index.String()))
+		return errors.New(fmt.Sprintf("account %s has not %s permission of account:%s", guest, permission, a.Index.String()))
 	} else {
 		if "" != perm.Parent {
 			if err := a.checkAccountPermission(state, guest, perm.Parent); err == nil {
@@ -266,7 +266,7 @@ func (a *Account) checkAccountPermission(state *State, guest string, permission 
 func (a *Account) findPermission(name string) (str string, err error) {
 	perm, ok := a.Permissions[name]
 	if !ok {
-		return "", errors.New(log, fmt.Sprintf("can't find this permission:%s", name))
+		return "", errors.New(fmt.Sprintf("can't find this permission:%s", name))
 	}
 	b, err := json.Marshal(perm)
 	if err != nil {

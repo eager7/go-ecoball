@@ -75,7 +75,7 @@ type Transaction struct {
 
 func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
 	if payload == nil {
-		return nil, errors.New(log, "the transaction's payload is nil")
+		return nil, errors.New("the transaction's payload is nil")
 	}
 	tx := Transaction{
 		Version:    VersionTx,
@@ -132,7 +132,7 @@ func (t *Transaction) SetSignature(account *account.Account) error {
 
 func (t *Transaction) AddSignature(pubKey, sigData []byte) error {
 	if pubKey == nil || sigData == nil {
-		return errors.New(log, fmt.Sprintf("the input param is nil, %s, %s", pubKey, sigData))
+		return errors.New(fmt.Sprintf("the input param is nil, %s, %s", pubKey, sigData))
 	}
 	t.Signatures = append(t.Signatures, common.Signature{PubKey:pubKey, SigData:sigData})
 	return nil
@@ -214,7 +214,7 @@ func (t *Transaction) Serialize() ([]byte, error) {
 	}
 	b, err := p.Marshal()
 	if err != nil {
-		return nil, errors.New(log, fmt.Sprintf("Marshal error:%s", err.Error()))
+		return nil, errors.New(fmt.Sprintf("Marshal error:%s", err.Error()))
 	}
 	return b, nil
 }
@@ -225,12 +225,12 @@ func (t *Transaction) Serialize() ([]byte, error) {
  */
 func (t *Transaction) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New(log, "input data's length is zero")
+		return errors.New("input data's length is zero")
 	}
 
 	var txPb pb.Transaction
 	if err := txPb.Unmarshal(data); err != nil {
-		return errors.New(log, fmt.Sprintf("data len: %d, unMarshal error:%s", len(data), err.Error()))
+		return errors.New(fmt.Sprintf("data len: %d, unMarshal error:%s", len(data), err.Error()))
 	}
 
 	t.Version = txPb.Payload.Version
@@ -255,7 +255,7 @@ func (t *Transaction) Deserialize(data []byte) error {
 		case TxInvoke:
 			t.Payload = new(InvokeInfo)
 		default:
-			return errors.New(log, "the transaction's payload must not be nil")
+			return errors.New("the transaction's payload must not be nil")
 		}
 	}
 	if err := t.Payload.Deserialize(txPb.Payload.Payload); err != nil {

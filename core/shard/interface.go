@@ -54,7 +54,7 @@ type BlockInterface interface {
 
 func Serialize(payload Payload) ([]byte, error) {
 	if payload == nil {
-		return nil, errors.New(log, "the payload is nil")
+		return nil, errors.New("the payload is nil")
 	}
 	data, err := payload.Serialize()
 	if err != nil {
@@ -66,18 +66,18 @@ func Serialize(payload Payload) ([]byte, error) {
 	}
 	data, err = pbPayload.Marshal()
 	if err != nil {
-		return nil, errors.New(log, fmt.Sprintf("the marshal error:%s", err.Error()))
+		return nil, errors.New(fmt.Sprintf("the marshal error:%s", err.Error()))
 	}
 	return data, nil
 }
 
 func BlockDeserialize(data []byte) (BlockInterface, error) {
 	if len(data) == 0 {
-		return nil, errors.New(log, "input data's length is zero")
+		return nil, errors.New("input data's length is zero")
 	}
 	var pbPayload pb.Payload
 	if err := pbPayload.Unmarshal(data); err != nil {
-		return nil, errors.New(log, err.Error())
+		return nil, errors.New(err.Error())
 	}
 	data = pbPayload.Data
 	switch HeaderType(pbPayload.Type) {
@@ -106,17 +106,17 @@ func BlockDeserialize(data []byte) (BlockInterface, error) {
 		}
 		return block, nil
 	default:
-		return nil, errors.New(log, "unknown header type")
+		return nil, errors.New("unknown header type")
 	}
 }
 
 func HeaderDeserialize(data []byte) (HeaderInterface, error) {
 	if len(data) == 0 {
-		return nil, errors.New(log, "input data's length is zero")
+		return nil, errors.New("input data's length is zero")
 	}
 	var pbPayload pb.Payload
 	if err := pbPayload.Unmarshal(data); err != nil {
-		return nil, errors.New(log, err.Error())
+		return nil, errors.New(err.Error())
 	}
 	data = pbPayload.Data
 	switch HeaderType(pbPayload.Type) {
@@ -145,6 +145,6 @@ func HeaderDeserialize(data []byte) (HeaderInterface, error) {
 		}
 		return header, nil
 	default:
-		return nil, errors.New(log, "unknown header type")
+		return nil, errors.New("unknown header type")
 	}
 }

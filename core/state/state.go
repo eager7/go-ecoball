@@ -110,7 +110,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
 		return nil, err
 	}
 	if data != nil {
-		return nil, errors.New(log, "reduplicate name")
+		return nil, errors.New("reduplicate name")
 	}
 	acc, err := NewAccount(s.path, index, addr, timeStamp)
 	if err != nil {
@@ -220,7 +220,7 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	}
 	if fData == nil {
 		log.Warn(fmt.Sprintf("no this account named:%s", index.String()))
-		return nil, errors.New(log, fmt.Sprintf("no this account named:%s", index.String()))
+		return nil, errors.New(fmt.Sprintf("no this account named:%s", index.String()))
 	}
 	acc = &Account{}
 	if err = acc.Deserialize(fData); err != nil {
@@ -238,7 +238,7 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
 		return nil, err
 	} else {
 		if value == 0 {
-			return nil, errors.New(log, fmt.Sprintf("the address:%s is not register be an account", addr.HexString()))
+			return nil, errors.New(fmt.Sprintf("the address:%s is not register be an account", addr.HexString()))
 		}
 		return s.GetAccountByName(common.AccountName(value))
 	}
@@ -249,7 +249,7 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
 		return nil, err
 	} else {
 		if fData == nil {
-			return nil, errors.New(log, fmt.Sprintf("can't find this account by address:%s", addr.HexString()))
+			return nil, errors.New(fmt.Sprintf("can't find this account by address:%s", addr.HexString()))
 		} else {
 			acc, err := s.GetAccountByName(common.IndexSetBytes(fData))
 			if err != nil {
@@ -266,7 +266,7 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
  */
 func (s *State) CommitAccount(acc *Account) error {
 	if acc == nil {
-		return errors.New(log, "param acc is nil")
+		return errors.New("param acc is nil")
 	}
 	d, err := acc.Serialize()
 	if err != nil {
@@ -310,7 +310,7 @@ func (s *State) getParam(key string) (uint64, error) {
 	s.mutex.Unlock()
 	if err != nil {
 		s.Params.Add(key, 0)
-		return 0, errors.New(log, fmt.Sprintf("mpt tree get error:%s", err.Error()))
+		return 0, errors.New(fmt.Sprintf("mpt tree get error:%s", err.Error()))
 	}
 	if len(data) == 0 {
 		return 0, nil

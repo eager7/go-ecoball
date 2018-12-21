@@ -39,10 +39,10 @@ import (
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	circuit "gx/ipfs/QmcQ56iqKP8ZRhRGLe5EReJVvrJZDaGzkuatrPv4Z1B6cG/go-libp2p-circuit"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
-	ic "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
 	"os"
 	"sync"
 	"time"
+	"github.com/ecoball/go-ecoball/net/address"
 )
 
 const (
@@ -53,14 +53,13 @@ const (
 	ShardBackup
 )
 
-const nBitsForKeyPairDef = 1024
 
 var (
 	log = elog.NewLogger("net", elog.DebugLog)
 
 	ecoballChainId uint32 = 1
 
-	netNode *NetNode
+	defaultNode *netNode
 )
 
 type ShardingInfo struct {
@@ -71,7 +70,7 @@ type ShardingInfo struct {
 	rwLock    sync.RWMutex
 }
 
-type NetNode struct {
+type netNode struct {
 	ctx           context.Context
 	self          peer.ID
 	network       network.EcoballNetwork
@@ -152,27 +151,7 @@ func filterRelayAddrs(addrs []ma.Multiaddr) []ma.Multiaddr {
 	return rAdds
 }
 
-func GetNodePrivateKey() (ic.PrivKey, error) {
-	var err error
-	var privKey ic.PrivKey
-	if config.SwarmConfig.PrivateKey == "" {
-		privKey, _, err = ic.GenerateKeyPair(ic.RSA, nBitsForKeyPairDef)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		key, err := ic.ConfigDecodeKey(config.SwarmConfig.PrivateKey)
-		if err != nil {
-			return nil, err
-		}
-		privKey, err = ic.UnmarshalPrivateKey(key)
-		if err != nil {
-			return nil, err
-		}
-	}
 
-	return privKey, nil
-}
 
 func composeAddrsFactory(f, g basichost.AddrsFactory) basichost.AddrsFactory {
 	return func(addrs []ma.Multiaddr) []ma.Multiaddr {
@@ -180,41 +159,23 @@ func composeAddrsFactory(f, g basichost.AddrsFactory) basichost.AddrsFactory {
 	}
 }
 
-//func New(parent context.Context, privKey ic.PrivKey, listen []string) (*NetNode, error) {
-func New(parent context.Context) (*NetNode, error) {
-	/*
-		var privKey ic.PrivKey
-
-		dsnCfg, err := fsrepo.ConfigAt(config.IpfsDir)
-		if err != nil {
-			privKey, _, err = ic.GenerateKeyPair(ic.RSA, 2048)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			privKey, err = dsnCfg.Identity.DecodePrivateKey("passphrase todo!")
-			if err != nil {
-				return nil, err
-			}
-		}
-	*/
-	privateKey, err := GetNodePrivateKey()
+func NewNetNode(parent context.Context) (*netNode, error) {
+	private, err := address.GetNodePrivateKey()
 	if err != nil {
 		return nil, err
 	}
 
-	id, err := peer.IDFromPrivateKey(privateKey)
+	id, err := peer.IDFromPrivateKey(private)
 	if err != nil {
 		return nil, fmt.Errorf("error for generate id from key,%s", err.Error())
 	}
-	netNode := &NetNode{
+	netNode := &netNode{
 		ctx:           parent,
 		self:          id,
 		broadCastCh:   make(chan message.EcoBallNetMsg, 4*1024), //TODO move to config
 		handlers:      message.MakeHandlers(),
 		shardingInfo:  new(ShardingInfo),
 		shardingSubCh: make(<-chan interface{}, 1),
-		//pubSub:      ipfs.Floodsub,
 	}
 
 	netNode.shardingInfo.peersInfo = make([][]peer.ID, 0)
@@ -252,8 +213,8 @@ func New(parent context.Context) (*NetNode, error) {
 	libP2pOpts = append(libP2pOpts, libp2p.ConnectionManager(mgr))
 
 	peerStore := peerstore.NewPeerstore()
-	peerStore.AddPrivKey(id, privateKey)
-	peerStore.AddPubKey(id, privateKey.GetPublic())
+	peerStore.AddPrivKey(id, private)
+	peerStore.AddPubKey(id, private.GetPublic())
 	h, err := constructPeerHost(parent, id, peerStore, libP2pOpts...) //basic_host.go
 	if err != nil {
 		return nil, fmt.Errorf("error for constructing host, %s", err.Error())
@@ -270,7 +231,7 @@ func New(parent context.Context) (*NetNode, error) {
 	return netNode, nil
 }
 
-func (nn *NetNode) Start() error {
+func (nn *netNode) Start() error {
 	multiAddresses := make([]ma.Multiaddr, len(nn.listen))
 	for idx, v := range nn.listen {
 		addr, err := ma.NewMultiaddr(v)
@@ -300,7 +261,7 @@ func (nn *NetNode) Start() error {
 }
 
 //连接本shard内的节点
-func (nn *NetNode) connectToShardingPeers() {
+func (nn *netNode) connectToShardingPeers() {
 	nn.shardingInfo.rwLock.RLock()
 	defer nn.shardingInfo.rwLock.RUnlock()
 	works := nn.shardingInfo.info[nn.shardingInfo.shardId]
@@ -327,7 +288,7 @@ func (nn *NetNode) connectToShardingPeers() {
 	log.Debug("finish connecting to sharding peers exit...")
 }
 
-func (nn *NetNode) updateShardingInfo(info *common.ShardingTopo) {
+func (nn *netNode) updateShardingInfo(info *common.ShardingTopo) {
 	log.Info(inCommon.JsonString(info))
 	nn.shardingInfo.rwLock.Lock()
 	nn.shardingInfo.shardId = info.ShardId
@@ -375,7 +336,7 @@ func (nn *NetNode) updateShardingInfo(info *common.ShardingTopo) {
 	nn.connectToShardingPeers()
 }
 
-func (nn *NetNode) GetShardAddress(id peer.ID) peerstore.PeerInfo {
+func (nn *netNode) GetShardAddress(id peer.ID) peerstore.PeerInfo {
 	nn.shardingInfo.rwLock.RLock()
 	defer nn.shardingInfo.rwLock.RUnlock()
 	for _, addr := range nn.shardingInfo.info {
@@ -388,7 +349,7 @@ func (nn *NetNode) GetShardAddress(id peer.ID) peerstore.PeerInfo {
 	return peerstore.PeerInfo{}
 }
 
-func (nn *NetNode) nativeMessageLoop() {
+func (nn *netNode) nativeMessageLoop() {
 	go func() {
 		for {
 			select {
@@ -408,7 +369,7 @@ func (nn *NetNode) nativeMessageLoop() {
 	}()
 }
 
-func (nn *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
+func (nn *netNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
 	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), nn.GetShardAddress(p))
 	if incoming.Type() >= pb.MsgType_APP_MSG_UNDEFINED {
 		log.Error("receive a invalid message ", incoming.Type().String())
@@ -431,11 +392,11 @@ func (nn *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming messa
 	}
 }
 
-func (nn *NetNode) ReceiveError(err error) {
+func (nn *netNode) ReceiveError(err error) {
 	//TOD
 }
 
-func (nn *NetNode) IsValidRemotePeer(p peer.ID) bool {
+func (nn *netNode) IsValidRemotePeer(p peer.ID) bool {
 	if !config.DisableSharding {
 		nn.shardingInfo.rwLock.RLock()
 		defer nn.shardingInfo.rwLock.RUnlock()
@@ -453,7 +414,7 @@ func (nn *NetNode) IsValidRemotePeer(p peer.ID) bool {
 	return true
 }
 
-func (nn *NetNode) IsNotMyShard(p peer.ID) bool {
+func (nn *netNode) IsNotMyShard(p peer.ID) bool {
 	if !config.DisableSharding {
 		nn.shardingInfo.rwLock.RLock()
 		defer nn.shardingInfo.rwLock.RUnlock()
@@ -466,7 +427,7 @@ func (nn *NetNode) IsNotMyShard(p peer.ID) bool {
 	return false
 }
 
-func (nn *NetNode) IsLeaderOrBackup() bool {
+func (nn *netNode) IsLeaderOrBackup() bool {
 	nn.shardingInfo.rwLock.RLock()
 	defer nn.shardingInfo.rwLock.RUnlock()
 
@@ -477,7 +438,7 @@ func (nn *NetNode) IsLeaderOrBackup() bool {
 	return false
 }
 
-func (nn *NetNode) GetShardLeader(shardId uint16) (*peerstore.PeerInfo, error) {
+func (nn *netNode) GetShardLeader(shardId uint16) (*peerstore.PeerInfo, error) {
 	nn.shardingInfo.rwLock.RLock()
 	defer nn.shardingInfo.rwLock.RUnlock()
 
@@ -490,7 +451,7 @@ func (nn *NetNode) GetShardLeader(shardId uint16) (*peerstore.PeerInfo, error) {
 	return pi, nil
 }
 
-func (nn *NetNode) GetShardMembersToReceiveCBlock() [][]*peerstore.PeerInfo {
+func (nn *netNode) GetShardMembersToReceiveCBlock() [][]*peerstore.PeerInfo {
 	nn.shardingInfo.rwLock.RLock()
 	defer nn.shardingInfo.rwLock.RUnlock()
 
@@ -516,7 +477,7 @@ func (nn *NetNode) GetShardMembersToReceiveCBlock() [][]*peerstore.PeerInfo {
 	return peers
 }
 
-func (nn *NetNode) GetCMMembersToReceiveSBlock() []*peerstore.PeerInfo {
+func (nn *netNode) GetCMMembersToReceiveSBlock() []*peerstore.PeerInfo {
 	nn.shardingInfo.rwLock.RLock()
 	defer nn.shardingInfo.rwLock.RUnlock()
 
@@ -538,23 +499,23 @@ func (nn *NetNode) GetCMMembersToReceiveSBlock() []*peerstore.PeerInfo {
 	return peers
 }
 
-func (nn *NetNode) PeerConnected(p peer.ID) {
+func (nn *netNode) PeerConnected(p peer.ID) {
 	// TOD
 }
 
-func (nn *NetNode) PeerDisconnected(p peer.ID) {
+func (nn *netNode) PeerDisconnected(p peer.ID) {
 	// TOD
 }
 
-func (nn *NetNode) SelfId() string {
+func (nn *netNode) SelfId() string {
 	return nn.self.Pretty()
 }
 
-func (nn *NetNode) SelfRawId() peer.ID {
+func (nn *netNode) SelfRawId() peer.ID {
 	return nn.self
 }
 
-func (nn *NetNode) Neighbors() []string {
+func (nn *netNode) Neighbors() []string {
 	var peers []string
 
 	host := nn.network.Host()
@@ -566,15 +527,15 @@ func (nn *NetNode) Neighbors() []string {
 	return peers
 }
 
-func (nn *NetNode) SetActorPid(pid *actor.PID) {
+func (nn *netNode) SetActorPid(pid *actor.PID) {
 	nn.actorId = pid
 }
 
-func (nn *NetNode) GetActorPid() *actor.PID {
+func (nn *netNode) GetActorPid() *actor.PID {
 	return nn.actorId
 }
 
-func (nn *NetNode) SetShardingSubCh(ch <-chan interface{}) {
+func (nn *netNode) SetShardingSubCh(ch <-chan interface{}) {
 	nn.shardingSubCh = ch
 }
 
@@ -588,26 +549,25 @@ func GetChainId() uint32 {
 
 func InitNetWork(ctx context.Context) {
 	var err error
-	netNode, err = New(ctx)
+	defaultNode, err = NewNetNode(ctx)
 	if err != nil {
-		log.Error(err)
-		os.Exit(1)
+		log.Panic(err)
 	}
 }
 
 func StartNetWork(cShard <-chan interface{}) {
-	netActor := NewNetActor(netNode)
+	netActor := NewNetActor(defaultNode)
 	actorId, _ := netActor.Start()
-	netNode.SetActorPid(actorId)
+	defaultNode.SetActorPid(actorId)
 
 	if cShard != nil {
-		netNode.SetShardingSubCh(cShard)
+		defaultNode.SetShardingSubCh(cShard)
 	}
 
-	if err := netNode.Start(); err != nil {
+	if err := defaultNode.Start(); err != nil {
 		log.Error("error for starting net node,", err)
 		os.Exit(1)
 	}
 
-	log.Info(fmt.Sprintf("peer(self) %s is running", netNode.SelfId()))
+	log.Info(fmt.Sprintf("peer(self) %s is running", defaultNode.SelfId()))
 }

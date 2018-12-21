@@ -58,7 +58,7 @@ func (t *TransferInfo) Serialize() ([]byte, error) {
 	}
 	b, err := pbTransfer.Marshal()
 	if err != nil {
-		return nil, errors.New(log, "marshal failed")
+		return nil, errors.New("marshal failed")
 	}
 	return b, nil
 }
@@ -69,11 +69,11 @@ func (t *TransferInfo) Serialize() ([]byte, error) {
  */
 func (t *TransferInfo) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New(log, "data len is 0")
+		return errors.New("data len is 0")
 	}
 	var pbTransfer pb.Transfer
 	if err := pbTransfer.Unmarshal(data); err != nil {
-		return errors.New(log, "unMarshal failed")
+		return errors.New("unMarshal failed")
 	}
 	t.Token = pbTransfer.Token
 	t.Value = new(big.Int)

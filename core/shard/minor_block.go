@@ -93,7 +93,7 @@ func (h *MinorBlockHeader) unSignatureData() ([]byte, error) {
 	pbHeader.COSign.Step2 = 0
 	data, err := pbHeader.Marshal()
 	if err != nil {
-		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
+		return nil, errors.New(fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
 	}
 	return data, nil
 }
@@ -105,7 +105,7 @@ func (h *MinorBlockHeader) Serialize() ([]byte, error) {
 	}
 	data, err := pbHeader.Marshal()
 	if err != nil {
-		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
+		return nil, errors.New(fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
 	}
 	return data, nil
 }
@@ -191,7 +191,7 @@ func (a *AccountMinor) Hash() (common.Hash, error) {
 		return common.Hash{}, err
 	} else {
 		if data, err := p.Marshal(); err != nil {
-			return common.Hash{}, errors.New(log, err.Error())
+			return common.Hash{}, errors.New(err.Error())
 		} else {
 			return common.DoubleHash(data)
 		}
@@ -286,7 +286,7 @@ func (b *MinorBlock) GetTransaction(hash common.Hash) (*types.Transaction, error
 			return tx, nil
 		}
 	}
-	return nil, errors.New(log, fmt.Sprintf("can't find the tx:%s", hash.HexString()))
+	return nil, errors.New(fmt.Sprintf("can't find the tx:%s", hash.HexString()))
 }
 
 func (b *MinorBlock) proto() (block *pb.MinorBlock, err error) {
@@ -328,11 +328,11 @@ func (b *MinorBlock) Serialize() ([]byte, error) {
 
 func (b *MinorBlock) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New(log, "input data's length is zero")
+		return errors.New("input data's length is zero")
 	}
 	var pbBlock pb.MinorBlock
 	if err := pbBlock.Unmarshal(data); err != nil {
-		return errors.New(log, err.Error())
+		return errors.New(err.Error())
 	}
 	dataHeader, err := pbBlock.Header.Marshal()
 	if err != nil {

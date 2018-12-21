@@ -18,6 +18,7 @@
 package network
 
 import (
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/util"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
@@ -25,7 +26,6 @@ import (
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	ic "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
-	"github.com/ecoball/go-ecoball/common"
 )
 
 func (net *NetImpl) ConnectToPeer(ip, port, pubKey string, isPermanent bool) error {
@@ -112,10 +112,7 @@ func (net *NetImpl) SendMsgSyncToPeerWithId(id peer.ID, msg message.EcoBallNetMs
 //async send msg to peer by id
 func (net *NetImpl) SendMsgToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
 	p := &peerstore.PeerInfo{ID: id}
-	sendJob := &SendMsgJob{
-		[]*peerstore.PeerInfo{p},
-		msg,
-	}
+	sendJob := &SendMsgJob{[]*peerstore.PeerInfo{p}, msg}
 	net.AddMsgJob(sendJob)
 
 	return nil
@@ -127,10 +124,7 @@ func (net *NetImpl) SendMsgToPeersWithId(pid []peer.ID, msg message.EcoBallNetMs
 		peers = append(peers, &peerstore.PeerInfo{ID: id})
 	}
 
-	sendJob := &SendMsgJob{
-		peers,
-		msg,
-	}
+	sendJob := &SendMsgJob{peers, msg}
 	net.AddMsgJob(sendJob)
 
 	return nil
@@ -138,8 +132,7 @@ func (net *NetImpl) SendMsgToPeersWithId(pid []peer.ID, msg message.EcoBallNetMs
 
 func (net *NetImpl) BroadcastMessage(msg message.EcoBallNetMsg) error {
 	var peers []*peerstore.PeerInfo
-	conns := net.host.Network().Conns()
-	for _, c := range conns {
+	for _, c := range net.host.Network().Conns() {
 		pid := c.RemotePeer()
 		if !net.receiver.IsNotMyShard(pid) {
 			peers = append(peers, &peerstore.PeerInfo{ID: pid})
@@ -147,10 +140,7 @@ func (net *NetImpl) BroadcastMessage(msg message.EcoBallNetMsg) error {
 	}
 
 	if len(peers) > 0 {
-		sendJob := &SendMsgJob{
-			peers,
-			msg,
-		}
+		sendJob := &SendMsgJob{peers, msg}
 		net.AddMsgJob(sendJob)
 	}
 

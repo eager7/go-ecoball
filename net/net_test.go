@@ -6,7 +6,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/net"
-	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/test/example"
 	"testing"

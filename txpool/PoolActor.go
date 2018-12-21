@@ -154,14 +154,14 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		} else {
 			net, err := network.GetNetInstance()
 			if err != nil {
-				return errors.New(log, err.Error())
+				return errors.New(err.Error())
 			}
 			data, err := tx.Serialize()
 			if err != nil {
 				return err
 			}
 			if err := net.SendMsgDataToShard(uint16(toShard), pb.MsgType_APP_MSG_TRN, data); err != nil {
-				return errors.New(log, err.Error())
+				return errors.New(err.Error())
 			}
 		}
 	} else {
@@ -185,7 +185,7 @@ func (p *PoolActor) handleNewBlock(block *types.Block) {
 func (p *PoolActor) preHandleTransaction(tx *types.Transaction) ([]byte, error) {
 	s, ok := p.txPool.StateDB[tx.ChainID]
 	if !ok {
-		return nil, errors.New(log, fmt.Sprintf("can't find the chain:%s", tx.ChainID.HexString()))
+		return nil, errors.New(fmt.Sprintf("can't find the chain:%s", tx.ChainID.HexString()))
 	}
 	ret, _, _, err := p.txPool.ledger.ShardPreHandleTransaction(tx.ChainID, s, tx, tx.TimeStamp)
 	if err != nil {

@@ -86,7 +86,7 @@ func InitConsensusData(timestamp int64) (*ConsensusData, error) {
 		return NewConsensusPayload(conType, conPayload), nil
 		//TODO
 	default:
-		return nil, errors.New(log, "unknown consensus type")
+		return nil, errors.New("unknown consensus type")
 	}
 }
 
@@ -133,7 +133,7 @@ func (c *ConsensusData) Deserialize(data []byte) error {
 	case ConABFT:
 		c.Payload = new(AbaBftData)
 	default:
-		return errors.New(log, "unknown consensus type")
+		return errors.New("unknown consensus type")
 	}
 	return c.Payload.Deserialize(pbCon.Data)
 }
@@ -303,7 +303,7 @@ func (d *DPosData) Serialize() ([]byte, error) {
 //TODO
 func (d *DPosData) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New(log, "input data's length is zero")
+		return errors.New("input data's length is zero")
 	}
 	var state pb.ConsensusState
 	if err := state.Unmarshal(data); err != nil {
@@ -389,7 +389,7 @@ func (a *AbaBftData) Serialize() ([]byte, error) {
 }
 func (a *AbaBftData) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New(log, fmt.Sprintf("AbaBftData is nil:%v", data))
+		return errors.New(fmt.Sprintf("AbaBftData is nil:%v", data))
 	}
 	var pbData pb.AbaBftData
 	if err := pbData.Unmarshal(data); err != nil {

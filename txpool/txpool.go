@@ -44,7 +44,7 @@ type TxPool struct {
 func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
 	csc, err := lru.New(10000)
 	if err != nil {
-		return nil, errors.New(log, fmt.Sprintf("New Lru error:%s", err.Error()))
+		return nil, errors.New(fmt.Sprintf("New Lru error:%s", err.Error()))
 	}
 	//transaction pool
 	pool = &TxPool{ledger: ledger, txsCache: csc, StateDB: make(map[common.Hash]*state.State, 0)}
@@ -67,7 +67,7 @@ func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
 func (t *TxPool) GetTxsList(chainID common.Hash) ([]*types.Transaction, error) {
 	list, ok := t.PendingTxs[chainID]
 	if !ok {
-		return nil, errors.New(log, fmt.Sprintf("can't find this chain:%s", chainID.HexString()))
+		return nil, errors.New(fmt.Sprintf("can't find this chain:%s", chainID.HexString()))
 	}
 	txs := list.GetTransactions()
 	return txs, nil
@@ -83,7 +83,7 @@ func (t *TxPool) AddTxsList(hash common.Hash) {
 func (t *TxPool) Push(chainID common.Hash, tx *types.Transaction) error {
 	list, ok := t.PendingTxs[chainID]
 	if !ok {
-		return errors.New(log, fmt.Sprintf("can't find this chain:%s", chainID.HexString()))
+		return errors.New(fmt.Sprintf("can't find this chain:%s", chainID.HexString()))
 	}
 	list.Push(tx)
 	return nil
@@ -92,7 +92,7 @@ func (t *TxPool) Push(chainID common.Hash, tx *types.Transaction) error {
 func (t *TxPool) Delete(chainID, txHash common.Hash) error {
 	list, ok := t.PendingTxs[chainID]
 	if !ok {
-		return errors.New(log, fmt.Sprintf("can't find this chain:%s", chainID.HexString()))
+		return errors.New(fmt.Sprintf("can't find this chain:%s", chainID.HexString()))
 	}
 	list.Delete(txHash)
 	return nil

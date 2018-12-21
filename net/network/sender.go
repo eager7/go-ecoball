@@ -67,7 +67,7 @@ func (ms *messageSender) prepOrInvalidate() error {
 
 func (ms *messageSender) prep() error {
 	if ms.invalid {
-		return errors.New(log, "message sender has been invalidated")
+		return errors.New("message sender has been invalidated")
 	}
 	if ms.s != nil {
 		return nil
@@ -80,7 +80,7 @@ func (ms *messageSender) prep() error {
 
 	stream, err := ms.newStreamToPeer(ms.net.ctx, ms.p.ID, ProtocolP2pV1)
 	if err != nil {
-		return errors.New(log, err.Error())
+		return errors.New(err.Error())
 	}
 
 	ms.s = stream
@@ -126,7 +126,7 @@ func msgToStream(ctx context.Context, s inet.Stream, msg message.EcoBallNetMsg) 
 	switch s.Protocol() {
 	case ProtocolP2pV1:
 		if err := msg.ToNetV1(s); err != nil {
-			return errors.New(log, err.Error())
+			return errors.New(err.Error())
 		}
 	default:
 		return fmt.Errorf("unrecognized protocol on remote: %s", s.Protocol())

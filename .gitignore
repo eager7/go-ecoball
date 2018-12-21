@@ -24,3 +24,19 @@ glide.lock
 ./ecoball.toml
 /eballscan/build/*
 
+#docker
+docker/cockroach
+docker/eballscan
+docker/eballscan_service.sh
+docker/ecoball
+docker/ecoball_log/
+docker/ecowallet
+docker/restart.sh
+docker/run.sh
+docker/run.sh.bak
+docker/shard_setup.toml
+docker/tools/
+test/p2p/ecoball.toml
+test/p2p/main
+test/p2p/shard2/
+

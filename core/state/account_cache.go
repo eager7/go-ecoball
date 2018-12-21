@@ -16,7 +16,7 @@ type AccountCache struct {
 func (a *AccountCache) Initialize() error {
 	csc, err := lru.New(10000)
 	if err != nil {
-		return errors.New(log, fmt.Sprintf("New Lru error:%s", err.Error()))
+		return errors.New(fmt.Sprintf("New Lru error:%s", err.Error()))
 	}
 	a.AccountCache = csc
 	return nil
