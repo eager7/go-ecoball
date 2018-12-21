@@ -141,22 +141,6 @@ func NewTransactionChain(path string, ledger ledger.Ledger, shard bool) (c *Chai
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, []*types.Transaction, error) {
-	//// every 30 blocks issue reward
-	//if ledger.GetCurrentHeight(config.ChainHash) % 30 == 0 {
-	//	c.StateDB.FinalDB.IssueToken(common.NameToIndex("saving"), big.NewInt(100), state.AbaToken)
-	//
-	//	produces, err := ledger.GetProducerList(config.ChainHash)
-	//	if err != nil {
-	//		fmt.Println(err)
-	//		return nil, err
-	//	}
-	//
-	//	value := 100 / len(produces)
-	//	for _, producer := range produces {
-	//		c.StateDB.FinalDB.IssueToken(producer, big.NewInt(int64(value)), state.AbaToken)
-	//	}
-	//}
-
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, nil, err

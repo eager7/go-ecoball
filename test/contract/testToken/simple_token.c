@@ -7,7 +7,7 @@ void create(char *creator,int max_supply,char *token_id){
     int result;
 
     //if the creator account exists
-    result = ABA_account_contain(creator);
+    result = ABA_is_account(creator, strlen(creator));
     if(result != 1) {
       ABA_prints("The creator account does not exist");
       return;
@@ -61,7 +61,7 @@ void issue(char *to,int amount,char *token_id){
     }	
 	
     //if the receiving account exists
-    result = ABA_account_contain(to);
+    result = ABA_is_account(to, strlen(to));
     if(result != 1) {
       ABA_prints("The receiving account does not exist");
       return;
@@ -102,12 +102,12 @@ void transfer(char *from,char *to,int amount,char *token_id){
     int balance1,balance2,result;
   
     //if the creator account exists
-    result = ABA_account_contain(from);
+    result = ABA_is_account(from, strlen(from));
     if(result != 1) {
       ABA_prints("The transfer account does not exist");
       return;
     }
-    result = ABA_account_contain(to);
+    result = ABA_is_account(to, strlen(to));
     if(result != 1) {
       ABA_prints("The receiving account does not exist");
       return;
