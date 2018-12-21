@@ -17,8 +17,8 @@
 package message
 
 import (
-	"github.com/ecoball/go-ecoball/core/types"
 	eactor "github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 )
 
@@ -30,7 +30,7 @@ func HdTransactionMsg(data []byte) error {
 	}
 	log.Debug("dispatch tx msg")
 	eactor.Send(0, eactor.ActorTxPool, tx)
-	return  nil
+	return nil
 }
 
 func HdBlkMsg(data []byte) error {
@@ -45,13 +45,13 @@ func HdBlkMsg(data []byte) error {
 }
 
 func HdSignPreMsg(data []byte) error {
-	signpre_receive := pb.SignaturePreBlockA{}
-	err := signpre_receive.Deserialize(data)
+	signPreReceive := pb.SignaturePreBlockA{}
+	err := signPreReceive.Deserialize(data)
 	if err != nil {
 		return err
 	}
-	log.Debug("dispatch signpre msg")
-	eactor.Send(0, eactor.ActorConsensus, signpre_receive)
+	log.Debug("dispatch signPre msg")
+	eactor.Send(0, eactor.ActorConsensus, signPreReceive)
 	return nil
 }
 
@@ -67,84 +67,84 @@ func HdBlkFMsg(data []byte) error {
 }
 
 func HdReqSynMsg(data []byte) error {
-	reqsyn := pb.REQSynA{}
-	err := reqsyn.Deserialize(data)
+	reqSyn := pb.REQSynA{}
+	err := reqSyn.Deserialize(data)
 	if err != nil {
 		return err
 	}
 	log.Debug("dispatch synchronization request msg")
-	eactor.Send(0, eactor.ActorConsensus, reqsyn)
+	eactor.Send(0, eactor.ActorConsensus, reqSyn)
 	return nil
 }
 
 func HdReqSynSoloMsg(data []byte) error {
-	reqsyn := pb.REQSynSolo{}
-	err := reqsyn.Deserialize(data)
+	reqSyn := pb.REQSynSolo{}
+	err := reqSyn.Deserialize(data)
 	if err != nil {
 		return err
 	}
 	log.Debug("dispatch synchronization request msg")
-	eactor.Send(0, eactor.ActorConsensus, reqsyn)
+	eactor.Send(0, eactor.ActorConsensus, reqSyn)
 	return nil
 }
 
 func HdToutMsg(data []byte) error {
-	toutmsg := pb.TimeoutMsg{}
-	err := toutmsg.Deserialize(data)
+	tOutMsg := pb.TimeoutMsg{}
+	err := tOutMsg.Deserialize(data)
 	if err != nil {
 		return err
 	}
 	log.Debug("dispatch synchronization request msg")
-	eactor.Send(0, eactor.ActorConsensus, toutmsg)
+	eactor.Send(0, eactor.ActorConsensus, tOutMsg)
 	return nil
 }
 
 func HdSignBlkFMsg(data []byte) error {
-	signblkf_receive := pb.SignatureBlkFA{}
-	err := signblkf_receive.Deserialize(data)
+	signBlkfReceive := pb.SignatureBlkFA{}
+	err := signBlkfReceive.Deserialize(data)
 	if err != nil {
 		return err
 	}
 	log.Debug("dispatch the signature of first-round block msg")
-	eactor.Send(0, eactor.ActorConsensus, signblkf_receive)
+	eactor.Send(0, eactor.ActorConsensus, signBlkfReceive)
 	return nil
 }
 
 func HdBlkSMsg(data []byte) error {
-	block_secondround := pb.BlockSecondRound{}
-	err := block_secondround.BlockSecond.Deserialize(data)
+	blockSecondRound := pb.BlockSecondRound{}
+	err := blockSecondRound.BlockSecond.Deserialize(data)
 	if err != nil {
 		return err
 	}
 	log.Debug("dispatch second-round(final) block msg")
-	eactor.Send(0, eactor.ActorConsensus, block_secondround)
+	eactor.Send(0, eactor.ActorConsensus, blockSecondRound)
 	return nil
 }
 
 func HdBlkSynMsg(data []byte) error {
-	blksyn := pb.BlockSynA{}
-	err := blksyn.Deserialize(data)
+	blkSyn := pb.BlockSynA{}
+	err := blkSyn.Deserialize(data)
 	if err != nil {
 		return err
 	}
 	log.Debug("dispatch the block according to the synchronization request")
-	eactor.Send(0, eactor.ActorConsensus, blksyn)
+	eactor.Send(0, eactor.ActorConsensus, blkSyn)
 	return nil
 }
 
 // MakeHandlers generates a map of MsgTypes to their corresponding handler functions
 func MakeHandlers() map[pb.MsgType]HandlerFunc {
 	return map[pb.MsgType]HandlerFunc{
-		pb.MsgType_APP_MSG_TRN:       HdTransactionMsg,
-		pb.MsgType_APP_MSG_BLK:       HdBlkMsg,
-		pb.MsgType_APP_MSG_SIGNPRE:   HdSignPreMsg,
-		pb.MsgType_APP_MSG_BLKF:      HdBlkFMsg,
-		pb.MsgType_APP_MSG_REQSYN:    HdReqSynMsg,
-		pb.MsgType_APP_MSG_REQSYNSOLO:HdReqSynSoloMsg,
-		pb.MsgType_APP_MSG_SIGNBLKF:  HdSignBlkFMsg,
-		pb.MsgType_APP_MSG_BLKS:      HdBlkSMsg,
-		pb.MsgType_APP_MSG_BLKSYN:    HdBlkSynMsg,
-		pb.MsgType_APP_MSG_TIMEOUT:   HdToutMsg,
+		pb.MsgType_APP_MSG_TRN:        HdTransactionMsg,
+		pb.MsgType_APP_MSG_BLK:        HdBlkMsg,
+		pb.MsgType_APP_MSG_SIGNPRE:    HdSignPreMsg,
+		pb.MsgType_APP_MSG_BLKF:       HdBlkFMsg,
+		pb.MsgType_APP_MSG_REQSYN:     HdReqSynMsg,
+		pb.MsgType_APP_MSG_REQSYNSOLO: HdReqSynSoloMsg,
+		pb.MsgType_APP_MSG_SIGNBLKF:   HdSignBlkFMsg,
+		pb.MsgType_APP_MSG_BLKS:       HdBlkSMsg,
+		pb.MsgType_APP_MSG_BLKSYN:     HdBlkSynMsg,
+		pb.MsgType_APP_MSG_TIMEOUT:    HdToutMsg,
 		//TODO add new msg handler at here
 	}
 }

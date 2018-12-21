@@ -17,25 +17,23 @@
 package txpool
 
 import (
-	"reflect"
-
-	"github.com/ecoball/go-ecoball/common"
-
-	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/core/types"
-	"sync"
-	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/core/shard"
-	"github.com/ecoball/go-ecoball/net/network"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/net/message/pb"
 	"fmt"
-	"time"
+	"github.com/AsynkronIT/protoactor-go/actor"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/net/message/pb"
+	"github.com/ecoball/go-ecoball/net/network"
+	"reflect"
+	"sync"
 )
 
 const magicNum = 999
+
 var CurrentTxN = 0
 
 type PoolActor struct {
@@ -64,14 +62,14 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 	case *actor.Started:
 	case *actor.Restarting:
 	case *types.Transaction:
-		log.Info("receive tx:", CurrentTxN, "Hash:", msg.Hash.HexString())
+		log.Debug("receive tx:", CurrentTxN, "type:", msg.Type.String(), "Hash:", msg.Hash.HexString())
 		CurrentTxN++
 		go p.handleTransaction(msg)
 	case *types.Block:
 		log.Debug("new block delete transactions")
 		go p.handleNewBlock(msg)
 	case *message.RegChain:
-		log.Info("Add New TxList:", msg.ChainID.HexString())
+		log.Debug("Add New TxList:", msg.ChainID.HexString())
 		p.txPool.AddTxsList(msg.ChainID)
 	case *shard.MinorBlock:
 		for _, v := range msg.Transactions {
@@ -79,8 +77,11 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 			p.txPool.Delete(msg.ChainID, v.Hash)
 		}
 	case *shard.FinalBlock:
-		if s, err := p.txPool.ledger.StateDB(msg.ChainID).CopyState(); err != nil {
+		if s, err := p.txPool.ledger.StateDB(msg.ChainID).CopyState(); err == nil {
 			p.txPool.StateDB[msg.ChainID] = s
+			log.Debug("update tx pool state:", s.GetHashRoot().HexString())
+		} else {
+			log.Warn("update tx pool state error:", err)
 		}
 	case *shard.CMBlock:
 	case message.DeleteTx:
@@ -123,7 +124,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		}
 		numShard := len(lastCMBlock.GetObject().(shard.CMBlock).Shards)
 		if numShard == 0 {
-			log.Warn("the node network is not work")
+			log.Warn("the node network is not work, last cm block:", lastCMBlock.JsonString())
 			return nil
 		}
 		var handle bool
@@ -131,20 +132,20 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 		if err != nil {
 			return err
 		}
-		log.Info("the shard id is ", shardId)
+		log.Debug("the shard id is ", shardId)
 		var toShard uint64
 		if tx.Type == types.TxTransfer || tx.Addr == common.NameToIndex("root") {
 			toShard = uint64(tx.From)%magicNum%uint64(numShard) + 1
-			log.Info("the handle shard id is ", toShard)
+			log.Debug("the handle shard id is ", toShard)
 			if uint64(shardId) == toShard {
-				log.Info("put the transfer tx:", tx.From, tx.Hash.HexString(), "to txPool")
+				log.Debug("put the transfer tx:", tx.From, tx.Hash.HexString(), "to txPool")
 				handle = true
 			}
 		} else {
 			toShard = uint64(tx.Addr)%magicNum%uint64(numShard) + 1
-			log.Info("the handle shard id is ", toShard)
+			log.Debug("the handle shard id is ", toShard)
 			if uint64(shardId) == toShard {
-				log.Info("put the contract tx:", tx.Addr, tx.Hash.HexString(), "to txPool")
+				log.Debug("put the contract tx:", tx.Addr, tx.Hash.HexString(), "to txPool")
 				handle = true
 			}
 		}
@@ -176,7 +177,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 
 func (p *PoolActor) handleNewBlock(block *types.Block) {
 	for _, v := range block.Transactions {
-		log.Info("Delete tx:", v.Hash.HexString())
+		log.Debug("Delete tx:", v.Hash.HexString())
 		p.txPool.Delete(block.ChainID, v.Hash)
 	}
 }
@@ -186,7 +187,7 @@ func (p *PoolActor) preHandleTransaction(tx *types.Transaction) ([]byte, error) 
 	if !ok {
 		return nil, errors.New(log, fmt.Sprintf("can't find the chain:%s", tx.ChainID.HexString()))
 	}
-	ret, _, _, err := p.txPool.ledger.ShardPreHandleTransaction(tx.ChainID, s, tx, time.Now().UnixNano())
+	ret, _, _, err := p.txPool.ledger.ShardPreHandleTransaction(tx.ChainID, s, tx, tx.TimeStamp)
 	if err != nil {
 		return nil, err
 	}

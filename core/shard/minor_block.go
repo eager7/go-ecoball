@@ -229,7 +229,6 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *MinorBlockHeader, txs []
 		Transactions:     txs,
 		StateDelta:       sDelta,
 	}
-	fmt.Println("block.StateDelta:", block.StateDelta)
 	if err := block.SetReceipt(prevHeader, cpu, net); err != nil {
 		return nil, err
 	}

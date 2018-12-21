@@ -41,7 +41,7 @@ func (net *NetImpl)SendMsgToShards(msg message.EcoBallNetMsg) error {
 		return fmt.Errorf("sender is not a committee leader or backup")
 	}
 
-	shardMembers := net.receiver.GetShardMemebersToReceiveCBlock()
+	shardMembers := net.receiver.GetShardMembersToReceiveCBlock()
 	for _, shard := range shardMembers {
 		net.SendMsgToPeerWithPeerInfo(shard, msg)
 	}
@@ -54,7 +54,7 @@ func (net *NetImpl)SendMsgToCommittee(msg message.EcoBallNetMsg) error {
 		return fmt.Errorf("sender is not a committee leader or backup")
 	}
 
-	cmMembers := net.receiver.GetCMMemebersToReceiveSBlock()
+	cmMembers := net.receiver.GetCMMembersToReceiveSBlock()
 	net.SendMsgToPeerWithPeerInfo(cmMembers, msg)
 
 	return nil

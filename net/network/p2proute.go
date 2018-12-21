@@ -18,47 +18,47 @@
 package network
 
 import (
-	"time"
-	"sync"
 	"context"
-	"github.com/ecoball/go-ecoball/net/util"
-	"github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/core/types"
-	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
+	"github.com/ecoball/go-ecoball/net/dispatcher"
+	"github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
+	"github.com/ecoball/go-ecoball/net/util"
+	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
+	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	"gx/ipfs/QmZ383TySJVeZWzGnWui6pRcKyYZk9VkKTuW7tmKRWk5au/go-libp2p-routing"
+	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	kb "gx/ipfs/QmesQqwonP618R7cJZoFfA4ioYhhMKnDmtUxcAvvxEEGnw/go-libp2p-kbucket"
-	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
-	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
-	"github.com/ecoball/go-ecoball/net/message/pb"
+	"sync"
+	"time"
 )
 
 const (
 	// K is the maximum number of requests to perform before returning failure.
-	KValue                 = 20
+	KValue = 20
 	// Alpha is the concurrency factor for asynchronous requests.
-	AlphaValue             = 3
+	AlphaValue = 3
 
-	RTSyncAckMaxCount      = 10
-	RTSyncInterval         = 30 * time.Second
+	RTSyncAckMaxCount = 10
+	RTSyncInterval    = 30 * time.Second
 )
 
 type NetRouteTable struct {
-	net          *NetImpl
-	rt           *kb.RoutingTable
-	rtLock       sync.Mutex
-	msgSubCh     <-chan interface{}
-	stop         chan bool
+	net      *NetImpl
+	rt       *kb.RoutingTable
+	rtLock   sync.Mutex
+	msgSubCh <-chan interface{}
+	stop     chan bool
 
 	routing.PeerRouting
 }
 
-func NewRouteTable(n *NetImpl) (*NetRouteTable) {
-	table := &NetRouteTable {
-		net:   n,
-		rt:    initRoutingTable(n.host),
+func NewRouteTable(n *NetImpl) *NetRouteTable {
+	table := &NetRouteTable{
+		net: n,
+		rt:  initRoutingTable(n.host),
 	}
 
 	return table
@@ -70,7 +70,7 @@ func initRoutingTable(host host.Host) (table *kb.RoutingTable) {
 	rt := kb.NewRoutingTable(
 		KValue,
 		peerID,
-		time.Minute,   //TOD, should come from config file
+		time.Minute, //TOD, should come from config file
 		host.Peerstore())
 	cmgr := host.ConnManager()
 	rt.PeerAdded = func(p peer.ID) {
@@ -87,7 +87,7 @@ func (nrt *NetRouteTable) SyncRouteTable() {
 	syncedPeers := make(map[peer.ID]bool)
 	//sync with bootstrap peer
 	if nrt.net.bootstrapper != nil {
-		for _, bsp := range nrt.net.bootstrapper.bspeers {
+		for _, bsp := range nrt.net.bootstrapper.bsPeers {
 			if nrt.net.host.Network().Connectedness(bsp.ID()) == inet.Connected {
 				nrt.SyncWithPeer(bsp.ID())
 				syncedPeers[bsp.ID()] = true
@@ -143,14 +143,14 @@ func (nrt *NetRouteTable) OnSyncRoute(msg message.EcoBallNetMsg) {
 		}
 
 		pa := &types.PeerAddress{
-			Id: pi.ID,
+			Id:     pi.ID,
 			Ipport: addr[0].String(), //only get the first address
 		}
 		syncPA[i] = pa
 	}
 
 	syncAck := types.P2PRTSynAckMsg{
-		Resp: nrt.net.host.ID(),
+		Resp:  nrt.net.host.ID(),
 		PAddr: syncPA,
 	}
 
@@ -179,12 +179,12 @@ func (nrt *NetRouteTable) OnSyncRouteAck(msg message.EcoBallNetMsg) {
 			continue
 		}
 		nrt.net.host.Peerstore().AddAddr(pa.Id, addr, pstore.PermanentAddrTTL)
-		pi := &pstore.PeerInfo {
+		pi := &pstore.PeerInfo{
 			pa.Id,
 			[]ma.Multiaddr{addr},
 		}
 		cntness := nrt.net.host.Network().Connectedness(pi.ID)
-		if (pi.ID != nrt.net.host.ID()) && !(cntness == inet.Connected  || cntness == inet.CanConnect){
+		if (pi.ID != nrt.net.host.ID()) && !(cntness == inet.Connected || cntness == inet.CanConnect) {
 			go func(pi *pstore.PeerInfo) {
 				if pi.ID == nrt.net.host.ID() {
 					return
@@ -218,7 +218,7 @@ func (nrt *NetRouteTable) Stop() {
 	nrt.stop <- true
 }
 
-func (nrt *NetRouteTable) SyncRouting(ctx context.Context){
+func (nrt *NetRouteTable) SyncRouting(ctx context.Context) {
 	log.Debug("start to sync routing table")
 	defer log.Debug("sync routing table was shutting down")
 
@@ -238,10 +238,10 @@ func (nrt *NetRouteTable) SyncRouting(ctx context.Context){
 			if !ok {
 				continue
 			}
-			if msg.Type()==pb.MsgType_APP_MSG_P2PRTSYN {
+			if msg.Type() == pb.MsgType_APP_MSG_P2PRTSYN {
 				nrt.OnSyncRoute(msg)
 			}
-			if msg.Type()==pb.MsgType_APP_MSG_P2PRTSYNACK {
+			if msg.Type() == pb.MsgType_APP_MSG_P2PRTSYNACK {
 				nrt.OnSyncRouteAck(msg)
 			}
 		}
@@ -289,13 +289,14 @@ func (nrt *NetRouteTable) remove(p peer.ID) {
 	defer nrt.rtLock.Unlock()
 	nrt.rt.Remove(p)
 }
+
 /*
 func (nrt *NetRouteTable) nearestPeersToQuery(id peer.ID, count int) []peer.ID {
 	closer := nrt.rt.NearestPeers(kb.ConvertKey(id.String()), count)
 	return closer
 }
 */
-func getRandomPeers(k int, peers[]peer.ID) []peer.ID {
+func getRandomPeers(k int, peers []peer.ID) []peer.ID {
 
 	if len(peers) < k {
 		k = len(peers)

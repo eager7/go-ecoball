@@ -26,40 +26,6 @@ import (
 	"math/big"
 )
 
-/*
-func GenesisBlockInit(ledger ledger.Ledger, timeStamp int64) (*types.Block, error) {
-	if ledger == nil {
-		return nil, errors.New("ledger is nil")
-	}
-
-	//TODO start
-	SecondInMs := int64(1000)
-	BlockIntervalInMs := int64(15000)
-	timeStamp = int64((timeStamp*SecondInMs-SecondInMs)/BlockIntervalInMs) * BlockIntervalInMs
-	timeStamp = timeStamp / SecondInMs
-	//TODO end
-
-	hash := common.NewHash([]byte("EcoBall Geneses Block"))
-	conData := types.GenesesBlockInitConsensusData(timeStamp)
-	txs, err := PresetContract(ledger, timeStamp)
-	if err != nil {
-		return nil, err
-	}
-
-
-	hashState := ledger.StateDB().GetHashRoot()
-	header, err := types.NewHeader(types.VersionHeader, 1, hash, hash, hashState, *conData, bloom.Bloom{}, timeStamp)
-	if err != nil {
-		return nil, err
-	}
-	block := types.Block{Header: header, CountTxs: uint32(len(txs)), Transactions: txs}
-
-	if err := block.SetSignature(&config.Root); err != nil {
-		return nil, err
-	}
-	return &block, nil
-}*/
-
 func PresetContract(s *state.State, timeStamp int64, addr common.Address) error {
 	if s == nil {
 		return errors.New("state is nil")

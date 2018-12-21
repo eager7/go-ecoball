@@ -146,6 +146,7 @@ func (a *Account) StoreSet(path string, key, value []byte) (err error) {
 	a.Hash = a.trie.Hash()
 	return nil
 }
+
 func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
 	if err := a.NewStoreTrie(path); err != nil {
 		return nil, err
@@ -174,6 +175,7 @@ func (a *Account) Serialize() ([]byte, error) {
 	}
 	return data, nil
 }
+
 func (a *Account) ProtoBuf() (*pb.Account, error) {
 	var tokens []*pb.Token
 	var keysToken []string
@@ -287,7 +289,7 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 			Port:    a.Elector.Port,
 			Payee:   a.Elector.Payee.Number(),
 		},
-		Hash:    a.Hash.Bytes(),
+		Hash: a.Hash.Bytes(),
 	}
 	return &pbAcc, nil
 }
@@ -372,22 +374,25 @@ func (a *Account) Deserialize(data []byte) error {
 
 	return nil
 }
-func (a *Account) JsonString(format bool) string {
-	if format {
-		data, err := json.MarshalIndent(a, "", "    ")
-		if err != nil {
-			fmt.Println(err)
-		}
-		return string(data)
-	} else {
-		data, err := json.Marshal(a)
-		if err != nil {
-			fmt.Println(err)
-		}
-		return string(data)
+
+func (a *Account) JsonString() string {
+	data, err := json.Marshal(a)
+	if err != nil {
+		fmt.Println(err)
 	}
+	return string(data)
 }
-func (a *Account) Show() {
-	fmt.Println("----------------" + a.Index.String() + ":")
-	fmt.Println(a.JsonString(false))
+
+func (a *Account) Clone() (*Account, error) {
+	n := new(Account)
+	data, err := a.Serialize()
+	if err != nil {
+		log.Warn(err)
+		return nil, err
+	}
+	if err := n.Deserialize(data); err != nil {
+		log.Warn(err)
+		return nil, err
+	}
+	return n, nil
 }

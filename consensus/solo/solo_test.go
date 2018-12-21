@@ -24,7 +24,7 @@ func xTestSoloModule(t *testing.T) {
 	ledger := example.Ledger("/tmp/solo")
 	txPool, err := txpool.Start(ledger)
 	errors.CheckErrorPanic(err)
-	net.StartNetWork()
+	net.StartNetWork(nil)
 
 	solo.NewSoloConsensusServer(ledger, txPool, config.User)
 	event.Send(event.ActorNil, event.ActorConsensusSolo, config.ChainHash)
@@ -53,7 +53,7 @@ func TestNewSolo(t *testing.T) {
 	ledger := example.Ledger("/tmp/solo")
 	txPool, err := txpool.Start(ledger)
 	errors.CheckErrorPanic(err)
-	net.StartNetWork()
+	net.StartNetWork(nil)
 
 	solo.NewSoloConsensusServer(ledger, txPool, config.User)
 	event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{

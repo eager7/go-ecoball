@@ -154,7 +154,7 @@ func getAccount(c *cli.Context) error {
 	requestData := request.AccountName{Name: name, ChainHash: chainHash}
 	err = rpc.NodePost("/query/getAccountInfo", &requestData, &result)
 	if nil == err {
-		fmt.Println(result.JsonString(false))
+		fmt.Println(result.JsonString())
 	}
 	return err
 }

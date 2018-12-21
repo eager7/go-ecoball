@@ -19,12 +19,6 @@ var flag = false
 const VotesLimit = 200
 const ChainLimit = 200
 
-type Chain struct {
-	Hash    common.Hash
-	TxHash  common.Hash
-	Address common.Address
-	Index   common.AccountName
-}
 type Resource struct {
 	Net struct {
 		Staked    uint64  `json:"staked_aba, omitempty"`     //total stake delegated from account to self, uint ABA
@@ -197,9 +191,7 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 		return err
 	}
 	if acc.Votes.Staked < VotesLimit {
-		s.prodMutex.Lock()
-		delete(s.Producers, acc.Index)
-		s.prodMutex.Unlock()
+		s.Producers.Del(acc.Index)
 	}
 	s.commitProducersList()
 	return s.CommitAccount(acc)
@@ -211,6 +203,7 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
  *  @param timeStamp - current time
  */
 func (s *State) RecoverResources(index common.AccountName, timeStamp int64, cpuLimit, netLimit float64) error {
+	log.Debug("recover resource:", timeStamp)
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -247,12 +240,14 @@ func (s *State) RequireResources(index common.AccountName, cpuLimit, netLimit fl
 	if err != nil {
 		return 0, 0, err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
-	acc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit)
-	log.Debug("cpu:", acc.Cpu.Used, acc.Cpu.Available, acc.Cpu.Limit)
-	log.Debug("net:", acc.Net.Used, acc.Net.Available, acc.Net.Limit)
-	return acc.Cpu.Available, acc.Net.Available, nil
+	nAcc, err := acc.Clone()
+	if err != nil {
+		return 0, 0, err
+	}
+	nAcc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit)
+	log.Debug("cpu:", nAcc.Cpu.Used, nAcc.Cpu.Available, nAcc.Cpu.Limit)
+	log.Debug("net:", nAcc.Net.Used, nAcc.Net.Available, nAcc.Net.Limit)
+	return nAcc.Cpu.Available, nAcc.Net.Available, nil
 }
 
 /**
@@ -263,41 +258,30 @@ func (s *State) RegisterChain(index common.AccountName, hash, txHash common.Hash
 	if _, err := s.GetChainList(); err != nil {
 		return err
 	}
-	s.chainMutex.Lock()
-	if _, ok := s.Chains[hash]; ok {
-		s.chainMutex.Unlock()
+	if chain := s.Chains.Get(hash); chain != nil {
 		return errors.New(log, fmt.Sprintf("the chain:%s was already registed", hash.HexString()))
 	}
 	if err := s.checkAccountCertification(index, ChainLimit); err != nil {
-		s.chainMutex.Unlock()
 		return nil
 	}
-	s.Chains[hash] = Chain{
-		Hash:    hash,
-		TxHash:  txHash,
-		Address: addr,
-		Index:   index,
-	}
-	s.chainMutex.Unlock()
+	s.Chains.Add(hash, Chain{Hash: hash, TxHash: txHash, Address: addr, Index: index})
 
 	return s.commitChains()
 }
 func (s *State) commitChains() error {
-	if len(s.Chains) == 0 {
+	if s.Chains.Len() == 0 {
 		return nil
 	}
 
-	s.chainMutex.Lock()
-	defer s.chainMutex.Unlock()
 	var Keys []string
-	for k := range s.Chains {
-		Keys = append(Keys, k.HexString())
+	for chain := range s.Chains.Iterator() {
+		Keys = append(Keys, chain.Hash.HexString())
 	}
 	sort.Strings(Keys)
-	var List []Chain
+	var List []*Chain
 	for _, v := range Keys {
 		hash := common.HexToHash(v)
-		List = append(List, s.Chains[hash])
+		List = append(List, s.Chains.Get(hash))
 	}
 
 	data, err := json.Marshal(List)
@@ -312,9 +296,7 @@ func (s *State) commitChains() error {
 	return nil
 }
 func (s *State) GetChainList() ([]Chain, error) {
-	s.chainMutex.Lock()
-	defer s.chainMutex.Unlock()
-	if len(s.Chains) == 0 {
+	if s.Chains.Len() == 0 {
 		data, err := s.trie.TryGet([]byte(chainList))
 		if err != nil {
 			return nil, errors.New(log, fmt.Sprintf("can't get chainList from DB:%s", err.Error()))
@@ -325,20 +307,13 @@ func (s *State) GetChainList() ([]Chain, error) {
 				return nil, errors.New(log, fmt.Sprintf("can't unmarshal Chains List from json string:%s", err.Error()))
 			}
 			for _, v := range Chains {
-				s.Chains[v.Hash] = v
+				s.Chains.Add(v.Hash, v)
 			}
 		}
 	}
 	var list []Chain
-	for _, v := range s.Chains {
-		c := Chain{
-			Hash:    v.Hash,
-			TxHash:  v.TxHash,
-			Address: v.Address,
-			Index:   v.Index,
-		}
-		list = append(list, c)
-		log.Debug(c.Hash.HexString(), c.Index.String())
+	for chain := range s.Chains.Iterator() {
+		list = append(list, chain)
 	}
 	return list, nil
 }
@@ -398,7 +373,7 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 }
 func (a *Account) SubResourceLimits(cpu, net float64, cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) error {
 	if a.Cpu.Available < cpu {
-		log.Warn(a.JsonString(false))
+		log.Warn(a.JsonString())
 		return errors.New(log, fmt.Sprintf("the account:%s cpu avaiable[%f] is not enough", a.Index.String(), a.Cpu.Available))
 	}
 	if a.Net.Available < net {

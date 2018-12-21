@@ -134,7 +134,7 @@ func runNode(c *cli.Context) error {
 	net.InitNetWork(ctx)
 
 	if !config.DisableSharding {
-		simulate.LoadConfig()
+		simulate.LoadConfig("./sharding.json")
 	}
 
 	log.Info("Build Geneses Block")
@@ -151,7 +151,7 @@ func runNode(c *cli.Context) error {
 	}
 
 	//network depends on sharding
-	net.StartNetWork(sdactor)
+	net.StartNetWork(sdactor.SubscribeShardingTopo())
 
 	instance, err := network.GetNetInstance()
 	if err != nil {

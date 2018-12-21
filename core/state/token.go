@@ -1,22 +1,22 @@
 package state
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"math/big"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"encoding/json"
+	"math/big"
 )
 
 const AbaTotal = 2100000000
 
 type TokenInfo struct {
-	Symbol 		 string					`json:"symbol"`
-	MaxSupply 	 *big.Int				`json:"max_supply"`
-	Supply		 *big.Int 				`json:"supply"`
-	Creator 	 common.AccountName     `json:"issuer"`
-	Issuer       common.AccountName     `json:"issuer"`
+	Symbol    string             `json:"symbol"`
+	MaxSupply *big.Int           `json:"max_supply"`
+	Supply    *big.Int           `json:"supply"`
+	Creator   common.AccountName `json:"issuer"`
+	Issuer    common.AccountName `json:"issuer"`
 }
 
 type Token struct {
@@ -24,13 +24,13 @@ type Token struct {
 	Balance *big.Int `json:"balance, omitempty"`
 }
 
-func NewToken(symbol string, maxSupply, supply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error){
+func NewToken(symbol string, maxSupply, supply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error) {
 	stat := &TokenInfo{
-		Symbol: 	symbol,
-		MaxSupply:	maxSupply,
-		Supply:		supply,
-		Creator:	creator,
-		Issuer:		issuer,
+		Symbol:    symbol,
+		MaxSupply: maxSupply,
+		Supply:    supply,
+		Creator:   creator,
+		Issuer:    issuer,
 	}
 
 	return stat, nil
@@ -40,11 +40,11 @@ func (info *TokenInfo) Serialize() ([]byte, error) {
 	maxSupply, err := info.MaxSupply.GobEncode()
 	supply, err := info.Supply.GobEncode()
 	p := &pb.TokenInfo{
-		Symbol:		info.Symbol,
-		MaxSupply:	maxSupply,
-		Supply:		supply,
-		Creator:	uint64(info.Creator),
-		Issuer:		uint64(info.Issuer),
+		Symbol:    info.Symbol,
+		MaxSupply: maxSupply,
+		Supply:    supply,
+		Creator:   uint64(info.Creator),
+		Issuer:    uint64(info.Issuer),
 	}
 	b, err := p.Marshal()
 	if err != nil {
@@ -53,7 +53,7 @@ func (info *TokenInfo) Serialize() ([]byte, error) {
 	return b, nil
 }
 
-func (info *TokenInfo) Deserialize(data []byte) (error) {
+func (info *TokenInfo) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New(log, "input data's length is zero")
 	}
@@ -149,10 +149,7 @@ func (s *State) AccountAddBalance(index common.AccountName, token string, value 
 }
 
 func (s *State) TokenExisted(name string) bool {
-	s.tokenMutex.RLock()
-	defer s.tokenMutex.RUnlock()
-	_, ok := s.Tokens[name]
-	if ok {
+	if token := s.Tokens.Get(name); token != nil {
 		return true
 	}
 
@@ -178,13 +175,10 @@ func (s *State) TokenExisted(name string) bool {
 
 func (s *State) GetTokenInfo(symbol string) (*TokenInfo, error) {
 	if err := common.TokenNameCheck(symbol); err != nil {
-		return nil, err
+		return nil, errors.New(log, err.Error())
 	}
 
-	s.tokenMutex.RLock()
-	defer s.tokenMutex.RUnlock()
-	token, ok := s.Tokens[symbol]
-	if ok {
+	if token := s.Tokens.Get(symbol); token != nil {
 		return token, nil
 	}
 
@@ -199,8 +193,8 @@ func (s *State) GetTokenInfo(symbol string) (*TokenInfo, error) {
 		return nil, errors.New(log, fmt.Sprintf("no this token named:%s", symbol))
 	}
 
-	token = &TokenInfo{}
-	if err = token.Deserialize(data); err != nil {
+	token := &TokenInfo{}
+	if err := token.Deserialize(data); err != nil {
 		return nil, err
 	}
 	return token, nil
@@ -223,9 +217,7 @@ func (s *State) CommitToken(token *TokenInfo) error {
 	if err := s.trie.TryUpdate([]byte(token.Symbol), d); err != nil {
 		return err
 	}
-	s.tokenMutex.Lock()
-	defer s.tokenMutex.Unlock()
-	s.Tokens[token.Symbol] = token
+	s.Tokens.Add(token.Symbol, *token)
 	return nil
 }
 
@@ -268,7 +260,7 @@ func (s *State) SetTokenInfo(symbol string, maxSupply, supply *big.Int, creator,
 	return token, nil
 }
 
-func (s *State) IssueToken(to common.AccountName, amount *big.Int, symbol string) error{
+func (s *State) IssueToken(to common.AccountName, amount *big.Int, symbol string) error {
 	token, err := s.GetTokenInfo(symbol)
 	if err != nil {
 		return err
@@ -354,7 +346,6 @@ func (a *Account) SubBalance(token string, amount *big.Int) error {
 	balance := t.GetBalance()
 	value := new(big.Int).Sub(balance, amount)
 	if value.Sign() < 0 {
-		a.Show()
 		return errors.New(log, "the balance is not enough")
 	}
 	t.SetBalance(value)
@@ -370,7 +361,7 @@ func (a *Account) SubBalance(token string, amount *big.Int) error {
 func (a *Account) Balance(token string) (*big.Int, error) {
 	t, ok := a.Tokens[token]
 	if !ok {
-		return nil, errors.New(log, fmt.Sprintf("can't find token account:%s, in account:%s", token, a.Index.String()))
+		return nil, errors.New(log, fmt.Sprintf("the:%s balance is zero, in account:%s", token, a.Index.String()))
 	}
 	return t.GetBalance(), nil
 }

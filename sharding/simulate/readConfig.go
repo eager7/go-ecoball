@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"strconv"
 
 	sc "github.com/ecoball/go-ecoball/sharding/common"
@@ -21,16 +19,10 @@ type config struct {
 	Candidate []sc.Worker
 }
 
-func readConfigFile() *config {
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(dir)
-
-	file := "sharding.json"
-
-	bytes, err := ioutil.ReadFile(file)
+func readConfigFile(path string) *config {
+	//file := "sharding.json"
+	fmt.Println("sharding config file:", path)
+	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Info("read config file error")
 		panic("sharding configure not exist")
@@ -50,8 +42,8 @@ func readConfigFile() *config {
 
 var cfg *config
 
-func LoadConfig() {
-	cfg = readConfigFile()
+func LoadConfig(path string) {
+	cfg = readConfigFile(path)
 	if cfg == nil {
 		panic("read config error")
 		return

@@ -15,7 +15,7 @@ func TestTransferBlock(t *testing.T) {
 	l := ShardLedger("/tmp/example/")
 	r, err := l.AccountGet(config.ChainHash, common.NameToIndex("root"))
 	errors.CheckErrorPanic(err)
-	fmt.Println(r.JsonString(false))
+	fmt.Println(r.JsonString())
 	fmt.Println(l.RequireResources(config.ChainHash, common.NameToIndex("root"), time.Now().UnixNano()))
 
 	var txs []*types.Transaction

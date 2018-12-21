@@ -18,7 +18,6 @@ package dispatcher
 
 import (
 	"fmt"
-	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"gx/ipfs/QmdbxjQWogRCHRaxhhGnYdT1oQJzL9GdqSKzCdqWr85AP2/pubsub"
@@ -30,7 +29,6 @@ const (
 )
 
 var (
-	log = elog.NewLogger("disp", elog.DebugLog)
 	dispatcher *Dispatcher
 )
 
@@ -51,44 +49,44 @@ func (ds *Dispatcher) publish(msg message.EcoBallNetMsg) {
 }
 
 func (ds *Dispatcher) subscribe(msgs ...pb.MsgType) <-chan interface{} {
-	var msgstr []string
+	var msgStr []string
 	for _, msg := range msgs {
-		msgstr = append(msgstr, msg.String())
+		msgStr = append(msgStr, msg.String())
 	}
-	if len(msgstr) > 0 {
-		return ds.ps.Sub(msgstr...)
+	if len(msgStr) > 0 {
+		return ds.ps.Sub(msgStr...)
 	}
 
 	return nil
 }
 
 func (ds *Dispatcher) unsubscribe(chn chan interface{}, msgType ...pb.MsgType) {
-	var msgstr []string
+	var msgStr []string
 	for _, msg := range msgType {
-		msgstr = append(msgstr, msg.String())
+		msgStr = append(msgStr, msg.String())
 	}
 
-	ds.ps.Unsub(chn, msgstr...)
+	ds.ps.Unsub(chn, msgStr...)
 }
 
 // Not safe to call more than once.
 func (ds *Dispatcher) shutdown() {
-	// shutdown the pubsub.
+	// shutdown the pub sub.
 	ds.ps.Shutdown()
 }
 
-func Subscribe (msgs ...pb.MsgType) (<-chan interface{}, error) {
+func Subscribe (msgTypes ...pb.MsgType) (<-chan interface{}, error) {
 	if dispatcher == nil {
 		return nil, fmt.Errorf(errorStr)
 	}
-	return dispatcher.subscribe(msgs...), nil
+	return dispatcher.subscribe(msgTypes...), nil
 }
 
-func UnSubscribe (chn chan interface{}, msgs ...pb.MsgType) error {
+func UnSubscribe (chn chan interface{}, msgTypes ...pb.MsgType) error {
 	if dispatcher == nil {
 		return fmt.Errorf(errorStr)
 	}
-	dispatcher.unsubscribe(chn, msgs...)
+	dispatcher.unsubscribe(chn, msgTypes...)
 
 	return nil
 }

@@ -98,7 +98,7 @@ func Ledger(path string) ledger.Ledger {
 }
 
 func ShardLedger(path string) ledger.Ledger {
-	simulate.LoadConfig()
+	simulate.LoadConfig("/tmp/sharding.json")
 	os.RemoveAll(path)
 	l, err := ledgerimpl.NewLedger(path, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
 	errors.CheckErrorPanic(err)

@@ -30,8 +30,7 @@ func TestStateObject(t *testing.T) {
 
 	acc2 := new(state.Account)
 	errors.CheckErrorPanic(acc2.Deserialize(data))
-	acc2.Show()
-	errors.CheckEqualPanic(acc.JsonString(false) == acc2.JsonString(false))
+	errors.CheckEqualPanic(acc.JsonString() == acc2.JsonString())
 }
 
 func TestResourceRecover(t *testing.T) {
@@ -61,7 +60,7 @@ func TestResourceRecover(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	accNew := new(state.Account)
 	errors.CheckErrorPanic(accNew.Deserialize(data))
-	errors.CheckEqualPanic(acc.JsonString(false) == accNew.JsonString(false))
+	errors.CheckEqualPanic(acc.JsonString() == accNew.JsonString())
 
 	errors.CheckErrorPanic(acc.SubResourceLimits(1, 1, 100, 100, config.BlockCpuLimit, config.BlockNetLimit))
 }

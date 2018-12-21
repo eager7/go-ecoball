@@ -28,6 +28,8 @@ import (
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 const connectedAddrTTL = time.Minute * 10
@@ -47,6 +49,7 @@ func NewMsgSender(pi peerstore.PeerInfo, p2pNet *NetImpl) *messageSender {
 func (ms *messageSender) invalidate() {
 	ms.invalid = true
 	if ms.s != nil {
+		log.Error("reset stream")
 		ms.s.Reset()
 		ms.s = nil
 	}
@@ -64,7 +67,7 @@ func (ms *messageSender) prepOrInvalidate() error {
 
 func (ms *messageSender) prep() error {
 	if ms.invalid {
-		return fmt.Errorf("message sender has been invalidated")
+		return errors.New(log, "message sender has been invalidated")
 	}
 	if ms.s != nil {
 		return nil
@@ -75,18 +78,19 @@ func (ms *messageSender) prep() error {
 		ms.net.host.Peerstore().AddAddrs(ms.p.ID, ms.p.Addrs, connectedAddrTTL)
 	}
 
-	nstr, err := ms.newStreamToPeer(ms.net.ctx, ms.p.ID, ProtocolP2pV1)
+	stream, err := ms.newStreamToPeer(ms.net.ctx, ms.p.ID, ProtocolP2pV1)
 	if err != nil {
-		return err
+		return errors.New(log, err.Error())
 	}
 
-	ms.s = nstr
+	ms.s = stream
 
 	return nil
 }
 
 func (ms *messageSender) newStreamToPeer(ctx context.Context, p peer.ID, pids ...protocol.ID) (inet.Stream, error) {
-	return ms.net.host.NewStream(ctx, p, pids...)
+	log.Info("create new stream", ms.net.host.Peerstore().Addrs(p), common.JsonString(pids))
+	return ms.net.host.NewStream(ctx, p, pids...) //basic_host.go
 }
 
 func (ms *messageSender) SendMsg(ctx context.Context, msg message.EcoBallNetMsg) error {
@@ -100,9 +104,11 @@ func (ms *messageSender) SendMsg(ctx context.Context, msg message.EcoBallNetMsg)
 	if err := msgToStream(ctx, ms.s, msg); err != nil {
 		go inet.FullClose(ms.s)
 		ms.s = nil
+		log.Warn(err)
+		return err
 	}
 
-	log.Debug(fmt.Sprintf("send msg %s to peer", msg.Type().String()), ms.p.ID)
+	log.Debug(fmt.Sprintf("success send msg %s to peer:", msg.Type().String()), ms.p)
 
 	return nil
 }
@@ -120,8 +126,7 @@ func msgToStream(ctx context.Context, s inet.Stream, msg message.EcoBallNetMsg) 
 	switch s.Protocol() {
 	case ProtocolP2pV1:
 		if err := msg.ToNetV1(s); err != nil {
-			log.Debug("error: ", err)
-			return err
+			return errors.New(log, err.Error())
 		}
 	default:
 		return fmt.Errorf("unrecognized protocol on remote: %s", s.Protocol())

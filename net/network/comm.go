@@ -18,16 +18,17 @@
 package network
 
 import (
-	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ecoball/go-ecoball/net/message"
-	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
-	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	"github.com/ecoball/go-ecoball/net/util"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
+	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	ic "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
+	"github.com/ecoball/go-ecoball/common"
 )
 
-func (net *NetImpl)ConnectToPeer(ip, port, pubKey string, isPermanent bool) error {
+func (net *NetImpl) ConnectToPeer(ip, port, pubKey string, isPermanent bool) error {
 	addrInfo := util.ConstructAddrInfo(ip, port)
 	pi, err := constructPeerInfo(addrInfo, pubKey)
 	if err != nil {
@@ -41,55 +42,54 @@ func (net *NetImpl)ConnectToPeer(ip, port, pubKey string, isPermanent bool) erro
 	if err := net.host.Connect(net.ctx, pi); err != nil {
 		return err
 	}
+	log.Debug("connect peer finished:", ip, port, common.AddressFromPubKey([]byte(pubKey)).HexString(), isPermanent)
 
 	return nil
 }
 
-func (net *NetImpl)ClosePeer(pubKey string) error {
-	id, err := IdFromConfigEncodePublickKey(pubKey)
+func (net *NetImpl) ClosePeer(pubKey string) error {
+	id, err := IdFromConfigEncodePublicKey(pubKey)
 	if err != nil {
 		return err
 	}
 
-	conns := net.host.Network().ConnsToPeer(id)
+	conn := net.host.Network().ConnsToPeer(id)
 
 	var streams []inet.Stream
-	for _, conn := range conns {
+	for _, conn := range conn {
 		streams = append(streams, conn.GetStreams()...)
 	}
 
 	net.strmlk.Lock()
-	defer  net.strmlk.Unlock()
+	defer net.strmlk.Unlock()
 
 	for _, stream := range streams {
 		stream.Close()
 	}
 
 	delete(net.strmap, id)
+	log.Info("close the peer", id.String())
 	return net.host.Network().ClosePeer(id)
 }
 
-func (net *NetImpl)SendMsgToPeer(ip, port, pubKey string, msg message.EcoBallNetMsg) error {
+func (net *NetImpl) SendMsgToPeer(ip, port, pubKey string, msg message.EcoBallNetMsg) error {
 	addrInfo := util.ConstructAddrInfo(ip, port)
-	peer, err := constructPeerInfo(addrInfo, pubKey)
+	p, err := constructPeerInfo(addrInfo, pubKey)
 	if err != nil {
 		return err
 	}
-/*
-	if addr := net.host.Peerstore().Addrs(peer.ID); len(addr) == 0 {
-		return fmt.Errorf("connection have not created for %s", peer.ID.Pretty())
-	}
-*/
-	sendJob := &SendMsgJob{
-		[]*peerstore.PeerInfo{&peer},
-		msg,
-	}
+	/*
+		if addr := net.host.Peerstore().Addrs(peer.ID); len(addr) == 0 {
+			return fmt.Errorf("connection have not created for %s", peer.ID.Pretty())
+		}
+	*/
+	sendJob := &SendMsgJob{Peers: []*peerstore.PeerInfo{&p}, Msg: msg}
 	net.AddMsgJob(sendJob)
 
 	return nil
 }
 
-func (net *NetImpl)SendMsgToPeerWithPeerInfo(info []*peerstore.PeerInfo, msg message.EcoBallNetMsg) error {
+func (net *NetImpl) SendMsgToPeerWithPeerInfo(info []*peerstore.PeerInfo, msg message.EcoBallNetMsg) error {
 	sendJob := &SendMsgJob{
 		info,
 		msg,
@@ -99,22 +99,21 @@ func (net *NetImpl)SendMsgToPeerWithPeerInfo(info []*peerstore.PeerInfo, msg mes
 	return nil
 }
 
-//sync send msg to pper by id
-func (net *NetImpl)SendMsgSyncToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
-
-	peer := peerstore.PeerInfo{ID:id}
-	if err:= net.sendMessage(peer,msg); err != nil {
-		log.Error("send message to ", peer.ID.Pretty(), err)
+//sync send msg to peer by id
+func (net *NetImpl) SendMsgSyncToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
+	p := peerstore.PeerInfo{ID: id}
+	if err := net.sendMessage(p, msg); err != nil {
+		log.Error("send message to ", p.ID.Pretty(), err)
 	}
 
 	return nil
 }
 
-//async send msg to pper by id
-func (net *NetImpl)SendMsgToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
-	peer := &peerstore.PeerInfo{ID:id}
+//async send msg to peer by id
+func (net *NetImpl) SendMsgToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
+	p := &peerstore.PeerInfo{ID: id}
 	sendJob := &SendMsgJob{
-		[]*peerstore.PeerInfo{peer},
+		[]*peerstore.PeerInfo{p},
 		msg,
 	}
 	net.AddMsgJob(sendJob)
@@ -122,10 +121,10 @@ func (net *NetImpl)SendMsgToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) er
 	return nil
 }
 
-func (net *NetImpl)SendMsgToPeersWithId(pid []peer.ID, msg message.EcoBallNetMsg) error {
-	peers := []*peerstore.PeerInfo{}
+func (net *NetImpl) SendMsgToPeersWithId(pid []peer.ID, msg message.EcoBallNetMsg) error {
+	var peers []*peerstore.PeerInfo
 	for _, id := range pid {
-		peers = append(peers, &peerstore.PeerInfo{ID:id})
+		peers = append(peers, &peerstore.PeerInfo{ID: id})
 	}
 
 	sendJob := &SendMsgJob{
@@ -137,13 +136,13 @@ func (net *NetImpl)SendMsgToPeersWithId(pid []peer.ID, msg message.EcoBallNetMsg
 	return nil
 }
 
-func (net *NetImpl)BroadcastMessage(msg message.EcoBallNetMsg) error {
-	peers := []*peerstore.PeerInfo{}
+func (net *NetImpl) BroadcastMessage(msg message.EcoBallNetMsg) error {
+	var peers []*peerstore.PeerInfo
 	conns := net.host.Network().Conns()
 	for _, c := range conns {
 		pid := c.RemotePeer()
 		if !net.receiver.IsNotMyShard(pid) {
-			peers = append(peers, &peerstore.PeerInfo{ID:pid})
+			peers = append(peers, &peerstore.PeerInfo{ID: pid})
 		}
 	}
 
@@ -158,13 +157,11 @@ func (net *NetImpl)BroadcastMessage(msg message.EcoBallNetMsg) error {
 	return nil
 }
 
-func (net *NetImpl)GetPeerStoreConnectStatus()  []peer.ID {
+func (net *NetImpl) GetPeerStoreConnectStatus() []peer.ID {
 
 	return net.host.Network().Peers()
 
 }
-
-
 
 func constructPeerInfo(addrInfo, pubKey string) (peerstore.PeerInfo, error) {
 	pma, err := ma.NewMultiaddr(addrInfo)
@@ -172,17 +169,17 @@ func constructPeerInfo(addrInfo, pubKey string) (peerstore.PeerInfo, error) {
 		return peerstore.PeerInfo{}, err
 	}
 
-	id, err := IdFromConfigEncodePublickKey(pubKey)
+	id, err := IdFromConfigEncodePublicKey(pubKey)
 	if err != nil {
 		return peerstore.PeerInfo{}, err
 	}
 
-	peer := peerstore.PeerInfo{id, []ma.Multiaddr{pma}}
+	p := peerstore.PeerInfo{ID: id, Addrs: []ma.Multiaddr{pma}}
 
-	return peer, nil
+	return p, nil
 }
 
-func IdFromConfigEncodePublickKey(pubKey string) (peer.ID, error) {
+func IdFromConfigEncodePublicKey(pubKey string) (peer.ID, error) {
 	key, err := ic.ConfigDecodeKey(pubKey)
 	if err != nil {
 		return "", err
@@ -200,7 +197,7 @@ func IdFromConfigEncodePublickKey(pubKey string) (peer.ID, error) {
 	return id, nil
 }
 
-func IdFromProtoserPublickKey(pubKey []byte) (peer.ID, error) {
+func IdFromProtoserPublicKey(pubKey []byte) (peer.ID, error) {
 	pk, err := ic.UnmarshalPublicKey(pubKey)
 	if err != nil {
 		return "", err
