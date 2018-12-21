@@ -4,8 +4,8 @@
       "name": "create",
       "base": "",
       "fields": [
-         {"name":"creator", "type":"string"},
-         {"name":"max_supply", "type":"int32"},
+         {"name":"issuer", "type":"string"},
+         {"name":"max_supply", "type":"int64"},
          {"name":"token_id", "type":"string"}
       ]
     },{
@@ -13,7 +13,7 @@
       "base": "",
       "fields": [
          {"name":"to", "type":"string"},
-         {"name":"amount", "type":"int32"},
+         {"name":"amount", "type":"int64"},
          {"name":"token_id", "type":"string"}
       ]
     },{	
@@ -22,21 +22,25 @@
       "fields": [
          {"name":"from", "type":"string"},
          {"name":"to", "type":"string"},
-         {"name":"amount", "type":"int32"},
+         {"name":"amount", "type":"int64"},
          {"name":"token_id", "type":"string"}
       ]
     },{
-      "name": "account",
+      "name": "Account",
       "base": "",
       "fields": [
-        {"name":"balance", "type":"string"}
+        {"name":"balance", "type":"int64"},
+        {"name":"name", "type":"char[16]"},
+        {"name":"token_id", "type":"char[8]"}
       ]
     },{
-      "name": "currency_stats",
+      "name": "Stat",
       "base": "",
       "fields": [
-        {"name":"supply", "type":"string"},
-        {"name":"max_supply", "type":"string"}
+        {"name":"supply", "type":"int64"},
+        {"name":"max_supply", "type":"int64"},
+		    {"name":"issuer", "type":"char[16]"},
+        {"name":"token_id", "type":"char[8]"}
       ]
     }
   ],
@@ -46,23 +50,23 @@
     },{
       "name": "issue",
       "type": "issue"
-    },{
+    },{	
       "name": "transfer",
       "type": "transfer"
     }
   ],
   "tables": [{
-      "name": "accounts",
-      "type": "account",
+      "name": "Account",
+      "type": "Account",
       "index_type": "i64",
       "key_names" : ["currency"],
       "key_types" : ["uint64"]
     },{
-      "name": "stat",
-      "type": "currency_stats",
+      "name": "Stat",
+      "type": "Stat",
       "index_type": "i64",
       "key_names" : ["currency"],
       "key_types" : ["uint64"]
-    }
+    }  
   ]
 }
