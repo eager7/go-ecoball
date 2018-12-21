@@ -29,6 +29,7 @@ import (
 )
 
 type ShardingInfo struct {
+	ShardingSubCh <-chan interface{}
 	ShardId   uint16
 	Role      int
 	PeersInfo [][]peer.ID
@@ -37,6 +38,7 @@ type ShardingInfo struct {
 }
 
 func (s *ShardingInfo) Initialize() {
+	s.ShardingSubCh = make(<-chan interface{}, 1)
 	s.PeersInfo = make([][]peer.ID, 0)
 	s.Info = make(map[uint16]map[peer.ID]multiaddr.Multiaddr)
 }

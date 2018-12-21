@@ -53,23 +53,19 @@ const (
 )
 
 var (
-	log = elog.NewLogger("net", elog.DebugLog)
-
-	ecoballChainId uint32 = 1
-
+	log         = elog.NewLogger("net", elog.DebugLog)
 	defaultNode *netNode
 )
 
 type netNode struct {
-	ctx           context.Context
-	self          peer.ID
-	network       network.EcoballNetwork
-	broadCastCh   chan message.EcoBallNetMsg
-	handlers      map[pb.MsgType]message.HandlerFunc
-	actorId       *actor.PID
-	listen        []string
-	shardingSubCh <-chan interface{}
-	shardingInfo  *network.ShardingInfo
+	ctx          context.Context
+	self         peer.ID
+	network      network.EcoballNetwork
+	broadCastCh  chan message.EcoBallNetMsg
+	handlers     map[pb.MsgType]message.HandlerFunc
+	actorId      *actor.PID
+	listen       []string
+	shardingInfo *network.ShardingInfo
 
 	network.Receiver
 }
@@ -121,16 +117,15 @@ func NewNetNode(parent context.Context) (*netNode, error) {
 		return nil, errors.New(fmt.Sprintf("error for generate id from key,%s", err.Error()))
 	}
 	netNode := &netNode{
-		ctx:           parent,
-		self:          id,
-		network:       nil,
-		broadCastCh:   make(chan message.EcoBallNetMsg, 4*1024),
-		handlers:      message.MakeHandlers(),
-		actorId:       nil,
-		listen:        config.SwarmConfig.ListenAddress,
-		shardingSubCh: make(<-chan interface{}, 1),
-		shardingInfo:  new(network.ShardingInfo),
-		Receiver:      nil,
+		ctx:          parent,
+		self:         id,
+		network:      nil,
+		broadCastCh:  make(chan message.EcoBallNetMsg, 4*1024),
+		handlers:     message.MakeHandlers(),
+		actorId:      nil,
+		listen:       config.SwarmConfig.ListenAddress,
+		shardingInfo: new(network.ShardingInfo),
+		Receiver:     nil,
 	}
 	netNode.shardingInfo.Initialize()
 
@@ -269,7 +264,7 @@ func (nn *netNode) nativeMessageLoop() {
 	go func() {
 		for {
 			select {
-			case info := <-nn.shardingSubCh:
+			case info := <-nn.shardingInfo.ShardingSubCh:
 				sInfo, ok := info.(*common.ShardingTopo)
 				if !ok {
 					log.Error("unsupported Info from sharding.")
@@ -452,15 +447,7 @@ func (nn *netNode) GetActorPid() *actor.PID {
 }
 
 func (nn *netNode) SetShardingSubCh(ch <-chan interface{}) {
-	nn.shardingSubCh = ch
-}
-
-func SetChainId(id uint32) {
-	ecoballChainId = id
-}
-
-func GetChainId() uint32 {
-	return ecoballChainId
+	nn.shardingInfo.ShardingSubCh = ch
 }
 
 func InitNetWork(ctx context.Context) {
@@ -479,7 +466,6 @@ func StartNetWork(cShard <-chan interface{}) {
 	if cShard != nil {
 		defaultNode.SetShardingSubCh(cShard)
 	}
-
 	if err := defaultNode.Start(); err != nil {
 		log.Error("error for starting net node,", err)
 		os.Exit(1)
