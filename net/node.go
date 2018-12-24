@@ -98,7 +98,7 @@ func constructPeerHost(ctx context.Context, id peer.ID, private crypto.PrivKey) 
 	return libp2p.New(ctx, options...)
 }
 
-func NewNetNode(parent context.Context) (*netNode, error) {
+func newNetNode(parent context.Context) (*netNode, error) {
 	private, err := address.GetNodePrivateKey()
 	if err != nil {
 		return nil, err
@@ -126,9 +126,8 @@ func NewNetNode(parent context.Context) (*netNode, error) {
 		return nil, errors.New(fmt.Sprintf("error for constructing host, %s", err.Error()))
 	}
 
-	netNode.network = network.NewNetwork(parent, h)
-	netNode.network.SetDelegate(netNode)
-
+	netNode.network = network.NewNetwork(parent, h, netNode)
+	//netNode.network.SetDelegate(netNode)
 	dispatcher.InitMsgDispatcher()
 
 	return netNode, nil
@@ -320,7 +319,7 @@ func (nn *netNode) SetShardingSubCh(ch <-chan interface{}) {
 
 func InitNetWork(ctx context.Context) {
 	var err error
-	defaultNode, err = NewNetNode(ctx)
+	defaultNode, err = newNetNode(ctx)
 	if err != nil {
 		log.Panic(err)
 	}

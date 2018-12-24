@@ -86,7 +86,7 @@ func (ms *messageSender) prep() error {
 	return nil
 }
 
-func (ms *messageSender) SendMsg(ctx context.Context, msg message.EcoBallNetMsg) error {
+func (ms *messageSender) SendMessage(ctx context.Context, msg message.EcoBallNetMsg) error {
 	ms.lk.Lock()
 	defer ms.lk.Unlock()
 

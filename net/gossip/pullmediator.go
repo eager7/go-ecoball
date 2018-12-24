@@ -43,9 +43,9 @@ type PullConfig struct {
 }
 
 type pullMediator struct {
-	config       PullConfig
-	netinst      network.EcoballNetwork
-	pullEngine   *GspPullEngine
+	config     PullConfig
+	inst       network.EcoballNetwork
+	pullEngine *GspPullEngine
 
 	msgSubChan   <- chan interface{}
 
@@ -63,10 +63,10 @@ func NewPullMediator(ctx context.Context, cfg PullConfig, receiver Receiver) Med
 	}
 
 	pm := &pullMediator{
-		config:       cfg,
-		netinst:      inst,
-		stopCh:       make(chan struct{}),
-		Receiver:     receiver,
+		config:   cfg,
+		inst:     inst,
+		stopCh:   make(chan struct{}),
+		Receiver: receiver,
 	}
 
 	pm.pullEngine = newGspPullEngine(pm)
@@ -114,7 +114,7 @@ func(pm *pullMediator) Stop() {
 
 func(pm *pullMediator) Hello(id peer.ID) error {
 	hello := new(GspPullHello)
-	hello.SenderId = pm.netinst.Host().ID()
+	hello.SenderId = pm.inst.Host().ID()
 	hello.MsgType = pm.config.MsgType
 
 	pullmsg := new(GossipPullMsg)
@@ -126,13 +126,13 @@ func(pm *pullMediator) Hello(id peer.ID) error {
 
 	msg := message.New(mpb.MsgType_APP_MSG_GOSSIP_PULL, data)
 	log.Debug("send hello,", id,  hello)
-	return pm.netinst.SendMsgToPeerWithId(id, msg)
+	return pm.inst.SendMsgToPeerWithId(id, msg)
 }
 
 func(pm *pullMediator) SendDigest(id peer.ID, digest interface{}) error {
 	dig := new(GspPullDigest)
 	dig.MsgType = pm.config.MsgType
-	dig.SenderId = pm.netinst.Host().ID()
+	dig.SenderId = pm.inst.Host().ID()
 	dig.Digests = digest.([]string)
 
 	pullmsg := new(GossipPullMsg)
@@ -144,13 +144,13 @@ func(pm *pullMediator) SendDigest(id peer.ID, digest interface{}) error {
 
 	msg := message.New(mpb.MsgType_APP_MSG_GOSSIP_PULL, data)
 	log.Debug("send digest,", id,  dig)
-	return pm.netinst.SendMsgToPeerWithId(id, msg)
+	return pm.inst.SendMsgToPeerWithId(id, msg)
 }
 
 func(pm *pullMediator) SendRequest(id peer.ID, request interface{}) error {
 	req := new(GspPullRequest)
 	req.MsgType = pm.config.MsgType
-	req.Asker = pm.netinst.Host().ID()
+	req.Asker = pm.inst.Host().ID()
 	req.ReqItems = request.([]string)
 
 	pullmsg := new(GossipPullMsg)
@@ -162,13 +162,13 @@ func(pm *pullMediator) SendRequest(id peer.ID, request interface{}) error {
 
 	msg := message.New(mpb.MsgType_APP_MSG_GOSSIP_PULL, data)
 	log.Debug("send request,", id,  req)
-	return pm.netinst.SendMsgToPeerWithId(id, msg)
+	return pm.inst.SendMsgToPeerWithId(id, msg)
 }
 
 func(pm *pullMediator) SendResponse(id peer.ID, response interface{}) error {
 	res := new(GspPullReqAck)
 	res.MsgType = pm.config.MsgType
-	res.Responser = pm.netinst.Host().ID()
+	res.Responser = pm.inst.Host().ID()
 
 	for _, item := range response.([]string) {
 		data := pm.GetItemData(item)
@@ -187,7 +187,7 @@ func(pm *pullMediator) SendResponse(id peer.ID, response interface{}) error {
 
 	msg := message.New(mpb.MsgType_APP_MSG_GOSSIP_PULL, data)
 	log.Debug("send response,", id,  res)
-	return pm.netinst.SendMsgToPeerWithId(id, msg)
+	return pm.inst.SendMsgToPeerWithId(id, msg)
 }
 
 func (pm *pullMediator) HandleMessage(msg message.EcoBallNetMsg) {
@@ -211,5 +211,5 @@ func (pm *pullMediator) HandleMessage(msg message.EcoBallNetMsg) {
 }
 
 func (pm *pullMediator) SelectRemotePeers() []peer.ID {
-	return pm.netinst.SelectRandomPeers(pm.config.PullPeersCount)
+	return pm.inst.SelectRandomPeers(pm.config.PullPeersCount)
 }

@@ -33,9 +33,9 @@ const (
 )
 
 const (
-	PullEngine_State_Init           = 0
-	PullEngine_State_AcceptDigest   = 1
-	PullEngine_State_AcceptResponse = 2
+	PullEngineStateInit           = 0
+	PullEngineStateAcceptDigest   = 1
+	PullEngineStateAcceptResponse = 2
 )
 
 var (
@@ -69,15 +69,15 @@ type GspPullEngine struct {
 	stopOnce        sync.Once
 }
 
-func newGspPullEngine(adpt GspPullAdapter) *GspPullEngine {
+func newGspPullEngine(adapter GspPullAdapter) *GspPullEngine {
 	pe := &GspPullEngine{
-		GspPullAdapter:  adpt,
+		GspPullAdapter:  adapter,
 		sentHello:       make(map[string] bool),
 		sentDigest:      make(map[string][]string),
 		sentRequest:     make(map[string][]string),
 		receivedDigests: make(map[string][]string),
 		digest:          make([]string, 0),
-		runningState:    PullEngine_State_Init,
+		runningState:    PullEngineStateInit,
 		stopCh:          make(chan struct{}),
 	}
 
@@ -212,21 +212,21 @@ func (pe *GspPullEngine) requestExistInMyDigests(item string) bool {
 }
 
 func (pe *GspPullEngine) resetState() {
-	atomic.StoreInt32(&(pe.runningState), PullEngine_State_Init)
+	atomic.StoreInt32(&(pe.runningState), PullEngineStateInit)
 }
 
 func (pe *GspPullEngine) acceptDigest() {
-	atomic.StoreInt32(&(pe.runningState), PullEngine_State_AcceptDigest)
+	atomic.StoreInt32(&(pe.runningState), PullEngineStateAcceptDigest)
 }
 
 func (pe *GspPullEngine) isInAcceptDigestSate() bool {
-	return atomic.LoadInt32(&(pe.runningState)) == PullEngine_State_AcceptDigest
+	return atomic.LoadInt32(&(pe.runningState)) == PullEngineStateAcceptDigest
 }
 
 func (pe *GspPullEngine) acceptResponse() {
-	atomic.StoreInt32(&(pe.runningState), PullEngine_State_AcceptResponse)
+	atomic.StoreInt32(&(pe.runningState), PullEngineStateAcceptResponse)
 }
 
 func (pe *GspPullEngine) isInAcceptResponseSate() bool {
-	return atomic.LoadInt32(&(pe.runningState)) == PullEngine_State_AcceptResponse
+	return atomic.LoadInt32(&(pe.runningState)) == PullEngineStateAcceptResponse
 }

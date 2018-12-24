@@ -73,22 +73,21 @@ type NetImpl struct {
 	routingTable *NetRouteTable
 }
 
-func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
+func NewNetwork(ctx context.Context, host host.Host, r Receiver) EcoballNetwork {
 	if netImpl != nil {
 		return netImpl
 	}
 	netImpl = &NetImpl{
 		ctx:          ctx,
 		host:         host,
-		receiver:     nil,
+		receiver:     r,
 		engine:       NewMsgEngine(ctx, host.ID()),
-		SenderMap:    SenderMap{},
+		SenderMap:    new(SenderMap).Initialize(),
 		gossipStore:  NewMsgStore(ctx, gossipMsgTTL),
 		mdnsService:  nil,
 		bootStrapper: nil,
 		routingTable: nil,
 	}
-	netImpl.SenderMap.Initialize()
 	netImpl.routingTable = NewRouteTable(netImpl)
 
 	host.SetStreamHandler(ProtocolP2pV1, netImpl.handleNewStream)
@@ -102,10 +101,6 @@ func GetNetInstance() (EcoballNetwork, error) {
 		return nil, fmt.Errorf("network has not been initialized")
 	}
 	return netImpl, nil
-}
-
-func (net *NetImpl) GetPeerID() (peer.ID, error) {
-	return net.host.ID(), nil
 }
 
 func (net *NetImpl) Host() host.Host {
@@ -126,7 +121,7 @@ func (net *NetImpl) sendMessage(p pstore.PeerInfo, outgoing message.EcoBallNetMs
 	if err != nil {
 		return err
 	}
-	err = sender.SendMsg(net.ctx, outgoing)
+	err = sender.SendMessage(net.ctx, outgoing)
 
 	return err
 }

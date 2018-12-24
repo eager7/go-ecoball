@@ -10,8 +10,9 @@ type SenderMap struct {
 	lock    sync.RWMutex
 }
 
-func (p *SenderMap) Initialize() {
+func (p *SenderMap) Initialize() SenderMap {
 	p.Senders = make(map[peer.ID]*messageSender)
+	return *p
 }
 
 func (p *SenderMap) Len() int {
