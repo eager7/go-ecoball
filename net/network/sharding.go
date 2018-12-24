@@ -28,17 +28,17 @@ import (
 	"sync"
 )
 
-type ShardingInfo struct {
-	ShardingSubCh <-chan interface{}
-	ShardId   uint16
-	Role      int
-	PeersInfo [][]peer.ID
-	Info      map[uint16]map[peer.ID]multiaddr.Multiaddr // to accelerate the finding speed
-	RwLock    sync.RWMutex
+type ShardInfo struct {
+	ShardSubCh <-chan interface{}
+	ShardId    uint16
+	Role       int
+	PeersInfo  [][]peer.ID
+	Info       map[uint16]map[peer.ID]multiaddr.Multiaddr // to accelerate the finding speed
+	RwLock     sync.RWMutex
 }
 
-func (s *ShardingInfo) Initialize() {
-	s.ShardingSubCh = make(<-chan interface{}, 1)
+func (s *ShardInfo) Initialize() {
+	s.ShardSubCh = make(<-chan interface{}, 1)
 	s.PeersInfo = make([][]peer.ID, 0)
 	s.Info = make(map[uint16]map[peer.ID]multiaddr.Multiaddr)
 }
