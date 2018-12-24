@@ -44,14 +44,6 @@ import (
 	"time"
 )
 
-const (
-	OtherMember = iota
-	CommitteeLeader
-	CommitteeBackup
-	ShardLeader
-	ShardBackup
-)
-
 var (
 	log         = elog.NewLogger("net", elog.DebugLog)
 	defaultNode *netNode
@@ -173,9 +165,10 @@ func (nn *netNode) Start() error {
 
 //连接本shard内的节点
 func (nn *netNode) connectToShardingPeers() {
-	nn.shardInfo.RwLock.RLock()
-	defer nn.shardInfo.RwLock.RUnlock()
-	works := nn.shardInfo.Info[nn.shardInfo.ShardId]
+	works, err := nn.shardInfo.GetShardNodes(nn.shardInfo.GetLocalId())
+	if err != nil {
+		return
+	}
 	h := nn.network.Host()
 	var wg sync.WaitGroup
 	for id, w := range works {
@@ -201,63 +194,25 @@ func (nn *netNode) connectToShardingPeers() {
 
 func (nn *netNode) updateShardingInfo(info *common.ShardingTopo) {
 	log.Info(inCommon.JsonString(info))
-	nn.shardInfo.RwLock.Lock()
-	nn.shardInfo.ShardId = info.ShardId
 	for sid, shard := range info.ShardingInfo {
-		for i, member := range shard {
-			log.Info(sid, i)
-			if sid == 0 && i == 0 {
-				nn.shardInfo.Role = CommitteeLeader
-			} else if sid == 0 && i == 1 {
-				nn.shardInfo.Role = CommitteeBackup
-			} else if sid > 0 && i == 0 {
-				nn.shardInfo.Role = ShardLeader
-			} else if sid > 0 && i == 1 {
-				nn.shardInfo.Role = ShardBackup
-			}
-
+		for _, member := range shard {
 			id, err := network.IdFromConfigEncodePublicKey(member.Pubkey)
 			if err != nil {
 				log.Error("error for getting id from public key")
 				continue
 			}
 
-			//var addr ma.Multiaddr
 			addInfo := util.ConstructAddrInfo(member.Address, member.Port)
 			addr, err := ma.NewMultiaddr(addInfo)
 			if err != nil {
 				log.Error("error for create ip addr from member Info", err)
 				continue
 			}
-
-			if _, ok := nn.shardInfo.Info[uint16(sid)]; !ok {
-				idAddr := make(map[peer.ID]ma.Multiaddr)
-				idAddr[id] = addr
-				nn.shardInfo.Info[uint16(sid)] = idAddr
-
-				nn.shardInfo.PeersInfo = append(nn.shardInfo.PeersInfo, []peer.ID{})
-				nn.shardInfo.PeersInfo[sid] = append(nn.shardInfo.PeersInfo[sid], id)
-			} else {
-				nn.shardInfo.Info[uint16(sid)][id] = addr
-				nn.shardInfo.PeersInfo[sid] = append(nn.shardInfo.PeersInfo[sid], id)
-			}
+			nn.shardInfo.AddShardNode(uint32(sid), id, addr)
 		}
 	}
-	nn.shardInfo.RwLock.Unlock()
 	nn.connectToShardingPeers()
-}
-
-func (nn *netNode) GetShardAddress(id peer.ID) peerstore.PeerInfo {
-	nn.shardInfo.RwLock.RLock()
-	defer nn.shardInfo.RwLock.RUnlock()
-	for _, addr := range nn.shardInfo.Info {
-		for i, m := range addr {
-			if i.String() == id.String() {
-				return peerstore.PeerInfo{ID: i, Addrs: []ma.Multiaddr{m}}
-			}
-		}
-	}
-	return peerstore.PeerInfo{}
+	log.Info("the shard info is :", nn.shardInfo.JsonString())
 }
 
 func (nn *netNode) nativeMessageLoop() {
@@ -281,7 +236,7 @@ func (nn *netNode) nativeMessageLoop() {
 }
 
 func (nn *netNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
-	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), nn.GetShardAddress(p))
+	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), nn.network.Host().Peerstore().Addrs(p))
 	if incoming.Type() >= pb.MsgType_APP_MSG_UNDEFINED {
 		log.Error("receive a invalid message ", incoming.Type().String())
 		return
@@ -308,29 +263,12 @@ func (nn *netNode) ReceiveError(err error) {
 }
 
 func (nn *netNode) IsValidRemotePeer(p peer.ID) bool {
-	if !config.DisableSharding {
-		nn.shardInfo.RwLock.RLock()
-		defer nn.shardInfo.RwLock.RUnlock()
-
-		for _, shard := range nn.shardInfo.Info {
-			if _, ok := shard[p]; ok {
-				return true
-			}
-		}
-
-		log.Error(nn.shardInfo.ShardId, p, nn.network.Host().Peerstore().Addrs(p))
-		return false
-	}
-
-	return true
+	return nn.shardInfo.IsValidRemotePeer(p)
 }
 
 func (nn *netNode) IsNotMyShard(p peer.ID) bool {
 	if !config.DisableSharding {
-		nn.shardInfo.RwLock.RLock()
-		defer nn.shardInfo.RwLock.RUnlock()
-
-		if _, ok := nn.shardInfo.Info[nn.shardInfo.ShardId][p]; !ok {
+		if addr := nn.shardInfo.GetNodeAddress(nn.shardInfo.GetLocalId(), p); addr == nil {
 			return true
 		}
 	}
@@ -338,75 +276,13 @@ func (nn *netNode) IsNotMyShard(p peer.ID) bool {
 	return false
 }
 
-func (nn *netNode) IsLeaderOrBackup() bool {
-	nn.shardInfo.RwLock.RLock()
-	defer nn.shardInfo.RwLock.RUnlock()
-
-	if nn.shardInfo.Role != OtherMember {
-		return true
-	}
-
-	return false
-}
-
-func (nn *netNode) GetShardLeader(shardId uint16) (*peerstore.PeerInfo, error) {
-	nn.shardInfo.RwLock.RLock()
-	defer nn.shardInfo.RwLock.RUnlock()
-
-	if int(shardId) > (len(nn.shardInfo.PeersInfo) - 1) {
-		return nil, fmt.Errorf("invalid shard id:%d(shard len:%d)", shardId, len(nn.shardInfo.PeersInfo))
-	}
-
-	id := nn.shardInfo.PeersInfo[shardId][0]
-	pi := &peerstore.PeerInfo{ID: id, Addrs: []ma.Multiaddr{nn.shardInfo.Info[shardId][id]}}
-	return pi, nil
-}
-
 func (nn *netNode) GetShardMembersToReceiveCBlock() [][]*peerstore.PeerInfo {
-	nn.shardInfo.RwLock.RLock()
-	defer nn.shardInfo.RwLock.RUnlock()
-
-	if len(nn.shardInfo.PeersInfo) <= 1 {
-		return [][]*peerstore.PeerInfo{}
-	}
-
-	var peers = make([][]*peerstore.PeerInfo, len(nn.shardInfo.PeersInfo)-1)
-	// the algo may be changed according to the requirement
-	for id, shard := range nn.shardInfo.PeersInfo[1:] {
-		if nn.shardInfo.Role == CommitteeLeader {
-			addrInfo := []ma.Multiaddr{nn.shardInfo.Info[uint16(id)][shard[0]]}
-			pi := &peerstore.PeerInfo{ID: shard[0], Addrs: addrInfo}
-			peers[id] = append(peers[id], pi)
-		} else if nn.shardInfo.Role == CommitteeBackup {
-			if len(shard) > 1 {
-				addrInfo := []ma.Multiaddr{nn.shardInfo.Info[uint16(id)][shard[1]]}
-				pi := &peerstore.PeerInfo{ID: shard[0], Addrs: addrInfo}
-				peers[id] = append(peers[id], pi)
-			}
-		}
-	}
+	var peers = make([][]*peerstore.PeerInfo, 1)
 	return peers
 }
 
 func (nn *netNode) GetCMMembersToReceiveSBlock() []*peerstore.PeerInfo {
-	nn.shardInfo.RwLock.RLock()
-	defer nn.shardInfo.RwLock.RUnlock()
-
 	var peers []*peerstore.PeerInfo
-	if nn.shardInfo.Role == ShardLeader {
-		id := nn.shardInfo.PeersInfo[0][0]
-		addrInfo := []ma.Multiaddr{nn.shardInfo.Info[0][id]}
-		pi := &peerstore.PeerInfo{id, addrInfo}
-		peers = append(peers, pi)
-	} else if nn.shardInfo.Role == ShardBackup {
-		if len(nn.shardInfo.PeersInfo[0]) > 1 {
-			id := nn.shardInfo.PeersInfo[0][1]
-			addrInfo := []ma.Multiaddr{nn.shardInfo.Info[0][id]}
-			pi := &peerstore.PeerInfo{ID: id, Addrs: addrInfo}
-			peers = append(peers, pi)
-		}
-	}
-
 	return peers
 }
 
@@ -418,20 +294,14 @@ func (nn *netNode) PeerDisconnected(p peer.ID) {
 	// TOD
 }
 
-func (nn *netNode) SelfId() string {
-	return nn.self.Pretty()
-}
-
 func (nn *netNode) SelfRawId() peer.ID {
 	return nn.self
 }
 
-func (nn *netNode) Neighbors() []string {
-	var peers []string
-
-	host := nn.network.Host()
-	conns := host.Network().Conns()
-	for _, c := range conns {
+func (nn *netNode) Neighbors() (peers []string) {
+	h := nn.network.Host()
+	cs := h.Network().Conns()
+	for _, c := range cs {
 		pid := c.RemotePeer()
 		peers = append(peers, pid.Pretty())
 	}
@@ -471,5 +341,5 @@ func StartNetWork(cShard <-chan interface{}) {
 		os.Exit(1)
 	}
 
-	log.Info(fmt.Sprintf("peer(self) %s is running", defaultNode.SelfId()))
+	log.Info(fmt.Sprintf("peer(self) %s is running", defaultNode.SelfRawId().Pretty()))
 }

@@ -121,6 +121,7 @@ func (net *NetImpl) SetDelegate(r Receiver) {
 }
 
 func (net *NetImpl) sendMessage(p pstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
+	log.Info("send message to", p)
 	sender, err := net.NewMessageSender(p)
 	if err != nil {
 		return err

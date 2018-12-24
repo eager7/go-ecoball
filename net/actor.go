@@ -18,10 +18,13 @@ package net
 import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/event"
+	commonMsg "github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"reflect"
+	"fmt"
 )
 
 type netActor struct {
@@ -48,12 +51,27 @@ func (n *netActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 		log.Debug("NetActor started")
-	case *types.Transaction:
+	case commonMsg.Transaction:
 		msgType := pb.MsgType_APP_MSG_TRN
-		buffer, _ := msg.Serialize()
-		netMsg := message.New(msgType, buffer)
-		log.Debug("new transactions")
-		n.node.broadCastCh <- netMsg
+		buffer, _ := msg.Tx.Serialize()
+		if msg.ShardID == n.node.shardInfo.GetLocalId() {
+			netMsg := message.New(msgType, buffer)
+			log.Debug("send transactions in shard")
+			n.node.broadCastCh <- netMsg
+		} else {
+			m := message.New(msgType, buffer)
+			work, err := n.node.shardInfo.GetShardNodes(msg.ShardID)
+			if err != nil {
+				log.Error(fmt.Sprintf("can't find shard[%d] nodes", msg.ShardID))
+				return
+			}
+			var peers []peer.ID
+			for id := range work {
+				peers = append(peers, id)
+			}
+			log.Debug("send transaction to ", peers)
+			n.node.network.SendMsgToPeersWithId(peers, m)
+		}
 
 	case *types.Block: //not shard block
 		msgType := pb.MsgType_APP_MSG_BLKS
