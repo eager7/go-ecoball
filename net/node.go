@@ -116,10 +116,10 @@ func NewNetNode(parent context.Context) (*netNode, error) {
 		handlers:    message.MakeHandlers(),
 		actorId:     nil,
 		listen:      config.SwarmConfig.ListenAddress,
-		shardInfo:   new(network.ShardInfo),
+		shardInfo:   new(network.ShardInfo).Initialize(),
 		Receiver:    nil,
 	}
-	netNode.shardInfo.Initialize()
+	//netNode.shardInfo.Initialize()
 
 	h, err := constructPeerHost(parent, id, private) //basic_host.go
 	if err != nil {
@@ -163,30 +163,30 @@ func (nn *netNode) Start() error {
 	return nil
 }
 
-//连接本shard内的节点
+//连接本shard内的节点, 跳过自身，并且和其他节点保持长连接
 func (nn *netNode) connectToShardingPeers() {
-	works, err := nn.shardInfo.GetShardNodes(nn.shardInfo.GetLocalId())
-	if err != nil {
+	peerMap := nn.shardInfo.GetShardNodes(nn.shardInfo.GetLocalId())
+	if peerMap == nil {
 		return
 	}
 	h := nn.network.Host()
 	var wg sync.WaitGroup
-	for id, w := range works {
-		if id == h.ID() {
+	for node := range peerMap.Iterator() {
+		if node.PeerInfo.ID == h.ID() {
 			continue
 		}
 		wg.Add(1)
-		go func(p peer.ID, addr ma.Multiaddr) {
+		go func(p peer.ID, addr []ma.Multiaddr) {
 			log.Info("start host connect thread:", p, addr)
 			defer wg.Done()
-			h.Peerstore().AddAddrs(p, []ma.Multiaddr{addr}, peerstore.PermanentAddrTTL)
-			pi := peerstore.PeerInfo{ID: p, Addrs: []ma.Multiaddr{addr}}
+			h.Peerstore().AddAddrs(p, addr, peerstore.PermanentAddrTTL)
+			pi := peerstore.PeerInfo{ID: p, Addrs: addr}
 			if err := h.Connect(nn.ctx, pi); err != nil {
 				log.Error("failed to connect peer ", pi, err)
 			} else {
 				log.Debug("succeed to connect peer ", pi)
 			}
-		}(id, w)
+		}(node.PeerInfo.ID, node.PeerInfo.Addrs)
 	}
 	wg.Wait()
 	log.Debug("finish connecting to sharding peers exit...")
@@ -267,13 +267,11 @@ func (nn *netNode) IsValidRemotePeer(p peer.ID) bool {
 }
 
 func (nn *netNode) IsNotMyShard(p peer.ID) bool {
-	if !config.DisableSharding {
-		if addr := nn.shardInfo.GetNodeAddress(nn.shardInfo.GetLocalId(), p); addr == nil {
-			return true
-		}
+	if peerMap := nn.shardInfo.GetShardNodes(nn.shardInfo.GetLocalId()); peerMap == nil {
+		return true
+	} else {
+		return !peerMap.Contains(p)
 	}
-
-	return false
 }
 
 func (nn *netNode) GetShardMembersToReceiveCBlock() [][]*peerstore.PeerInfo {

@@ -107,7 +107,7 @@ func ComposeAddressesFactory(f, g basichost.AddrsFactory) basichost.AddrsFactory
 		return func(addresses []multiaddr.Multiaddr) []multiaddr.Multiaddr {
 			return f(g(addresses))
 		}
-	}else {
+	} else {
 		return f
 	}
 }

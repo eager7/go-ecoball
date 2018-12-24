@@ -20,7 +20,7 @@ package network
 
 import (
 	"fmt"
-	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/net/address"
 	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"sync"
@@ -30,34 +30,21 @@ type ShardInfo struct {
 	ShardSubCh <-chan interface{}
 	LocalID    uint32
 	Role       int
-	ShardMap   map[uint32]map[peer.ID]multiaddr.Multiaddr // to accelerate the finding speed
+	ShardMap   map[uint32]address.PeerMap
 	lock       sync.RWMutex
 }
 
-func (s *ShardInfo) Initialize() {
+func (s *ShardInfo) Initialize() *ShardInfo {
 	s.ShardSubCh = make(<-chan interface{}, 1)
-	s.ShardMap = make(map[uint32]map[peer.ID]multiaddr.Multiaddr)
+	s.ShardMap = make(map[uint32]address.PeerMap)
+	return s
 }
 
-func (s *ShardInfo) GetShardNodes(shardId uint32) (map[peer.ID]multiaddr.Multiaddr, error) {
+func (s *ShardInfo) GetShardNodes(shardId uint32) *address.PeerMap {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	if works, ok := s.ShardMap[shardId]; ok {
-		return works, nil
-	} else {
-		return nil, errors.New(fmt.Sprintf("cat't find this shard:%d", shardId))
-	}
-}
-
-func (s *ShardInfo) GetNodeAddress(shardId uint32, peerId peer.ID) multiaddr.Multiaddr {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-	if works, ok := s.ShardMap[shardId]; ok {
-		for pid, addr := range works {
-			if pid == peerId {
-				return addr
-			}
-		}
+	if peerMap, ok := s.ShardMap[shardId]; ok {
+		return peerMap.Clone()
 	}
 	return nil
 }
@@ -65,12 +52,12 @@ func (s *ShardInfo) GetNodeAddress(shardId uint32, peerId peer.ID) multiaddr.Mul
 func (s *ShardInfo) AddShardNode(shardId uint32, peerId peer.ID, addr multiaddr.Multiaddr) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	if nodeMap, ok := s.ShardMap[shardId]; ok {
-		nodeMap[peerId] = addr
+	if peerMap, ok := s.ShardMap[shardId]; ok {
+		peerMap.Add(peerId, nil, []multiaddr.Multiaddr{addr}, "")
 	} else {
-		idAddr := make(map[peer.ID]multiaddr.Multiaddr)
-		idAddr[peerId] = addr
-		s.ShardMap[shardId] = idAddr
+		peerMap := new(address.PeerMap).Initialize()
+		peerMap.Add(peerId, nil, []multiaddr.Multiaddr{addr}, "")
+		s.ShardMap[shardId] = peerMap
 	}
 }
 
@@ -78,7 +65,7 @@ func (s *ShardInfo) IsValidRemotePeer(p peer.ID) bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	for _, shard := range s.ShardMap {
-		if _, ok := shard[p]; ok {
+		if shard.Contains(p) {
 			return true
 		}
 	}
@@ -113,10 +100,10 @@ func (s *ShardInfo) JsonString() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	var info string
-	for id, works := range s.ShardMap {
+	for id, peerMap := range s.ShardMap {
 		info += fmt.Sprintf("\nshard id[%d], nodes:", id)
-		for id, addr := range works {
-			info += fmt.Sprintf("[%s-%s]", id.Pretty(), addr.String())
+		for node := range peerMap.Iterator() {
+			info += fmt.Sprintf("[%s-%s]", node.PeerInfo.ID.Pretty(), node.PeerInfo.Addrs)
 		}
 	}
 	return fmt.Sprintf("local id:%d, the role is :%d, the info map is:%s", s.LocalID, s.Role, info)

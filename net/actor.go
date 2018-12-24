@@ -16,6 +16,7 @@
 package net
 
 import (
+	"fmt"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/event"
 	commonMsg "github.com/ecoball/go-ecoball/common/message"
@@ -24,7 +25,6 @@ import (
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"reflect"
-	"fmt"
 )
 
 type netActor struct {
@@ -60,14 +60,14 @@ func (n *netActor) Receive(ctx actor.Context) {
 			n.node.broadCastCh <- netMsg
 		} else {
 			m := message.New(msgType, buffer)
-			work, err := n.node.shardInfo.GetShardNodes(msg.ShardID)
-			if err != nil {
+			peerMap := n.node.shardInfo.GetShardNodes(msg.ShardID)
+			if peerMap == nil {
 				log.Error(fmt.Sprintf("can't find shard[%d] nodes", msg.ShardID))
 				return
 			}
 			var peers []peer.ID
-			for id := range work {
-				peers = append(peers, id)
+			for node := range peerMap.Iterator() {
+				peers = append(peers, node.PeerInfo.ID)
 			}
 			log.Debug("send transaction to ", peers)
 			n.node.network.SendMsgToPeersWithId(peers, m)
