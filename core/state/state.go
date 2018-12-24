@@ -52,7 +52,20 @@ type State struct {
  *  @param root - the root of mpt trie, this value decide the state of trie
  */
 func NewState(path string, root common.Hash) (st *State, err error) {
-	st = &State{path: path}
+	st = &State{
+		Type:      0,
+		path:      path,
+		trie:      nil,
+		db:        nil,
+		diskDb:    nil,
+		Tokens:    new(TokensMap).Initialize(),
+		Accounts:  AccountCache{},
+		Params:    new(ParamsMap).Initialize(),
+		Producers: new(ProducersMap).Initialize(),
+		Chains:    new(ChainsMap).Initialize(),
+		mutex:     sync.RWMutex{},
+	}
+	st.Accounts.Initialize()
 	st.diskDb, err = store.NewLevelDBStore(path, 0, 0)
 	if err != nil {
 		log.Error(err)
@@ -64,11 +77,6 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	if err != nil {
 		st.trie, _ = st.db.OpenTrie(common.Hash{})
 	}
-	st.Tokens.Initialize()
-	st.Accounts.Initialize()
-	st.Params.Initialize()
-	st.Producers.Initialize()
-	st.Chains.Initialize()
 	return st, nil
 }
 
