@@ -33,7 +33,6 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/dsn/audit"
 	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/sharding"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
@@ -145,9 +144,6 @@ func runNode(c *cli.Context) error {
 		sdActor, _ = sharding.NewShardingActor(ledger.L)
 	}
 
-	//network depends on sharding
-	net.StartNetWork(sdActor.SubscribeShardingTopo())
-
 	instance, err := network.GetNetInstance()
 	if err != nil {
 		log.Fatal(err)
@@ -181,7 +177,7 @@ func runNode(c *cli.Context) error {
 	}
 
 	//storage
-	audit.StartDsn(ctx, ledger.L)
+	//audit.StartDsn(ctx, ledger.L)
 
 	//start blockchain browser
 	ecoballGroup.Go(func() error {

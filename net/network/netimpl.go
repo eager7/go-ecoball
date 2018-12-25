@@ -116,7 +116,7 @@ func (net *NetImpl) SetDelegate(r Receiver) {
 }
 
 func (net *NetImpl) sendMessage(p pstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
-	log.Info("send message to", p)
+	log.Info("send message to", p.ID.Pretty(), p.Addrs[0].String())
 	sender, err := net.NewMessageSender(p)
 	if err != nil {
 		return err
@@ -131,7 +131,7 @@ func (net *NetImpl) handleNewStream(s inet.Stream) {
 }
 
 func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
-	log.Info("handleNewStreamMsg")
+	log.Info("handleNewStreamMsg:", s.Conn().RemotePeer().Pretty(), s.Conn().RemoteMultiaddr().String())
 	defer s.Close()
 	if net.receiver == nil {
 		log.Error("reset stream")

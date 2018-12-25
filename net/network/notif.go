@@ -45,6 +45,7 @@ func (net *NetImpl) HandlePeerFound(p pstore.PeerInfo) {
 func (net *NetImpl) Listen(n inet.Network, a ma.Multiaddr)      {}
 func (net *NetImpl) ListenClose(n inet.Network, a ma.Multiaddr) {}
 func (net *NetImpl) Connected(n inet.Network, v inet.Conn) {
+	log.Info("connected peer:", v.RemotePeer().Pretty(), v.RemoteMultiaddr().String())
 	id := v.RemotePeer()
 	if net.receiver.IsValidRemotePeer(id) {
 		net.receiver.PeerConnected(v.RemotePeer())
@@ -52,7 +53,8 @@ func (net *NetImpl) Connected(n inet.Network, v inet.Conn) {
 			net.routingTable.update(id)
 		}
 	} else {
-		v.Close() // invalid connection, close it...
+		log.Warn("close invalid connection:", v.RemotePeer().Pretty(), v.RemoteMultiaddr().String())
+		//v.Close() // invalid connection, close it...
 	}
 }
 func (net *NetImpl) Disconnected(n inet.Network, v inet.Conn) {

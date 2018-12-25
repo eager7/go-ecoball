@@ -30,10 +30,10 @@ import (
 
 type netActor struct {
 	props *actor.Props
-	node  *netNode
+	node  *Node
 }
 
-func NewNetActor(node *netNode) *netActor {
+func NewNetActor(node *Node) *netActor {
 	return &netActor{
 		node: node,
 	}

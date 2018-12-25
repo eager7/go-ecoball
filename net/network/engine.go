@@ -35,6 +35,15 @@ type SendMsgJob struct {
 	Msg   message.EcoBallNetMsg
 }
 
+func (s *SendMsgJob) String() string {
+	var ret string
+	for _, p := range s.Peers {
+		ret += p.ID.Pretty() + p.Addrs[0].String()
+	}
+	ret += "-" + s.Msg.Type().String()
+	return ret
+}
+
 type MsgWrapper struct {
 	pi   pstore.PeerInfo
 	eMsg message.EcoBallNetMsg
@@ -112,6 +121,7 @@ func (m *MsgEngine) nextMsgWrapper(ctx context.Context) (*MsgWrapper, error) {
 }
 
 func (net *NetImpl) AddMsgJob(job *SendMsgJob) {
+	log.Debug("put msg in send pool:", job.String())
 	net.engine.PushJob(job)
 }
 func (net *NetImpl) startSendWorkers() {

@@ -63,7 +63,7 @@ func (ms *messageSender) prepOrInvalidate() error {
 	return nil
 }
 
-func (ms *messageSender) prep() error {
+func (ms *messageSender) prep() (err error) {
 	if ms.invalid {
 		return errors.New("message sender has been invalidated")
 	}
@@ -76,9 +76,18 @@ func (ms *messageSender) prep() error {
 		ms.net.host.Peerstore().AddAddrs(ms.p.ID, ms.p.Addrs, connectedAddrTTL)
 	}
 
-	stream, err := ms.net.host.NewStream(ms.net.ctx, ms.p.ID, ProtocolP2pV1) //basic_host.go
-	if err != nil {
-		return errors.New(err.Error())
+	var stream inet.Stream
+	retry := 0
+	for retry < 3 {
+		if stream, err = ms.net.host.NewStream(ms.net.ctx, ms.p.ID, ProtocolP2pV1); err != nil { //basic_host.go
+			err = errors.New(err.Error())
+			retry += 1
+		} else {
+			break
+		}
+		if retry == 3 {
+			return err
+		}
 	}
 
 	ms.s = stream

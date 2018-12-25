@@ -10,19 +10,19 @@ import (
 	"github.com/ecoball/go-ecoball/test/example"
 	"testing"
 	"github.com/ecoball/go-ecoball/net/network"
+	"github.com/ecoball/go-ecoball/common/event"
 )
 
 func TestNet(t *testing.T) {
 	elog.Log.Debug("net test program...")
 
-	c := make(chan interface{})
 	ctx, cancel := context.WithCancel(context.Background())
 	net.InitNetWork(ctx)
-	net.StartNetWork(c)
-
+	//c := make(chan interface{})
+	//n.SetShardingSubCh(c)
 	toPoInfo := `{
 	"ShardId": 1,
-	"Pubkey": "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAL98FFiv93FzIwFS6hTIXRlJoY2rTrU9jQR/uzYk1UlnfCBJ4Q7fsWSBwILmGttmyr1599Si+XlH4AFYZ9bWXGwZXuLx9VYVG/faB1fu4/kzPF9IZJ80M0XPMNhR4/IX69Fde0Mpr1muFTAFgmNcmrZoXymTHsEOM+bP4VfitOtpAgMBAAE=",
+	"Pubkey": "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAE=",
 	"ShardingInfo": [
 		[{
 			"Pubkey": "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBANWB0oHE4Qebj9vRSPTWrKRrzwy73xm9JoBr5j57J6qb5f93gZqkaWOl3oMr6pZIyBOH6fPqvsKAagqIJQlkgch4NjV4LZmWjdCEcK9UdyTT0pD+MdkuqlGcOXKG913wWFPlRNbEKkT+/jO+SC+k+iStRr50yFah074QbIIxIeNbAgMBAAE=",
@@ -30,7 +30,7 @@ func TestNet(t *testing.T) {
 			"Port": "9901"
 		}],
 		[{
-			"Pubkey": "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAL98FFiv93FzIwFS6hTIXRlJoY2rTrU9jQR/uzYk1UlnfCBJ4Q7fsWSBwILmGttmyr1599Si+XlH4AFYZ9bWXGwZXuLx9VYVG/faB1fu4/kzPF9IZJ80M0XPMNhR4/IX69Fde0Mpr1muFTAFgmNcmrZoXymTHsEOM+bP4VfitOtpAgMBAAE=",
+			"Pubkey": "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAE=",
 			"Address": "192.168.8.35",
 			"Port": "9902"
 		}],
@@ -48,7 +48,9 @@ func TestNet(t *testing.T) {
 }`
 	toPo := &common.ShardingTopo{}
 	errors.CheckErrorPanic(json.Unmarshal([]byte(toPoInfo), toPo))
-	c <- toPo
+
+	//c <- toPo
+	event.Send(event.ActorNil, event.ActorP2P, toPo)
 
 	_, err := network.GetNetInstance()
 	errors.CheckErrorPanic(err)
