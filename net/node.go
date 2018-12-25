@@ -119,7 +119,6 @@ func newNetNode(parent context.Context) (*netNode, error) {
 		shardInfo:   new(network.ShardInfo).Initialize(),
 		Receiver:    nil,
 	}
-	//netNode.shardInfo.Initialize()
 
 	h, err := constructPeerHost(parent, id, private) //basic_host.go
 	if err != nil {
@@ -127,7 +126,6 @@ func newNetNode(parent context.Context) (*netNode, error) {
 	}
 
 	netNode.network = network.NewNetwork(parent, h, netNode)
-	//netNode.network.SetDelegate(netNode)
 	dispatcher.InitMsgDispatcher()
 
 	return netNode, nil

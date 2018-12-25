@@ -7,7 +7,7 @@ import (
 	"context"
 )
 
-func StartBlockPuller(ctx context.Context) {
+func StartBlockPuller(ctx context.Context) gossip.Mediator {
 	cfg := gossip.PullConfig{
 		ChainId:  1,
 		PullPeersCount: 3,
@@ -16,7 +16,7 @@ func StartBlockPuller(ctx context.Context) {
 	}
 	receiver := NewPullReceiver()
 
-	gossip.NewPullMediator(ctx, cfg, receiver)
+	return gossip.NewPullMediator(ctx, cfg, receiver)
 }
 
 

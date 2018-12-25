@@ -24,35 +24,35 @@ import (
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 )
 
-type  GspPullHello struct {
-	MsgType     pb.PullMsgType
-	SenderId    peer.ID
+type GspPullHello struct {
+	MsgType  pb.PullMsgType
+	SenderId peer.ID
 }
 
-type  GspPullDigest struct {
-	MsgType     pb.PullMsgType
-	SenderId    peer.ID
-	Digests     []string
+type GspPullDigest struct {
+	MsgType  pb.PullMsgType
+	SenderId peer.ID
+	Digests  []string
 }
 
-type  GspPullRequest struct {
-	MsgType     pb.PullMsgType
-	Asker       peer.ID
-	ReqItems    []string
+type GspPullRequest struct {
+	MsgType  pb.PullMsgType
+	Asker    peer.ID
+	ReqItems []string
 }
 
 type GspDataEnv struct {
-	Data        []byte
+	Data []byte
 }
 
-type  GspPullReqAck struct {
-	MsgType      pb.PullMsgType
-	Responser    peer.ID
-	Payload      []*GspDataEnv
+type GspPullReqAck struct {
+	MsgType   pb.PullMsgType
+	Responser peer.ID
+	Payload   []*GspDataEnv
 }
 
 type GossipPullMsg struct {
-	SubMsg       interface{}
+	SubMsg interface{}
 }
 
 func (gpm *GossipPullMsg) Serialize() ([]byte, error) {
@@ -74,7 +74,7 @@ func (gpm *GossipPullMsg) helloSerialize() ([]byte, error) {
 	ph := gpm.SubMsg.(*GspPullHello)
 	p := pb.GossipPullMsg{
 		SubMsg: &pb.GossipPullMsg_Hello{
-			Hello:&pb.PullHello{
+			Hello: &pb.PullHello{
 				SenderId: []byte(ph.SenderId),
 				MsgType:  ph.MsgType,
 			},
@@ -91,7 +91,7 @@ func (gpm *GossipPullMsg) digestSerialize() ([]byte, error) {
 	pd := gpm.SubMsg.(*GspPullDigest)
 	p := pb.GossipPullMsg{
 		SubMsg: &pb.GossipPullMsg_Digest{
-			Digest:&pb.PullDigest{
+			Digest: &pb.PullDigest{
 				SenderId: []byte(pd.SenderId),
 				Digests:  pd.Digests,
 				MsgType:  pd.MsgType,
@@ -109,10 +109,10 @@ func (gpm *GossipPullMsg) requestSerialize() ([]byte, error) {
 	pr := gpm.SubMsg.(*GspPullRequest)
 	p := pb.GossipPullMsg{
 		SubMsg: &pb.GossipPullMsg_Request{
-			Request:&pb.PullRequest{
-				Asker: []byte(pr.Asker),
-				ReqItems:  pr.ReqItems,
-				MsgType:   pr.MsgType,
+			Request: &pb.PullRequest{
+				Asker:    []byte(pr.Asker),
+				ReqItems: pr.ReqItems,
+				MsgType:  pr.MsgType,
 			},
 		},
 	}
@@ -138,7 +138,7 @@ func (gpm *GossipPullMsg) reqackSerialize() ([]byte, error) {
 	}
 	p := pb.GossipPullMsg{
 		SubMsg: &pb.GossipPullMsg_ReqAck{
-			ReqAck:ack,
+			ReqAck: ack,
 		},
 	}
 
@@ -173,7 +173,7 @@ func (gpm *GossipPullMsg) Deserialize(data []byte) error {
 }
 
 func (gpm *GossipPullMsg) helloDerialize(ph interface{}) error {
-	if ph ==nil {
+	if ph == nil {
 		return errors.New("hello data is nil")
 	}
 	h := ph.(*pb.PullHello)
@@ -185,7 +185,7 @@ func (gpm *GossipPullMsg) helloDerialize(ph interface{}) error {
 }
 
 func (gpm *GossipPullMsg) digestDerialize(pd interface{}) error {
-	if pd ==nil {
+	if pd == nil {
 		return errors.New("digest data is nil")
 	}
 	d := pd.(*pb.PullDigest)
@@ -198,7 +198,7 @@ func (gpm *GossipPullMsg) digestDerialize(pd interface{}) error {
 }
 
 func (gpm *GossipPullMsg) requestDerialize(pr interface{}) error {
-	if pr ==nil {
+	if pr == nil {
 		return errors.New("request data is nil")
 	}
 	r := pr.(*pb.PullRequest)
@@ -212,7 +212,7 @@ func (gpm *GossipPullMsg) requestDerialize(pr interface{}) error {
 }
 
 func (gpm *GossipPullMsg) reqackDerialize(pra interface{}) error {
-	if pra ==nil {
+	if pra == nil {
 		return errors.New("response data is nil")
 	}
 	ra := pra.(*pb.PullReqAck)

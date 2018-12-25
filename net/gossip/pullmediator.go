@@ -117,9 +117,9 @@ func(pm *pullMediator) Hello(id peer.ID) error {
 	hello.SenderId = pm.inst.Host().ID()
 	hello.MsgType = pm.config.MsgType
 
-	pullmsg := new(GossipPullMsg)
-	pullmsg.SubMsg = hello
-	data, err := pullmsg.Serialize()
+	pullMsg := new(GossipPullMsg)
+	pullMsg.SubMsg = hello
+	data, err := pullMsg.Serialize()
 	if err != nil {
 		return err
 	}
@@ -135,9 +135,9 @@ func(pm *pullMediator) SendDigest(id peer.ID, digest interface{}) error {
 	dig.SenderId = pm.inst.Host().ID()
 	dig.Digests = digest.([]string)
 
-	pullmsg := new(GossipPullMsg)
-	pullmsg.SubMsg = dig
-	data, err := pullmsg.Serialize()
+	pullMsg := new(GossipPullMsg)
+	pullMsg.SubMsg = dig
+	data, err := pullMsg.Serialize()
 	if err != nil {
 		return err
 	}
@@ -153,9 +153,9 @@ func(pm *pullMediator) SendRequest(id peer.ID, request interface{}) error {
 	req.Asker = pm.inst.Host().ID()
 	req.ReqItems = request.([]string)
 
-	pullmsg := new(GossipPullMsg)
-	pullmsg.SubMsg = req
-	data, err := pullmsg.Serialize()
+	pullMsg := new(GossipPullMsg)
+	pullMsg.SubMsg = req
+	data, err := pullMsg.Serialize()
 	if err != nil {
 		return err
 	}
@@ -178,9 +178,9 @@ func(pm *pullMediator) SendResponse(id peer.ID, response interface{}) error {
 		res.Payload = append(res.Payload, env)
 	}
 
-	pullmsg := new(GossipPullMsg)
-	pullmsg.SubMsg = res
-	data, err := pullmsg.Serialize()
+	pullMsg := new(GossipPullMsg)
+	pullMsg.SubMsg = res
+	data, err := pullMsg.Serialize()
 	if err != nil {
 		return err
 	}
@@ -191,20 +191,20 @@ func(pm *pullMediator) SendResponse(id peer.ID, response interface{}) error {
 }
 
 func (pm *pullMediator) HandleMessage(msg message.EcoBallNetMsg) {
-	pullmsg := new(GossipPullMsg)
-	if err := pullmsg.Deserialize(msg.Data()); err != nil {
+	pullMsg := new(GossipPullMsg)
+	if err := pullMsg.Deserialize(msg.Data()); err != nil {
 		log.Error("failed to deserialize gossip pull msg")
 		return
 	}
-	switch pullmsg.SubMsg.(type) {
+	switch pullMsg.SubMsg.(type) {
 	case *GspPullHello:
-		pm.pullEngine.OnHello(pullmsg.SubMsg.(*GspPullHello))
+		pm.pullEngine.OnHello(pullMsg.SubMsg.(*GspPullHello))
 	case *GspPullDigest:
-		pm.pullEngine.OnDigest(pullmsg.SubMsg.(*GspPullDigest))
+		pm.pullEngine.OnDigest(pullMsg.SubMsg.(*GspPullDigest))
 	case *GspPullRequest:
-		pm.pullEngine.OnRequest(pullmsg.SubMsg.(*GspPullRequest))
+		pm.pullEngine.OnRequest(pullMsg.SubMsg.(*GspPullRequest))
 	case *GspPullReqAck:
-		pm.pullEngine.OnResponse(pullmsg.SubMsg.(*GspPullReqAck))
+		pm.pullEngine.OnResponse(pullMsg.SubMsg.(*GspPullReqAck))
 	default:
 		log.Error("gossip pull engine receive an invalid message")
 	}

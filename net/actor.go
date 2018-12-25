@@ -25,6 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"reflect"
+	"github.com/ecoball/go-ecoball/sharding/common"
 )
 
 type netActor struct {
@@ -72,7 +73,8 @@ func (n *netActor) Receive(ctx actor.Context) {
 			log.Debug("send transaction to ", peers)
 			n.node.network.SendMsgToPeersWithId(peers, m)
 		}
-
+	case *common.ShardingTopo:
+		go n.node.updateShardingInfo(msg)
 	case *types.Block: //not shard block
 		msgType := pb.MsgType_APP_MSG_BLKS
 		buffer, _ := msg.Serialize()
