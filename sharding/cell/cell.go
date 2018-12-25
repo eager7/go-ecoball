@@ -166,6 +166,12 @@ func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 
 }
 
+func (c *Cell) sendTopoToNet(topo *sc.ShardingTopo) {
+	if err := event.Send(event.ActorSharding, event.ActorP2P, topo); err != nil {
+		log.Error(err)
+	}
+}
+
 func (c *Cell) createShardingTopo() {
 	topo := &sc.ShardingTopo{ShardId: c.Shardid, Pubkey: c.Self.Pubkey}
 
@@ -199,7 +205,8 @@ func (c *Cell) createShardingTopo() {
 	}
 
 	log.Debug("send sharding topo to channel ", topo.ShardId, " len ", len(topo.ShardingInfo))
-	c.Topoc <- topo
+	//c.Topoc <- topo
+	c.sendTopoToNet(topo)
 }
 
 func (c *Cell) GetLastCMBlock() *cs.CMBlock {
