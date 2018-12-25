@@ -7,6 +7,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 )
 
