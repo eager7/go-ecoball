@@ -285,6 +285,7 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 		Elector: &pb.Elector{
 			Index:   a.Elector.Index.Number(),
 			Amount:  a.Elector.Amount,
+			B64Pub:  a.Elector.b64Pub,
 			Address: a.Elector.Address,
 			Port:    a.Elector.Port,
 			Payee:   a.Elector.Payee.Number(),
@@ -322,6 +323,7 @@ func (a *Account) Deserialize(data []byte) error {
 	a.Votes.Staked = pbAcc.Votes.Staked
 	a.Elector.Index = common.AccountName(pbAcc.Elector.Index)
 	a.Elector.Payee = common.AccountName(pbAcc.Elector.Payee)
+	a.Elector.b64Pub = pbAcc.Elector.B64Pub
 	a.Elector.Address = pbAcc.Elector.Address
 	a.Elector.Port = pbAcc.Elector.Port
 	a.Elector.Amount = pbAcc.Elector.Amount

@@ -213,6 +213,7 @@ message Account {
 message Elector {
     uint64      Index   = 1;
     uint64      Amount  = 2;
+    string      b64Pub  = 6;
     string      Address = 3;
     uint32      Port    = 4;
     uint64      Payee   = 5;

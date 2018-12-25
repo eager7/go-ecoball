@@ -114,18 +114,20 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		}
 		ns.tx.Receipt.Accounts[0] = data
 
-	case "reg_prod": //注册成为候选节点，需要4个参数，分别为注册账号，地址，端口号，以及付款账号，如: root,192.168.1.1,1001,root
-		if len(params) != 4 {
-			return nil, errors.New("the param is error, please input four param for reg_prod like [root,192.168.1.1,1001,root]")
+	case "reg_prod": //注册成为候选节点，需要4个参数，分别为注册账号，节点公钥，地址，端口号，以及付款账号，如: root,192.168.1.1,1001,root
+		if len(params) != 5 {
+			return nil, errors.New("the param is error, please input 5 param for reg_prod like [root,CAASogEwgZ8....,192.168.1.1,1001,root]")
 		}
 		index := common.NameToIndex(params[0])
-		port, err := strconv.ParseUint(params[2], 10, 64)
+		b64Pub := params[1]
+		addr := params[2]
+		port, err := strconv.ParseUint(params[3], 10, 64)
 		if err != nil {
 			ns.Println(err.Error())
 			return nil, err
 		}
-		payee := common.NameToIndex(params[3])
-		if err := ns.state.RegisterProducer(index, params[1], uint32(port), payee); err != nil {
+		payee := common.NameToIndex(params[4])
+		if err := ns.state.RegisterProducer(index, b64Pub, addr, uint32(port), payee); err != nil {
 			ns.Println(err.Error())
 			return nil, errors.New(err.Error())
 		}

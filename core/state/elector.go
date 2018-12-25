@@ -19,6 +19,7 @@ type Producer struct {
 type Elector struct {
 	Index   common.AccountName
 	Amount  uint64
+	b64Pub string
 	Address string
 	Port    uint32
 	Payee   common.AccountName
@@ -249,14 +250,7 @@ func (s *State) GetProducerList() ([]Elector, error) {
 			return nil, err
 		}
 		acc.mutex.RLock()
-		elector := Elector{
-			Index:   producer.Index,
-			Amount:  producer.Amount,
-			Address: acc.Elector.Address,
-			Port:    acc.Elector.Port,
-			Payee:   acc.Elector.Payee,
-		}
-		electors = append(electors, elector)
+		electors = append(electors, acc.Elector)
 		acc.mutex.RUnlock()
 	}
 	return electors, nil
@@ -290,7 +284,7 @@ func (s *State) initProducersList() error {
  *  @brief 注册成为一个候选节点，票数为零，需等待其他节点投票给自己
  *  @param index - account's index
  */
-func (s *State) RegisterProducer(index common.AccountName, addr string, port uint32, payee common.AccountName) error {
+func (s *State) RegisterProducer(index common.AccountName, b64Pub, addr string, port uint32, payee common.AccountName) error {
 	if err := s.initProducersList(); err != nil {
 		return err
 	}
@@ -312,6 +306,7 @@ func (s *State) RegisterProducer(index common.AccountName, addr string, port uin
 	acc.mutex.Lock()
 	defer acc.mutex.Unlock()
 	acc.Elector.Index = index
+	acc.Elector.b64Pub = b64Pub
 	acc.Elector.Address = addr
 	acc.Elector.Port = port
 	acc.Elector.Amount = 0
