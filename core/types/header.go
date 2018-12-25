@@ -63,10 +63,10 @@ var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
  */
 func NewHeader(version uint32, chainID common.Hash, height uint64, prevHash, merkleHash, stateHash common.Hash, conData ConsensusData, bloom bloom.Bloom, cpuLimit, netLimit float64, timeStamp int64) (*Header, error) {
 	if version != VersionHeader {
-		return nil, errors.New(log, "version mismatch")
+		return nil, errors.New("version mismatch")
 	}
 	if conData.Payload == nil {
-		return nil, errors.New(log, "consensus' payload is nil")
+		return nil, errors.New("consensus' payload is nil")
 	}
 	header := Header{
 		ChainID:       chainID,
@@ -99,10 +99,10 @@ func NewHeader(version uint32, chainID common.Hash, height uint64, prevHash, mer
 
 func (h *Header) InitializeHash() error {
 	if h.Version != VersionHeader {
-		return errors.New(log, "version mismatch")
+		return errors.New("version mismatch")
 	}
 	if h.ConsensusData.Payload == nil {
-		return errors.New(log, "consensus' payload is nil")
+		return errors.New("consensus' payload is nil")
 	}
 	payload, err := h.unSignatureData()
 	if err != nil {
@@ -147,7 +147,7 @@ func (h *Header) VerifySignature() (bool, error) {
  */
 func (h *Header) unSignatureData() (*pb.Header, error) {
 	if h.TimeStamp == 0 {
-		return nil, errors.New(log, "this header struct is illegal")
+		return nil, errors.New("this header struct is illegal")
 	}
 	pbCon, err := h.ConsensusData.ProtoBuf()
 	if err != nil {
@@ -214,7 +214,7 @@ func (h *Header) Serialize() ([]byte, error) {
 	}
 	data, err := p.Marshal()
 	if err != nil {
-		return nil, errors.New(log, fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
+		return nil, errors.New(fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
 	}
 	return data, nil
 }
@@ -225,7 +225,7 @@ func (h *Header) Serialize() ([]byte, error) {
  */
 func (h *Header) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New(log, "input data's length is zero")
+		return errors.New("input data's length is zero")
 	}
 	var pbHeader pb.HeaderTx
 	if err := pbHeader.Unmarshal(data); err != nil {

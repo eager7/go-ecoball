@@ -34,7 +34,7 @@ func (e *Elector) Serialize() ([]byte, error) {
 	}
 	data, err := pbE.Marshal()
 	if err != nil {
-		return nil, errors.New(log, err.Error())
+		return nil, errors.New(err.Error())
 	}
 	return data, err
 }
@@ -42,7 +42,7 @@ func (e *Elector) Serialize() ([]byte, error) {
 func (e *Elector) Deserialize(data []byte) error {
 	pbE := pb.Elector{}
 	if err := pbE.Unmarshal(data); err != nil {
-		return errors.New(log, err.Error())
+		return errors.New(err.Error())
 	}
 	e.Index = common.AccountName(pbE.Index)
 	e.Amount = pbE.Amount
@@ -61,7 +61,7 @@ func (s *State) UnRegisterProducer(index common.AccountName) error {
 		return err
 	}
 	if producer := s.Producers.Get(index); producer == nil {
-		return errors.New(log, fmt.Sprintf("the account:%s is not registed", index.String()))
+		return errors.New(fmt.Sprintf("the account:%s is not registed", index.String()))
 	} else {
 		s.Producers.Del(index)
 	}
@@ -81,14 +81,14 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	acc.mutex.Lock()
 	defer acc.mutex.Unlock()
 	if acc.Resource.Votes.Staked == 0 {
-		return errors.New(log, fmt.Sprintf("the account:%s has no enough vote", index.String()))
+		return errors.New(fmt.Sprintf("the account:%s has no enough vote", index.String()))
 	}
 	if err := s.initProducersList(); err != nil {
 		return err
 	}
 	for _, acc := range accounts {
 		if producer := s.Producers.Get(acc); producer == nil {
-			return errors.New(log, fmt.Sprintf("the account:%s is not register", acc.String()))
+			return errors.New(fmt.Sprintf("the account:%s is not register", acc.String()))
 		}
 	}
 	if err := s.changeElectedProducers(acc, accounts); err != nil {
@@ -151,7 +151,7 @@ func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountNa
 		}
 		acc.Votes.Producers[a] = acc.Votes.Staked
 		if producer := s.Producers.Get(a); producer == nil {
-			return errors.New(log, fmt.Sprintf("the account:%s is not a candidata node", a.String()))
+			return errors.New(fmt.Sprintf("the account:%s is not a candidata node", a.String()))
 		} else {
 			s.Producers.Add(a, producer.Amount + acc.Votes.Staked)
 		}
@@ -173,7 +173,7 @@ func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
 		if producer := s.Producers.Get(k); producer != nil {
 			s.Producers.Add(k, producer.Amount - votesOld + acc.Votes.Staked)
 		} else {
-			return errors.New(log, fmt.Sprintf("the account:%s is exit candidata nodes list", k.String()))
+			return errors.New(fmt.Sprintf("the account:%s is exit candidata nodes list", k.String()))
 		}
 	}
 	return s.commitProducersList()
@@ -189,7 +189,7 @@ func (s *State) checkAccountCertification(index common.AccountName, votes uint64
 		return err
 	}
 	if acc.Votes.Staked < votes {
-		return errors.New(log, fmt.Sprintf("the account:%s has no enough staked:%d", index.String(), acc.Votes.Staked))
+		return errors.New(fmt.Sprintf("the account:%s has no enough staked:%d", index.String(), acc.Votes.Staked))
 	}
 	return nil
 }
@@ -212,10 +212,10 @@ func (s *State) commitProducersList() error {
 
 	data, err := json.Marshal(List)
 	if err != nil {
-		return errors.New(log, fmt.Sprintf("error convert to json string:%s", err.Error()))
+		return errors.New(fmt.Sprintf("error convert to json string:%s", err.Error()))
 	}
 	if err := s.trie.TryUpdate([]byte(prodsList), data); err != nil {
-		return errors.New(log, fmt.Sprintf("error update trie:%s", err.Error()))
+		return errors.New(fmt.Sprintf("error update trie:%s", err.Error()))
 	}
 	return nil
 }
@@ -271,12 +271,12 @@ func (s *State) initProducersList() error {
 		defer s.mutex.RUnlock()
 		data, err := s.trie.TryGet([]byte(prodsList))
 		if err != nil {
-			return errors.New(log, fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
+			return errors.New(fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
 		}
 		if len(data) != 0 {
 			var Producers []Producer
 			if err := json.Unmarshal(data, &Producers); err != nil {
-				return errors.New(log, fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
+				return errors.New(fmt.Sprintf("can't unmarshal ProdList from json string:%s", err.Error()))
 			}
 			for _, v := range Producers {
 				s.Producers.Add(v.Index, v.Amount)
@@ -295,7 +295,7 @@ func (s *State) RegisterProducer(index common.AccountName, addr string, port uin
 		return err
 	}
 	if producer := s.Producers.Get(index); producer != nil {
-		return errors.New(log, fmt.Sprintf("the account:%s was already registed", index.String()))
+		return errors.New(fmt.Sprintf("the account:%s was already registed", index.String()))
 	}
 	if err := s.checkAccountCertification(index, VotesLimit); err != nil {
 		return err

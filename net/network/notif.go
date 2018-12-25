@@ -27,45 +27,14 @@ import (
 	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 )
 
-type netNotifiee NetImpl
-
-func (nn *netNotifiee) impl() *NetImpl {
-	return (*NetImpl)(nn)
-}
-
-func (nn *netNotifiee) Connected(n inet.Network, v inet.Conn) {
-	p := v.RemotePeer()
-	if nn.impl().receiver.IsValidRemotePeer(p) {
-		nn.impl().receiver.PeerConnected(v.RemotePeer())
-
-		if nn.impl().host.Network().Connectedness(p) == inet.Connected {
-			nn.impl().routingTable.update(p)
-		}
-	} else {
-		// invalid connection, close it...
-		v.Close()
-	}
-}
-
-func (nn *netNotifiee) Disconnected(n inet.Network, v inet.Conn) {
-	nn.impl().receiver.PeerDisconnected(v.RemotePeer())
-
-	p := v.RemotePeer()
-	if nn.impl().host.Network().Connectedness(p) == inet.Connected {
-		// We're still connected.
-		return
-	}
-	nn.impl().routingTable.remove(p)
-}
-
-func (nn *netNotifiee) HandlePeerFound(p pstore.PeerInfo) {
+func (net *NetImpl) HandlePeerFound(p pstore.PeerInfo) {
 	if config.DisableLocalDisLog {
 		log.SetLogLevel(elog.InfoLog)
 	}
 	log.Debug("trying peer info: ", p)
-	ctx, cancel := context.WithTimeout(nn.ctx, discoveryConnTimeout)
+	ctx, cancel := context.WithTimeout(net.ctx, discoveryConnTimeout)
 	defer cancel()
-	if err := nn.host.Connect(ctx, p); err != nil {
+	if err := net.host.Connect(ctx, p); err != nil {
 		log.Debug("Failed to connect to peer found by discovery: ", err)
 	} else {
 		log.Debug("connected to peer ", p)
@@ -73,7 +42,27 @@ func (nn *netNotifiee) HandlePeerFound(p pstore.PeerInfo) {
 	log.SetLogLevel(elog.DebugLog)
 }
 
-func (nn *netNotifiee) OpenedStream(n inet.Network, v inet.Stream) {}
-func (nn *netNotifiee) ClosedStream(n inet.Network, v inet.Stream) {}
-func (nn *netNotifiee) Listen(n inet.Network, a ma.Multiaddr)      {}
-func (nn *netNotifiee) ListenClose(n inet.Network, a ma.Multiaddr) {}
+func (net *NetImpl) Listen(n inet.Network, a ma.Multiaddr)      {}
+func (net *NetImpl) ListenClose(n inet.Network, a ma.Multiaddr) {}
+func (net *NetImpl) Connected(n inet.Network, v inet.Conn) {
+	id := v.RemotePeer()
+	if net.receiver.IsValidRemotePeer(id) {
+		net.receiver.PeerConnected(v.RemotePeer())
+		if net.host.Network().Connectedness(id) == inet.Connected {
+			net.routingTable.update(id)
+		}
+	} else {
+		v.Close() // invalid connection, close it...
+	}
+}
+func (net *NetImpl) Disconnected(n inet.Network, v inet.Conn) {
+	net.receiver.PeerDisconnected(v.RemotePeer())
+	id := v.RemotePeer()
+	if net.host.Network().Connectedness(id) == inet.Connected {
+		// We're still connected.
+		return
+	}
+	net.routingTable.remove(id)
+}
+func (net *NetImpl) OpenedStream(n inet.Network, v inet.Stream) {}
+func (net *NetImpl) ClosedStream(n inet.Network, v inet.Stream) {}

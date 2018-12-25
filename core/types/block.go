@@ -22,27 +22,22 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/trie"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 type Block struct {
 	*Header
-	//Minor Block Data
 	CountTxs     uint32
 	Transactions []*Transaction
-	//Cm Block Data
-	//Shards []Shard
-	//Final Block Data
-	//MinorBlocks []MinorBlockHeader
 }
 
 func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, consensusData ConsensusData, txs []*Transaction, cpu, net float64, timeStamp int64) (*Block, error) {
 	if nil == prevHeader {
-		return nil, errors.New(log, "invalid parameter preHeader")
+		return nil, errors.New("invalid parameter preHeader")
 	}
 	var Bloom bloom.Bloom
 	var hashes []common.Hash
@@ -89,7 +84,6 @@ func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, co
 		Header:       header,
 		CountTxs:     uint32(len(txs)),
 		Transactions: txs,
-		//Shards:       nil,
 	}
 	return &block, nil
 }
@@ -170,7 +164,7 @@ func (b *Block) Serialize() (data []byte, err error) {
  */
 func (b *Block) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New(log, "input data's length is zero")
+		return errors.New("input data's length is zero")
 	}
 	var pbBlock pb.BlockTx
 	if err := pbBlock.Unmarshal(data); err != nil {

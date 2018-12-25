@@ -30,14 +30,9 @@ import (
 	"github.com/ecoball/go-ecoball/txpool"
 	"github.com/urfave/cli"
 
-	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	//"github.com/ecoball/go-ecoball/dsn"
 	"github.com/ecoball/go-ecoball/dsn/audit"
 	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/sharding"
@@ -144,20 +139,20 @@ func runNode(c *cli.Context) error {
 		log.Fatal(err)
 	}
 
-	var sdactor *sharding.ShardingActor
+	var sdActor *sharding.ShardingActor
 	if !config.DisableSharding {
 		log.Info("start sharding")
-		sdactor, _ = sharding.NewShardingActor(ledger.L)
+		sdActor, _ = sharding.NewShardingActor(ledger.L)
 	}
 
 	//network depends on sharding
-	net.StartNetWork(sdactor.SubscribeShardingTopo())
+	net.StartNetWork(sdActor.SubscribeShardingTopo())
 
 	instance, err := network.GetNetInstance()
 	if err != nil {
 		log.Fatal(err)
 	}
-	sdactor.SetNet(instance)
+	sdActor.SetNet(instance)
 
 	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)
@@ -171,7 +166,6 @@ func runNode(c *cli.Context) error {
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
 		solo.NewSoloConsensusServer(ledger.L, txPool, config.User)
-		//event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, Address: common.AddressFromPubKey(config.Root.PublicKey)})
 	case "DPOS":
 		log.Info("Start DPOS consensus")
 
@@ -179,16 +173,6 @@ func runNode(c *cli.Context) error {
 		c.Setup(ledger.L, txPool)
 		c.Start()
 
-	case "ABABFT":
-		var acc account.Account
-		acc = config.Worker
-		serviceConsensus, _ := ababft.ServiceABABFTGen(ledger.L, txPool, &acc)
-		println("build the ababft service")
-		serviceConsensus.Start()
-		println("start the ababft service")
-		if ledger.L.StateDB(config.ChainHash).RequireVotingInfo() {
-			event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{config.ChainHash})
-		}
 	case "SHARD":
 		log.Debug("Start Shard Mode")
 		//go example.TransferExample()

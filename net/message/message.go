@@ -17,18 +17,16 @@
 package message
 
 import (
-	"io"
-	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/net/message/pb"
+	"github.com/ecoball/go-ecoball/net/util"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
-	"github.com/ecoball/go-ecoball/common/errors"
+	"io"
 )
 
 var log = elog.NewLogger("message", elog.DebugLog)
-
-type HandlerFunc func(data []byte) (err error)
 
 type EcoBallNetMsg interface {
 	ChainID() uint32
@@ -111,7 +109,7 @@ func FromNet(r io.Reader) (EcoBallNetMsg, error) {
 func FromPBReader(pbr ggio.Reader) (EcoBallNetMsg, error) {
 	pbMsg := new(pb.Message)
 	if err := pbr.ReadMsg(pbMsg); err != nil {
-		return nil, errors.New(log, err.Error())
+		return nil, errors.New(err.Error())
 	}
 	return NewMessageFromProto(*pbMsg)
 }

@@ -30,7 +30,6 @@ import (
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"io"
-	"sync"
 	"time"
 )
 
@@ -53,34 +52,6 @@ var (
 	netImpl *NetImpl
 )
 
-func NewNetwork(ctx context.Context, host host.Host) EcoballNetwork {
-	if netImpl != nil {
-		return netImpl
-	}
-	netImpl = &NetImpl{
-		ctx:         ctx,
-		host:        host,
-		engine:      NewMsgEngine(ctx, host.ID()),
-		strmap:      make(map[peer.ID]*messageSender),
-		gossipStore: NewMsgStore(ctx, gossipMsgTTL),
-		quitsendJb:  make(chan bool, 1),
-	}
-
-	netImpl.routingTable = NewRouteTable(netImpl)
-
-	host.SetStreamHandler(ProtocolP2pV1, netImpl.handleNewStream)
-	host.Network().Notify((*netNotifiee)(netImpl))
-
-	return netImpl
-}
-
-func GetNetInstance() (EcoballNetwork, error) {
-	if netImpl == nil {
-		return nil, fmt.Errorf("network has not been initialized")
-	}
-	return netImpl, nil
-}
-
 // impl transforms the network interface, which sends and receives
 // NetMessage objects, into the ecoball network interface.
 type NetImpl struct {
@@ -90,21 +61,46 @@ type NetImpl struct {
 	// inbound messages from the network are forwarded to the receiver
 	receiver Receiver
 	// outbound message engine
-	engine     *MsgEngine
-	quitsendJb chan bool
-	strmap     map[peer.ID]*messageSender
-	strmlk     sync.Mutex
+	engine *MsgEngine
+
+	SenderMap SenderMap
 
 	gossipStore MsgStore
 
 	mdnsService  discovery.Service
-	bootstrapper *BootStrapper
+	bootStrapper *BootStrapper
 
 	routingTable *NetRouteTable
 }
 
-func (net *NetImpl) GetPeerID() (peer.ID, error) {
-	return net.host.ID(), nil
+func NewNetwork(ctx context.Context, host host.Host, r Receiver) EcoballNetwork {
+	if netImpl != nil {
+		return netImpl
+	}
+	netImpl = &NetImpl{
+		ctx:          ctx,
+		host:         host,
+		receiver:     r,
+		engine:       NewMsgEngine(ctx, host.ID()),
+		SenderMap:    new(SenderMap).Initialize(),
+		gossipStore:  NewMsgStore(ctx, gossipMsgTTL),
+		mdnsService:  nil,
+		bootStrapper: nil,
+		routingTable: nil,
+	}
+	netImpl.routingTable = NewRouteTable(netImpl)
+
+	host.SetStreamHandler(ProtocolP2pV1, netImpl.handleNewStream)
+	host.Network().Notify(netImpl)
+
+	return netImpl
+}
+
+func GetNetInstance() (EcoballNetwork, error) {
+	if netImpl == nil {
+		return nil, fmt.Errorf("network has not been initialized")
+	}
+	return netImpl, nil
 }
 
 func (net *NetImpl) Host() host.Host {
@@ -120,45 +116,14 @@ func (net *NetImpl) SetDelegate(r Receiver) {
 }
 
 func (net *NetImpl) sendMessage(p pstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
-	ms, err := net.messageSenderToPeer(p)
+	log.Info("send message to", p)
+	sender, err := net.NewMessageSender(p)
 	if err != nil {
 		return err
 	}
-	err = ms.SendMsg(net.ctx, outgoing)
+	err = sender.SendMessage(net.ctx, outgoing)
 
 	return err
-}
-
-func (net *NetImpl) messageSenderToPeer(p pstore.PeerInfo) (*messageSender, error) {
-	net.strmlk.Lock()
-	ms, ok := net.strmap[p.ID]
-	if ok {
-		net.strmlk.Unlock()
-		return ms, nil
-	}
-	ms = NewMsgSender(p, net)
-	net.strmap[p.ID] = ms
-	net.strmlk.Unlock()
-
-	if err := ms.prepOrInvalidate(); err != nil {
-		net.strmlk.Lock()
-		defer net.strmlk.Unlock()
-
-		if msCur, ok := net.strmap[p.ID]; ok {
-			// Changed. Use the new one, old one is invalid and
-			// not in the map so we can just throw it away.
-			if ms != msCur {
-				return msCur, nil
-			}
-			// Not changed, remove the now invalid stream from the
-			// map.
-			delete(net.strmap, p.ID)
-		}
-		// Invalid but not in map. Must have been removed by a disconnect.
-		return nil, err
-	}
-	// All ready to go.
-	return ms, nil
 }
 
 func (net *NetImpl) handleNewStream(s inet.Stream) {
@@ -226,54 +191,19 @@ func (net *NetImpl) preHandleGossipMsg(gmsg message.EcoBallNetMsg, sender peer.I
 	net.forwardMsg(gmsg, fwPeers)
 }
 
-func (net *NetImpl) AddMsgJob(job *SendMsgJob) {
-	net.engine.PushJob(job)
-}
-
-func (net *NetImpl) startSendWorkers() {
-	for i := 0; i < sendWorkerCount; i++ {
-		i := i
-		go net.sendWorker(i)
-	}
-}
-
-func (net *NetImpl) sendWorker(id int) {
-	defer log.Debug("network send message worker ", id, " shutting down.")
-	for {
-		select {
-		case nextWrapper := <-net.engine.Outbox():
-			select {
-			case wrapper, ok := <-nextWrapper:
-				if !ok {
-					continue
-				}
-				if err := net.sendMessage(wrapper.pi, wrapper.eMsg); err != nil {
-					log.Error("send message to ", wrapper.pi, net.host.Peerstore().Addrs(wrapper.pi.ID), err)
-				}
-			case <-net.ctx.Done():
-				return
-			}
-		case <-net.ctx.Done():
-			return
-		}
-	}
-}
-
 func (net *NetImpl) StartLocalDiscovery() (discovery.Service, error) {
 	service, err := discovery.NewMdnsService(net.ctx, net.host, 10*time.Second, ServiceTag)
 	if err != nil {
 		return nil, fmt.Errorf("net discovery error, %s", err)
 	}
-	service.RegisterNotifee((*netNotifiee)(net))
+	service.RegisterNotifee(net)
 
 	return service, nil
 }
 
-// Start network
 func (net *NetImpl) Start() {
 	if config.DisableSharding {
 		net.routingTable.Start()
-
 		if config.EnableLocalDiscovery {
 			var err error
 			net.mdnsService, err = net.StartLocalDiscovery()
@@ -285,30 +215,21 @@ func (net *NetImpl) Start() {
 		}
 	}
 
-	net.bootstrapper = net.bootstrap(config.SwarmConfig.BootStrapAddr)
-
+	net.bootStrapper = net.bootstrap(config.SwarmConfig.BootStrapAddr)
 	net.startSendWorkers()
 }
 
-// Stop network
 func (net *NetImpl) Stop() {
 	if config.DisableSharding {
 		net.routingTable.Stop()
-
 		if net.mdnsService != nil {
 			net.mdnsService.Close()
 		}
 	}
-
 	if net.bootstrap != nil {
-		net.bootstrapper.closer.Close()
+		net.bootStrapper.closer.Close()
 	}
-
-	net.host.Network().StopNotify((*netNotifiee)(net))
-
+	net.host.Network().StopNotify(net)
 	net.engine.Stop()
-
 	net.gossipStore.Stop()
-
-	net.quitsendJb <- true
 }

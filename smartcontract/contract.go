@@ -34,7 +34,7 @@ type ContractService interface {
 
 func NewContractService(s state.InterfaceState, tx *types.Transaction, action *types.Action, context *context.ApplyContext, cpuLimit, netLimit float64, timeStamp int64) (ContractService, error) {
 	if s == nil || tx == nil || action == nil {
-		return nil, errors.New(log, "the contract service's ledger interface or tx is nil")
+		return nil, errors.New("the contract service's ledger interface or tx is nil")
 	}
 	contract, err := s.GetContract(action.ContractAccount)
 	if err != nil {
@@ -42,7 +42,7 @@ func NewContractService(s state.InterfaceState, tx *types.Transaction, action *t
 	}
 	invoke, ok := action.Payload.GetObject().(types.InvokeInfo)
 	if !ok {
-		return nil, errors.New(log, "transaction type error[invoke]")
+		return nil, errors.New("transaction type error[invoke]")
 	}
 
 	log.Debug("NewContractService type: ", contract.TypeVm)
@@ -61,6 +61,6 @@ func NewContractService(s state.InterfaceState, tx *types.Transaction, action *t
 		}
 		return service, nil
 	default:
-		return nil, errors.New(log, "unknown virtual machine")
+		return nil, errors.New("unknown virtual machine")
 	}
 }

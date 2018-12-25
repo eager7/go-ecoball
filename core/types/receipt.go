@@ -66,7 +66,7 @@ func (r *TransactionReceipt) Serialize() ([]byte, error) {
 
 func (r *TransactionReceipt) Deserialize(data []byte) (error) {
 	if len(data) == 0 {
-		return errors.New(log, "input data's length is zero")
+		return errors.New("input data's length is zero")
 	}
 	var receipt pb.TransactionReceipt
 	if err := receipt.Unmarshal(data); err != nil {
@@ -75,7 +75,7 @@ func (r *TransactionReceipt) Deserialize(data []byte) (error) {
 
 	amount := new(big.Int)
 	if err := amount.GobDecode(receipt.Amount); err != nil {
-		return errors.New(log, fmt.Sprintf("GobDecode err:%s", err.Error()))
+		return errors.New(fmt.Sprintf("GobDecode err:%s", err.Error()))
 	}
 	r.Amount = amount
 	r.TokenName = receipt.TokenName

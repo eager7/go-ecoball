@@ -20,42 +20,91 @@ package network
 
 import (
 	"fmt"
-	"github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/net/message/pb"
-	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"github.com/ecoball/go-ecoball/net/address"
+	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+	"sync"
 )
 
-func (net *NetImpl)SendMsgDataToShard(shardId uint16, msgId pb.MsgType, data []byte) error {
-	p, err := net.receiver.GetShardLeader(shardId)
-	if err != nil {
-		return err
-	}
-	msg := message.New(msgId, data)
-	net.SendMsgToPeerWithPeerInfo([]*peerstore.PeerInfo{p}, msg)
+type ShardInfo struct {
+	ShardSubCh <-chan interface{}
+	localID    uint32
+	role       int
+	shardMap   map[uint32]address.PeerMap
+	lock       sync.RWMutex
+}
 
+func (s *ShardInfo) Initialize() *ShardInfo {
+	s.ShardSubCh = make(<-chan interface{}, 1)
+	s.shardMap = make(map[uint32]address.PeerMap)
+	return s
+}
+
+func (s *ShardInfo) GetShardNodes(shardId uint32) *address.PeerMap {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	if peerMap, ok := s.shardMap[shardId]; ok {
+		return peerMap.Clone()
+	}
 	return nil
 }
 
-func (net *NetImpl)SendMsgToShards(msg message.EcoBallNetMsg) error {
-	if !net.receiver.IsLeaderOrBackup() {
-		return fmt.Errorf("sender is not a committee leader or backup")
+func (s *ShardInfo) AddShardNode(shardId uint32, peerId peer.ID, addr multiaddr.Multiaddr) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if peerMap, ok := s.shardMap[shardId]; ok {
+		peerMap.Add(peerId, nil, []multiaddr.Multiaddr{addr}, "")
+	} else {
+		peerMap := new(address.PeerMap).Initialize()
+		peerMap.Add(peerId, nil, []multiaddr.Multiaddr{addr}, "")
+		s.shardMap[shardId] = peerMap
 	}
-
-	shardMembers := net.receiver.GetShardMembersToReceiveCBlock()
-	for _, shard := range shardMembers {
-		net.SendMsgToPeerWithPeerInfo(shard, msg)
-	}
-
-	return nil
 }
 
-func (net *NetImpl)SendMsgToCommittee(msg message.EcoBallNetMsg) error {
-	if !net.receiver.IsLeaderOrBackup() {
-		return fmt.Errorf("sender is not a committee leader or backup")
+func (s *ShardInfo) IsValidRemotePeer(p peer.ID) bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	for _, shard := range s.shardMap {
+		if shard.Contains(p) {
+			return true
+		}
 	}
+	return false
+}
 
-	cmMembers := net.receiver.GetCMMembersToReceiveSBlock()
-	net.SendMsgToPeerWithPeerInfo(cmMembers, msg)
+func (s *ShardInfo) GetLocalId() uint32 {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.localID
+}
 
-	return nil
+func (s *ShardInfo) SetLocalId(id uint32) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.localID = id
+}
+
+func (s *ShardInfo) SetNodeRole(role int) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.role = role
+}
+
+func (s *ShardInfo) GetNodeRole() int {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.role
+}
+
+func (s *ShardInfo) JsonString() string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	var info string
+	for id, peerMap := range s.shardMap {
+		info += fmt.Sprintf("\nshard id[%d], nodes:", id)
+		for node := range peerMap.Iterator() {
+			info += fmt.Sprintf("[%s-%s]", node.PeerInfo.ID.Pretty(), node.PeerInfo.Addrs)
+		}
+	}
+	return fmt.Sprintf("local id:%d, the role is :%d, the info map is:%s", s.localID, s.role, info)
 }

@@ -259,7 +259,7 @@ func (s *State) RegisterChain(index common.AccountName, hash, txHash common.Hash
 		return err
 	}
 	if chain := s.Chains.Get(hash); chain != nil {
-		return errors.New(log, fmt.Sprintf("the chain:%s was already registed", hash.HexString()))
+		return errors.New(fmt.Sprintf("the chain:%s was already registed", hash.HexString()))
 	}
 	if err := s.checkAccountCertification(index, ChainLimit); err != nil {
 		return nil
@@ -286,12 +286,12 @@ func (s *State) commitChains() error {
 
 	data, err := json.Marshal(List)
 	if err != nil {
-		return errors.New(log, fmt.Sprintf("error convert to json string:%s", err.Error()))
+		return errors.New(fmt.Sprintf("error convert to json string:%s", err.Error()))
 	}
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if err := s.trie.TryUpdate([]byte(chainList), data); err != nil {
-		return errors.New(log, fmt.Sprintf("error update trie:%s", err.Error()))
+		return errors.New(fmt.Sprintf("error update trie:%s", err.Error()))
 	}
 	return nil
 }
@@ -299,12 +299,12 @@ func (s *State) GetChainList() ([]Chain, error) {
 	if s.Chains.Len() == 0 {
 		data, err := s.trie.TryGet([]byte(chainList))
 		if err != nil {
-			return nil, errors.New(log, fmt.Sprintf("can't get chainList from DB:%s", err.Error()))
+			return nil, errors.New(fmt.Sprintf("can't get chainList from DB:%s", err.Error()))
 		}
 		if len(data) != 0 {
 			var Chains []Chain
 			if err := json.Unmarshal(data, &Chains); err != nil {
-				return nil, errors.New(log, fmt.Sprintf("can't unmarshal Chains List from json string:%s", err.Error()))
+				return nil, errors.New(fmt.Sprintf("can't unmarshal Chains List from json string:%s", err.Error()))
 			}
 			for _, v := range Chains {
 				s.Chains.Add(v.Hash, v)
@@ -352,10 +352,10 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 		if a.Delegates[i].Index == acc.Index {
 			done = true
 			if acc.Cpu.Delegated < cpuStaked {
-				return errors.New(log, fmt.Sprintf("the account:%s cpu amount is not enough", acc.Index.String()))
+				return errors.New(fmt.Sprintf("the account:%s cpu amount is not enough", acc.Index.String()))
 			}
 			if acc.Net.Delegated < netStaked {
-				return errors.New(log, fmt.Sprintf("the account:%s net amount is not enough", acc.Index.String()))
+				return errors.New(fmt.Sprintf("the account:%s net amount is not enough", acc.Index.String()))
 			}
 			acc.CancelOthersDelegate(cpuStaked, netStaked, cpuStakedSum, netStakedSum, cpuLimit, netLimit)
 
@@ -367,17 +367,17 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 		}
 	}
 	if done == false {
-		return errors.New(log, fmt.Sprintf("account:%s is not delegated for %s", a.Index.String(), acc.Index.String()))
+		return errors.New(fmt.Sprintf("account:%s is not delegated for %s", a.Index.String(), acc.Index.String()))
 	}
 	return nil
 }
 func (a *Account) SubResourceLimits(cpu, net float64, cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) error {
 	if a.Cpu.Available < cpu {
 		log.Warn(a.JsonString())
-		return errors.New(log, fmt.Sprintf("the account:%s cpu avaiable[%f] is not enough", a.Index.String(), a.Cpu.Available))
+		return errors.New(fmt.Sprintf("the account:%s cpu avaiable[%f] is not enough", a.Index.String(), a.Cpu.Available))
 	}
 	if a.Net.Available < net {
-		return errors.New(log, fmt.Sprintf("the account:%s net avaiable[%f] is not enough", a.Index.String(), a.Net.Available))
+		return errors.New(fmt.Sprintf("the account:%s net avaiable[%f] is not enough", a.Index.String(), a.Net.Available))
 	}
 	a.Cpu.Used += cpu
 	a.Net.Used += net

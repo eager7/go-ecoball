@@ -4,7 +4,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/common/elog"
 )
 
 func ApplyExecOne(ac *context.ApplyContext) (ret []byte, err error){
@@ -35,7 +34,7 @@ func ApplyExec(ac *context.ApplyContext) (ret []byte, err error){
 	ret, err = ApplyExecOne(ac)
 
 	if ac.RecurseDepth > 4 {
-		return nil, errors.New(elog.Log, "inline action recurse depth is out of range")
+		return nil, errors.New("inline action recurse depth is out of range")
 	}
 
 	for _, act := range ac.InlineAction {

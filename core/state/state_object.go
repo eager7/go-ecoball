@@ -123,7 +123,7 @@ func (a *Account) SetContract(t types.VmType, des, code []byte, abi []byte) erro
  */
 func (a *Account) GetContract() (*types.DeployInfo, error) {
 	if a.Contract.TypeVm == 0 {
-		return nil, errors.New(log, fmt.Sprintf("this account[%s] is not set contract", a.Index.String()))
+		return nil, errors.New(fmt.Sprintf("this account[%s] is not set contract", a.Index.String()))
 	}
 	return &a.Contract, nil
 }
@@ -300,7 +300,7 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
  */
 func (a *Account) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New(log, "input Token's length is zero")
+		return errors.New("input Token's length is zero")
 	}
 	var pbAcc pb.Account
 	if err := proto.Unmarshal(data, &pbAcc); err != nil {

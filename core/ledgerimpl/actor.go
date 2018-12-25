@@ -106,18 +106,18 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		switch msg.Type {
 		case shard.HeMinorBlock:
 			if txpool.T == nil {
-				ctx.Sender().Tell(errors.New(log, "create minor block err the txPool is nil"))
+				ctx.Sender().Tell(errors.New("create minor block err the txPool is nil"))
 				return
 			}
 			txs, err := txpool.T.GetTxsList(msg.ChainID)
 			if err != nil {
-				ctx.Sender().Tell(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
+				ctx.Sender().Tell(errors.New(fmt.Sprintf("create final block err:%s", err.Error())))
 				return
 			}
 		PACKAGE:
 			minorBlock, txs, err := l.ledger.NewMinorBlock(msg.ChainID, txs, time.Now().UnixNano())
 			if err != nil {
-				log.Warn(errors.New(log, fmt.Sprintf("create minor block err:%s", err.Error())))
+				log.Warn(errors.New(fmt.Sprintf("create minor block err:%s", err.Error())))
 				if txs != nil {
 					goto PACKAGE
 				} else {
@@ -133,7 +133,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		case shard.HeFinalBlock:
 			block, err := l.ledger.NewFinalBlock(msg.ChainID, time.Now().UnixNano(), msg.Hashes)
 			if err != nil {
-				ctx.Sender().Tell(errors.New(log, fmt.Sprintf("create final block err:%s", err.Error())))
+				ctx.Sender().Tell(errors.New(fmt.Sprintf("create final block err:%s", err.Error())))
 				return
 			}
 			end := time.Now().UnixNano()
@@ -156,7 +156,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		case uint32(shard.HeFinalBlock):
 
 		default:
-			result.Result = errors.New(log, "unknown header type")
+			result.Result = errors.New("unknown header type")
 		}
 		ctx.Sender().Tell(result)
 	default:

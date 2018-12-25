@@ -15,8 +15,9 @@ type ParamsMap struct {
 	lock   sync.RWMutex
 }
 
-func (p *ParamsMap) Initialize() {
+func (p *ParamsMap) Initialize() ParamsMap {
 	p.Params = make(map[string]Param)
+	return *p
 }
 
 func (p *ParamsMap) Len() int {
@@ -95,8 +96,9 @@ type ProducersMap struct {
 	lock      sync.RWMutex
 }
 
-func (p *ProducersMap) Initialize() {
+func (p *ProducersMap) Initialize() ProducersMap {
 	p.Producers = make(map[common.AccountName]Producer)
+	return *p
 }
 
 func (p *ProducersMap) Len() int {
@@ -175,8 +177,9 @@ type TokensMap struct {
 	lock   sync.RWMutex
 }
 
-func (t *TokensMap) Initialize() {
+func (t *TokensMap) Initialize() TokensMap {
 	t.Tokens = make(map[string]TokenInfo)
+	return *t
 }
 
 func (t *TokensMap) Len() int {
@@ -262,8 +265,9 @@ type ChainsMap struct {
 	lock   sync.RWMutex
 }
 
-func (c *ChainsMap) Initialize() {
+func (c *ChainsMap) Initialize() ChainsMap {
 	c.Chains = make(map[common.Hash]Chain)
+	return *c
 }
 
 func (c *ChainsMap) Len() int {

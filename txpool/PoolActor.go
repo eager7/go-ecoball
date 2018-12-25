@@ -20,14 +20,11 @@ import (
 	"fmt"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/net/message/pb"
-	"github.com/ecoball/go-ecoball/net/network"
 	"reflect"
 	"sync"
 )
@@ -117,58 +114,42 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	}
 	p.txPool.txsCache.Add(tx.Hash, nil)
 
-	if !config.DisableSharding {
-		lastCMBlock, _, err := p.txPool.ledger.GetLastShardBlock(tx.ChainID, shard.HeCmBlock)
-		if err != nil {
-			return err
-		}
-		numShard := len(lastCMBlock.GetObject().(shard.CMBlock).Shards)
-		if numShard == 0 {
-			log.Warn("the node network is not work, last cm block:", lastCMBlock.JsonString())
-			return nil
-		}
-		var handle bool
-		shardId, err := p.txPool.ledger.GetShardId(tx.ChainID)
-		if err != nil {
-			return err
-		}
-		log.Debug("the shard id is ", shardId)
-		var toShard uint64
-		if tx.Type == types.TxTransfer || tx.Addr == common.NameToIndex("root") {
-			toShard = uint64(tx.From)%magicNum%uint64(numShard) + 1
-			log.Debug("the handle shard id is ", toShard)
-			if uint64(shardId) == toShard {
-				log.Debug("put the transfer tx:", tx.From, tx.Hash.HexString(), "to txPool")
-				handle = true
-			}
-		} else {
-			toShard = uint64(tx.Addr)%magicNum%uint64(numShard) + 1
-			log.Debug("the handle shard id is ", toShard)
-			if uint64(shardId) == toShard {
-				log.Debug("put the contract tx:", tx.Addr, tx.Hash.HexString(), "to txPool")
-				handle = true
-			}
-		}
-		if handle || config.DisableSharding {
-			p.txPool.Push(tx.ChainID, tx)
-		} else {
-			net, err := network.GetNetInstance()
-			if err != nil {
-				return errors.New(log, err.Error())
-			}
-			data, err := tx.Serialize()
-			if err != nil {
-				return err
-			}
-			if err := net.SendMsgDataToShard(uint16(toShard), pb.MsgType_APP_MSG_TRN, data); err != nil {
-				return errors.New(log, err.Error())
-			}
+	lastCMBlock, _, err := p.txPool.ledger.GetLastShardBlock(tx.ChainID, shard.HeCmBlock)
+	if err != nil {
+		return err
+	}
+	numShard := len(lastCMBlock.GetObject().(shard.CMBlock).Shards)
+	if numShard == 0 {
+		log.Warn("the node network is not work, last cm block:", lastCMBlock.JsonString())
+		return nil
+	}
+	var handle bool
+	shardId, err := p.txPool.ledger.GetShardId(tx.ChainID)
+	if err != nil {
+		return err
+	}
+	log.Debug("the shard id is ", shardId)
+	var toShard uint64
+	if tx.Type == types.TxTransfer || tx.Addr == common.NameToIndex("root") {
+		toShard = uint64(tx.From)%magicNum%uint64(numShard) + 1
+		log.Debug("the handle shard id is ", toShard)
+		if uint64(shardId) == toShard {
+			log.Debug("put the transfer tx:", tx.From, tx.Hash.HexString(), "to txPool")
+			handle = true
 		}
 	} else {
+		toShard = uint64(tx.Addr)%magicNum%uint64(numShard) + 1
+		log.Debug("the handle shard id is ", toShard)
+		if uint64(shardId) == toShard {
+			log.Debug("put the contract tx:", tx.Addr, tx.Hash.HexString(), "to txPool")
+			handle = true
+		}
+	}
+	if handle {
 		p.txPool.Push(tx.ChainID, tx)
 	}
 
-	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
+	if err := event.Send(event.ActorNil, event.ActorP2P, message.Transaction{ShardID: uint32(toShard), Tx: tx}); nil != err {
 		log.Warn("broadcast transaction failed:", err.Error(), tx.Hash.HexString())
 	}
 
@@ -185,7 +166,7 @@ func (p *PoolActor) handleNewBlock(block *types.Block) {
 func (p *PoolActor) preHandleTransaction(tx *types.Transaction) ([]byte, error) {
 	s, ok := p.txPool.StateDB[tx.ChainID]
 	if !ok {
-		return nil, errors.New(log, fmt.Sprintf("can't find the chain:%s", tx.ChainID.HexString()))
+		return nil, errors.New(fmt.Sprintf("can't find the chain:%s", tx.ChainID.HexString()))
 	}
 	ret, _, _, err := p.txPool.ledger.ShardPreHandleTransaction(tx.ChainID, s, tx, tx.TimeStamp)
 	if err != nil {

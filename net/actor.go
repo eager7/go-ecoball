@@ -16,113 +16,71 @@
 package net
 
 import (
-	"reflect"
+	"fmt"
 	"github.com/AsynkronIT/protoactor-go/actor"
-	eactor "github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/event"
+	commonMsg "github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/net/rpc"
 	"github.com/ecoball/go-ecoball/net/message/pb"
+	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+	"reflect"
 )
 
-type NetActor struct {
-	props    *actor.Props
-	node   	 *NetNode
+type netActor struct {
+	props *actor.Props
+	node  *netNode
 }
 
-func NewNetActor(node *NetNode) *NetActor {
-	return &NetActor{
-		node:     node,
+func NewNetActor(node *netNode) *netActor {
+	return &netActor{
+		node: node,
 	}
 }
 
-func (n *NetActor) Start() (*actor.PID, error) {
+func (n *netActor) Start() (*actor.PID, error) {
 	n.props = actor.FromProducer(func() actor.Actor { return n })
 	netPid, err := actor.SpawnNamed(n.props, "net")
-	eactor.RegisterActor(eactor.ActorP2P, netPid)
+	event.RegisterActor(event.ActorP2P, netPid)
 	return netPid, err
 }
 
-func (n *NetActor) Receive(ctx actor.Context) {
-	var buffer []byte
-	var msgType pb.MsgType
-	msg := ctx.Message()
-	switch msg.(type) {
+func (n *netActor) Receive(ctx actor.Context) {
+	log.Debug("Actor receive msg:", reflect.TypeOf(ctx.Message()))
+
+	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 		log.Debug("NetActor started")
-	case *types.Transaction:
-		msgType = pb.MsgType_APP_MSG_TRN
-		buffer, _ = msg.(*types.Transaction).Serialize()
-		netMsg := message.New(msgType, buffer)
-		log.Debug("new transactions")
-		n.node.broadCastCh <- netMsg
-	case *rpc.ListMyIdReq:
-		id := n.node.SelfId()
-		ctx.Sender().Request(&rpc.ListMyIdRsp{Id:id}, ctx.Self())
-	case *rpc.ListPeersReq:
-		peers := n.node.Neighbors()
-		log.Info(peers)
-		ctx.Sender().Request(&rpc.ListPeersRsp{Peer: peers}, ctx.Self())
-	case pb.SignaturePreBlockA:
-		// broadcast the signature for the previous block
-		info,_ := msg.(pb.SignaturePreBlockA)
-		msgType = pb.MsgType_APP_MSG_SIGNPRE
-		buffer, _ = info.Serialize()
-		netMsg := message.New(msgType, buffer)
-		n.node.broadCastCh <- netMsg
-	case pb.BlockFirstRound:
-		// broadcast the first round block
-		info,_ := msg.(pb.BlockFirstRound)
-		msgType = pb.MsgType_APP_MSG_BLKF
-		buffer, _ = info.BlockFirst.Serialize()
-		netMsg := message.New(msgType, buffer)
-		n.node.broadCastCh <- netMsg
-	case pb.REQSynA:
-		// broadcast the synchronization request to update the ledger
-		info,_ := msg.(pb.REQSynA)
-		msgType = pb.MsgType_APP_MSG_REQSYN
-		buffer, _ = info.Serialize()
+	case commonMsg.Transaction:
+		msgType := pb.MsgType_APP_MSG_TRN
+		buffer, _ := msg.Tx.Serialize()
+		if msg.ShardID == n.node.shardInfo.GetLocalId() {
+			netMsg := message.New(msgType, buffer)
+			log.Debug("send transactions in shard")
+			n.node.broadCastCh <- netMsg
+		} else {
+			m := message.New(msgType, buffer)
+			peerMap := n.node.shardInfo.GetShardNodes(msg.ShardID)
+			if peerMap == nil {
+				log.Error(fmt.Sprintf("can't find shard[%d] nodes", msg.ShardID))
+				return
+			}
+			var peers []peer.ID
+			for node := range peerMap.Iterator() {
+				peers = append(peers, node.PeerInfo.ID)
+			}
+			log.Debug("send transaction to ", peers)
+			n.node.network.SendMsgToPeersWithId(peers, m)
+		}
+
+	case *types.Block: //not shard block
+		msgType := pb.MsgType_APP_MSG_BLKS
+		buffer, _ := msg.Serialize()
 		netMsg := message.New(msgType, buffer)
 		n.node.broadCastCh <- netMsg
-	case pb.REQSynSolo:
-		// broadcast the synchronization request to update the ledger
-		info,_ := msg.(pb.REQSynSolo)
-		msgType = pb.MsgType_APP_MSG_REQSYNSOLO
-		buffer, _ = info.Serialize()
-		netMsg := message.New(msgType, buffer)
-		n.node.broadCastCh <- netMsg
-	case pb.TimeoutMsg:
-		info,_ := msg.(pb.TimeoutMsg)
-		msgType = pb.MsgType_APP_MSG_TIMEOUT
-		// buffer, _ = msg.(*ababft.TimeoutMsg).Serialize()
-		buffer, _ = info.Serialize()
-		netMsg := message.New(msgType, buffer)
-		n.node.broadCastCh <- netMsg
-	case pb.SignatureBlkFA:
-		// broadcast the signature for the first-round block
-		info,_ := msg.(pb.SignatureBlkFA)
-		msgType = pb.MsgType_APP_MSG_SIGNBLKF
-		buffer, _ = info.Serialize()
-		netMsg := message.New(msgType, buffer)
-		n.node.broadCastCh <- netMsg
-	//case ababft.BlockSecondRound:
-	case *types.Block:
-		// broadcast the first round block
-		msgType = pb.MsgType_APP_MSG_BLKS
-		// buffer, _ = msg.(*ababft.BlockSecondRound).blockSecond.Serialize()
-		buffer, _ = msg.(*types.Block).Serialize()
-		netMsg := message.New(msgType, buffer)
-		n.node.broadCastCh <- netMsg
-	case pb.BlockSynA:
-		// broadcast the block according to the synchronization request
-		info,_ := msg.(pb.BlockSynA)
-		msgType = pb.MsgType_APP_MSG_BLKSYN
-		buffer, _ = info.Serialize()
-		netMsg := message.New(msgType, buffer)
-		n.node.broadCastCh <- netMsg
+
 	default:
-		log.Error("Error Xmit message ", reflect.TypeOf(ctx.Message()))
+		log.Error("unknown message ", reflect.TypeOf(ctx.Message()))
 	}
 
-	log.Debug("Actor receive msg ", reflect.TypeOf(ctx.Message()))
 }

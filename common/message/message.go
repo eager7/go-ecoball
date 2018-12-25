@@ -19,6 +19,7 @@ package message
 import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type ABABFTStart struct {
@@ -52,5 +53,10 @@ type CheckBlock struct {
 
 type DeleteTx struct {
 	ChainID common.Hash
-	Hash common.Hash
+	Hash    common.Hash
+}
+
+type Transaction struct {
+	ShardID uint32
+	Tx      *types.Transaction
 }

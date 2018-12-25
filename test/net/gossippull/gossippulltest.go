@@ -14,9 +14,9 @@ func StartBlockPuller(ctx context.Context) {
 		PullInterval: time.Duration(5)*time.Second,
 		MsgType: pb.PullMsgType_BLOCK_MSG,
 	}
-	pullrecv := NewPullReceiver()
+	receiver := NewPullReceiver()
 
-	gossip.NewPullMediator(ctx, cfg, pullrecv)
+	gossip.NewPullMediator(ctx, cfg, receiver)
 }
 
 

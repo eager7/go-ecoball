@@ -7,7 +7,7 @@ package errors
 
 import (
 	"fmt"
-	"gx/ipfs/QmVmDhyTTUcQXFD1rRQ64fGLMSAoaQvNH3hwuaCFAPq2hy/errors"
+	"errors"
 	"github.com/ecoball/go-ecoball/common/elog"
 )
 
@@ -83,8 +83,8 @@ func (err ErrCode) Value() int {
 	return int(err)
 }
 
-func New(log elog.Logger, err string) error {
-	log.ErrStack()
+func New(err string) error {
+	elog.Log.ErrStack()
 	return errors.New(err)
 }
 

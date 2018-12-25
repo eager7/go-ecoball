@@ -68,7 +68,7 @@ func (net *NetImpl) GossipMsg(msg message.EcoBallNetMsg) error {
 func (net *NetImpl) sendMsgToRandomPeers(peerCounts int, msg message.EcoBallNetMsg) (err error) {
 	peers := net.getRandomPeers(peerCounts, net.receiver.IsNotMyShard)
 	if len(peers) == 0 {
-		return errors.New(log,"failed to select random peers")
+		return errors.New("failed to select random peers")
 	}
 	var peerInfo []*peerstore.PeerInfo
 	for _, id := range peers {
@@ -111,12 +111,12 @@ func (net *NetImpl) warpMsgByGossip(msg message.EcoBallNetMsg) (message.EcoBallN
 
 func (net *NetImpl) unWarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
 	if msg.Type() != pb.MsgType_APP_MSG_GOSSIP {
-		return nil, errors.New(log, "unwrap an invalid gossip message")
+		return nil, errors.New("unwrap an invalid gossip message")
 	}
 	oriPbMsg := pb.Message{}
 	err := oriPbMsg.Unmarshal(msg.Data())
 	if err != nil {
-		return nil, errors.New(log, "error for unmarshal a gossip message data")
+		return nil, errors.New("error for unmarshal a gossip message data")
 	} else {
 		msg, _ := message.NewMessageFromProto(oriPbMsg)
 		return msg, nil

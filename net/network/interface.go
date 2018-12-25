@@ -19,8 +19,6 @@ package network
 import (
 	"context"
 	"github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/net/message/pb"
-	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 )
@@ -37,7 +35,6 @@ type EcoballNetwork interface {
 	Stop()
 
 	CommAPI
-	ShardingMsgAPI
 }
 
 type CommAPI interface {
@@ -66,22 +63,11 @@ type CommAPI interface {
 	GetPeerStoreConnectStatus() []peer.ID
 }
 
-type ShardingMsgAPI interface {
-	SendMsgDataToShard(shardId uint16, msgId pb.MsgType, data []byte) error
-	SendMsgToShards(message.EcoBallNetMsg) error
-	SendMsgToCommittee(message.EcoBallNetMsg) error
-}
-
 // Implement Receiver to receive messages from the EcoBallNetwork
 type Receiver interface {
 	ReceiveMessage(ctx context.Context, sender peer.ID, incoming message.EcoBallNetMsg)
 	IsValidRemotePeer(peer.ID) bool
 	IsNotMyShard(p peer.ID) bool
-	IsLeaderOrBackup() bool
-	GetShardLeader(shardId uint16) (*peerstore.PeerInfo, error)
-	GetShardAddress(id peer.ID) peerstore.PeerInfo
-	GetShardMembersToReceiveCBlock() [][]*peerstore.PeerInfo
-	GetCMMembersToReceiveSBlock() []*peerstore.PeerInfo
 	ReceiveError(error)
 	PeerConnected(peer.ID)
 	PeerDisconnected(peer.ID)

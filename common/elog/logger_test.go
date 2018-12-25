@@ -11,5 +11,6 @@ func TestLogger(t *testing.T) {
 	l.Info("info----------------------")
 	l.Warn("warn------------------")
 	l.Error("error---------------------")
+	//l.Panic("panic------------")
 	l.ErrStack()
 }

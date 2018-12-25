@@ -6,10 +6,10 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/net"
-	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/test/example"
 	"testing"
+	"github.com/ecoball/go-ecoball/net/network"
 )
 
 func TestNet(t *testing.T) {
@@ -49,6 +49,9 @@ func TestNet(t *testing.T) {
 	toPo := &common.ShardingTopo{}
 	errors.CheckErrorPanic(json.Unmarshal([]byte(toPoInfo), toPo))
 	c <- toPo
+
+	_, err := network.GetNetInstance()
+	errors.CheckErrorPanic(err)
 
 	example.Wait()
 	cancel()
