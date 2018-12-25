@@ -18,7 +18,7 @@ func (c *Consensus) sendPrepare(d time.Duration) {
 	c.step = StepPrePare
 	//packet := c.instance.MakeNetPacket(c.step)
 	//c.sendCsPacket(packet)
-	c.rcb(true, d)
+	c.rcb(true, d)		// wait 1s in case of shard leader receive final block but other member had not received
 }
 
 func (c *Consensus) prepareRsp(csp *sc.CsPacket) {
@@ -30,7 +30,7 @@ func (c *Consensus) prepareRsp(csp *sc.CsPacket) {
 		c.sendPreCommit()
 	} else if c.ns.IsVoteOnThreshold(sign) {
 		log.Debug("prepare rsp vote on threshold")
-		c.fcb(true)
+		c.fcb(true)		// wait 3s to receive all vote,
 	}
 }
 
@@ -53,7 +53,7 @@ func (c *Consensus) precommitRsp(csp *sc.CsPacket) {
 		c.sendCommit()
 	} else if c.ns.IsVoteOnThreshold(sign) {
 		log.Debug("precommit rsp vote on threshold ")
-		c.fcb(true)
+		c.fcb(true)		// it is best to receive all vote, wait 3s
 	}
 }
 

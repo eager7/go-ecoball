@@ -23,12 +23,9 @@ const (
 )
 
 const (
-	//ActProductMinorBlock = iota + 1
 	ActWaitBlock = iota + 1
-	//ActRecvConsensusPacket
 	ActChainNotSync
 	ActRecvShardingPacket
-	//ActLedgerBlockMsg
 	ActStateTimeout
 )
 
@@ -126,8 +123,6 @@ func (s *shard) processActorMsg(msg interface{}) {
 	switch msg.(type) {
 	case *message.SyncComplete:
 		s.processSyncComplete()
-	//case *cs.MinorBlock:
-	//	s.processMinorBlockMsg(msg.(*cs.MinorBlock))
 	default:
 		log.Error("wrong actor message")
 	}
@@ -135,8 +130,6 @@ func (s *shard) processActorMsg(msg interface{}) {
 
 func (s *shard) processPacket(packet *sc.CsPacket) {
 	switch packet.PacketType {
-	//case pb.MsgType_APP_MSG_CONSENSUS_PACKET:
-	//	s.recvConsensusPacket(packet)
 	case pb.MsgType_APP_MSG_SHARDING_PACKET:
 		s.recvShardingPacket(packet)
 	case pb.MsgType_APP_MSG_SYNC_REQUEST:
