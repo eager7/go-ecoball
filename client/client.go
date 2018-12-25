@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -30,12 +31,18 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/dsn/host/cmd"
 	"github.com/peterh/liner"
+	"github.com/spf13/viper"
 	"github.com/urfave/cli"
 )
 
 const (
-	SUCCESS = 0
-	FAILED  = 1
+	SUCCESS       = 0
+	FAILED        = 1
+	configDefault = `#toml configuration for EcoBall system
+ecoball_port = "20678"          # ecoball http port
+ecoball_ip = "127.0.0.1"		# ecoball ip address
+ecowallet_port = "20679"   		# ecowallet http port
+ecowallet_ip = "127.0.0.1"		# ecowallet ip address`
 )
 
 var (
@@ -67,12 +74,10 @@ func newClientApp() *cli.App {
 		cli.StringFlag{
 			Name:  "ip, i",
 			Usage: "node's ip address",
-			Value: "localhost",
 		},
 		cli.StringFlag{
 			Name:  "port, p",
 			Usage: "node's RPC port",
-			Value: "20678",
 		},
 	}
 
@@ -97,6 +102,9 @@ func newClientApp() *cli.App {
 }
 
 func main() {
+	//load config
+	loadConfig()
+
 	//interrupt handle
 	go interruptHandle()
 
@@ -259,4 +267,28 @@ func interruptHandle() {
 	sig := <-interrupt
 	fmt.Println("ecoclient received signal:", sig)
 	os.Exit(1)
+}
+
+func loadConfig() {
+	//if file not exist, create and write file
+	file := "./ecoclient.toml"
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		if err := ioutil.WriteFile(file, []byte(configDefault), 0644); err != nil {
+			fmt.Println("write file err:", err)
+			return
+		}
+	}
+
+	//load data
+	viper.SetConfigName("ecoclient")
+	viper.AddConfigPath("./")
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Println("can't load config file ecoclient.toml:", err)
+	}
+
+	//set config
+	common.NodeIp = viper.GetString("ecoball_ip")
+	common.NodePort = viper.GetString("ecoball_port")
+	common.WalletIp = viper.GetString("ecowallet_ip")
+	common.WalletPort = viper.GetString("ecowallet_port")
 }
