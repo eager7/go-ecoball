@@ -89,16 +89,5 @@ func (s *shard) processSyncComplete() {
 
 	// importtant: return state when sync complete
 	s.fsm.Execute(ActWaitBlock, nil)
-	//preMinor := simulate.GetPreproductionMinorBlock()
-	//if preMinor != nil {
-	//	s.fsm.Execute(ActWaitBlock, nil)
-	//	return
-	//} else {
-	//	s.fsm.Execute(ActProductMinorBlock, nil)
-	//	return
-	//}
 }
 
-//func (s *shard) processMinorBlockMsg(minor *cs.MinorBlock) {
-//	s.fsm.Execute(ActLedgerBlockMsg, minor)
-//}

@@ -105,7 +105,7 @@ func (b *cmBlockCsi) GetCandidate() *cs.NodeInfo {
 }
 
 func (c *committee) reshardWorker(height uint64) (candidate *cs.NodeInfo, shards []cs.Shard) {
-	/*missing_func need get deposit account info*/
+	// get Producer List, then select leader via VRF
 	//candidate, err := c.ns.Ledger.GetProducerList(config.ChainHash)
 	cw := simulate.GetCandidateList()
 	if len(cw) > 0 {

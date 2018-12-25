@@ -24,7 +24,7 @@ type Consensus struct {
 	view *sc.CsView
 
 	instance sc.ConsensusInstance
-	rcb      timerdCb
+	rcb      timerdCb				// retransfer timer
 	fcb      timerCb
 	ccb      csCompleteCb
 }
@@ -65,8 +65,8 @@ func (c *Consensus) ProcessPacket(csp *sc.CsPacket) bool {
 		return false
 	}
 
-	candidate := c.instance.GetCandidate()
-	if candidate != nil {
+	candidate := c.instance.GetCandidate()		// only for view change block
+	if candidate != nil {		// view change block
 		if c.ns.Self.EqualNode(candidate) {
 			if !c.instance.CheckBlock(csp.Packet, true) {
 				log.Error("check packet error")
@@ -80,7 +80,7 @@ func (c *Consensus) ProcessPacket(csp *sc.CsPacket) bool {
 			}
 			c.processPacketByVoter(csp)
 		}
-	} else {
+	} else {		// other block
 		if c.ns.IsLeader() {
 			if !c.instance.CheckBlock(csp.Packet, true) {
 				log.Error("check packet error")

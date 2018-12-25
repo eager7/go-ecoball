@@ -39,15 +39,17 @@ const (
 )
 
 type committee struct {
-	ns            *cell.Cell
-	fsm           *sc.Fsm
-	actorc        chan interface{}
-	ppc           chan *sc.CsPacket
-	pvc           <-chan interface{}
+	ns            *cell.Cell		// all static info, include shardinfo and all blocks
+	fsm           *sc.Fsm			// state machine
+	actorc        chan interface{}		// process actor msg
+	ppc           chan *sc.CsPacket		// process verified block serially in one routine
+	// it is most suitable for leader recieve responsed consensus packet
+	// TODO: There is a question, one node recieve new minor block before final block, it may verify failed
+	pvc           <-chan interface{}	// verify block concurrently in many routine, it can't verfy height because concurrently verify
 	stateTimer    *sc.Stimer
-	retransTimer  *sc.Stimer
-	fullVoteTimer *sc.Stimer
-	vccount       uint16
+	retransTimer  *sc.Stimer			// retransfer timer
+	fullVoteTimer *sc.Stimer			// wait some time for receive full vote
+	vccount       uint16			// When view change block could not get enough sign, count it
 	cs            *consensus.Consensus
 
 	sync *datasync.Sync
@@ -65,7 +67,7 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 		sync:          datasync.MakeSync(ns),
 	}
 
-	cm.cs = consensus.MakeConsensus(cm.ns, cm.setRetransTimer, cm.setFullVoeTimer, cm.consensusCb)
+	cm.cs = consensus.MakeConsensus(cm.ns, cm.setRetransTimer, cm.setFullVoteTimer, cm.consensusCb)
 
 	cm.fsm = sc.NewFsm(blockSync,
 		[]sc.FsmElem{
@@ -102,6 +104,7 @@ func MakeCommittee(ns *cell.Cell) sc.NodeInstance {
 	return cm
 }
 
+// dispatch actor msg
 func (c *committee) MsgDispatch(msg interface{}) {
 	c.actorc <- msg
 }
@@ -199,7 +202,7 @@ func (c *committee) processFullVoteTimeout() {
 	c.cs.ProcessFullVoteTimeout()
 }
 
-func (c *committee) setFullVoeTimer(bStart bool) {
+func (c *committee) setFullVoteTimer(bStart bool) {
 	log.Debug("set full vote timer ", bStart)
 
 	if bStart {

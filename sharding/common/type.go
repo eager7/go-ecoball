@@ -67,7 +67,7 @@ type CsView struct {
 func (v1 *CsView) Equal(v2 *CsView) bool {
 	return v1.EpochNo == v2.EpochNo && v1.FinalHeight == v2.FinalHeight && v1.MinorHeight == v2.MinorHeight && v1.Round == v2.Round
 }
-
+// all block interface
 type ConsensusInstance interface {
 	GetCsView() *CsView
 	MakeNetPacket(round uint16) *NetPacket
