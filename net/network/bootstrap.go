@@ -53,7 +53,6 @@ func (net *NetImpl) bootstrap(bsAddress []string) *BootStrapper {
 		log.Error("failed to parse bootstrap address", err)
 		return nil
 	}
-
 	if len(bsPeers) == 0 {
 		return nil
 	}
@@ -75,13 +74,13 @@ func (net *NetImpl) bootstrap(bsAddress []string) *BootStrapper {
 		<-doneWithRound
 	}
 
-	proc := periodicproc.Tick(bootStrapInterval, periodic)
-	proc.Go(periodic) // run one right now.
+	process := periodicproc.Tick(bootStrapInterval, periodic)
+	process.Go(periodic) // run one right now.
 
 	doneWithRound <- struct{}{}
 	close(doneWithRound) // it no longer blocks periodic
 
-	return &BootStrapper{proc, bsPeers}
+	return &BootStrapper{process, bsPeers}
 }
 
 func (net *NetImpl) bootstrapConnect(ctx context.Context, bsPeers []cfg.BootstrapPeer, numToDial int) error {
@@ -94,7 +93,7 @@ func (net *NetImpl) bootstrapConnect(ctx context.Context, bsPeers []cfg.Bootstra
 			protoNum := len(p.Multiaddr().Protocols())
 			sep := "/" + p.Multiaddr().Protocols()[protoNum-1].Name
 			addr, _ := ma.NewMultiaddr(strings.Split(p.String(), sep)[0])
-			peerInfo := pstore.PeerInfo{p.ID(), []ma.Multiaddr{addr}}
+			peerInfo := pstore.PeerInfo{ID: p.ID(), Addrs: []ma.Multiaddr{addr}}
 			notConnected = append(notConnected, peerInfo)
 		}
 	}

@@ -38,7 +38,10 @@ type SendMsgJob struct {
 func (s *SendMsgJob) String() string {
 	var ret string
 	for _, p := range s.Peers {
-		ret += p.ID.Pretty() + p.Addrs[0].String()
+		ret += p.ID.Pretty()
+		for _, addr := range p.Addrs {
+			ret += addr.String()
+		}
 	}
 	ret += "-" + s.Msg.Type().String()
 	return ret
@@ -150,4 +153,16 @@ func (net *NetImpl) sendWorker(id int) {
 			return
 		}
 	}
+}
+
+func (net *NetImpl) nativeMessageLoop() {
+	go func() {
+		for {
+			select {
+			case msg := <-net.BroadCastCh:
+				log.Debug("BroadCastCh receive msg:", msg.Type().String())
+				net.BroadcastMessage(msg)
+			}
+		}
+	}()
 }

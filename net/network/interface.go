@@ -66,8 +66,6 @@ type CommAPI interface {
 // Implement Receiver to receive messages from the EcoBallNetwork
 type Receiver interface {
 	ReceiveMessage(ctx context.Context, sender peer.ID, incoming message.EcoBallNetMsg)
-	IsValidRemotePeer(peer.ID) bool
-	IsNotMyShard(p peer.ID) bool
 	ReceiveError(error)
 	PeerConnected(peer.ID)
 	PeerDisconnected(peer.ID)

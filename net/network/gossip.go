@@ -66,7 +66,7 @@ func (net *NetImpl) GossipMsg(msg message.EcoBallNetMsg) error {
 }
 
 func (net *NetImpl) sendMsgToRandomPeers(peerCounts int, msg message.EcoBallNetMsg) (err error) {
-	peers := net.getRandomPeers(peerCounts, net.receiver.IsNotMyShard)
+	peers := net.getRandomPeers(peerCounts, net.IsNotMyShard)
 	if len(peers) == 0 {
 		return errors.New("failed to select random peers")
 	}

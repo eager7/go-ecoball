@@ -126,7 +126,7 @@ func (net *NetImpl) BroadcastMessage(msg message.EcoBallNetMsg) error {
 	var peers []*peerstore.PeerInfo
 	for _, c := range net.host.Network().Conns() {
 		pid := c.RemotePeer()
-		if !net.receiver.IsNotMyShard(pid) {
+		if !net.IsNotMyShard(pid) {
 			peers = append(peers, &peerstore.PeerInfo{ID: pid})
 		}
 	}

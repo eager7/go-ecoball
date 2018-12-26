@@ -27,7 +27,6 @@ import (
 )
 
 type ShardInfo struct {
-	ShardSubCh <-chan interface{}
 	localID    uint32
 	role       int
 	shardMap   map[uint32]address.PeerMap
@@ -35,7 +34,6 @@ type ShardInfo struct {
 }
 
 func (s *ShardInfo) Initialize() *ShardInfo {
-	s.ShardSubCh = make(<-chan interface{}, 1)
 	s.shardMap = make(map[uint32]address.PeerMap)
 	return s
 }

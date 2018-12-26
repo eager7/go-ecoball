@@ -26,7 +26,7 @@ import (
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/discovery"
 	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
-	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"io"
@@ -34,17 +34,12 @@ import (
 )
 
 const (
-	sendWorkerCount = 4
-
-	sendMessageTimeout = time.Minute * 10
-
-	discoveryConnTimeout = time.Second * 30
-
-	gossipMsgTTL = time.Second * 100
-
-	ServiceTag = "_net-discovery._udp"
-
-	ProtocolP2pV1 protocol.ID = "/ecoball/app/1.0.0"
+	sendWorkerCount                  = 4
+	sendMessageTimeout               = time.Minute * 10
+	discoveryConnTimeout             = time.Second * 30
+	gossipMsgTTL                     = time.Second * 100
+	ServiceTag                       = "_net-discovery._udp"
+	ProtocolP2pV1        protocol.ID = "/ecoball/app/1.0.0"
 )
 
 var (
@@ -55,31 +50,28 @@ var (
 // impl transforms the network interface, which sends and receives
 // NetMessage objects, into the ecoball network interface.
 type NetImpl struct {
-	ctx  context.Context
-	host host.Host
-
-	// inbound messages from the network are forwarded to the receiver
-	receiver Receiver
-	// outbound message engine
-	engine *MsgEngine
-
-	SenderMap SenderMap
-
-	gossipStore MsgStore
-
+	ctx          context.Context
+	host         host.Host
+	ShardInfo    *ShardInfo
+	BroadCastCh  chan message.EcoBallNetMsg
+	receiver     Receiver   // inbound messages from the network are forwarded to the receiver
+	engine       *MsgEngine // outbound message engine
+	SenderMap    SenderMap
+	gossipStore  MsgStore
 	mdnsService  discovery.Service
 	bootStrapper *BootStrapper
-
 	routingTable *NetRouteTable
 }
 
-func NewNetwork(ctx context.Context, host host.Host, r Receiver) EcoballNetwork {
+func NewNetwork(ctx context.Context, host host.Host, r Receiver) *NetImpl {
 	if netImpl != nil {
 		return netImpl
 	}
 	netImpl = &NetImpl{
 		ctx:          ctx,
 		host:         host,
+		ShardInfo:    new(ShardInfo).Initialize(),
+		BroadCastCh:  make(chan message.EcoBallNetMsg, 4*1024),
 		receiver:     r,
 		engine:       NewMsgEngine(ctx, host.ID()),
 		SenderMap:    new(SenderMap).Initialize(),
@@ -89,6 +81,7 @@ func NewNetwork(ctx context.Context, host host.Host, r Receiver) EcoballNetwork 
 		routingTable: nil,
 	}
 	netImpl.routingTable = NewRouteTable(netImpl)
+	netImpl.bootStrapper = netImpl.bootstrap(config.SwarmConfig.BootStrapAddr)
 
 	host.SetStreamHandler(ProtocolP2pV1, netImpl.handleNewStream)
 	host.Network().Notify(netImpl)
@@ -108,15 +101,15 @@ func (net *NetImpl) Host() host.Host {
 }
 
 func (net *NetImpl) SelectRandomPeers(peerCount uint16) []peer.ID {
-	return net.getRandomPeers(int(peerCount), net.receiver.IsNotMyShard)
+	return net.getRandomPeers(int(peerCount), net.IsNotMyShard)
 }
 
 func (net *NetImpl) SetDelegate(r Receiver) {
 	net.receiver = r
 }
 
-func (net *NetImpl) sendMessage(p pstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
-	log.Info("send message to", p.ID.Pretty(), p.Addrs[0].String())
+func (net *NetImpl) sendMessage(p peerstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
+	log.Info("send message to", p.ID.Pretty(), p.Addrs)
 	sender, err := net.NewMessageSender(p)
 	if err != nil {
 		return err
@@ -173,7 +166,7 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 func (net *NetImpl) preHandleGossipMsg(gmsg message.EcoBallNetMsg, sender peer.ID) {
 	log.Debug(fmt.Sprintf("receive a gossip msg(id=%d) from peer %s", gmsg.Type(), sender.Pretty()))
 
-	peers := net.getRandomPeers(GossipPeerCount, net.receiver.IsNotMyShard)
+	peers := net.getRandomPeers(GossipPeerCount, net.IsNotMyShard)
 
 	var fwPeers []peer.ID
 	for _, p := range peers {
@@ -214,9 +207,8 @@ func (net *NetImpl) Start() {
 			}
 		}
 	}
-
-	net.bootStrapper = net.bootstrap(config.SwarmConfig.BootStrapAddr)
 	net.startSendWorkers()
+	net.nativeMessageLoop()
 }
 
 func (net *NetImpl) Stop() {
@@ -232,4 +224,16 @@ func (net *NetImpl) Stop() {
 	net.host.Network().StopNotify(net)
 	net.engine.Stop()
 	net.gossipStore.Stop()
+}
+
+func (net *NetImpl) IsNotMyShard(p peer.ID) bool {
+	if peerMap := net.ShardInfo.GetShardNodes(net.ShardInfo.GetLocalId()); peerMap == nil {
+		return true
+	} else {
+		return !peerMap.Contains(p)
+	}
+}
+
+func (net *NetImpl) IsValidRemotePeer(p peer.ID) bool {
+	return net.ShardInfo.IsValidRemotePeer(p)
 }

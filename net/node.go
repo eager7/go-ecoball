@@ -19,7 +19,6 @@ package net
 import (
 	"context"
 	"fmt"
-	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
@@ -28,8 +27,6 @@ import (
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/net/network"
-	"github.com/ecoball/go-ecoball/net/util"
-	"github.com/ecoball/go-ecoball/sharding/common"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
 	"gx/ipfs/QmYAL9JsqVVPFWwM1ZzHNsofmTzRYQHJ2KqQaBmFJjJsNx/go-libp2p-connmgr"
 	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
@@ -39,24 +36,19 @@ import (
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 	"gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
 	"os"
-	"sync"
 	"time"
 )
 
 var (
-	log         = elog.NewLogger("net", elog.DebugLog)
-	defaultNode *Node
+	log = elog.NewLogger("net", elog.DebugLog)
 )
 
 type Node struct {
 	ctx         context.Context
 	self        peer.ID
-	network     network.EcoballNetwork
-	broadCastCh chan message.EcoBallNetMsg
+	network     *network.NetImpl
 	handlers    map[pb.MsgType]message.HandlerFunc
-	actorId     *actor.PID
 	listen      []string
-	shardInfo   *network.ShardInfo
 
 	network.Receiver
 }
@@ -98,22 +90,21 @@ func constructPeerHost(ctx context.Context, id peer.ID, private crypto.PrivKey) 
 }
 
 func InitNetWork(ctx context.Context) *Node {
-	var err error
-	defaultNode, err = newNetNode(ctx)
+	node, err := newNetNode(ctx)
 	if err != nil {
 		log.Panic(err)
 	}
-	netActor := NewNetActor(defaultNode)
-	actorId, _ := netActor.Start()
-	defaultNode.SetActorPid(actorId)
 
-	if err := defaultNode.Start(); err != nil {
+	if err := node.Start(); err != nil {
 		log.Error("error for starting net node,", err)
 		os.Exit(1)
 	}
 
-	log.Info(fmt.Sprintf("peer(self) %s is running", defaultNode.SelfRawId().Pretty()))
-	return defaultNode
+	if err := NewNetActor(&netActor{network: node.network, ctx: node.ctx}); err != nil {
+		log.Panic(err)
+	}
+	log.Info(fmt.Sprintf("peer(self) %s is running", node.SelfRawId().Pretty()))
+	return node
 }
 
 func newNetNode(parent context.Context) (*Node, error) {
@@ -130,11 +121,8 @@ func newNetNode(parent context.Context) (*Node, error) {
 		ctx:         parent,
 		self:        id,
 		network:     nil,
-		broadCastCh: make(chan message.EcoBallNetMsg, 4*1024),
 		handlers:    message.MakeHandlers(),
-		actorId:     nil,
 		listen:      config.SwarmConfig.ListenAddress,
-		shardInfo:   new(network.ShardInfo).Initialize(),
 		Receiver:    nil,
 	}
 
@@ -156,7 +144,6 @@ func (nn *Node) Start() error {
 		if err != nil {
 			return err
 		}
-
 		multiAddresses[idx] = addr
 	}
 
@@ -173,82 +160,8 @@ func (nn *Node) Start() error {
 
 	log.Info("net node listening on:", addresses)
 	nn.network.Start()
-	nn.nativeMessageLoop()
 
 	return nil
-}
-
-//连接本shard内的节点, 跳过自身，并且和其他节点保持长连接
-func (nn *Node) connectToShardingPeers() {
-	peerMap := nn.shardInfo.GetShardNodes(nn.shardInfo.GetLocalId())
-	if peerMap == nil {
-		return
-	}
-	h := nn.network.Host()
-	var wg sync.WaitGroup
-	for node := range peerMap.Iterator() {
-		if node.PeerInfo.ID == h.ID() {
-			continue
-		}
-		wg.Add(1)
-		go func(p peer.ID, addr []ma.Multiaddr) {
-			log.Info("start host connect thread:", p, addr)
-			defer wg.Done()
-			h.Peerstore().AddAddrs(p, addr, peerstore.PermanentAddrTTL)
-			pi := peerstore.PeerInfo{ID: p, Addrs: addr}
-			if err := h.Connect(nn.ctx, pi); err != nil {
-				log.Error("failed to connect peer ", pi, err)
-			} else {
-				log.Debug("succeed to connect peer ", pi)
-			}
-		}(node.PeerInfo.ID, node.PeerInfo.Addrs)
-	}
-	wg.Wait()
-	log.Debug("finish connecting to sharding peers exit...")
-}
-
-func (nn *Node) updateShardingInfo(info *common.ShardingTopo) {
-	for sid, shard := range info.ShardingInfo {
-		for _, member := range shard {
-			id, err := network.IdFromConfigEncodePublicKey(member.Pubkey)
-			if err != nil {
-				log.Error("error for getting id from public key")
-				continue
-			}
-			if id == nn.network.Host().ID() {
-				nn.shardInfo.SetLocalId(uint32(sid))
-			}
-			addInfo := util.ConstructAddrInfo(member.Address, member.Port)
-			addr, err := ma.NewMultiaddr(addInfo)
-			if err != nil {
-				log.Error("error for create ip addr from member Info", err)
-				continue
-			}
-			nn.shardInfo.AddShardNode(uint32(sid), id, addr)
-		}
-	}
-	nn.connectToShardingPeers()
-	log.Info("the shard info is :", nn.shardInfo.JsonString())
-}
-
-func (nn *Node) nativeMessageLoop() {
-	go func() {
-		for {
-			select {
-			case info := <-nn.shardInfo.ShardSubCh:
-				sInfo, ok := info.(*common.ShardingTopo)
-				if !ok {
-					log.Error("unsupported Info from sharding.")
-					continue
-				}
-				log.Debug("receive a update sharding message, my shard:", sInfo.ShardId)
-				go nn.updateShardingInfo(sInfo)
-			case msg := <-nn.broadCastCh:
-				log.Debug("broadCastCh receive msg:", msg.Type().String())
-				nn.network.BroadcastMessage(msg)
-			}
-		}
-	}()
 }
 
 func (nn *Node) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
@@ -276,18 +189,6 @@ func (nn *Node) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.
 
 func (nn *Node) ReceiveError(err error) {
 	//TOD
-}
-
-func (nn *Node) IsValidRemotePeer(p peer.ID) bool {
-	return nn.shardInfo.IsValidRemotePeer(p)
-}
-
-func (nn *Node) IsNotMyShard(p peer.ID) bool {
-	if peerMap := nn.shardInfo.GetShardNodes(nn.shardInfo.GetLocalId()); peerMap == nil {
-		return true
-	} else {
-		return !peerMap.Contains(p)
-	}
 }
 
 func (nn *Node) GetShardMembersToReceiveCBlock() [][]*peerstore.PeerInfo {
@@ -320,16 +221,4 @@ func (nn *Node) Neighbors() (peers []string) {
 		peers = append(peers, pid.Pretty())
 	}
 	return peers
-}
-
-func (nn *Node) SetActorPid(pid *actor.PID) {
-	nn.actorId = pid
-}
-
-func (nn *Node) GetActorPid() *actor.PID {
-	return nn.actorId
-}
-
-func (nn *Node) SetShardingSubCh(ch <-chan interface{}) {
-	nn.shardInfo.ShardSubCh = ch
 }

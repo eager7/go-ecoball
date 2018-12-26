@@ -47,7 +47,7 @@ func (net *NetImpl) ListenClose(n inet.Network, a ma.Multiaddr) {}
 func (net *NetImpl) Connected(n inet.Network, v inet.Conn) {
 	log.Info("connected peer:", v.RemotePeer().Pretty(), v.RemoteMultiaddr().String())
 	id := v.RemotePeer()
-	if net.receiver.IsValidRemotePeer(id) {
+	if net.IsValidRemotePeer(id) {
 		net.receiver.PeerConnected(v.RemotePeer())
 		if net.host.Network().Connectedness(id) == inet.Connected {
 			net.routingTable.update(id)
