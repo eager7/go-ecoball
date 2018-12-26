@@ -19,7 +19,7 @@ type Producer struct {
 type Elector struct {
 	Index   common.AccountName
 	Amount  uint64
-	b64Pub string
+	B64Pub  string
 	Address string
 	Port    uint32
 	Payee   common.AccountName
@@ -142,7 +142,7 @@ func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountNa
 	}
 	for index := range acc.Votes.Producers { //为防止重复投票，在更新票数前先把之前投的票作废
 		if producer := s.Producers.Get(index); producer != nil {
-			s.Producers.Add(index, producer.Amount - acc.Votes.Producers[index])
+			s.Producers.Add(index, producer.Amount-acc.Votes.Producers[index])
 		}
 		delete(acc.Votes.Producers, index)
 	}
@@ -154,7 +154,7 @@ func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountNa
 		if producer := s.Producers.Get(a); producer == nil {
 			return errors.New(fmt.Sprintf("the account:%s is not a candidata node", a.String()))
 		} else {
-			s.Producers.Add(a, producer.Amount + acc.Votes.Staked)
+			s.Producers.Add(a, producer.Amount+acc.Votes.Staked)
 		}
 	}
 	return s.commitProducersList()
@@ -172,7 +172,7 @@ func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
 	for k := range acc.Votes.Producers {
 		acc.Votes.Producers[k] = acc.Votes.Staked
 		if producer := s.Producers.Get(k); producer != nil {
-			s.Producers.Add(k, producer.Amount - votesOld + acc.Votes.Staked)
+			s.Producers.Add(k, producer.Amount-votesOld+acc.Votes.Staked)
 		} else {
 			return errors.New(fmt.Sprintf("the account:%s is exit candidata nodes list", k.String()))
 		}
@@ -306,7 +306,7 @@ func (s *State) RegisterProducer(index common.AccountName, b64Pub, addr string, 
 	acc.mutex.Lock()
 	defer acc.mutex.Unlock()
 	acc.Elector.Index = index
-	acc.Elector.b64Pub = b64Pub
+	acc.Elector.B64Pub = b64Pub
 	acc.Elector.Address = addr
 	acc.Elector.Port = port
 	acc.Elector.Amount = 0
