@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
@@ -54,7 +55,6 @@ type NetImpl struct {
 	host         host.Host
 	ShardInfo    *ShardInfo
 	BroadCastCh  chan message.EcoBallNetMsg
-	receiver     Receiver   // inbound messages from the network are forwarded to the receiver
 	engine       *MsgEngine // outbound message engine
 	SenderMap    SenderMap
 	gossipStore  MsgStore
@@ -63,7 +63,7 @@ type NetImpl struct {
 	routingTable *NetRouteTable
 }
 
-func NewNetwork(ctx context.Context, host host.Host, r Receiver) *NetImpl {
+func NewNetwork(ctx context.Context, host host.Host) *NetImpl {
 	if netImpl != nil {
 		return netImpl
 	}
@@ -72,7 +72,6 @@ func NewNetwork(ctx context.Context, host host.Host, r Receiver) *NetImpl {
 		host:         host,
 		ShardInfo:    new(ShardInfo).Initialize(),
 		BroadCastCh:  make(chan message.EcoBallNetMsg, 4*1024),
-		receiver:     r,
 		engine:       NewMsgEngine(ctx, host.ID()),
 		SenderMap:    new(SenderMap).Initialize(),
 		gossipStore:  NewMsgStore(ctx, gossipMsgTTL),
@@ -104,10 +103,6 @@ func (net *NetImpl) SelectRandomPeers(peerCount uint16) []peer.ID {
 	return net.getRandomPeers(int(peerCount), net.IsNotMyShard)
 }
 
-func (net *NetImpl) SetDelegate(r Receiver) {
-	net.receiver = r
-}
-
 func (net *NetImpl) sendMessage(p peerstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
 	log.Info("send message to", p.ID.Pretty(), p.Addrs)
 	sender, err := net.NewMessageSender(p)
@@ -126,11 +121,6 @@ func (net *NetImpl) handleNewStream(s inet.Stream) {
 func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 	log.Info("handleNewStreamMsg:", s.Conn().RemotePeer().Pretty(), s.Conn().RemoteMultiaddr().String())
 	defer s.Close()
-	if net.receiver == nil {
-		log.Error("reset stream")
-		s.Reset()
-		return
-	}
 
 	reader := ggio.NewDelimitedReader(s, inet.MessageSizeMax)
 	for {
@@ -140,7 +130,6 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 				log.Warn("reset stream of ", s)
 				log.Error("reset stream")
 				s.Reset()
-				go net.receiver.ReceiveError(err)
 				log.Error(fmt.Sprintf("error from %s, %s", s.Conn().RemotePeer(), err))
 			}
 			return
@@ -155,11 +144,23 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 			if err != nil {
 				log.Error(err)
 			} else {
-				net.receiver.ReceiveMessage(ctx, p, msg)
+				net.ReceiveMessage(ctx, p, msg)
 			}
 		} else {
-			net.receiver.ReceiveMessage(ctx, p, received)
+			net.ReceiveMessage(ctx, p, received)
 		}
+	}
+}
+
+func (net *NetImpl) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
+	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), net.Host().Peerstore().Addrs(p))
+	if incoming.Type() >= pb.MsgType_APP_MSG_UNDEFINED {
+		log.Error("receive a invalid message ", incoming.Type().String())
+		return
+	}
+
+	if err := dispatcher.Publish(incoming); err != nil {
+		log.Error(err)
 	}
 }
 

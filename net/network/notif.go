@@ -23,11 +23,11 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
-	ma "gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
-	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 )
 
-func (net *NetImpl) HandlePeerFound(p pstore.PeerInfo) {
+func (net *NetImpl) HandlePeerFound(p peerstore.PeerInfo) {
 	if config.DisableLocalDisLog {
 		log.SetLogLevel(elog.InfoLog)
 	}
@@ -42,13 +42,13 @@ func (net *NetImpl) HandlePeerFound(p pstore.PeerInfo) {
 	log.SetLogLevel(elog.DebugLog)
 }
 
-func (net *NetImpl) Listen(n inet.Network, a ma.Multiaddr)      {}
-func (net *NetImpl) ListenClose(n inet.Network, a ma.Multiaddr) {}
+func (net *NetImpl) Listen(n inet.Network, a multiaddr.Multiaddr)      {}
+func (net *NetImpl) ListenClose(n inet.Network, a multiaddr.Multiaddr) {}
 func (net *NetImpl) Connected(n inet.Network, v inet.Conn) {
 	log.Info("connected peer:", v.RemotePeer().Pretty(), v.RemoteMultiaddr().String())
 	id := v.RemotePeer()
 	if net.IsValidRemotePeer(id) {
-		net.receiver.PeerConnected(v.RemotePeer())
+		//net.PeerConnected(v.RemotePeer())
 		if net.host.Network().Connectedness(id) == inet.Connected {
 			net.routingTable.update(id)
 		}
@@ -58,7 +58,7 @@ func (net *NetImpl) Connected(n inet.Network, v inet.Conn) {
 	}
 }
 func (net *NetImpl) Disconnected(n inet.Network, v inet.Conn) {
-	net.receiver.PeerDisconnected(v.RemotePeer())
+	//net.PeerDisconnected(v.RemotePeer())
 	id := v.RemotePeer()
 	if net.host.Network().Connectedness(id) == inet.Connected {
 		// We're still connected.

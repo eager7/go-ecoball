@@ -44,12 +44,10 @@ var (
 )
 
 type Node struct {
-	ctx         context.Context
-	self        peer.ID
-	network     *network.NetImpl
-	listen      []string
-
-	network.Receiver
+	ctx     context.Context
+	self    peer.ID
+	network *network.NetImpl
+	listen  []string
 }
 
 func constructPeerHost(ctx context.Context, id peer.ID, private crypto.PrivKey) (host.Host, error) {
@@ -117,11 +115,10 @@ func newNetNode(parent context.Context) (*Node, error) {
 		return nil, errors.New(fmt.Sprintf("error for generate id from key,%s", err.Error()))
 	}
 	netNode := &Node{
-		ctx:         parent,
-		self:        id,
-		network:     nil,
-		listen:      config.SwarmConfig.ListenAddress,
-		Receiver:    nil,
+		ctx:     parent,
+		self:    id,
+		network: nil,
+		listen:  config.SwarmConfig.ListenAddress,
 	}
 
 	h, err := constructPeerHost(parent, id, private) //basic_host.go
@@ -129,7 +126,7 @@ func newNetNode(parent context.Context) (*Node, error) {
 		return nil, errors.New(fmt.Sprintf("error for constructing host, %s", err.Error()))
 	}
 
-	netNode.network = network.NewNetwork(parent, h, netNode)
+	netNode.network = network.NewNetwork(parent, h)
 	dispatcher.InitMsgDispatcher()
 
 	return netNode, nil
