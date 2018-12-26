@@ -73,11 +73,6 @@ func (net *NetWork) SendMsgToPeer(ip, port, pubKey string, msg message.EcoBallNe
 	if err != nil {
 		return err
 	}
-	/*
-		if addr := net.host.Peerstore().Addrs(peer.ID); len(addr) == 0 {
-			return fmt.Errorf("connection have not created for %s", peer.ID.Pretty())
-		}
-	*/
 	sendJob := &SendMsgJob{Peers: []*peerstore.PeerInfo{&p}, Msg: msg}
 	net.AddMsgJob(sendJob)
 
@@ -92,14 +87,14 @@ func (net *NetWork) SendMsgToPeerWithPeerInfo(info []*peerstore.PeerInfo, msg me
 }
 
 //sync send msg to peer by id
-func (net *NetWork) SendMsgSyncToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
+/*func (net *NetWork) SendMsgSyncToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
 	p := peerstore.PeerInfo{ID: id}
 	if err := net.sendMessage(p, msg); err != nil {
 		log.Error("send message to ", p.ID.Pretty(), err)
 	}
 
 	return nil
-}
+}*/
 
 //async send msg to peer by id
 func (net *NetWork) SendMsgToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
@@ -122,22 +117,6 @@ func (net *NetWork) SendMsgToPeersWithId(pid []peer.ID, msg message.EcoBallNetMs
 	return nil
 }
 
-func (net *NetWork) BroadcastMessage(msg message.EcoBallNetMsg) error {
-	var peers []*peerstore.PeerInfo
-	for _, c := range net.host.Network().Conns() {
-		pid := c.RemotePeer()
-		if !net.IsNotMyShard(pid) {
-			peers = append(peers, &peerstore.PeerInfo{ID: pid})
-		}
-	}
-
-	if len(peers) > 0 {
-		sendJob := &SendMsgJob{peers, msg}
-		net.AddMsgJob(sendJob)
-	}
-
-	return nil
-}
 
 func (net *NetWork) GetPeerStoreConnectStatus() []peer.ID {
 

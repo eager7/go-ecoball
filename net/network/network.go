@@ -20,17 +20,17 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
-	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
+	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/discovery"
-	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
+	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
-	"io"
 	"time"
 )
 
@@ -44,12 +44,10 @@ const (
 )
 
 var (
-	log     = elog.NewLogger("network", elog.DebugLog)
-	netImpl *NetWork
+	log      = elog.NewLogger("network", elog.DebugLog)
+	instance *NetWork
 )
 
-// impl transforms the network interface, which sends and receives
-// NetMessage objects, into the ecoball network interface.
 type NetWork struct {
 	ctx          context.Context
 	host         host.Host
@@ -64,10 +62,10 @@ type NetWork struct {
 }
 
 func NewNetwork(ctx context.Context, host host.Host) *NetWork {
-	if netImpl != nil {
-		return netImpl
+	if instance != nil {
+		return instance
 	}
-	netImpl = &NetWork{
+	instance = &NetWork{
 		ctx:          ctx,
 		host:         host,
 		ShardInfo:    new(ShardInfo).Initialize(),
@@ -79,122 +77,21 @@ func NewNetwork(ctx context.Context, host host.Host) *NetWork {
 		bootStrapper: nil,
 		routingTable: nil,
 	}
-	netImpl.routingTable = NewRouteTable(netImpl)
-	netImpl.bootStrapper = netImpl.bootstrap(config.SwarmConfig.BootStrapAddr)
+	instance.routingTable = NewRouteTable(instance)
+	instance.bootStrapper = instance.bootstrap(config.SwarmConfig.BootStrapAddr)
 
-	host.SetStreamHandler(ProtocolP2pV1, netImpl.handleNewStream)
-	host.Network().Notify(netImpl)
+	host.SetStreamHandler(ProtocolP2pV1, instance.NetWorkHandler)
+	host.Network().Notify(instance)
 
-	return netImpl
+	return instance
 }
 
 func GetNetInstance() (EcoballNetwork, error) {
-	if netImpl == nil {
+	if instance == nil {
 		return nil, fmt.Errorf("network has not been initialized")
 	}
-	return netImpl, nil
+	return instance, nil
 }
-
-func (net *NetWork) Host() host.Host {
-	return net.host
-}
-
-func (net *NetWork) SelectRandomPeers(peerCount uint16) []peer.ID {
-	return net.getRandomPeers(int(peerCount), net.IsNotMyShard)
-}
-
-func (net *NetWork) sendMessage(p peerstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
-	log.Info("send message to", p.ID.Pretty(), p.Addrs)
-	sender, err := net.NewMessageSender(p)
-	if err != nil {
-		return err
-	}
-	err = sender.SendMessage(net.ctx, outgoing)
-
-	return err
-}
-
-func (net *NetWork) handleNewStream(s inet.Stream) {
-	go net.handleNewStreamMsg(s)
-}
-
-func (net *NetWork) handleNewStreamMsg(s inet.Stream) {
-	log.Info("handleNewStreamMsg:", s.Conn().RemotePeer().Pretty(), s.Conn().RemoteMultiaddr().String())
-	defer s.Close()
-
-	reader := ggio.NewDelimitedReader(s, inet.MessageSizeMax)
-	for {
-		received, err := message.FromPBReader(reader)
-		if err != nil {
-			if err != io.EOF {
-				log.Warn("reset stream of ", s)
-				log.Error("reset stream")
-				s.Reset()
-				log.Error(fmt.Sprintf("error from %s, %s", s.Conn().RemotePeer(), err))
-			}
-			return
-		}
-
-		p := s.Conn().RemotePeer()
-		ctx := context.Background()
-		net.routingTable.update(p)
-		if received.Type() == pb.MsgType_APP_MSG_GOSSIP {
-			net.preHandleGossipMsg(received, p)
-			msg, err := net.unWarpGossipMsg(received)
-			if err != nil {
-				log.Error(err)
-			} else {
-				net.ReceiveMessage(ctx, p, msg)
-			}
-		} else {
-			net.ReceiveMessage(ctx, p, received)
-		}
-	}
-}
-
-func (net *NetWork) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
-	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), net.Host().Peerstore().Addrs(p))
-	if incoming.Type() >= pb.MsgType_APP_MSG_UNDEFINED {
-		log.Error("receive a invalid message ", incoming.Type().String())
-		return
-	}
-
-	if err := dispatcher.Publish(incoming); err != nil {
-		log.Error(err)
-	}
-}
-
-func (net *NetWork) preHandleGossipMsg(gmsg message.EcoBallNetMsg, sender peer.ID) {
-	log.Debug(fmt.Sprintf("receive a gossip msg(id=%d) from peer %s", gmsg.Type(), sender.Pretty()))
-
-	peers := net.getRandomPeers(GossipPeerCount, net.IsNotMyShard)
-
-	var fwPeers []peer.ID
-	for _, p := range peers {
-		if p != sender {
-			fwPeers = append(fwPeers, p)
-		}
-	}
-
-	// targets is null or there is a same gossip message in the store
-	if len(fwPeers) == 0 || !net.gossipStore.Add(gmsg) {
-		log.Debug("terminate a gossip message")
-		return
-	}
-
-	net.forwardMsg(gmsg, fwPeers)
-}
-
-func (net *NetWork) StartLocalDiscovery() (discovery.Service, error) {
-	service, err := discovery.NewMdnsService(net.ctx, net.host, 10*time.Second, ServiceTag)
-	if err != nil {
-		return nil, fmt.Errorf("net discovery error, %s", err)
-	}
-	service.RegisterNotifee(net)
-
-	return service, nil
-}
-
 func (net *NetWork) Start() {
 	if config.DisableSharding {
 		net.routingTable.Start()
@@ -211,7 +108,6 @@ func (net *NetWork) Start() {
 	net.startSendWorkers()
 	net.nativeMessageLoop()
 }
-
 func (net *NetWork) Stop() {
 	if config.DisableSharding {
 		net.routingTable.Stop()
@@ -227,6 +123,76 @@ func (net *NetWork) Stop() {
 	net.gossipStore.Stop()
 }
 
+func (net *NetWork) NetWorkHandler(s net.Stream) {
+	id := s.Conn().RemotePeer()
+	addresses := s.Conn().RemoteMultiaddr()
+	log.Info("receive message from:", id.Pretty(), addresses.String())
+	net.SenderMap.Add(id, NewMsgSender(peerstore.PeerInfo{ID: id, Addrs: []multiaddr.Multiaddr{addresses}}, s, net))
+	go net.HandleNewStream(s)
+}
+func (net *NetWork) HandleNewStream(s net.Stream) {
+	defer s.Close()
+	reader := message.NewReader(s)
+	for {
+		if received, err := message.FromPBReader(reader); err != nil {
+			log.Error(fmt.Sprintf("error from %s, %s", s.Conn().RemotePeer(), err))
+			s.Reset()
+			net.SenderMap.Del(s.Conn().RemotePeer())
+			return
+		} else {
+			net.routingTable.update(s.Conn().RemotePeer())
+			if received.Type() == pb.MsgType_APP_MSG_GOSSIP {
+				net.preHandleGossipMsg(received, s.Conn().RemotePeer())
+				msg, err := net.unWarpGossipMsg(received)
+				if err != nil {
+					log.Error(err)
+				} else {
+					net.ReceiveMessage(msg)
+				}
+			} else {
+				net.ReceiveMessage(received)
+			}
+		}
+	}
+}
+
+func (net *NetWork) ReceiveMessage(incoming message.EcoBallNetMsg) error {
+	log.Debug(fmt.Sprintf("msg type: %s", incoming.Type().String()))
+	if incoming.Type() >= pb.MsgType_APP_MSG_UNDEFINED {
+		log.Error()
+		return errors.New(fmt.Sprintf("receive a invalid message:%s", incoming.Type().String()))
+	}
+
+	if err := dispatcher.Publish(incoming); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (net *NetWork) preHandleGossipMsg(msg message.EcoBallNetMsg, sender peer.ID) {
+	log.Debug(fmt.Sprintf("receive a gossip msg(id=%d) from peer %s", msg.Type(), sender.Pretty()))
+
+	peers := net.getRandomPeers(GossipPeerCount, net.IsNotMyShard)
+
+	var fwPeers []peer.ID
+	for _, p := range peers {
+		if p != sender {
+			fwPeers = append(fwPeers, p)
+		}
+	}
+
+	// targets is null or there is a same gossip message in the store
+	if len(fwPeers) == 0 || !net.gossipStore.Add(msg) {
+		log.Debug("terminate a gossip message")
+		return
+	}
+
+	net.forwardMsg(msg, fwPeers)
+}
+
+func (net *NetWork) Host() host.Host {
+	return net.host
+}
 func (net *NetWork) IsNotMyShard(p peer.ID) bool {
 	if peerMap := net.ShardInfo.GetShardNodes(net.ShardInfo.GetLocalId()); peerMap == nil {
 		return true
@@ -234,7 +200,27 @@ func (net *NetWork) IsNotMyShard(p peer.ID) bool {
 		return !peerMap.Contains(p)
 	}
 }
-
 func (net *NetWork) IsValidRemotePeer(p peer.ID) bool {
 	return net.ShardInfo.IsValidRemotePeer(p)
+}
+func (net *NetWork) StartLocalDiscovery() (discovery.Service, error) {
+	service, err := discovery.NewMdnsService(net.ctx, net.host, 10*time.Second, ServiceTag)
+	if err != nil {
+		return nil, fmt.Errorf("net discovery error, %s", err)
+	}
+	service.RegisterNotifee(net)
+
+	return service, nil
+}
+func (net *NetWork) Neighbors() (peers []*peerstore.PeerInfo) {
+	for _, c := range net.Host().Network().Conns() {
+		pid := c.RemotePeer()
+		if !net.IsNotMyShard(pid) {
+			peers = append(peers, &peerstore.PeerInfo{ID: pid})
+		}
+	}
+	return peers
+}
+func (net *NetWork) SelectRandomPeers(peerCount uint16) []peer.ID {
+	return net.getRandomPeers(int(peerCount), net.IsNotMyShard)
 }

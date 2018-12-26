@@ -35,9 +35,9 @@ import (
 )
 
 type netActor struct {
-	ctx     context.Context
-	pid     *actor.PID
-	network *network.NetWork
+	ctx  context.Context
+	pid  *actor.PID
+	node *Node
 }
 
 func NewNetActor(n *netActor) (err error) {
@@ -63,13 +63,13 @@ func (n *netActor) Receive(ctx actor.Context) {
 	case commonMsg.Transaction:
 		msgType := pb.MsgType_APP_MSG_TRN
 		buffer, _ := msg.Tx.Serialize()
-		if msg.ShardID == n.network.ShardInfo.GetLocalId() {
+		if msg.ShardID == n.node.network.ShardInfo.GetLocalId() {
 			netMsg := message.New(msgType, buffer)
 			log.Debug("send transactions in shard")
-			n.network.BroadCastCh <- netMsg
+			n.node.network.BroadCastCh <- netMsg
 		} else {
 			m := message.New(msgType, buffer)
-			peerMap := n.network.ShardInfo.GetShardNodes(msg.ShardID)
+			peerMap := n.node.network.ShardInfo.GetShardNodes(msg.ShardID)
 			if peerMap == nil {
 				log.Error(fmt.Sprintf("can't find shard[%d] nodes", msg.ShardID))
 				return
@@ -80,9 +80,9 @@ func (n *netActor) Receive(ctx actor.Context) {
 			}
 			log.Debug("send transaction to ", peers)
 			for _, p := range peers {
-				log.Debug(n.network.Host().Peerstore().Addrs(p))
+				log.Debug(n.node.network.Host().Peerstore().Addrs(p))
 			}
-			n.network.SendMsgToPeersWithId(peers, m)
+			n.node.network.SendMsgToPeersWithId(peers, m)
 		}
 	case *common.ShardingTopo:
 		go n.UpdateShardingInfo(msg)
@@ -90,7 +90,7 @@ func (n *netActor) Receive(ctx actor.Context) {
 		msgType := pb.MsgType_APP_MSG_BLKS
 		buffer, _ := msg.Serialize()
 		netMsg := message.New(msgType, buffer)
-		n.network.BroadCastCh <- netMsg
+		n.node.network.BroadCastCh <- netMsg
 		//n.network.BroadcastMessage(netMsg)
 
 	default:
@@ -107,8 +107,8 @@ func (n *netActor) UpdateShardingInfo(info *common.ShardingTopo) {
 				log.Error("error for getting id from public key")
 				continue
 			}
-			if id == n.network.Host().ID() {
-				n.network.ShardInfo.SetLocalId(uint32(sid))
+			if id == n.node.network.Host().ID() {
+				n.node.network.ShardInfo.SetLocalId(uint32(sid))
 			}
 			addInfo := util.ConstructAddrInfo(member.Address, member.Port)
 			addr, err := multiaddr.NewMultiaddr(addInfo)
@@ -116,20 +116,20 @@ func (n *netActor) UpdateShardingInfo(info *common.ShardingTopo) {
 				log.Error("error for create ip addr from member Info", err)
 				continue
 			}
-			n.network.ShardInfo.AddShardNode(uint32(sid), id, addr)
+			n.node.network.ShardInfo.AddShardNode(uint32(sid), id, addr)
 		}
 	}
 	n.ConnectToShardingPeers()
-	log.Info("the shard info is :", n.network.ShardInfo.JsonString())
+	log.Info("the shard info is :", n.node.network.ShardInfo.JsonString())
 }
 
 //连接本shard内的节点, 跳过自身，并且和其他节点保持长连接
 func (n *netActor) ConnectToShardingPeers() {
-	peerMap := n.network.ShardInfo.GetShardNodes(n.network.ShardInfo.GetLocalId())
+	peerMap := n.node.network.ShardInfo.GetShardNodes(n.node.network.ShardInfo.GetLocalId())
 	if peerMap == nil {
 		return
 	}
-	h := n.network.Host()
+	h := n.node.network.Host()
 	var wg sync.WaitGroup
 	for node := range peerMap.Iterator() {
 		if node.PeerInfo.ID == h.ID() {

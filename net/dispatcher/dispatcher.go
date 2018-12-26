@@ -21,6 +21,7 @@ import (
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"gx/ipfs/QmdbxjQWogRCHRaxhhGnYdT1oQJzL9GdqSKzCdqWr85AP2/pubsub"
+	"github.com/ecoball/go-ecoball/common/errors"
 )
 
 const (
@@ -93,7 +94,7 @@ func UnSubscribe (chn chan interface{}, msgTypes ...pb.MsgType) error {
 
 func Publish (msg message.EcoBallNetMsg) error {
 	if dispatcher == nil {
-		return fmt.Errorf(errorStr)
+		return errors.New(errorStr)
 	}
 	dispatcher.publish(msg)
 

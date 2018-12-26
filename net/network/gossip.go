@@ -124,20 +124,20 @@ func (net *NetWork) unWarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallN
 }
 
 func (net *NetWork) getRandomPeers(k int, filter RoutingFilter) []peer.ID {
-	var filterConns []inet.Conn
-	conns := net.host.Network().Conns()
-	for _, conn := range conns {
+	var filterConn []inet.Conn
+	conn := net.host.Network().Conns()
+	for _, conn := range conn {
 		if !filter(conn.RemotePeer()) {
-			filterConns = append(filterConns, conn)
+			filterConn = append(filterConn, conn)
 		}
 	}
-	if len(filterConns) < k {
-		k = len(filterConns)
+	if len(filterConn) < k {
+		k = len(filterConn)
 	}
-	indices := util.GetRandomIndices(k, len(filterConns)-1)
+	indices := util.GetRandomIndices(k, len(filterConn)-1)
 	peers := make([]peer.ID, len(indices))
 	for i, j := range indices {
-		pid := filterConns[j].RemotePeer()
+		pid := filterConn[j].RemotePeer()
 		peers[i] = pid
 	}
 

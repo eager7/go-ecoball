@@ -6,31 +6,31 @@ import (
 )
 
 type SenderMap struct {
-	Senders map[peer.ID]*messageSender
+	senders map[peer.ID]*messageSender
 	lock    sync.RWMutex
 }
 
 func (p *SenderMap) Initialize() SenderMap {
-	p.Senders = make(map[peer.ID]*messageSender)
+	p.senders = make(map[peer.ID]*messageSender)
 	return *p
 }
 
 func (p *SenderMap) Len() int {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
-	return len(p.Senders)
+	return len(p.senders)
 }
 
 func (p *SenderMap) Add(key peer.ID, Value *messageSender) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	p.Senders[key] = Value
+	p.senders[key] = Value
 }
 
 func (p *SenderMap) Get(key peer.ID) *messageSender {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
-	if k, ok := p.Senders[key]; ok {
+	if k, ok := p.senders[key]; ok {
 		return k
 	} else {
 		return nil
@@ -40,7 +40,7 @@ func (p *SenderMap) Get(key peer.ID) *messageSender {
 func (p *SenderMap) Contains(key peer.ID) bool {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
-	if _, ok := p.Senders[key]; ok {
+	if _, ok := p.senders[key]; ok {
 		return true
 	} else {
 		return false
@@ -50,24 +50,24 @@ func (p *SenderMap) Contains(key peer.ID) bool {
 func (p *SenderMap) Del(key peer.ID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	if _, ok := p.Senders[key]; ok {
-		delete(p.Senders, key)
+	if _, ok := p.senders[key]; ok {
+		delete(p.senders, key)
 	}
 }
 
 func (p *SenderMap) Purge() {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	for k := range p.Senders {
-		delete(p.Senders, k)
+	for k := range p.senders {
+		delete(p.senders, k)
 	}
 }
 
 func (p *SenderMap) Clone() SenderMap {
 	n := SenderMap{}
 	n.Initialize()
-	for k, v := range p.Senders {
-		n.Senders[k] = v
+	for k, v := range p.senders {
+		n.senders[k] = v
 	}
 	return n
 }
@@ -77,7 +77,7 @@ func (p *SenderMap) Iterator() <-chan messageSender {
 	go func() {
 		p.lock.RLock()
 		defer p.lock.RUnlock()
-		for _, v := range p.Senders {
+		for _, v := range p.senders {
 			channel <- *v
 		}
 		close(channel)

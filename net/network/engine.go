@@ -21,7 +21,7 @@ package network
 import (
 	"context"
 	"github.com/ecoball/go-ecoball/net/message"
-	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
 )
 
@@ -31,7 +31,7 @@ const (
 )
 
 type SendMsgJob struct {
-	Peers []*pstore.PeerInfo
+	Peers []*peerstore.PeerInfo
 	Msg   message.EcoBallNetMsg
 }
 
@@ -48,18 +48,15 @@ func (s *SendMsgJob) String() string {
 }
 
 type MsgWrapper struct {
-	pi   pstore.PeerInfo
+	pi   peerstore.PeerInfo
 	eMsg message.EcoBallNetMsg
 }
 
 type MsgEngine struct {
-	ctx context.Context
-	id  peer.ID
-	//contains outgoing messages to peers
-	outbox chan (<-chan *MsgWrapper)
-	//enqueue a msg job from service
-	inbox chan interface{}
-
+	ctx        context.Context
+	id         peer.ID
+	outbox     chan (<-chan *MsgWrapper) //contains outgoing messages to peers
+	inbox      chan interface{}          //enqueue a msg job from service
 	quitWorker chan bool
 }
 
@@ -74,20 +71,6 @@ func NewMsgEngine(ctx context.Context, id peer.ID) *MsgEngine {
 	return me
 }
 
-func (m *MsgEngine) Outbox() <-chan (<-chan *MsgWrapper) {
-	return m.outbox
-}
-func (m *MsgEngine) PushJob(job *SendMsgJob) {
-	for _, p := range job.Peers {
-		if p.ID == m.id {
-			continue
-		}
-		m.inbox <- &MsgWrapper{*p, job.Msg}
-	}
-}
-func (m *MsgEngine) Stop() {
-	m.quitWorker <- true
-}
 func (m *MsgEngine) taskWorker(ctx context.Context) {
 	defer close(m.outbox)
 	for {
@@ -122,16 +105,41 @@ func (m *MsgEngine) nextMsgWrapper(ctx context.Context) (*MsgWrapper, error) {
 		}
 	}
 }
+func (m *MsgEngine) Outbox() <-chan (<-chan *MsgWrapper) {
+	return m.outbox
+}
+func (m *MsgEngine) PushJob(job *SendMsgJob) {
+	for _, p := range job.Peers {
+		if p.ID == m.id {
+			continue
+		}
+		m.inbox <- &MsgWrapper{*p, job.Msg}
+	}
+}
+func (m *MsgEngine) Stop() {
+	m.quitWorker <- true
+}
 
-func (net *NetWork) AddMsgJob(job *SendMsgJob) {
-	log.Debug("put msg in send pool:", job.String())
-	net.engine.PushJob(job)
+func (net *NetWork) nativeMessageLoop() {
+	go func() {
+		for {
+			select {
+			case msg := <-net.BroadCastCh:
+				log.Debug("BroadCastCh receive msg:", msg.Type().String())
+				net.BroadcastMessageToNeighbors(msg)
+			}
+		}
+	}()
 }
 func (net *NetWork) startSendWorkers() {
 	for i := 0; i < sendWorkerCount; i++ {
 		i := i
 		go net.sendWorker(i)
 	}
+}
+func (net *NetWork) AddMsgJob(job *SendMsgJob) {
+	log.Debug("put msg in send pool:", job.String())
+	net.engine.PushJob(job)
 }
 func (net *NetWork) sendWorker(id int) {
 	defer log.Debug("network send message worker ", id, " shutting down.")
@@ -154,15 +162,21 @@ func (net *NetWork) sendWorker(id int) {
 		}
 	}
 }
+func (net *NetWork) sendMessage(p peerstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
+	log.Info("send message to", p.ID.Pretty(), p.Addrs)
+	sender, err := net.NewMessageSender(p)
+	if err != nil {
+		return err
+	}
+	return sender.SendMessage(net.ctx, outgoing)
+}
 
-func (net *NetWork) nativeMessageLoop() {
-	go func() {
-		for {
-			select {
-			case msg := <-net.BroadCastCh:
-				log.Debug("BroadCastCh receive msg:", msg.Type().String())
-				net.BroadcastMessage(msg)
-			}
-		}
-	}()
+func (net *NetWork) BroadcastMessageToNeighbors(msg message.EcoBallNetMsg) error {
+	peers := net.Neighbors()
+	if len(peers) > 0 {
+		sendJob := &SendMsgJob{peers, msg}
+		net.AddMsgJob(sendJob)
+	}
+
+	return nil
 }

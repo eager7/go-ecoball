@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/net/message"
-	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
+	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
+	"gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
-	pstore "gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"sync"
 	"time"
 )
@@ -33,124 +33,81 @@ import (
 const connectedAddrTTL = time.Minute * 10
 
 type messageSender struct {
-	s       inet.Stream
-	lk      sync.Mutex
-	p       peerstore.PeerInfo
-	net     *NetWork
-	invalid bool
+	stream   net.Stream
+	lock     sync.Mutex
+	peerInfo peerstore.PeerInfo
+	net      *NetWork
 }
 
-func NewMsgSender(pi peerstore.PeerInfo, p2pNet *NetWork) *messageSender {
-	return &messageSender{p: pi, net: p2pNet}
+func NewMsgSender(pi peerstore.PeerInfo, s net.Stream, p2pNet *NetWork) *messageSender {
+	return &messageSender{stream: s, lock: sync.Mutex{}, peerInfo: pi, net: p2pNet}
 }
 
-func (ms *messageSender) invalidate() {
-	ms.invalid = true
-	if ms.s != nil {
-		log.Error("reset stream")
-		ms.s.Reset()
-		ms.s = nil
-	}
-}
-
-func (ms *messageSender) prepOrInvalidate() error {
-	ms.lk.Lock()
-	defer ms.lk.Unlock()
-	if err := ms.prep(); err != nil {
-		ms.invalidate()
-		return err
-	}
-	return nil
-}
-
-func (ms *messageSender) prep() (err error) {
-	if ms.invalid {
-		return errors.New("message sender has been invalidated")
-	}
-	if ms.s != nil {
+func (sender *messageSender) newStream() (err error) {
+	if sender.stream != nil {
 		return nil
 	}
-
-	addr := ms.net.host.Peerstore().Addrs(ms.p.ID)
-	if len(addr) == 0 && len(ms.p.Addrs) > 0 {
-		ms.net.host.Peerstore().AddAddrs(ms.p.ID, ms.p.Addrs, connectedAddrTTL)
+	if len(sender.net.host.Peerstore().Addrs(sender.peerInfo.ID)) == 0 && len(sender.peerInfo.Addrs) > 0 {
+		sender.net.host.Peerstore().AddAddrs(sender.peerInfo.ID, sender.peerInfo.Addrs, connectedAddrTTL)
 	}
-
-	var stream inet.Stream
-	retry := 0
-	for retry < 3 {
-		if stream, err = ms.net.host.NewStream(ms.net.ctx, ms.p.ID, ProtocolP2pV1); err != nil { //basic_host.go
-			err = errors.New(err.Error())
-			retry += 1
-		} else {
-			break
-		}
-		if retry == 3 {
-			return err
-		}
+	if sender.stream, err = sender.net.host.NewStream(sender.net.ctx, sender.peerInfo.ID, ProtocolP2pV1); err != nil { //basic_host.go
+		return errors.New(err.Error())
 	}
-
-	ms.s = stream
 
 	return nil
 }
 
-func (ms *messageSender) SendMessage(ctx context.Context, msg message.EcoBallNetMsg) error {
-	ms.lk.Lock()
-	defer ms.lk.Unlock()
-
-	if err := ms.prep(); err != nil {
+func (sender *messageSender) SendMessage(ctx context.Context, msg message.EcoBallNetMsg) error {
+	sender.lock.Lock()
+	defer sender.lock.Unlock()
+	if err := sender.send(ctx, msg); err != nil {
+		go net.FullClose(sender.stream)
+		sender.stream = nil
 		return err
 	}
-
-	if err := msgToStream(ctx, ms.s, msg); err != nil {
-		go inet.FullClose(ms.s)
-		ms.s = nil
-		log.Warn(err)
-		return err
-	}
-
-	log.Debug(fmt.Sprintf("success send msg %s to peer:", msg.Type().String()), ms.p)
+	log.Debug(fmt.Sprintf("success send msg %s to peer:", msg.Type().String()), sender.peerInfo)
 
 	return nil
 }
 
-func msgToStream(ctx context.Context, s inet.Stream, msg message.EcoBallNetMsg) error {
+func (net *NetWork) NewMessageSender(p peerstore.PeerInfo) (*messageSender, error) {
+	sender := net.SenderMap.Get(p.ID)
+	if sender != nil {
+		return sender, nil
+	}
+	sender = NewMsgSender(p, nil, net)
+
+	if err := sender.newStream(); err != nil {
+		return nil, err
+	}
+	net.SenderMap.Add(p.ID, sender)
+	go net.HandleNewStream(sender.stream) /*当本节点先和对端建立连接时，对端再次连接将无法触发handler函数，因此需要在此启动接收线程*/
+
+	return sender, nil
+}
+
+func (sender *messageSender) send(ctx context.Context, msg message.EcoBallNetMsg) error {
 	deadline := time.Now().Add(sendMessageTimeout)
 	if dl, ok := ctx.Deadline(); ok {
 		deadline = dl
 	}
 
-	if err := s.SetWriteDeadline(deadline); err != nil {
+	if err := sender.stream.SetWriteDeadline(deadline); err != nil {
 		log.Warn("error setting deadline: ", err)
 	}
 
-	switch s.Protocol() {
+	switch sender.stream.Protocol() {
 	case ProtocolP2pV1:
-		if err := msg.ToNetV1(s); err != nil {
+		pbw := io.NewDelimitedWriter(sender.stream)
+		if err := pbw.WriteMsg(msg.ToProtoV1()); err != nil {
 			return errors.New(err.Error())
 		}
 	default:
-		return fmt.Errorf("unrecognized protocol on remote: %s", s.Protocol())
+		return fmt.Errorf("unrecognized protocol on remote: %s", sender.stream.Protocol())
 	}
 
-	if err := s.SetWriteDeadline(time.Time{}); err != nil {
+	if err := sender.stream.SetWriteDeadline(time.Time{}); err != nil {
 		log.Warn("error resetting deadline: ", err)
 	}
 	return nil
-}
-
-func (net *NetWork) NewMessageSender(p pstore.PeerInfo) (*messageSender, error) {
-	sender := net.SenderMap.Get(p.ID)
-	if sender != nil {
-		return sender, nil
-	}
-	sender = NewMsgSender(p, net)
-
-	if err := sender.prepOrInvalidate(); err != nil {
-		return nil, err
-	}
-	net.SenderMap.Add(p.ID, sender)
-
-	return sender, nil
 }

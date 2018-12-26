@@ -21,8 +21,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/net/util"
-	inet "gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
-	ggio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
+	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
+	pio "gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
 	"io"
 )
 
@@ -88,28 +88,32 @@ func (m *impl) Data() []byte {
 }
 
 func (m *impl) ToProtoV1() *pb.Message {
-	pbm := new(pb.Message)
-	pbm.ChainId = m.chainId
-	pbm.Data = m.data
-	pbm.Type = m.msgType
-	pbm.Nonce = m.nonce
-	return pbm
+	return &pb.Message{
+		ChainId: m.chainId,
+		Type:    m.msgType,
+		Nonce:   m.nonce,
+		Data:    m.data,
+	}
 }
 
 func (m *impl) ToNetV1(w io.Writer) error {
-	pbw := ggio.NewDelimitedWriter(w)
+	pbw := pio.NewDelimitedWriter(w)
 	return pbw.WriteMsg(m.ToProtoV1())
 }
 
 func FromNet(r io.Reader) (EcoBallNetMsg, error) {
-	pbr := ggio.NewDelimitedReader(r, inet.MessageSizeMax)
+	pbr := pio.NewDelimitedReader(r, net.MessageSizeMax)
 	return FromPBReader(pbr)
 }
 
-func FromPBReader(pbr ggio.Reader) (EcoBallNetMsg, error) {
+func FromPBReader(pbr pio.Reader) (EcoBallNetMsg, error) {
 	pbMsg := new(pb.Message)
 	if err := pbr.ReadMsg(pbMsg); err != nil {
 		return nil, errors.New(err.Error())
 	}
 	return NewMessageFromProto(*pbMsg)
+}
+
+func NewReader(s net.Stream) pio.ReadCloser {
+	return pio.NewDelimitedReader(s, net.MessageSizeMax)
 }

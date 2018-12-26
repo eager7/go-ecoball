@@ -24,8 +24,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/net/address"
 	"github.com/ecoball/go-ecoball/net/dispatcher"
-	"github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/net/network"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
 	"gx/ipfs/QmYAL9JsqVVPFWwM1ZzHNsofmTzRYQHJ2KqQaBmFJjJsNx/go-libp2p-connmgr"
@@ -87,6 +85,9 @@ func constructPeerHost(ctx context.Context, id peer.ID, private crypto.PrivKey) 
 }
 
 func InitNetWork(ctx context.Context) *Node {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	node, err := newNetNode(ctx)
 	if err != nil {
 		log.Panic(err)
@@ -97,7 +98,7 @@ func InitNetWork(ctx context.Context) *Node {
 		os.Exit(1)
 	}
 
-	if err := NewNetActor(&netActor{network: node.network, ctx: node.ctx}); err != nil {
+	if err := NewNetActor(&netActor{node: node, ctx: node.ctx}); err != nil {
 		log.Panic(err)
 	}
 	log.Info(fmt.Sprintf("peer(self) %s is running", node.SelfRawId().Pretty()))
@@ -159,28 +160,6 @@ func (nn *Node) Start() error {
 	return nil
 }
 
-func (nn *Node) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
-	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), nn.network.Host().Peerstore().Addrs(p))
-	if incoming.Type() >= pb.MsgType_APP_MSG_UNDEFINED {
-		log.Error("receive a invalid message ", incoming.Type().String())
-		return
-	}
-
-	if err := dispatcher.Publish(incoming); err != nil {
-		log.Error(err)
-	}
-}
-
 func (nn *Node) SelfRawId() peer.ID {
 	return nn.self
-}
-
-func (nn *Node) Neighbors() (peers []string) {
-	h := nn.network.Host()
-	cs := h.Network().Conns()
-	for _, c := range cs {
-		pid := c.RemotePeer()
-		peers = append(peers, pid.Pretty())
-	}
-	return peers
 }
