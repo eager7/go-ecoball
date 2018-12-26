@@ -36,7 +36,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/trie"
 	"github.com/ecoball/go-ecoball/core/types"
 	dsnStore "github.com/ecoball/go-ecoball/dsn/host/block"
-	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
 	"github.com/ecoball/go-ecoball/spectator/connect"
@@ -1285,7 +1284,7 @@ func (c *ChainTx) newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transact
 		TrxHashRoot:       merkleHash,
 		StateRootHash:     s.GetHashRoot(),
 		CMBlockHash:       c.LastHeader.CmHeader.Hashes,
-		ProposalPublicKey: simulate.GetNodePubKey(),
+		ProposalPublicKey: []byte(config.SwarmConfig.PublicKey),
 		ShardId:           shardID,
 		CMEpochNo:         c.LastHeader.CmHeader.Height,
 		Receipt:           types.BlockReceipt{},
@@ -1429,7 +1428,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 		Timestamp:          timeStamp,
 		TrxCount:           TrxCount,
 		PrevHash:           c.LastHeader.FinalHeader.Hashes,
-		ProposalPubKey:     simulate.GetNodePubKey(),
+		ProposalPubKey:     []byte(config.SwarmConfig.PublicKey),
 		EpochNo:            c.LastHeader.CmHeader.Height,
 		CMBlockHash:        c.LastHeader.CmHeader.Hashes,
 		TrxRootHash:        TrxRootHash,
@@ -1508,13 +1507,13 @@ func (c *ChainTx) updateShardId() (uint32, error) {
 	}
 	for index, s := range block.Shards {
 		for _, node := range s.Member {
-			if bytes.Equal(simulate.GetNodePubKey(), node.PublicKey) {
+			if bytes.Equal([]byte(config.SwarmConfig.PublicKey), node.PublicKey) {
 				c.shardId = uint32(index) + 1
 				return uint32(index) + 1, nil
 			}
 		}
 	}
-	log.Warn(fmt.Sprintf("can't find the public key:%s", simulate.GetNodePubKey()))
+	log.Warn(fmt.Sprintf("can't find the public key:%s", []byte(config.SwarmConfig.PublicKey)))
 	return 0, nil
 }
 
