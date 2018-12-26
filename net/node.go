@@ -47,7 +47,6 @@ type Node struct {
 	ctx         context.Context
 	self        peer.ID
 	network     *network.NetImpl
-	handlers    map[pb.MsgType]message.HandlerFunc
 	listen      []string
 
 	network.Receiver
@@ -121,7 +120,6 @@ func newNetNode(parent context.Context) (*Node, error) {
 		ctx:         parent,
 		self:        id,
 		network:     nil,
-		handlers:    message.MakeHandlers(),
 		listen:      config.SwarmConfig.ListenAddress,
 		Receiver:    nil,
 	}
@@ -171,19 +169,8 @@ func (nn *Node) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.
 		return
 	}
 
-	handler, ok := nn.handlers[incoming.Type()] //go-ecoball/net/message/handler.go:MakeHandlers()
-	if ok {
-		err := handler(incoming.Data())
-		if err != nil {
-			log.Error(err.Error())
-			return
-		}
-		if err := dispatcher.Publish(incoming); err != nil {
-			log.Error(err)
-		}
-	} else {
-		dispatcher.Publish(incoming)
-		return
+	if err := dispatcher.Publish(incoming); err != nil {
+		log.Error(err)
 	}
 }
 

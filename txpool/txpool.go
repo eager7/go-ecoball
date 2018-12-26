@@ -18,15 +18,18 @@ package txpool
 
 import (
 	"fmt"
-	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/hashicorp/golang-lru"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/net/dispatcher"
+	"github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/message/pb"
+	"github.com/hashicorp/golang-lru"
 )
 
 var log = elog.NewLogger("TxPool", elog.NoticeLog)
@@ -34,10 +37,12 @@ var log = elog.NewLogger("TxPool", elog.NoticeLog)
 var T *TxPool
 
 type TxPool struct {
-	ledger    ledger.Ledger
+	netMsg     <-chan interface{}
+	ledger     ledger.Ledger
 	PendingTxs map[common.Hash]*types.TxsList //UnPackaged list of legitimate transactions
-	txsCache  *lru.Cache
-	StateDB   map[common.Hash]*state.State
+	txsCache   *lru.Cache
+	StateDB    map[common.Hash]*state.State
+	stop       chan struct{}
 }
 
 //start transaction pool
@@ -47,21 +52,39 @@ func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
 		return nil, errors.New(fmt.Sprintf("New Lru error:%s", err.Error()))
 	}
 	//transaction pool
-	pool = &TxPool{ledger: ledger, txsCache: csc, StateDB: make(map[common.Hash]*state.State, 0)}
+	pool = &TxPool{
+		netMsg:     nil,
+		ledger:     ledger,
+		PendingTxs: nil,
+		txsCache:   csc,
+		StateDB:    make(map[common.Hash]*state.State, 0),
+		stop:       make(chan struct{}),
+	}
 	pool.PendingTxs = make(map[common.Hash]*types.TxsList, 1)
 	pool.AddTxsList(config.ChainHash)
+	msg := []pb.MsgType{
+		pb.MsgType_APP_MSG_TRN,
+	}
+	pool.netMsg, err = dispatcher.Subscribe(msg...)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
 	s, err := ledger.StateDB(config.ChainHash).CopyState()
 	if err != nil {
 		return nil, err
 	}
 	pool.StateDB[config.ChainHash] = s
-	//transaction pool actor
 	if _, err = NewTxPoolActor(pool, 3); nil != err {
 		pool = nil
 	}
 	T = pool
 	event.InitMsgDispatcher()
+	go pool.Subscribe()
 	return
+}
+
+func (t *TxPool) Stop() {
+	t.stop <- struct{}{}
 }
 
 func (t *TxPool) GetTxsList(chainID common.Hash) ([]*types.Transaction, error) {
@@ -96,4 +119,31 @@ func (t *TxPool) Delete(chainID, txHash common.Hash) error {
 	}
 	list.Delete(txHash)
 	return nil
+}
+
+func (t *TxPool) Subscribe() {
+	for {
+		select {
+		case <-t.stop:
+			{
+				log.Info("stop tx pool")
+				return
+			}
+		case msg := <-t.netMsg:
+			in, ok := msg.(message.EcoBallNetMsg)
+			if !ok {
+				log.Error("can't parse msg")
+				continue
+			}
+			log.Info("receive msg:", in.Type().String())
+			tx := new(types.Transaction)
+			if err := tx.Deserialize(in.Data()); err != nil {
+				log.Error(err)
+				continue
+			}
+			if err := event.Send(event.ActorNil, event.ActorTxPool, tx); err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
 }
