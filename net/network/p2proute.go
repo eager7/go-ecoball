@@ -46,7 +46,7 @@ const (
 )
 
 type NetRouteTable struct {
-	net      *NetImpl
+	net      *NetWork
 	rt       *kb.RoutingTable
 	rtLock   sync.Mutex
 	msgSubCh <-chan interface{}
@@ -55,7 +55,7 @@ type NetRouteTable struct {
 	routing.PeerRouting
 }
 
-func NewRouteTable(n *NetImpl) *NetRouteTable {
+func NewRouteTable(n *NetWork) *NetRouteTable {
 	table := &NetRouteTable{
 		net:         n,
 		rt:          initRoutingTable(n.host),

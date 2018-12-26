@@ -27,7 +27,7 @@ import (
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 )
 
-func (net *NetImpl) HandlePeerFound(p peerstore.PeerInfo) {
+func (net *NetWork) HandlePeerFound(p peerstore.PeerInfo) {
 	if config.DisableLocalDisLog {
 		log.SetLogLevel(elog.InfoLog)
 	}
@@ -42,9 +42,9 @@ func (net *NetImpl) HandlePeerFound(p peerstore.PeerInfo) {
 	log.SetLogLevel(elog.DebugLog)
 }
 
-func (net *NetImpl) Listen(n inet.Network, a multiaddr.Multiaddr)      {}
-func (net *NetImpl) ListenClose(n inet.Network, a multiaddr.Multiaddr) {}
-func (net *NetImpl) Connected(n inet.Network, v inet.Conn) {
+func (net *NetWork) Listen(n inet.Network, a multiaddr.Multiaddr)      {}
+func (net *NetWork) ListenClose(n inet.Network, a multiaddr.Multiaddr) {}
+func (net *NetWork) Connected(n inet.Network, v inet.Conn) {
 	log.Info("connected peer:", v.RemotePeer().Pretty(), v.RemoteMultiaddr().String())
 	id := v.RemotePeer()
 	if net.IsValidRemotePeer(id) {
@@ -57,7 +57,8 @@ func (net *NetImpl) Connected(n inet.Network, v inet.Conn) {
 		//v.Close() // invalid connection, close it...
 	}
 }
-func (net *NetImpl) Disconnected(n inet.Network, v inet.Conn) {
+func (net *NetWork) Disconnected(n inet.Network, v inet.Conn) {
+	log.Info("disconnected peer:", v.RemotePeer().Pretty(), v.RemoteMultiaddr().String())
 	//net.PeerDisconnected(v.RemotePeer())
 	id := v.RemotePeer()
 	if net.host.Network().Connectedness(id) == inet.Connected {
@@ -66,5 +67,9 @@ func (net *NetImpl) Disconnected(n inet.Network, v inet.Conn) {
 	}
 	net.routingTable.remove(id)
 }
-func (net *NetImpl) OpenedStream(n inet.Network, v inet.Stream) {}
-func (net *NetImpl) ClosedStream(n inet.Network, v inet.Stream) {}
+func (net *NetWork) OpenedStream(n inet.Network, v inet.Stream) {
+	log.Info("OpenedStream peer:", v.Conn().RemotePeer().Pretty(), v.Conn().RemoteMultiaddr().String())
+}
+func (net *NetWork) ClosedStream(n inet.Network, v inet.Stream) {
+	log.Info("ClosedStream peer:", v.Conn().RemotePeer().Pretty(), v.Conn().RemoteMultiaddr().String())
+}

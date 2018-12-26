@@ -46,7 +46,7 @@ var (
 type Node struct {
 	ctx     context.Context
 	self    peer.ID
-	network *network.NetImpl
+	network *network.NetWork
 	listen  []string
 }
 
@@ -169,28 +169,6 @@ func (nn *Node) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.
 	if err := dispatcher.Publish(incoming); err != nil {
 		log.Error(err)
 	}
-}
-
-func (nn *Node) ReceiveError(err error) {
-	//TOD
-}
-
-func (nn *Node) GetShardMembersToReceiveCBlock() [][]*peerstore.PeerInfo {
-	var peers = make([][]*peerstore.PeerInfo, 1)
-	return peers
-}
-
-func (nn *Node) GetCMMembersToReceiveSBlock() []*peerstore.PeerInfo {
-	var peers []*peerstore.PeerInfo
-	return peers
-}
-
-func (nn *Node) PeerConnected(p peer.ID) {
-	// TOD
-}
-
-func (nn *Node) PeerDisconnected(p peer.ID) {
-	// TOD
 }
 
 func (nn *Node) SelfRawId() peer.ID {

@@ -51,7 +51,7 @@ func CombineRoutingFilters(filters ...RoutingFilter) RoutingFilter {
 	}
 }
 
-func (net *NetImpl) GossipMsg(msg message.EcoBallNetMsg) error {
+func (net *NetWork) GossipMsg(msg message.EcoBallNetMsg) error {
 	// wrap the message by the gossip msg type
 	gossipMsg, err := net.warpMsgByGossip(msg)
 	if err != nil {
@@ -65,7 +65,7 @@ func (net *NetImpl) GossipMsg(msg message.EcoBallNetMsg) error {
 	return fmt.Errorf("duplicated msg in gossip store")
 }
 
-func (net *NetImpl) sendMsgToRandomPeers(peerCounts int, msg message.EcoBallNetMsg) (err error) {
+func (net *NetWork) sendMsgToRandomPeers(peerCounts int, msg message.EcoBallNetMsg) (err error) {
 	peers := net.getRandomPeers(peerCounts, net.IsNotMyShard)
 	if len(peers) == 0 {
 		return errors.New("failed to select random peers")
@@ -83,7 +83,7 @@ func (net *NetImpl) sendMsgToRandomPeers(peerCounts int, msg message.EcoBallNetM
 	return nil
 }
 
-func (net *NetImpl) forwardMsg(msg message.EcoBallNetMsg, peers []peer.ID) {
+func (net *NetWork) forwardMsg(msg message.EcoBallNetMsg, peers []peer.ID) {
 	var peerInfo []*peerstore.PeerInfo
 	for _, id := range peers {
 		peerInfo = append(peerInfo, &peerstore.PeerInfo{ID: id})
@@ -98,7 +98,7 @@ func (net *NetImpl) forwardMsg(msg message.EcoBallNetMsg, peers []peer.ID) {
 	net.AddMsgJob(sendJob)
 }
 
-func (net *NetImpl) warpMsgByGossip(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
+func (net *NetWork) warpMsgByGossip(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
 	pbMsg := msg.ToProtoV1()
 	wrapData, err := pbMsg.Marshal()
 	if err != nil {
@@ -109,7 +109,7 @@ func (net *NetImpl) warpMsgByGossip(msg message.EcoBallNetMsg) (message.EcoBallN
 	return gossipMsg, nil
 }
 
-func (net *NetImpl) unWarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
+func (net *NetWork) unWarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallNetMsg, error) {
 	if msg.Type() != pb.MsgType_APP_MSG_GOSSIP {
 		return nil, errors.New("unwrap an invalid gossip message")
 	}
@@ -123,7 +123,7 @@ func (net *NetImpl) unWarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallN
 	}
 }
 
-func (net *NetImpl) getRandomPeers(k int, filter RoutingFilter) []peer.ID {
+func (net *NetWork) getRandomPeers(k int, filter RoutingFilter) []peer.ID {
 	var filterConns []inet.Conn
 	conns := net.host.Network().Conns()
 	for _, conn := range conns {

@@ -123,17 +123,17 @@ func (m *MsgEngine) nextMsgWrapper(ctx context.Context) (*MsgWrapper, error) {
 	}
 }
 
-func (net *NetImpl) AddMsgJob(job *SendMsgJob) {
+func (net *NetWork) AddMsgJob(job *SendMsgJob) {
 	log.Debug("put msg in send pool:", job.String())
 	net.engine.PushJob(job)
 }
-func (net *NetImpl) startSendWorkers() {
+func (net *NetWork) startSendWorkers() {
 	for i := 0; i < sendWorkerCount; i++ {
 		i := i
 		go net.sendWorker(i)
 	}
 }
-func (net *NetImpl) sendWorker(id int) {
+func (net *NetWork) sendWorker(id int) {
 	defer log.Debug("network send message worker ", id, " shutting down.")
 	for {
 		select {
@@ -155,7 +155,7 @@ func (net *NetImpl) sendWorker(id int) {
 	}
 }
 
-func (net *NetImpl) nativeMessageLoop() {
+func (net *NetWork) nativeMessageLoop() {
 	go func() {
 		for {
 			select {

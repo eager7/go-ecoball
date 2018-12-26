@@ -45,12 +45,12 @@ const (
 
 var (
 	log     = elog.NewLogger("network", elog.DebugLog)
-	netImpl *NetImpl
+	netImpl *NetWork
 )
 
 // impl transforms the network interface, which sends and receives
 // NetMessage objects, into the ecoball network interface.
-type NetImpl struct {
+type NetWork struct {
 	ctx          context.Context
 	host         host.Host
 	ShardInfo    *ShardInfo
@@ -63,11 +63,11 @@ type NetImpl struct {
 	routingTable *NetRouteTable
 }
 
-func NewNetwork(ctx context.Context, host host.Host) *NetImpl {
+func NewNetwork(ctx context.Context, host host.Host) *NetWork {
 	if netImpl != nil {
 		return netImpl
 	}
-	netImpl = &NetImpl{
+	netImpl = &NetWork{
 		ctx:          ctx,
 		host:         host,
 		ShardInfo:    new(ShardInfo).Initialize(),
@@ -95,15 +95,15 @@ func GetNetInstance() (EcoballNetwork, error) {
 	return netImpl, nil
 }
 
-func (net *NetImpl) Host() host.Host {
+func (net *NetWork) Host() host.Host {
 	return net.host
 }
 
-func (net *NetImpl) SelectRandomPeers(peerCount uint16) []peer.ID {
+func (net *NetWork) SelectRandomPeers(peerCount uint16) []peer.ID {
 	return net.getRandomPeers(int(peerCount), net.IsNotMyShard)
 }
 
-func (net *NetImpl) sendMessage(p peerstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
+func (net *NetWork) sendMessage(p peerstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
 	log.Info("send message to", p.ID.Pretty(), p.Addrs)
 	sender, err := net.NewMessageSender(p)
 	if err != nil {
@@ -114,11 +114,11 @@ func (net *NetImpl) sendMessage(p peerstore.PeerInfo, outgoing message.EcoBallNe
 	return err
 }
 
-func (net *NetImpl) handleNewStream(s inet.Stream) {
+func (net *NetWork) handleNewStream(s inet.Stream) {
 	go net.handleNewStreamMsg(s)
 }
 
-func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
+func (net *NetWork) handleNewStreamMsg(s inet.Stream) {
 	log.Info("handleNewStreamMsg:", s.Conn().RemotePeer().Pretty(), s.Conn().RemoteMultiaddr().String())
 	defer s.Close()
 
@@ -152,7 +152,7 @@ func (net *NetImpl) handleNewStreamMsg(s inet.Stream) {
 	}
 }
 
-func (net *NetImpl) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
+func (net *NetWork) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
 	log.Debug(fmt.Sprintf("receive msg %s from peer", incoming.Type().String()), net.Host().Peerstore().Addrs(p))
 	if incoming.Type() >= pb.MsgType_APP_MSG_UNDEFINED {
 		log.Error("receive a invalid message ", incoming.Type().String())
@@ -164,7 +164,7 @@ func (net *NetImpl) ReceiveMessage(ctx context.Context, p peer.ID, incoming mess
 	}
 }
 
-func (net *NetImpl) preHandleGossipMsg(gmsg message.EcoBallNetMsg, sender peer.ID) {
+func (net *NetWork) preHandleGossipMsg(gmsg message.EcoBallNetMsg, sender peer.ID) {
 	log.Debug(fmt.Sprintf("receive a gossip msg(id=%d) from peer %s", gmsg.Type(), sender.Pretty()))
 
 	peers := net.getRandomPeers(GossipPeerCount, net.IsNotMyShard)
@@ -185,7 +185,7 @@ func (net *NetImpl) preHandleGossipMsg(gmsg message.EcoBallNetMsg, sender peer.I
 	net.forwardMsg(gmsg, fwPeers)
 }
 
-func (net *NetImpl) StartLocalDiscovery() (discovery.Service, error) {
+func (net *NetWork) StartLocalDiscovery() (discovery.Service, error) {
 	service, err := discovery.NewMdnsService(net.ctx, net.host, 10*time.Second, ServiceTag)
 	if err != nil {
 		return nil, fmt.Errorf("net discovery error, %s", err)
@@ -195,7 +195,7 @@ func (net *NetImpl) StartLocalDiscovery() (discovery.Service, error) {
 	return service, nil
 }
 
-func (net *NetImpl) Start() {
+func (net *NetWork) Start() {
 	if config.DisableSharding {
 		net.routingTable.Start()
 		if config.EnableLocalDiscovery {
@@ -212,7 +212,7 @@ func (net *NetImpl) Start() {
 	net.nativeMessageLoop()
 }
 
-func (net *NetImpl) Stop() {
+func (net *NetWork) Stop() {
 	if config.DisableSharding {
 		net.routingTable.Stop()
 		if net.mdnsService != nil {
@@ -227,7 +227,7 @@ func (net *NetImpl) Stop() {
 	net.gossipStore.Stop()
 }
 
-func (net *NetImpl) IsNotMyShard(p peer.ID) bool {
+func (net *NetWork) IsNotMyShard(p peer.ID) bool {
 	if peerMap := net.ShardInfo.GetShardNodes(net.ShardInfo.GetLocalId()); peerMap == nil {
 		return true
 	} else {
@@ -235,6 +235,6 @@ func (net *NetImpl) IsNotMyShard(p peer.ID) bool {
 	}
 }
 
-func (net *NetImpl) IsValidRemotePeer(p peer.ID) bool {
+func (net *NetWork) IsValidRemotePeer(p peer.ID) bool {
 	return net.ShardInfo.IsValidRemotePeer(p)
 }

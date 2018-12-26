@@ -47,7 +47,7 @@ type BootStrapper struct {
 	bsPeers []cfg.BootstrapPeer
 }
 
-func (net *NetImpl) bootstrap(bsAddress []string) *BootStrapper {
+func (net *NetWork) bootstrap(bsAddress []string) *BootStrapper {
 	bsPeers, err := cfg.ParseBootstrapPeers(bsAddress)
 	if err != nil {
 		log.Error("failed to parse bootstrap address", err)
@@ -83,7 +83,7 @@ func (net *NetImpl) bootstrap(bsAddress []string) *BootStrapper {
 	return &BootStrapper{process, bsPeers}
 }
 
-func (net *NetImpl) bootstrapConnect(ctx context.Context, bsPeers []cfg.BootstrapPeer, numToDial int) error {
+func (net *NetWork) bootstrapConnect(ctx context.Context, bsPeers []cfg.BootstrapPeer, numToDial int) error {
 	ctx, cancel := context.WithTimeout(ctx, bootStrapTimeOut)
 	defer cancel()
 

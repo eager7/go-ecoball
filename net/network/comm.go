@@ -28,7 +28,7 @@ import (
 	ic "gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
 )
 
-func (net *NetImpl) ConnectToPeer(ip, port, pubKey string, isPermanent bool) error {
+func (net *NetWork) ConnectToPeer(ip, port, pubKey string, isPermanent bool) error {
 	addrInfo := util.ConstructAddrInfo(ip, port)
 	pi, err := constructPeerInfo(addrInfo, pubKey)
 	if err != nil {
@@ -47,7 +47,7 @@ func (net *NetImpl) ConnectToPeer(ip, port, pubKey string, isPermanent bool) err
 	return nil
 }
 
-func (net *NetImpl) ClosePeer(pubKey string) error {
+func (net *NetWork) ClosePeer(pubKey string) error {
 	id, err := IdFromConfigEncodePublicKey(pubKey)
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (net *NetImpl) ClosePeer(pubKey string) error {
 	return net.host.Network().ClosePeer(id)
 }
 
-func (net *NetImpl) SendMsgToPeer(ip, port, pubKey string, msg message.EcoBallNetMsg) error {
+func (net *NetWork) SendMsgToPeer(ip, port, pubKey string, msg message.EcoBallNetMsg) error {
 	addrInfo := util.ConstructAddrInfo(ip, port)
 	p, err := constructPeerInfo(addrInfo, pubKey)
 	if err != nil {
@@ -84,7 +84,7 @@ func (net *NetImpl) SendMsgToPeer(ip, port, pubKey string, msg message.EcoBallNe
 	return nil
 }
 
-func (net *NetImpl) SendMsgToPeerWithPeerInfo(info []*peerstore.PeerInfo, msg message.EcoBallNetMsg) error {
+func (net *NetWork) SendMsgToPeerWithPeerInfo(info []*peerstore.PeerInfo, msg message.EcoBallNetMsg) error {
 	sendJob := &SendMsgJob{info, msg}
 	net.AddMsgJob(sendJob)
 
@@ -92,7 +92,7 @@ func (net *NetImpl) SendMsgToPeerWithPeerInfo(info []*peerstore.PeerInfo, msg me
 }
 
 //sync send msg to peer by id
-func (net *NetImpl) SendMsgSyncToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
+func (net *NetWork) SendMsgSyncToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
 	p := peerstore.PeerInfo{ID: id}
 	if err := net.sendMessage(p, msg); err != nil {
 		log.Error("send message to ", p.ID.Pretty(), err)
@@ -102,7 +102,7 @@ func (net *NetImpl) SendMsgSyncToPeerWithId(id peer.ID, msg message.EcoBallNetMs
 }
 
 //async send msg to peer by id
-func (net *NetImpl) SendMsgToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
+func (net *NetWork) SendMsgToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) error {
 	p := &peerstore.PeerInfo{ID: id}
 	sendJob := &SendMsgJob{[]*peerstore.PeerInfo{p}, msg}
 	net.AddMsgJob(sendJob)
@@ -110,7 +110,7 @@ func (net *NetImpl) SendMsgToPeerWithId(id peer.ID, msg message.EcoBallNetMsg) e
 	return nil
 }
 
-func (net *NetImpl) SendMsgToPeersWithId(pid []peer.ID, msg message.EcoBallNetMsg) error {
+func (net *NetWork) SendMsgToPeersWithId(pid []peer.ID, msg message.EcoBallNetMsg) error {
 	var peers []*peerstore.PeerInfo
 	for _, id := range pid {
 		peers = append(peers, &peerstore.PeerInfo{ID: id})
@@ -122,7 +122,7 @@ func (net *NetImpl) SendMsgToPeersWithId(pid []peer.ID, msg message.EcoBallNetMs
 	return nil
 }
 
-func (net *NetImpl) BroadcastMessage(msg message.EcoBallNetMsg) error {
+func (net *NetWork) BroadcastMessage(msg message.EcoBallNetMsg) error {
 	var peers []*peerstore.PeerInfo
 	for _, c := range net.host.Network().Conns() {
 		pid := c.RemotePeer()
@@ -139,7 +139,7 @@ func (net *NetImpl) BroadcastMessage(msg message.EcoBallNetMsg) error {
 	return nil
 }
 
-func (net *NetImpl) GetPeerStoreConnectStatus() []peer.ID {
+func (net *NetWork) GetPeerStoreConnectStatus() []peer.ID {
 
 	return net.host.Network().Peers()
 

@@ -36,11 +36,11 @@ type messageSender struct {
 	s       inet.Stream
 	lk      sync.Mutex
 	p       peerstore.PeerInfo
-	net     *NetImpl
+	net     *NetWork
 	invalid bool
 }
 
-func NewMsgSender(pi peerstore.PeerInfo, p2pNet *NetImpl) *messageSender {
+func NewMsgSender(pi peerstore.PeerInfo, p2pNet *NetWork) *messageSender {
 	return &messageSender{p: pi, net: p2pNet}
 }
 
@@ -140,7 +140,7 @@ func msgToStream(ctx context.Context, s inet.Stream, msg message.EcoBallNetMsg) 
 	return nil
 }
 
-func (net *NetImpl) NewMessageSender(p pstore.PeerInfo) (*messageSender, error) {
+func (net *NetWork) NewMessageSender(p pstore.PeerInfo) (*messageSender, error) {
 	sender := net.SenderMap.Get(p.ID)
 	if sender != nil {
 		return sender, nil

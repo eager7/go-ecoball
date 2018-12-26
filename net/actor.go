@@ -37,7 +37,7 @@ import (
 type netActor struct {
 	ctx     context.Context
 	pid     *actor.PID
-	network *network.NetImpl
+	network *network.NetWork
 }
 
 func NewNetActor(n *netActor) (err error) {
