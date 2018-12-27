@@ -31,6 +31,7 @@ import (
 )
 
 const connectedAddrTTL = time.Minute * 10
+const connectTry = 5
 
 type messageSender struct {
 	stream   net.Stream
@@ -50,6 +51,7 @@ func (sender *messageSender) newStream() (err error) {
 	if len(sender.net.host.Peerstore().Addrs(sender.peerInfo.ID)) == 0 && len(sender.peerInfo.Addrs) > 0 {
 		sender.net.host.Peerstore().AddAddrs(sender.peerInfo.ID, sender.peerInfo.Addrs, connectedAddrTTL)
 	}
+	log.Info("connect to peer:", sender.String())
 	if sender.stream, err = sender.net.host.NewStream(sender.net.ctx, sender.peerInfo.ID, ProtocolP2pV1); err != nil { //basic_host.go
 		return errors.New(err.Error())
 	}
@@ -77,8 +79,15 @@ func (net *NetWork) NewMessageSender(p peerstore.PeerInfo) (*messageSender, erro
 	}
 	sender = NewMsgSender(p, nil, net)
 
+	var i = 0
+RETRY:
 	if err := sender.newStream(); err != nil {
-		return nil, err
+		log.Error("new stream failed:", err.Error())
+		if i >= connectTry {
+			return nil, errors.New(fmt.Sprintf("can't create new stream:%s", err.Error()))
+		}
+		i += 1
+		goto RETRY
 	}
 	net.SenderMap.Add(p.ID, sender)
 	go net.HandleNewStream(sender.stream) /*当本节点先和对端建立连接时，对端再次连接将无法触发handler函数，因此需要在此启动接收线程*/
@@ -110,4 +119,12 @@ func (sender *messageSender) send(ctx context.Context, msg message.EcoBallNetMsg
 		log.Warn("error resetting deadline: ", err)
 	}
 	return nil
+}
+
+func (sender *messageSender) String() string {
+	ret := sender.peerInfo.ID.Pretty()
+	for _, addr := range sender.peerInfo.Addrs {
+		ret += addr.String()
+	}
+	return ret
 }

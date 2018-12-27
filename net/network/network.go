@@ -126,7 +126,10 @@ func (net *NetWork) Stop() {
 func (net *NetWork) NetWorkHandler(s net.Stream) {
 	id := s.Conn().RemotePeer()
 	addresses := s.Conn().RemoteMultiaddr()
-	log.Info("receive message from:", id.Pretty(), addresses.String())
+	log.Info("receive connect peer from:", id.Pretty(), addresses.String())
+	if net.SenderMap.Get(id) != nil {
+		return
+	}
 	net.SenderMap.Add(id, NewMsgSender(peerstore.PeerInfo{ID: id, Addrs: []multiaddr.Multiaddr{addresses}}, s, net))
 	go net.HandleNewStream(s)
 }

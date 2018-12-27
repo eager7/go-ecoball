@@ -39,8 +39,6 @@ func main() {
 	ctx := context.Background()
 	net.InitNetWork(ctx)
 
-	net.StartNetWork(nil)
-
 	remotePeer := "/ip4/192.168.8.221/tcp/4013"
 
 	id, err :=  peer.IDB58Decode("QmW33JWeTeBhjviWaHLUTt7jNiNj7Z86jngC7ogBZSXmSt")

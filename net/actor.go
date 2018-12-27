@@ -85,7 +85,7 @@ func (n *netActor) Receive(ctx actor.Context) {
 			n.node.network.SendMsgToPeersWithId(peers, m)
 		}
 	case *common.ShardingTopo:
-		go n.UpdateShardingInfo(msg)
+		//go n.UpdateShardingInfo(msg)
 	case *types.Block: //not shard block
 		msgType := pb.MsgType_APP_MSG_BLKS
 		buffer, _ := msg.Serialize()
