@@ -7,12 +7,13 @@ size = 5
 # The key string represents the host IP address 
 # The first value represents the number of Committee nodes
 # The second value represents the number of Shard nodes
+# The third value represents the number of Candidate nodes
 [network]
-"39.108.228.77" = [1, 3]
-"120.77.83.170" = [1, 4]
-"120.78.137.39" = [1, 4]
-"39.108.145.83" = [2, 3]
-"47.52.191.93"  = [0, 1]
+"39.108.228.77" = [1, 3, 0]
+"120.77.83.170" = [1, 4, 0]
+"120.78.137.39" = [1, 4, 0]
+"39.108.145.83" = [2, 3, 0]
+"47.52.191.93"  = [0, 1, 0]
 
 
 # Different configuration items for ecoball.toml

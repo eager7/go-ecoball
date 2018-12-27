@@ -67,7 +67,7 @@ def main():
     network = data["network"]
     for one_ip in network:
         count_list = network[one_ip]
-        for i in range(2):
+        for i in range(3):
             count = 0
             while count < count_list[i]:
                 result_str, result_code = run_shell_output(key_gen)
@@ -87,6 +87,8 @@ def main():
                         public_str = one_str[index + len("Public  Key:"):].strip()
                 if 1 == i:
                     tail = count + count_list[0]
+                elif 2 == i:
+                    tail = count + count_list[0] + count_list[1]                    
                 else:
                     tail = count
                 one_config = one_ip + "_" + str(tail)

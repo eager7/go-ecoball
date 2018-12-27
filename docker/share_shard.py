@@ -75,7 +75,9 @@ def main():
         host_ip = args.host_ip
         committee_count = network[host_ip][0]
         shard_count = network[host_ip][1]
-
+        if len(network[host_ip]) > 2:
+            candidate_count = network[host_ip][2]
+            
     except Exception as e:
         print("shard_setup.toml has some error: ", e)
         return
@@ -92,7 +94,7 @@ def main():
     image = "registry.quachain.net:5000/ecoball:1.0.0"
 
     count = committee_count
-    while count < committee_count + shard_count:
+    while count < committee_count + shard_count + candidate_count:
         # start ecoball
         command = "docker run -d " + "--name=ecoball_" + str(count) + " -p "
         command += str(PORT + count) + ":20678 "
@@ -116,14 +118,14 @@ def main():
         run(command)
         # sleep(2)
 
-        if args.browser and count == committee_count + shard_count - 1:
+        if args.browser and count == committee_count + shard_count + candidate_count - 1:
             # start eballscan
             command = "docker run -d --name=eballscan --link=ecoball_" + str(committee_count) + ":ecoball_alias -p 20680:20680 "
             command += image + " /ecoball/eballscan/eballscan_service.sh ecoball_" + str(committee_count)
             run(command)
             sleep(2)
 
-        if args.wallet and count == committee_count + shard_count - 1:
+        if args.wallet and count == committee_count + shard_count + candidate_count - 1:
             # start ecowallet
             command = "docker run -d --name=ecowallet -p 20679:20679 "
             command += "-v " + root_dir + ":/var "
