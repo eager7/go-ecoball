@@ -63,12 +63,10 @@ func (sender *messageSender) SendMessage(ctx context.Context, msg message.EcoBal
 	sender.lock.Lock()
 	defer sender.lock.Unlock()
 	if err := sender.send(ctx, msg); err != nil {
-		//go net.FullClose(sender.stream)
-		net.FullClose(sender.stream)
-		sender.stream = nil
+		go net.FullClose(sender.stream)
 		return err
 	}
-	log.Debug(fmt.Sprintf("success send msg %s to peer:", msg.Type().String()), sender.peerInfo)
+	log.Debug(fmt.Sprintf("success send msg %s to peer:", msg.Type().String()), sender.peerInfo.ID.Pretty(), sender.peerInfo.Addrs)
 
 	return nil
 }
@@ -83,7 +81,7 @@ func (net *NetWork) NewMessageSender(p peerstore.PeerInfo) (*messageSender, erro
 	var i = 0
 RETRY:
 	if err := sender.newStream(); err != nil {
-		log.Error("new stream failed:", err.Error())
+		log.Error(fmt.Sprintf("new stream failed[%d]:%s", i, err.Error()))
 		if i >= connectTry {
 			return nil, errors.New(fmt.Sprintf("can't create new stream:%s", err.Error()))
 		}
@@ -91,7 +89,6 @@ RETRY:
 		goto RETRY
 	}
 	net.SenderMap.Add(p.ID, sender)
-	go net.HandleNewStream(sender.stream) /*当本节点先和对端建立连接时，对端再次连接将无法触发handler函数，因此需要在此启动接收线程*/
 
 	return sender, nil
 }

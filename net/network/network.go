@@ -26,7 +26,6 @@ import (
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p/p2p/discovery"
-	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	"gx/ipfs/QmZNkThpqfVXs9GNbexPrfBbXSLNYeKrE7jwFM2oqHbyqN/go-libp2p-protocol"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
@@ -127,20 +126,15 @@ func (net *NetWork) NetWorkHandler(s net.Stream) {
 	id := s.Conn().RemotePeer()
 	addresses := s.Conn().RemoteMultiaddr()
 	log.Info("receive connect peer from:", id.Pretty(), addresses.String())
-	if net.SenderMap.Get(id) != nil {
-		log.Warn("the peer:", id.Pretty(), addresses.String(), "is connected, ignore this message")
-		return
-	}
-	net.SenderMap.Add(id, NewMsgSender(peerstore.PeerInfo{ID: id, Addrs: []multiaddr.Multiaddr{addresses}}, s, net))
 	go net.HandleNewStream(s)
 }
 func (net *NetWork) HandleNewStream(s net.Stream) {
+	log.Info("start stream handler:", s.Conn().RemotePeer().Pretty(), s.Conn().RemoteMultiaddr().String())
 	defer s.Close()
 	reader := message.NewReader(s)
 	for {
 		if received, err := message.FromPBReader(reader); err != nil {
 			err := errors.New(fmt.Sprintf("error from %s, %s", s.Conn().RemotePeer(), err))
-			net.SenderMap.Del(s.Conn().RemotePeer())
 			log.Error(err)
 			s.Reset()
 			return

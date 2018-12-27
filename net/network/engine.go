@@ -170,6 +170,7 @@ func (net *NetWork) sendMessage(peerInfo peerstore.PeerInfo, msg message.EcoBall
 	if err != nil {
 		return err
 	}
+	/*当本节点先和对端建立连接时，new stream对端将无法触发handler函数，发送消息则可触发handler*/
 	if err := sender.SendMessage(net.ctx, msg); err != nil {
 		net.SenderMap.Del(peerInfo.ID)
 		return err
