@@ -54,6 +54,7 @@ def main():
         port_index = 0
         committee_count = network[ip][0]
         shard_count = network[ip][1]
+        candidate_count = 0
         if len(network[ip]) > 2:
             candidate_count = network[ip][2]
         while port_index < committee_count + shard_count + candidate_count:
