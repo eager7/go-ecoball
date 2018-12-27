@@ -123,6 +123,22 @@ var (
 						Usage: "account who want to be producer",
 					},
 					cli.StringFlag{
+						Name:  "p2p_publickey, k",
+						Usage: "node p2p publickey",
+					},
+					cli.StringFlag{
+						Name:  "ip, i",
+						Usage: "ip v4 address",
+					},
+					cli.StringFlag{
+						Name:  "port, o",
+						Usage: "port",
+					},
+					cli.StringFlag{
+						Name:  "payee, f",
+						Usage: "account who recieve producer reward",
+					},
+					cli.StringFlag{
 						Name:  "chainHash, c",
 						Usage: "chain hash(the default is the main chain hash)",
 					},
@@ -504,13 +520,35 @@ func registerProducer(c *cli.Context) error {
 		return nil
 	}
 
-	//contract address
 	producer := c.String("producer")
 	if producer == "" {
-		fmt.Println("Please input a valid contract account name")
-		return errors.New("Invalid contract account name")
+		fmt.Println("Please input a valid account name")
+		return errors.New("Invalid account name")
 	}
 
+	p2p_pk := c.String("p2p_publickey")
+	if p2p_pk == "" {
+		fmt.Println("Please input a valid node p2p publickey")
+		return errors.New("Invalid node p2p publickey")
+	}
+
+	ip := c.String("ip")
+	if ip == "" {
+		fmt.Println("Please input a valid ip address")
+		return errors.New("Invalid ip address")
+	}
+
+	port := c.Int("port")
+	if port <= 0 {
+		fmt.Println("Please input a valid port number ", port)
+		return errors.New("Invalid port number")
+	}
+
+	payee := c.String("payee")
+	if payee == "" {
+		fmt.Println("Please input a valid account name")
+		return errors.New("Invalid account name")
+	}
 
 	//chainHash
 	var chainHash common.Hash
@@ -539,6 +577,10 @@ func registerProducer(c *cli.Context) error {
 
 	var parameters []string
 	parameters = append(parameters, producer)
+	parameters = append(parameters, p2p_pk)
+	parameters = append(parameters, ip)
+	parameters = append(parameters, strconv.Itoa(port))
+	parameters = append(parameters, payee)
 
 	//time
 	time := time.Now().UnixNano()

@@ -56,8 +56,10 @@ func (s *Sharding) Start() {
 	s.ns.LoadConfig()
 
 	if s.ns.NodeType == sc.NodeCommittee {
+		log.Debug("I am a committee node")
 		s.instance = committee.MakeCommittee(s.ns)
 	} else if s.ns.NodeType == sc.NodeShard {
+		log.Debug("I am a shard node")
 		s.instance = shard.MakeShard(s.ns)
 	} else if s.ns.NodeType == sc.NodeCandidate {
 		log.Debug("I am a candidate node")

@@ -24,6 +24,8 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/common/config"
 	"math/big"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
+	"strconv"
 )
 
 func PresetContract(s *state.State, timeStamp int64, addr common.Address) error {
@@ -227,6 +229,66 @@ func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) e
 	if err := s.SetResourceLimits(worker3, worker3, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
 		fmt.Println(err)
 		return err
+	}
+
+	//TODO annotation committee and shard until new register producer api finish
+	// only import candidate, because now can't recongize backup node and loopup node
+	/* import producer */
+	//cms := simulate.GetCommittee()
+	//for i, cm := range cms {
+	//	cmproducer := common.NameToIndex("cmproducer" + strconv.Itoa(i+1))
+	//	fmt.Println("preset insert account:", "cmproducer" + strconv.Itoa(i+1))
+	//	if _, err := s.AddAccount(cmproducer, addr, timeStamp); err != nil {
+	//		return err
+	//	}
+	//	if err := s.AccountAddBalance(cmproducer, state.AbaToken, new(big.Int).SetUint64(5000)); err != nil {
+	//		return err
+	//	}
+	//	if err := s.SetResourceLimits(cmproducer, cmproducer, 2000, 2000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
+	//		fmt.Println(err)
+	//		return err
+	//	}
+	//
+	//	port, _ := strconv.Atoi(cm.Port)
+	//	s.RegisterProducer(cmproducer, cm.Pubkey, cm.Address, uint32(port), root)
+	//}
+	//
+	//shards := simulate.GetShards()
+	//for i, shard := range shards {
+	//	shardproducer := common.NameToIndex("shproducer" + strconv.Itoa(i+1))
+	//	fmt.Println("preset insert account:", "shproducer" + strconv.Itoa(i+1))
+	//	if _, err := s.AddAccount(shardproducer, addr, timeStamp); err != nil {
+	//		return err
+	//	}
+	//	if err := s.AccountAddBalance(shardproducer, state.AbaToken, new(big.Int).SetUint64(5000)); err != nil {
+	//		return err
+	//	}
+	//	if err := s.SetResourceLimits(shardproducer, shardproducer, 2000, 2000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
+	//		fmt.Println(err)
+	//		return err
+	//	}
+	//
+	//	port, _ := strconv.Atoi(shard.Port)
+	//	s.RegisterProducer(shardproducer, shard.Pubkey, shard.Address, uint32(port), root)
+	//}
+
+	cans := simulate.GetCandidate()
+	for i, shard := range cans {
+		canproducer := common.NameToIndex("cnproducer" + strconv.Itoa(i+1))
+		fmt.Println("preset insert account:", "cnproducer" + strconv.Itoa(i+1))
+		if _, err := s.AddAccount(canproducer, addr, timeStamp); err != nil {
+			return err
+		}
+		if err := s.AccountAddBalance(canproducer, state.AbaToken, new(big.Int).SetUint64(5000)); err != nil {
+			return err
+		}
+		if err := s.SetResourceLimits(canproducer, canproducer, 500, 500, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		port, _ := strconv.Atoi(shard.Port)
+		s.RegisterProducer(canproducer, shard.Pubkey, shard.Address, uint32(port), root)
 	}
 
 	return nil

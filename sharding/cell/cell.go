@@ -9,6 +9,7 @@ import (
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
+	"strconv"
 )
 
 var (
@@ -63,23 +64,33 @@ func (c *Cell) LoadConfig() {
 		}
 	}
 
-	//if nodeType == sc.NodeNil {
-		can := simulate.GetCandidate()
-		for _, member := range can {
-			var worker sc.Worker
-			worker.Pubkey = member.Pubkey
-			worker.Address = member.Address
-			worker.Port = member.Port
+	can := simulate.GetCandidate()
+	for _, member := range can {
+		var worker sc.Worker
+		worker.Pubkey = member.Pubkey
+		worker.Address = member.Address
+		worker.Port = member.Port
 
-			c.addCandidateWorker(&worker)
-			if c.Self.Equal(&worker) {
-				nodeType = sc.NodeCandidate
-			}
+		c.addCandidateWorker(&worker)
+		if c.Self.Equal(&worker) {
+			nodeType = sc.NodeCandidate
 		}
-	//}
+	}
+
+	shards := simulate.GetShards()
+	for _, member := range shards {
+		var worker sc.Worker
+		worker.Pubkey = member.Pubkey
+		worker.Address = member.Address
+		worker.Port = member.Port
+
+		if c.Self.Equal(&worker) {
+			nodeType = sc.NodeShard
+		}
+	}
 
 	if nodeType == sc.NodeNil {
-		nodeType = sc.NodeShard
+		nodeType = sc.NodeCandidate
 	}
 
 	c.NodeType = nodeType
@@ -163,8 +174,25 @@ func (c *Cell) SaveLastCMBlock(bk *cs.CMBlock) {
 		}
 	}
 
-	c.createShardingTopo()
+	producers, err := c.Ledger.GetProducerList(config.ChainHash)
+	if err != nil {
+		log.Error("Get Producer List failed")
+	}
 
+	log.Debug("There is producer ", len(producers))
+
+	c.candidate = c.candidate[:0]
+	for _, member := range producers {
+		log.Debug("producer: ", common.IndexToName(member.Index))
+		var worker sc.Worker
+		worker.Pubkey = member.B64Pub
+		worker.Address = member.Address
+		worker.Port = strconv.Itoa(int(member.Port))
+
+		c.candidate = append(c.candidate, &worker)
+	}
+
+	c.createShardingTopo()
 }
 
 func (c *Cell) sendTopoToNet(topo *sc.ShardingTopo) {
