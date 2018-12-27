@@ -61,14 +61,13 @@ func newMsg(msgType pb.MsgType, data []byte) *impl {
 	}
 }
 
-func NewMessageFromProto(pbm pb.Message) (EcoBallNetMsg, error) {
-	m := new(impl)
-	m.chainId = pbm.ChainId
-	m.msgType = pbm.Type
-	m.nonce = pbm.Nonce
-	m.data = pbm.Data
-
-	return m, nil
+func NewMessageFromProto(pbm pb.Message) EcoBallNetMsg {
+	return &impl{
+		chainId: pbm.ChainId,
+		msgType: pbm.Type,
+		nonce:   pbm.Nonce,
+		data:    pbm.Data,
+	}
 }
 
 func (m *impl) ChainID() uint32 {
@@ -111,7 +110,7 @@ func FromPBReader(pbr pio.Reader) (EcoBallNetMsg, error) {
 	if err := pbr.ReadMsg(pbMsg); err != nil {
 		return nil, errors.New(err.Error())
 	}
-	return NewMessageFromProto(*pbMsg)
+	return NewMessageFromProto(*pbMsg), nil
 }
 
 func NewReader(s net.Stream) pio.ReadCloser {

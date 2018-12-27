@@ -78,8 +78,12 @@ func constructPeerHost(ctx context.Context, id peer.ID, private crypto.PrivKey) 
 	options = append(options, libp2p.ConnectionManager(mgr))
 
 	ps := peerstore.NewPeerstore()
-	ps.AddPrivKey(id, private)
-	ps.AddPubKey(id, private.GetPublic())
+	if err := ps.AddPrivKey(id, private); err != nil {
+		return nil, err
+	}
+	if err := ps.AddPubKey(id, private.GetPublic()); err != nil {
+		return nil, err
+	}
 	options = append(options, libp2p.Peerstore(ps))
 	return libp2p.New(ctx, options...)
 }
@@ -122,7 +126,7 @@ func newNetNode(parent context.Context) (*Node, error) {
 		listen:  config.SwarmConfig.ListenAddress,
 	}
 
-	h, err := constructPeerHost(parent, id, private) //basic_host.go
+	h, err := constructPeerHost(parent, id, private)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("error for constructing host, %s", err.Error()))
 	}

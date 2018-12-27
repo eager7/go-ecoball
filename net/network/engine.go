@@ -155,20 +155,26 @@ func (net *NetWork) sendWorker(id int) {
 					log.Error("send message to ", wrapper.pi, net.host.Peerstore().Addrs(wrapper.pi.ID), err)
 				}
 			case <-net.ctx.Done():
+				log.Warn("receive ctx done")
 				return
 			}
 		case <-net.ctx.Done():
+			log.Warn("receive ctx done")
 			return
 		}
 	}
 }
-func (net *NetWork) sendMessage(p peerstore.PeerInfo, outgoing message.EcoBallNetMsg) error {
-	log.Info("send message to", p.ID.Pretty(), p.Addrs)
-	sender, err := net.NewMessageSender(p)
+func (net *NetWork) sendMessage(peerInfo peerstore.PeerInfo, msg message.EcoBallNetMsg) error {
+	log.Info("prepare send message:", msg.Type().String(), " to", peerInfo.ID.Pretty(), peerInfo.Addrs)
+	sender, err := net.NewMessageSender(peerInfo)
 	if err != nil {
 		return err
 	}
-	return sender.SendMessage(net.ctx, outgoing)
+	if err := sender.SendMessage(net.ctx, msg); err != nil {
+		net.SenderMap.Del(peerInfo.ID)
+		return err
+	}
+	return nil
 }
 
 func (net *NetWork) BroadcastMessageToNeighbors(msg message.EcoBallNetMsg) error {
@@ -177,6 +183,18 @@ func (net *NetWork) BroadcastMessageToNeighbors(msg message.EcoBallNetMsg) error
 		sendJob := &SendMsgJob{peers, msg}
 		net.AddMsgJob(sendJob)
 	}
+	return nil
+}
 
+func (net *NetWork) BroadcastMessageToShard(shardId uint32, msg message.EcoBallNetMsg) error {
+	var peers []*peerstore.PeerInfo
+	nodes := net.ShardInfo.GetShardNodes(shardId)
+	for node := range nodes.Iterator() {
+		peers = append(peers, &node.PeerInfo)
+	}
+	if len(peers) > 0 {
+		sendJob := &SendMsgJob{peers, msg}
+		net.AddMsgJob(sendJob)
+	}
 	return nil
 }

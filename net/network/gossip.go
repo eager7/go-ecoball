@@ -118,7 +118,7 @@ func (net *NetWork) unWarpGossipMsg(msg message.EcoBallNetMsg) (message.EcoBallN
 	if err != nil {
 		return nil, errors.New("error for unmarshal a gossip message data")
 	} else {
-		msg, _ := message.NewMessageFromProto(oriPbMsg)
+		msg := message.NewMessageFromProto(oriPbMsg)
 		return msg, nil
 	}
 }

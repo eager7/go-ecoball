@@ -63,7 +63,8 @@ func (sender *messageSender) SendMessage(ctx context.Context, msg message.EcoBal
 	sender.lock.Lock()
 	defer sender.lock.Unlock()
 	if err := sender.send(ctx, msg); err != nil {
-		go net.FullClose(sender.stream)
+		//go net.FullClose(sender.stream)
+		net.FullClose(sender.stream)
 		sender.stream = nil
 		return err
 	}

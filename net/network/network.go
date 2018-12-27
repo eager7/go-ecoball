@@ -128,6 +128,7 @@ func (net *NetWork) NetWorkHandler(s net.Stream) {
 	addresses := s.Conn().RemoteMultiaddr()
 	log.Info("receive connect peer from:", id.Pretty(), addresses.String())
 	if net.SenderMap.Get(id) != nil {
+		log.Warn("the peer:", id.Pretty(), addresses.String(), "is connected, ignore this message")
 		return
 	}
 	net.SenderMap.Add(id, NewMsgSender(peerstore.PeerInfo{ID: id, Addrs: []multiaddr.Multiaddr{addresses}}, s, net))
@@ -138,9 +139,10 @@ func (net *NetWork) HandleNewStream(s net.Stream) {
 	reader := message.NewReader(s)
 	for {
 		if received, err := message.FromPBReader(reader); err != nil {
-			log.Error(fmt.Sprintf("error from %s, %s", s.Conn().RemotePeer(), err))
-			s.Reset()
+			err := errors.New(fmt.Sprintf("error from %s, %s", s.Conn().RemotePeer(), err))
 			net.SenderMap.Del(s.Conn().RemotePeer())
+			log.Error(err)
+			s.Reset()
 			return
 		} else {
 			net.routingTable.update(s.Conn().RemotePeer())
@@ -160,7 +162,7 @@ func (net *NetWork) HandleNewStream(s net.Stream) {
 }
 
 func (net *NetWork) ReceiveMessage(incoming message.EcoBallNetMsg) error {
-	log.Debug(fmt.Sprintf("msg type: %s", incoming.Type().String()))
+	log.Debug(fmt.Sprintf("receive msg type: %s", incoming.Type().String()))
 	if incoming.Type() >= pb.MsgType_APP_MSG_UNDEFINED {
 		log.Error()
 		return errors.New(fmt.Sprintf("receive a invalid message:%s", incoming.Type().String()))

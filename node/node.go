@@ -125,7 +125,7 @@ func runNode(c *cli.Context) error {
 	shutdown := make(chan bool, 1)
 	ecoballGroup, ctx := errgroup.WithContext(context.Background())
 
-	net.InitNetWork(nil)
+	net.InitNetWork(ctx)
 
 	if !config.DisableSharding {
 		simulate.LoadConfig("./sharding.json")
