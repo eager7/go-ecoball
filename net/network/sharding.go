@@ -51,10 +51,10 @@ func (s *ShardInfo) AddShardNode(shardId uint32, peerId peer.ID, addr multiaddr.
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if peerMap, ok := s.shardMap[shardId]; ok {
-		peerMap.Add(peerId, nil, []multiaddr.Multiaddr{addr}, "")
+		peerMap.Add(peerId, []multiaddr.Multiaddr{addr}, "")
 	} else {
 		peerMap := new(address.PeerMap).Initialize()
-		peerMap.Add(peerId, nil, []multiaddr.Multiaddr{addr}, "")
+		peerMap.Add(peerId, []multiaddr.Multiaddr{addr}, "")
 		s.shardMap[shardId] = peerMap
 	}
 }

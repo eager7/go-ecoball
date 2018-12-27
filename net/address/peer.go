@@ -3,7 +3,6 @@ package address
 import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
@@ -11,7 +10,6 @@ import (
 )
 
 type Peer struct {
-	s         net.Stream
 	PeerInfo  peerstore.PeerInfo
 	PublicKey string
 }
@@ -26,14 +24,14 @@ func (p *PeerMap) Initialize() PeerMap {
 	return *p
 }
 
-func (p *PeerMap) Add(id peer.ID, s net.Stream, addr []multiaddr.Multiaddr, b64Pub string) {
+func (p *PeerMap) Add(id peer.ID, addr []multiaddr.Multiaddr, b64Pub string) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	if _, ok := p.Peers[id]; ok {
 		return
 	}
 	peerInfo := peerstore.PeerInfo{ID: id, Addrs: addr}
-	p.Peers[id] = Peer{s: s, PeerInfo: peerInfo, PublicKey: b64Pub}
+	p.Peers[id] = Peer{PeerInfo: peerInfo, PublicKey: b64Pub}
 }
 
 func (p *PeerMap) Del(id peer.ID) error {
@@ -49,7 +47,7 @@ func (p *PeerMap) Del(id peer.ID) error {
 func (p *PeerMap) Get(id peer.ID) *Peer {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
-	if info, ok := p.Peers[id]; ok {
+	if info, ok := p.Peers[id]; ok { //copy value
 		return &info
 	}
 	return nil
@@ -82,7 +80,7 @@ func (p *PeerMap) Clone() *PeerMap {
 	defer p.lock.RUnlock()
 	np := new(PeerMap).Initialize()
 	for k, v := range p.Peers {
-		np.Add(k, v.s, v.PeerInfo.Addrs, v.PublicKey)
+		np.Add(k, v.PeerInfo.Addrs, v.PublicKey)
 	}
 	return &np
 }
