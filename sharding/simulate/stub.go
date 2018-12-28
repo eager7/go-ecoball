@@ -59,7 +59,7 @@ func TellLedgerProductMinorBlock(epoch uint64, height uint64) {
 }
 
 func CheckFinalBlock(f *cs.FinalBlock) bool {
-	log.Error("ledger check final block")
+	log.Warn("ledger check final block")
 	return true
 }
 
