@@ -31,7 +31,7 @@ import (
 )
 
 const connectedAddrTTL = time.Minute * 10
-const connectTry = 5
+const connectTry = 3
 
 type messageSender struct {
 	stream   net.Stream

@@ -18,7 +18,13 @@ func TestSync_SendSyncRequest(t *testing.T) {
 	fmt.Println("First")
 	requestPacket := MakeSyncRequestPacket(1, 10, -1,  worker, 0)
 	fmt.Println("Second")
-	cell := &cell.Cell{}
+	cell := &cell.Cell{
+		NodeType: 0,
+		Shardid:  0,
+		Self:     sc.Worker{},
+		Ledger:   nil,
+		Topoc:    nil,
+	}
 	sync := MakeSync(cell)
 	csp := cell.VerifySyncRequestPacket(requestPacket)
 	fmt.Println("Third")

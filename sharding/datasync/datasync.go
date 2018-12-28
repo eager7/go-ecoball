@@ -1,20 +1,20 @@
 package datasync
 
 import (
-	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"encoding/json"
-	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/sharding/net"
-	"github.com/ecoball/go-ecoball/sharding/cell"
-	"github.com/ecoball/go-ecoball/net/message/pb"
-	cs "github.com/ecoball/go-ecoball/core/shard"
-	"github.com/ecoball/go-ecoball/common/config"
 	"fmt"
-	"github.com/ecoball/go-ecoball/sharding/simulate"
-	"time"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/elog"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/net/message/pb"
+	"github.com/ecoball/go-ecoball/sharding/cell"
+	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"github.com/ecoball/go-ecoball/sharding/net"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"reflect"
 	"sync"
+	"time"
 )
 
 var (
@@ -23,77 +23,78 @@ var (
 
 /**
 TODO,maybe change cache to map:height->block base, will be easy to code?and more efficient
- */
+*/
 type BlocksCache struct {
-	needHeight map[cs.HeaderType]uint64
-	needHeightMinor map[uint32]uint64
-	blocks map[cs.HeaderType][]cs.BlockInterface
-	minorBlocks map[uint32][]cs.BlockInterface
+	needHeight         map[cs.HeaderType]uint64
+	needHeightMinor    map[uint32]uint64
+	blocks             map[cs.HeaderType][]cs.BlockInterface
+	minorBlocks        map[uint32][]cs.BlockInterface
 	finalBlockComplete bool
-	complete bool
+	complete           bool
 }
 
 type Sync struct {
-	cell *cell.Cell
-	cache BlocksCache
+	cell          *cell.Cell
+	cache         BlocksCache
 	synchronizing bool
-	lock sync.Mutex
-	receiveCh chan *sc.CsPacket
-	sendCh chan int
-	retryTimer *sc.Stimer
+	lock          sync.Mutex
+	receiveCh     chan *sc.CsPacket
+	sendCh        chan int
+	retryTimer    *sc.Stimer
 }
 
 func MakeSync(c *cell.Cell) *Sync {
 	return &Sync{
 		cell: c,
-		cache: BlocksCache {
-			needHeight: make(map[cs.HeaderType]uint64, 0),
-			needHeightMinor: make(map[uint32]uint64, 0),
-			blocks: make(map[cs.HeaderType][]cs.BlockInterface, 0),
-			minorBlocks: make(map[uint32][]cs.BlockInterface, 0),
+		cache: BlocksCache{
+			needHeight:         make(map[cs.HeaderType]uint64, 0),
+			needHeightMinor:    make(map[uint32]uint64, 0),
+			blocks:             make(map[cs.HeaderType][]cs.BlockInterface, 0),
+			minorBlocks:        make(map[uint32][]cs.BlockInterface, 0),
 			finalBlockComplete: false,
-			complete:false,
+			complete:           false,
 		},
 		synchronizing: false,
-		receiveCh : make(chan *sc.CsPacket, 10),
-		sendCh : make(chan int, 2),
-		retryTimer: sc.NewStimer(0, false),
+		receiveCh:     make(chan *sc.CsPacket, 10),
+		sendCh:        make(chan int, 2),
+		retryTimer:    sc.NewStimer(0, false),
 	}
 }
 
-func (sync *Sync)Start()  {
+func (sync *Sync) Start() {
 	go sync.working()
 }
 
-func (sync *Sync)working() {
-	for  {
+func (sync *Sync) working() {
+	for {
 		select {
-		case packet := <- sync.receiveCh:
+		case packet := <-sync.receiveCh:
 			log.Debug("Receive Sync Packet")
 			sync.RecvSyncResponsePacketHelper(packet)
-		case <- sync.sendCh:
+		case <-sync.sendCh:
 			log.Debug("Send Request")
 			sync.SendSyncRequestHelper()
-		case <- sync.retryTimer.T.C:
+		case <-sync.retryTimer.T.C:
 			log.Debug("Retry sync")
 			sync.SendSyncRequest()
 		}
 	}
 }
 
-
-func MakeSyncRequestPacket(blockType cs.HeaderType, fromHeight int64, to int64, worker *sc.WorkerId, shardID uint32) (*sc.NetPacket) {
+func MakeSyncRequestPacket(blockType cs.HeaderType, fromHeight int64, to int64, worker *sc.WorkerId, shardID uint32) *sc.NetPacket {
 	csp := &sc.NetPacket{
+		ChainId:    0,
 		PacketType: pb.MsgType_APP_MSG_SYNC_REQUEST,
-		BlockType: sc.SD_SYNC,
-		Step: 0,
+		BlockType:  sc.SD_SYNC,
+		Step:       0,
+		Packet:     nil,
 	}
 	request := &sc.SyncRequestPacket{
-		BlockType: blockType,
+		BlockType:  blockType,
 		FromHeight: fromHeight,
-		ToHeight: to,
-		Worker: worker,
-		ShardID: shardID,
+		ToHeight:   to,
+		Worker:     worker,
+		ShardID:    shardID,
 	}
 
 	data, err := json.Marshal(request)
@@ -106,12 +107,12 @@ func MakeSyncRequestPacket(blockType cs.HeaderType, fromHeight int64, to int64, 
 	return csp
 }
 
-func (sync *Sync)SendSyncRequest()  {
+func (sync *Sync) SendSyncRequest() {
 	sync.sendCh <- 1
 }
 
 //Request order is important
-func (sync *Sync)SendSyncRequestHelper()  {
+func (sync *Sync) SendSyncRequestHelper() {
 
 	sync.retryTimer.Reset(3 * time.Second)
 
@@ -165,7 +166,7 @@ func (sync *Sync)SendSyncRequestHelper()  {
 	sync.SendSyncRequestWithType(cs.HeMinorBlock)
 }
 
-func (sync *Sync)SendSyncRequestWithType(blockType cs.HeaderType) {
+func (sync *Sync) SendSyncRequestWithType(blockType cs.HeaderType) {
 	if blockType != cs.HeMinorBlock {
 
 		var height int64 = -1
@@ -225,8 +226,7 @@ func (sync *Sync)SendSyncRequestWithType(blockType cs.HeaderType) {
 	}
 }
 
-
-func (sync *Sync)SendSyncRequestWithHeightType(blockType cs.HeaderType, fromHeight int64, shardID uint32)  {
+func (sync *Sync) SendSyncRequestWithHeightType(blockType cs.HeaderType, fromHeight int64, shardID uint32) {
 	log.Debug("SendSyncRequestWithHeightType, blockType = ",
 		blockType, " from height = ", fromHeight, " shardID = ", shardID)
 	worker := &sc.WorkerId{
@@ -239,7 +239,7 @@ func (sync *Sync)SendSyncRequestWithHeightType(blockType cs.HeaderType, fromHeig
 	net.Np.SendSyncMessage(csp)
 }
 
-func (sync *Sync)SendSyncRequestTo(blockType cs.HeaderType, fromHeight int64, toHeight int64, shardID uint32)  {
+func (sync *Sync) SendSyncRequestTo(blockType cs.HeaderType, fromHeight int64, toHeight int64, shardID uint32) {
 	worker := &sc.WorkerId{
 		sync.cell.Self.Pubkey,
 		sync.cell.Self.Address,
@@ -250,7 +250,7 @@ func (sync *Sync)SendSyncRequestTo(blockType cs.HeaderType, fromHeight int64, to
 	net.Np.SendSyncMessage(csp)
 }
 
-func (s *Sync) SyncResponseDecode(syncData *sc.SyncResponseData) (*sc.SyncResponsePacket)   {
+func (s *Sync) SyncResponseDecode(syncData *sc.SyncResponseData) *sc.SyncResponsePacket {
 
 	blockType := syncData.BlockType
 	len := syncData.Len
@@ -268,7 +268,7 @@ func (s *Sync) SyncResponseDecode(syncData *sc.SyncResponseData) (*sc.SyncRespon
 			log.Error("minor block deserialize err")
 			return nil
 		}
-		list = append(list,blockInterface)
+		list = append(list, blockInterface)
 	}
 	csp := &sc.SyncResponsePacket{
 		uint(len),
@@ -283,13 +283,13 @@ func (s *Sync) SyncResponseDecode(syncData *sc.SyncResponseData) (*sc.SyncRespon
 }
 
 func (s *Sync) clearCache() {
-	 s.cache = BlocksCache {
-		needHeight: make(map[cs.HeaderType]uint64, 0),
-		needHeightMinor: make(map[uint32]uint64, 0),
-		blocks: make(map[cs.HeaderType][]cs.BlockInterface, 0),
-		minorBlocks: make(map[uint32][]cs.BlockInterface, 0),
+	s.cache = BlocksCache{
+		needHeight:         make(map[cs.HeaderType]uint64, 0),
+		needHeightMinor:    make(map[uint32]uint64, 0),
+		blocks:             make(map[cs.HeaderType][]cs.BlockInterface, 0),
+		minorBlocks:        make(map[uint32][]cs.BlockInterface, 0),
 		finalBlockComplete: false,
-		complete:false,
+		complete:           false,
 	}
 }
 
@@ -337,7 +337,7 @@ func (s *Sync) tellLedgerSyncComplete() {
 	}
 }
 
-func (s *Sync) DealSyncRequestHelper(request *sc.SyncRequestPacket) (*sc.NetPacket)  {
+func (s *Sync) DealSyncRequestHelper(request *sc.SyncRequestPacket) *sc.NetPacket {
 	from := request.FromHeight
 	to := request.ToHeight
 	blockType := cs.HeaderType(request.BlockType)
@@ -364,7 +364,7 @@ func (s *Sync) DealSyncRequestHelper(request *sc.SyncRequestPacket) (*sc.NetPack
 	if to < 0 {
 		to = int64(lastBlock.GetHeight())
 	}
-	if to > from + 10 {
+	if to > from+10 {
 		to = from + 10
 		response.Compelte = false
 	} else {
@@ -390,9 +390,9 @@ func (s *Sync) DealSyncRequestHelper(request *sc.SyncRequestPacket) (*sc.NetPack
 
 	csp := &sc.NetPacket{
 		PacketType: pb.MsgType_APP_MSG_SYNC_RESPONSE,
-		BlockType: sc.SD_SYNC,
+		BlockType:  sc.SD_SYNC,
 	}
-	jsonData,err := json.Marshal(data)
+	jsonData, err := json.Marshal(data)
 	if err != nil {
 		log.Error("GetLastShardBlock error", err)
 		return nil
@@ -411,7 +411,7 @@ func (s *Sync) dealSyncRequest(request *sc.SyncRequestPacket) (*sc.NetPacket, *s
 	return csp, worker
 }
 
-func (s *Sync) RecvSyncRequestPacket(packet *sc.CsPacket) (*sc.NetPacket, *sc.WorkerId){
+func (s *Sync) RecvSyncRequestPacket(packet *sc.CsPacket) (*sc.NetPacket, *sc.WorkerId) {
 	requestPacket := packet.Packet.(*sc.SyncRequestPacket)
 	return s.dealSyncRequest(requestPacket)
 }
@@ -447,8 +447,8 @@ func (s *Sync) CheckSyncCompleteForCMBlock(epoch uint64, blocks *[]cs.BlockInter
 	list := *blocks
 	len := len(list)
 	var lastCMBlock cs.CMBlock
-	if (len > 0) {
-		lastCMBlock =  (*blocks)[len-1].GetObject().(cs.CMBlock)
+	if len > 0 {
+		lastCMBlock = (*blocks)[len-1].GetObject().(cs.CMBlock)
 	} else {
 		o, _, err := s.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 		if err != nil {
@@ -462,11 +462,10 @@ func (s *Sync) CheckSyncCompleteForCMBlock(epoch uint64, blocks *[]cs.BlockInter
 		return true
 	}
 	return false
- }
+}
 
-
- //TODO, probably missing some corner case?
-func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool  {
+//TODO, probably missing some corner case?
+func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool {
 	log.Debug("CheckSyncComplete blockType = ",
 		syncResponse.BlockType, " complete = ", syncResponse.Compelte)
 	log.Debug("Block type = ", uint8(syncResponse.BlockType))
@@ -478,7 +477,7 @@ func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool  {
 		s.cache.finalBlockComplete = true
 		blocks := s.cache.blocks[cs.HeFinalBlock]
 		len := len(blocks)
-		log.Debug("final block cache len = ",len)
+		log.Debug("final block cache len = ", len)
 		if len > 0 {
 			lastFinalBlock = blocks[len-1].GetObject().(cs.FinalBlock)
 			hasFinalBlock = true
@@ -486,12 +485,12 @@ func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool  {
 	}
 	if s.cache.finalBlockComplete {
 
-		if (hasFinalBlock) {
+		if hasFinalBlock {
 			log.Debug("check complete, step 1")
 			for _, minorBlock := range lastFinalBlock.MinorBlocks {
 				log.Debug("MinorBlock hash = ", minorBlock.Hash())
 				blocks := s.cache.minorBlocks[minorBlock.ShardId]
-				complete := s.CheckSyncCompleteForMinorBlock(minorBlock, &blocks,  syncResponse)
+				complete := s.CheckSyncCompleteForMinorBlock(minorBlock, &blocks, syncResponse)
 				if !complete {
 					return false
 				}
@@ -507,8 +506,8 @@ func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool  {
 		} else {
 
 			/*
-			Case commitee start
-			 */
+				Case commitee start
+			*/
 			lastFinalBlock, _, err := s.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 			if err != nil {
 				log.Error("GetLastShardBlock", err)
@@ -535,7 +534,7 @@ func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool  {
 	}
 }
 
-func (s *Sync) getConcreteBlockObject(o interface{}) interface{}  {
+func (s *Sync) getConcreteBlockObject(o interface{}) interface{} {
 	var block interface{}
 	switch t := o.(type) {
 	case cs.CMBlock:
@@ -569,9 +568,9 @@ func (s *Sync) FillSyncDataInCacheHelper(p *[]cs.BlockInterface, needHeight uint
 		len := len(list)
 		var needH uint64
 		if len > 0 {
-			needH = list[len-1].GetHeight()+1
+			needH = list[len-1].GetHeight() + 1
 		} else {
-			needH = needHeight//s.cache.needHeight[blockType]
+			needH = needHeight //s.cache.needHeight[blockType]
 		}
 		if block.GetHeight() != needH {
 			log.Debug("Not need height, needHeight = ",
@@ -592,7 +591,7 @@ func (s *Sync) FillSyncDataInCache(syncResponse *sc.SyncResponsePacket) {
 		list := s.cache.blocks[blockType]
 		s.FillSyncDataInCacheHelper(&list, s.cache.needHeight[blockType], syncResponse)
 		//TODO, not efficent
-		s.cache.blocks[blockType]=list
+		s.cache.blocks[blockType] = list
 	} else {
 		shardID := syncResponse.ShardID
 		list := s.cache.minorBlocks[shardID]
@@ -603,11 +602,11 @@ func (s *Sync) FillSyncDataInCache(syncResponse *sc.SyncResponsePacket) {
 
 }
 
-func (s *Sync)  RecvSyncResponsePacket(packet *sc.CsPacket) {
+func (s *Sync) RecvSyncResponsePacket(packet *sc.CsPacket) {
 	s.receiveCh <- packet
 }
 
-func (s *Sync)  RecvSyncResponsePacketHelper(packet *sc.CsPacket) {
+func (s *Sync) RecvSyncResponsePacketHelper(packet *sc.CsPacket) {
 
 	data := packet.Packet.(*sc.SyncResponseData)
 
@@ -636,7 +635,7 @@ func (s *Sync)  RecvSyncResponsePacketHelper(packet *sc.CsPacket) {
 	}
 }
 
-func (s *Sync) DealSyncRequestHelperTest(request *sc.SyncRequestPacket) (*sc.NetPacket)  {
+func (s *Sync) DealSyncRequestHelperTest(request *sc.SyncRequestPacket) *sc.NetPacket {
 	from := request.FromHeight
 	to := request.ToHeight
 
@@ -649,12 +648,12 @@ func (s *Sync) DealSyncRequestHelperTest(request *sc.SyncRequestPacket) (*sc.Net
 	var response sc.SyncResponsePacket
 	for i := from; i <= to; i++ {
 
-		header := cs.MinorBlockHeader {
-			Version: 213,
-			Height: 21392,
-			Timestamp:    time.Now().UnixNano(),
+		header := cs.MinorBlockHeader{
+			Version:   213,
+			Height:    21392,
+			Timestamp: time.Now().UnixNano(),
 
-			COSign:       nil,
+			COSign: nil,
 		}
 		cosign := &types.COSign{}
 		cosign.Step1 = 1
@@ -662,22 +661,22 @@ func (s *Sync) DealSyncRequestHelperTest(request *sc.SyncRequestPacket) (*sc.Net
 
 		header.COSign = cosign
 
-		minorBlock := cs.MinorBlock {
+		minorBlock := cs.MinorBlock{
 			MinorBlockHeader: header,
-			Transactions: nil  ,
-			StateDelta: nil ,
+			Transactions:     nil,
+			StateDelta:       nil,
 		}
 		response.Blocks = append(response.Blocks, &minorBlock)
 
 	}
 
-	data := response.Encode(cs.HeMinorBlock, 0 )
+	data := response.Encode(cs.HeMinorBlock, 0)
 
 	csp := &sc.NetPacket{
 		PacketType: pb.MsgType_APP_MSG_SYNC_RESPONSE,
-		BlockType: sc.SD_SYNC,
+		BlockType:  sc.SD_SYNC,
 	}
-	jsonData,err := json.Marshal(data)
+	jsonData, err := json.Marshal(data)
 	if err != nil {
 		log.Error("GetLastShardBlock error", err)
 		return nil
@@ -686,8 +685,3 @@ func (s *Sync) DealSyncRequestHelperTest(request *sc.SyncRequestPacket) (*sc.Net
 
 	return csp
 }
-
-
-
-
-

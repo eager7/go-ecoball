@@ -62,10 +62,14 @@ func (n *netActor) Receive(ctx actor.Context) {
 		log.Debug("NetActor started")
 	case commonMsg.Transaction:
 		msgType := pb.MsgType_APP_MSG_TRN
-		buffer, _ := msg.Tx.Serialize()
+		buffer, err := msg.Tx.Serialize()
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Debug("broadcast transactions to shard:", msg.ShardID)
 		if msg.ShardID == n.node.network.ShardInfo.GetLocalId() {
 			netMsg := message.New(msgType, buffer)
-			log.Debug("send transactions in shard")
 			n.node.network.BroadCastCh <- netMsg
 		} else {
 			m := message.New(msgType, buffer)
@@ -85,13 +89,12 @@ func (n *netActor) Receive(ctx actor.Context) {
 			n.node.network.SendMsgToPeersWithId(peers, m)
 		}
 	case *common.ShardingTopo:
-		//go n.UpdateShardingInfo(msg)
+		go n.UpdateShardingInfo(msg)
 	case *types.Block: //not shard block
 		msgType := pb.MsgType_APP_MSG_BLKS
 		buffer, _ := msg.Serialize()
 		netMsg := message.New(msgType, buffer)
 		n.node.network.BroadCastCh <- netMsg
-		//n.network.BroadcastMessage(netMsg)
 
 	default:
 		log.Error("unknown message ", reflect.TypeOf(ctx.Message()))
