@@ -18,8 +18,10 @@ package message
 
 import (
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/message/pb"
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/net/message"
 )
 
 type ABABFTStart struct {
@@ -59,4 +61,19 @@ type DeleteTx struct {
 type Transaction struct {
 	ShardID uint32
 	Tx      *types.Transaction
+}
+
+type NetPacket struct {
+	Address   string
+	Port      string
+	PublicKey string
+	Message   message.EcoBallNetMsg
+}
+
+type EcoMessage interface {
+	Identify() mpb.Identify
+	JsonString() string
+	GetInstance() interface{}
+	Serialize() ([]byte, error)
+	Deserialize(data []byte) error
 }

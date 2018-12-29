@@ -27,6 +27,9 @@ import (
 	"strings"
 	"sync"
 	"io/ioutil"
+	"syscall"
+	"os/signal"
+	"fmt"
 )
 
 // DisableCache will disable caching of the home directory. Caching is enabled
@@ -174,4 +177,12 @@ func FileRead(path string) ([]byte, error){
 
 func FileWrite(path string, data []byte) error {
 	return ioutil.WriteFile(path, data, 0666)
+}
+
+func Pause() {
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	defer signal.Stop(interrupt)
+	sig := <-interrupt
+	fmt.Println(" program received exit signal:", sig)
 }
