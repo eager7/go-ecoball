@@ -70,6 +70,14 @@ func (s *ShardInfo) IsValidRemotePeer(p peer.ID) bool {
 	return false
 }
 
+func (s *ShardInfo) Purge() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	for k := range s.shardMap {
+		delete(s.shardMap, k)
+	}
+}
+
 func (s *ShardInfo) GetLocalId() uint32 {
 	s.lock.RLock()
 	defer s.lock.RUnlock()

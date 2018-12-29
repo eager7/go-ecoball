@@ -103,7 +103,7 @@ func (n *netActor) Receive(ctx actor.Context) {
 }
 
 func (n *netActor) UpdateShardingInfo(info *common.ShardingTopo) {
-	n.node.network.SenderMap.Purge()
+	n.node.network.ShardInfo.Purge()
 	for sid, shard := range info.ShardingInfo {
 		for _, member := range shard {
 			id, err := network.IdFromConfigEncodePublicKey(member.Pubkey)
