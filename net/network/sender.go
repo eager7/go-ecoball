@@ -31,7 +31,7 @@ import (
 )
 
 const connectedAddrTTL = time.Minute * 10
-const connectTry = 3
+const connectTry = 1
 
 type messageSender struct {
 	stream   net.Stream
@@ -78,15 +78,15 @@ func (net *NetWork) NewMessageSender(p peerstore.PeerInfo) (*messageSender, erro
 	}
 	sender = NewMsgSender(p, nil, net)
 
-	var i = 0
+	var i = 1
 RETRY:
 	if err := sender.newStream(); err != nil {
-		log.Error(fmt.Sprintf("new stream failed[%d]:%s", i, err.Error()))
-		if i >= connectTry {
-			return nil, errors.New(fmt.Sprintf("can't create new stream:%s", err.Error()))
+		log.Error(fmt.Sprintf("new stream[%s] failed[%d]:%s", p.Addrs, i, err.Error()))
+		if i < connectTry {
+			i += 1
+			goto RETRY
 		}
-		i += 1
-		goto RETRY
+		return nil, err
 	}
 	net.SenderMap.Add(p.ID, sender)
 
