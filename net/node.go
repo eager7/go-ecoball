@@ -23,7 +23,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/net/address"
-	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/network"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
 	"gx/ipfs/QmYAL9JsqVVPFWwM1ZzHNsofmTzRYQHJ2KqQaBmFJjJsNx/go-libp2p-connmgr"
@@ -35,10 +34,12 @@ import (
 	"gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
 	"os"
 	"time"
+	"github.com/ecoball/go-ecoball/lib-p2p/net"
 )
 
 var (
 	log = elog.NewLogger("net", elog.DebugLog)
+	NodeNetWork *net.Instance
 )
 
 type Node struct {
@@ -89,6 +90,16 @@ func constructPeerHost(ctx context.Context, id peer.ID, private crypto.PrivKey) 
 }
 
 func InitNetWork(ctx context.Context) *Node {
+	var err error
+	NodeNetWork,err = net.New(ctx, config.SwarmConfig.PrivateKey, config.SwarmConfig.ListenAddress[0])
+	if err != nil {
+		log.Error(err)
+	}
+	network.NewNetwork(ctx, NodeNetWork.Host)
+	if err := NewNetActor(&netActor{node: nil, ctx: ctx}); err != nil {
+		log.Panic(err)
+	}
+	return nil
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -132,7 +143,6 @@ func newNetNode(parent context.Context) (*Node, error) {
 	}
 
 	netNode.network = network.NewNetwork(parent, h)
-	dispatcher.InitMsgDispatcher()
 
 	return netNode, nil
 }

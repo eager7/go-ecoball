@@ -3,8 +3,10 @@ package net
 import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/event"
+	cm "github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	cs "github.com/ecoball/go-ecoball/core/shard"
-	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/net/network"
@@ -349,9 +351,9 @@ func (n *net) Subscribe(port string, chanSize uint16) (rcv <-chan interface{}, e
 		}
 		return
 	} else {
-		msg := []pb.MsgType{pb.MsgType_APP_MSG_SHARDING_PACKET, pb.MsgType_APP_MSG_CONSENSUS_PACKET,
-			pb.MsgType_APP_MSG_SYNC_REQUEST, pb.MsgType_APP_MSG_SYNC_RESPONSE}
-		rcv, err = dispatcher.Subscribe(msg...)
+		msg := []mpb.Identify{mpb.Identify_APP_MSG_SHARDING_PACKET, mpb.Identify_APP_MSG_CONSENSUS_PACKET,
+			mpb.Identify_APP_MSG_SYNC_REQUEST, mpb.Identify_APP_MSG_SYNC_RESPONSE}
+		rcv, err = event.Subscribe(msg...)
 		if err != nil {
 			log.Error("Subscribe error ", err)
 			panic("Subscribe error ")
@@ -366,16 +368,22 @@ func (n *net) sendto(addr string, port string, pubKey string, packet *sc.NetPack
 		go simulate.Sendto(addr, port, packet)
 		return nil
 	} else {
-		data, err := json.Marshal(packet)
+		/*data, err := json.Marshal(packet)
 		if err != nil {
 			log.Error("wrong packet")
 			return err
-		}
+		}*/
 
 		log.Debug("p2p net send to peer ", addr, " port ", port, " packet type ", packet.PacketType, " block type ", packet.BlockType)
 
-		msg := message.New(packet.PacketType, data)
-		n.n.SendMsgToPeer(addr, port, pubKey, msg)
+		//msg := message.New(packet.PacketType, data)
+		//n.n.SendMsgToPeer(addr, port, pubKey, msg)
+		event.Send(event.ActorSharding, event.ActorP2P, cm.NetPacket{
+			Address:   addr,
+			Port:      port,
+			PublicKey: pubKey,
+			Message:   nil, //TODO
+		})
 		return nil
 	}
 }

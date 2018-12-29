@@ -21,7 +21,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
@@ -64,6 +63,8 @@ func NewNetwork(ctx context.Context, host host.Host) *NetWork {
 	if instance != nil {
 		return instance
 	}
+	instance = &NetWork{}
+	return instance
 	instance = &NetWork{
 		ctx:          ctx,
 		host:         host,
@@ -162,9 +163,9 @@ func (net *NetWork) ReceiveMessage(incoming message.EcoBallNetMsg) error {
 		return errors.New(fmt.Sprintf("receive a invalid message:%s", incoming.Type().String()))
 	}
 
-	if err := dispatcher.Publish(incoming); err != nil {
-		return err
-	}
+	//if err := event.Publish(incoming); err != nil {
+	//	return err
+	//}
 	return nil
 }
 

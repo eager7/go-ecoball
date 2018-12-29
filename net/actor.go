@@ -20,7 +20,8 @@ import (
 	"fmt"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/event"
-	commonMsg "github.com/ecoball/go-ecoball/common/message"
+	cm "github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
@@ -60,7 +61,7 @@ func (n *netActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 		log.Debug("NetActor started")
-	case commonMsg.Transaction:
+	case cm.Transaction:
 		msgType := pb.MsgType_APP_MSG_TRN
 		buffer, err := msg.Tx.Serialize()
 		if err != nil {
@@ -89,13 +90,22 @@ func (n *netActor) Receive(ctx actor.Context) {
 			n.node.network.SendMsgToPeersWithId(peers, m)
 		}
 	case *common.ShardingTopo:
-		go n.UpdateShardingInfo(msg)
+		//go n.UpdateShardingInfo(msg)
 	case *types.Block: //not shard block
 		msgType := pb.MsgType_APP_MSG_BLKS
 		buffer, _ := msg.Serialize()
 		netMsg := message.New(msgType, buffer)
 		n.node.network.BroadCastCh <- netMsg
 
+	case cm.NetPacket:
+		//n.node.network.SendMsgToPeer(msg.Address, msg.Port, msg.PublicKey, msg.Message)
+		data, err := msg.Message.Serialize()
+		if err != nil {
+			log.Error(err)
+		}
+		if err := NodeNetWork.SendMessage(msg.PublicKey, msg.Address, msg.Port, &mpb.Message{Identify: msg.Message.Identify(), Payload: data}); err != nil {
+			log.Error("send message failed:", err)
+		}
 	default:
 		log.Error("unknown message ", reflect.TypeOf(ctx.Message()))
 	}

@@ -25,11 +25,10 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/net/dispatcher"
 	netMessage "github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/txpool"
 	"time"
-	"github.com/ecoball/go-ecoball/net/message/pb"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
@@ -48,11 +47,11 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.
 	actor := &soloActor{solo: solo}
 	NewSoloActor(actor)
 
-	msg := []pb.MsgType{
-		pb.MsgType_APP_MSG_BLKS,
+	msg := []mpb.Identify{
+		mpb.Identify_APP_MSG_SHARD_BLOCK,
 	}
 
-	solo.msg, err = dispatcher.Subscribe(msg...)
+	solo.msg, err = event.Subscribe(msg...)
 	if err != nil {
 		log.Error(err)
 		return nil, err

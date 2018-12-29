@@ -15,9 +15,9 @@ func main() {
 	for {
 		i++
 		log.Debug("start test program:", i)
-		out, err := runCmd("./run.sh.bak")
+		out, err := runCmd("./run.sh")
 		errors.CheckErrorPanic(err)
-		time.Sleep(time.Second*15)
+		time.Sleep(time.Second*10)
 		out, err = runCmd("find ecoball_log/ -name ecoball.log | xargs grep 123456789")
 		log.Notice(out)
 		out, err = runCmd("find ecoball_log/ -name ecoball.log | xargs grep ERROR")

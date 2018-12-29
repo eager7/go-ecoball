@@ -373,7 +373,7 @@ func invokeContractForScan(c *gin.Context) {
 
 	// wait for trx handle result
 	var result string
-	cmsg, err := event.SubscribeOnceEach(invoke.Hash)
+	cmsg, err := event.SubOnceEach(invoke.Hash.String())
 	timeout := make(chan bool, 1)
 	go func() {
 		time.Sleep(time.Second * 30)

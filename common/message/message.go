@@ -21,7 +21,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/net/message"
 )
 
 type ABABFTStart struct {
@@ -67,7 +66,7 @@ type NetPacket struct {
 	Address   string
 	Port      string
 	PublicKey string
-	Message   message.EcoBallNetMsg
+	Message   EcoMessage
 }
 
 type EcoMessage interface {

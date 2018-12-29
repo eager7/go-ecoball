@@ -18,8 +18,6 @@ func TestNet(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	net.InitNetWork(ctx)
-	//c := make(chan interface{})
-	//n.SetShardingSubCh(c)
 	toPoInfo := `{
 	"ShardId": 1,
 	"Pubkey": "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAE=",

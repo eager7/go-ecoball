@@ -20,7 +20,6 @@ package network
 import (
 	"context"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/net/dispatcher"
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/net/util"
@@ -33,6 +32,8 @@ import (
 	kb "gx/ipfs/QmesQqwonP618R7cJZoFfA4ioYhhMKnDmtUxcAvvxEEGnw/go-libp2p-kbucket"
 	"sync"
 	"time"
+	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 const (
@@ -201,11 +202,11 @@ func (nrt *NetRouteTable) OnSyncRouteAck(msg message.EcoBallNetMsg) {
 
 func (nrt *NetRouteTable) Start() {
 	var err error
-	msg := []pb.MsgType{
-		pb.MsgType_APP_MSG_P2PRTSYN,
-		pb.MsgType_APP_MSG_P2PRTSYNACK,
+	msg := []mpb.Identify{
+		mpb.Identify_APP_MSG_P2PRTSYN,
+		mpb.Identify_APP_MSG_P2PRTSYNACK,
 	}
-	nrt.msgSubCh, err = dispatcher.Subscribe(msg...)
+	nrt.msgSubCh, err = event.Subscribe(msg...)
 	if err != nil {
 		log.Error(err)
 		return
