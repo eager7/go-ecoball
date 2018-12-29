@@ -19,9 +19,9 @@ package common
 import (
 	"bytes"
 	"errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/crypto/sha3"
 	"math/big"
-	"fmt"
 )
 
 const HashLen = 32
@@ -33,22 +33,22 @@ func NewHash(addr []byte) Hash {
 	copy(hash[:], addr)
 	return hash
 }
-
 func BytesToHash(b []byte) Hash {
 	var h Hash
 	h.SetBytes(b)
 	return h
 }
-
 func BigToHash(b *big.Int) Hash { return BytesToHash(b.Bytes()) }
-
-func HexToHash(s string) Hash { return BytesToHash(FromHex(s)) }
-
+func HexToHash(s string) Hash   { return BytesToHash(FromHex(s)) }
 func (h Hash) Bytes() []byte {
 	return h[:]
 }
-
-// Sets the hash to the value of b. If b is larger than len(h), 'b' will be cropped (from the left).
+func (h Hash) HexString() string {
+	return ToHex(h[:])
+}
+func (h Hash) String() string {
+	return h.HexString()
+}
 func (h *Hash) SetBytes(b []byte) {
 	if len(b) > len(h) {
 		b = b[len(b)-HashLen:]
@@ -56,7 +56,25 @@ func (h *Hash) SetBytes(b []byte) {
 
 	copy(h[HashLen-len(b):], b)
 }
-
+func (h *Hash) FormHexString(data string) Hash {
+	hash := NewHash(FromHex(data))
+	return hash
+}
+func (h *Hash) Equals(b *Hash) bool {
+	if nil == h {
+		return nil == b
+	}
+	if nil == b {
+		return false
+	}
+	return bytes.Equal(h[:], b[:])
+}
+func (h *Hash) IsNil() bool {
+	return h.Equals(&Hash{})
+}
+func (h *Hash) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_HASH
+}
 func SingleHash(b []byte) Hash {
 	return Keccak256Hash(b)
 }
@@ -77,31 +95,4 @@ func Keccak256Hash(data ...[]byte) (hash Hash) {
 	}
 	d.Sum(hash[:0])
 	return hash
-}
-
-func (h Hash) HexString() string {
-	return ToHex(h[:])
-}
-
-func (h *Hash) FormHexString(data string) Hash {
-	hash := NewHash(FromHex(data))
-	return hash
-}
-
-func (h *Hash) Equals(b *Hash) bool {
-	if nil == h {
-		return nil == b
-	}
-	if nil == b {
-		return false
-	}
-	return bytes.Equal(h[:], b[:])
-}
-
-func (h *Hash) IsNil() bool {
-	return h.Equals(&Hash{})
-}
-
-func (h Hash) Show() {
-	fmt.Println("\t\thash:", h.HexString())
 }

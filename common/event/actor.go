@@ -135,20 +135,6 @@ func SendSync(receiver ActorIndex, msg interface{}, timeout time.Duration) (inte
 	return res, nil
 }
 
-/**
-** Send msg to multiple actors
-** pub -- the sender actor
-** sub -- the receiver actor
- */
-func Publish(pub ActorIndex, msg interface{}, sub ...ActorIndex) error {
-	for _, s := range sub {
-		if err := Send(pub, s, msg); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func EventStop() {
 	for _, s := range actorList.list {
 		s.Tell(&actor.Stop{})

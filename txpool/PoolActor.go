@@ -35,7 +35,6 @@ var CurrentTxN = 0
 
 type PoolActor struct {
 	txPool *TxPool
-
 	wg     sync.WaitGroup
 	worker map[string]Worker
 }
@@ -103,14 +102,14 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	}
 	txClone, err := tx.Clone()
 	if err != nil {
-		event.PublishTrxRes(tx.Hash, err.Error())
+		event.PublishCustom(err.Error(), tx.Hash.String())
 		return err
 	}
 	if ret, err := p.preHandleTransaction(txClone); err != nil {
-		event.PublishTrxRes(tx.Hash, err.Error())
+		event.PublishCustom(err.Error(), tx.Hash.String())
 		return err
 	} else {
-		event.PublishTrxRes(tx.Hash, string(ret))
+		event.PublishCustom(string(ret), tx.Hash.String())
 	}
 	p.txPool.txsCache.Add(tx.Hash, nil)
 

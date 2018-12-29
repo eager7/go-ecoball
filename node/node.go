@@ -39,6 +39,7 @@ import (
 	"github.com/ecoball/go-ecoball/spectator"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
+	"github.com/ecoball/go-ecoball/common/event"
 )
 
 var (
@@ -126,6 +127,7 @@ func runNode(c *cli.Context) error {
 	ecoballGroup, ctx := errgroup.WithContext(context.Background())
 
 	net.InitNetWork(ctx)
+	event.InitMsgDispatcher()
 
 	if !config.DisableSharding {
 		simulate.LoadConfig("./sharding.json")

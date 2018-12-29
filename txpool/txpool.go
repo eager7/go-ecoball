@@ -23,12 +23,10 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/net/dispatcher"
-	"github.com/ecoball/go-ecoball/net/message"
-	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/hashicorp/golang-lru"
 )
 
@@ -62,10 +60,10 @@ func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
 	}
 	pool.PendingTxs = make(map[common.Hash]*types.TxsList, 1)
 	pool.AddTxsList(config.ChainHash)
-	msg := []pb.MsgType{
-		pb.MsgType_APP_MSG_TRN,
+	topics := []mpb.Identify{
+		mpb.Identify_APP_MSG_TRANSACTION,
 	}
-	pool.netMsg, err = dispatcher.Subscribe(msg...)
+	pool.netMsg, err = event.Subscribe(topics...)
 	if err != nil {
 		return nil, errors.New(err.Error())
 	}
@@ -78,7 +76,6 @@ func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
 		pool = nil
 	}
 	T = pool
-	event.InitMsgDispatcher()
 	go pool.Subscribe()
 	return
 }
@@ -130,14 +127,14 @@ func (t *TxPool) Subscribe() {
 				return
 			}
 		case msg := <-t.netMsg:
-			in, ok := msg.(message.EcoBallNetMsg)
+			in, ok := msg.(mpb.Message)
 			if !ok {
 				log.Error("can't parse msg")
 				continue
 			}
-			log.Info("receive msg:", in.Type().String())
+			log.Info("receive msg:", in.Identify.String())
 			tx := new(types.Transaction)
-			if err := tx.Deserialize(in.Data()); err != nil {
+			if err := tx.Deserialize(in.Payload); err != nil {
 				log.Error(err)
 				continue
 			}

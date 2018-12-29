@@ -18,7 +18,7 @@ package message
 
 import (
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/message/pb"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/net/message"
@@ -72,7 +72,7 @@ type NetPacket struct {
 
 type EcoMessage interface {
 	Identify() mpb.Identify
-	JsonString() string
+	String() string
 	GetInstance() interface{}
 	Serialize() ([]byte, error)
 	Deserialize(data []byte) error
