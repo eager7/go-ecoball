@@ -26,6 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"math/big"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 const VersionTx = 1
@@ -295,6 +296,10 @@ func (t *Transaction) JsonString() string {
 	return string(data)
 }
 
+func (t *Transaction) String() string {
+	return t.JsonString()
+}
+
 func (t *Transaction) Clone() (*Transaction, error) {
 	tx := new(Transaction)
 	data, err := t.Serialize()
@@ -305,4 +310,12 @@ func (t *Transaction) Clone() (*Transaction, error) {
 		return nil, err
 	}
 	return tx, nil
+}
+
+func (t *Transaction) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_TRANSACTION
+}
+
+func (t Transaction) GetInstance() interface{} {
+	return t
 }
