@@ -21,7 +21,7 @@ const (
 )
 
 func TestNode1(t *testing.T) {
-	n, err := net.New(context.Background(), priKey1, "/ip4/0.0.0.0/tcp/9011")
+	n, err := net.NewInstance(context.Background(), priKey1, "/ip4/0.0.0.0/tcp/9011")
 	CheckErrorPanic(err)
 
 	fmt.Println("wait...")
@@ -34,7 +34,7 @@ func TestNode1(t *testing.T) {
 }
 
 func TestNode2(t *testing.T) {
-	n, err := net.New(context.Background(), priKey2, "/ip4/0.0.0.0/tcp/9012")
+	n, err := net.NewInstance(context.Background(), priKey2, "/ip4/0.0.0.0/tcp/9012")
 	CheckErrorPanic(err)
 
 	fmt.Println("wait...")

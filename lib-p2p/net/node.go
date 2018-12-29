@@ -7,7 +7,9 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/common/message/mpb"
+	"github.com/ecoball/go-ecoball/lib-p2p/address"
 	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
 	"gx/ipfs/QmYAL9JsqVVPFWwM1ZzHNsofmTzRYQHJ2KqQaBmFJjJsNx/go-libp2p-connmgr"
@@ -30,16 +32,18 @@ const (
 )
 
 type Instance struct {
-	ctx     context.Context
-	Host    host.Host
-	ID      peer.ID
-	Address string
-	Peers   PeerMap
-	lock    sync.RWMutex
+	ctx       context.Context
+	Host      host.Host
+	ID        peer.ID
+	Address   string
+	Peers     PeerMap
+	ShardInfo address.ShardInfo
+	lock      sync.RWMutex
 }
 
-func New(ctx context.Context, b64Pri, address string) (*Instance, error) {
+func NewInstance(ctx context.Context, b64Pri, address string) (*Instance, error) {
 	i := new(Instance)
+	i.ShardInfo.Initialize()
 	if err := i.initialize(ctx, b64Pri, address); err != nil {
 		return nil, err
 	}
@@ -145,8 +149,8 @@ func (i *Instance) NetworkHandler(s net.Stream) {
 	go i.ReceiveMessage(s)
 }
 
-func (i *Instance) StreamConnect(b64Pub, address, port string) (net.Stream, error) {
-	id, err := IdFromPublicKey(b64Pub)
+func (i *Instance) StreamConnect(b64Pub, addr, port string) (net.Stream, error) {
+	id, err := address.IdFromPublicKey(b64Pub)
 	if err != nil {
 		return nil, err
 	}
@@ -155,21 +159,21 @@ func (i *Instance) StreamConnect(b64Pub, address, port string) (net.Stream, erro
 		return p.s, nil
 	}
 
-	addr, err := multiaddr.NewMultiaddr(NewAddrInfo(address, port))
+	multiAddr, err := multiaddr.NewMultiaddr(address.NewAddrInfo(addr, port))
 	if err != nil {
 		return nil, errors.New(err.Error())
 	}
 	//i.Host.Peerstore().AddAddr(id, addr, peerstore.PermanentAddrTTL)
 	if len(i.Host.Peerstore().Addrs(id)) == 0 {
-		i.Host.Peerstore().AddAddr(id, addr, time.Minute*10)
+		i.Host.Peerstore().AddAddr(id, multiAddr, time.Minute*10)
 	}
-	log.Info("create new stream:", id.Pretty(), address, port)
+	log.Info("create new stream:", id.Pretty(), multiAddr, port)
 	s, err := i.Host.NewStream(i.ctx, id, Protocol)
 	if err != nil {
 		return nil, errors.New(err.Error())
 	}
 	log.Info("add stream:", s)
-	i.Peers.Add(id, s, addr)
+	i.Peers.Add(id, s, multiAddr)
 	//go i.ReceiveMessage(s)
 	return s, nil
 }
@@ -180,20 +184,19 @@ func (i *Instance) StreamConnect(b64Pub, address, port string) (net.Stream, erro
  *  @param address - the address of ip
  *  @param port - the port of ip
  */
-func (i *Instance) Connect(b64Pub, address, port string) error {
-	id, err := IdFromPublicKey(b64Pub)
+func (i *Instance) Connect(b64Pub, addr, port string) error {
+	id, err := address.IdFromPublicKey(b64Pub)
 	if err != nil {
 		return err
 	}
-	addr, err := multiaddr.NewMultiaddr(NewAddrInfo(address, port))
+	multiAddr, err := multiaddr.NewMultiaddr(address.NewAddrInfo(addr, port))
 	if err != nil {
 		return errors.New(err.Error())
 	}
-	pi := peerstore.PeerInfo{ID: id, Addrs: []multiaddr.Multiaddr{addr}}
+	pi := peerstore.PeerInfo{ID: id, Addrs: []multiaddr.Multiaddr{multiAddr}}
 	if err := i.Host.Connect(i.ctx, pi); err != nil {
 		return errors.New(err.Error())
 	}
-	//i.Peers.Add(id, nil, addr, b64Pub)
 	return nil
 }
 
@@ -216,15 +219,15 @@ func (i *Instance) ReceiveMessage(s net.Stream) {
 	}
 }
 
-func (i *Instance) SendMessage(b64Pub, address, port string, message *mpb.Message) error {
-	id, err := IdFromPublicKey(b64Pub)
+func (i *Instance) SendMessage(b64Pub, addr, port string, message *mpb.Message) error {
+	id, err := address.IdFromPublicKey(b64Pub)
 	if err != nil {
 		return errors.New(err.Error())
 	}
 	var s net.Stream
 	info := i.Peers.Get(id)
 	if info == nil {
-		if s, err = i.StreamConnect(b64Pub, address, port); err != nil {
+		if s, err = i.StreamConnect(b64Pub, addr, port); err != nil {
 			return err
 		}
 	} else {
@@ -258,5 +261,22 @@ func (i *Instance) ResetStream(s net.Stream) error {
 		return err
 	}
 	i.Peers.Del(id)
+	return nil
+}
+
+func (i *Instance) BroadcastToShard(shardId uint32, msg message.EcoMessage) error {
+	peerMap := i.ShardInfo.GetShardNodes(shardId)
+	if peerMap == nil {
+		return errors.New(fmt.Sprintf("can't find shard[%d] nodes", shardId))
+	}
+	for node := range peerMap.Iterator() {
+		data, err := msg.Serialize()
+		if err != nil {
+			return err
+		}
+		if err := i.SendMessage(node.Pubkey, node.Address, node.Port, &mpb.Message{Identify: msg.Identify(), Payload: data}); err != nil {
+			log.Error(err)
+		}
+	}
 	return nil
 }
