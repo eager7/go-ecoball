@@ -123,7 +123,7 @@ logger_type=0                           # 0: zap 1: logrus
 with_caller=false
 logger_encoder=1                        # 0: json 1: console
 skip=4                                  # call depth, zap log is 3, logger is 4
-time_pattern="2006-01-02 15:04:05.000"
+time_pattern="2006-01-02 15:04:05.00000"
 #file name, file location is log_dir + name
 debug_log_filename="ecoball.log"   		# or 'stdout' / 'stderr'
 info_log_filename="ecoball.log"     	# or 'stdout' / 'stderr'
