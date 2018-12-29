@@ -74,6 +74,9 @@ def main():
     host_ip = args.host_ip
     committee_count = network[host_ip][0]
     shard_count = network[host_ip][1]
+    candidate_count = 0
+    if len(network[host_ip]) > 2:
+        candidate_count = network[host_ip][2]
 
     #create directory
     shard_log_dir = os.path.join(root_dir, 'ecoball_log/shard')
@@ -90,7 +93,7 @@ def main():
     PORT = 20681
     image = "registry.quachain.net:5000/ecoball:1.0.0"
 
-    count = committee_count + shard_count - 1
+    count = committee_count + shard_count + candidate_count - 1
     while count >= 0:
         # start ecoball
         command = "docker run -d " + "--name=ecoball_" + str(count) + " -p "
