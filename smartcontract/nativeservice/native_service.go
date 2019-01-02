@@ -114,7 +114,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		}
 		ns.tx.Receipt.Accounts[0] = data
 
-	case "reg_prod": //注册成为候选节点，需要4个参数，分别为注册账号，节点公钥，地址，端口号，以及付款账号，如: root,192.168.1.1,1001,root
+	case "reg_prod": //注册成为候选节点，需要5个参数，分别为注册账号，节点公钥，地址，端口号，以及付款账号，如: root,CAASogEwgZ8....,192.168.1.1,1001,root
 		if len(params) != 5 {
 			return nil, errors.New("the param is error, please input 5 param for reg_prod like [root,CAASogEwgZ8....,192.168.1.1,1001,root]")
 		}

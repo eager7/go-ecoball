@@ -257,7 +257,7 @@ func TestResource(t *testing.T) {
 
 	shards := []shard.Shard{{
 		Member: []shard.NodeInfo{{
-			PublicKey: simulate.GetNodePubKey(),
+			PublicKey: []byte(config.SwarmConfig.PublicKey),
 			Address:   simulate.GetNodeInfo().Address,
 			Port:      simulate.GetNodeInfo().Port,
 		}},
