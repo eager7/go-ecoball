@@ -5,7 +5,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/test/example"
@@ -209,38 +208,4 @@ func TestVCBlockHeader(t *testing.T) {
 	errors.CheckErrorPanic(blockVC2.Deserialize(data))
 
 	errors.CheckEqualPanic(blockVC.JsonString() == blockVC2.JsonString())
-}
-
-func TestHeader(t *testing.T) {
-	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
-	h, err := types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, config.BlockCpuLimit, config.BlockNetLimit, time.Now().Unix())
-	errors.CheckErrorPanic(err)
-	errors.CheckErrorPanic(h.SetSignature(&config.Root))
-
-	data, err := h.Serialize()
-	errors.CheckErrorPanic(err)
-
-	h2 := new(types.Header)
-	errors.CheckErrorPanic(h2.Deserialize(data))
-
-	errors.CheckEqualPanic(h.JsonString() == h2.JsonString())
-
-	//ABA BFT
-	sig1 := common.Signature{PubKey: []byte("1234"), SigData: []byte("5678")}
-	sig2 := common.Signature{PubKey: []byte("4321"), SigData: []byte("8765")}
-	var sigPer []common.Signature
-	sigPer = append(sigPer, sig1)
-	sigPer = append(sigPer, sig2)
-	abaData := types.AbaBftData{NumberRound: 5, PreBlockSignatures: sigPer}
-	conData = types.ConsensusData{Type: types.ConABFT, Payload: &abaData}
-	h, err = types.NewHeader(types.VersionHeader, config.ChainHash, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, config.BlockCpuLimit, config.BlockNetLimit, time.Now().Unix())
-	errors.CheckErrorPanic(err)
-	errors.CheckErrorPanic(h.SetSignature(&config.Root))
-
-	data, err = h.Serialize()
-	errors.CheckErrorPanic(err)
-
-	h2 = new(types.Header)
-	errors.CheckErrorPanic(h2.Deserialize(data))
-	errors.CheckEqualPanic(h.JsonString() == h2.JsonString())
 }

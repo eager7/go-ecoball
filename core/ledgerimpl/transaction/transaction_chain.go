@@ -26,7 +26,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/geneses"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/pb"
@@ -139,7 +138,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger, shard bool) (c *Chai
 *  @brief  create a new block, this function will execute the transaction to rebuild mpt trie
 *  @param  consensusData - the data of consensus module set
  */
-func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, []*types.Transaction, error) {
+func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsData, timeStamp int64) (*types.Block, []*types.Transaction, error) {
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, nil, err
@@ -150,7 +149,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 	for i := 0; i < len(txs); i++ {
 		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
 		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
-			log.Warn(txs[i].JsonString())
+			log.Warn(txs[i].String())
 			event.Send(event.ActorLedger, event.ActorTxPool, message.DeleteTx{ChainID: txs[i].ChainID, Hash: txs[i].Hash})
 			txs = append(txs[:i], txs[i+1:]...)
 			return nil, txs, err
@@ -191,7 +190,7 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 	}
 	for _, v := range block.Transactions {
 		if err := c.CheckTransaction(v); err != nil {
-			log.Warn(v.JsonString())
+			log.Warn(v.String())
 			return err
 		}
 	}
@@ -216,7 +215,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	for i := 0; i < len(block.Transactions); i++ {
 		log.Notice("Handle Transaction:", block.Transactions[i].Type.String(), block.Transactions[i].Hash.HexString(), " in final DB")
 		if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
-			log.Warn(block.Transactions[i].JsonString())
+			log.Warn(block.Transactions[i].String())
 			c.StateDB.FinalDB.Reset(stateHashRoot)
 			return err
 		}
@@ -236,7 +235,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return err
 	}
 	if c.StateDB.FinalDB.GetHashRoot().HexString() != block.StateHash.HexString() {
-		log.Warn(block.JsonString(true))
+		log.Warn(block.String())
 		c.StateDB.FinalDB.Reset(stateHashRoot)
 		return errors.New(fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.FinalDB.GetHashRoot().HexString(), block.Hash.HexString()))
 	}
@@ -262,7 +261,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	}
 	c.StateDB.FinalDB.CommitToDB()
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
-	log.Notice(block.JsonString(false))
+	log.Notice(block.String())
 	c.CurrentHeader = block.Header
 
 	//c.lockBlock.Lock()
@@ -354,15 +353,31 @@ func (c *ChainTx) GenesesBlockInit(chainID common.Hash, addr common.Address) err
 	//TODO end
 
 	hash := common.NewHash([]byte("EcoBall Geneses Block"))
-	conData := types.GenesesBlockInitConsensusData(timeStamp)
-
+	conData, err := types.InitConsensusData(timeStamp)
+	if err != nil {
+		return err
+	}
 	if err := geneses.PresetContract(c.StateDB.FinalDB, timeStamp, addr); err != nil {
 		return err
 	}
 
-	header, err := types.NewHeader(types.VersionHeader, chainID, 1, chainID, hash,
-		c.StateDB.FinalDB.GetHashRoot(), *conData, bloom.Bloom{}, config.BlockCpuLimit, config.BlockNetLimit, timeStamp)
-	if err != nil {
+	header := &types.Header{
+		Version:    types.VersionHeader,
+		ChainID:    chainID,
+		TimeStamp:  timeStamp,
+		Height:     1,
+		ConsData:   *conData,
+		PrevHash:   hash,
+		MerkleHash: common.Hash{},
+		StateHash:  c.StateDB.FinalDB.GetHashRoot(),
+		Receipt:    types.BlockReceipt{
+			BlockCpu: config.BlockCpuLimit,
+			BlockNet: config.BlockNetLimit,
+		},
+		Signatures: nil,
+		Hash:       common.Hash{},
+	}
+	if err := header.ComputeHash(); err != nil {
 		return err
 	}
 	block := &types.Block{Header: header, CountTxs: 0, Transactions: nil}
@@ -418,7 +433,11 @@ func (c *ChainTx) GetTransaction(hash common.Hash) (*types.Transaction, error) {
 	if err := block.Deserialize(blockData); err != nil {
 		return nil, err
 	}
-	return block.GetTransaction(hash)
+	tx := block.GetTransaction(hash)
+	if tx == nil {
+		return nil, errors.New(fmt.Sprintf("can't find this tx:%s", hash.String()))
+	}
+	return tx, nil
 }
 
 /**
@@ -997,7 +1016,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	log.Debug("commit to block map")
 	c.MapStore.Put(key, cacheData)
 
-	log.Notice("save "+shard.HeaderType(block.Type()).String()+" block", block.JsonString())
+	log.Notice("save "+shard.HeaderType(block.Type()).String()+" block", block.String())
 	if block.GetHeight() != 1 {
 		go connect.Notify(info.ShardBlock, block)
 		if err := event.Publish(event.ActorLedger, block, event.ActorTxPool); err != nil {
@@ -1256,7 +1275,7 @@ func (c *ChainTx) newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transact
 	for i := 0; i < len(txs); i++ {
 		//log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
 		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
-			log.Warn(txs[i].JsonString())
+			log.Warn(txs[i].String())
 			event.Send(event.ActorLedger, event.ActorTxPool, message.DeleteTx{ChainID: txs[i].ChainID, Hash: txs[i].Hash})
 			txs = append(txs[:i], txs[i+1:]...)
 			return nil, txs, err
@@ -1301,7 +1320,7 @@ func (c *ChainTx) newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transact
 		return nil, nil, err
 	}
 	log.Notice("new minor block:", block.GetHeight(), block.MinorBlockHeader.JsonString())
-	//log.Warn(common.JsonString(c.StateDB.FinalDB.Params), common.JsonString(c.StateDB.FinalDB.Accounts))
+	//log.Warn(common.String(c.StateDB.FinalDB.Params), common.String(c.StateDB.FinalDB.Accounts))
 	return block, nil, nil
 }
 
@@ -1442,7 +1461,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 		return nil, err
 	}
 	log.Notice("new final block:", block.Height, block.FinalBlockHeader.JsonString())
-	//log.Warn(common.JsonString(c.StateDB.FinalDB.Params), common.JsonString(c.StateDB.FinalDB.Accounts))
+	//log.Warn(common.String(c.StateDB.FinalDB.Params), common.String(c.StateDB.FinalDB.Accounts))
 	return block, nil
 }
 
@@ -1617,7 +1636,7 @@ func (c *ChainTx) blockExisted(hash common.Hash) bool {
 func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, tx *types.Transaction, timeStamp int64, cpuLimit, netLimit float64) (err error) {
 	switch delta.Type {
 	case types.TxTransfer:
-		//log.Info("handle delta in ", s.Type.String(), common.JsonString(delta))
+		//log.Info("handle delta in ", s.Type.String(), common.String(delta))
 		if err := s.AccountSubBalance(delta.Receipt.From, state.AbaToken, delta.Receipt.Amount); err != nil {
 			return err
 		}

@@ -13,7 +13,7 @@ type Ledger interface {
 	//GetShardBlock() (types.Payload, error)
 
 	GetTxBlock(chainID common.Hash, hash common.Hash) (*types.Block, error)
-	NewTxBlock(chainID common.Hash, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, []*types.Transaction, error)
+	NewTxBlock(chainID common.Hash, txs []*types.Transaction, consData types.ConsData, timeStamp int64) (*types.Block, []*types.Transaction, error)
 	VerifyTxBlock(chainID common.Hash, block *types.Block) error
 	//SaveTxBlock(block *types.Block) error
 	GetTxBlockByHeight(chainID common.Hash, height uint64) (*types.Block, error)

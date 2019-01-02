@@ -136,9 +136,9 @@ func (n *netActor) Engine() {
 			}
 		case <-n.ctx.Done():
 			log.Warn("lib p2p actor receive quit signal")
-			break
+			return
 		case <-n.exit:
-			break
+			return
 		}
 	}
 }

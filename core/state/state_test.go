@@ -248,6 +248,7 @@ func checkBalance(value uint64, index common.AccountName, s *state.State) {
 }
 
 func TestResource(t *testing.T) {
+	event.InitMsgDispatcher()
 	l := example.ShardLedger("/tmp/test_resource")
 	txpool.Start(l)
 
@@ -256,7 +257,7 @@ func TestResource(t *testing.T) {
 
 	shards := []shard.Shard{{
 		Member: []shard.NodeInfo{{
-			PublicKey: simulate.GetNodePubKey(),
+			PublicKey: []byte(config.SwarmConfig.PublicKey),
 			Address:   simulate.GetNodeInfo().Address,
 			Port:      simulate.GetNodeInfo().Port,
 		}},

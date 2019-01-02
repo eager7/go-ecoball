@@ -23,12 +23,12 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	netMessage "github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/txpool"
 	"time"
-	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 var log = elog.NewLogger("Solo", elog.NoticeLog)
@@ -78,7 +78,7 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.
 func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address) {
 	time.Sleep(time.Second * 1)
 	t := time.NewTimer(time.Second * 1)
-	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
+	conData := types.ConsData{Type: types.ConSolo, Payload: &types.SoloData{}}
 	root := common.AddressFromPubKey(solo.account.PublicKey)
 	startNode := root.Equals(&addr)
 	for {
@@ -94,7 +94,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 				//log.Info("no transaction in this time")
 				continue
 			}
-			PACKAGE:
+		PACKAGE:
 			block, txs, err := solo.ledger.NewTxBlock(chainID, txs, conData, time.Now().UnixNano())
 			if err != nil {
 				log.Error(err)
@@ -108,7 +108,6 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 				log.Warn(err)
 				continue
 			}
-			log.Debug(block.JsonString(false))
 			if err := block.SetSignature(&solo.account); err != nil {
 				log.Fatal(err)
 			}

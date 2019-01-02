@@ -18,7 +18,6 @@ package types_test
 
 import (
 	"fmt"
-	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/types"
 	"reflect"
@@ -27,42 +26,14 @@ import (
 
 func TestDBft(t *testing.T) {
 	dposData := &types.DPosData{}
-	consensusData := types.ConsensusData{Type: types.CondPos, Payload: dposData}
+	consensusData := types.ConsData{Type: types.CondPos, Payload: dposData}
 
 	data, err := consensusData.Serialize()
 	errors.CheckErrorPanic(err)
 
-	conData := new(types.ConsensusData)
+	conData := new(types.ConsData)
 	errors.CheckErrorPanic(conData.Deserialize(data))
 
-	con := types.ConsensusData{}
+	con := types.ConsData{}
 	fmt.Println(reflect.ValueOf(con))
-}
-
-func TestAbaBft(t *testing.T) {
-	sig1 := common.Signature{PubKey: []byte("1234"), SigData: []byte("5678")}
-	sig2 := common.Signature{PubKey: []byte("4321"), SigData: []byte("8765")}
-	var sigPer []common.Signature
-	sigPer = append(sigPer, sig1)
-	sigPer = append(sigPer, sig2)
-	abaData := types.AbaBftData{NumberRound: 5, PreBlockSignatures: sigPer}
-
-	conData := types.NewConsensusPayload(types.ConABFT, &abaData)
-
-	data, err := conData.Serialize()
-	errors.CheckErrorPanic(err)
-
-	conDataDeserialize := new(types.ConsensusData)
-	errors.CheckErrorPanic(conDataDeserialize.Deserialize(data))
-
-	conDataObj, ok := conDataDeserialize.Payload.GetObject().(types.AbaBftData)
-	if !ok {
-		t.Fatal("type error")
-	}
-	if conDataObj.NumberRound != 5 {
-		t.Fatal("NumberRound mismatch")
-	}
-	if len(conDataObj.PreBlockSignatures) != 2 {
-		t.Fatal("PreBlockSignatures mismatch")
-	}
 }

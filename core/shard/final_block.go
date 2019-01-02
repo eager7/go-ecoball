@@ -127,7 +127,7 @@ func (h *FinalBlockHeader) String() string {
 	}
 	return "hash:" + h.Hashes.HexString() + string(data)
 }
-func (h FinalBlockHeader) GetInstance() interface{} {
+func (h *FinalBlockHeader) GetInstance() interface{} {
 	return h
 }
 func (h *FinalBlockHeader) Serialize() ([]byte, error) {

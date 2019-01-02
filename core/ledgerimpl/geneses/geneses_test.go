@@ -15,6 +15,7 @@ import (
 	"math/big"
 	"testing"
 	"time"
+	"github.com/ecoball/go-ecoball/common/event"
 )
 
 var root = common.NameToIndex("root")
@@ -24,6 +25,7 @@ var worker3 = common.NameToIndex("worker3")
 var delegate = common.NameToIndex("delegate")
 
 func TestGenesesBlockInit(t *testing.T) {
+	event.InitMsgDispatcher()
 	elog.Log.Info("genesis block")
 	ledger.L = example.Ledger("/tmp/genesis")
 	_, err := txpool.Start(ledger.L)
@@ -135,12 +137,12 @@ func PledgeContract(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 func VotingContract(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 	elog.Log.Info("VotingContract-----------------------5-------------------------------\n\n")
 	var txs []*types.Transaction
-	invoke, err := types.NewInvokeContract(worker1, root, chainID, "active", "reg_prod", []string{"worker1", "192.168.8.35", "9002", "worker1"}, 0, time.Now().UnixNano())
+	invoke, err := types.NewInvokeContract(worker1, root, chainID, "active", "reg_prod", []string{"worker1", "public key 1", "192.168.8.35", "9002", "worker1"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(worker2, root, chainID, "active", "reg_prod", []string{"worker2", "192.168.8.35", "9002", "worker2"}, 0, time.Now().UnixNano())
+	invoke, err = types.NewInvokeContract(worker2, root, chainID, "active", "reg_prod", []string{"worker2", "public key 2", "192.168.8.35", "9002", "worker2"}, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker2)
 	txs = append(txs, invoke)
@@ -149,7 +151,6 @@ func VotingContract(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)
-	ledger.GetCurrentHeader(config.ChainHash).Show()
 	return example.SaveBlock(ledger, txs, chainID)
 }
 func CancelPledgeContract(ledger ledger.Ledger, chainID common.Hash) *types.Block {

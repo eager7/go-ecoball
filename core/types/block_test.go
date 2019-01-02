@@ -68,7 +68,7 @@ func TestBlockCreate(t *testing.T) {
 
 	blockNew := new(types.Block)
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
-	errors.CheckEqualPanic(block.JsonString(false) == blockNew.JsonString(false))
+	errors.CheckEqualPanic(block.String() == blockNew.String())
 
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(config.ChainHash, block))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorLedger, block))
@@ -76,9 +76,9 @@ func TestBlockCreate(t *testing.T) {
 
 	reBlock, err := ledger.GetTxBlock(config.ChainHash, blockNew.Hash)
 	errors.CheckErrorPanic(err)
-	elog.Log.Debug(block.JsonString(false))
-	elog.Log.Info(blockNew.JsonString(false))
-	errors.CheckEqualPanic(blockNew.JsonString(false) == reBlock.JsonString(false))
+	elog.Log.Debug(block.String())
+	elog.Log.Info(blockNew.String())
+	errors.CheckEqualPanic(blockNew.String() == reBlock.String())
 
 	event.EventStop()
 }

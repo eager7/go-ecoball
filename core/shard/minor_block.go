@@ -137,7 +137,7 @@ func (h *MinorBlockHeader) String() string {
 	}
 	return "hash:" + h.Hashes.HexString() + string(data)
 }
-func (h MinorBlockHeader) GetInstance() interface{} {
+func (h *MinorBlockHeader) GetInstance() interface{} {
 	return h
 }
 func (h *MinorBlockHeader) Serialize() ([]byte, error) {
@@ -349,7 +349,7 @@ func (b *MinorBlock) String() string {
 	}
 	return "hash:" + b.Hashes.HexString() + string(data)
 }
-func (b MinorBlock) GetInstance() interface{} {
+func (b *MinorBlock) GetInstance() interface{} {
 	return b
 }
 func (b *MinorBlock) Serialize() ([]byte, error) {

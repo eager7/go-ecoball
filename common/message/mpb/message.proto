@@ -6,27 +6,29 @@ enum  Identify {
     APP_MSG_HASH                = 0;
     APP_MSG_ADDRESS             = 1;
     APP_MSG_TRANSACTION         = 2;
-    APP_MSG_SHARD_BLOCK         = 3;
-    APP_MSG_MINOR_BLOCK         = 4;
-    APP_MSG_CM_BLOCK            = 5;
-    APP_MSG_FINAL_BLOCK         = 6;
-    APP_MSG_VC_BLOCK            = 7;
-    APP_MSG_SIGNPRE             = 8;
-    APP_MSG_TIMEOUT             = 9;
-    APP_MSG_SHARDING_PACKET     = 10;
-    APP_MSG_CONSENSUS_PACKET    = 11;
-    APP_MSG_P2PRTSYN            = 12;
-    APP_MSG_P2PRTSYNACK         = 13;
-    APP_MSG_GOSSIP              = 14;
-    APP_MSG_GOSSIP_PULL         = 15;
-    APP_MSG_DKGSIJ              = 16;
-    APP_MSG_DKGNLQUAL           = 17;
-    APP_MSG_DKGLQUAL            = 18;
-    APP_MSG_SYNC_REQUEST        = 19;
-    APP_MSG_SYNC_RESPONSE       = 20;
-    APP_MSG_STRING              = 21;
+    APP_MSG_HEADER              = 3;
+    APP_MSG_BLOCK               = 4;
+    APP_MSG_SHARD_BLOCK         = 5;
+    APP_MSG_MINOR_BLOCK         = 6;
+    APP_MSG_CM_BLOCK            = 7;
+    APP_MSG_FINAL_BLOCK         = 8;
+    APP_MSG_VC_BLOCK            = 9;
+    APP_MSG_SIGNPRE             = 10;
+    APP_MSG_TIMEOUT             = 11;
+    APP_MSG_SHARDING_PACKET     = 12;
+    APP_MSG_CONSENSUS_PACKET    = 13;
+    APP_MSG_P2PRTSYN            = 14;
+    APP_MSG_P2PRTSYNACK         = 15;
+    APP_MSG_GOSSIP              = 16;
+    APP_MSG_GOSSIP_PULL         = 17;
+    APP_MSG_DKGSIJ              = 18;
+    APP_MSG_DKGNLQUAL           = 19;
+    APP_MSG_DKGLQUAL            = 20;
+    APP_MSG_SYNC_REQUEST        = 21;
+    APP_MSG_SYNC_RESPONSE       = 22;
+    APP_MSG_STRING              = 23;
 
-    APP_MSG_UNDEFINED           = 22;
+    APP_MSG_UNDEFINED           = 24;
 }
 
 

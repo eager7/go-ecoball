@@ -124,7 +124,7 @@ func TimeStamp() int64 {
 	return tm.UnixNano()
 }
 
-func ConsensusData() types.ConsensusData {
+func ConsensusData() types.ConsData {
 	con, _ := types.InitConsensusData(TimeStamp())
 	return *con
 }

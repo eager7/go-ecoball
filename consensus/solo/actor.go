@@ -82,7 +82,7 @@ func (l *soloActor) CreateNewChain(msg *message.RegChain) {
 			log.Error(err)
 			continue
 		}
-		if block.IsExistedTransaction(msg.TxHash) {
+		if block.GetTransaction(msg.TxHash) != nil {
 			event.Send(event.ActorNil, event.ActorTxPool, msg)
 			event.Send(event.ActorNil, event.ActorLedger, msg)
 			l.solo.Chains[msg.ChainID] = msg.Address
