@@ -133,15 +133,6 @@ func (h *CMBlockHeader) Deserialize(data []byte) error {
 	return nil
 }
 
-func (h *CMBlockHeader) JsonString() string {
-	data, err := json.Marshal(h)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + h.Hashes.HexString() + string(data)
-}
-
 func (h *CMBlockHeader) Type() uint32 {
 	return uint32(HeCmBlock)
 }
@@ -151,7 +142,12 @@ func (h *CMBlockHeader) Identify() mpb.Identify {
 }
 
 func (h *CMBlockHeader) String() string {
-	return h.JsonString()
+	data, err := json.Marshal(h)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + h.Hashes.HexString() + string(data)
 }
 
 func (h *CMBlockHeader) Hash() common.Hash {
@@ -166,9 +162,6 @@ func (h *CMBlockHeader) GetChainID() common.Hash {
 	return h.ChainID
 }
 
-func (h CMBlockHeader) GetObject() interface{} {
-	return h
-}
 func (h *CMBlockHeader) GetInstance() interface{} {
 	return h
 }
@@ -342,14 +335,6 @@ func (b *CMBlock) Deserialize(data []byte) error {
 	return nil
 }
 
-func (b *CMBlock) JsonString() string {
-	data, err := json.Marshal(b)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + b.Hashes.HexString() + string(data)
-}
 func (b *CMBlock) String() string {
 	data, err := json.Marshal(b)
 	if err != nil {
@@ -359,9 +344,6 @@ func (b *CMBlock) String() string {
 	return "hash:" + b.Hashes.HexString() + string(data)
 }
 
-func (b CMBlock) GetObject() interface{} {
-	return b
-}
 func (b *CMBlock) GetInstance() interface{} {
 	return b
 }

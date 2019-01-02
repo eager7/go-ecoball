@@ -32,8 +32,8 @@ func (c *committee) processSyncComplete(msg interface{}) {
 		return
 	}
 
-	cm := lastCmBlock.GetObject().(cs.CMBlock)
-	c.ns.SyncCmBlockComplete(&cm)
+	cm := lastCmBlock.GetInstance().(*cs.CMBlock)
+	c.ns.SyncCmBlockComplete(cm)
 
 	lastvc, _, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
 	if err != nil || lastvc == nil {
@@ -41,8 +41,8 @@ func (c *committee) processSyncComplete(msg interface{}) {
 		return
 	}
 
-	vc := lastvc.GetObject().(cs.ViewChangeBlock)
-	c.ns.SaveLastViewchangeBlock(&vc)
+	vc := lastvc.GetInstance().(*cs.ViewChangeBlock)
+	c.ns.SaveLastViewchangeBlock(vc)
 
 	lastFinalBlock, _, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
@@ -50,8 +50,8 @@ func (c *committee) processSyncComplete(msg interface{}) {
 		return
 	}
 
-	final := lastFinalBlock.GetObject().(cs.FinalBlock)
-	c.ns.SaveLastFinalBlock(&final)
+	final := lastFinalBlock.GetInstance().(*cs.FinalBlock)
+	c.ns.SaveLastFinalBlock(final)
 
 	if cm.Height == 1 && final.Height == 1 {
 		c.fsm.Execute(ActProductCommitteeBlock, msg)

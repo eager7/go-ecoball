@@ -99,23 +99,6 @@ func (h *MinorBlockHeader) unSignatureData() ([]byte, error) {
 	return data, nil
 }
 
-func (h MinorBlockHeader) GetObject() interface{} {
-	return h
-}
-
-func (h *MinorBlockHeader) JsonString() string {
-	data, err := json.Marshal(h)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + h.Hashes.HexString() + string(data)
-}
-
-func (h *MinorBlockHeader) Type() uint32 {
-	return uint32(HeMinorBlock)
-}
-
 func (h *MinorBlockHeader) Hash() common.Hash {
 	return h.Hashes
 }
@@ -326,19 +309,6 @@ func (b *MinorBlock) proto() (block *pb.MinorBlock, err error) {
 	}
 
 	return &pbBlock, nil
-}
-
-func (b MinorBlock) GetObject() interface{} {
-	return b
-}
-
-func (b *MinorBlock) JsonString() string {
-	data, err := json.Marshal(b)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + b.Hashes.HexString() + string(data)
 }
 
 func (b *MinorBlock) String() string {

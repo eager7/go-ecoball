@@ -39,8 +39,8 @@ func (s *shard) processSyncComplete() {
 		return
 	}
 
-	cm := lastCmBlock.GetObject().(cs.CMBlock)
-	s.ns.SyncCmBlockComplete(&cm)
+	cm := lastCmBlock.GetInstance().(*cs.CMBlock)
+	s.ns.SyncCmBlockComplete(cm)
 
 	lastvc, _, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
 	if err != nil || lastvc == nil {
@@ -48,8 +48,8 @@ func (s *shard) processSyncComplete() {
 		return
 	}
 
-	vc := lastvc.GetObject().(cs.ViewChangeBlock)
-	s.ns.SaveLastViewchangeBlock(&vc)
+	vc := lastvc.GetInstance().(*cs.ViewChangeBlock)
+	s.ns.SaveLastViewchangeBlock(vc)
 
 	lastFinalBlock, _, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
@@ -57,8 +57,8 @@ func (s *shard) processSyncComplete() {
 		return
 	}
 
-	final := lastFinalBlock.GetObject().(cs.FinalBlock)
-	s.ns.SaveLastFinalBlock(&final)
+	final := lastFinalBlock.GetInstance().(*cs.FinalBlock)
+	s.ns.SaveLastFinalBlock(final)
 
 	lastMinor, bFinalize, err := s.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
 	if err != nil || lastMinor == nil {
@@ -66,7 +66,7 @@ func (s *shard) processSyncComplete() {
 		return
 	}
 
-	minor := lastMinor.GetObject().(cs.MinorBlock)
+	minor := lastMinor.GetInstance().(*cs.MinorBlock)
 
 	if !bFinalize {
 		last, finalize, err := s.ns.Ledger.GetShardBlockByHash(config.ChainHash, cs.HeMinorBlock, minor.PrevHash, true)
@@ -76,11 +76,11 @@ func (s *shard) processSyncComplete() {
 			return
 		}
 
-		minor = last.GetObject().(cs.MinorBlock)
+		minor = last.GetInstance().(*cs.MinorBlock)
 
 	}
 
-	s.ns.SaveLastMinorBlock(&minor)
+	s.ns.SaveLastMinorBlock(minor)
 
 	if cm.Height == 1 && final.Height == 1 {
 		s.fsm.Execute(ActWaitBlock, nil)

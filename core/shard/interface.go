@@ -5,15 +5,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"fmt"
+	"github.com/ecoball/go-ecoball/core/types"
 )
-
-type Payload interface {
-	Serialize() ([]byte, error)
-	Deserialize(data []byte) error
-	GetObject() interface{}
-	Type() uint32
-	JsonString() string
-}
 
 type HeaderType uint32
 
@@ -40,8 +33,7 @@ func (h HeaderType) String() string {
 }
 
 type HeaderInterface interface {
-	Payload
-	//SetSignature(account *account.Account) error
+	types.EcoMessage
 	VerifySignature() (bool, error)
 	Hash() common.Hash
 	GetChainID() common.Hash
@@ -52,7 +44,7 @@ type BlockInterface interface {
 	HeaderInterface
 }
 
-func Serialize(payload Payload) ([]byte, error) {
+func Serialize(payload types.EcoMessage) ([]byte, error) {
 	if payload == nil {
 		return nil, errors.New("the payload is nil")
 	}
@@ -61,7 +53,7 @@ func Serialize(payload Payload) ([]byte, error) {
 		return nil, err
 	}
 	pbPayload := pb.Payload{
-		Type: payload.Type(),
+		Type: uint32(payload.Identify()),
 		Data: data,
 	}
 	data, err = pbPayload.Marshal()

@@ -13,7 +13,7 @@ type PermissionLevel struct {
 type Action struct {
 	ContractAccount       common.AccountName			`json:"account"`
 	Permission 			  PermissionLevel				`json:"permission"`
-	Payload		  		  Payload						`json:"payload"`
+	Payload		  		  EcoMessage						`json:"payload"`
 	Console				  string						`json:"console"`
 }
 
@@ -27,7 +27,7 @@ func NewAction(tx *Transaction) (*Action, error){
 	return action, nil
 }
 
-func NewSimpleAction(contract string, permission PermissionLevel, payload Payload) (*Action, error){
+func NewSimpleAction(contract string, permission PermissionLevel, payload EcoMessage) (*Action, error){
 	action := &Action{
 		ContractAccount:		common.NameToIndex(contract),
 		Permission:				permission,
@@ -40,7 +40,7 @@ func NewSimpleAction(contract string, permission PermissionLevel, payload Payloa
 func (act *Action)Print() {
 	fmt.Println("account: ", act.ContractAccount)
 
-	invoke, ok := act.Payload.GetObject().(InvokeInfo)
+	invoke, ok := act.Payload.GetInstance().(*InvokeInfo)
 	if !ok {
 		fmt.Println("transaction type error[invoke]")
 		return

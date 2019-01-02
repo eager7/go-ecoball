@@ -103,8 +103,8 @@ func (c *Cell) LoadLastBlock() {
 		return
 	}
 
-	cm := lastCmBlock.GetObject().(cs.CMBlock)
-	c.SyncCmBlockComplete(&cm)
+	cm := lastCmBlock.GetInstance().(*cs.CMBlock)
+	c.SyncCmBlockComplete(cm)
 
 	lastvc, _, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
 	if err != nil || lastvc == nil {
@@ -112,8 +112,8 @@ func (c *Cell) LoadLastBlock() {
 		return
 	}
 
-	vc := lastvc.GetObject().(cs.ViewChangeBlock)
-	c.SaveLastViewchangeBlock(&vc)
+	vc := lastvc.GetInstance().(*cs.ViewChangeBlock)
+	c.SaveLastViewchangeBlock(vc)
 
 	lastFinalBlock, _, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
 	if err != nil || lastFinalBlock == nil {
@@ -121,8 +121,8 @@ func (c *Cell) LoadLastBlock() {
 		return
 	}
 
-	final := lastFinalBlock.GetObject().(cs.FinalBlock)
-	c.SaveLastFinalBlock(&final)
+	final := lastFinalBlock.GetInstance().(*cs.FinalBlock)
+	c.SaveLastFinalBlock(final)
 
 	if c.NodeType == sc.NodeShard || c.NodeType == sc.NodeCandidate {
 		lastMinor, bFinalize, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
@@ -131,7 +131,7 @@ func (c *Cell) LoadLastBlock() {
 			return
 		}
 
-		minor := lastMinor.GetObject().(cs.MinorBlock)
+		minor := lastMinor.GetInstance().(*cs.MinorBlock)
 
 		if !bFinalize {
 			last, finalize, err := c.Ledger.GetShardBlockByHash(config.ChainHash, cs.HeMinorBlock, minor.PrevHash, true)
@@ -141,10 +141,10 @@ func (c *Cell) LoadLastBlock() {
 				return
 			}
 
-			minor = last.GetObject().(cs.MinorBlock)
+			minor = last.GetInstance().(*cs.MinorBlock)
 		}
 
-		c.SaveLastMinorBlock(&minor)
+		c.SaveLastMinorBlock(minor)
 	}
 
 }
@@ -343,7 +343,7 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *cs.CMBlock) {
 			return
 		}
 
-		cm := block.GetObject().(cs.CMBlock)
+		cm := block.GetInstance().(*cs.CMBlock)
 
 		var worker sc.Worker
 		if len(cm.Candidate.PublicKey) != 0 {

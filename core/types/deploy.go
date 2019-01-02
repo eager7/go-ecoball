@@ -18,10 +18,10 @@ package types
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 type DeployInfo struct {
@@ -83,21 +83,15 @@ func (d *DeployInfo) Deserialize(data []byte) error {
 	return nil
 }
 
-func (d *DeployInfo) Type() uint32 {
-	return uint32(TxDeploy)
+func (d *DeployInfo) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_TRANSACTION_DEPLOY
 }
 
-func (d DeployInfo) GetObject() interface{} {
+func (d *DeployInfo) GetInstance() interface{} {
 	return d
 }
 
-func (d *DeployInfo) show() {
-	fmt.Println("\t---------Show Deploy Info ----------")
-	fmt.Println("\tTypeVm        :", d.TypeVm)
-	fmt.Println("\tDescribe      :", string(d.Describe))
-}
-
-func (d *DeployInfo) JsonString() string {
+func (d *DeployInfo) String() string {
 	data, _ := json.Marshal(d)
 	return string(data)
 }

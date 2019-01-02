@@ -59,8 +59,8 @@ func (ns *NativeService)Println(s string) {
 }
 
 func (ns *NativeService) RootExecute() ([]byte, error) {
-	method := string(ns.tx.Payload.GetObject().(types.InvokeInfo).Method)
-	params := ns.tx.Payload.GetObject().(types.InvokeInfo).Param
+	method := string(ns.tx.Payload.GetInstance().(*types.InvokeInfo).Method)
+	params := ns.tx.Payload.GetInstance().(*types.InvokeInfo).Param
 	switch method {
 	case "new_account":
 		if len(params) != 2 {

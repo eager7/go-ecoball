@@ -102,19 +102,6 @@ func (h *ViewChangeBlockHeader) unSignatureData() ([]byte, error) {
 	return data, nil
 }
 
-func (h *ViewChangeBlockHeader) JsonString() string {
-	data, err := json.Marshal(h)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + h.Hashes.HexString() + string(data)
-}
-
-func (h *ViewChangeBlockHeader) Type() uint32 {
-	return uint32(HeViewChange)
-}
-
 func (h *ViewChangeBlockHeader) Hash() common.Hash {
 	return h.Hashes
 }
@@ -125,10 +112,6 @@ func (h *ViewChangeBlockHeader) GetHeight() uint64 {
 
 func (h *ViewChangeBlockHeader) GetChainID() common.Hash {
 	return h.ChainID
-}
-
-func (h ViewChangeBlockHeader) GetObject() interface{} {
-	return h
 }
 
 func (h *ViewChangeBlockHeader) Identify() mpb.Identify {
@@ -201,19 +184,6 @@ func (b *ViewChangeBlock) proto() (*pb.ViewChangeBlock, error) {
 	}
 
 	return &pbBlock, nil
-}
-
-func (b *ViewChangeBlock) JsonString() string {
-	data, err := json.Marshal(b)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + b.Hashes.HexString() + string(data)
-}
-
-func (b ViewChangeBlock) GetObject() interface{} {
-	return b
 }
 
 func NewVCBlock(header ViewChangeBlockHeader) (*ViewChangeBlock, error) {

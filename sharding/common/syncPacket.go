@@ -3,6 +3,7 @@ package common
 import (
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"fmt"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 //SyncType
@@ -39,7 +40,7 @@ type SyncRequestPacket struct {
 type SyncResponsePacket struct {
 	Len uint
 	BlockType cs.HeaderType
-	Blocks []cs.Payload
+	Blocks []types.EcoMessage
 	LastHeight uint64
 	ShardID uint32
 	Compelte bool

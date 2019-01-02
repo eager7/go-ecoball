@@ -117,9 +117,9 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	if err != nil {
 		return err
 	}
-	numShard := len(lastCMBlock.GetObject().(shard.CMBlock).Shards)
+	numShard := len(lastCMBlock.GetInstance().(*shard.CMBlock).Shards)
 	if numShard == 0 {
-		log.Warn("the node network is not work, last cm block:", lastCMBlock.JsonString())
+		log.Warn("the node network is not work, last cm block:", lastCMBlock.String())
 		return nil
 	}
 	var handle bool

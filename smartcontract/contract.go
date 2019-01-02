@@ -40,7 +40,7 @@ func NewContractService(s state.InterfaceState, tx *types.Transaction, action *t
 	if err != nil {
 		return nil, err
 	}
-	invoke, ok := action.Payload.GetObject().(types.InvokeInfo)
+	invoke, ok := action.Payload.GetInstance().(*types.InvokeInfo)
 	if !ok {
 		return nil, errors.New("transaction type error[invoke]")
 	}
@@ -55,7 +55,7 @@ func NewContractService(s state.InterfaceState, tx *types.Transaction, action *t
 	}
 	return service, nil
 	case types.VmWasm:
-		service, err := wasmservice.NewWasmService(s, action, context, contract, &invoke, timeStamp)
+		service, err := wasmservice.NewWasmService(s, action, context, contract, invoke, timeStamp)
 		if err != nil {
 			return nil, err
 		}

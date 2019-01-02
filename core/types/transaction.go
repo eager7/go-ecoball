@@ -68,13 +68,13 @@ type Transaction struct {
 	Addr       common.AccountName `json:"addr"`
 	Nonce      uint64             `json:"nonce"`
 	TimeStamp  int64              `json:"timeStamp"`
-	Payload    Payload            `json:"payload"`
+	Payload    EcoMessage            `json:"payload"`
 	Signatures []common.Signature `json:"signatures"`
 	Hash       common.Hash        `json:"hash"`
 	Receipt    TransactionReceipt
 }
 
-func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
+func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash, perm string, payload EcoMessage, nonce uint64, time int64) (*Transaction, error) {
 	if payload == nil {
 		return nil, errors.New("the transaction's payload is nil")
 	}
@@ -290,7 +290,7 @@ func (t *Transaction) String() string {
 		Receipt    TransactionReceipt `json:"receipt"`
 	}{Version: t.Version, ChainID: t.ChainID.HexString(), Type: t.Type.String(), From: t.From.String(),
 		Permission: t.Permission, Addr: t.Addr.String(), Nonce: t.Nonce,
-		TimeStamp: t.TimeStamp, Payload: t.Payload.JsonString(), Signatures: t.Signatures,
+		TimeStamp: t.TimeStamp, Payload: t.Payload.String(), Signatures: t.Signatures,
 		Hash: t.Hash.HexString(), Receipt: t.Receipt})
 	//data, _ := json.Marshal(t)
 	return string(data)

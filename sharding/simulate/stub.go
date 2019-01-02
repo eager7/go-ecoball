@@ -19,7 +19,7 @@ func SyncComplete() {
 }
 
 func TellBlock(bl cs.BlockInterface) {
-	log.Debug("tell ledger block type ", bl.Type(), " height ", bl.GetHeight())
+	log.Debug("tell ledger block type ", bl.Identify(), " height ", bl.GetHeight())
 	if err := event.Send(event.ActorSharding, event.ActorLedger, bl); err != nil {
 		log.Fatal(err)
 	}

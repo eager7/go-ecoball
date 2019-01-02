@@ -18,10 +18,10 @@ package types
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 type InvokeInfo struct {
@@ -38,11 +38,11 @@ func NewInvokeContract(from, addr common.AccountName, chainID common.Hash, perm 
 	return trans, nil
 }
 
-func (i *InvokeInfo) Type() uint32 {
-	return uint32(TxInvoke)
+func (i *InvokeInfo) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_TRANSACTION_INVOKE
 }
 
-func (i InvokeInfo) GetObject() interface{} {
+func (i *InvokeInfo) GetInstance() interface{} {
 	return i
 }
 
@@ -89,17 +89,8 @@ func (i *InvokeInfo) Deserialize(data []byte) error {
 	return nil
 }
 
-func (i *InvokeInfo) show() {
-	fmt.Println("\t---------Show Invoke Info ----------")
-	fmt.Println("\tMethod        :", string(i.Method))
-	fmt.Println("\tParam Num     :", len(i.Param))
-	for _, v := range i.Param {
-		fmt.Println("\tParam         :", v)
-	}
-	fmt.Println("\t---------------------------")
-}
 
-func (i *InvokeInfo) JsonString() string {
+func (i *InvokeInfo) String() string {
 	data, _ := json.Marshal(
 		struct {
 			Method string   `json:"method"`

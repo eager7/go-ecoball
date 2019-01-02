@@ -26,6 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/geneses"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/pb"
@@ -370,7 +371,7 @@ func (c *ChainTx) GenesesBlockInit(chainID common.Hash, addr common.Address) err
 		PrevHash:   hash,
 		MerkleHash: common.Hash{},
 		StateHash:  c.StateDB.FinalDB.GetHashRoot(),
-		Receipt:    types.BlockReceipt{
+		Receipt: types.BlockReceipt{
 			BlockCpu: config.BlockCpuLimit,
 			BlockNet: config.BlockNetLimit,
 		},
@@ -579,7 +580,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 	start := time.Now().UnixNano()
 	switch tx.Type {
 	case types.TxTransfer:
-		payload, ok := tx.Payload.GetObject().(types.TransferInfo)
+		payload, ok := tx.Payload.GetInstance().(*types.TransferInfo)
 		if !ok {
 			return nil, 0, 0, errors.New("transaction type error[transfer]")
 		}
@@ -595,7 +596,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		if err := s.CheckPermission(tx.Addr, state.Active, tx.Hash, tx.Signatures); err != nil {
 			return nil, 0, 0, err
 		}
-		payload, ok := tx.Payload.GetObject().(types.DeployInfo)
+		payload, ok := tx.Payload.GetInstance().(*types.DeployInfo)
 		if !ok {
 			return nil, 0, 0, errors.New("transaction type error[deploy]")
 		}
@@ -605,7 +606,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 
 		acc := state.Account{ // generate trx receipt
 			Index:    tx.Addr,
-			Contract: payload,
+			Contract: *payload,
 		}
 		if data, err := acc.Serialize(); err != nil {
 			return nil, 0, 0, err
@@ -676,10 +677,10 @@ func (c *ChainTx) RestoreCurrentShardHeader() (result bool, err error) {
 		if err != nil {
 			return false, err
 		}
-		header, ok := payload.GetObject().(shard.CMBlockHeader)
+		header, ok := payload.GetInstance().(*shard.CMBlockHeader)
 		if ok {
 			result = true
-			c.LastHeader.CmHeader = &header
+			c.LastHeader.CmHeader = header
 		}
 	}
 
@@ -692,10 +693,10 @@ func (c *ChainTx) RestoreCurrentShardHeader() (result bool, err error) {
 		if err != nil {
 			return false, err
 		}
-		header, ok := payload.GetObject().(shard.MinorBlockHeader)
+		header, ok := payload.GetInstance().(*shard.MinorBlockHeader)
 		if ok {
 			result = true
-			c.LastHeader.MinorHeader = &header
+			c.LastHeader.MinorHeader = header
 			c.shardId = header.ShardId
 		}
 	}
@@ -709,10 +710,10 @@ func (c *ChainTx) RestoreCurrentShardHeader() (result bool, err error) {
 		if err != nil {
 			return false, err
 		}
-		header, ok := payload.GetObject().(shard.FinalBlockHeader)
+		header, ok := payload.GetInstance().(*shard.FinalBlockHeader)
 		if ok {
 			result = true
-			c.LastHeader.FinalHeader = &header
+			c.LastHeader.FinalHeader = header
 		}
 	}
 
@@ -725,10 +726,10 @@ func (c *ChainTx) RestoreCurrentShardHeader() (result bool, err error) {
 		if err != nil {
 			return false, err
 		}
-		header, ok := payload.GetObject().(shard.ViewChangeBlockHeader)
+		header, ok := payload.GetInstance().(*shard.ViewChangeBlockHeader)
 		if ok {
 			result = true
-			c.LastHeader.VCHeader = &header
+			c.LastHeader.VCHeader = header
 		}
 	}
 
@@ -753,9 +754,9 @@ func (c *ChainTx) RestoreCurrentShardHeader() (result bool, err error) {
 	}
 
 	log.Debug("finalizer:", c.LastHeader.Finalizer)
-	log.Debug("cm block:", c.LastHeader.CmHeader.JsonString())
-	log.Debug("minor block:", c.LastHeader.MinorHeader.JsonString())
-	log.Debug("final block:", c.LastHeader.FinalHeader.JsonString())
+	log.Debug("cm block:", c.LastHeader.CmHeader.String())
+	log.Debug("minor block:", c.LastHeader.MinorHeader.String())
+	log.Debug("final block:", c.LastHeader.FinalHeader.String())
 	return result, nil
 }
 
@@ -806,7 +807,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		Timestamp:         timeStamp,
 		PrevHash:          prevHash,
 		TrxHashRoot:       common.Hash{},
-		StateRootHash:    c.StateDB.FinalDB.GetHashRoot(),
+		StateRootHash:     c.StateDB.FinalDB.GetHashRoot(),
 		CMBlockHash:       common.Hash{},
 		ProposalPublicKey: nil,
 		ShardId:           0,
@@ -885,14 +886,14 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		return errors.New("the block is nil")
 	}
 	if c.blockExisted(block.Hash()) {
-		log.Warn("the block:", shard.HeaderType(block.Type()).String(), "height:", block.GetHeight(), "hash:", block.Hash().HexString(), "is existed")
+		log.Warn("the block:", block.Identify().String(), "height:", block.GetHeight(), "hash:", block.Hash().HexString(), "is existed")
 		return nil
 	}
 
 	stateHashRoot := c.StateDB.FinalDB.GetHashRoot() //used to reset mpt tire when the delta tx handle failed
-	switch shard.HeaderType(block.Type()) {
-	case shard.HeCmBlock:
-		if cm, ok := block.GetObject().(shard.CMBlock); !ok {
+	switch block.Identify() {
+	case mpb.Identify_APP_MSG_CM_BLOCK:
+		if cm, ok := block.GetInstance().(*shard.CMBlock); !ok {
 			return errors.New(fmt.Sprintf("type asserts error:%s", shard.HeCmBlock.String()))
 		} else {
 			if err := c.HeaderStore.Put([]byte(keyLastCm), block.Hash().Bytes()); err != nil {
@@ -904,8 +905,8 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 			c.LastHeader.CmHeader = &cm.CMBlockHeader
 			defer c.updateShardId()
 		}
-	case shard.HeMinorBlock:
-		minor, ok := block.GetObject().(shard.MinorBlock)
+	case mpb.Identify_APP_MSG_MINOR_BLOCK:
+		minor, ok := block.GetInstance().(*shard.MinorBlock)
 		if !ok {
 			return errors.New(fmt.Sprintf("type asserts error:%s", shard.HeMinorBlock.String()))
 		}
@@ -925,8 +926,8 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		if err := c.storeBlock(minor.ShardId, &minor.MinorBlockHeader, block, false); err != nil {
 			return err
 		}
-	case shard.HeFinalBlock:
-		final, ok := block.GetObject().(shard.FinalBlock)
+	case mpb.Identify_APP_MSG_FINAL_BLOCK:
+		final, ok := block.GetInstance().(*shard.FinalBlock)
 		if !ok {
 			return errors.New(fmt.Sprintf("type asserts error:%s", shard.HeFinalBlock.String()))
 		}
@@ -935,7 +936,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 			if err != nil {
 				return err
 			}
-			minorBlock, ok := blockInterface.GetObject().(shard.MinorBlock)
+			minorBlock, ok := blockInterface.GetInstance().(*shard.MinorBlock)
 			if !ok {
 				return errors.New("the type assertion failed")
 			}
@@ -953,7 +954,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 					}
 				}
 			}
-			if err := c.recombinationBlockStore(&minorBlock); err != nil {
+			if err := c.recombinationBlockStore(minorBlock); err != nil {
 				return err
 			}
 		}
@@ -970,8 +971,8 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		if err := c.storeBlock(0, &final.FinalBlockHeader, block, true); err != nil {
 			return err
 		}
-	case shard.HeViewChange:
-		vc, ok := block.GetObject().(shard.ViewChangeBlock)
+	case mpb.Identify_APP_MSG_VC_BLOCK:
+		vc, ok := block.GetInstance().(*shard.ViewChangeBlock)
 		if !ok {
 			return errors.New(fmt.Sprintf("type asserts error:%s", shard.HeViewChange.String()))
 		}
@@ -984,7 +985,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 			return err
 		}
 	default:
-		return errors.New(fmt.Sprintf("unknown header type:%d", block.Type()))
+		return errors.New(fmt.Sprintf("unknown header type:%d", block.Identify().String()))
 	}
 
 	/*log.Debug("store block into levelDB")
@@ -1053,8 +1054,8 @@ func (c *ChainTx) storeBlock(shardID uint32, header shard.HeaderInterface, block
 	}
 	c.StateDB.FinalDB.CommitToDB()
 
-	blockCache := pb.BlockCache{ShardID: shardID, Finalizer: false, Height: block.GetHeight(), HeaderType: block.Type(), Hash: block.Hash().Bytes()} //used to store the map of height and hash
-	cacheKey := pb.BlockCacheKey{Type: block.Type(), ShardID: shardID, Height: block.GetHeight()}
+	blockCache := pb.BlockCache{ShardID: shardID, Finalizer: false, Height: block.GetHeight(), HeaderType: uint32(block.Identify()), Hash: block.Hash().Bytes()} //used to store the map of height and hash
+	cacheKey := pb.BlockCacheKey{Type: uint32(block.Identify()), ShardID: shardID, Height: block.GetHeight()}
 	key, err := cacheKey.Marshal()
 	if err != nil {
 		return errors.New(err.Error())
@@ -1065,12 +1066,12 @@ func (c *ChainTx) storeBlock(shardID uint32, header shard.HeaderInterface, block
 	}
 	c.MapStore.Put(key, cacheData)
 
-	go connect.Notify(info.ShardBlock, block)
+	//go connect.Notify(info.ShardBlock, block)
 	if err := event.Send(event.ActorLedger, event.ActorTxPool, block); err != nil {
 		log.Warn(err)
 	}
 
-	log.Notice("Shard ", c.shardId, "Save", shard.HeaderType(block.Type()).String(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString(), header.JsonString())
+	log.Notice("Shard ", c.shardId, "Save", block.Identify().String(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString(), header.String())
 
 	return nil
 }
@@ -1251,11 +1252,11 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 		if err != nil {
 			return nil, nil, err
 		}
-		cmBlock, _ := lastCm.GetObject().(shard.CMBlock)
-		minorBlock, _ := lastMinor.GetObject().(shard.MinorBlock)
+		cmBlock, _ := lastCm.GetInstance().(*shard.CMBlock)
+		minorBlock, _ := lastMinor.GetInstance().(*shard.MinorBlock)
 		if minorBlock.CMEpochNo == cmBlock.Height {
-			return &minorBlock, nil, nil
-			log.Info("new minor block:", minorBlock.GetHeight(), minorBlock.JsonString())
+			return minorBlock, nil, nil
+			log.Info("new minor block:", minorBlock.GetHeight(), minorBlock.String())
 		} else {
 			return c.newMinorBlock(&minorBlock.MinorBlockHeader, minorBlock.Transactions, timeStamp)
 		}
@@ -1319,7 +1320,7 @@ func (c *ChainTx) newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transact
 	if err != nil {
 		return nil, nil, err
 	}
-	log.Notice("new minor block:", block.GetHeight(), block.MinorBlockHeader.JsonString())
+	log.Notice("new minor block:", block.GetHeight(), block.MinorBlockHeader.String())
 	//log.Warn(common.String(c.StateDB.FinalDB.Params), common.String(c.StateDB.FinalDB.Accounts))
 	return block, nil, nil
 }
@@ -1460,7 +1461,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	if err != nil {
 		return nil, err
 	}
-	log.Notice("new final block:", block.Height, block.FinalBlockHeader.JsonString())
+	log.Notice("new final block:", block.Height, block.FinalBlockHeader.String())
 	//log.Warn(common.String(c.StateDB.FinalDB.Params), common.String(c.StateDB.FinalDB.Accounts))
 	return block, nil
 }
@@ -1476,8 +1477,8 @@ func (c *ChainTx) NewFinalBlock(timeStamp int64, hashes []common.Hash) (*shard.F
 		if b, _, err := c.GetShardBlockByHash(shard.HeMinorBlock, hash, false); err != nil {
 			log.Warn(err)
 		} else {
-			if B, ok := b.GetObject().(shard.MinorBlock); ok {
-				minorBlocks = append(minorBlocks, &B)
+			if B, ok := b.GetInstance().(*shard.MinorBlock); ok {
+				minorBlocks = append(minorBlocks, B)
 			} else {
 				return nil, errors.New("the type is error")
 			}
@@ -1520,7 +1521,7 @@ func (c *ChainTx) updateShardId() (uint32, error) {
 	if err != nil {
 		return 0, err
 	}
-	block, ok := cm.GetObject().(shard.CMBlock)
+	block, ok := cm.GetInstance().(*shard.CMBlock)
 	if !ok {
 		return 0, errors.New("type error")
 	}
@@ -1554,7 +1555,7 @@ func (c *ChainTx) GetShardId() (uint32, error) {
  */
 func (c *ChainTx) CheckShardBlock(block shard.BlockInterface) error {
 	if c.blockExisted(block.Hash()) {
-		return errors.New(fmt.Sprintf("the block %s is existed:%s-%d", shard.HeaderType(block.Type()).String(), block.Hash().HexString(), block.GetHeight()))
+		return errors.New(fmt.Sprintf("the block %s is existed:%s-%d", block.Identify().String(), block.Hash().HexString(), block.GetHeight()))
 	}
 
 	result, err := block.VerifySignature()
@@ -1566,10 +1567,10 @@ func (c *ChainTx) CheckShardBlock(block shard.BlockInterface) error {
 		return errors.New("block verify signature failed")
 	}
 
-	switch block.Type() {
-	case uint32(shard.HeMinorBlock):
+	switch block.Identify() {
+	case mpb.Identify_APP_MSG_MINOR_BLOCK:
 		//TODO:State Hash Check
-		minorBlock, ok := block.GetObject().(shard.MinorBlock)
+		minorBlock, ok := block.GetInstance().(*shard.MinorBlock)
 		if !ok {
 			return errors.New("the block type is not minor block")
 		}
@@ -1586,10 +1587,10 @@ func (c *ChainTx) CheckShardBlock(block shard.BlockInterface) error {
 		if !newBlock.StateRootHash.Equals(&minorBlock.StateRootHash) {
 			return errors.New(fmt.Sprintf("the state hash is not equal:%s, %s", minorBlock.StateRootHash.HexString(), newBlock.StateRootHash.HexString()))
 		}
-	case uint32(shard.HeCmBlock):
-	case uint32(shard.HeFinalBlock):
+	case mpb.Identify_APP_MSG_CM_BLOCK:
+	case mpb.Identify_APP_MSG_FINAL_BLOCK:
 		//TODO:State Hash Check
-		finalBlock, ok := block.GetObject().(shard.FinalBlock)
+		finalBlock, ok := block.GetInstance().(*shard.FinalBlock)
 		if !ok {
 			return errors.New("block type error")
 		}
@@ -1604,7 +1605,7 @@ func (c *ChainTx) CheckShardBlock(block shard.BlockInterface) error {
 		if !newBlock.StateHashRoot.Equals(&finalBlock.StateHashRoot) {
 			return errors.New(fmt.Sprintf("the state hash is not equal:%s, %s", finalBlock.StateHashRoot.HexString(), newBlock.StateHashRoot.HexString()))
 		}
-	case uint32(shard.HeViewChange):
+	case mpb.Identify_APP_MSG_VC_BLOCK:
 	default:
 		return errors.New("unknown header type")
 	}
@@ -1643,7 +1644,7 @@ func (c *ChainTx) HandleDeltaState(s *state.State, delta *shard.AccountMinor, tx
 		if err := s.AccountAddBalance(delta.Receipt.To, state.AbaToken, delta.Receipt.Amount); err != nil {
 			return err
 		}
-		
+
 		if err := s.RecoverResources(delta.Receipt.From, timeStamp, cpuLimit, netLimit); err != nil {
 			return err
 		}

@@ -191,11 +191,11 @@ func (sync *Sync) SendSyncRequestWithType(blockType cs.HeaderType) {
 	} else {
 
 		finalBlocks := sync.cache.blocks[cs.HeFinalBlock]
-		var markBlock cs.FinalBlock
+		var markBlock *cs.FinalBlock
 		var offset uint64
 
 		if len(finalBlocks) > 0 {
-			markBlock = finalBlocks[0].GetObject().(cs.FinalBlock)
+			markBlock = finalBlocks[0].GetInstance().(*cs.FinalBlock)
 			offset = 0
 		} else {
 			//TODO, problem: no final block situation
@@ -204,7 +204,7 @@ func (sync *Sync) SendSyncRequestWithType(blockType cs.HeaderType) {
 				log.Error("GetLastShardBlock, ", err)
 				return
 			}
-			markBlock = lastBlock.GetObject().(cs.FinalBlock)
+			markBlock = lastBlock.GetInstance().(*cs.FinalBlock)
 
 			offset = 1
 		}
@@ -260,7 +260,7 @@ func (s *Sync) SyncResponseDecode(syncData *sc.SyncResponseData) *sc.SyncRespons
 	//fmt.Println("len = ", len)
 	//fmt.Println("data = ", data)
 
-	var list []cs.Payload
+	var list []types.EcoMessage
 	for i := 0; i < int(len); i++ {
 
 		blockInterface, err := cs.BlockDeserialize(data[i])
@@ -307,7 +307,7 @@ func (s *Sync) tellLedgerSyncComplete() {
 	finalBlocks := s.cache.blocks[cs.HeFinalBlock]
 	l := len(finalBlocks)
 	if l > 0 {
-		lastFinalBlock := finalBlocks[l-1].GetObject().(cs.FinalBlock)
+		lastFinalBlock := finalBlocks[l-1].GetInstance().(*cs.FinalBlock)
 		for _, minorBlock := range lastFinalBlock.MinorBlocks {
 			shardID := minorBlock.ShardId
 			minorBlocks := s.cache.minorBlocks[shardID]
@@ -378,10 +378,10 @@ func (s *Sync) DealSyncRequestHelper(request *sc.SyncRequestPacket) *sc.NetPacke
 		log.Debug("Block Type = ", blockType, " index = ", i)
 		if err == nil {
 			//TODO, need to simplize, and refactor
-			log.Debug("block type = ", reflect.TypeOf(blockInterface.GetObject()))
-			o := blockInterface.GetObject()
+			log.Debug("block type = ", reflect.TypeOf(blockInterface.GetInstance()))
+			o := blockInterface.GetInstance()
 			block := s.getConcreteBlockObject(o)
-			payload := block.(cs.Payload)
+			payload := block.(types.EcoMessage)
 			response.Blocks = append(response.Blocks, payload)
 		}
 	}
@@ -446,15 +446,15 @@ func (s *Sync) CheckSyncCompleteForMinorBlock(minBlock *cs.MinorBlockHeader, blo
 func (s *Sync) CheckSyncCompleteForCMBlock(epoch uint64, blocks *[]cs.BlockInterface) bool {
 	list := *blocks
 	len := len(list)
-	var lastCMBlock cs.CMBlock
+	var lastCMBlock *cs.CMBlock
 	if len > 0 {
-		lastCMBlock = (*blocks)[len-1].GetObject().(cs.CMBlock)
+		lastCMBlock = (*blocks)[len-1].GetInstance().(*cs.CMBlock)
 	} else {
 		o, _, err := s.cell.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
 		if err != nil {
 			log.Error("GetLastShardBlock error")
 		} else {
-			lastCMBlock = o.GetObject().(cs.CMBlock)
+			lastCMBlock = o.GetInstance().(*cs.CMBlock)
 		}
 	}
 	log.Debug("final epoch = ", epoch, " lastCMBlock.Height = ", lastCMBlock.Height)
@@ -470,7 +470,7 @@ func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool {
 		syncResponse.BlockType, " complete = ", syncResponse.Compelte)
 	log.Debug("Block type = ", uint8(syncResponse.BlockType))
 
-	var lastFinalBlock cs.FinalBlock
+	var lastFinalBlock *cs.FinalBlock
 	hasFinalBlock := false
 	if syncResponse.BlockType == cs.HeFinalBlock && syncResponse.Compelte {
 		log.Debug("CheckSyncComplete, set complete")
@@ -479,7 +479,7 @@ func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool {
 		len := len(blocks)
 		log.Debug("final block cache len = ", len)
 		if len > 0 {
-			lastFinalBlock = blocks[len-1].GetObject().(cs.FinalBlock)
+			lastFinalBlock = blocks[len-1].GetInstance().(*cs.FinalBlock)
 			hasFinalBlock = true
 		}
 	}
@@ -537,18 +537,18 @@ func (s *Sync) CheckSyncComplete(syncResponse *sc.SyncResponsePacket) bool {
 func (s *Sync) getConcreteBlockObject(o interface{}) interface{} {
 	var block interface{}
 	switch t := o.(type) {
-	case cs.CMBlock:
-		o1 := o.(cs.CMBlock)
-		block = interface{}(&o1)
-	case cs.MinorBlock:
-		o1 := o.(cs.MinorBlock)
-		block = interface{}(&o1)
-	case cs.FinalBlock:
-		o1 := o.(cs.FinalBlock)
-		block = interface{}(&o1)
-	case cs.ViewChangeBlock:
-		o1 := o.(cs.ViewChangeBlock)
-		block = interface{}(&o1)
+	case *cs.CMBlock:
+		o1 := o.(*cs.CMBlock)
+		block = interface{}(o1)
+	case *cs.MinorBlock:
+		o1 := o.(*cs.MinorBlock)
+		block = interface{}(o1)
+	case *cs.FinalBlock:
+		o1 := o.(*cs.FinalBlock)
+		block = interface{}(o1)
+	case *cs.ViewChangeBlock:
+		o1 := o.(*cs.ViewChangeBlock)
+		block = interface{}(o1)
 	default:
 		log.Error("Wrong type ", t)
 	}
@@ -560,7 +560,7 @@ func (s *Sync) FillSyncDataInCacheHelper(p *[]cs.BlockInterface, needHeight uint
 	log.Debug("Fill Block size = ", len(syncResponse.Blocks), " cache size = ", len(*p))
 	blockType := syncResponse.BlockType
 	for _, payload := range syncResponse.Blocks {
-		o := payload.GetObject()
+		o := payload.GetInstance()
 		var block cs.BlockInterface
 		block = s.getConcreteBlockObject(o).(cs.BlockInterface)
 

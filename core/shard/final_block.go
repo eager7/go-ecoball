@@ -90,22 +90,6 @@ func (h *FinalBlockHeader) unSignatureData() ([]byte, error) {
 	return data, nil
 }
 
-func (h *FinalBlockHeader) JsonString() string {
-	data, err := json.Marshal(h)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + h.Hashes.HexString() + string(data)
-}
-
-func (h *FinalBlockHeader) Type() uint32 {
-	return uint32(HeFinalBlock)
-}
-func (h FinalBlockHeader) GetObject() interface{} {
-	return h
-}
-
 func (h *FinalBlockHeader) Hash() common.Hash {
 	return h.Hashes
 }
@@ -219,18 +203,6 @@ func (b *FinalBlock) proto() (block *pb.FinalBlock, err error) {
 	return &pbBlock, nil
 }
 
-func (b FinalBlock) GetObject() interface{} {
-	return b
-}
-
-func (b *FinalBlock) JsonString() string {
-	data, err := json.Marshal(b)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + b.Hashes.HexString() + string(data)
-}
 func (b *FinalBlock) String() string {
 	data, err := json.Marshal(b)
 	if err != nil {
@@ -239,7 +211,7 @@ func (b *FinalBlock) String() string {
 	}
 	return "hash:" + b.Hashes.HexString() + string(data)
 }
-func (b FinalBlock) GetInstance() interface{} {
+func (b *FinalBlock) GetInstance() interface{} {
 	return b
 }
 func (b *FinalBlock) Serialize() ([]byte, error) {

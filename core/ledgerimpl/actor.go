@@ -72,7 +72,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		end := time.Now().UnixNano()
 		log.Info("save block["+msg.ChainID.HexString()+"block hash:"+msg.Hash.HexString()+"]:", (end-begin)/1000, "us")
 	case shard.BlockInterface:
-		log.Info("receive a ", shard.HeaderType(msg.Type()).String(), "block:", msg.Hash().HexString(), "height:", msg.GetHeight())
+		log.Info("receive a ", msg.Identify().String(), "block:", msg.Hash().HexString(), "height:", msg.GetHeight())
 		chain, ok := l.ledger.ChainTxs[msg.GetChainID()]
 		if !ok {
 			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.GetChainID().HexString()))
@@ -85,7 +85,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		}
 		end := time.Now().UnixNano()
 		t := (end - begin) / 1000
-		log.Info("save ", shard.HeaderType(msg.Type()).String(), "block["+msg.Hash().HexString()+"]:", t, "us")
+		log.Info("save ", msg.Identify().String(), "block["+msg.Hash().HexString()+"]:", t, "us")
 		if t > 50000 {
 			log.Error("save block maybe trouble:", t)
 			//os.Exit(-1)
@@ -148,16 +148,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			Block:  msg.Block,
 			Result: nil,
 		}
-		switch msg.Block.Type() {
-		case uint32(shard.HeMinorBlock):
-
-		case uint32(shard.HeCmBlock):
-
-		case uint32(shard.HeFinalBlock):
-
-		default:
-			result.Result = errors.New("unknown header type")
-		}
+		//TODO
 		ctx.Sender().Tell(result)
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))

@@ -18,11 +18,11 @@ package types
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"math/big"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"math/big"
 )
 
 type TransferInfo struct {
@@ -80,19 +80,15 @@ func (t *TransferInfo) Deserialize(data []byte) error {
 	return t.Value.GobDecode(pbTransfer.Value)
 }
 
-func (t TransferInfo) GetObject() interface{} {
+func (t *TransferInfo) GetInstance() interface{} {
 	return t
 }
 
-func (t *TransferInfo) Type() uint32 {
-	return uint32(TxTransfer)
+func (t *TransferInfo) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_TRANSACTION_TRANSFER
 }
 
-func (t *TransferInfo) show() {
-	fmt.Println("\tValue          :", t.Value)
-}
-
-func (t *TransferInfo) JsonString() string {
+func (t *TransferInfo) String() string {
 	data, _ := json.Marshal(t)
 	return string(data)
 }
