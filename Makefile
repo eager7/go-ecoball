@@ -30,6 +30,7 @@ ecowallet:
 proto:
 	@echo "\033[;32mbuild protobuf file \033[0m"
 	make -C core/pb
+	make -C common/message/mpb
 	make -C client/protos
 	make -C net/message/pb
 	make -C net/gossip/protos
