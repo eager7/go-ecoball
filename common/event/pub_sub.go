@@ -16,15 +16,16 @@
 package event
 
 import (
-	"github.com/ecoball/go-ecoball/common/errors"
+	"errors"
 	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"gx/ipfs/QmdbxjQWogRCHRaxhhGnYdT1oQJzL9GdqSKzCdqWr85AP2/pubsub"
 )
 
 const (
 	bufferSize = 16
-	errorStr   = "dispatcher is not ready"
 )
+
+var errorStr = errors.New("dispatcher is not ready")
 
 var (
 	dispatcher *Dispatcher
@@ -81,7 +82,7 @@ func (ds *Dispatcher) shutdown() {
 /*订阅消息,返回一个channel,循环接收此channel,将返回mpb.Message{Identify:0, Payload:nil,}类型数据,根据类型进行解析即可*/
 func Subscribe(topics ...mpb.Identify) (chan interface{}, error) {
 	if dispatcher == nil {
-		return nil, errors.New(errorStr)
+		return nil, errorStr
 	}
 	return dispatcher.subscribe(topics...), nil
 }
@@ -89,14 +90,14 @@ func Subscribe(topics ...mpb.Identify) (chan interface{}, error) {
 /*订阅消息,返回一个channel,循环接收此channel,将返回mpb.Message{Identify:0, Payload:nil,}类型数据,根据类型进行解析即可,channel只能接收一次*/
 func SubOnceEach(topics ...string) (chan interface{}, error) {
 	if dispatcher == nil {
-		return nil, errors.New(errorStr)
+		return nil, errorStr
 	}
 	return dispatcher.ps.SubOnceEach(topics...), nil
 }
 
 func UnSubscribe(chn chan interface{}, topics ...mpb.Identify) error {
 	if dispatcher == nil {
-		return errors.New(errorStr)
+		return errorStr
 	}
 	dispatcher.unsubscribe(chn, topics...)
 	return nil
@@ -104,7 +105,7 @@ func UnSubscribe(chn chan interface{}, topics ...mpb.Identify) error {
 
 func Publish(msg mpb.Message, topics ...mpb.Identify) error {
 	if dispatcher == nil {
-		return errors.New(errorStr)
+		return errorStr
 	}
 	var strings []string
 	for _, topic := range topics {
@@ -118,7 +119,7 @@ func Publish(msg mpb.Message, topics ...mpb.Identify) error {
 
 func PublishCustom(msg interface{}, topics ...string) error {
 	if dispatcher == nil {
-		return errors.New(errorStr)
+		return errorStr
 	}
 	dispatcher.ps.Pub(msg, topics...)
 	return nil

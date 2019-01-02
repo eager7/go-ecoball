@@ -215,6 +215,7 @@ func (i *Instance) ReceiveMessage(s net.Stream) {
 		}
 		log.Info("receive msg:", msg.String())
 		if err := event.Publish(msg, msg.Identify); err != nil {
+			log.Error("event publish error:", err)
 			return
 		}
 	}
