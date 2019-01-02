@@ -1,29 +1,30 @@
 package example
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/http/common/abi"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"io/ioutil"
 	"math/big"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-	"encoding/hex"
-	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/ecoball/go-ecoball/core/shard"
-	"github.com/ecoball/go-ecoball/sharding/simulate"
 )
 
 var interval = time.Millisecond * 100
@@ -104,7 +105,6 @@ func ShardLedger(path string) ledger.Ledger {
 	errors.CheckErrorPanic(err)
 	return l
 }
-
 
 func SaveBlock(ledger ledger.Ledger, txs []*types.Transaction, chainID common.Hash) *types.Block {
 	con, err := types.InitConsensusData(TimeStamp())
@@ -228,12 +228,12 @@ func VotingProducer(ledger ledger.Ledger) {
 
 	//worker1, worker2 register to producer
 	/*
-	time.Sleep(time.Second * 5)
-	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("root"), config.ChainHash, state.Active, "reg_prod", []string{"worker1"}, 0, time.Now().UnixNano())
-	errors.CheckErrorPanic(err)
-	invoke.SetSignature(&config.Worker1)
-	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	time.Sleep(time.Millisecond * 500)
+		time.Sleep(time.Second * 5)
+		invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("root"), config.ChainHash, state.Active, "reg_prod", []string{"worker1"}, 0, time.Now().UnixNano())
+		errors.CheckErrorPanic(err)
+		invoke.SetSignature(&config.Worker1)
+		errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
+		time.Sleep(time.Millisecond * 500)
 	*/
 
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("root"), config.ChainHash, state.Active, "reg_prod", []string{"worker1"}, 0, time.Now().UnixNano())
@@ -432,7 +432,6 @@ func InlineAction(ledger ledger.Ledger) {
 	//errors.CheckErrorPanic(err)
 	//time.Sleep(interval)
 
-
 	transfer, err := types.NewTransfer(root, common.NameToIndex("worker1"), config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	transfer.SetSignature(&config.Root)
@@ -485,7 +484,6 @@ func InlineAction(ledger ledger.Ledger) {
 
 	time.Sleep(time.Second * 2)
 
-
 	perm = state.NewPermission(state.Active, state.Owner, 1, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}})
 	param, err = json.Marshal(perm)
 	errors.CheckErrorPanic(err)
@@ -496,13 +494,12 @@ func InlineAction(ledger ledger.Ledger) {
 
 	time.Sleep(time.Second * 2)
 
-
 	log.Warn("Start Invoke contract")
 
 	path := os.Getenv("GOPATH")
 
 	// contract file1 data
-	file, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/contract/testToken/inline_action.wasm", os.O_RDONLY, 0666)
+	file, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/contract/testToken/inline_action.wasm", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file inline_action.wasm failed")
 		return
@@ -516,7 +513,7 @@ func InlineAction(ledger ledger.Ledger) {
 	}
 
 	// abi file, common for contract file1 and file2
-	abifile, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/contract/testToken/simple_token.abi", os.O_RDONLY, 0666)
+	abifile, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/contract/testToken/simple_token.abi", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file simple_token.abi failed")
 		return
@@ -530,7 +527,7 @@ func InlineAction(ledger ledger.Ledger) {
 	}
 
 	//contract file2 data
-	file2, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/contract/testToken/inline_action2.wasm", os.O_RDONLY, 0666)
+	file2, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/contract/testToken/inline_action2.wasm", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file inline_action2.wasm failed")
 		return
@@ -542,7 +539,6 @@ func InlineAction(ledger ledger.Ledger) {
 		fmt.Println("read contract filr err: ", err.Error())
 		return
 	}
-
 
 	var contractAbi abi.ABI
 	if err = json.Unmarshal(abidata, &contractAbi); err != nil {
@@ -564,14 +560,12 @@ func InlineAction(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 1500)
 
-
 	// deploy second contract
 	contract, err = types.NewDeployContract(common.NameToIndex("worker2"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, types.VmWasm, "test", data2, abibyte, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Worker2))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 1500)
-
 
 	contractGet, err := ledger.GetContract(config.ChainHash, common.NameToIndex("worker"))
 	if err != nil {
@@ -605,7 +599,6 @@ func InlineAction(ledger ledger.Ledger) {
 	invoke.SetSignature(&config.Worker)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
-
 
 	// second contract create
 	create = []byte(`["worker2", "800", "XXX"]`)
@@ -645,7 +638,6 @@ func InlineAction(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
 
-
 	// first contract issue, inline call second contract "transfer"
 	issue = []byte(`{"to": "worker1", "amount": "100", "token_id": "XYX"}`)
 
@@ -664,7 +656,6 @@ func InlineAction(ledger ledger.Ledger) {
 	invoke.SetSignature(&config.Worker)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
-
 
 	trans := []byte(`{"from": "worker1", "to": "worker2", "amount": "20", "token_id": "XYX"}`)
 
@@ -729,7 +720,6 @@ func TokenContract(ledger ledger.Ledger) {
 	//errors.CheckErrorPanic(err)
 	//time.Sleep(interval)
 
-
 	transfer, err := types.NewTransfer(root, common.NameToIndex("worker1"), config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	transfer.SetSignature(&config.Root)
@@ -782,7 +772,6 @@ func TokenContract(ledger ledger.Ledger) {
 
 	time.Sleep(time.Second * 2)
 
-
 	perm = state.NewPermission(state.Active, state.Owner, 1, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}})
 	param, err = json.Marshal(perm)
 	errors.CheckErrorPanic(err)
@@ -792,7 +781,6 @@ func TokenContract(ledger ledger.Ledger) {
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
-
 
 	perm = state.NewPermission(state.Active, state.Owner, 1, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}})
 	param, err = json.Marshal(perm)
@@ -809,7 +797,7 @@ func TokenContract(ledger ledger.Ledger) {
 	path := os.Getenv("GOPATH")
 
 	// contract file1 data
-	file, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/contract/testToken/token_api.wasm", os.O_RDONLY, 0666)
+	file, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/contract/testToken/token_api.wasm", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file inline_action.wasm failed")
 		return
@@ -823,7 +811,7 @@ func TokenContract(ledger ledger.Ledger) {
 	}
 
 	// abi file, common for contract file1 and file2
-	abifile, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/contract/testToken/simple_token.abi", os.O_RDONLY, 0666)
+	abifile, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/contract/testToken/simple_token.abi", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file simple_token.abi failed")
 		return
@@ -837,7 +825,7 @@ func TokenContract(ledger ledger.Ledger) {
 	}
 
 	//contract file2 data
-	file2, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/contract/testToken/token_api2.wasm", os.O_RDONLY, 0666)
+	file2, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/contract/testToken/token_api2.wasm", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file inline_action2.wasm failed")
 		return
@@ -849,7 +837,6 @@ func TokenContract(ledger ledger.Ledger) {
 		fmt.Println("read contract filr err: ", err.Error())
 		return
 	}
-
 
 	var contractAbi abi.ABI
 	if err = json.Unmarshal(abidata, &contractAbi); err != nil {
@@ -871,14 +858,12 @@ func TokenContract(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 1500)
 
-
 	// deploy second contract
 	contract, err = types.NewDeployContract(common.NameToIndex("worker2"), common.NameToIndex("worker2"), config.ChainHash, state.Owner, types.VmWasm, "test", data2, abibyte, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(contract.SetSignature(&config.Worker2))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 1500)
-
 
 	contractGet, err := ledger.GetContract(config.ChainHash, common.NameToIndex("worker"))
 	if err != nil {
@@ -912,7 +897,6 @@ func TokenContract(ledger ledger.Ledger) {
 	invoke.SetSignature(&config.Worker)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
-
 
 	// second contract create
 	create = []byte(`["worker2", "800", "XXX"]`)
@@ -952,7 +936,6 @@ func TokenContract(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
 
-
 	// first contract issue, inline call second contract "transfer"
 	issue = []byte(`{"to": "worker1", "amount": "100", "token_id": "XYX"}`)
 
@@ -971,7 +954,6 @@ func TokenContract(ledger ledger.Ledger) {
 	invoke.SetSignature(&config.Worker)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
-
 
 	trans := []byte(`{"from": "worker1", "to": "worker2", "amount": "20", "token_id": "XYX"}`)
 
@@ -1041,7 +1023,6 @@ func InvokeSingleContract(ledger ledger.Ledger) {
 	//errors.CheckErrorPanic(err)
 	//time.Sleep(interval)
 
-
 	transfer, err := types.NewTransfer(root, common.NameToIndex("worker1"), config.ChainHash, "active", new(big.Int).SetUint64(500), 101, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	transfer.SetSignature(&config.Root)
@@ -1094,7 +1075,6 @@ func InvokeSingleContract(ledger ledger.Ledger) {
 
 	time.Sleep(time.Second * 2)
 
-
 	perm = state.NewPermission(state.Active, state.Owner, 1, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}})
 	param, err = json.Marshal(perm)
 	errors.CheckErrorPanic(err)
@@ -1104,7 +1084,6 @@ func InvokeSingleContract(ledger ledger.Ledger) {
 	time.Sleep(interval)
 
 	time.Sleep(time.Second * 2)
-
 
 	perm = state.NewPermission(state.Active, state.Owner, 1, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}})
 	param, err = json.Marshal(perm)
@@ -1121,7 +1100,7 @@ func InvokeSingleContract(ledger ledger.Ledger) {
 	path := os.Getenv("GOPATH")
 
 	// contract file1 data
-	file, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/contract/testToken/token_api.wasm", os.O_RDONLY, 0666)
+	file, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/contract/testToken/token_api.wasm", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file inline_action.wasm failed")
 		return
@@ -1135,7 +1114,7 @@ func InvokeSingleContract(ledger ledger.Ledger) {
 	}
 
 	// abi file, common for contract file1 and file2
-	abifile, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/contract/testToken/simple_token.abi", os.O_RDONLY, 0666)
+	abifile, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/contract/testToken/simple_token.abi", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file simple_token.abi failed")
 		return
@@ -1147,7 +1126,6 @@ func InvokeSingleContract(ledger ledger.Ledger) {
 		fmt.Println("read contract filr err: ", err.Error())
 		return
 	}
-
 
 	var contractAbi abi.ABI
 	if err = json.Unmarshal(abidata, &contractAbi); err != nil {
@@ -1168,7 +1146,6 @@ func InvokeSingleContract(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(contract.SetSignature(&config.Worker))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 1500)
-
 
 	contractGet, err := ledger.GetContract(config.ChainHash, common.NameToIndex("worker"))
 	if err != nil {
@@ -1202,8 +1179,6 @@ func InvokeSingleContract(ledger ledger.Ledger) {
 	invoke.SetSignature(&config.Worker)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
-
-
 
 	// first contract issue, inline call second contract "transfer"
 	issue := []byte(`{"to": "worker1", "amount": "100", "token_id": "XYX"}`)
@@ -1289,7 +1264,6 @@ func InvokeTicContract(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 	time.Sleep(interval)
 
-
 	transfer, err = types.NewTransfer(root, common.NameToIndex("user1"), config.ChainHash, "active", new(big.Int).SetUint64(1000), 101, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	transfer.SetSignature(&config.Root)
@@ -1340,7 +1314,6 @@ func InvokeTicContract(ledger ledger.Ledger) {
 
 	time.Sleep(time.Second * 2)
 
-
 	// set permission
 	log.Info("-----------------------------set permission-----------------------------")
 	perm := state.NewPermission(state.Active, state.Owner, 1, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("tictactoe"), Weight: 1, Permission: "active"}})
@@ -1353,7 +1326,6 @@ func InvokeTicContract(ledger ledger.Ledger) {
 
 	time.Sleep(time.Second * 2)
 
-
 	perm = state.NewPermission(state.Active, state.Owner, 1, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("tictactoe"), Weight: 1, Permission: "active"}})
 	param, err = json.Marshal(perm)
 	errors.CheckErrorPanic(err)
@@ -1364,14 +1336,11 @@ func InvokeTicContract(ledger ledger.Ledger) {
 
 	time.Sleep(time.Second * 2)
 
-
-
-
 	log.Info("-----------------------------Start Deploy Contract-----------------------------")
 
 	path := os.Getenv("GOPATH")
 	// tic contract data
-	file2, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/game/game.wasm", os.O_RDONLY, 0666)
+	file2, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/game/game.wasm", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file inline_action.wasm failed")
 		return
@@ -1385,7 +1354,7 @@ func InvokeTicContract(ledger ledger.Ledger) {
 	}
 
 	// abi file of tic contract
-	abifile2, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/game/game.abi", os.O_RDONLY, 0666)
+	abifile2, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/game/game.abi", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file simple_token.abi failed")
 		return
@@ -1397,7 +1366,6 @@ func InvokeTicContract(ledger ledger.Ledger) {
 		fmt.Println("read contract filr err: ", err.Error())
 		return
 	}
-
 
 	var contractAbi2 abi.ABI
 	if err = json.Unmarshal(abidata2, &contractAbi2); err != nil {
@@ -1411,9 +1379,8 @@ func InvokeTicContract(ledger ledger.Ledger) {
 		return
 	}
 
-
 	// token contract data
-	file, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/game/token_api.wasm", os.O_RDONLY, 0666)
+	file, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/game/token_api.wasm", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file inline_action.wasm failed")
 		return
@@ -1427,7 +1394,7 @@ func InvokeTicContract(ledger ledger.Ledger) {
 	}
 
 	// abi file of token contract
-	abifile, err := os.OpenFile(path + "/src/github.com/ecoball/go-ecoball/test/game/token_api.abi", os.O_RDONLY, 0666)
+	abifile, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/game/token_api.abi", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file simple_token.abi failed")
 		return
@@ -1466,7 +1433,6 @@ func InvokeTicContract(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, contract))
 	time.Sleep(time.Millisecond * 1500)
 
-
 	contractGet, err := ledger.GetContract(config.ChainHash, common.NameToIndex("tictactoe"))
 	if err != nil {
 		fmt.Errorf("can not find contract abi file")
@@ -1500,7 +1466,6 @@ func InvokeTicContract(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
 
-
 	balance, _ := ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("user1"), "ABA")
 	fmt.Println("After create, user1 account balance: ", balance)
 	balance, _ = ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("user2"), "ABA")
@@ -1523,7 +1488,6 @@ func InvokeTicContract(ledger ledger.Ledger) {
 	invoke.SetSignature(&config.Worker1)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 	time.Sleep(time.Millisecond * 2500)
-
 
 	balance2, _ := ledger.StateDB(config.ChainHash).AccountGetBalance(common.NameToIndex("user1"), "ABA")
 	fmt.Println("After restart, user1 account balance: ", balance2)
@@ -1568,13 +1532,13 @@ func RecepitTest(ledger ledger.Ledger) {
 	accounts[1] = account
 
 	receipt := types.TransactionReceipt{
-		TokenName:	"ABA",
-		Amount:		big.NewInt(100),
-		Hash:		common.NewHash(account),
-		Cpu:		10.0,
-		Net:		20.5,
-		Accounts:	accounts,
-		Result:		account,
+		TokenName: "ABA",
+		Amount:    big.NewInt(100),
+		Hash:      common.NewHash(account),
+		Cpu:       10.0,
+		Net:       20.5,
+		Accounts:  accounts,
+		Result:    account,
 	}
 
 	data, err := receipt.Serialize()
@@ -1619,16 +1583,16 @@ func TransferExample() {
 	worker2 := common.NameToIndex("testerl")
 	worker3 := common.NameToIndex("testerp")
 
-	for i := 0; i < 20; i ++ {
+	for i := 0; i < 20; i++ {
 
-		for i := 0; i < 1; i ++ {
+		for i := 0; i < 1; i++ {
 			transfer, err := types.NewTransfer(root, worker, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
 			errors.CheckErrorPanic(err)
 			transfer.SetSignature(&config.Root)
 			errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
 			time.Sleep(time.Second * 1)
 		}
-		for i := 0; i < 1; i ++ {
+		for i := 0; i < 1; i++ {
 			transfer, err := types.NewTransfer(worker, worker1, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
 			errors.CheckErrorPanic(err)
 			transfer.SetSignature(&config.Worker)
@@ -1641,21 +1605,21 @@ func TransferExample() {
 			errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
 			time.Sleep(time.Millisecond * 500)
 		}
-		for i := 0; i < 1; i ++ {
+		for i := 0; i < 1; i++ {
 			transfer, err := types.NewTransfer(worker1, worker2, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
 			errors.CheckErrorPanic(err)
 			transfer.SetSignature(&config.Worker1)
 			errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
 			time.Sleep(time.Second * 1)
 		}
-		for i := 0; i < 1; i ++ {
+		for i := 0; i < 1; i++ {
 			transfer, err := types.NewTransfer(worker2, worker3, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
 			errors.CheckErrorPanic(err)
 			transfer.SetSignature(&config.Worker2)
 			errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, transfer))
 			time.Sleep(time.Second * 1)
 		}
-		for i := 0; i < 1; i ++ {
+		for i := 0; i < 1; i++ {
 			transfer, err := types.NewTransfer(worker3, root, config.ChainHash, "active", new(big.Int).SetUint64(5), 101, time.Now().UnixNano())
 			errors.CheckErrorPanic(err)
 			transfer.SetSignature(&config.Delegate)
@@ -1671,5 +1635,22 @@ func TransferExample() {
 		time.Sleep(time.Second * 10)
 	}
 
+}
 
+type Message string
+
+func (m *Message) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_STRING
+}
+func (m *Message) String() string {
+	return string(*m)
+}
+func (m Message) GetInstance() interface{} {
+	return m
+}
+func (m *Message) Serialize() ([]byte, error) {
+	return []byte(string(*m)), nil
+}
+func (m *Message) Deserialize(data []byte) error {
+	return nil
 }
