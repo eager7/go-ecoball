@@ -8,6 +8,7 @@ import (
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 func SyncComplete() {
@@ -34,7 +35,7 @@ func TellLedgerProductFinalBlock(epoch uint64, height uint64, hashes []common.Ha
 	pb := message.ProducerBlock{
 		ChainID: cc.ChainHash,
 		Height:  height,
-		Type:    cs.HeFinalBlock,
+		Type:    mpb.Identify_APP_MSG_FINAL_BLOCK,
 	}
 
 	pb.Hashes = append(pb.Hashes, hashes...)
@@ -50,7 +51,7 @@ func TellLedgerProductMinorBlock(epoch uint64, height uint64) {
 	pb := message.ProducerBlock{
 		ChainID: cc.ChainHash,
 		Height:  height,
-		Type:    cs.HeMinorBlock,
+		Type:    mpb.Identify_APP_MSG_MINOR_BLOCK,
 	}
 
 	if err := event.Send(event.ActorSharding, event.ActorLedger, pb); err != nil {

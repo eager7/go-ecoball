@@ -130,7 +130,7 @@ func (s *shard) SyncResponseDecode(syncData *sc.SyncResponseData) (*sc.SyncRespo
 
 	var list []cs.Payload
 	for i := 0; i < int(len); i++ {
-		blockInterface, err := cs.BlockDeserialize(data[i], cs.HeaderType(blockType))
+		blockInterface, err := cs.BlockDeserialize(data[i], mpb.Identify(blockType))
 		if err != nil {
 			log.Error("minor block deserialize err")
 			return nil
@@ -192,7 +192,7 @@ func (s *shard) DealSyncRequestHelperTest(request *sc.SyncRequestPacket) (*sc.Ne
 
 	}
 
-	data := response.Encode(uint8(cs.HeMinorBlock))
+	data := response.Encode(uint8(mpb.Identify_APP_MSG_MINOR_BLOCK))
 
 	csp := &sc.NetPacket{
 		PacketType: netmsg.APP_MSG_SYNC_RESPONSE,
@@ -211,7 +211,7 @@ func (s *shard) DealSyncRequestHelperTest(request *sc.SyncRequestPacket) (*sc.Ne
 func (s *shard) DealSyncRequestHelper(request *sc.SyncRequestPacket) (*sc.NetPacket)  {
 	from := request.FromHeight
 	to := request.ToHeight
-	blockType := cs.HeaderType(request.BlockType)
+	blockType := mpb.Identify(request.BlockType)
 
 	fmt.Println("from = ", from)
 	if to < 0 {

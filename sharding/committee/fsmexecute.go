@@ -6,6 +6,7 @@ import (
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"time"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 func (c *committee) processStateTimeout() {
@@ -26,7 +27,7 @@ func (c *committee) recvShardPacket(packet *sc.CsPacket) {
 func (c *committee) processSyncComplete(msg interface{}) {
 	log.Debug("recv sync complete")
 
-	lastCmBlock, _, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
+	lastCmBlock, _, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, mpb.Identify_APP_MSG_CM_BLOCK)
 	if err != nil || lastCmBlock == nil {
 		panic("get cm block error ")
 		return
@@ -35,7 +36,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 	cm := lastCmBlock.GetInstance().(*cs.CMBlock)
 	c.ns.SyncCmBlockComplete(cm)
 
-	lastvc, _, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
+	lastvc, _, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, mpb.Identify_APP_MSG_VC_BLOCK)
 	if err != nil || lastvc == nil {
 		panic("get vc block error ")
 		return
@@ -44,7 +45,7 @@ func (c *committee) processSyncComplete(msg interface{}) {
 	vc := lastvc.GetInstance().(*cs.ViewChangeBlock)
 	c.ns.SaveLastViewchangeBlock(vc)
 
-	lastFinalBlock, _, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
+	lastFinalBlock, _, err := c.ns.Ledger.GetLastShardBlock(config.ChainHash, mpb.Identify_APP_MSG_FINAL_BLOCK)
 	if err != nil || lastFinalBlock == nil {
 		panic("get final block error ")
 		return

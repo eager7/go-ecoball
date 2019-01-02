@@ -27,6 +27,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"reflect"
 	"sync"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 const magicNum = 999
@@ -113,7 +114,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	}
 	p.txPool.txsCache.Add(tx.Hash, nil)
 
-	lastCMBlock, _, err := p.txPool.ledger.GetLastShardBlock(tx.ChainID, shard.HeCmBlock)
+	lastCMBlock, _, err := p.txPool.ledger.GetLastShardBlock(tx.ChainID, mpb.Identify_APP_MSG_CM_BLOCK)
 	if err != nil {
 		return err
 	}

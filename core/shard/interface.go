@@ -1,36 +1,13 @@
 package shard
 
 import (
+	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"fmt"
 	"github.com/ecoball/go-ecoball/core/types"
 )
-
-type HeaderType uint32
-
-const (
-	HeCmBlock    HeaderType = 1
-	HeFinalBlock HeaderType = 2
-	HeMinorBlock HeaderType = 3
-	HeViewChange HeaderType = 4
-)
-
-func (h HeaderType) String() string {
-	switch h {
-	case HeCmBlock:
-		return "HeCmBlock Type"
-	case HeMinorBlock:
-		return "HeMinorBlock Type"
-	case HeFinalBlock:
-		return "HeFinalBlock Type"
-	case HeViewChange:
-		return "ViewChangeBlock Type"
-	default:
-		return "unknown type"
-	}
-}
 
 type HeaderInterface interface {
 	types.EcoMessage
@@ -72,26 +49,26 @@ func BlockDeserialize(data []byte) (BlockInterface, error) {
 		return nil, errors.New(err.Error())
 	}
 	data = pbPayload.Data
-	switch HeaderType(pbPayload.Type) {
-	case HeCmBlock:
+	switch mpb.Identify(pbPayload.Type) {
+	case mpb.Identify_APP_MSG_CM_BLOCK:
 		block := new(CMBlock)
 		if err := block.Deserialize(data); err != nil {
 			return nil, err
 		}
 		return block, nil
-	case HeMinorBlock:
+	case mpb.Identify_APP_MSG_MINOR_BLOCK:
 		block := new(MinorBlock)
 		if err := block.Deserialize(data); err != nil {
 			return nil, err
 		}
 		return block, nil
-	case HeFinalBlock:
+	case mpb.Identify_APP_MSG_FINAL_BLOCK:
 		block := new(FinalBlock)
 		if err := block.Deserialize(data); err != nil {
 			return nil, err
 		}
 		return block, nil
-	case HeViewChange:
+	case mpb.Identify_APP_MSG_VC_BLOCK:
 		block := new(ViewChangeBlock)
 		if err := block.Deserialize(data); err != nil {
 			return nil, err
@@ -111,26 +88,26 @@ func HeaderDeserialize(data []byte) (HeaderInterface, error) {
 		return nil, errors.New(err.Error())
 	}
 	data = pbPayload.Data
-	switch HeaderType(pbPayload.Type) {
-	case HeCmBlock:
+	switch mpb.Identify(pbPayload.Type) {
+	case mpb.Identify_APP_MSG_CM_BLOCK:
 		header := new(CMBlockHeader)
 		if err := header.Deserialize(data); err != nil {
 			return nil, err
 		}
 		return header, nil
-	case HeMinorBlock:
+	case mpb.Identify_APP_MSG_MINOR_BLOCK:
 		header := new(MinorBlockHeader)
 		if err := header.Deserialize(data); err != nil {
 			return nil, err
 		}
 		return header, nil
-	case HeFinalBlock:
+	case mpb.Identify_APP_MSG_FINAL_BLOCK:
 		header := new(FinalBlockHeader)
 		if err := header.Deserialize(data); err != nil {
 			return nil, err
 		}
 		return header, nil
-	case HeViewChange:
+	case mpb.Identify_APP_MSG_VC_BLOCK:
 		header := new(ViewChangeBlockHeader)
 		if err := header.Deserialize(data); err != nil {
 			return nil, err

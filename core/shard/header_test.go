@@ -40,16 +40,16 @@ func TestMinorBlockHeader(t *testing.T) {
 
 	headerNew := shard.MinorBlockHeader{}
 	errors.CheckErrorPanic(headerNew.Deserialize(data))
-	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
+	errors.CheckEqualPanic(header.String() == headerNew.String())
 
 	block, err := shard.NewMinorBlock(header, nil, []*types.Transaction{example.TestTransfer()}, 0, 0)
 	data, err = block.Serialize()
 	errors.CheckErrorPanic(err)
 	blockNew := shard.MinorBlock{}
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
-	elog.Log.Debug(block.JsonString())
-	elog.Log.Info(blockNew.JsonString())
-	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
+	elog.Log.Debug(block.String())
+	elog.Log.Info(blockNew.String())
+	errors.CheckEqualPanic(block.String() == blockNew.String())
 }
 
 func TestCmBlockHeader(t *testing.T) {
@@ -82,9 +82,9 @@ func TestCmBlockHeader(t *testing.T) {
 
 	headerNew := shard.CMBlockHeader{}
 	errors.CheckErrorPanic(headerNew.Deserialize(data))
-	elog.Log.Debug(header.JsonString())
-	elog.Log.Info(headerNew.JsonString())
-	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
+	elog.Log.Debug(header.String())
+	elog.Log.Info(headerNew.String())
+	errors.CheckEqualPanic(header.String() == headerNew.String())
 
 	Shards := []shard.Shard{shard.Shard{
 		Member: []shard.NodeInfo{
@@ -106,9 +106,9 @@ func TestCmBlockHeader(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	blockNew := shard.CMBlock{}
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
-	elog.Log.Notice(block.JsonString())
-	elog.Log.Debug(blockNew.JsonString())
-	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
+	elog.Log.Notice(block.String())
+	elog.Log.Debug(blockNew.String())
+	errors.CheckEqualPanic(block.String() == blockNew.String())
 }
 
 func TestFinalBlockHeader(t *testing.T) {
@@ -141,7 +141,7 @@ func TestFinalBlockHeader(t *testing.T) {
 
 	headerNew := shard.FinalBlockHeader{}
 	errors.CheckErrorPanic(headerNew.Deserialize(data))
-	errors.CheckEqualPanic(header.JsonString() == headerNew.JsonString())
+	errors.CheckEqualPanic(header.String() == headerNew.String())
 
 	headerMinor := shard.MinorBlockHeader{
 		ChainID:           config.ChainHash,
@@ -172,7 +172,7 @@ func TestFinalBlockHeader(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	blockNew := shard.FinalBlock{}
 	errors.CheckErrorPanic(blockNew.Deserialize(data))
-	errors.CheckEqualPanic(block.JsonString() == blockNew.JsonString())
+	errors.CheckEqualPanic(block.String() == blockNew.String())
 }
 
 func TestVCBlockHeader(t *testing.T) {
@@ -198,7 +198,7 @@ func TestVCBlockHeader(t *testing.T) {
 	data, err := headerVC.Serialize()
 	headerVC2 := new(shard.ViewChangeBlockHeader)
 	errors.CheckErrorPanic(headerVC2.Deserialize(data))
-	errors.CheckEqualPanic(headerVC.JsonString() == headerVC2.JsonString())
+	errors.CheckEqualPanic(headerVC.String() == headerVC2.String())
 
 	blockVC, err := shard.NewVCBlock(headerVC)
 	errors.CheckErrorPanic(err)
@@ -207,5 +207,5 @@ func TestVCBlockHeader(t *testing.T) {
 	blockVC2 := new(shard.ViewChangeBlock)
 	errors.CheckErrorPanic(blockVC2.Deserialize(data))
 
-	errors.CheckEqualPanic(blockVC.JsonString() == blockVC2.JsonString())
+	errors.CheckEqualPanic(blockVC.String() == blockVC2.String())
 }

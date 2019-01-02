@@ -5,6 +5,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 var L Ledger
@@ -63,19 +64,19 @@ type Ledger interface {
 	 *  @param hash - the hash of block
 	 *  @param expectFinalize - if the block has a high probability of finalizer, get it first from BlockStore, otherwise get it first from BlockStoreCache
 	 */
-	GetShardBlockByHash(chainID common.Hash, typ shard.HeaderType, hash common.Hash, finalizer bool) (shard.BlockInterface, bool, error)
+	GetShardBlockByHash(chainID common.Hash, typ mpb.Identify, hash common.Hash, finalizer bool) (shard.BlockInterface, bool, error)
 	/**
 	 *  @brief get the shard block by height, if the block type is not minor block, the shardID is 0
 	 *  @param typ - the type of block
 	 *  @param height - the height of block
 	 *  @param shardID - the shardId of minor block
 	 */
-	GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, bool, error)
+	GetShardBlockByHeight(chainID common.Hash, typ mpb.Identify, height uint64, shardID uint32) (shard.BlockInterface, bool, error)
 	/**
 	 *  @brief get the last shard block by type, the minor block is local shard
 	 *  @param typ - the type of block
 	 */
-	GetLastShardBlock(chainID common.Hash, typ shard.HeaderType) (shard.BlockInterface, bool, error)
+	GetLastShardBlock(chainID common.Hash, typ mpb.Identify) (shard.BlockInterface, bool, error)
 	/**
 	 *  @brief create a new committee block
 	 *  @param timeStamp - the time of block create

@@ -24,18 +24,19 @@ import (
 	"github.com/ecoball/go-ecoball/sharding/common"
 	"reflect"
 	"sync"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type BroadcastMessage struct {
 	ShardId uint32
-	Message message.EcoMessage
+	Message types.EcoMessage
 }
 
 type SingleMessage struct {
 	PublicKey string
 	Address   string
 	Port      string
-	Message   message.EcoMessage
+	Message   types.EcoMessage
 }
 
 type netActor struct {

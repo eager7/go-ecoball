@@ -7,7 +7,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/lib-p2p/address"
 	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
@@ -22,6 +21,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 var log = elog.Log
@@ -225,7 +225,7 @@ func (i *Instance) ReceiveMessage(s net.Stream) {
 	}
 }
 
-func (i *Instance) SendMessage(b64Pub, addr, port string, msg message.EcoMessage) error {
+func (i *Instance) SendMessage(b64Pub, addr, port string, msg types.EcoMessage) error {
 	data, err := msg.Serialize()
 	if err != nil {
 		return err
@@ -277,7 +277,7 @@ func (i *Instance) ResetStream(s net.Stream) error {
 	return nil
 }
 
-func (i *Instance) BroadcastToShard(shardId uint32, msg message.EcoMessage) error {
+func (i *Instance) BroadcastToShard(shardId uint32, msg types.EcoMessage) error {
 	peerMap := i.ShardInfo.GetShardNodes(shardId)
 	if peerMap == nil {
 		return errors.New(fmt.Sprintf("can't find shard[%d] nodes", shardId))

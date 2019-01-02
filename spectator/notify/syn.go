@@ -25,6 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/spectator/info"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/shard"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 var (
@@ -67,7 +68,7 @@ func HandleSynBlock(conn net.Conn, one info.OneNotify) error {
 			}
 			height := uint64(Height)
 
-			synShardBlock(height, shard.HeCmBlock, conn)
+			synShardBlock(height, mpb.Identify_APP_MSG_CM_BLOCK, conn)
 			break
 		case 2:
 			var Height scanSyn.FinalHeight
@@ -76,7 +77,7 @@ func HandleSynBlock(conn net.Conn, one info.OneNotify) error {
 			}
 			height := uint64(Height)
 
-			synShardBlock(height, shard.HeFinalBlock, conn)
+			synShardBlock(height, mpb.Identify_APP_MSG_FINAL_BLOCK, conn)
 			break
 		case 3:
 			break
@@ -87,7 +88,7 @@ func HandleSynBlock(conn net.Conn, one info.OneNotify) error {
 			}
 			height := uint64(Height)
 
-			synShardBlock(height, shard.HeViewChange, conn)
+			synShardBlock(height, mpb.Identify_APP_MSG_VC_BLOCK, conn)
 			break
 		default:
 		}
@@ -96,7 +97,7 @@ func HandleSynBlock(conn net.Conn, one info.OneNotify) error {
 	return nil
 }
 
-func synShardBlock(height uint64, typ shard.HeaderType, conn net.Conn) error{
+func synShardBlock(height uint64, typ mpb.Identify, conn net.Conn) error{
 	block, _, err := CoreLedger.GetLastShardBlock(config.ChainHash, typ)
 	if nil != err {
 		log.Error("GetLastShardBlock error: ", err)
@@ -115,7 +116,7 @@ func synShardBlock(height uint64, typ shard.HeaderType, conn net.Conn) error{
 			log.Error("send_message error: ", err)
 		}
 
-		if shard.HeFinalBlock == typ {
+		if mpb.Identify_APP_MSG_FINAL_BLOCK == typ {
 			data, err := block.Serialize()
 			if nil != err {
 				continue
@@ -129,7 +130,7 @@ func synShardBlock(height uint64, typ shard.HeaderType, conn net.Conn) error{
 
 			if len(final.MinorBlocks) > 0 {
 				for _, v := range final.MinorBlocks{
-					minorblock, _, err := CoreLedger.GetShardBlockByHash(config.ChainHash, shard.HeMinorBlock, v.Hash(), true)
+					minorblock, _, err := CoreLedger.GetShardBlockByHash(config.ChainHash, mpb.Identify_APP_MSG_MINOR_BLOCK, v.Hash(), true)
 					if nil != err {
 						log.Error("GetShardBlockByHash error: ", err)
 						continue

@@ -10,6 +10,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"strconv"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 var (
@@ -97,7 +98,7 @@ func (c *Cell) LoadConfig() {
 }
 
 func (c *Cell) LoadLastBlock() {
-	lastCmBlock, _, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeCmBlock)
+	lastCmBlock, _, err := c.Ledger.GetLastShardBlock(config.ChainHash, mpb.Identify_APP_MSG_CM_BLOCK)
 	if err != nil || lastCmBlock == nil {
 		panic("get cm block error ")
 		return
@@ -106,7 +107,7 @@ func (c *Cell) LoadLastBlock() {
 	cm := lastCmBlock.GetInstance().(*cs.CMBlock)
 	c.SyncCmBlockComplete(cm)
 
-	lastvc, _, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeViewChange)
+	lastvc, _, err := c.Ledger.GetLastShardBlock(config.ChainHash, mpb.Identify_APP_MSG_VC_BLOCK)
 	if err != nil || lastvc == nil {
 		panic("get vc block error ")
 		return
@@ -115,7 +116,7 @@ func (c *Cell) LoadLastBlock() {
 	vc := lastvc.GetInstance().(*cs.ViewChangeBlock)
 	c.SaveLastViewchangeBlock(vc)
 
-	lastFinalBlock, _, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeFinalBlock)
+	lastFinalBlock, _, err := c.Ledger.GetLastShardBlock(config.ChainHash, mpb.Identify_APP_MSG_FINAL_BLOCK)
 	if err != nil || lastFinalBlock == nil {
 		panic("get final block error ")
 		return
@@ -125,7 +126,7 @@ func (c *Cell) LoadLastBlock() {
 	c.SaveLastFinalBlock(final)
 
 	if c.NodeType == sc.NodeShard || c.NodeType == sc.NodeCandidate {
-		lastMinor, bFinalize, err := c.Ledger.GetLastShardBlock(config.ChainHash, cs.HeMinorBlock)
+		lastMinor, bFinalize, err := c.Ledger.GetLastShardBlock(config.ChainHash, mpb.Identify_APP_MSG_MINOR_BLOCK)
 		if err != nil || lastMinor == nil {
 			panic("get minor block error ")
 			return
@@ -134,7 +135,7 @@ func (c *Cell) LoadLastBlock() {
 		minor := lastMinor.GetInstance().(*cs.MinorBlock)
 
 		if !bFinalize {
-			last, finalize, err := c.Ledger.GetShardBlockByHash(config.ChainHash, cs.HeMinorBlock, minor.PrevHash, true)
+			last, finalize, err := c.Ledger.GetShardBlockByHash(config.ChainHash, mpb.Identify_APP_MSG_MINOR_BLOCK, minor.PrevHash, true)
 			if err != nil || finalize != true {
 				log.Error("get last finalize minor block error", err)
 				panic("get last finalize minor block error")
@@ -337,7 +338,7 @@ func (c *Cell) SyncCmBlockComplete(lastCmblock *cs.CMBlock) {
 	}
 
 	for ; i < lastCmblock.Height; i++ {
-		block, _, err := c.Ledger.GetShardBlockByHeight(config.ChainHash, cs.HeCmBlock, i, 0)
+		block, _, err := c.Ledger.GetShardBlockByHeight(config.ChainHash, mpb.Identify_APP_MSG_CM_BLOCK, i, 0)
 		if err != nil {
 			log.Error("get block error ", err)
 			return

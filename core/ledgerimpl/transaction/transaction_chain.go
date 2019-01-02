@@ -78,7 +78,7 @@ type ChainTx struct {
 	shardId    uint32
 }
 
-func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {
+func NewTransactionChain(path string, ledger ledger.Ledger, option... bool) (c *ChainTx, err error) {
 	c = &ChainTx{ledger: ledger}
 	if config.DsnStorage {
 		c.BlockStore, err = dsnStore.NewDsnStore(path + config.StringBlock)
@@ -98,7 +98,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 		return nil, err
 	}
 
-	if !config.DisableSharding {
+	if !config.DisableSharding && len(option) == 0{
 		existed, err := c.RestoreCurrentShardHeader()
 		if err != nil {
 			return nil, err
@@ -894,7 +894,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	switch block.Identify() {
 	case mpb.Identify_APP_MSG_CM_BLOCK:
 		if cm, ok := block.GetInstance().(*shard.CMBlock); !ok {
-			return errors.New(fmt.Sprintf("type asserts error:%s", shard.HeCmBlock.String()))
+			return errors.New(fmt.Sprintf("type asserts error:%s", mpb.Identify_APP_MSG_CM_BLOCK.String()))
 		} else {
 			if err := c.HeaderStore.Put([]byte(keyLastCm), block.Hash().Bytes()); err != nil {
 				return err
@@ -908,7 +908,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	case mpb.Identify_APP_MSG_MINOR_BLOCK:
 		minor, ok := block.GetInstance().(*shard.MinorBlock)
 		if !ok {
-			return errors.New(fmt.Sprintf("type asserts error:%s", shard.HeMinorBlock.String()))
+			return errors.New(fmt.Sprintf("type asserts error:%s", mpb.Identify_APP_MSG_MINOR_BLOCK.String()))
 		}
 		if c.shardId == minor.ShardId {
 			if err := c.HeaderStore.Put([]byte(keyLastMinor), block.Hash().Bytes()); err != nil {
@@ -929,10 +929,10 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	case mpb.Identify_APP_MSG_FINAL_BLOCK:
 		final, ok := block.GetInstance().(*shard.FinalBlock)
 		if !ok {
-			return errors.New(fmt.Sprintf("type asserts error:%s", shard.HeFinalBlock.String()))
+			return errors.New(fmt.Sprintf("type asserts error:%s", mpb.Identify_APP_MSG_FINAL_BLOCK.String()))
 		}
 		for _, minorHeader := range final.MinorBlocks { //Handle Minor Headers
-			blockInterface, _, err := c.GetShardBlockByHash(shard.HeMinorBlock, minorHeader.Hashes, false)
+			blockInterface, _, err := c.GetShardBlockByHash(mpb.Identify_APP_MSG_FINAL_BLOCK, minorHeader.Hashes, false)
 			if err != nil {
 				return err
 			}
@@ -974,7 +974,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	case mpb.Identify_APP_MSG_VC_BLOCK:
 		vc, ok := block.GetInstance().(*shard.ViewChangeBlock)
 		if !ok {
-			return errors.New(fmt.Sprintf("type asserts error:%s", shard.HeViewChange.String()))
+			return errors.New(fmt.Sprintf("type asserts error:%s", mpb.Identify_APP_MSG_VC_BLOCK.String()))
 		}
 
 		c.LastHeader.VCHeader = &vc.ViewChangeBlockHeader
@@ -1094,7 +1094,7 @@ func (c *ChainTx) recombinationBlockStore(block shard.BlockInterface) error {
  *  @param hash - the hash of block
  *  @param expectFinalize - if the block has a high probability of finalizer, get it first from BlockStore, otherwise get it first from BlockStoreCache
  */
-func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash, expectFinalize bool) (block shard.BlockInterface, finalizer bool, err error) {
+func (c *ChainTx) GetShardBlockByHash(typ mpb.Identify, hash common.Hash, expectFinalize bool) (block shard.BlockInterface, finalizer bool, err error) {
 	if expectFinalize {
 		dataBlock, err := c.BlockStore.Get(hash.Bytes())
 		if err != nil {
@@ -1145,7 +1145,7 @@ func (c *ChainTx) GetShardBlockByHash(typ shard.HeaderType, hash common.Hash, ex
  *  @param height - the height of block
  *  @param shardID - the shardId of minor block
  */
-func (c *ChainTx) GetShardBlockByHeight(typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, bool, error) {
+func (c *ChainTx) GetShardBlockByHeight(typ mpb.Identify, height uint64, shardID uint32) (shard.BlockInterface, bool, error) {
 	keyPb := pb.BlockCacheKey{Type: uint32(typ), ShardID: shardID, Height: height}
 	key, err := keyPb.Marshal()
 	if err != nil {
@@ -1210,21 +1210,21 @@ func (c *ChainTx) GetFinalBlocksByEpochNo(epochNo uint64) (finalBlocks []shard.B
  *  @brief get the last shard block by type, the minor block is local shard
  *  @param typ - the type of block
  */
-func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface, bool, error) {
+func (c *ChainTx) GetLastShardBlock(typ mpb.Identify) (shard.BlockInterface, bool, error) {
 	switch typ {
-	case shard.HeFinalBlock:
+	case mpb.Identify_APP_MSG_FINAL_BLOCK:
 		if c.LastHeader.FinalHeader != nil {
 			return c.GetShardBlockByHash(typ, c.LastHeader.FinalHeader.Hashes, true)
 		}
-	case shard.HeMinorBlock:
+	case mpb.Identify_APP_MSG_MINOR_BLOCK:
 		if c.LastHeader.MinorHeader != nil {
 			return c.GetShardBlockByHash(typ, c.LastHeader.MinorHeader.Hashes, true)
 		}
-	case shard.HeCmBlock:
+	case mpb.Identify_APP_MSG_CM_BLOCK:
 		if c.LastHeader.CmHeader != nil {
 			return c.GetShardBlockByHash(typ, c.LastHeader.CmHeader.Hashes, true)
 		}
-	case shard.HeViewChange:
+	case mpb.Identify_APP_MSG_VC_BLOCK:
 		if c.LastHeader.VCHeader != nil {
 			return c.GetShardBlockByHash(typ, c.LastHeader.VCHeader.Hashes, true)
 		}
@@ -1241,14 +1241,14 @@ func (c *ChainTx) GetLastShardBlock(typ shard.HeaderType) (shard.BlockInterface,
  */
 func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error) {
 	if c.LastHeader.Finalizer == false {
-		lastMinor, finalizer, err := c.GetLastShardBlock(shard.HeMinorBlock)
+		lastMinor, finalizer, err := c.GetLastShardBlock(mpb.Identify_APP_MSG_MINOR_BLOCK)
 		if err != nil {
 			return nil, nil, err
 		}
 		if finalizer != false {
 			return nil, nil, errors.New("the last minor block's finalizer state error")
 		}
-		lastCm, _, err := c.GetLastShardBlock(shard.HeCmBlock)
+		lastCm, _, err := c.GetLastShardBlock(mpb.Identify_APP_MSG_CM_BLOCK)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1474,7 +1474,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 func (c *ChainTx) NewFinalBlock(timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
 	var minorBlocks []*shard.MinorBlock
 	for _, hash := range hashes {
-		if b, _, err := c.GetShardBlockByHash(shard.HeMinorBlock, hash, false); err != nil {
+		if b, _, err := c.GetShardBlockByHash(mpb.Identify_APP_MSG_MINOR_BLOCK, hash, false); err != nil {
 			log.Warn(err)
 		} else {
 			if B, ok := b.GetInstance().(*shard.MinorBlock); ok {
@@ -1517,7 +1517,7 @@ func (c *ChainTx) NewViewChangeBlock(timeStamp int64, round uint16) (*shard.View
  *  @param block - the interface of block
  */
 func (c *ChainTx) updateShardId() (uint32, error) {
-	cm, _, err := c.GetLastShardBlock(shard.HeCmBlock)
+	cm, _, err := c.GetLastShardBlock(mpb.Identify_APP_MSG_CM_BLOCK)
 	if err != nil {
 		return 0, err
 	}

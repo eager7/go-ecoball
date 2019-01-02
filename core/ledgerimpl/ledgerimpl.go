@@ -29,6 +29,7 @@ import (
 	"sync"
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.NoticeLog)
@@ -39,7 +40,7 @@ type LedgerImpl struct {
 	path     string
 }
 
-func NewLedger(path string, chainID common.Hash, addr common.Address) (l ledger.Ledger, err error) {
+func NewLedger(path string, chainID common.Hash, addr common.Address, option... bool) (l ledger.Ledger, err error) {
 	log.Debug("Create Ledger in ", path)
 	ll := &LedgerImpl{path: path, ChainTxs: make(map[common.Hash]*transaction.ChainTx, 1)}
 
@@ -49,7 +50,7 @@ func NewLedger(path string, chainID common.Hash, addr common.Address) (l ledger.
 		return nil, err
 	}
 
-	if err := ll.NewTxChain(chainID, addr); err != nil {
+	if err := ll.NewTxChain(chainID, addr, option...); err != nil {
 		return nil, err
 	}
 
@@ -57,15 +58,15 @@ func NewLedger(path string, chainID common.Hash, addr common.Address) (l ledger.
 	return ll, nil
 }
 
-func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address) (err error) {
+func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address, option... bool) (err error) {
 	if _, ok := l.ChainTxs[chainID]; ok {
 		return nil
 	}
-	ChainTx, err := transaction.NewTransactionChain(l.path+"/"+chainID.HexString()+"/Transaction", l)
+	ChainTx, err := transaction.NewTransactionChain(l.path+"/"+chainID.HexString()+"/Transaction", l, option...)
 	if err != nil {
 		return err
 	}
-	if !config.DisableSharding {
+	if !config.DisableSharding && len(option) == 0{
 		if err := ChainTx.GenesesShardBlockInit(chainID, addr); err != nil {
 			return err
 		}
@@ -373,7 +374,7 @@ func (l *LedgerImpl) SaveShardBlock(chainID common.Hash, block shard.BlockInterf
 	return chain.SaveShardBlock(block)
 }
 
-func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ shard.HeaderType, hash common.Hash, finalizer bool) (shard.BlockInterface, bool, error) {
+func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ mpb.Identify, hash common.Hash, finalizer bool) (shard.BlockInterface, bool, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, false, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
@@ -381,7 +382,7 @@ func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ shard.HeaderTy
 	return chain.GetShardBlockByHash(typ, hash, finalizer)
 }
 
-func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ shard.HeaderType, height uint64, shardID uint32) (shard.BlockInterface, bool, error) {
+func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ mpb.Identify, height uint64, shardID uint32) (shard.BlockInterface, bool, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, false, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
@@ -389,7 +390,7 @@ func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ shard.Header
 	return chain.GetShardBlockByHeight(typ, height, shardID)
 }
 
-func (l *LedgerImpl) GetLastShardBlock(chainID common.Hash, typ shard.HeaderType) (shard.BlockInterface, bool, error) {
+func (l *LedgerImpl) GetLastShardBlock(chainID common.Hash, typ mpb.Identify) (shard.BlockInterface, bool, error) {
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, false, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))

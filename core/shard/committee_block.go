@@ -133,10 +133,6 @@ func (h *CMBlockHeader) Deserialize(data []byte) error {
 	return nil
 }
 
-func (h *CMBlockHeader) Type() uint32 {
-	return uint32(HeCmBlock)
-}
-
 func (h *CMBlockHeader) Identify() mpb.Identify {
 	return mpb.Identify_APP_MSG_CM_BLOCK
 }

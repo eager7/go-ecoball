@@ -18,9 +18,9 @@ package message
 
 import (
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 type ABABFTStart struct {
@@ -43,7 +43,7 @@ type BlockMessage struct {
 type ProducerBlock struct {
 	ChainID common.Hash
 	Height  uint64
-	Type    shard.HeaderType
+	Type    mpb.Identify
 	Hashes  []common.Hash
 }
 
@@ -66,13 +66,6 @@ type NetPacket struct {
 	Address   string
 	Port      string
 	PublicKey string
-	Message   EcoMessage
+	Message   types.EcoMessage
 }
 
-type EcoMessage interface {
-	Identify() mpb.Identify
-	String() string
-	GetInstance() interface{}
-	Serialize() ([]byte, error)
-	Deserialize(data []byte) error
-}

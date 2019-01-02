@@ -4,6 +4,7 @@ import (
 	cs "github.com/ecoball/go-ecoball/core/shard"
 	"fmt"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 //SyncType
@@ -29,7 +30,7 @@ type SyncPacket struct {
 
 //toHeight = -1, means to newest height
 type SyncRequestPacket struct {
-	BlockType cs.HeaderType
+	BlockType mpb.Identify
 	FromHeight int64
 	ToHeight int64
 	Worker *WorkerId
@@ -39,7 +40,7 @@ type SyncRequestPacket struct {
 
 type SyncResponsePacket struct {
 	Len uint
-	BlockType cs.HeaderType
+	BlockType mpb.Identify
 	Blocks []types.EcoMessage
 	LastHeight uint64
 	ShardID uint32
@@ -49,7 +50,7 @@ type SyncResponsePacket struct {
 
 
 type SyncResponseData struct {
-	BlockType cs.HeaderType
+	BlockType mpb.Identify
 	Len uint
 	Data [][]byte
 	LastHeight uint64
@@ -58,7 +59,7 @@ type SyncResponseData struct {
 }
 
 
-func (p *SyncResponsePacket)Encode(blockType cs.HeaderType, shardID uint32) *SyncResponseData {
+func (p *SyncResponsePacket)Encode(blockType mpb.Identify, shardID uint32) *SyncResponseData {
 	var data [][]byte
 	p.BlockType = blockType
 	p.Len = uint(len(p.Blocks))

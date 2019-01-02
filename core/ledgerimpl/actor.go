@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -104,7 +105,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		log.Debug("receive create block request")
 		begin := time.Now().UnixNano()
 		switch msg.Type {
-		case shard.HeMinorBlock:
+		case mpb.Identify_APP_MSG_MINOR_BLOCK:
 			if txpool.T == nil {
 				ctx.Sender().Tell(errors.New("create minor block err the txPool is nil"))
 				return
@@ -126,11 +127,11 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			}
 			end := time.Now().UnixNano()
 			t := (end - begin) / 1000
-			log.Info("create ", shard.HeaderType(msg.Type).String(), "block["+minorBlock.Hashes.HexString()+"]:", t, "us")
+			log.Info("create ", msg.Type.String(), "block["+minorBlock.Hashes.HexString()+"]:", t, "us")
 			ctx.Sender().Tell(minorBlock)
-		case shard.HeCmBlock:
-			log.Warn("the minor block nonsupport create by actor")
-		case shard.HeFinalBlock:
+		case mpb.Identify_APP_MSG_CM_BLOCK:
+			log.Warn("the cm block nonsupport create by actor")
+		case mpb.Identify_APP_MSG_FINAL_BLOCK:
 			block, err := l.ledger.NewFinalBlock(msg.ChainID, time.Now().UnixNano(), msg.Hashes)
 			if err != nil {
 				ctx.Sender().Tell(errors.New(fmt.Sprintf("create final block err:%s", err.Error())))
@@ -138,7 +139,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			}
 			end := time.Now().UnixNano()
 			t := (end - begin) / 1000
-			log.Info("create ", shard.HeaderType(msg.Type).String(), "block["+block.Hashes.HexString()+"]:", t, "us")
+			log.Info("create ", msg.Type.String(), "block["+block.Hashes.HexString()+"]:", t, "us")
 			ctx.Sender().Tell(block)
 		default:
 			log.Error("unknown type:", msg.Type.String())
