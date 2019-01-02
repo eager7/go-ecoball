@@ -1,4 +1,4 @@
-package net
+package address
 
 import (
 	"fmt"
@@ -11,33 +11,33 @@ import (
 	"sync"
 )
 
-type Peer struct {
+type Sender struct {
 	ID       peer.ID
-	s        net.Stream
+	Stream   net.Stream
 	PeerInfo peerstore.PeerInfo
 }
 
-type PeerMap struct {
-	Peers map[peer.ID]Peer
+type SenderMap struct {
+	Peers map[peer.ID]Sender
 	P     sync.Map
 	lock  sync.RWMutex
 }
 
-func (p *PeerMap) Initialize() {
-	p.Peers = make(map[peer.ID]Peer)
+func (p *SenderMap) Initialize() {
+	p.Peers = make(map[peer.ID]Sender)
 }
 
-func (p *PeerMap) Add(id peer.ID, s net.Stream, addr multiaddr.Multiaddr) {
+func (p *SenderMap) Add(id peer.ID, s net.Stream, addr multiaddr.Multiaddr) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	if _, ok := p.Peers[id]; ok {
 		return
 	}
 	peerInfo := peerstore.PeerInfo{ID: id, Addrs: []multiaddr.Multiaddr{addr}}
-	p.Peers[id] = Peer{ID: id, s: s, PeerInfo: peerInfo}
+	p.Peers[id] = Sender{ID: id, Stream: s, PeerInfo: peerInfo}
 }
 
-func (p *PeerMap) Del(id peer.ID) error {
+func (p *SenderMap) Del(id peer.ID) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	if _, ok := p.Peers[id]; ok {
@@ -47,7 +47,7 @@ func (p *PeerMap) Del(id peer.ID) error {
 	return errors.New(fmt.Sprintf("can't find stream by id:%s", id))
 }
 
-func (p *PeerMap) Get(id peer.ID) *Peer {
+func (p *SenderMap) Get(id peer.ID) *Sender {
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 	if info, ok := p.Peers[id]; ok {
@@ -56,8 +56,8 @@ func (p *PeerMap) Get(id peer.ID) *Peer {
 	return nil
 }
 
-func (p *PeerMap) Iterator() <-chan Peer {
-	channel := make(chan Peer)
+func (p *SenderMap) Iterator() <-chan Sender {
+	channel := make(chan Sender)
 	go func() {
 		p.lock.RLock()
 		defer p.lock.RUnlock()

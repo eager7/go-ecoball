@@ -20,20 +20,44 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/lib-p2p/net"
 	"github.com/ecoball/go-ecoball/sharding/common"
 	"reflect"
 	"sync"
 )
 
+type BroadcastMessage struct {
+	ShardId uint32
+	Message message.EcoMessage
+}
+
+type SingleMessage struct {
+	PublicKey string
+	Address   string
+	Port      string
+	Message   message.EcoMessage
+}
+
 type netActor struct {
-	ctx      context.Context
-	pid      *actor.PID
-	instance *net.Instance
+	ctx              context.Context
+	pid              *actor.PID
+	instance         *net.Instance
+	singleMessage    chan SingleMessage
+	broadcastMessage chan BroadcastMessage
+}
+
+func (n *netActor) initialize() {
+	n.singleMessage = make(chan SingleMessage, 100)
+	n.broadcastMessage = make(chan BroadcastMessage, 100)
+}
+
+func (n *netActor) finished() {
+	close(n.singleMessage)
+	close(n.broadcastMessage)
 }
 
 func NewNetActor(n *netActor) (err error) {
+	n.initialize()
 	props := actor.FromProducer(func() actor.Actor {
 		return n
 	})
@@ -42,6 +66,7 @@ func NewNetActor(n *netActor) (err error) {
 		return err
 	}
 	event.RegisterActor(event.ActorP2P, n.pid)
+	go n.Engine()
 	log.Debug("start net actor:", n.pid)
 
 	return nil
@@ -54,49 +79,20 @@ func (n *netActor) Receive(ctx actor.Context) {
 	case *actor.Started:
 		log.Debug("NetActor started")
 	case message.Transaction:
-		n.instance.BroadcastToShard(msg.ShardID, msg.Tx)
+		n.broadcastMessage <- BroadcastMessage{ShardId: msg.ShardID, Message: msg.Tx}
 	case *common.ShardingTopo:
-		go n.UpdateShardingInfo(msg)
-
+		go n.ConnectToShardingPeers(msg)
 	case message.NetPacket:
-		//n.node.network.SendMsgToPeer(msg.Address, msg.Port, msg.PublicKey, msg.Message)
-		return //TODO
-		data, err := msg.Message.Serialize()
-		if err != nil {
-			log.Error(err)
-		}
-		if err := NodeNetWork.SendMessage(msg.PublicKey, msg.Address, msg.Port, &mpb.Message{Identify: msg.Message.Identify(), Payload: data}); err != nil {
-			log.Error("send message failed:", err)
-		}
+		n.singleMessage <- SingleMessage{PublicKey: msg.PublicKey, Address: msg.Address, Port: msg.Port, Message: msg.Message}
 	default:
 		log.Error("unknown message ", reflect.TypeOf(ctx.Message()))
 	}
 
 }
 
-func (n *netActor) UpdateShardingInfo(info *common.ShardingTopo) {
-	n.instance.ShardInfo.Purge()
-	n.instance.ShardInfo.SetLocalId(uint32(info.ShardId))
-	n.instance.ShardInfo.SetLocalPub(info.Pubkey)
-	for sid, shard := range info.ShardingInfo {
-		for _, member := range shard {
-			/*id, err := network.IdFromConfigEncodePublicKey(member.Pubkey)
-			if err != nil {
-				log.Error("error for getting id from public key")
-				continue
-			}
-			if id == n.instance.Host.ID() {
-				n.instance.ShardInfo.SetLocalId(uint32(sid))
-			}*/
-			n.instance.ShardInfo.AddShardNode(uint32(sid), member.Pubkey, member.Address, member.Port)
-		}
-	}
-	log.Info("the shard info is :", n.instance.ShardInfo.JsonString())
-	n.ConnectToShardingPeers()
-}
-
 //连接本shard内的节点, 跳过自身，并且和其他节点保持长连接
-func (n *netActor) ConnectToShardingPeers() {
+func (n *netActor) ConnectToShardingPeers(info *common.ShardingTopo) {
+	n.instance.ShardInfo.Upgrading(info)
 	peerMap := n.instance.ShardInfo.GetShardNodes(n.instance.ShardInfo.GetLocalId())
 	if peerMap == nil {
 		return
@@ -118,4 +114,24 @@ func (n *netActor) ConnectToShardingPeers() {
 	}
 	wg.Wait()
 	log.Debug("finish connecting to sharding peers exit...")
+}
+
+func (n *netActor) Engine() {
+	log.Debug("start message engine to send message")
+	defer n.finished()
+	for {
+		select {
+		case msg := <-n.singleMessage:
+			if err := n.instance.SendMessage(msg.PublicKey, msg.Address, msg.Port, msg.Message); err != nil {
+				log.Error("send message error:", err)
+			}
+		case msg := <-n.broadcastMessage:
+			if err := n.instance.BroadcastToShard(msg.ShardId, msg.Message); err != nil {
+				log.Error("broadcast message error:", err)
+			}
+		case <-n.ctx.Done():
+			log.Warn("lib p2p actor receive quit signal")
+			break
+		}
+	}
 }

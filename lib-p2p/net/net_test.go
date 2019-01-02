@@ -8,7 +8,7 @@ import (
 )
 
 func TestPeerMap_Iterator(t *testing.T) {
-	p := new(net.PeerMap)
+	p := new(net.SenderMap)
 	p.Initialize()
 	p.Add(peer.ID("test1"), nil, nil)
 	p.Add(peer.ID("test2"), nil, nil)

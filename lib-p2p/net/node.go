@@ -36,7 +36,7 @@ type Instance struct {
 	Host      host.Host
 	ID        peer.ID
 	Address   []string
-	Peers     PeerMap
+	Peers     address.SenderMap
 	ShardInfo address.ShardInfo
 	lock      sync.RWMutex
 }
@@ -160,8 +160,8 @@ func (i *Instance) StreamConnect(b64Pub, addr, port string) (net.Stream, error) 
 		return nil, err
 	}
 	if p := i.Peers.Get(id); p != nil {
-		log.Warn("the stream is created:", p.s)
-		return p.s, nil
+		log.Warn("the stream is created:", p.Stream)
+		return p.Stream, nil
 	}
 
 	multiAddr, err := multiaddr.NewMultiaddr(address.NewAddrInfo(addr, port))
@@ -225,7 +225,13 @@ func (i *Instance) ReceiveMessage(s net.Stream) {
 	}
 }
 
-func (i *Instance) SendMessage(b64Pub, addr, port string, message *mpb.Message) error {
+func (i *Instance) SendMessage(b64Pub, addr, port string, msg message.EcoMessage) error {
+	data, err := msg.Serialize()
+	if err != nil {
+		return err
+	}
+	sendMsg := &mpb.Message{Identify: msg.Identify(), Payload: data}
+
 	id, err := address.IdFromPublicKey(b64Pub)
 	if err != nil {
 		return errors.New(err.Error())
@@ -237,7 +243,7 @@ func (i *Instance) SendMessage(b64Pub, addr, port string, message *mpb.Message) 
 			return err
 		}
 	} else {
-		s = info.s
+		s = info.Stream
 	}
 
 	deadline := time.Now().Add(sendMessageTimeout)
@@ -250,14 +256,14 @@ func (i *Instance) SendMessage(b64Pub, addr, port string, message *mpb.Message) 
 	}
 
 	writer := io.NewDelimitedWriter(s)
-	err = writer.WriteMsg(message)
+	err = writer.WriteMsg(sendMsg)
 	if err != nil {
 		return errors.New(err.Error())
 	}
 	if err := s.SetWriteDeadline(time.Time{}); err != nil {
 		log.Warn("error resetting deadline: ", err)
 	}
-	log.Info("send message finished:", message)
+	log.Info("send message finished:", sendMsg)
 	return nil
 }
 
@@ -276,11 +282,7 @@ func (i *Instance) BroadcastToShard(shardId uint32, msg message.EcoMessage) erro
 		return errors.New(fmt.Sprintf("can't find shard[%d] nodes", shardId))
 	}
 	for node := range peerMap.Iterator() {
-		data, err := msg.Serialize()
-		if err != nil {
-			return err
-		}
-		if err := i.SendMessage(node.Pubkey, node.Address, node.Port, &mpb.Message{Identify: msg.Identify(), Payload: data}); err != nil {
+		if err := i.SendMessage(node.Pubkey, node.Address, node.Port, msg); err != nil {
 			log.Error(err)
 		}
 	}
