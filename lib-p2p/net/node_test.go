@@ -11,6 +11,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/utils"
 	"github.com/ecoball/go-ecoball/common/message/mpb"
+	"github.com/ecoball/go-ecoball/common/event"
 )
 
 const (
@@ -21,27 +22,27 @@ const (
 )
 
 func TestNode1(t *testing.T) {
-	n, err := net.NewInstance(context.Background(), priKey1, "/ip4/0.0.0.0/tcp/9011")
+	n, err := net.NewInstance(context.Background(), priKey1, "/ip4/0.0.0.0/tcp/9011","/ip4/0.0.0.0/tcp/9012")
 	CheckErrorPanic(err)
 
 	fmt.Println("wait...")
 	time.Sleep(time.Second * 3)
 
 	{
-		CheckErrorPanic(n.SendMessage(pubKey2, "0.0.0.0", "9012", &mpb.Message{Identify: mpb.Identify_APP_MSG_STRING, Payload: []byte(fmt.Sprintf("node1111111111:%d", 9001))}))
+		CheckErrorPanic(n.SendMessage(pubKey2, "127.0.0.1", "9014", &mpb.Message{Identify: mpb.Identify_APP_MSG_STRING, Payload: []byte(fmt.Sprintf("node1111111111:%d", 9001))}))
 	}
 	utils.Pause()
 }
 
 func TestNode2(t *testing.T) {
-	n, err := net.NewInstance(context.Background(), priKey2, "/ip4/0.0.0.0/tcp/9012")
+	n, err := net.NewInstance(context.Background(), priKey2, "/ip4/0.0.0.0/tcp/9013","/ip4/0.0.0.0/tcp/9014")
 	CheckErrorPanic(err)
 
 	fmt.Println("wait...")
 	time.Sleep(time.Second * 3)
 
 	{
-		CheckErrorPanic(n.SendMessage(pubKey1, "0.0.0.0", "9011", &mpb.Message{Identify: mpb.Identify_APP_MSG_STRING, Payload: []byte(fmt.Sprintf("node222222222222:%d", 9002))}))
+		CheckErrorPanic(n.SendMessage(pubKey1, "127.0.0.1", "9012", &mpb.Message{Identify: mpb.Identify_APP_MSG_STRING, Payload: []byte(fmt.Sprintf("node222222222222:%d", 9002))}))
 	}
 	utils.Pause()
 }
@@ -51,4 +52,8 @@ func CheckErrorPanic(err error) {
 		elog.Log.Error(err)
 		os.Exit(-1)
 	}
+}
+
+func init() {
+	event.InitMsgDispatcher()
 }

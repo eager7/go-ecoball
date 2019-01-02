@@ -172,7 +172,6 @@ func (i *Instance) StreamConnect(b64Pub, addr, port string) (net.Stream, error) 
 	if len(i.Host.Peerstore().Addrs(id)) == 0 {
 		i.Host.Peerstore().AddAddr(id, multiAddr, time.Minute*10)
 	}
-	log.Info("create new stream:", id.Pretty(), multiAddr, port)
 	s, err := i.Host.NewStream(i.ctx, id, Protocol)
 	if err != nil {
 		return nil, errors.New(err.Error())
