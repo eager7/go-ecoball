@@ -169,7 +169,7 @@ func (h *CMBlockHeader) GetChainID() common.Hash {
 func (h CMBlockHeader) GetObject() interface{} {
 	return h
 }
-func (h CMBlockHeader) GetInstance() interface{} {
+func (h *CMBlockHeader) GetInstance() interface{} {
 	return h
 }
 
@@ -362,6 +362,6 @@ func (b *CMBlock) String() string {
 func (b CMBlock) GetObject() interface{} {
 	return b
 }
-func (b CMBlock) GetInstance() interface{} {
+func (b *CMBlock) GetInstance() interface{} {
 	return b
 }

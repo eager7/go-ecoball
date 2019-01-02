@@ -53,9 +53,9 @@ func TestTransfer(t *testing.T) {
 	tx2 := &types.Transaction{}
 	errors.CheckErrorPanic(tx2.Deserialize(transferData))
 
-	elog.Log.Debug(tx.JsonString())
-	elog.Log.Info(tx2.JsonString())
-	errors.CheckEqualPanic(tx.JsonString() == tx2.JsonString())
+	elog.Log.Debug(tx.String())
+	elog.Log.Info(tx2.String())
+	errors.CheckEqualPanic(tx.String() == tx2.String())
 }
 
 func TestDeploy(t *testing.T) {
@@ -65,9 +65,9 @@ func TestDeploy(t *testing.T) {
 
 	dep := &types.Transaction{Payload: new(types.DeployInfo)}
 	errors.CheckErrorPanic(dep.Deserialize(data))
-	elog.Log.Debug(deploy.JsonString())
-	elog.Log.Info(dep.JsonString())
-	errors.CheckEqualPanic(dep.JsonString() == deploy.JsonString())
+	elog.Log.Debug(deploy.String())
+	elog.Log.Info(dep.String())
+	errors.CheckEqualPanic(dep.String() == deploy.String())
 }
 
 func TestInvoke(t *testing.T) {
@@ -78,7 +78,7 @@ func TestInvoke(t *testing.T) {
 	i2 := new(types.Transaction)
 	errors.CheckErrorPanic(i2.Deserialize(data))
 
-	errors.CheckEqualPanic(i.JsonString() == i2.JsonString())
+	errors.CheckEqualPanic(i.String() == i2.String())
 }
 
 func TestSize(t *testing.T) {

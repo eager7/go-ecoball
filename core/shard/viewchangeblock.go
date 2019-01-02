@@ -142,7 +142,7 @@ func (h *ViewChangeBlockHeader) String() string {
 	}
 	return "hash:" + h.Hashes.HexString() + string(data)
 }
-func (h ViewChangeBlockHeader) GetInstance() interface{} {
+func (h *ViewChangeBlockHeader) GetInstance() interface{} {
 	return h
 }
 func (h *ViewChangeBlockHeader) Serialize() ([]byte, error) {
@@ -245,7 +245,7 @@ func (b *ViewChangeBlock) String() string {
 	}
 	return "hash:" + b.Hashes.HexString() + string(data)
 }
-func (b ViewChangeBlock) GetInstance() interface{} {
+func (b *ViewChangeBlock) GetInstance() interface{} {
 	return b
 }
 func (b *ViewChangeBlock) Serialize() ([]byte, error) {

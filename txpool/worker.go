@@ -49,7 +49,7 @@ func (w *Worker) Start() {
 				fmt.Println("Start PreHandle Transaction")
 				ret, cpu, net, err := w.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
 				if err != nil {
-					log.Warn(tx.JsonString())
+					log.Warn(tx.String())
 					log.Error("handle tx error:", err)
 					continue
 				}

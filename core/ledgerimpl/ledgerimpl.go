@@ -157,7 +157,7 @@ func (l *LedgerImpl) CheckTransaction(chainID common.Hash, tx *types.Transaction
 		return errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
 	if err := chain.CheckTransaction(tx); err != nil {
-		log.Warn(tx.JsonString())
+		log.Warn(tx.String())
 		return err
 	}
 	return nil

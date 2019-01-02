@@ -178,7 +178,7 @@ func (b *Block) String() string {
 	data := b.Header.String()
 	data += fmt.Sprintf("{CountTxs:%d}", b.CountTxs)
 	for _, v := range b.Transactions {
-		data += v.JsonString()
+		data += v.String()
 	}
 	return string(data)
 
