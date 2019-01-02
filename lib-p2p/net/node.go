@@ -35,28 +35,28 @@ type Instance struct {
 	ctx       context.Context
 	Host      host.Host
 	ID        peer.ID
-	Address   string
+	Address   []string
 	Peers     PeerMap
 	ShardInfo address.ShardInfo
 	lock      sync.RWMutex
 }
 
-func NewInstance(ctx context.Context, b64Pri, address string) (*Instance, error) {
+func NewInstance(ctx context.Context, b64Pri string, address ...string) (*Instance, error) {
 	i := new(Instance)
 	i.ShardInfo.Initialize()
-	if err := i.initialize(ctx, b64Pri, address); err != nil {
+	if err := i.initialize(ctx, b64Pri, address...); err != nil {
 		return nil, err
 	}
 	return i, nil
 }
 
-func (i *Instance) initialize(ctx context.Context, b64Pri, address string) error {
+func (i *Instance) initialize(ctx context.Context, b64Pri string, address ...string) error {
 	i.Peers.Initialize()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	i.ctx = ctx
-	i.Address = address
+	i.Address = append(i.Address, address...)
 	return i.initNetwork(b64Pri)
 }
 
@@ -117,11 +117,16 @@ func (i *Instance) initNetwork(b64Pri string) (err error) {
 	i.Host.SetStreamHandler(Protocol, i.NetworkHandler)
 	i.Host.Network().Notify(i)
 
-	mAddr, err := multiaddr.NewMultiaddr(i.Address)
-	if err != nil {
-		return err
+	mAddresses := make([]multiaddr.Multiaddr, len(i.Address))
+	for idx, v := range i.Address {
+		addr, err := multiaddr.NewMultiaddr(v)
+		if err != nil {
+			return err
+		}
+		mAddresses[idx] = addr
 	}
-	err = i.Host.Network().Listen([]multiaddr.Multiaddr{mAddr}...)
+
+	err = i.Host.Network().Listen(mAddresses...)
 	if err != nil {
 		return err
 	}
