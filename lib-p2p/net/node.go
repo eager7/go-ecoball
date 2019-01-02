@@ -179,7 +179,8 @@ func (i *Instance) StreamConnect(b64Pub, addr, port string) (net.Stream, error) 
 }
 
 /**
- *  @brief 建立和对端的连接，这个函数会调用Dial函数拨号，可以节省ConnectPeer函数执行时间，因为如果已经拨号成功，那么创建流时就不需要再次拨号，因此此函数可以作为ping函数使用，实时去刷新和节点间的连接
+ *  @brief 建立和对端的连接，这个函数会调用Dial函数拨号，可以节省ConnectPeer函数执行时间，因为如果已经拨号成功，
+ *  那么创建流时就不需要再次拨号，因此此函数可以作为ping函数使用，实时去刷新和节点间的连接
  *  @param b64Pub - the public key
  *  @param address - the address of ip
  *  @param port - the port of ip

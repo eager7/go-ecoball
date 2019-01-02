@@ -5,31 +5,29 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/consensus/solo"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/net"
+	"github.com/ecoball/go-ecoball/lib-p2p"
+	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"github.com/ecoball/go-ecoball/spectator"
 	"github.com/ecoball/go-ecoball/test/example"
 	"github.com/ecoball/go-ecoball/txpool"
+	"golang.org/x/net/context"
+	"golang.org/x/sync/errgroup"
 	"os"
 	"os/signal"
 	"syscall"
 	"testing"
-	"golang.org/x/sync/errgroup"
-	"golang.org/x/net/context"
-	"github.com/ecoball/go-ecoball/sharding/simulate"
+	"github.com/ecoball/go-ecoball/common/event"
 )
 
 func TestRunMain(t *testing.T) {
 	_, ctx := errgroup.WithContext(context.Background())
-	net.InitNetWork(ctx)
+	event.InitMsgDispatcher()
+	p2p.InitNetWork(ctx)
 	simulate.LoadConfig("/tmp/sharding.json")
 
-	//os.RemoveAll("/tmp/node_test")
 	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
 	errors.CheckErrorPanic(err)
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
@@ -38,7 +36,6 @@ func TestRunMain(t *testing.T) {
 	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)
 	errors.CheckErrorPanic(err)
-	net.StartNetWork(nil)
 
 	//start consensus
 	switch config.ConsensusAlgorithm {
@@ -47,15 +44,9 @@ func TestRunMain(t *testing.T) {
 		//event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, Address: common.AddressFromPubKey(config.Root.PublicKey)})
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
-	case "ABABFT":
-		elog.Log.Info("enter the branch of ababft consensus", config.ConsensusAlgorithm)
-		s, _ := ababft.ServiceABABFTGen(ledger.L, txPool, &config.Root)
-		s.Start()
-		elog.Log.Info("send the start message to ababft")
-		event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{config.ChainHash})
 	case "SHARD":
 		elog.Log.Debug("Start Shard Mode")
-		go example.TransferExample()
+		elog.Log.Warn("unsupported now")
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
@@ -63,7 +54,7 @@ func TestRunMain(t *testing.T) {
 	//start explorer
 	go spectator.Bystander(ledger.L)
 	if config.StartNode {
-		go example.VotingProducer(ledger.L)
+		//go example.VotingProducer(ledger.L)
 	}
 
 	wait()
@@ -71,7 +62,7 @@ func TestRunMain(t *testing.T) {
 
 func TestRunNode(t *testing.T) {
 	_, ctx := errgroup.WithContext(context.Background())
-	net.InitNetWork(ctx)
+	p2p.InitNetWork(ctx)
 	os.RemoveAll("/tmp/node_test")
 	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), false)
 	errors.CheckErrorPanic(err)
@@ -81,7 +72,6 @@ func TestRunNode(t *testing.T) {
 	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)
 	errors.CheckErrorPanic(err)
-	net.StartNetWork(nil)
 
 	//start consensus
 	switch config.ConsensusAlgorithm {
@@ -90,12 +80,6 @@ func TestRunNode(t *testing.T) {
 		//event.Send(event.ActorNil, event.ActorConsensusSolo, &message.RegChain{ChainID: config.ChainHash, Address: common.AddressFromPubKey(config.Root.PublicKey)})
 	case "DPOS":
 		elog.Log.Info("Start DPOS consensus")
-	case "ABABFT":
-		elog.Log.Info("enter the branch of ababft consensus", config.ConsensusAlgorithm)
-		s, _ := ababft.ServiceABABFTGen(ledger.L, txPool, &config.Root)
-		s.Start()
-		elog.Log.Info("send the start message to ababft")
-		event.Send(event.ActorNil, event.ActorConsensus, message.ABABFTStart{config.ChainHash})
 	default:
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}

@@ -91,7 +91,7 @@ func constructPeerHost(ctx context.Context, id peer.ID, private crypto.PrivKey) 
 
 func InitNetWork(ctx context.Context) *Node {
 	var err error
-	NodeNetWork,err = net.New(ctx, config.SwarmConfig.PrivateKey, config.SwarmConfig.ListenAddress[0])
+	NodeNetWork,err = net.NewInstance(ctx, config.SwarmConfig.PrivateKey, config.SwarmConfig.ListenAddress[0])
 	if err != nil {
 		log.Error(err)
 	}

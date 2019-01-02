@@ -26,20 +26,20 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/http/rpc"
-	"github.com/ecoball/go-ecoball/net"
 	"github.com/ecoball/go-ecoball/txpool"
 	"github.com/urfave/cli"
 
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/net/network"
+	"github.com/ecoball/go-ecoball/lib-p2p"
 	"github.com/ecoball/go-ecoball/sharding"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"github.com/ecoball/go-ecoball/spectator"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
-	"github.com/ecoball/go-ecoball/common/event"
+	"fmt"
 )
 
 var (
@@ -126,8 +126,8 @@ func runNode(c *cli.Context) error {
 	shutdown := make(chan bool, 1)
 	ecoballGroup, ctx := errgroup.WithContext(context.Background())
 
-	net.InitNetWork(ctx)
 	event.InitMsgDispatcher()
+	p2p.InitNetWork(ctx)
 
 	if !config.DisableSharding {
 		simulate.LoadConfig("./sharding.json")
@@ -145,12 +145,12 @@ func runNode(c *cli.Context) error {
 		log.Info("start sharding")
 		sdActor, _ = sharding.NewShardingActor(ledger.L)
 	}
-
-	instance, err := network.GetNetInstance()
+	fmt.Println(sdActor)
+	/*instance, err := network.GetNetInstance()
 	if err != nil {
 		log.Fatal(err)
 	}
-	sdActor.SetNet(instance)
+	sdActor.SetNet(instance)*/
 
 	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)
