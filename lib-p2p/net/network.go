@@ -258,6 +258,7 @@ func (i *Instance) SendMessage(b64Pub, addr, port string, msg message.EcoMessage
 	writer := io.NewDelimitedWriter(s)
 	err = writer.WriteMsg(sendMsg)
 	if err != nil {
+		//TODO:delete stream
 		return errors.New(err.Error())
 	}
 	if err := s.SetWriteDeadline(time.Time{}); err != nil {

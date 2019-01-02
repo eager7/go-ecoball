@@ -28,9 +28,13 @@ var (
 	NodeNetWork *net.Instance
 )
 
-func InitNetWork(ctx context.Context) *net.Instance {
+func InitNetWork(ctx context.Context, options ...string) *net.Instance {
 	var err error
-	NodeNetWork, err = net.NewInstance(ctx, config.SwarmConfig.PrivateKey, config.SwarmConfig.ListenAddress[0])
+	if len(options) > 0 {
+		NodeNetWork, err = net.NewInstance(ctx, options[0], options[1:]...)
+	} else {
+		NodeNetWork, err = net.NewInstance(ctx, config.SwarmConfig.PrivateKey, config.SwarmConfig.ListenAddress...)
+	}
 	if err != nil {
 		log.Error(err)
 	}
