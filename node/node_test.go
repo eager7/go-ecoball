@@ -28,7 +28,7 @@ func TestRunMain(t *testing.T) {
 	p2p.InitNetWork(ctx)
 	simulate.LoadConfig("/tmp/sharding.json")
 
-	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
 	ledger.L = L
@@ -64,7 +64,7 @@ func TestRunNode(t *testing.T) {
 	_, ctx := errgroup.WithContext(context.Background())
 	p2p.InitNetWork(ctx)
 	os.RemoveAll("/tmp/node_test")
-	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), false)
+	L, err := ledgerimpl.NewLedger("/tmp/node_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
 	ledger.L = L

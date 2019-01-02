@@ -37,11 +37,9 @@ type LedgerImpl struct {
 	ChainTxs map[common.Hash]*transaction.ChainTx
 	mutex    sync.RWMutex
 	path     string
-	//ChainCt *ChainContract
-	//ChainAc *account.ChainAccount
 }
 
-func NewLedger(path string, chainID common.Hash, addr common.Address, shard bool) (l ledger.Ledger, err error) {
+func NewLedger(path string, chainID common.Hash, addr common.Address) (l ledger.Ledger, err error) {
 	log.Debug("Create Ledger in ", path)
 	ll := &LedgerImpl{path: path, ChainTxs: make(map[common.Hash]*transaction.ChainTx, 1)}
 
@@ -51,7 +49,7 @@ func NewLedger(path string, chainID common.Hash, addr common.Address, shard bool
 		return nil, err
 	}
 
-	if err := ll.NewTxChain(chainID, addr, shard); err != nil {
+	if err := ll.NewTxChain(chainID, addr); err != nil {
 		return nil, err
 	}
 
@@ -59,15 +57,15 @@ func NewLedger(path string, chainID common.Hash, addr common.Address, shard bool
 	return ll, nil
 }
 
-func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address, shard bool) (err error) {
+func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address) (err error) {
 	if _, ok := l.ChainTxs[chainID]; ok {
 		return nil
 	}
-	ChainTx, err := transaction.NewTransactionChain(l.path+"/"+chainID.HexString()+"/Transaction", l, shard)
+	ChainTx, err := transaction.NewTransactionChain(l.path+"/"+chainID.HexString()+"/Transaction", l)
 	if err != nil {
 		return err
 	}
-	if shard {
+	if !config.DisableSharding {
 		if err := ChainTx.GenesesShardBlockInit(chainID, addr); err != nil {
 			return err
 		}

@@ -124,7 +124,7 @@ func TokenTransferBlock(ledger ledger.Ledger) *types.Block {
 func TestInterface(t *testing.T) {
 	simulate.LoadConfig("/tmp/sharding.json")
 	os.RemoveAll("/tmp/interface")
-	l, err := ledgerimpl.NewLedger("/tmp/interface", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	l, err := ledgerimpl.NewLedger("/tmp/interface", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 	header := shard.CMBlockHeader{
 		ChainID:   config.ChainHash,
@@ -178,7 +178,7 @@ func TestInterface(t *testing.T) {
 func TestShard(t *testing.T) {
 	os.RemoveAll("/tmp/shard_test")
 	simulate.LoadConfig("/tmp/sharding.json")
-	l, err := ledgerimpl.NewLedger("/tmp/shard_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	l, err := ledgerimpl.NewLedger("/tmp/shard_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 
 	//check get last cm block
@@ -243,7 +243,7 @@ func TestShard(t *testing.T) {
 func TestExample(t *testing.T) {
 	os.RemoveAll("/tmp/shard_example")
 	simulate.LoadConfig("/tmp/sharding.json")
-	l, err := ledgerimpl.NewLedger("/tmp/shard_example", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	l, err := ledgerimpl.NewLedger("/tmp/shard_example", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 
 	pid := example.Actor()
@@ -271,7 +271,7 @@ func TestExample(t *testing.T) {
 func TestMinorBlock(t *testing.T) {
 	simulate.LoadConfig("/tmp/sharding.json")
 	os.RemoveAll("/tmp/minor_test")
-	l, err := ledgerimpl.NewLedger("/tmp/minor_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	l, err := ledgerimpl.NewLedger("/tmp/minor_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 	b, _, err := l.NewMinorBlock(config.ChainHash, nil, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
@@ -292,7 +292,7 @@ func TestMinorBlock(t *testing.T) {
 func xTestSaveBlock(t *testing.T) {
 	simulate.LoadConfig("/tmp/sharding.json")
 	os.RemoveAll("/tmp/block_save_test")
-	l, err := ledgerimpl.NewLedger("/tmp/block_save_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	l, err := ledgerimpl.NewLedger("/tmp/block_save_test", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 
 	_, err = txpool.Start(l)

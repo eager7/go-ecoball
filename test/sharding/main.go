@@ -17,7 +17,7 @@ func main() {
 	simulate.LoadConfig("/tmp/sharding.json")
 
 	os.RemoveAll("shard")
-	L, err := ledgerimpl.NewLedger("shard", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	L, err := ledgerimpl.NewLedger("shard", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 
 	_, err = txpool.Start(L)

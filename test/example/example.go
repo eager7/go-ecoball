@@ -93,7 +93,7 @@ func TestTransfer() *types.Transaction {
 
 func Ledger(path string) ledger.Ledger {
 	os.RemoveAll(path)
-	l, err := ledgerimpl.NewLedger(path, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), false)
+	l, err := ledgerimpl.NewLedger(path, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 	return l
 }
@@ -101,7 +101,7 @@ func Ledger(path string) ledger.Ledger {
 func ShardLedger(path string) ledger.Ledger {
 	simulate.LoadConfig("/tmp/sharding.json")
 	os.RemoveAll(path)
-	l, err := ledgerimpl.NewLedger(path, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), true)
+	l, err := ledgerimpl.NewLedger(path, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 	return l
 }

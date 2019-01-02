@@ -77,7 +77,7 @@ type ChainTx struct {
 	shardId    uint32
 }
 
-func NewTransactionChain(path string, ledger ledger.Ledger, shard bool) (c *ChainTx, err error) {
+func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {
 	c = &ChainTx{ledger: ledger}
 	if config.DsnStorage {
 		c.BlockStore, err = dsnStore.NewDsnStore(path + config.StringBlock)
@@ -97,7 +97,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger, shard bool) (c *Chai
 		return nil, err
 	}
 
-	if shard {
+	if !config.DisableSharding {
 		existed, err := c.RestoreCurrentShardHeader()
 		if err != nil {
 			return nil, err
