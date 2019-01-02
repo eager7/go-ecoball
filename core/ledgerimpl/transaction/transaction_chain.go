@@ -1188,12 +1188,12 @@ func (c *ChainTx) GetFinalBlocksByEpochNo(epochNo uint64) (finalBlocks []shard.B
 
 	c.lockBlock.RLock()
 	for k, v := range c.BlockMap {
-		if v.Type == shard.HeFinalBlock {
+		if v.Type == mpb.Identify_APP_MSG_FINAL_BLOCK {
 			if v.Height >= heightMin && v.Height <= heightMax {
-				block, err := c.GetShardBlockByHash(shard.HeFinalBlock, common.HexToHash(k))
+				block, err := c.GetShardBlockByHash(mpb.Identify_APP_MSG_FINAL_BLOCK, common.HexToHash(k))
 				if err != nil {
 					c.lockBlock.RUnlock()
-					return nil, 0, errors.New(log, fmt.Sprintf("can't find this block:[type]%s, [height]%d", shard.HeFinalBlock, v.Height))
+					return nil, 0, errors.New(log, fmt.Sprintf("can't find this block:[type]%s, [height]%d", mpb.Identify_APP_MSG_FINAL_BLOCK, v.Height))
 				}
 
 				finalBlocks = append(finalBlocks, block)
@@ -1335,7 +1335,7 @@ func (c *ChainTx) NewCmBlock(timeStamp int64, shards []shard.Shard) (*shard.CMBl
 		if c.LastHeader.CmHeader.Height > 3 {
 			// get cmBlock
 			epochNo := c.LastHeader.CmHeader.Height - 3
-			cmBlock, err := c.GetShardBlockByHeight(shard.HeCmBlock, epochNo, 0)
+			cmBlock, err := c.GetShardBlockByHeight(mpb.Identify_APP_MSG_CM_BLOCK, epochNo, 0)
 			if err != nil {
 				return nil, err
 			}

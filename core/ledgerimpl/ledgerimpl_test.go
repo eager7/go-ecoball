@@ -37,6 +37,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"github.com/ecoball/go-ecoball/txpool"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 var root = common.NameToIndex("root")
@@ -157,11 +158,11 @@ func TestInterface(t *testing.T) {
 	}}
 	block, err := shard.NewCmBlock(header, shards)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, block))
-	blockGet, _, err := l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, block.Hash(), true)
+	blockGet, _, err := l.GetShardBlockByHash(config.ChainHash, mpb.Identify_APP_MSG_CM_BLOCK, block.Hash(), true)
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(block.String() == blockGet.String())
 
-	blockLast, _, err := l.GetLastShardBlock(config.ChainHash, shard.HeCmBlock)
+	blockLast, _, err := l.GetLastShardBlock(config.ChainHash, mpb.Identify_APP_MSG_CM_BLOCK)
 	errors.CheckErrorPanic(err)
 	errors.CheckEqualPanic(block.String() == blockLast.String())
 
@@ -182,7 +183,7 @@ func TestShard(t *testing.T) {
 	errors.CheckErrorPanic(err)
 
 	//check get last cm block
-	blockNew, _, err := l.GetLastShardBlock(config.ChainHash, shard.HeCmBlock)
+	blockNew, _, err := l.GetLastShardBlock(config.ChainHash, mpb.Identify_APP_MSG_CM_BLOCK)
 	errors.CheckErrorPanic(err)
 	//test new cm block
 	shards := []shard.Shard{{
@@ -200,30 +201,30 @@ func TestShard(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockCM))
 	//check get cm block
-	blockNew, _, err = l.GetShardBlockByHash(config.ChainHash, shard.HeCmBlock, blockCM.Hash(), true)
+	blockNew, _, err = l.GetShardBlockByHash(config.ChainHash, mpb.Identify_APP_MSG_CM_BLOCK, blockCM.Hash(), true)
 	errors.CheckErrorPanic(err)
 	elog.Log.Info("Committee Block:", blockNew.String())
 	errors.CheckEqualPanic(blockCM.String() == blockNew.String())
 
 	//MinorBlock
-	blockNew, _, err = l.GetLastShardBlock(config.ChainHash, shard.HeMinorBlock)
+	blockNew, _, err = l.GetLastShardBlock(config.ChainHash, mpb.Identify_APP_MSG_MINOR_BLOCK)
 	errors.CheckErrorPanic(err)
 	blockMinor, _, err := l.NewMinorBlock(config.ChainHash, []*types.Transaction{example.TestTransfer()}, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockMinor))
-	blockNew, _, err = l.GetShardBlockByHash(config.ChainHash, shard.HeMinorBlock, blockMinor.Hash(), true)
+	blockNew, _, err = l.GetShardBlockByHash(config.ChainHash, mpb.Identify_APP_MSG_MINOR_BLOCK, blockMinor.Hash(), true)
 	errors.CheckErrorPanic(err)
 	elog.Log.Info("Minor Block:", blockNew.String())
 	errors.CheckEqualPanic(blockMinor.String() == blockNew.String())
 
 
 	//FinalBlock
-	blockNew, _, err = l.GetLastShardBlock(config.ChainHash, shard.HeFinalBlock)
+	blockNew, _, err = l.GetLastShardBlock(config.ChainHash, mpb.Identify_APP_MSG_FINAL_BLOCK)
 	errors.CheckErrorPanic(err)
 	blockFinal, err := l.NewFinalBlock(config.ChainHash, time.Now().UnixNano(), []common.Hash{blockMinor.Hash()})
 	errors.CheckErrorPanic(err)
 	errors.CheckErrorPanic(l.SaveShardBlock(config.ChainHash, blockFinal))
-	blockNew, _, err = l.GetShardBlockByHash(config.ChainHash, shard.HeFinalBlock, blockFinal.Hash(), true)
+	blockNew, _, err = l.GetShardBlockByHash(config.ChainHash, mpb.Identify_APP_MSG_FINAL_BLOCK, blockFinal.Hash(), true)
 	errors.CheckErrorPanic(err)
 	elog.Log.Info("Final Block:", blockNew.String())
 	errors.CheckEqualPanic(blockFinal.String() == blockNew.String())
@@ -251,7 +252,7 @@ func TestExample(t *testing.T) {
 	msg := &message.ProducerBlock{
 		ChainID: config.ChainHash,
 		Height:  2,
-		Type:    shard.HeFinalBlock,
+		Type:    mpb.Identify_APP_MSG_FINAL_BLOCK,
 	}
 	pidL, _ := event.GetActor(event.ActorLedger)
 	pidL.Request(msg, pid)
@@ -261,7 +262,7 @@ func TestExample(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	elog.Log.Debug(m.String())
 
-	block, _, err := l.GetLastShardBlock(config.ChainHash, shard.HeViewChange)
+	block, _, err := l.GetLastShardBlock(config.ChainHash, mpb.Identify_APP_MSG_VC_BLOCK)
 	errors.CheckErrorPanic(err)
 	elog.Log.Debug("vc block:", block.String())
 
