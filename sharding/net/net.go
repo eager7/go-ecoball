@@ -7,12 +7,10 @@ import (
 	cm "github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/common/message/mpb"
 	cs "github.com/ecoball/go-ecoball/core/shard"
-	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/net/network"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
-	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"math"
 	"math/rand"
 	"time"
@@ -343,14 +341,14 @@ func (n *net) TransitBlock(p *sc.CsPacket) {
 }
 
 func (n *net) Subscribe(port string, chanSize uint16) (rcv <-chan interface{}, err error) {
-	if n.n == nil {
+	/*if n.n == nil {
 		rcv, err = simulate.Subscribe(port, chanSize)
 		if err != nil {
 			log.Panic("simulate error ", err)
 			return
 		}
 		return
-	} else {
+	} else */{
 		msg := []mpb.Identify{mpb.Identify_APP_MSG_SHARDING_PACKET, mpb.Identify_APP_MSG_CONSENSUS_PACKET,
 			mpb.Identify_APP_MSG_SYNC_REQUEST, mpb.Identify_APP_MSG_SYNC_RESPONSE}
 		rcv, err = event.Subscribe(msg...)
@@ -364,10 +362,10 @@ func (n *net) Subscribe(port string, chanSize uint16) (rcv <-chan interface{}, e
 }
 
 func (n *net) sendto(addr string, port string, pubKey string, packet *sc.NetPacket) error {
-	if n.n == nil {
+	/*if n.n == nil {
 		go simulate.Sendto(addr, port, packet)
 		return nil
-	} else {
+	} else */{
 		/*data, err := json.Marshal(packet)
 		if err != nil {
 			log.Error("wrong packet")
@@ -382,7 +380,7 @@ func (n *net) sendto(addr string, port string, pubKey string, packet *sc.NetPack
 			Address:   addr,
 			Port:      port,
 			PublicKey: pubKey,
-			Message:   nil, //TODO
+			Message:   packet, //TODO
 		})
 		return nil
 	}
@@ -390,17 +388,17 @@ func (n *net) sendto(addr string, port string, pubKey string, packet *sc.NetPack
 
 func (n *net) RecvNetMsg(msg interface{}) (packet *sc.NetPacket, err error) {
 	err = nil
-	if n.n == nil {
+	/*if n.n == nil {
 		log.Debug("recv net message ")
 
 		packet = msg.(*sc.NetPacket)
 		return
-	} else {
+	} else */{
 		log.Debug("recv p2p net message ")
 
-		emsg := msg.(message.EcoBallNetMsg)
+		emsg := msg.(*mpb.Message)
 		var np sc.NetPacket
-		err = json.Unmarshal(emsg.Data(), &np)
+		err = json.Unmarshal(emsg.Payload, &np)
 		packet = &np
 		return
 	}

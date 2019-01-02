@@ -5,6 +5,8 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/net/message/pb"
 	"github.com/ecoball/go-ecoball/net/network"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
+	"encoding/json"
 )
 
 type NodeInstance interface {
@@ -57,6 +59,29 @@ func (p1 *NetPacket) DupHeader(p2 *NetPacket) {
 	p1.Step = p2.Step
 }
 
+func (n *NetPacket) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_SHARDING_PACKET
+}
+
+func (n *NetPacket) GetInstance() interface{} {
+	return n
+}
+
+func (n *NetPacket) String() string {
+	return ""
+}
+
+func (n *NetPacket) Serialize() ([]byte, error) {
+	data, err := json.Marshal(n)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (n *NetPacket) Deserialize(data []byte) error {
+	return json.Unmarshal(data, n)
+}
 type CsView struct {
 	EpochNo     uint64
 	FinalHeight uint64

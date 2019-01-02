@@ -18,9 +18,9 @@ package message
 
 import (
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 type ABABFTStart struct {
@@ -68,4 +68,3 @@ type NetPacket struct {
 	PublicKey string
 	Message   types.EcoMessage
 }
-
