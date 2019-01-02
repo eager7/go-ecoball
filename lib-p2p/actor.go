@@ -44,11 +44,13 @@ type netActor struct {
 	instance         *net.Instance
 	singleMessage    chan SingleMessage
 	broadcastMessage chan BroadcastMessage
+	exit             chan struct{}
 }
 
 func (n *netActor) initialize() {
 	n.singleMessage = make(chan SingleMessage, 100)
 	n.broadcastMessage = make(chan BroadcastMessage, 100)
+	n.exit = make(chan struct{})
 }
 
 func (n *netActor) finished() {
@@ -78,6 +80,9 @@ func (n *netActor) Receive(ctx actor.Context) {
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 		log.Debug("NetActor started")
+	case *actor.Stop, *actor.Stopped, *actor.Stopping:
+		n.exit <- struct{}{}
+		n.pid.Stop()
 	case message.Transaction:
 		n.broadcastMessage <- BroadcastMessage{ShardId: msg.ShardID, Message: msg.Tx}
 	case *common.ShardingTopo:
@@ -85,7 +90,7 @@ func (n *netActor) Receive(ctx actor.Context) {
 	case message.NetPacket:
 		n.singleMessage <- SingleMessage{PublicKey: msg.PublicKey, Address: msg.Address, Port: msg.Port, Message: msg.Message}
 	default:
-		log.Error("unknown message ", reflect.TypeOf(ctx.Message()))
+		log.Error("unknown message type:", reflect.TypeOf(ctx.Message()))
 	}
 
 }
@@ -131,6 +136,8 @@ func (n *netActor) Engine() {
 			}
 		case <-n.ctx.Done():
 			log.Warn("lib p2p actor receive quit signal")
+			break
+		case <-n.exit:
 			break
 		}
 	}
