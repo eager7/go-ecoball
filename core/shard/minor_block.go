@@ -8,6 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/trie"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -98,6 +99,47 @@ func (h *MinorBlockHeader) unSignatureData() ([]byte, error) {
 	return data, nil
 }
 
+func (h MinorBlockHeader) GetObject() interface{} {
+	return h
+}
+
+func (h *MinorBlockHeader) JsonString() string {
+	data, err := json.Marshal(h)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + h.Hashes.HexString() + string(data)
+}
+
+func (h *MinorBlockHeader) Type() uint32 {
+	return uint32(HeMinorBlock)
+}
+
+func (h *MinorBlockHeader) Hash() common.Hash {
+	return h.Hashes
+}
+func (h *MinorBlockHeader) GetHeight() uint64 {
+	return h.Height
+}
+func (h *MinorBlockHeader) GetChainID() common.Hash {
+	return h.ChainID
+}
+
+func (h *MinorBlockHeader) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_MINOR_BLOCK
+}
+func (h *MinorBlockHeader) String() string {
+	data, err := json.Marshal(h)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + h.Hashes.HexString() + string(data)
+}
+func (h MinorBlockHeader) GetInstance() interface{} {
+	return h
+}
 func (h *MinorBlockHeader) Serialize() ([]byte, error) {
 	pbHeader, err := h.proto()
 	if err != nil {
@@ -109,7 +151,6 @@ func (h *MinorBlockHeader) Serialize() ([]byte, error) {
 	}
 	return data, nil
 }
-
 func (h *MinorBlockHeader) Deserialize(data []byte) error {
 	var pbHeader pb.MinorBlockHeader
 	if err := pbHeader.Unmarshal(data); err != nil {
@@ -141,33 +182,6 @@ func (h *MinorBlockHeader) Deserialize(data []byte) error {
 	h.COSign.Sign2 = append(h.COSign.Sign2, pbHeader.COSign.Sign2...)
 
 	return nil
-}
-
-func (h MinorBlockHeader) GetObject() interface{} {
-	return h
-}
-
-func (h *MinorBlockHeader) JsonString() string {
-	data, err := json.Marshal(h)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + h.Hashes.HexString() + string(data)
-}
-
-func (h *MinorBlockHeader) Type() uint32 {
-	return uint32(HeMinorBlock)
-}
-
-func (h *MinorBlockHeader) Hash() common.Hash {
-	return h.Hashes
-}
-func (h *MinorBlockHeader) GetHeight() uint64 {
-	return h.Height
-}
-func (h *MinorBlockHeader) GetChainID() common.Hash {
-	return h.ChainID
 }
 
 type AccountMinor struct {
@@ -314,6 +328,30 @@ func (b *MinorBlock) proto() (block *pb.MinorBlock, err error) {
 	return &pbBlock, nil
 }
 
+func (b MinorBlock) GetObject() interface{} {
+	return b
+}
+
+func (b *MinorBlock) JsonString() string {
+	data, err := json.Marshal(b)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + b.Hashes.HexString() + string(data)
+}
+
+func (b *MinorBlock) String() string {
+	data, err := json.Marshal(b)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + b.Hashes.HexString() + string(data)
+}
+func (b MinorBlock) GetInstance() interface{} {
+	return b
+}
 func (b *MinorBlock) Serialize() ([]byte, error) {
 	p, err := b.proto()
 	if err != nil {
@@ -325,7 +363,6 @@ func (b *MinorBlock) Serialize() ([]byte, error) {
 	}
 	return data, nil
 }
-
 func (b *MinorBlock) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")
@@ -367,17 +404,4 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 		b.StateDelta = append(b.StateDelta, &stateDelta)
 	}
 	return nil
-}
-
-func (b MinorBlock) GetObject() interface{} {
-	return b
-}
-
-func (b *MinorBlock) JsonString() string {
-	data, err := json.Marshal(b)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + b.Hashes.HexString() + string(data)
 }

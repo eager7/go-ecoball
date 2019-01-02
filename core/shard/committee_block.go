@@ -6,6 +6,7 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/trie"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -145,6 +146,14 @@ func (h *CMBlockHeader) Type() uint32 {
 	return uint32(HeCmBlock)
 }
 
+func (h *CMBlockHeader) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_CM_BLOCK
+}
+
+func (h *CMBlockHeader) String() string {
+	return h.JsonString()
+}
+
 func (h *CMBlockHeader) Hash() common.Hash {
 	return h.Hashes
 }
@@ -158,6 +167,9 @@ func (h *CMBlockHeader) GetChainID() common.Hash {
 }
 
 func (h CMBlockHeader) GetObject() interface{} {
+	return h
+}
+func (h CMBlockHeader) GetInstance() interface{} {
 	return h
 }
 
@@ -338,7 +350,18 @@ func (b *CMBlock) JsonString() string {
 	}
 	return "hash:" + b.Hashes.HexString() + string(data)
 }
+func (b *CMBlock) String() string {
+	data, err := json.Marshal(b)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + b.Hashes.HexString() + string(data)
+}
 
 func (b CMBlock) GetObject() interface{} {
+	return b
+}
+func (b CMBlock) GetInstance() interface{} {
 	return b
 }

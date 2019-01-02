@@ -22,6 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/types"
 )
@@ -101,6 +102,49 @@ func (h *ViewChangeBlockHeader) unSignatureData() ([]byte, error) {
 	return data, nil
 }
 
+func (h *ViewChangeBlockHeader) JsonString() string {
+	data, err := json.Marshal(h)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + h.Hashes.HexString() + string(data)
+}
+
+func (h *ViewChangeBlockHeader) Type() uint32 {
+	return uint32(HeViewChange)
+}
+
+func (h *ViewChangeBlockHeader) Hash() common.Hash {
+	return h.Hashes
+}
+
+func (h *ViewChangeBlockHeader) GetHeight() uint64 {
+	return h.Height
+}
+
+func (h *ViewChangeBlockHeader) GetChainID() common.Hash {
+	return h.ChainID
+}
+
+func (h ViewChangeBlockHeader) GetObject() interface{} {
+	return h
+}
+
+func (h *ViewChangeBlockHeader) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_VC_BLOCK
+}
+func (h *ViewChangeBlockHeader) String() string {
+	data, err := json.Marshal(h)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + h.Hashes.HexString() + string(data)
+}
+func (h ViewChangeBlockHeader) GetInstance() interface{} {
+	return h
+}
 func (h *ViewChangeBlockHeader) Serialize() ([]byte, error) {
 	pbHeader, err := h.proto()
 	if err != nil {
@@ -112,7 +156,6 @@ func (h *ViewChangeBlockHeader) Serialize() ([]byte, error) {
 	}
 	return data, nil
 }
-
 func (h *ViewChangeBlockHeader) Deserialize(data []byte) error {
 	var pbHeader pb.ViewChangeBlockHeader
 	if err := pbHeader.Unmarshal(data); err != nil {
@@ -144,35 +187,6 @@ func (h *ViewChangeBlockHeader) Deserialize(data []byte) error {
 	return nil
 }
 
-func (h *ViewChangeBlockHeader) JsonString() string {
-	data, err := json.Marshal(h)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + h.Hashes.HexString() + string(data)
-}
-
-func (h *ViewChangeBlockHeader) Type() uint32 {
-	return uint32(HeViewChange)
-}
-
-func (h *ViewChangeBlockHeader) Hash() common.Hash {
-	return h.Hashes
-}
-
-func (h *ViewChangeBlockHeader) GetHeight() uint64 {
-	return h.Height
-}
-
-func (h *ViewChangeBlockHeader) GetChainID() common.Hash {
-	return h.ChainID
-}
-
-func (h ViewChangeBlockHeader) GetObject() interface{} {
-	return h
-}
-
 type ViewChangeBlock struct {
 	ViewChangeBlockHeader
 }
@@ -187,39 +201,6 @@ func (b *ViewChangeBlock) proto() (*pb.ViewChangeBlock, error) {
 	}
 
 	return &pbBlock, nil
-}
-
-func (b *ViewChangeBlock) Serialize() ([]byte, error) {
-	p, err := b.proto()
-	if err != nil {
-		return nil, err
-	}
-	data, err := p.Marshal()
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func (b *ViewChangeBlock) Deserialize(data []byte) error {
-	if len(data) == 0 {
-		return errors.New("input data's length is zero")
-	}
-	var pbBlock pb.ViewChangeBlock
-	if err := pbBlock.Unmarshal(data); err != nil {
-		return errors.New(err.Error())
-	}
-	dataHeader, err := pbBlock.Header.Marshal()
-	if err != nil {
-		return err
-	}
-
-	err = b.ViewChangeBlockHeader.Deserialize(dataHeader)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (b *ViewChangeBlock) JsonString() string {
@@ -253,5 +234,48 @@ func (b *ViewChangeBlock) SetSignature(account *account.Account) error {
 	sig.SigData = common.CopyBytes(sigData)
 	sig.PubKey = common.CopyBytes(account.PublicKey)
 	//t.Signatures = append(t.Signatures, sig)
+	return nil
+}
+
+func (b *ViewChangeBlock) String() string {
+	data, err := json.Marshal(b)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + b.Hashes.HexString() + string(data)
+}
+func (b ViewChangeBlock) GetInstance() interface{} {
+	return b
+}
+func (b *ViewChangeBlock) Serialize() ([]byte, error) {
+	p, err := b.proto()
+	if err != nil {
+		return nil, err
+	}
+	data, err := p.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+func (b *ViewChangeBlock) Deserialize(data []byte) error {
+	if len(data) == 0 {
+		return errors.New("input data's length is zero")
+	}
+	var pbBlock pb.ViewChangeBlock
+	if err := pbBlock.Unmarshal(data); err != nil {
+		return errors.New(err.Error())
+	}
+	dataHeader, err := pbBlock.Header.Marshal()
+	if err != nil {
+		return err
+	}
+
+	err = b.ViewChangeBlockHeader.Deserialize(dataHeader)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

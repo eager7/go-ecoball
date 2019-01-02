@@ -6,6 +6,7 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/types"
 )
@@ -89,6 +90,46 @@ func (h *FinalBlockHeader) unSignatureData() ([]byte, error) {
 	return data, nil
 }
 
+func (h *FinalBlockHeader) JsonString() string {
+	data, err := json.Marshal(h)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + h.Hashes.HexString() + string(data)
+}
+
+func (h *FinalBlockHeader) Type() uint32 {
+	return uint32(HeFinalBlock)
+}
+func (h FinalBlockHeader) GetObject() interface{} {
+	return h
+}
+
+func (h *FinalBlockHeader) Hash() common.Hash {
+	return h.Hashes
+}
+func (h *FinalBlockHeader) GetHeight() uint64 {
+	return h.Height
+}
+func (h *FinalBlockHeader) GetChainID() common.Hash {
+	return h.ChainID
+}
+
+func (h *FinalBlockHeader) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_FINAL_BLOCK
+}
+func (h *FinalBlockHeader) String() string {
+	data, err := json.Marshal(h)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + h.Hashes.HexString() + string(data)
+}
+func (h FinalBlockHeader) GetInstance() interface{} {
+	return h
+}
 func (h *FinalBlockHeader) Serialize() ([]byte, error) {
 	pbHeader, err := h.proto()
 	if err != nil {
@@ -100,7 +141,6 @@ func (h *FinalBlockHeader) Serialize() ([]byte, error) {
 	}
 	return data, nil
 }
-
 func (h *FinalBlockHeader) Deserialize(data []byte) error {
 	var pbHeader pb.FinalBlockHeader
 	if err := pbHeader.Unmarshal(data); err != nil {
@@ -132,32 +172,6 @@ func (h *FinalBlockHeader) Deserialize(data []byte) error {
 	h.COSign.Sign2 = append(h.COSign.Sign2, pbHeader.COSign.Sign2...)
 
 	return nil
-}
-
-func (h *FinalBlockHeader) JsonString() string {
-	data, err := json.Marshal(h)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + h.Hashes.HexString() + string(data)
-}
-
-func (h *FinalBlockHeader) Type() uint32 {
-	return uint32(HeFinalBlock)
-}
-func (h FinalBlockHeader) GetObject() interface{} {
-	return h
-}
-
-func (h *FinalBlockHeader) Hash() common.Hash {
-	return h.Hashes
-}
-func (h *FinalBlockHeader) GetHeight() uint64 {
-	return h.Height
-}
-func (h *FinalBlockHeader) GetChainID() common.Hash {
-	return h.ChainID
 }
 
 type FinalBlock struct {
@@ -205,6 +219,29 @@ func (b *FinalBlock) proto() (block *pb.FinalBlock, err error) {
 	return &pbBlock, nil
 }
 
+func (b FinalBlock) GetObject() interface{} {
+	return b
+}
+
+func (b *FinalBlock) JsonString() string {
+	data, err := json.Marshal(b)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + b.Hashes.HexString() + string(data)
+}
+func (b *FinalBlock) String() string {
+	data, err := json.Marshal(b)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return "hash:" + b.Hashes.HexString() + string(data)
+}
+func (b FinalBlock) GetInstance() interface{} {
+	return b
+}
 func (b *FinalBlock) Serialize() ([]byte, error) {
 	p, err := b.proto()
 	if err != nil {
@@ -216,7 +253,6 @@ func (b *FinalBlock) Serialize() ([]byte, error) {
 	}
 	return data, nil
 }
-
 func (b *FinalBlock) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")
@@ -247,17 +283,4 @@ func (b *FinalBlock) Deserialize(data []byte) error {
 	}
 
 	return nil
-}
-
-func (b FinalBlock) GetObject() interface{} {
-	return b
-}
-
-func (b *FinalBlock) JsonString() string {
-	data, err := json.Marshal(b)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return "hash:" + b.Hashes.HexString() + string(data)
 }
