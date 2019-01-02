@@ -22,12 +22,13 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 type NotifyInfo interface {
 	Serialize() ([]byte, error)
 	Deserialize(data []byte) error
-	Type() uint32
+	Identify() mpb.Identify
 }
 
 type NotifyType int
@@ -42,11 +43,11 @@ const (
 type OneNotify struct {
 	InfoType NotifyType
 	Info     []byte
-	BlockType uint32
+	BlockType mpb.Identify
 }
 
 func NewOneNotify(oneType NotifyType, message NotifyInfo) (*OneNotify, error) {
-	blockType := message.Type()
+	blockType := message.Identify()
 	oneMessage, err := message.Serialize()
 	if nil != err {
 		return nil, err
