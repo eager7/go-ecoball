@@ -27,6 +27,6 @@ type ChainInterface interface {
 	SaveBlock(block *types.Block) error
 	//SaveConsensusState(block *DposBlock) error
 	//NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error)
-	NewBlock(ledger Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, []*types.Transaction, error)
+	NewBlock(ledger Ledger, txs []*types.Transaction, consensusData types.ConsData, timeStamp int64) (*types.Block, []*types.Transaction, error)
 	GetTailBlockHash() common.Hash
 }

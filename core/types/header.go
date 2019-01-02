@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
@@ -31,17 +32,15 @@ import (
 const VersionHeader = 1
 
 type Header struct {
-	//Type          HeaderType
-	//Payload       Payload
-	Version       uint32
-	ChainID       common.Hash
-	TimeStamp     int64
-	Height        uint64
-	ConsensusData ConsensusData
-	PrevHash      common.Hash
-	MerkleHash    common.Hash
-	StateHash     common.Hash
-	Bloom         bloom.Bloom
+	Version    uint32
+	ChainID    common.Hash
+	TimeStamp  int64
+	Height     uint64
+	ConsData   ConsData
+	PrevHash   common.Hash
+	MerkleHash common.Hash
+	StateHash  common.Hash
+	Bloom      bloom.Bloom
 
 	Receipt    BlockReceipt
 	Signatures []common.Signature
@@ -50,70 +49,12 @@ type Header struct {
 
 var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
 
-/**
- *  @brief create a new block header, the compute this header's hash
- *  @param version - the version of header, default 1
- *  @param height - the height of this block
- *  @param prevHash - the hash of perv block
- *  @param merkleHash - the merkle hash root of transactions' hash
- *  @param stateHash - the mpt hash root of state
- *  @param conData - the data of consensus module
- *  @param bloom - the bloom filter of transactions
- *  @param timeStamp - the timeStamp of block, unit is ns
- */
-func NewHeader(version uint32, chainID common.Hash, height uint64, prevHash, merkleHash, stateHash common.Hash, conData ConsensusData, bloom bloom.Bloom, cpuLimit, netLimit float64, timeStamp int64) (*Header, error) {
-	if version != VersionHeader {
-		return nil, errors.New("version mismatch")
-	}
-	if conData.Payload == nil {
-		return nil, errors.New("consensus' payload is nil")
-	}
-	header := Header{
-		ChainID:       chainID,
-		Version:       version,
-		TimeStamp:     timeStamp,
-		Height:        height,
-		ConsensusData: conData,
-		PrevHash:      prevHash,
-		MerkleHash:    merkleHash,
-		StateHash:     stateHash,
-		Bloom:         bloom,
-		Receipt:       BlockReceipt{BlockCpu: cpuLimit, BlockNet: netLimit},
-		Signatures:    nil,
-		Hash:          common.Hash{},
-	}
-	data, err := header.unSignatureData()
-	if err != nil {
-		return nil, err
-	}
-	b, err := data.Marshal()
-	if err != nil {
-		return nil, err
-	}
-	header.Hash, err = common.DoubleHash(b)
-	if err != nil {
-		return nil, err
-	}
-	return &header, nil
-}
-
-func (h *Header) InitializeHash() error {
-	if h.Version != VersionHeader {
-		return errors.New("version mismatch")
-	}
-	if h.ConsensusData.Payload == nil {
-		return errors.New("consensus' payload is nil")
-	}
-	payload, err := h.unSignatureData()
+func (h *Header) ComputeHash() error {
+	data, err := h.unSignatureData()
 	if err != nil {
 		return err
 	}
-	b, err := payload.Marshal()
-	if err != nil {
-		return err
-	}
-	h.Hash, err = common.DoubleHash(b)
-	fmt.Println("New Header Hash:", h.Hash.HexString())
+	h.Hash, err = common.DoubleHash(data)
 	if err != nil {
 		return err
 	}
@@ -145,62 +86,19 @@ func (h *Header) VerifySignature() (bool, error) {
 /**
 ** Used to compute hash
  */
-func (h *Header) unSignatureData() (*pb.Header, error) {
-	if h.TimeStamp == 0 {
-		return nil, errors.New("this header struct is illegal")
-	}
-	pbCon, err := h.ConsensusData.ProtoBuf()
+func (h *Header) unSignatureData() ([]byte, error) {
+	p, err := h.proto()
 	if err != nil {
 		return nil, err
 	}
-	return &pb.Header{
-		Version:       h.Version,
-		ChainID:       h.ChainID.Bytes(),
-		Timestamp:     h.TimeStamp,
-		Height:        h.Height,
-		ConsensusData: pbCon,
-		PrevHash:      h.PrevHash.Bytes(),
-		MerkleHash:    h.MerkleHash.Bytes(),
-		StateHash:     h.StateHash.Bytes(),
-		Bloom:         h.Bloom.Bytes(),
-	}, nil
-}
-
-func (h *Header) protoBuf() (*pb.HeaderTx, error) {
-	var sig []*pb.Signature
-	for i := 0; i < len(h.Signatures); i++ {
-		s := &pb.Signature{PubKey: h.Signatures[i].PubKey, SigData: h.Signatures[i].SigData}
-		sig = append(sig, s)
-	}
-	pbCon, err := h.ConsensusData.ProtoBuf()
+	p.Hash = nil
+	p.Signature = nil
+	p.Receipt = nil
+	data, err := p.Marshal()
 	if err != nil {
-		return nil, err
+		return nil, errors.New(fmt.Sprintf("ProtoBuf Marshal error:%s", err.Error()))
 	}
-	//if h.Payload == nil {
-	//	return nil, errors.New(log, "header payload is nil")
-	//}
-	//payload, err := h.Payload.Serialize()
-	if err != nil {
-		return nil, err
-	}
-	return &pb.HeaderTx{
-		Header: &pb.Header{
-			//Type:          uint32(h.Type),
-			//Payload:       payload,
-			Version:       h.Version,
-			ChainID:       h.ChainID.Bytes(),
-			Timestamp:     h.TimeStamp,
-			Height:        h.Height,
-			ConsensusData: pbCon,
-			PrevHash:      h.PrevHash.Bytes(),
-			MerkleHash:    h.MerkleHash.Bytes(),
-			StateHash:     h.StateHash.Bytes(),
-			Bloom:         h.Bloom.Bytes(),
-		},
-		Receipt:   &pb.BlockReceipt{BlockCpu: h.Receipt.BlockCpu, BlockNet: h.Receipt.BlockNet},
-		Sign:      sig,
-		BlockHash: h.Hash.Bytes(),
-	}, nil
+	return data, nil
 }
 
 /**
@@ -208,7 +106,7 @@ func (h *Header) protoBuf() (*pb.HeaderTx, error) {
  *  @return []byte - a sequence of characters
  */
 func (h *Header) Serialize() ([]byte, error) {
-	p, err := h.protoBuf()
+	p, err := h.proto()
 	if err != nil {
 		return nil, err
 	}
@@ -227,78 +125,65 @@ func (h *Header) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")
 	}
-	var pbHeader pb.HeaderTx
+	var pbHeader pb.Header
 	if err := pbHeader.Unmarshal(data); err != nil {
 		return err
 	}
 
-	/*switch HeaderType(pbHeader.Header.Type) {
-	case HeMinorBlock:
-		h.Payload = new(MinorBlockHeader)
-	case HeCmBlock:
-		h.Payload = new(CMBlockHeader)
-	default:
-		return errors.New(log, "unknown header type")
-	}
-	h.Type = HeaderType(pbHeader.Header.Type)
-	if err := h.Payload.Deserialize(pbHeader.Header.Payload); err != nil {
-		return err
-	}*/
-
-	h.Version = pbHeader.Header.Version
-	h.ChainID = common.NewHash(pbHeader.Header.ChainID)
-	h.TimeStamp = pbHeader.Header.Timestamp
-	h.Height = pbHeader.Header.Height
-	h.PrevHash = common.NewHash(pbHeader.Header.PrevHash)
-	h.MerkleHash = common.NewHash(pbHeader.Header.MerkleHash)
-	for i := 0; i < len(pbHeader.Sign); i++ {
+	h.Version = pbHeader.Version
+	h.ChainID = common.NewHash(pbHeader.ChainID)
+	h.TimeStamp = pbHeader.Timestamp
+	h.Height = pbHeader.Height
+	h.PrevHash = common.NewHash(pbHeader.PrevHash)
+	h.MerkleHash = common.NewHash(pbHeader.MerkleHash)
+	for i := 0; i < len(pbHeader.Signature); i++ {
 		sig := common.Signature{
-			PubKey:  common.CopyBytes(pbHeader.Sign[i].PubKey),
-			SigData: common.CopyBytes(pbHeader.Sign[i].SigData),
+			PubKey:  common.CopyBytes(pbHeader.Signature[i].PubKey),
+			SigData: common.CopyBytes(pbHeader.Signature[i].SigData),
 		}
 		h.Signatures = append(h.Signatures, sig)
 	}
-	h.StateHash = common.NewHash(pbHeader.Header.StateHash)
-	h.Hash = common.NewHash(pbHeader.BlockHash)
-	h.Bloom = bloom.NewBloom(pbHeader.Header.Bloom)
+	h.StateHash = common.NewHash(pbHeader.StateHash)
+	h.Hash = common.NewHash(pbHeader.Hash)
 	h.Receipt = BlockReceipt{BlockNet: pbHeader.Receipt.BlockNet, BlockCpu: pbHeader.Receipt.BlockCpu}
+	h.Bloom = bloom.NewBloom(pbHeader.Bloom)
 
-	dataCon, err := pbHeader.Header.ConsensusData.Marshal()
+	dataCon, err := pbHeader.ConsensusData.Marshal()
 	if err != nil {
 		return err
 	}
-	if err := h.ConsensusData.Deserialize(dataCon); err != nil {
+	if err := h.ConsData.Deserialize(dataCon); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (h *Header) JsonString() string {
+func (h *Header) String() string {
 	data, err := json.Marshal(
 		struct {
-			ChainID       string
-			Version       uint32
-			TimeStamp     int64
-			Height        uint64
-			ConsensusData ConsensusData
-			PrevHash      string
-			MerkleHash    string
-			StateHash     string
-			bloom         bloom.Bloom
-			Signatures    []common.Signature
-			Hash          string
+			ChainID    string
+			Version    uint32
+			TimeStamp  int64
+			Height     uint64
+			ConsData   ConsData
+			PrevHash   string
+			MerkleHash string
+			StateHash  string
+			bloom      bloom.Bloom
+			Signatures []common.Signature
+			Hash       string
 		}{
-			ChainID:       h.ChainID.HexString(),
-			Version:       h.Version,
-			TimeStamp:     h.TimeStamp,
-			Height:        h.Height,
-			ConsensusData: h.ConsensusData,
-			PrevHash:      h.PrevHash.HexString(),
-			MerkleHash:    h.MerkleHash.HexString(),
-			StateHash:     h.StateHash.HexString(),
-			Signatures:    h.Signatures,
-			Hash:          h.Hash.HexString(),
+			ChainID:    h.ChainID.HexString(),
+			Version:    h.Version,
+			TimeStamp:  h.TimeStamp,
+			Height:     h.Height,
+			ConsData:   h.ConsData,
+			PrevHash:   h.PrevHash.HexString(),
+			MerkleHash: h.MerkleHash.HexString(),
+			StateHash:  h.StateHash.HexString(),
+			Signatures: h.Signatures,
+			Hash:       h.Hash.HexString(),
 		})
 	if err != nil {
 		log.Error(err)
@@ -307,7 +192,39 @@ func (h *Header) JsonString() string {
 	return string(data)
 }
 
-func (h *Header) Show() {
-	log.Debug("\t\tshow header:")
-	log.Debug(h.JsonString())
+func (h *Header) proto() (*pb.Header, error) {
+	var sig []*pb.Signature
+	for i := 0; i < len(h.Signatures); i++ {
+		s := &pb.Signature{PubKey: h.Signatures[i].PubKey, SigData: h.Signatures[i].SigData}
+		sig = append(sig, s)
+	}
+	pbCon, err := h.ConsData.proto()
+	if err != nil {
+		return nil, err
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &pb.Header{
+		Version:       h.Version,
+		ChainID:       h.ChainID.Bytes(),
+		Timestamp:     h.TimeStamp,
+		Height:        h.Height,
+		ConsensusData: pbCon,
+		PrevHash:      h.PrevHash.Bytes(),
+		MerkleHash:    h.MerkleHash.Bytes(),
+		StateHash:     h.StateHash.Bytes(),
+		Bloom:         h.Bloom.Bytes(),
+		Hash:          h.Hash.Bytes(),
+		Signature:     sig,
+		Receipt:       &pb.BlockReceipt{BlockCpu: h.Receipt.BlockCpu, BlockNet: h.Receipt.BlockNet},
+	}, nil
+}
+
+func (h *Header) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_HEADER
+}
+
+func (h *Header) GetInstance() interface{} {
+	return h
 }

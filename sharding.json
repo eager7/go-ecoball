@@ -1,1 +1,25 @@
-{"Pubkey":"1109ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be41","Address":"127.0.0.1","Port":"20001","Size":"1","Committee":[{"Pubkey":"1109ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be41","Address":"127.0.0.1","Port":"20001"}],"Shard":[{"Pubkey":"2699ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be45","Address":"127.0.0.1","Port":"11006"},{"Pubkey":"3699ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be45","Address":"127.0.0.1","Port":"11007"}],"Candidate":[{"Pubkey":"3199ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be45","Address":"192.168.11.1","Port":"12001"}]}
+{
+  "Pubkey": "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBANqQleuG0BmzpttZ1lfkGmxyKILudJEFLgFcnguSllgdN+6GoeZmByZLoiioTTVgexmXcLGDUdHz5wREhaEo/cx2RwdaUZES6Lewzc82vkmPmp1HMQB3d5s45SMuwqDVSgfvlzdUOXu9629hTgDE//wlq47Kgk6aDCyuLA7jlLGzAgMBAAE=",
+  "Address": "127.0.0.1",
+  "Port": "20001",
+  "Size": "1",
+  "Committee": [{
+    "Pubkey": "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAJXs/ovug1g4gu43I08QiyUSN9E4SSuWqFNe4qYNn6x6PhTTVDW1yatb8uE3aaFB+Jm9Pyh3eADQ9y8EFK9XN5fwJp7y3szeD/xl0HtiNk1xJKmRX+njEPZ3F6XMAL6wA6FFlif6FI9wj4bci0pk4g5xi28vQ6XBO50G71YUIhbfAgMBAAE=",
+    "Address": "127.0.0.1",
+    "Port": "20001"
+  }],
+  "Shard": [{
+    "Pubkey": "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAN5QleuG0BmzpttZ1lfkGmxyKILudJEFLgFcnguSllgdN+6GoeZmByZLoiioTTVgexmXcLGDUdHz5wREhaEo/cx2RwdaUZES6Lewzc82vkmPmp1HMQB3d5s45SMuwqDVSgfvlzdUOXu9629hTgDE//wlq47Kgk6aDCyuLA7jlLGzAgMBAAE=",
+    "Address": "127.0.0.1",
+    "Port": "11006"
+  }, {
+    "Pubkey": "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBANqQleuG0BmzpttZ1lfkGmxyKILudJEFLgFcnguSllgdN+6GoeZmByZLoiioTTVgexmXcLGDUdHz5wREhaEo/cx2RwdaUZES6Lewzc82vkmPmp1HMQB3d5s45SMuwqDVSgfvlzdUOXu9629hTgDE//wlq47Kgk6aDCyuLA7jlLGzAgMBAAE=",
+    "Address": "127.0.0.1",
+    "Port": "11006"
+  }],
+  "Candidate": [{
+    "Pubkey": "3199ef616830cd7b8599ae7958fbee56d4c8168ffd5421a16025a398b8a4be45",
+    "Address": "192.168.11.1",
+    "Port": "12001"
+  }]
+}

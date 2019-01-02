@@ -44,15 +44,17 @@ type LedgerImpl struct {
 func NewLedger(path string, chainID common.Hash, addr common.Address, shard bool) (l ledger.Ledger, err error) {
 	log.Debug("Create Ledger in ", path)
 	ll := &LedgerImpl{path: path, ChainTxs: make(map[common.Hash]*transaction.ChainTx, 1)}
-	if err := ll.NewTxChain(chainID, addr, shard); err != nil {
-		return nil, err
-	}
 
 	actor := &LedActor{ledger: ll}
 	actor.pid, err = NewLedgerActor(actor)
 	if err != nil {
 		return nil, err
 	}
+
+	if err := ll.NewTxChain(chainID, addr, shard); err != nil {
+		return nil, err
+	}
+
 
 	return ll, nil
 }
@@ -86,13 +88,13 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address, shard 
 	log.Info("Chains:", l.ChainTxs)
 	return nil
 }
-func (l *LedgerImpl) NewTxBlock(chainID common.Hash, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, []*types.Transaction, error) {
+func (l *LedgerImpl) NewTxBlock(chainID common.Hash, txs []*types.Transaction, consData types.ConsData, timeStamp int64) (*types.Block, []*types.Transaction, error) {
 	//return l.ChainTx.NewBlock(l, txs, consensusData, timeStamp)
 	chain, ok := l.ChainTxs[chainID]
 	if !ok {
 		return nil, nil, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
-	return chain.NewBlock(l, txs, consensusData, timeStamp)
+	return chain.NewBlock(l, txs, consData, timeStamp)
 }
 func (l *LedgerImpl) GetTxBlock(chainID common.Hash, hash common.Hash) (*types.Block, error) {
 	chain, ok := l.ChainTxs[chainID]

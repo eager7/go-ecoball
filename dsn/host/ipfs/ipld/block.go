@@ -100,7 +100,7 @@ func (this *EcoballBlock) Resolve(path []string) (interface{}, []string, error) 
 	case "height":
 		return this.Height, path[1:], nil
 	case "consensusData":
-		return this.ConsensusData, path[1:], nil
+		return this.ConsData, path[1:], nil
 	case "stateHash":
 		return this.StateHash, path[1:], nil
 	case "bloom":

@@ -119,7 +119,7 @@ func GetBlockInfo(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"result": blockInfo.JsonString(true)})
+	c.JSON(http.StatusOK, gin.H{"result": blockInfo.String()})
 }
 
 func GetTransaction(c *gin.Context) {

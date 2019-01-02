@@ -26,7 +26,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/geneses"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/pb"
@@ -139,7 +138,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger, shard bool) (c *Chai
 *  @brief  create a new block, this function will execute the transaction to rebuild mpt trie
 *  @param  consensusData - the data of consensus module set
  */
-func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData, timeStamp int64) (*types.Block, []*types.Transaction, error) {
+func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsData, timeStamp int64) (*types.Block, []*types.Transaction, error) {
 	s, err := c.StateDB.FinalDB.CopyState()
 	if err != nil {
 		return nil, nil, err
@@ -236,7 +235,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return err
 	}
 	if c.StateDB.FinalDB.GetHashRoot().HexString() != block.StateHash.HexString() {
-		log.Warn(block.JsonString(true))
+		log.Warn(block.String())
 		c.StateDB.FinalDB.Reset(stateHashRoot)
 		return errors.New(fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.FinalDB.GetHashRoot().HexString(), block.Hash.HexString()))
 	}
@@ -262,7 +261,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	}
 	c.StateDB.FinalDB.CommitToDB()
 	log.Debug("block state:", block.Height, block.StateHash.HexString())
-	log.Notice(block.JsonString(false))
+	log.Notice(block.String())
 	c.CurrentHeader = block.Header
 
 	//c.lockBlock.Lock()
@@ -354,15 +353,31 @@ func (c *ChainTx) GenesesBlockInit(chainID common.Hash, addr common.Address) err
 	//TODO end
 
 	hash := common.NewHash([]byte("EcoBall Geneses Block"))
-	conData := types.GenesesBlockInitConsensusData(timeStamp)
-
+	conData, err := types.InitConsensusData(timeStamp)
+	if err != nil {
+		return err
+	}
 	if err := geneses.PresetContract(c.StateDB.FinalDB, timeStamp, addr); err != nil {
 		return err
 	}
 
-	header, err := types.NewHeader(types.VersionHeader, chainID, 1, chainID, hash,
-		c.StateDB.FinalDB.GetHashRoot(), *conData, bloom.Bloom{}, config.BlockCpuLimit, config.BlockNetLimit, timeStamp)
-	if err != nil {
+	header := &types.Header{
+		Version:    types.VersionHeader,
+		ChainID:    chainID,
+		TimeStamp:  timeStamp,
+		Height:     1,
+		ConsData:   *conData,
+		PrevHash:   hash,
+		MerkleHash: common.Hash{},
+		StateHash:  c.StateDB.FinalDB.GetHashRoot(),
+		Receipt:    types.BlockReceipt{
+			BlockCpu: config.BlockCpuLimit,
+			BlockNet: config.BlockNetLimit,
+		},
+		Signatures: nil,
+		Hash:       common.Hash{},
+	}
+	if err := header.ComputeHash(); err != nil {
 		return err
 	}
 	block := &types.Block{Header: header, CountTxs: 0, Transactions: nil}
@@ -418,7 +433,11 @@ func (c *ChainTx) GetTransaction(hash common.Hash) (*types.Transaction, error) {
 	if err := block.Deserialize(blockData); err != nil {
 		return nil, err
 	}
-	return block.GetTransaction(hash)
+	tx := block.GetTransaction(hash)
+	if tx == nil {
+		return nil, errors.New(fmt.Sprintf("can't find this tx:%s", hash.String()))
+	}
+	return tx, nil
 }
 
 /**

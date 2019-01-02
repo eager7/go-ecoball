@@ -149,7 +149,6 @@ func VotingContract(ledger ledger.Ledger, chainID common.Hash) *types.Block {
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker1)
 	txs = append(txs, invoke)
-	ledger.GetCurrentHeader(config.ChainHash).Show()
 	return example.SaveBlock(ledger, txs, chainID)
 }
 func CancelPledgeContract(ledger ledger.Ledger, chainID common.Hash) *types.Block {

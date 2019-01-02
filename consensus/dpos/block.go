@@ -78,7 +78,7 @@ func LoadBlockFromStorage(hash common.Hash, chain *Blockchain) (*DposBlock, erro
 	}
 	//state, err := chain.chainTx.GetConsensusState(hash)
 
-	tmp := block.ConsensusData.Payload.GetObject()
+	tmp := block.ConsData.Payload.GetObject()
 	//log.Debug("type = ", reflect.TypeOf(state))
 	state:= tmp.(types.DPosData)
 

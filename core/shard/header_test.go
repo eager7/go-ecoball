@@ -223,7 +223,7 @@ func TestHeader(t *testing.T) {
 	h2 := new(types.Header)
 	errors.CheckErrorPanic(h2.Deserialize(data))
 
-	errors.CheckEqualPanic(h.JsonString() == h2.JsonString())
+	errors.CheckEqualPanic(h.String() == h2.String())
 
 	//ABA BFT
 	sig1 := common.Signature{PubKey: []byte("1234"), SigData: []byte("5678")}
@@ -242,5 +242,5 @@ func TestHeader(t *testing.T) {
 
 	h2 = new(types.Header)
 	errors.CheckErrorPanic(h2.Deserialize(data))
-	errors.CheckEqualPanic(h.JsonString() == h2.JsonString())
+	errors.CheckEqualPanic(h.String() == h2.String())
 }

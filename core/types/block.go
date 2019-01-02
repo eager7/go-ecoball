@@ -17,13 +17,12 @@
 package types
 
 import (
-	"encoding/json"
-	errIn "errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/trie"
@@ -35,8 +34,8 @@ type Block struct {
 	Transactions []*Transaction
 }
 
-func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, consensusData ConsensusData, txs []*Transaction, cpu, net float64, timeStamp int64) (*Block, error) {
-	if nil == prevHeader {
+func NewBlock(chainID common.Hash, prev *Header, stateHash common.Hash, consensusData ConsData, txs []*Transaction, cpu, net float64, timeStamp int64) (*Block, error) {
+	if nil == prev {
 		return nil, errors.New("invalid parameter preHeader")
 	}
 	var Bloom bloom.Bloom
@@ -54,32 +53,48 @@ func NewBlock(chainID common.Hash, prevHeader *Header, stateHash common.Hash, co
 
 	var cpuLimit, netLimit float64
 	if cpu < (config.BlockCpuLimit / 10) {
-		cpuLimit = prevHeader.Receipt.BlockCpu * 1.01
+		cpuLimit = prev.Receipt.BlockCpu * 1.01
 		if cpuLimit > config.VirtualBlockCpuLimit {
 			cpuLimit = config.VirtualBlockCpuLimit
 		}
 	} else {
-		cpuLimit = prevHeader.Receipt.BlockCpu * 0.99
+		cpuLimit = prev.Receipt.BlockCpu * 0.99
 		if cpuLimit < config.BlockCpuLimit {
 			cpuLimit = config.BlockCpuLimit
 		}
 	}
 	if net < (config.BlockNetLimit / 10) {
-		netLimit = prevHeader.Receipt.BlockNet * 1.01
+		netLimit = prev.Receipt.BlockNet * 1.01
 		if netLimit > config.VirtualBlockNetLimit {
 			netLimit = config.VirtualBlockNetLimit
 		}
 	} else {
-		netLimit = prevHeader.Receipt.BlockNet * 0.99
+		netLimit = prev.Receipt.BlockNet * 0.99
 		if netLimit < config.BlockNetLimit {
 			netLimit = config.BlockNetLimit
 		}
 	}
 
-	header, err := NewHeader(VersionHeader, chainID, prevHeader.Height+1, prevHeader.Hash, merkleHash, stateHash, consensusData, Bloom, cpuLimit, netLimit, timeStamp)
-	if err != nil {
+	header := &Header{
+		Version:    VersionHeader,
+		ChainID:    chainID,
+		TimeStamp:  timeStamp,
+		Height:     prev.Height + 1,
+		ConsData:   consensusData,
+		PrevHash:   prev.Hash,
+		MerkleHash: merkleHash,
+		StateHash:  stateHash,
+		Receipt: BlockReceipt{
+			BlockCpu: cpuLimit,
+			BlockNet: netLimit,
+		},
+		Signatures: nil,
+		Hash:       common.Hash{},
+	}
+	if err := header.ComputeHash(); err != nil {
 		return nil, err
 	}
+
 	block := Block{
 		Header:       header,
 		CountTxs:     uint32(len(txs)),
@@ -92,54 +107,13 @@ func (b *Block) SetSignature(account *account.Account) error {
 	return b.Header.SetSignature(account)
 }
 
-func (b *Block) GetTransaction(hash common.Hash) (*Transaction, error) {
+func (b *Block) GetTransaction(hash common.Hash) *Transaction {
 	for _, tx := range b.Transactions {
 		if hash.Equals(&tx.Hash) {
-			return tx, nil
+			return tx
 		}
 	}
-	return nil, errIn.New("can't find this transaction")
-}
-
-func (b *Block) IsExistedTransaction(hash common.Hash) bool {
-	for _, tx := range b.Transactions {
-		if hash.Equals(&tx.Hash) {
-			return true
-		}
-	}
-	return false
-}
-
-func GenesesBlockInitConsensusData(timestamp int64) *ConsensusData {
-	conData, err := InitConsensusData(timestamp)
-	if err != nil {
-		log.Debug(err)
-		return nil
-	}
-	return conData
-}
-
-func (b *Block) protoBuf() (*pb.BlockTx, error) {
-	var block pb.BlockTx
-	var err error
-	block.Header, err = b.Header.protoBuf()
-	if err != nil {
-		return nil, err
-	}
-	var pbTxs []*pb.Transaction
-	for _, tx := range b.Transactions {
-		pbTx, err := tx.ProtoBuf()
-		if err != nil {
-			return nil, err
-		}
-		pbTxs = append(pbTxs, pbTx)
-	}
-	block.Transactions = append(block.Transactions, pbTxs...)
-	return &block, nil
-}
-
-func (b *Block) Type() uint32 {
-	return 0
+	return nil
 }
 
 /**
@@ -147,7 +121,7 @@ func (b *Block) Type() uint32 {
  *  @return []byte - a sequence of characters
  */
 func (b *Block) Serialize() (data []byte, err error) {
-	p, err := b.protoBuf()
+	p, err := b.proto()
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +140,7 @@ func (b *Block) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")
 	}
-	var pbBlock pb.BlockTx
+	var pbBlock pb.Block
 	if err := pbBlock.Unmarshal(data); err != nil {
 		return err
 	}
@@ -200,55 +174,43 @@ func (b *Block) Deserialize(data []byte) error {
 	return nil
 }
 
-func (b *Block) Show(format bool) {
-	fmt.Println(b.JsonString(format))
-}
-
-func (b *Block) JsonString(format bool) string {
-	if !format {
-		data, _ := json.Marshal(b)
-		return string(data)
-	} else {
-		data := b.Header.JsonString()
-		data += fmt.Sprintf("{CountTxs:%d}", b.CountTxs)
-		for _, v := range b.Transactions {
-			data += v.JsonString()
-		}
-		return string(data)
+func (b *Block) String() string {
+	data := b.Header.String()
+	data += fmt.Sprintf("{CountTxs:%d}", b.CountTxs)
+	for _, v := range b.Transactions {
+		data += v.JsonString()
 	}
+	return string(data)
+
 }
 
-func (b *Block) Blk2BlkTx() (*pb.BlockTx, error) {
-	block, err := b.protoBuf()
+func (b *Block) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_BLOCK
+}
+
+func (b *Block) GetInstance() interface{} {
+	return b
+}
+
+func (b *Block) proto() (*pb.Block, error) {
+	var block pb.Block
+	var err error
+	block.Header, err = b.Header.proto()
 	if err != nil {
 		return nil, err
 	}
-	return block, nil
+	var pbTxs []*pb.Transaction
+	for _, tx := range b.Transactions {
+		pbTx, err := tx.ProtoBuf()
+		if err != nil {
+			return nil, err
+		}
+		pbTxs = append(pbTxs, pbTx)
+	}
+	block.Transactions = append(block.Transactions, pbTxs...)
+	return &block, nil
 }
 
-func (b *Block) BlkTx2Blk(blktx pb.BlockTx) error {
-	dataHeader, err := blktx.Header.Marshal()
-	if err != nil {
-		return err
-	}
-	b.Header = new(Header)
-	err = b.Header.Deserialize(dataHeader)
-	if err != nil {
-		return err
-	}
-	var txs []*Transaction
-	for _, tx := range blktx.Transactions {
-		b, err := tx.Marshal()
-		if err != nil {
-			return err
-		}
-		t := new(Transaction)
-		if err := t.Deserialize(b); err != nil {
-			return err
-		}
-		txs = append(txs, t)
-	}
-	b.CountTxs = uint32(len(txs))
-	b.Transactions = txs
-	return nil
+func (b *Block) Type() uint32 {
+	return 0
 }

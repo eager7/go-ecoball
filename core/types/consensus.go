@@ -20,9 +20,7 @@ import (
 	"encoding/binary"
 	errIn "errors"
 	"fmt"
-	"sort"
 
-	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
@@ -35,7 +33,6 @@ const (
 	ConDBFT ConType = 0x01
 	CondPos ConType = 0x02
 	ConSolo ConType = 0x03
-	ConABFT ConType = 0x04
 )
 
 func (c ConType) String() string {
@@ -46,31 +43,28 @@ func (c ConType) String() string {
 		return "ConDBFT"
 	case CondPos:
 		return "CondPos"
-	case ConABFT:
-		return "ConABFT"
 	default:
 		return "UnKnown"
 	}
 }
 
-type ConsensusPayload interface {
+type ConsPayload interface {
 	Serialize() ([]byte, error)
 	Deserialize(data []byte) error
 	GetObject() interface{}
 	Show()
 }
 
-type ConsensusData struct {
+type ConsData struct {
 	Type    ConType
-	Payload ConsensusPayload
+	Payload ConsPayload
 }
 
-func NewConsensusPayload(Type ConType, payload ConsensusPayload) *ConsensusData {
-	return &ConsensusData{Type: Type, Payload: payload}
+func NewConsensusPayload(Type ConType, payload ConsPayload) *ConsData {
+	return &ConsData{Type: Type, Payload: payload}
 }
 
-func InitConsensusData(timestamp int64) (*ConsensusData, error) {
-
+func InitConsensusData(timestamp int64) (*ConsData, error) {
 	switch config.ConsensusAlgorithm {
 	case "SOLO", "SHARD":
 		conType := ConSolo
@@ -80,33 +74,28 @@ func InitConsensusData(timestamp int64) (*ConsensusData, error) {
 		conType := CondPos
 		conPayload := GenesisStateInit(timestamp)
 		return NewConsensusPayload(conType, conPayload), nil
-	case "ABABFT":
-		conType := ConABFT
-		conPayload := GenesisABABFTInit(timestamp)
-		return NewConsensusPayload(conType, conPayload), nil
-		//TODO
 	default:
 		return nil, errors.New("unknown consensus type")
 	}
 }
 
-func (c *ConsensusData) ProtoBuf() (*pb.ConsensusData, error) {
+func (c *ConsData) proto() (*pb.ConData, error) {
 	data, err := c.Payload.Serialize()
 	if err != nil {
 		return nil, err
 	}
-	return &pb.ConsensusData{
+	return &pb.ConData{
 		Type: uint32(c.Type),
 		Data: common.CopyBytes(data),
 	}, nil
 }
 
-func (c *ConsensusData) Serialize() ([]byte, error) {
+func (c *ConsData) Serialize() ([]byte, error) {
 	data, err := c.Payload.Serialize()
 	if err != nil {
 		return nil, err
 	}
-	pbCon := pb.ConsensusData{
+	pbCon := pb.ConData{
 		Type: uint32(c.Type),
 		Data: common.CopyBytes(data),
 	}
@@ -117,8 +106,8 @@ func (c *ConsensusData) Serialize() ([]byte, error) {
 	return b, nil
 }
 
-func (c *ConsensusData) Deserialize(data []byte) error {
-	var pbCon pb.ConsensusData
+func (c *ConsData) Deserialize(data []byte) error {
+	var pbCon pb.ConData
 	if err := pbCon.Unmarshal(data); err != nil {
 		return err
 	}
@@ -130,8 +119,6 @@ func (c *ConsensusData) Deserialize(data []byte) error {
 		c.Payload = new(DBFTData)
 	case ConSolo:
 		c.Payload = new(SoloData)
-	case ConABFT:
-		c.Payload = new(AbaBftData)
 	default:
 		return errors.New("unknown consensus type")
 	}
@@ -145,9 +132,6 @@ const (
 	BlockInterval      = int64(15000)
 	GenerationInterval = GenerationSize * BlockInterval * 10
 	GenerationSize     = 4
-	ConsensusThreshold = GenerationSize*2/3 + 1
-	MaxProduceDuration = int64(5250)
-	MinProduceDuration = int64(2250)
 )
 
 var (
@@ -174,29 +158,29 @@ type DPosData struct {
 	bookkeepers []common.Hash
 }
 
-func (ds *DPosData) Timestamp() int64 {
-	return ds.timestamp
+func (d *DPosData) Timestamp() int64 {
+	return d.timestamp
 }
 
-func (ds *DPosData) Leader() common.Hash {
-	return ds.leader
+func (d *DPosData) Leader() common.Hash {
+	return d.leader
 }
 
-func (ds *DPosData) NextConsensusState(passedSecond int64) (*DPosData, error) {
+func (d *DPosData) NextConsensusState(passedSecond int64) (*DPosData, error) {
 	elapsedSecondInMs := passedSecond * Second
 	if elapsedSecondInMs <= 0 || elapsedSecondInMs%BlockInterval != 0 {
 		return nil, ErrNotBlockForgTime
 	}
 	//TODO
-	bookkeepers := ds.bookkeepers
+	bookkeepers := d.bookkeepers
 
 	consensusState := &DPosData{
-		timestamp:   ds.timestamp + passedSecond,
+		timestamp:   d.timestamp + passedSecond,
 		bookkeepers: bookkeepers,
 	}
 
 	log.Debug("consensusState, timestamp ", consensusState.timestamp)
-	log.Debug(ds.timestamp, passedSecond)
+	log.Debug(d.timestamp, passedSecond)
 	currentInMs := consensusState.timestamp * Second
 	offsetInMs := currentInMs % GenerationInterval
 	log.Debug("timestamp %", offsetInMs, (offsetInMs*Second)%BlockInterval)
@@ -209,8 +193,8 @@ func (ds *DPosData) NextConsensusState(passedSecond int64) (*DPosData, error) {
 	return consensusState, nil
 }
 
-func (dposData *DPosData) Bookkeepers() ([]common.Hash, error) {
-	return dposData.bookkeepers, nil
+func (d *DPosData) Bookkeepers() ([]common.Hash, error) {
+	return d.bookkeepers, nil
 }
 
 func FindLeader(current int64, bookkeepers []common.Hash) (leader common.Hash, err error) {
@@ -271,18 +255,18 @@ func GenesisStateInit(timestamp int64) *DPosData {
 	return data
 }
 
-func (data *DPosData) protoBuf() (*pb.ConsensusState, error) {
+func (d *DPosData) protoBuf() (*pb.ConsensusState, error) {
 	var bookkeepers []*pb.Miner
-	for i := 0; i < len(data.bookkeepers); i++ {
+	for i := 0; i < len(d.bookkeepers); i++ {
 		bookkeeper := &pb.Miner{
-			Hash: data.bookkeepers[i].Bytes(),
+			Hash: d.bookkeepers[i].Bytes(),
 		}
 		bookkeepers = append(bookkeepers, bookkeeper)
 	}
 	consensusState := &pb.ConsensusState{
-		Hash:        data.leader.Bytes(),
+		Hash:        d.leader.Bytes(),
 		Bookkeepers: bookkeepers,
-		Timestamp:   data.timestamp,
+		Timestamp:   d.timestamp,
 	}
 	return consensusState, nil
 }
@@ -363,99 +347,4 @@ func (s SoloData) GetObject() interface{} {
 }
 func (s *SoloData) Show() {
 	fmt.Println("Solo Module Data")
-}
-
-///////////////////////////////////////////aBft/////////////////////////////////////
-type AbaBftData struct {
-	NumberRound        uint32
-	PreBlockSignatures []common.Signature
-}
-
-func (a *AbaBftData) Serialize() ([]byte, error) {
-	var sig []*pb.Signature
-	for i := 0; i < len(a.PreBlockSignatures); i++ {
-		s := &pb.Signature{PubKey: a.PreBlockSignatures[i].PubKey, SigData: a.PreBlockSignatures[i].SigData}
-		sig = append(sig, s)
-	}
-	pbData := pb.AbaBftData{
-		NumberRound: a.NumberRound,
-		Sign:        sig,
-	}
-	data, err := pbData.Marshal()
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-func (a *AbaBftData) Deserialize(data []byte) error {
-	if len(data) == 0 {
-		return errors.New(fmt.Sprintf("AbaBftData is nil:%v", data))
-	}
-	var pbData pb.AbaBftData
-	if err := pbData.Unmarshal(data); err != nil {
-		return err
-	}
-	a.NumberRound = pbData.NumberRound
-	for i := 0; i < len(pbData.Sign); i++ {
-		sig := common.Signature{
-			PubKey:  common.CopyBytes(pbData.Sign[i].PubKey),
-			SigData: common.CopyBytes(pbData.Sign[i].SigData),
-		}
-		a.PreBlockSignatures = append(a.PreBlockSignatures, sig)
-	}
-	return nil
-}
-func (a AbaBftData) GetObject() interface{} {
-	return a
-}
-func (a *AbaBftData) Show() {
-	fmt.Println("\t-----------AbaBft------------")
-	fmt.Println("\tNumberRound    :", a.NumberRound)
-	fmt.Println("\tSig Len        :", len(a.PreBlockSignatures))
-	for i := 0; i < len(a.PreBlockSignatures); i++ {
-		fmt.Println("\tPublicKey      :", common.ToHex(a.PreBlockSignatures[i].PubKey))
-		fmt.Println("\tSigData        :", common.ToHex(a.PreBlockSignatures[i].SigData))
-	}
-}
-
-func GenesisABABFTInit(timestamp int64) *AbaBftData {
-	// array the peers list
-	/*
-		Num_peers_t := len(ababft.Peers_list)
-		var Peers_list_t []string
-		for i := 0; i < Num_peers_t; i++ {
-			Peers_list_t[i] = string(ababft.Peers_list[i].PublicKey)
-		}
-		// sort the peers as list
-		sort.Strings(Peers_list_t)
-		for i := 0; i < Num_peers_t; i++ {
-			ababft.Peers_list[i].PublicKey = []byte(Peers_list_t[i])
-			ababft.Peers_list[i].Index = i
-		}
-		log.Debug("generate the geneses")
-		var sigs []common.Signature
-		for i := 0; i < Num_peers_t; i++ {
-			sigs = append(sigs,common.Signature{ababft.Peers_list[i].PublicKey, []byte("hello,ababft")})
-		}
-	*/
-	var Num_peers_t int
-	Num_peers_t = 3
-	var Peers_list_t []string
-	Peers_list_t = append(Peers_list_t, string(config.Worker1.PublicKey))
-	Peers_list_t = append(Peers_list_t, string(config.Worker2.PublicKey))
-	Peers_list_t = append(Peers_list_t, string(config.Worker3.PublicKey))
-
-	sort.Strings(Peers_list_t)
-	var Peers_list []account.Account
-	for i := 0; i < Num_peers_t; i++ {
-		var peer account.Account
-		peer.PublicKey = []byte(Peers_list_t[i])
-		Peers_list = append(Peers_list, peer)
-	}
-	var sigs []common.Signature
-	for i := 0; i < Num_peers_t; i++ {
-		sigs = append(sigs, common.Signature{Peers_list[i].PublicKey, []byte("hello,ababft")})
-	}
-	abaData := AbaBftData{0, sigs}
-	return &abaData
 }
