@@ -75,10 +75,10 @@ func (h *Hash) IsNil() bool {
 func (h *Hash) Identify() mpb.Identify {
 	return mpb.Identify_APP_MSG_HASH
 }
+
 func SingleHash(b []byte) Hash {
 	return Keccak256Hash(b)
 }
-
 func DoubleHash(b []byte) (Hash, error) {
 	if len(b) == 0 {
 		return Hash{}, errors.New("len of data is zero")
@@ -87,7 +87,6 @@ func DoubleHash(b []byte) (Hash, error) {
 	f := Keccak256Hash(temp[:])
 	return Hash(f), nil
 }
-
 func Keccak256Hash(data ...[]byte) (hash Hash) {
 	d := sha3.NewKeccak256()
 	for _, b := range data {
