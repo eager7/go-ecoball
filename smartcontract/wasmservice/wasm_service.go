@@ -91,36 +91,35 @@ func NewWasmService(s state.InterfaceState, action *types.Action, context *conte
 
 func (ws *WasmService) ParseParam(vm *exec.VM)([]uint64, error){
 
+	var addr     int
+	var	vString  string
+	var	vInt64   int64
+	var	vUint64  uint64
+
 	method, err := vm.Memmanage.SetBlock(ws.Method)
 	if err != nil{
 		return nil,err
 	}
 	param := make([]uint64,1)
 	param[0] = uint64(method)
-	var(
-		addr     int
-		v_string string
-		v_int64  int64
-		v_uint64 uint64
-	)
-	pcount := len(ws.Args.Arg)
-	for index := 0;index < pcount; index++{
+	pCount := len(ws.Args.Arg)
+	for index := 0;index < pCount; index++{
 		switch ws.Args.Arg[index].Ptype{
 		case "string":
-			v_string = ws.Args.Arg[index].Pval
-		    addr, err = vm.Memmanage.SetBlock(v_string)
+			vString = ws.Args.Arg[index].Pval
+		    addr, err = vm.Memmanage.SetBlock(vString)
 		    if err != nil{
 		    	return nil, errors.New("para error")
 			}
 		    ws.Args.Addrs[index] = int64(addr)
 		case "int8","int16","int32","int64":
-			v_string = ws.Args.Arg[index].Pval
-			v_int64, _ = strconv.ParseInt(v_string, 10, 64)
-			ws.Args.Addrs[index] = v_int64
+			vString = ws.Args.Arg[index].Pval
+			vInt64, _ = strconv.ParseInt(vString, 10, 64)
+			ws.Args.Addrs[index] = vInt64
 		case "uint8","uint16","uint32":
-			v_string = ws.Args.Arg[index].Pval
-			v_uint64, _ = strconv.ParseUint(v_string, 10, 64)
-			ws.Args.Addrs[index] = int64(v_uint64)
+			vString = ws.Args.Arg[index].Pval
+			vUint64, _ = strconv.ParseUint(vString, 10, 64)
+			ws.Args.Addrs[index] = int64(vUint64)
 		default:
 			return nil, errors.New("unsupport type")
 
@@ -233,19 +232,5 @@ func (ws *WasmService) RegisterApi() {
 	functions.Register("ABA_inline_action", ws.inline_action)
 	// authorization
 	functions.Register("ABA_require_auth", ws.require_auth)
-	// token
-	//functions.Register("ABA_createToken", ws.createToken)
-	//functions.Register("ABA_issueToken", ws.issueToken)
-	//functions.Register("ABA_transfer", ws.transfer)
-	//functions.Register("ABA_put_token_info",ws.putTokenInfo)
-	//functions.Register("ABA_get_token_info",ws.getTokenInfo)
 
-	functions.Register("ABA_token_Existed",ws.tokenExisted)
-
-	functions.Register("ABA_add_token_balance",ws.addAccountBalance)
-	functions.Register("ABA_sub_token_balance",ws.subAccountBalance)
-	functions.Register("ABA_get_token_balance",ws.getAccountBalance)
-
-	functions.Register("ABA_get_token_status",ws.getTokenStatus)
-	functions.Register("ABA_put_token_status",ws.putTokenStatus)
 }
