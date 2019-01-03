@@ -26,7 +26,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
-	netMessage "github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/txpool"
 	"time"
 )
@@ -48,7 +47,7 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.
 	NewSoloActor(actor)
 
 	msg := []mpb.Identify{
-		mpb.Identify_APP_MSG_SHARD_BLOCK,
+		mpb.Identify_APP_MSG_BLOCK,
 	}
 
 	solo.msg, err = event.Subscribe(msg...)
@@ -91,7 +90,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 			//log.Debug("Request transactions from tx pool[", chainID.HexString(), "]")
 			txs, _ := solo.txPool.GetTxsList(chainID)
 			if len(txs) == 0 {
-				//log.Info("no transaction in this time")
+				log.Info("no transaction in tx pool...")
 				continue
 			}
 		PACKAGE:
@@ -120,14 +119,14 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 				return
 			}
 		case msg := <-solo.msg:
-			in, ok := msg.(netMessage.EcoBallNetMsg)
+			in, ok := msg.(*mpb.Message)
 			if !ok {
 				log.Error("can't parse msg")
 				continue
 			}
-			log.Info("receive msg:", in.Type().String())
+			log.Info("receive msg:", in.Identify.String())
 			block := new(types.Block)
-			if err := block.Deserialize(in.Data()); err != nil {
+			if err := block.Deserialize(in.Payload); err != nil {
 				log.Error(err)
 				continue
 			}

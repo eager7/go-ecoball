@@ -78,7 +78,7 @@ type ChainTx struct {
 	shardId    uint32
 }
 
-func NewTransactionChain(path string, ledger ledger.Ledger, option... bool) (c *ChainTx, err error) {
+func NewTransactionChain(path string, ledger ledger.Ledger, option ...bool) (c *ChainTx, err error) {
 	c = &ChainTx{ledger: ledger}
 	if config.DsnStorage {
 		c.BlockStore, err = dsnStore.NewDsnStore(path + config.StringBlock)
@@ -98,7 +98,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger, option... bool) (c *
 		return nil, err
 	}
 
-	if !config.DisableSharding && len(option) == 0{
+	if !config.DisableSharding && len(option) == 0 {
 		existed, err := c.RestoreCurrentShardHeader()
 		if err != nil {
 			return nil, err
@@ -206,7 +206,6 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if block == nil {
 		return errors.New("block is nil")
 	}
-	//check block is existed
 	if c.blockExisted(block.Hash) {
 		log.Warn("the block:", block.Height, "is existed")
 		return nil
@@ -221,11 +220,10 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 			return err
 		}
 	}
-	if block.Height != 1 {
-		connect.Notify(info.InfoBlock, block)
-		//if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
-		//	log.Warn(err)
-		//}
+	if c.StateDB.FinalDB.GetHashRoot().HexString() != block.StateHash.HexString() {
+		log.Warn(block.String())
+		c.StateDB.FinalDB.Reset(stateHashRoot)
+		return errors.New(fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.FinalDB.GetHashRoot().HexString(), block.Hash.HexString()))
 	}
 
 	for _, t := range block.Transactions {
@@ -234,11 +232,6 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if err := c.MapStore.BatchCommit(); err != nil {
 		c.StateDB.FinalDB.Reset(stateHashRoot)
 		return err
-	}
-	if c.StateDB.FinalDB.GetHashRoot().HexString() != block.StateHash.HexString() {
-		log.Warn(block.String())
-		c.StateDB.FinalDB.Reset(stateHashRoot)
-		return errors.New(fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.FinalDB.GetHashRoot().HexString(), block.Hash.HexString()))
 	}
 
 	payload, err := block.Header.Serialize()
@@ -260,20 +253,27 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		c.StateDB.FinalDB.Reset(stateHashRoot)
 		return err
 	}
-	c.StateDB.FinalDB.CommitToDB()
-	log.Debug("block state:", block.Height, block.StateHash.HexString())
-	log.Notice(block.String())
+	if err := c.StateDB.FinalDB.CommitToDB(); err != nil {
+		c.StateDB.FinalDB.Reset(stateHashRoot)
+		return err
+	}
 	c.CurrentHeader = block.Header
 
-	//c.lockBlock.Lock()
-	//c.BlockMap[block.Hash.HexString()] = BlockCache{Height: block.Height}
-	//if data, err := json.Marshal(c.BlockMap); err != nil {
-	//	return errors.New(log, err.Error())
-	//} else {
-	//	c.HeaderStore.Put([]byte(keyBlockMap), data)
-	//}
-	//c.lockBlock.Unlock()
-	c.MapStore.Put(common.Uint64ToBytes(block.Height), block.Hash.Bytes())
+	if err := c.MapStore.Put(common.Uint64ToBytes(block.Height), block.Hash.Bytes()); err != nil {
+		c.StateDB.FinalDB.Reset(stateHashRoot)
+		return err
+	}
+	log.Notice("save block finish:", block.Height, block.Header.String())
+
+	if block.Height != 1 {
+		connect.Notify(info.InfoBlock, block)
+		if err := event.Send(event.ActorLedger, event.ActorTxPool, block); err != nil {
+			log.Warn(err)
+		}
+		if err := event.Send(event.ActorLedger, event.ActorP2P, block); err != nil {
+			log.Warn(err)
+		}
+	}
 
 	return nil
 }
@@ -345,15 +345,7 @@ func (c *ChainTx) GenesesBlockInit(chainID common.Hash, addr common.Address) err
 		return err
 	}
 	timeStamp := tm.UnixNano()
-
-	//TODO start
-	SecondInMs := int64(1000)
-	BlockIntervalInMs := int64(15000)
-	timeStamp = int64((timeStamp*SecondInMs-SecondInMs)/BlockIntervalInMs) * BlockIntervalInMs
-	timeStamp = timeStamp / SecondInMs
-	//TODO end
-
-	hash := common.NewHash([]byte("EcoBall Geneses Block"))
+	hash := common.SingleHash([]byte("EcoBall Geneses Block"))
 	conData, err := types.InitConsensusData(timeStamp)
 	if err != nil {
 		return err
@@ -371,21 +363,14 @@ func (c *ChainTx) GenesesBlockInit(chainID common.Hash, addr common.Address) err
 		PrevHash:   hash,
 		MerkleHash: common.Hash{},
 		StateHash:  c.StateDB.FinalDB.GetHashRoot(),
-		Receipt: types.BlockReceipt{
-			BlockCpu: config.BlockCpuLimit,
-			BlockNet: config.BlockNetLimit,
-		},
+		Receipt:    types.BlockReceipt{BlockCpu: config.BlockCpuLimit, BlockNet: config.BlockNetLimit},
 		Signatures: nil,
 		Hash:       common.Hash{},
 	}
 	if err := header.ComputeHash(); err != nil {
 		return err
 	}
-	block := &types.Block{Header: header, CountTxs: 0, Transactions: nil}
-	if err := c.VerifyTxBlock(block); err != nil {
-		return err
-	}
-	if err := c.SaveBlock(block); err != nil {
+	if err := c.SaveBlock(&types.Block{Header: header}); err != nil {
 		log.Error("Save geneses block error:", err)
 		return err
 	}
@@ -1616,14 +1601,13 @@ func (c *ChainTx) CheckShardBlock(block shard.BlockInterface) error {
 func (c *ChainTx) blockExisted(hash common.Hash) bool {
 	if _, err := c.BlockStore.Get(hash.Bytes()); err != nil {
 		if err == store.ErrNotFound {
-			if _, err := c.BlockStoreCache.Get(hash.Bytes()); err == nil {
+			if _, err := c.BlockStoreCache.Get(hash.Bytes()); err == nil { //在缓存中,还未入链,用于分片模式
 				return true
 			}
 		}
-	} else {
-		return true
+		return false
 	}
-	return false
+	return true
 }
 
 /**

@@ -29,6 +29,7 @@ import (
 	"github.com/ecoball/go-ecoball/txpool"
 	"github.com/urfave/cli"
 
+	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/consensus/dpos"
@@ -39,7 +40,6 @@ import (
 	"github.com/ecoball/go-ecoball/spectator"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
-	"fmt"
 )
 
 var (
@@ -167,22 +167,18 @@ func runNode(c *cli.Context) error {
 		solo.NewSoloConsensusServer(ledger.L, txPool, config.User)
 	case "DPOS":
 		log.Info("Start DPOS consensus")
-
 		c, _ := dpos.NewDposService()
 		c.Setup(ledger.L, txPool)
 		c.Start()
-
 	case "SHARD":
 		log.Debug("Start Shard Mode")
-		//go example.TransferExample()
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
-
 	//storage
 	//audit.StartDsn(ctx, ledger.L)
 
-	//start blockchain browser
+	//start block chain browser
 	ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
 		go func() {
