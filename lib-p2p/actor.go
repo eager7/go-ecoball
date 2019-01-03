@@ -26,7 +26,6 @@ import (
 )
 
 type BroadcastMessage struct {
-	ShardId uint32
 	Message types.EcoMessage
 }
 
@@ -83,13 +82,14 @@ func (n *netActor) Receive(ctx actor.Context) {
 		n.exit <- struct{}{}
 		n.pid.Stop()
 	case message.Transaction:
-		n.broadcastMessage <- BroadcastMessage{ShardId: msg.ShardID, Message: msg.Tx}
+		n.broadcastMessage <- BroadcastMessage{Message: msg.Tx}
 	case message.NetPacket:
 		n.singleMessage <- SingleMessage{PublicKey: msg.PublicKey, Address: msg.Address, Port: msg.Port, Message: msg.Message}
+	case *types.Block:
+		n.broadcastMessage <- BroadcastMessage{Message:msg}
 	default:
 		log.Error("unknown message type:", reflect.TypeOf(ctx.Message()))
 	}
-
 }
 
 func (n *netActor) Engine() {
@@ -102,7 +102,7 @@ func (n *netActor) Engine() {
 				log.Error("send message error:", err)
 			}
 		case msg := <-n.broadcastMessage:
-			if err := n.instance.BroadcastToShard(msg.ShardId, msg.Message); err != nil {
+			if err := n.instance.BroadcastToNeighbors(msg.Message); err != nil {
 				log.Error("broadcast message error:", err)
 			}
 		case <-n.ctx.Done():

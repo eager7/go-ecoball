@@ -280,19 +280,6 @@ func (i *Instance) ResetStream(s net.Stream) error {
 	return nil
 }
 
-func (i *Instance) BroadcastToShard(shardId uint32, msg types.EcoMessage) error {
-	peerMap := i.ShardInfo.GetShardNodes(shardId)
-	if peerMap == nil {
-		return errors.New(fmt.Sprintf("can't find shard[%d] nodes", shardId))
-	}
-	for node := range peerMap.Iterator() {
-		if err := i.SendMessage(node.Pubkey, node.Address, node.Port, msg); err != nil {
-			log.Error(err)
-		}
-	}
-	return nil
-}
-
 func (i *Instance) BroadcastToNeighbors(msg types.EcoMessage) error {
 	data, err := msg.Serialize()
 	if err != nil {
