@@ -8,6 +8,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message/mpb"
+	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/lib-p2p/address"
 	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
@@ -21,7 +22,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"github.com/ecoball/go-ecoball/core/types"
 )
 
 var log = elog.Log
@@ -245,7 +245,10 @@ func (i *Instance) SendMessage(b64Pub, addr, port string, msg types.EcoMessage) 
 	} else {
 		s = info.Stream
 	}
+	return i.send(s, sendMsg)
+}
 
+func (i *Instance) send(s net.Stream, sendMsg *mpb.Message) error {
 	deadline := time.Now().Add(sendMessageTimeout)
 	if dl, ok := i.ctx.Deadline(); ok {
 		deadline = dl
@@ -256,7 +259,7 @@ func (i *Instance) SendMessage(b64Pub, addr, port string, msg types.EcoMessage) 
 	}
 
 	writer := io.NewDelimitedWriter(s)
-	err = writer.WriteMsg(sendMsg)
+	err := writer.WriteMsg(sendMsg)
 	if err != nil {
 		//TODO:delete stream
 		return errors.New(err.Error())
@@ -285,6 +288,28 @@ func (i *Instance) BroadcastToShard(shardId uint32, msg types.EcoMessage) error 
 	for node := range peerMap.Iterator() {
 		if err := i.SendMessage(node.Pubkey, node.Address, node.Port, msg); err != nil {
 			log.Error(err)
+		}
+	}
+	return nil
+}
+
+func (i *Instance) BroadcastToNeighbors(msg types.EcoMessage) error {
+	data, err := msg.Serialize()
+	if err != nil {
+		return err
+	}
+	sendMsg := &mpb.Message{Identify: msg.Identify(), Payload: data}
+	for _, c := range i.Host.Network().Conns() {
+		id := c.RemotePeer()
+		var s net.Stream
+		info := i.Peers.Get(id)
+		if info == nil {
+			log.Error(fmt.Sprintf("the node is not connected:%s", id.Pretty()))
+		} else {
+			s = info.Stream
+		}
+		if err := i.send(s, sendMsg); err != nil {
+			log.Error("send err:", err)
 		}
 	}
 	return nil

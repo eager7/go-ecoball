@@ -30,8 +30,9 @@ enum  Identify {
     APP_MSG_SYNC_REQUEST        = 24;
     APP_MSG_SYNC_RESPONSE       = 25;
     APP_MSG_STRING              = 26;
+    APP_MSG_EBALLSCAN_HEIGHT    = 27;
 
-    APP_MSG_UNDEFINED           = 27;
+    APP_MSG_UNDEFINED           = 28;
 }
 
 
