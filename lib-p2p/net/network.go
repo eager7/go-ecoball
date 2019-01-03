@@ -209,8 +209,8 @@ func (i *Instance) ReceiveMessage(s net.Stream) {
 	log.Debug("start receive thread")
 	reader := io.NewDelimitedReader(s, net.MessageSizeMax)
 	for {
-		msg := mpb.Message{}
-		err := reader.ReadMsg(&msg)
+		msg := &mpb.Message{}
+		err := reader.ReadMsg(msg)
 		if err != nil {
 			log.Error("the peer ", s.Conn().RemotePeer().Pretty(), i.Host.Peerstore().Addrs(s.Conn().RemotePeer()), "is disconnected:", err)
 			s.Reset()

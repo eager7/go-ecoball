@@ -103,7 +103,7 @@ func UnSubscribe(chn chan interface{}, topics ...mpb.Identify) error {
 	return nil
 }
 
-func Publish(msg mpb.Message, topics ...mpb.Identify) error {
+func Publish(msg *mpb.Message, topics ...mpb.Identify) error {
 	if dispatcher == nil {
 		return errorStr
 	}
