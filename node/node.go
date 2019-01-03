@@ -144,6 +144,7 @@ func runNode(c *cli.Context) error {
 	if !config.DisableSharding {
 		log.Info("start sharding")
 		sdActor, _ = sharding.NewShardingActor(ledger.L)
+		sdActor.SetNet(nil)
 	}
 	fmt.Println(sdActor)
 	/*instance, err := network.GetNetInstance()
