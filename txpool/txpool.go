@@ -127,7 +127,7 @@ func (t *TxPool) Subscribe() {
 				return
 			}
 		case msg := <-t.netMsg:
-			in, ok := msg.(mpb.Message)
+			in, ok := msg.(*mpb.Message)
 			if !ok {
 				log.Error("can't parse msg")
 				continue

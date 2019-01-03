@@ -267,7 +267,7 @@ func (i *Instance) send(s net.Stream, sendMsg *mpb.Message) error {
 	if err := s.SetWriteDeadline(time.Time{}); err != nil {
 		log.Warn("error resetting deadline: ", err)
 	}
-	log.Info("send message finished:", sendMsg)
+	log.Info("send message finished:", sendMsg.Identify.String(), s.Conn().RemoteMultiaddr().String(), s.Conn().RemotePeer().Pretty())
 	return nil
 }
 
@@ -281,11 +281,15 @@ func (i *Instance) ResetStream(s net.Stream) error {
 }
 
 func (i *Instance) BroadcastToShard(shardId uint32, msg types.EcoMessage) error {
+	log.Debug("broadcast message:", msg.Identify().String(), "to shard:", shardId)
 	peerMap := i.ShardInfo.GetShardNodes(shardId)
 	if peerMap == nil {
 		return errors.New(fmt.Sprintf("can't find shard[%d] nodes", shardId))
 	}
 	for node := range peerMap.Iterator() {
+		if node.Pubkey == i.ShardInfo.GetLocalPub() {
+			continue
+		}
 		if err := i.SendMessage(node.Pubkey, node.Address, node.Port, msg); err != nil {
 			log.Error(err)
 		}
