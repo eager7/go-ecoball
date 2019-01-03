@@ -81,12 +81,12 @@ func (n *netActor) Receive(ctx actor.Context) {
 	case *actor.Stop, *actor.Stopped, *actor.Stopping:
 		n.exit <- struct{}{}
 		n.pid.Stop()
-	case message.Transaction:
-		n.broadcastMessage <- BroadcastMessage{Message: msg.Tx}
+	case *types.Transaction:
+		n.broadcastMessage <- BroadcastMessage{Message: msg}
 	case message.NetPacket:
 		n.singleMessage <- SingleMessage{PublicKey: msg.PublicKey, Address: msg.Address, Port: msg.Port, Message: msg.Message}
 	case *types.Block:
-		n.broadcastMessage <- BroadcastMessage{Message:msg}
+		n.broadcastMessage <- BroadcastMessage{Message: msg}
 	default:
 		log.Error("unknown message type:", reflect.TypeOf(ctx.Message()))
 	}

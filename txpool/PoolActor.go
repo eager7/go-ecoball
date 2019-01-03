@@ -93,6 +93,7 @@ func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
 	}
 	if ret, err := p.preHandleTransaction(txClone); err != nil {
 		event.PublishCustom(err.Error(), tx.Hash.String())
+		log.Error(err)
 		return err
 	} else {
 		event.PublishCustom(string(ret), tx.Hash.String())

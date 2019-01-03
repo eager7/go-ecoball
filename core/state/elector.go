@@ -285,6 +285,9 @@ func (s *State) initProducersList() error {
  *  @param index - account's index
  */
 func (s *State) RegisterProducer(index common.AccountName, b64Pub, addr string, port uint32, payee common.AccountName) error {
+	if _, err := s.GetAccountByName(payee); err != nil {
+		return err
+	}
 	if err := s.initProducersList(); err != nil {
 		return err
 	}

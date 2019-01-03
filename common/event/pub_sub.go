@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	bufferSize = 16
+	channelSize = 16
 )
 
 var errorStr = errors.New("dispatcher is not ready")
@@ -34,7 +34,7 @@ var (
 func InitMsgDispatcher() {
 	if dispatcher == nil {
 		dispatcher = &Dispatcher{
-			pubsub.New(bufferSize),
+			pubsub.New(channelSize),
 		}
 	}
 }

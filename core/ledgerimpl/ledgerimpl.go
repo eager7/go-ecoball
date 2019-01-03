@@ -164,7 +164,7 @@ func (l *LedgerImpl) PreHandleTransaction(chainID common.Hash, s *state.State, t
 	if err := chain.CheckTransactionWithDB(s, tx); err != nil {
 		return nil, 0, 0, err
 	}
-	log.Notice("Handle Transaction:", tx.Type.String(), tx.Hash.HexString(), " in temp DB")
+	log.Notice("Handle Transaction:", tx.Type.String(), tx.Hash.HexString(), " in per handle DB")
 	return chain.HandleTransaction(s, tx, timeStamp, chain.CurrentHeader.Receipt.BlockCpu, chain.CurrentHeader.Receipt.BlockNet)
 }
 func (l *LedgerImpl) AccountGet(chainID common.Hash, index common.AccountName) (*state.Account, error) {
