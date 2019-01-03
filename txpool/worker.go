@@ -16,14 +16,14 @@
 package txpool
 
 import (
+	"fmt"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"sync"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"fmt"
 )
 
 type Worker struct {
-	ledger ledger.Ledger
+	ledger   ledger.Ledger
 	mutex    sync.RWMutex
 	workerID uint8
 	txList   *types.TxsList
@@ -31,13 +31,12 @@ type Worker struct {
 	stopCh   chan bool
 }
 
-
 func NewWorker(workID uint8, ledger ledger.Ledger) *Worker {
-	w := &Worker{workerID: workID, recCh: make(chan *types.Transaction, 1000), stopCh: make(chan bool, 1), txList: types.NewTxsList(), ledger:ledger}
+	w := &Worker{workerID: workID, recCh: make(chan *types.Transaction, 1000), stopCh: make(chan bool, 1), txList: types.NewTxsList(), ledger: ledger}
 	return w
 }
 
-func (w *Worker)Run(trx *types.Transaction) {
+func (w *Worker) Run(trx *types.Transaction) {
 	w.recCh <- trx
 }
 
@@ -46,16 +45,9 @@ func (w *Worker) Start() {
 		select {
 		case tx, ok := <-w.recCh:
 			if ok {
-				fmt.Println("Start PreHandle Transaction")
-				ret, cpu, net, err := w.ledger.PreHandleTransaction(tx.ChainID, tx, tx.TimeStamp)
-				if err != nil {
-					log.Warn(tx.String())
-					log.Error("handle tx error:", err)
-					continue
-				}
-				log.Debug(ret, cpu, net, err)
+				fmt.Println("Start PreHandle Transaction", tx)
+
 			}
 		}
 	}
 }
-

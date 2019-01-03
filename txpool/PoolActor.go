@@ -20,14 +20,15 @@ import (
 	"fmt"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 	"reflect"
 	"sync"
-	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 const magicNum = 999
@@ -163,14 +164,21 @@ func (p *PoolActor) handleNewBlock(block *types.Block) {
 	}
 }
 
-func (p *PoolActor) preHandleTransaction(tx *types.Transaction) ([]byte, error) {
+func (p *PoolActor) preHandleTransaction(tx *types.Transaction) (ret []byte, err error) {
 	s, ok := p.txPool.StateDB[tx.ChainID]
 	if !ok {
 		return nil, errors.New(fmt.Sprintf("can't find the chain:%s", tx.ChainID.HexString()))
 	}
-	ret, _, _, err := p.txPool.ledger.ShardPreHandleTransaction(tx.ChainID, s, tx, tx.TimeStamp)
-	if err != nil {
-		return nil, err
+	if config.DisableSharding {
+		ret, _, _, err = p.txPool.ledger.PreHandleTransaction(tx.ChainID, s, tx, tx.TimeStamp)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		ret, _, _, err = p.txPool.ledger.ShardPreHandleTransaction(tx.ChainID, s, tx, tx.TimeStamp)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return ret, nil
 }

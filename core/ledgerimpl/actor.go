@@ -60,8 +60,8 @@ func (l *LedActor) Receive(ctx actor.Context) {
 	case *actor.Restarting:
 	case *types.Block:
 		log.Info("receive a block:", msg.Hash.HexString())
-		chain, ok := l.ledger.ChainTxs[msg.ChainID]
-		if !ok {
+		chain := l.ledger.ChainMap.Get(msg.ChainID)
+		if chain == nil {
 			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.ChainID.HexString()))
 			return
 		}
@@ -74,8 +74,8 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		log.Info("save block["+msg.ChainID.HexString()+"block hash:"+msg.Hash.HexString()+"]:", (end-begin)/1000, "us")
 	case shard.BlockInterface:
 		log.Info("receive a ", msg.Identify().String(), "block:", msg.Hash().HexString(), "height:", msg.GetHeight())
-		chain, ok := l.ledger.ChainTxs[msg.GetChainID()]
-		if !ok {
+		chain := l.ledger.ChainMap.Get(msg.GetChainID())
+		if chain == nil {
 			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.GetChainID().HexString()))
 			return
 		}

@@ -51,11 +51,6 @@ const keyLastVC = "lastVCHeader"
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
 
-type StateDatabase struct {
-	FinalDB *state.State //final database in levelDB
-	TempDB  *state.State //temp database used for tx pool pre-handle transaction
-}
-
 type LastHeaders struct {
 	Finalizer   bool
 	CmHeader    *shard.CMBlockHeader
@@ -72,7 +67,7 @@ type ChainTx struct {
 	MapStore        store.Storage
 	CurrentHeader   *types.Header
 	Geneses         *types.Header
-	StateDB         StateDatabase
+	StateDB         *state.State
 
 	LastHeader LastHeaders
 	shardId    uint32
@@ -104,11 +99,11 @@ func NewTransactionChain(path string, ledger ledger.Ledger, option ...bool) (c *
 			return nil, err
 		}
 		if existed {
-			if c.StateDB.FinalDB, err = state.NewState(path+config.StringState, c.LastHeader.FinalHeader.StateHashRoot); err != nil {
+			if c.StateDB, err = state.NewState(path+config.StringState, c.LastHeader.FinalHeader.StateHashRoot); err != nil {
 				return nil, err
 			}
 		} else {
-			if c.StateDB.FinalDB, err = state.NewState(path+config.StringState, common.Hash{}); err != nil {
+			if c.StateDB, err = state.NewState(path+config.StringState, common.Hash{}); err != nil {
 				return nil, err
 			}
 		}
@@ -118,17 +113,17 @@ func NewTransactionChain(path string, ledger ledger.Ledger, option ...bool) (c *
 			return nil, err
 		}
 		if existed {
-			if c.StateDB.FinalDB, err = state.NewState(path+config.StringState, c.CurrentHeader.StateHash); err != nil {
+			if c.StateDB, err = state.NewState(path+config.StringState, c.CurrentHeader.StateHash); err != nil {
 				return nil, err
 			}
 		} else {
-			if c.StateDB.FinalDB, err = state.NewState(path+config.StringState, common.Hash{}); err != nil {
+			if c.StateDB, err = state.NewState(path+config.StringState, common.Hash{}); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	c.StateDB.FinalDB.Type = state.FinalType
+	c.StateDB.Type = state.FinalType
 
 	//event.InitMsgDispatcher()
 
@@ -140,7 +135,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger, option ...bool) (c *
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsData, timeStamp int64) (*types.Block, []*types.Transaction, error) {
-	s, err := c.StateDB.FinalDB.CopyState()
+	s, err := c.StateDB.CopyState()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -173,7 +168,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
  */
 func (c *ChainTx) ResetStateDB(header *types.Header) error {
 	c.CurrentHeader = header
-	return c.StateDB.FinalDB.Reset(header.StateHash)
+	return c.StateDB.Reset(header.StateHash)
 }
 
 /**
@@ -211,56 +206,56 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return nil
 	}
 
-	stateHashRoot := c.StateDB.FinalDB.GetHashRoot()
+	stateHashRoot := c.StateDB.GetHashRoot()
 	for i := 0; i < len(block.Transactions); i++ {
 		log.Notice("Handle Transaction:", block.Transactions[i].Type.String(), block.Transactions[i].Hash.HexString(), " in final DB")
-		if _, _, _, err := c.HandleTransaction(c.StateDB.FinalDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+		if _, _, _, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(block.Transactions[i].String())
-			c.StateDB.FinalDB.Reset(stateHashRoot)
+			c.StateDB.Reset(stateHashRoot)
 			return err
 		}
 	}
-	if c.StateDB.FinalDB.GetHashRoot().HexString() != block.StateHash.HexString() {
+	if c.StateDB.GetHashRoot().HexString() != block.StateHash.HexString() {
 		log.Warn(block.String())
-		c.StateDB.FinalDB.Reset(stateHashRoot)
-		return errors.New(fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.FinalDB.GetHashRoot().HexString(), block.Hash.HexString()))
+		c.StateDB.Reset(stateHashRoot)
+		return errors.New(fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.GetHashRoot().HexString(), block.Hash.HexString()))
 	}
 
 	for _, t := range block.Transactions {
 		c.MapStore.BatchPut(t.Hash.Bytes(), block.Hash.Bytes())
 	}
 	if err := c.MapStore.BatchCommit(); err != nil {
-		c.StateDB.FinalDB.Reset(stateHashRoot)
+		c.StateDB.Reset(stateHashRoot)
 		return err
 	}
 
 	payload, err := block.Header.Serialize()
 	if err != nil {
-		c.StateDB.FinalDB.Reset(stateHashRoot)
+		c.StateDB.Reset(stateHashRoot)
 		return err
 	}
 	if err := c.HeaderStore.Put(block.Header.Hash.Bytes(), payload); err != nil {
-		c.StateDB.FinalDB.Reset(stateHashRoot)
+		c.StateDB.Reset(stateHashRoot)
 		return err
 	}
 	payload, err = block.Serialize()
 	if err != nil {
-		c.StateDB.FinalDB.Reset(stateHashRoot)
+		c.StateDB.Reset(stateHashRoot)
 		return err
 	}
 	c.BlockStore.BatchPut(block.Hash.Bytes(), payload)
 	if err := c.BlockStore.BatchCommit(); err != nil {
-		c.StateDB.FinalDB.Reset(stateHashRoot)
+		c.StateDB.Reset(stateHashRoot)
 		return err
 	}
-	if err := c.StateDB.FinalDB.CommitToDB(); err != nil {
-		c.StateDB.FinalDB.Reset(stateHashRoot)
+	if err := c.StateDB.CommitToDB(); err != nil {
+		c.StateDB.Reset(stateHashRoot)
 		return err
 	}
 	c.CurrentHeader = block.Header
 
 	if err := c.MapStore.Put(common.Uint64ToBytes(block.Height), block.Hash.Bytes()); err != nil {
-		c.StateDB.FinalDB.Reset(stateHashRoot)
+		c.StateDB.Reset(stateHashRoot)
 		return err
 	}
 	log.Notice("save block finish:", block.Height, block.Header.String())
@@ -350,7 +345,7 @@ func (c *ChainTx) GenesesBlockInit(chainID common.Hash, addr common.Address) err
 	if err != nil {
 		return err
 	}
-	if err := geneses.PresetContract(c.StateDB.FinalDB, timeStamp, addr); err != nil {
+	if err := geneses.PresetContract(c.StateDB, timeStamp, addr); err != nil {
 		return err
 	}
 
@@ -362,7 +357,7 @@ func (c *ChainTx) GenesesBlockInit(chainID common.Hash, addr common.Address) err
 		ConsData:   *conData,
 		PrevHash:   hash,
 		MerkleHash: common.Hash{},
-		StateHash:  c.StateDB.FinalDB.GetHashRoot(),
+		StateHash:  c.StateDB.GetHashRoot(),
 		Receipt:    types.BlockReceipt{BlockCpu: config.BlockCpuLimit, BlockNet: config.BlockNetLimit},
 		Signatures: nil,
 		Hash:       common.Hash{},
@@ -431,7 +426,7 @@ func (c *ChainTx) GetTransaction(hash common.Hash) (*types.Transaction, error) {
 *  @param  tx - a transaction
  */
 func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
-	if err := c.StateDB.FinalDB.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
+	if err := c.StateDB.CheckPermission(tx.From, tx.Permission, tx.Hash, tx.Signatures); err != nil {
 		return err
 	}
 	if data, _ := c.MapStore.Get(tx.Hash.Bytes()); data != nil {
@@ -483,7 +478,7 @@ func (c *ChainTx) CheckTransactionWithDB(s *state.State, tx *types.Transaction) 
 	return nil
 }
 func (c *ChainTx) CheckPermission(index common.AccountName, name string, hash common.Hash, sig []common.Signature) error {
-	return c.StateDB.FinalDB.CheckPermission(index, name, hash, sig)
+	return c.StateDB.CheckPermission(index, name, hash, sig)
 }
 
 /**
@@ -492,26 +487,26 @@ func (c *ChainTx) CheckPermission(index common.AccountName, name string, hash co
 *  @param  addr - the public key of account
  */
 func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error) {
-	return c.StateDB.FinalDB.AddAccount(index, addr, timeStamp)
+	return c.StateDB.AddAccount(index, addr, timeStamp)
 }
 func (c *ChainTx) StoreSet(index common.AccountName, key, value []byte) (err error) {
-	return c.StateDB.FinalDB.StoreSet(index, key, value)
+	return c.StateDB.StoreSet(index, key, value)
 }
 func (c *ChainTx) StoreGet(index common.AccountName, key []byte) (value []byte, err error) {
-	return c.StateDB.FinalDB.StoreGet(index, key)
+	return c.StateDB.StoreGet(index, key)
 }
 
 //func (c *ChainTx) AddResourceLimits(from, to common.AccountName, cpu, net float32) error {
 //	return c.StateDB.AddResourceLimits(from, to, cpu, net)
 //}
 func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, code []byte, abi []byte) error {
-	return c.StateDB.FinalDB.SetContract(index, t, des, code, abi)
+	return c.StateDB.SetContract(index, t, des, code, abi)
 }
 func (c *ChainTx) GetContract(index common.AccountName) (*types.DeployInfo, error) {
-	return c.StateDB.FinalDB.GetContract(index)
+	return c.StateDB.GetContract(index)
 }
 func (c *ChainTx) GetChainList() ([]state.Chain, error) {
-	return c.StateDB.FinalDB.GetChainList()
+	return c.StateDB.GetChainList()
 }
 
 /**
@@ -519,14 +514,14 @@ func (c *ChainTx) GetChainList() ([]state.Chain, error) {
 *  @param  indexAcc - the uuid of account
  */
 func (c *ChainTx) GetContractAbi(index common.AccountName) ([]byte, error) {
-	return c.StateDB.FinalDB.GetContractAbi(index)
+	return c.StateDB.GetContractAbi(index)
 }
 
 func (c *ChainTx) AddPermission(index common.AccountName, perm state.Permission) error {
-	return c.StateDB.FinalDB.AddPermission(index, perm)
+	return c.StateDB.AddPermission(index, perm)
 }
 func (c *ChainTx) FindPermission(index common.AccountName, name string) (string, error) {
-	return c.StateDB.FinalDB.FindPermission(index, name)
+	return c.StateDB.FindPermission(index, name)
 }
 
 /**
@@ -535,7 +530,7 @@ func (c *ChainTx) FindPermission(index common.AccountName, name string) (string,
 *  @param  indexToken - the uuid of token
  */
 func (c *ChainTx) AccountGetBalance(index common.AccountName, token string) (*big.Int, error) {
-	return c.StateDB.FinalDB.AccountGetBalance(index, token)
+	return c.StateDB.AccountGetBalance(index, token)
 }
 
 /**
@@ -544,7 +539,7 @@ func (c *ChainTx) AccountGetBalance(index common.AccountName, token string) (*bi
 *  @param  indexToken - the uuid of token
  */
 func (c *ChainTx) AccountAddBalance(index common.AccountName, token string, value uint64) error {
-	return c.StateDB.FinalDB.AccountAddBalance(index, token, new(big.Int).SetUint64(value))
+	return c.StateDB.AccountAddBalance(index, token, new(big.Int).SetUint64(value))
 }
 
 /**
@@ -553,7 +548,7 @@ func (c *ChainTx) AccountAddBalance(index common.AccountName, token string, valu
 *  @param  indexToken - the uuid of token
  */
 func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, value uint64) error {
-	return c.StateDB.FinalDB.AccountSubBalance(index, token, new(big.Int).SetUint64(value))
+	return c.StateDB.AccountSubBalance(index, token, new(big.Int).SetUint64(value))
 }
 
 /**
@@ -763,7 +758,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 	timeStamp := tm.UnixNano()
 
 	prevHash := common.NewHash([]byte("EcoBall Geneses Block"))
-	if err := geneses.PresetShardContract(c.StateDB.FinalDB, timeStamp, addr); err != nil {
+	if err := geneses.PresetShardContract(c.StateDB, timeStamp, addr); err != nil {
 		return err
 	}
 
@@ -792,7 +787,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		Timestamp:         timeStamp,
 		PrevHash:          prevHash,
 		TrxHashRoot:       common.Hash{},
-		StateRootHash:     c.StateDB.FinalDB.GetHashRoot(),
+		StateRootHash:     c.StateDB.GetHashRoot(),
 		CMBlockHash:       common.Hash{},
 		ProposalPublicKey: nil,
 		ShardId:           0,
@@ -827,7 +822,7 @@ func (c *ChainTx) GenesesShardBlockInit(chainID common.Hash, addr common.Address
 		TrxRootHash:        common.Hash{},
 		StateDeltaRootHash: common.Hash{},
 		MinorBlocksHash:    common.Hash{},
-		StateHashRoot:      c.StateDB.FinalDB.GetHashRoot(),
+		StateHashRoot:      c.StateDB.GetHashRoot(),
 		COSign:             &types.COSign{},
 	}
 	blockFinal, err := shard.NewFinalBlock(headerFinal, []*shard.MinorBlockHeader{&headerMinor})
@@ -875,7 +870,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 		return nil
 	}
 
-	stateHashRoot := c.StateDB.FinalDB.GetHashRoot() //used to reset mpt tire when the delta tx handle failed
+	stateHashRoot := c.StateDB.GetHashRoot() //used to reset mpt tire when the delta tx handle failed
 	switch block.Identify() {
 	case mpb.Identify_APP_MSG_CM_BLOCK:
 		if cm, ok := block.GetInstance().(*shard.CMBlock); !ok {
@@ -933,8 +928,8 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 				if tx, err := minorBlock.GetTransaction(delta.Receipt.Hash); err != nil {
 					return err
 				} else {
-					if err := c.HandleDeltaState(c.StateDB.FinalDB, delta, tx, minorBlock.MinorBlockHeader.Timestamp, c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
-						c.StateDB.FinalDB.Reset(stateHashRoot)
+					if err := c.HandleDeltaState(c.StateDB, delta, tx, minorBlock.MinorBlockHeader.Timestamp, c.LastHeader.MinorHeader.Receipt.BlockCpu, c.LastHeader.MinorHeader.Receipt.BlockNet); err != nil {
+						c.StateDB.Reset(stateHashRoot)
 						return err
 					}
 				}
@@ -944,9 +939,9 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 			}
 		}
 
-		if final.StateHashRoot != c.StateDB.FinalDB.GetHashRoot() { //check mpt tire's hash
-			log.Warn(common.JsonString(c.StateDB.FinalDB.Params), common.JsonString(c.StateDB.FinalDB.Accounts))
-			return errors.New(fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s", final.StateHashRoot.HexString(), c.StateDB.FinalDB.GetHashRoot().HexString()))
+		if final.StateHashRoot != c.StateDB.GetHashRoot() { //check mpt tire's hash
+			log.Warn(common.JsonString(c.StateDB.Params), common.JsonString(c.StateDB.Accounts))
+			return errors.New(fmt.Sprintf("the final block state hash root is not eqaul, receive:%s, local:%s", final.StateHashRoot.HexString(), c.StateDB.GetHashRoot().HexString()))
 		}
 
 		c.LastHeader.FinalHeader = &final.FinalBlockHeader
@@ -987,7 +982,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 	}
 
 	log.Debug("commit to mpt")
-	c.StateDB.FinalDB.CommitToDB()
+	c.StateDB.CommitToDB()
 
 	log.Debug("set block cache data")
 	cacheKey := pb.BlockCacheKey{Type: block.Type(), ShardID: blockCache.ShardID, Height: blockCache.Height}
@@ -1009,7 +1004,7 @@ func (c *ChainTx) SaveShardBlock(block shard.BlockInterface) (err error) {
 			log.Warn(err)
 		}
 	}
-	log.Notice("Shard ", c.shardId, "Save", shard.HeaderType(block.Type()).String(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString())
+	log.Notice("Shard ", c.shardId, "Save", shard.HeaderType(block.Type()).String(), "Height", block.GetHeight(), "State Hash:", c.StateDB.GetHashRoot().HexString())
 	*/
 	return nil
 }
@@ -1037,7 +1032,7 @@ func (c *ChainTx) storeBlock(shardID uint32, header shard.HeaderInterface, block
 			}
 		}
 	}
-	c.StateDB.FinalDB.CommitToDB()
+	c.StateDB.CommitToDB()
 
 	blockCache := pb.BlockCache{ShardID: shardID, Finalizer: false, Height: block.GetHeight(), HeaderType: uint32(block.Identify()), Hash: block.Hash().Bytes()} //used to store the map of height and hash
 	cacheKey := pb.BlockCacheKey{Type: uint32(block.Identify()), ShardID: shardID, Height: block.GetHeight()}
@@ -1056,7 +1051,7 @@ func (c *ChainTx) storeBlock(shardID uint32, header shard.HeaderInterface, block
 		log.Warn(err)
 	}
 
-	log.Notice("Shard ", c.shardId, "Save", block.Identify().String(), "Height", block.GetHeight(), "State Hash:", c.StateDB.FinalDB.GetHashRoot().HexString(), header.String())
+	log.Notice("Shard ", c.shardId, "Save", block.Identify().String(), "Height", block.GetHeight(), "State Hash:", c.StateDB.GetHashRoot().HexString(), header.String())
 
 	return nil
 }
@@ -1251,7 +1246,7 @@ func (c *ChainTx) NewMinorBlock(txs []*types.Transaction, timeStamp int64) (*sha
 }
 
 func (c *ChainTx) newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error) {
-	s, err := c.StateDB.FinalDB.CopyState()
+	s, err := c.StateDB.CopyState()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1306,7 +1301,7 @@ func (c *ChainTx) newMinorBlock(h *shard.MinorBlockHeader, txs []*types.Transact
 		return nil, nil, err
 	}
 	log.Notice("new minor block:", block.GetHeight(), block.MinorBlockHeader.String())
-	//log.Warn(common.String(c.StateDB.FinalDB.Params), common.String(c.StateDB.FinalDB.Accounts))
+	//log.Warn(common.String(c.StateDB.Params), common.String(c.StateDB.Accounts))
 	return block, nil, nil
 }
 
@@ -1405,7 +1400,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 	if err != nil {
 		return nil, err
 	}
-	s, err := c.StateDB.FinalDB.CopyState()
+	s, err := c.StateDB.CopyState()
 	if err != nil {
 		return nil, err
 	}
@@ -1447,7 +1442,7 @@ func (c *ChainTx) newFinalBlock(timeStamp int64, minorBlocks []*shard.MinorBlock
 		return nil, err
 	}
 	log.Notice("new final block:", block.Height, block.FinalBlockHeader.String())
-	//log.Warn(common.String(c.StateDB.FinalDB.Params), common.String(c.StateDB.FinalDB.Accounts))
+	//log.Warn(common.String(c.StateDB.Params), common.String(c.StateDB.Accounts))
 	return block, nil
 }
 
