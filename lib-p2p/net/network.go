@@ -18,7 +18,6 @@ import (
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
 	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
 	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
-	"gx/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5/go-libp2p-crypto"
 	"strings"
 	"sync"
 	"time"
@@ -61,28 +60,10 @@ func (i *Instance) initialize(ctx context.Context, b64Pri string, address ...str
 }
 
 func (i *Instance) initNetwork(b64Pri string) (err error) {
-	var private crypto.PrivKey
-	var public crypto.PubKey
-	if b64Pri == "" {
-		private, public, err = crypto.GenerateKeyPair(crypto.RSA, 1024)
-		if err != nil {
-			return err
-		}
-		b, _ := private.Bytes()
-		log.Info("generate private b64 key:", crypto.ConfigEncodeKey(b))
-		b, _ = public.Bytes()
-		log.Info("generate public b64 key:", crypto.ConfigEncodeKey(b))
-	} else {
-		key, err := crypto.ConfigDecodeKey(b64Pri)
-		if err != nil {
-			return err
-		}
-		private, err = crypto.UnmarshalPrivateKey(key)
-		if err != nil {
-			return err
-		}
+	private, err := address.GetNodePrivateKey(b64Pri)
+	if err != nil {
+		return err
 	}
-
 	i.ID, err = peer.IDFromPrivateKey(private)
 	if err != nil {
 		return err

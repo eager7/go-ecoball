@@ -3,6 +3,7 @@ package address
 import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"gx/ipfs/QmSMZwvs3n4GBikZ7hKzT17c3bk65FmyZo2JqtJ16swqCv/multiaddr-filter"
 	"gx/ipfs/QmSW4uNHbvQia8iZDXzbwjiyHQtnyo9aFqfQAMasj3TJ6Y/go-maddr-filter"
@@ -20,16 +21,21 @@ const nBitsForKeyPairDef = 1024
 /**
 ** 从配置文件中获取私钥，然后解析成lib p2p加密格式私钥，如果配置文件中未填充，则生成一个新的私钥
  */
-func GetNodePrivateKey() (crypto.PrivKey, error) {
+func GetNodePrivateKey(b64Pri string) (crypto.PrivKey, error) {
 	var err error
 	var private crypto.PrivKey
-	if config.SwarmConfig.PrivateKey == "" {
-		private, _, err = crypto.GenerateKeyPair(crypto.RSA, nBitsForKeyPairDef)
+	var public crypto.PubKey
+	if b64Pri == "" {
+		private, public, err = crypto.GenerateKeyPair(crypto.RSA, nBitsForKeyPairDef)
 		if err != nil {
 			return nil, errors.New(err.Error())
 		}
+		b, _ := private.Bytes()
+		elog.Log.Info("generate private b64 key:", crypto.ConfigEncodeKey(b))
+		b, _ = public.Bytes()
+		elog.Log.Info("generate public b64 key:", crypto.ConfigEncodeKey(b))
 	} else {
-		key, err := crypto.ConfigDecodeKey(config.SwarmConfig.PrivateKey)
+		key, err := crypto.ConfigDecodeKey(b64Pri)
 		if err != nil {
 			return nil, errors.New(err.Error())
 		}
