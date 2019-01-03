@@ -31,32 +31,25 @@ const (
 )
 
 type Instance struct {
-	ctx       context.Context
-	Host      host.Host
-	ID        peer.ID
-	Address   []string
-	Peers     address.SenderMap
-	ShardInfo address.ShardInfo
-	lock      sync.RWMutex
+	ctx     context.Context
+	Host    host.Host
+	ID      peer.ID
+	Address []string
+	Peers   address.SenderMap
+	lock    sync.RWMutex
 }
 
 func NewInstance(ctx context.Context, b64Pri string, address ...string) (*Instance, error) {
-	i := new(Instance)
-	i.ShardInfo.Initialize()
-	if err := i.initialize(ctx, b64Pri, address...); err != nil {
-		return nil, err
-	}
-	return i, nil
-}
-
-func (i *Instance) initialize(ctx context.Context, b64Pri string, address ...string) error {
-	i.Peers.Initialize()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	i.ctx = ctx
+	i := &Instance{ctx: ctx}
+	i.Peers.Initialize()
 	i.Address = append(i.Address, address...)
-	return i.initNetwork(b64Pri)
+	if err := i.initNetwork(b64Pri); err != nil {
+		return nil, err
+	}
+	return i, nil
 }
 
 func (i *Instance) initNetwork(b64Pri string) (err error) {
@@ -127,83 +120,10 @@ func (i *Instance) initNetwork(b64Pri string) (err error) {
 	return nil
 }
 
-//每个连接只会触发一次这个回调函数，之后需要在线程中做收发
+//多次发送只会触发一次这个回调函数，之后需要在线程中做收发
 func (i *Instance) NetworkHandler(s net.Stream) {
 	log.Debug("receive connect peer from:", s.Conn().RemotePeer().Pretty(), s.Conn().RemoteMultiaddr(), "| topic is:", s.Protocol(), s)
-	//i.Peers.Add(s.Conn().RemotePeer(), s, s.Conn().RemoteMultiaddr())
-
-	go i.ReceiveMessage(s)
-}
-
-func (i *Instance) StreamConnect(b64Pub, addr, port string) (net.Stream, error) {
-	id, err := address.IdFromPublicKey(b64Pub)
-	if err != nil {
-		return nil, err
-	}
-	if p := i.Peers.Get(id); p != nil {
-		log.Warn("the stream is created:", p.Stream)
-		return p.Stream, nil
-	}
-
-	multiAddr, err := multiaddr.NewMultiaddr(address.NewAddrInfo(addr, port))
-	if err != nil {
-		return nil, errors.New(err.Error())
-	}
-	//i.Host.Peerstore().AddAddr(id, addr, peerstore.PermanentAddrTTL)
-	if len(i.Host.Peerstore().Addrs(id)) == 0 {
-		i.Host.Peerstore().AddAddr(id, multiAddr, time.Minute*10)
-	}
-	s, err := i.Host.NewStream(i.ctx, id, Protocol)
-	if err != nil {
-		return nil, errors.New(err.Error())
-	}
-	log.Info("add stream:", s)
-	i.Peers.Add(id, s, multiAddr)
-	//go i.ReceiveMessage(s)
-	return s, nil
-}
-
-/**
- *  @brief 建立和对端的连接，这个函数会调用Dial函数拨号，可以节省ConnectPeer函数执行时间，因为如果已经拨号成功，
- *  那么创建流时就不需要再次拨号，因此此函数可以作为ping函数使用，实时去刷新和节点间的连接
- *  @param b64Pub - the public key
- *  @param address - the address of ip
- *  @param port - the port of ip
- */
-func (i *Instance) Connect(b64Pub, addr, port string) error {
-	id, err := address.IdFromPublicKey(b64Pub)
-	if err != nil {
-		return err
-	}
-	multiAddr, err := multiaddr.NewMultiaddr(address.NewAddrInfo(addr, port))
-	if err != nil {
-		return errors.New(err.Error())
-	}
-	pi := peerstore.PeerInfo{ID: id, Addrs: []multiaddr.Multiaddr{multiAddr}}
-	if err := i.Host.Connect(i.ctx, pi); err != nil {
-		return errors.New(err.Error())
-	}
-	return nil
-}
-
-func (i *Instance) ReceiveMessage(s net.Stream) {
-	log.Debug("start receive thread")
-	reader := io.NewDelimitedReader(s, net.MessageSizeMax)
-	for {
-		msg := &mpb.Message{}
-		err := reader.ReadMsg(msg)
-		if err != nil {
-			log.Error("the peer ", s.Conn().RemotePeer().Pretty(), i.Host.Peerstore().Addrs(s.Conn().RemotePeer()), "is disconnected:", err)
-			s.Reset()
-			i.Peers.Del(s.Conn().RemotePeer())
-			return
-		}
-		log.Info("receive msg:", msg.String())
-		if err := event.Publish(msg, msg.Identify); err != nil {
-			log.Error("event publish error:", err)
-			return
-		}
-	}
+	go i.receive(s)
 }
 
 func (i *Instance) SendMessage(b64Pub, addr, port string, msg types.EcoMessage) error {
@@ -219,46 +139,22 @@ func (i *Instance) SendMessage(b64Pub, addr, port string, msg types.EcoMessage) 
 	}
 	var s net.Stream
 	info := i.Peers.Get(id)
-	if info == nil {
-		if s, err = i.StreamConnect(b64Pub, addr, port); err != nil {
+	if info == nil || info.Stream == nil {
+		multiAddr, err := multiaddr.NewMultiaddr(address.NewAddrInfo(addr, port))
+		if err != nil {
+			return errors.New(err.Error())
+		}
+		id, err := address.IdFromPublicKey(b64Pub)
+		if err != nil {
+			return err
+		}
+		if s, err = i.newStream(id, multiAddr); err != nil {
 			return err
 		}
 	} else {
 		s = info.Stream
 	}
-	return i.send(s, sendMsg)
-}
-
-func (i *Instance) send(s net.Stream, sendMsg *mpb.Message) error {
-	deadline := time.Now().Add(sendMessageTimeout)
-	if dl, ok := i.ctx.Deadline(); ok {
-		deadline = dl
-		log.Info("set deal line:", deadline)
-	}
-	if err := s.SetWriteDeadline(deadline); err != nil {
-		return errors.New(err.Error())
-	}
-
-	writer := io.NewDelimitedWriter(s)
-	err := writer.WriteMsg(sendMsg)
-	if err != nil {
-		//TODO:delete stream
-		return errors.New(err.Error())
-	}
-	if err := s.SetWriteDeadline(time.Time{}); err != nil {
-		log.Warn("error resetting deadline: ", err)
-	}
-	log.Info("send message finished:", sendMsg.Identify)
-	return nil
-}
-
-func (i *Instance) ResetStream(s net.Stream) error {
-	id := s.Conn().RemotePeer()
-	if err := s.Reset(); err != nil {
-		return err
-	}
-	i.Peers.Del(id)
-	return nil
+	return i.transmit(s, sendMsg)
 }
 
 func (i *Instance) BroadcastToNeighbors(msg types.EcoMessage) error {
@@ -274,11 +170,102 @@ func (i *Instance) BroadcastToNeighbors(msg types.EcoMessage) error {
 		if info == nil {
 			log.Error(fmt.Sprintf("the node is not connected:%s", id.Pretty()))
 		} else {
-			s = info.Stream
+			if info.Stream != nil {
+				s = info.Stream
+			} else if len(info.PeerInfo.Addrs) > 0 {
+				if s, err = i.newStream(info.ID, info.PeerInfo.Addrs[0]); err != nil {
+					log.Error("new stream error:", err)
+				}
+			}
 		}
-		if err := i.send(s, sendMsg); err != nil {
-			log.Error("send err:", err)
+		if err := i.transmit(s, sendMsg); err != nil {
+			log.Error("transmit err:", err)
 		}
 	}
+	return nil
+}
+
+/**
+ *  @brief 建立和对端的连接，这个函数会调用Dial函数拨号，可以节省ConnectPeer函数执行时间，因为如果已经拨号成功，
+ *  那么创建流时就不需要再次拨号，因此此函数可以作为ping函数使用，实时去刷新和节点间的连接
+ *  @param b64Pub - the public key
+ *  @param address - the address of ip
+ *  @param port - the port of ip
+ */
+func (i *Instance) connect(b64Pub, addr, port string) error {
+	id, err := address.IdFromPublicKey(b64Pub)
+	if err != nil {
+		return err
+	}
+	multiAddr, err := multiaddr.NewMultiaddr(address.NewAddrInfo(addr, port))
+	if err != nil {
+		return errors.New(err.Error())
+	}
+	pi := peerstore.PeerInfo{ID: id, Addrs: []multiaddr.Multiaddr{multiAddr}}
+	if err := i.Host.Connect(i.ctx, pi); err != nil {
+		return errors.New(err.Error())
+	}
+	i.Peers.Add(id, nil, multiAddr)
+	return nil
+}
+
+func (i *Instance) newStream(id peer.ID, multiAddr multiaddr.Multiaddr) (net.Stream, error) {
+	if p := i.Peers.Get(id); p != nil {
+		log.Warn("the stream is created:", p.Stream)
+		return p.Stream, nil
+	}
+
+	if len(i.Host.Peerstore().Addrs(id)) == 0 {
+		i.Host.Peerstore().AddAddr(id, multiAddr, time.Minute*10)
+	}
+	s, err := i.Host.NewStream(i.ctx, id, Protocol)
+	if err != nil {
+		return nil, errors.New(err.Error())
+	}
+	log.Info("add stream:", s)
+	i.Peers.Add(id, s, multiAddr)
+	return s, nil
+}
+
+func (i *Instance) receive(s net.Stream) {
+	log.Debug("start receive thread")
+	reader := io.NewDelimitedReader(s, net.MessageSizeMax)
+	for {
+		msg := &mpb.Message{}
+		err := reader.ReadMsg(msg)
+		if err != nil {
+			log.Error("the peer ", s.Conn().RemotePeer().Pretty(), i.Host.Peerstore().Addrs(s.Conn().RemotePeer()), "is disconnected:", err)
+			s.Reset()
+			return
+		}
+		log.Info("receive msg:", msg.String())
+		if err := event.Publish(msg, msg.Identify); err != nil {
+			log.Error("event publish error:", err)
+			return
+		}
+	}
+}
+
+func (i *Instance) transmit(s net.Stream, sendMsg *mpb.Message) error {
+	deadline := time.Now().Add(sendMessageTimeout)
+	if dl, ok := i.ctx.Deadline(); ok {
+		deadline = dl
+		log.Info("set deal line:", deadline)
+	}
+	if err := s.SetWriteDeadline(deadline); err != nil {
+		return errors.New(err.Error())
+	}
+
+	writer := io.NewDelimitedWriter(s)
+	err := writer.WriteMsg(sendMsg)
+	if err != nil {
+		s.Reset()
+		i.Peers.Del(s.Conn().RemotePeer())
+		return errors.New(err.Error())
+	}
+	if err := s.SetWriteDeadline(time.Time{}); err != nil {
+		log.Warn("error resetting deadline: ", err)
+	}
+	log.Info("transmit message finished:", sendMsg.Identify)
 	return nil
 }

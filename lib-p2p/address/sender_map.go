@@ -14,7 +14,7 @@ import (
 type Sender struct {
 	ID       peer.ID
 	Stream   net.Stream
-	PeerInfo peerstore.PeerInfo
+	PeerInfo peerstore.PeerInfo //id, address, port
 }
 
 type SenderMap struct {
