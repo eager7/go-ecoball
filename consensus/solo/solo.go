@@ -103,6 +103,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 					panic(err)
 				}
 			}
+			block.SetSignature(&config.Root)
 			if err := solo.ledger.VerifyTxBlock(chainID, block); err != nil {
 				log.Warn(err)
 				continue

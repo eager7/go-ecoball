@@ -22,10 +22,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
-	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
@@ -65,15 +63,11 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address, option
 	if err != nil {
 		return err
 	}
-	if !config.DisableSharding && len(option) == 0 {
-		if err := ChainTx.GenesesShardBlockInit(chainID, addr); err != nil {
-			return err
-		}
-	} else {
+
 		if err := ChainTx.GenesesBlockInit(chainID, addr); err != nil {
 			return err
 		}
-	}
+
 	l.ChainMap.Add(chainID, ChainTx)
 	log.Info("Chains:", l.ChainMap)
 	return nil
@@ -125,14 +119,6 @@ func (l *LedgerImpl) GetCurrentHeight(chainID common.Hash) uint64 {
 	}
 	return chain.CurrentHeader.Height
 }
-func (l *LedgerImpl) GetChainTx(chainID common.Hash) ledger.ChainInterface {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-		return nil
-	}
-	return chain
-}
 func (l *LedgerImpl) VerifyTxBlock(chainID common.Hash, block *types.Block) error {
 	chain := l.ChainMap.Get(chainID)
 	if chain == nil {
@@ -151,7 +137,6 @@ func (l *LedgerImpl) CheckTransaction(chainID common.Hash, tx *types.Transaction
 	}
 	return nil
 }
-
 func (l *LedgerImpl) GetTransaction(chainID, hash common.Hash) (*types.Transaction, error) {
 	chain := l.ChainMap.Get(chainID)
 	if chain == nil {
@@ -182,19 +167,6 @@ func (l *LedgerImpl) PreHandleTransaction(chainID common.Hash, s *state.State, t
 	log.Notice("Handle Transaction:", tx.Type.String(), tx.Hash.HexString(), " in temp DB")
 	return chain.HandleTransaction(s, tx, timeStamp, chain.CurrentHeader.Receipt.BlockCpu, chain.CurrentHeader.Receipt.BlockNet)
 }
-
-func (l *LedgerImpl) ShardPreHandleTransaction(chainID common.Hash, s *state.State, tx *types.Transaction, timeStamp int64) (ret []byte, cpu, net float64, err error) {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return nil, 0, 0, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	if err := chain.CheckTransactionWithDB(chain.StateDB, tx); err != nil {
-		return nil, 0, 0, err
-	}
-	log.Notice("ShardPreHandleTransaction:", tx.Type.String(), tx.Hash.HexString())
-	return chain.HandleTransaction(s, tx, timeStamp, config.BlockCpuLimit, config.BlockNetLimit)
-}
-
 func (l *LedgerImpl) AccountGet(chainID common.Hash, index common.AccountName) (*state.Account, error) {
 	chain := l.ChainMap.Get(chainID)
 	if chain == nil {
@@ -209,10 +181,6 @@ func (l *LedgerImpl) AccountAdd(chainID common.Hash, index common.AccountName, a
 	}
 	return chain.StateDB.AddAccount(index, addr, timeStamp)
 }
-
-//func (l *LedgerImpl) AddResourceLimits(from, to common.AccountName, cpu, net float32) error {
-//	return l.ChainTx.StateDB.AddResourceLimits(from, to, cpu, net)
-//}
 func (l *LedgerImpl) StoreSet(chainID common.Hash, index common.AccountName, key, value []byte) (err error) {
 	chain := l.ChainMap.Get(chainID)
 	if chain == nil {
@@ -344,93 +312,4 @@ func (l *LedgerImpl) ResetStateDB(chainID common.Hash, header *types.Header) err
 		return errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
 	return chain.ResetStateDB(header)
-}
-
-/*func (l *LedgerImpl) GetGenesesTime(chainID common.Hash) int64 {
-	chain := l.ChainMap.Get(chainID)
-	if !ok {
-		errors.New(log, fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-		return 0
-	}
-	return chain.Geneses.TimeStamp
-}*/
-
-func (l *LedgerImpl) SaveShardBlock(chainID common.Hash, block shard.BlockInterface) (err error) {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.SaveShardBlock(block)
-}
-
-func (l *LedgerImpl) GetShardBlockByHash(chainID common.Hash, typ mpb.Identify, hash common.Hash, finalizer bool) (shard.BlockInterface, bool, error) {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return nil, false, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.GetShardBlockByHash(typ, hash, finalizer)
-}
-
-func (l *LedgerImpl) GetShardBlockByHeight(chainID common.Hash, typ mpb.Identify, height uint64, shardID uint32) (shard.BlockInterface, bool, error) {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return nil, false, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.GetShardBlockByHeight(typ, height, shardID)
-}
-
-func (l *LedgerImpl) GetLastShardBlock(chainID common.Hash, typ mpb.Identify) (shard.BlockInterface, bool, error) {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return nil, false, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.GetLastShardBlock(typ)
-}
-
-func (l *LedgerImpl) NewCmBlock(chainID common.Hash, timeStamp int64, shards []shard.Shard) (*shard.CMBlock, error) {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return nil, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.NewCmBlock(timeStamp, shards)
-}
-
-func (l *LedgerImpl) NewMinorBlock(chainID common.Hash, txs []*types.Transaction, timeStamp int64) (*shard.MinorBlock, []*types.Transaction, error) {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return nil, nil, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.NewMinorBlock(txs, timeStamp)
-}
-
-func (l *LedgerImpl) NewFinalBlock(chainID common.Hash, timeStamp int64, hashes []common.Hash) (*shard.FinalBlock, error) {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return nil, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.NewFinalBlock(timeStamp, hashes)
-}
-
-func (l *LedgerImpl) NewViewChangeBlock(chainID common.Hash, timeStamp int64, round uint16) (*shard.ViewChangeBlock, error) {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return nil, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.NewViewChangeBlock(timeStamp, round)
-}
-
-func (l *LedgerImpl) GetShardId(chainID common.Hash) (uint32, error) {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return 0, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.GetShardId()
-}
-
-func (l *LedgerImpl) CheckShardBlock(chainID common.Hash, block shard.BlockInterface) error {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.CheckShardBlock(block)
 }

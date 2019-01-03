@@ -20,12 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/common/config"
 	"math/big"
-	"github.com/ecoball/go-ecoball/sharding/simulate"
-	"strconv"
 )
 
 func PresetContract(s *state.State, timeStamp int64, addr common.Address) error {
@@ -52,34 +50,7 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 		return err
 	}
 
-	//// set root control token account
-	//perm := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
-	//perm.Accounts["root"] = state.AccFactor{Actor: common.NameToIndex("root"), Weight: 1, Permission: "active"}
-	//s.AddPermission(abaToken, perm)
-
-	//saving := common.NameToIndex("saving")
-	//savingAddr := common.AddressFromPubKey(config.Saving.PublicKey)
-	//fmt.Println("preset insert a bpay account:", savingAddr.HexString())
-	//if root, err := s.AddAccount(saving, savingAddr, timeStamp); err != nil {
-	//	return err
-	//} else {
-	//	root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
-	//}
-	//
-	//bpay := common.NameToIndex("bpay")
-	//bpayAddr := common.AddressFromPubKey(config.Bpay.PublicKey)
-	//fmt.Println("preset insert a bpay account:", bpayAddr.HexString())
-	//if root, err := s.AddAccount(bpay, bpayAddr, timeStamp); err != nil {
-	//	return err
-	//} else {
-	//	root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
-	//}
-
 	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), abaToken, root)
-
-	//if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(90000)); err != nil {
-	//	return err
-	//}
 
 	s.IssueToken(root, new(big.Int).SetUint64(90000), state.AbaToken)
 
@@ -89,20 +60,6 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 		return err
 	}
 
-	/*
-		delegate := common.NameToIndex("delegate")
-		if _, err := s.AddAccount(delegate, common.AddressFromPubKey(config.Delegate.PublicKey), timeStamp); err != nil {
-			return err
-		}
-		if err := s.AccountAddBalance(delegate, state.AbaToken, new(big.Int).SetUint64(10000)); err != nil {
-			return err
-		}
-		fmt.Println("set root account's resource to [cpu:100, net:100]")
-		if err := s.SetResourceLimits(delegate, delegate, 1000, 1000, types.BlockCpuLimit, types.BlockNetLimit); err != nil {
-			fmt.Println(err)
-			return err
-		}
-	*/
 	tester := common.NameToIndex("tester")
 	addr = common.AddressFromPubKey(config.Worker1.PublicKey)
 	fmt.Println("preset insert a tester account:", addr.HexString())
@@ -121,175 +78,5 @@ func PresetContract(s *state.State, timeStamp int64, addr common.Address) error 
 		fmt.Println(err)
 		return err
 	}
-	return nil
-}
-
-func PresetShardContract(s *state.State, timeStamp int64, addr common.Address) error {
-	if s == nil {
-		return errors.New("state is nil")
-	}
-	root := common.NameToIndex("root")
-	fmt.Println("preset insert a root account:", addr.HexString())
-	if root, err := s.AddAccount(root, addr, timeStamp); err != nil {
-		return err
-	} else {
-		root.SetContract(types.VmNative, []byte("system contract"), nil, nil)
-	}
-
-	dsn := common.NameToIndex("dsn")
-	fmt.Println("preset insert dsn account:", addr.HexString())
-	if _, err := s.AddAccount(dsn, addr, timeStamp); err != nil {
-		return err
-	}
-
-	abaToken := common.NameToIndex("abatoken")
-	fmt.Println("preset insert a token account:", addr.HexString())
-	if _, err := s.AddAccount(abaToken, addr, timeStamp); err != nil {
-		return err
-	}
-
-	//// set root control token account
-	//perm := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
-	//perm.Accounts["root"] = state.AccFactor{Actor: common.NameToIndex("root"), Weight: 1, Permission: "active"}
-	//s.AddPermission(abaToken, perm)
-
-	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), abaToken, root)
-
-	s.IssueToken(root, new(big.Int).SetUint64(900000), state.AbaToken)
-
-	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
-	if err := s.SetResourceLimits(root, root, 20000, 50000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	worker := common.NameToIndex("testeru")
-	addr = common.AddressFromPubKey(config.Worker.PublicKey)
-	fmt.Println("preset insert a tester account:", addr.HexString())
-	if _, err := s.AddAccount(worker, addr, timeStamp); err != nil {
-		return err
-	}
-
-	if err := s.AccountAddBalance(worker, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
-		return err
-	}
-
-	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
-	if err := s.SetResourceLimits(worker, worker, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	worker1 := common.NameToIndex("testerh")
-	addr = common.AddressFromPubKey(config.Worker1.PublicKey)
-	fmt.Println("preset insert a tester account:", addr.HexString())
-	if _, err := s.AddAccount(worker1, addr, timeStamp); err != nil {
-		return err
-	}
-
-	if err := s.AccountAddBalance(worker1, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
-		return err
-	}
-
-	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
-	if err := s.SetResourceLimits(worker1, worker1, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	worker2 := common.NameToIndex("testerl")
-	addr = common.AddressFromPubKey(config.Worker2.PublicKey)
-	fmt.Println("preset insert a tester account:", addr.HexString())
-	if _, err := s.AddAccount(worker2, addr, timeStamp); err != nil {
-		return err
-	}
-
-	if err := s.AccountAddBalance(worker2, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
-		return err
-	}
-
-	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
-	if err := s.SetResourceLimits(worker2, worker2, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	worker3 := common.NameToIndex("testerp")
-	addr = common.AddressFromPubKey(config.Worker3.PublicKey)
-	fmt.Println("preset insert a tester account:", addr.HexString())
-	if _, err := s.AddAccount(worker3, addr, timeStamp); err != nil {
-		return err
-	}
-
-	if err := s.AccountAddBalance(worker3, state.AbaToken, new(big.Int).SetUint64(50000)); err != nil {
-		return err
-	}
-
-	fmt.Println("set root account's resource to [cpu:10000, net:10000]")
-	if err := s.SetResourceLimits(worker3, worker3, 10000, 10000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	//TODO annotation committee and shard until new register producer api finish
-	// only import candidate, because now can't recongize backup node and loopup node
-	/* import producer */
-	//cms := simulate.GetCommittee()
-	//for i, cm := range cms {
-	//	cmproducer := common.NameToIndex("cmproducer" + strconv.Itoa(i+1))
-	//	fmt.Println("preset insert account:", "cmproducer" + strconv.Itoa(i+1))
-	//	if _, err := s.AddAccount(cmproducer, addr, timeStamp); err != nil {
-	//		return err
-	//	}
-	//	if err := s.AccountAddBalance(cmproducer, state.AbaToken, new(big.Int).SetUint64(5000)); err != nil {
-	//		return err
-	//	}
-	//	if err := s.SetResourceLimits(cmproducer, cmproducer, 2000, 2000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
-	//		fmt.Println(err)
-	//		return err
-	//	}
-	//
-	//	port, _ := strconv.Atoi(cm.Port)
-	//	s.RegisterProducer(cmproducer, cm.Pubkey, cm.Address, uint32(port), root)
-	//}
-	//
-	//shards := simulate.GetShards()
-	//for i, shard := range shards {
-	//	shardproducer := common.NameToIndex("shproducer" + strconv.Itoa(i+1))
-	//	fmt.Println("preset insert account:", "shproducer" + strconv.Itoa(i+1))
-	//	if _, err := s.AddAccount(shardproducer, addr, timeStamp); err != nil {
-	//		return err
-	//	}
-	//	if err := s.AccountAddBalance(shardproducer, state.AbaToken, new(big.Int).SetUint64(5000)); err != nil {
-	//		return err
-	//	}
-	//	if err := s.SetResourceLimits(shardproducer, shardproducer, 2000, 2000, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
-	//		fmt.Println(err)
-	//		return err
-	//	}
-	//
-	//	port, _ := strconv.Atoi(shard.Port)
-	//	s.RegisterProducer(shardproducer, shard.Pubkey, shard.Address, uint32(port), root)
-	//}
-
-	cans := simulate.GetCandidate()
-	for i, shard := range cans {
-		canproducer := common.NameToIndex("cnproducer" + strconv.Itoa(i+1))
-		fmt.Println("preset insert account:", "cnproducer" + strconv.Itoa(i+1))
-		if _, err := s.AddAccount(canproducer, addr, timeStamp); err != nil {
-			return err
-		}
-		if err := s.AccountAddBalance(canproducer, state.AbaToken, new(big.Int).SetUint64(5000)); err != nil {
-			return err
-		}
-		if err := s.SetResourceLimits(canproducer, canproducer, 500, 500, config.BlockCpuLimit, config.BlockNetLimit); err != nil {
-			fmt.Println(err)
-			return err
-		}
-
-		port, _ := strconv.Atoi(shard.Port)
-		s.RegisterProducer(canproducer, shard.Pubkey, shard.Address, uint32(port), root)
-	}
-
 	return nil
 }

@@ -29,14 +29,10 @@ import (
 	"github.com/ecoball/go-ecoball/txpool"
 	"github.com/urfave/cli"
 
-	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/lib-p2p"
-	"github.com/ecoball/go-ecoball/sharding"
-	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"github.com/ecoball/go-ecoball/spectator"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
@@ -129,10 +125,6 @@ func runNode(c *cli.Context) error {
 	event.InitMsgDispatcher()
 	p2p.InitNetWork(ctx)
 
-	if !config.DisableSharding {
-		simulate.LoadConfig("./sharding.json")
-	}
-
 	log.Info("Build Geneses Block")
 	var err error
 	ledger.L, err = ledgerimpl.NewLedger(config.RootDir+store.PathBlock, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
@@ -140,20 +132,6 @@ func runNode(c *cli.Context) error {
 		log.Fatal(err)
 	}
 
-	var sdActor *sharding.ShardingActor
-	if !config.DisableSharding {
-		log.Info("start sharding")
-		sdActor, _ = sharding.NewShardingActor(ledger.L)
-		sdActor.SetNet(nil)
-	}
-	fmt.Println(sdActor)
-	/*instance, err := network.GetNetInstance()
-	if err != nil {
-		log.Fatal(err)
-	}
-	sdActor.SetNet(instance)*/
-
-	//start transaction pool
 	txPool, err := txpool.Start(ledger.L)
 	if err != nil {
 		log.Fatal("start txPool error, ", err.Error())
@@ -165,18 +143,9 @@ func runNode(c *cli.Context) error {
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
 		solo.NewSoloConsensusServer(ledger.L, txPool, config.User)
-	case "DPOS":
-		log.Info("Start DPOS consensus")
-		c, _ := dpos.NewDposService()
-		c.Setup(ledger.L, txPool)
-		c.Start()
-	case "SHARD":
-		log.Debug("Start Shard Mode")
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
-	//storage
-	//audit.StartDsn(ctx, ledger.L)
 
 	//start block chain browser
 	ecoballGroup.Go(func() error {

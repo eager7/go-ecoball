@@ -10,11 +10,9 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-	"strconv"
-	"github.com/ecoball/go-ecoball/dsn/audit"
-	dsnComm "github.com/ecoball/go-ecoball/dsn/common"
-	"math/big"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
+	"math/big"
+	"strconv"
 )
 
 var log = elog.NewLogger("native", elog.NoticeLog)
@@ -23,8 +21,6 @@ type NativeService struct {
 	state     state.InterfaceState
 	tx        *types.Transaction
 	context   *context.ApplyContext
-	//method    string
-	//params    []string
 	cpuLimit  float64
 	netLimit  float64
 	timeStamp int64
@@ -32,11 +28,11 @@ type NativeService struct {
 
 func NewNativeService(s state.InterfaceState, tx *types.Transaction, context *context.ApplyContext, cpuLimit, netLimit float64, timeStamp int64) (*NativeService, error) {
 	ns := &NativeService{
-		state:     s,
-		tx:        tx,
+		state: s,
+		tx:    tx,
 		//method:    method,
 		//params:    params,
-		context:	context,
+		context:   context,
 		cpuLimit:  cpuLimit,
 		netLimit:  netLimit,
 		timeStamp: timeStamp,
@@ -54,7 +50,7 @@ func (ns *NativeService) Execute() ([]byte, error) {
 	return nil, nil
 }
 
-func (ns *NativeService)Println(s string) {
+func (ns *NativeService) Println(s string) {
 	ns.context.Action.Console += s + "\n"
 }
 
@@ -102,7 +98,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 
 		// generate trx receipt
 		acc := state.Account{
-			Index:			index,
+			Index:       index,
 			Permissions: make(map[string]state.Permission, 1),
 		}
 		acc.Permissions[perm.PermName] = perm
@@ -158,7 +154,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			ns.Println(err.Error())
 			return nil, errors.New(err.Error())
 		}
-		if  ns.state.StateType()== state.FinalType {
+		if ns.state.StateType() == state.FinalType {
 			if consensus == "solo" {
 				msg := &message.RegChain{ChainID: hash, TxHash: ns.tx.Hash, Address: addr}
 				event.Send(event.ActorNil, event.ActorConsensusSolo, msg)
@@ -202,17 +198,17 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		}
 
 		fromAccount := state.Account{
-			Index:			from,
-			Tokens:			make(map[string]state.Token),
+			Index:  from,
+			Tokens: make(map[string]state.Token),
 		}
 
 		toAccount := state.Account{
-			Index:			to,
+			Index: to,
 		}
 
 		balance := state.Token{
-			Name:		state.AbaToken,
-			Balance:	big.NewInt(int64(0 - (cpu + net))),
+			Name:    state.AbaToken,
+			Balance: big.NewInt(int64(0 - (cpu + net))),
 		}
 		fromAccount.Tokens[state.AbaToken] = balance
 
@@ -275,17 +271,17 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		}
 
 		fromAccount := state.Account{
-			Tokens:			make(map[string]state.Token),
-			Index:			from,
+			Tokens: make(map[string]state.Token),
+			Index:  from,
 		}
 
 		toAccount := state.Account{
-			Index:			to,
+			Index: to,
 		}
 
 		balance := state.Token{
-			Name:		state.AbaToken,
-			Balance:	big.NewInt(int64(cpu + net)),
+			Name:    state.AbaToken,
+			Balance: big.NewInt(int64(cpu + net)),
 		}
 		fromAccount.Tokens[state.AbaToken] = balance
 
@@ -315,17 +311,9 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			}
 			ns.tx.Receipt.Accounts[1] = data1
 		}
-
-	case dsnComm.FcMethodProof:
-		audit.HandleStorageProof(params[0], ns.state)
-	case dsnComm.FcMethodAn:
-		audit.HandleStoreAnn(params[0], ns.state)
-	case dsnComm.FcMethodFile:
-		audit.HandleFileContract(params[0], ns.state)
 	default:
 		ns.Println(fmt.Sprintf("unknown method:%s", method))
 		return nil, errors.New(fmt.Sprintf("unknown method:%s", method))
 	}
 	return nil, nil
 }
-

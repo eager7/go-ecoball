@@ -29,7 +29,6 @@ import (
 	"github.com/ecoball/go-ecoball/client/commands"
 	"github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/dsn/host/cmd"
 	"github.com/peterh/liner"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli"
@@ -90,7 +89,6 @@ func newClientApp() *cli.App {
 		commands.QueryCommands,
 		commands.AttachCommands,
 		commands.CreateCommands,
-		commands.DsnStorageCommands,
 	}
 
 	//set default action
@@ -250,13 +248,6 @@ func handleLine(line string) error {
 }
 
 func appRun(app *cli.App) (err error) {
-	if len(os.Args) >= 2 && os.Args[1] == "storage" {
-		temp := make([]string, 0, len(os.Args))
-		temp = append(temp, os.Args[0])
-		temp = append(temp, os.Args[2:]...)
-		os.Args = temp
-		return cmd.StorageFun()
-	}
 	return app.Run(os.Args)
 }
 

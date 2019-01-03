@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
@@ -14,11 +13,9 @@ import (
 	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/http/common/abi"
-	"github.com/ecoball/go-ecoball/sharding/simulate"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -94,14 +91,6 @@ func TestTransfer() *types.Transaction {
 func Ledger(path string) ledger.Ledger {
 	os.RemoveAll(path)
 	l, err := ledgerimpl.NewLedger(path, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), false)
-	errors.CheckErrorPanic(err)
-	return l
-}
-
-func ShardLedger(path string) ledger.Ledger {
-	simulate.LoadConfig("/tmp/sharding.json")
-	os.RemoveAll(path)
-	l, err := ledgerimpl.NewLedger(path, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 	return l
 }
@@ -1562,17 +1551,6 @@ func Wait() {
 	defer signal.Stop(interrupt)
 	sig := <-interrupt
 	log.Info("ecoball received signal:", sig)
-}
-
-func Actor() *actor.PID {
-	props := actor.FromFunc(func(context actor.Context) {
-		switch msg := context.Message().(type) {
-		case shard.BlockInterface:
-			elog.Log.Info(msg.String())
-		}
-	})
-	pid, _ := actor.SpawnNamed(props, "example")
-	return pid
 }
 
 func TransferExample() {

@@ -19,7 +19,6 @@ package message
 import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/message/mpb"
-	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
@@ -35,21 +34,13 @@ type RegChain struct {
 	TxHash  common.Hash
 }
 
-type BlockMessage struct {
-	ShardID uint32
-	Block   shard.BlockInterface
-}
+
 
 type ProducerBlock struct {
 	ChainID common.Hash
 	Height  uint64
 	Type    mpb.Identify
 	Hashes  []common.Hash
-}
-
-type CheckBlock struct {
-	Block  shard.BlockInterface
-	Result error
 }
 
 type DeleteTx struct {

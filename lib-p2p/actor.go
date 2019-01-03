@@ -20,11 +20,9 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/lib-p2p/net"
-	"github.com/ecoball/go-ecoball/sharding/common"
-	"reflect"
-	"sync"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/lib-p2p/net"
+	"reflect"
 )
 
 type BroadcastMessage struct {
@@ -86,40 +84,12 @@ func (n *netActor) Receive(ctx actor.Context) {
 		n.pid.Stop()
 	case message.Transaction:
 		n.broadcastMessage <- BroadcastMessage{ShardId: msg.ShardID, Message: msg.Tx}
-	case *common.ShardingTopo:
-		go n.ConnectToShardingPeers(msg)
 	case message.NetPacket:
 		n.singleMessage <- SingleMessage{PublicKey: msg.PublicKey, Address: msg.Address, Port: msg.Port, Message: msg.Message}
 	default:
 		log.Error("unknown message type:", reflect.TypeOf(ctx.Message()))
 	}
 
-}
-
-//连接本shard内的节点, 跳过自身，并且和其他节点保持长连接
-func (n *netActor) ConnectToShardingPeers(info *common.ShardingTopo) {
-	n.instance.ShardInfo.Upgrading(info)
-	peerMap := n.instance.ShardInfo.GetShardNodes(n.instance.ShardInfo.GetLocalId())
-	if peerMap == nil {
-		return
-	}
-	var wg sync.WaitGroup
-	for node := range peerMap.Iterator() {
-		if node.Pubkey == n.instance.ShardInfo.GetLocalPub() {
-			log.Debug("skip self")
-			continue
-		}
-		wg.Add(1)
-		go func() {
-			log.Debug("connect to peer:", node.Address, node.Port)
-			if err := n.instance.Connect(node.Pubkey, node.Address, node.Port); err != nil {
-				log.Error("connect to peer:", node.Address, node.Port, "error:", err)
-			}
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-	log.Debug("finish connecting to sharding peers exit...")
 }
 
 func (n *netActor) Engine() {

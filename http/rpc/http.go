@@ -31,11 +31,11 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/http/commands"
 	"github.com/ecoball/go-ecoball/http/common/abi"
 	"github.com/gin-gonic/gin"
-	"github.com/ecoball/go-ecoball/core/state"
 )
 
 func StartHttpServer() (err error) {
@@ -69,13 +69,6 @@ func StartHttpServer() (err error) {
 
 	//contract
 	router.POST("/invokeContract", commands.InvokeContract)
-
-	//dsnstorage
-	router.GET("/dsn/total", commands.TotalHandler)
-	router.POST("/dsn/eracode", commands.EraCoding)
-	router.GET("/dsn/eradecode", commands.EraDecoding)
-	router.POST("/dsn/getipinfo", commands.DsnGetIpInfo)
-	router.GET("/dsn/dsnaddfilecid", commands.DsnaddfileCid)
 
 	http.ListenAndServe(":"+config.HttpLocalPort, router)
 	return nil
@@ -310,7 +303,7 @@ func get_required_keys(c *gin.Context) {
 	hash := new(innerCommon.Hash)
 	chainids := hash.FormHexString(chainId)
 	data, err := ledger.L.FindPermission(chainids, innerCommon.NameToIndex(from), permission)
-	if err != nil{
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
 		return
 	}
@@ -323,7 +316,7 @@ func get_required_keys(c *gin.Context) {
 
 	public_address := []innerCommon.Address{}
 	for _, v := range permission_datas {
-		for _, value:= range v.Keys{
+		for _, value := range v.Keys {
 			public_address = append(public_address, value.Actor)
 		}
 	}
@@ -350,25 +343,25 @@ func get_required_keys(c *gin.Context) {
 }
 
 func invokeContractForScan(c *gin.Context) {
-	invoke := new(types.Transaction)//{
+	invoke := new(types.Transaction) //{
 	transaction_data := c.PostForm("transaction")
-	
+
 	bytes, err := hex.DecodeString(transaction_data)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return 
+		return
 	}
 
 	if err := invoke.Deserialize(bytes); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return 
+		return
 	}
-	
+
 	//send to txpool
 	err = event.Send(event.ActorNil, event.ActorTxPool, invoke)
 	if nil != err {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return 
+		return
 	}
 
 	// wait for trx handle result
@@ -380,10 +373,10 @@ func invokeContractForScan(c *gin.Context) {
 		timeout <- true
 	}()
 	select {
-		case msg := <-cmsg:
-			result = msg.(string) + "\nwarning: transaction executed locally, but may not be confirmed by the network yet"
-		case <-timeout:
-			result = "trx handle timeout"
+	case msg := <-cmsg:
+		result = msg.(string) + "\nwarning: transaction executed locally, but may not be confirmed by the network yet"
+	case <-timeout:
+		result = "trx handle timeout"
 	}
 	//event.UnSubscribe(cmsg, oneTransaction.Hash)
 

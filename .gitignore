@@ -41,3 +41,4 @@ test/p2p/main
 test/p2p/shard2/
 
 docker/wallet
+launch/tools/

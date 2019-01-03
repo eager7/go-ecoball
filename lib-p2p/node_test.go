@@ -2,14 +2,10 @@ package p2p_test
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/common/utils"
 	"github.com/ecoball/go-ecoball/lib-p2p"
-	"github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/test/example"
 	"testing"
 	"time"
@@ -47,16 +43,6 @@ const (
 	priKey2 = "CAAS4AQwggJcAgEAAoGBAJXs/ovug1g4gu43I08QiyUSN9E4SSuWqFNe4qYNn6x6PhTTVDW1yatb8uE3aaFB+Jm9Pyh3eADQ9y8EFK9XN5fwJp7y3szeD/xl0HtiNk1xJKmRX+njEPZ3F6XMAL6wA6FFlif6FI9wj4bci0pk4g5xi28vQ6XBO50G71YUIhbfAgMBAAECgYA6mk2RQuTiSgybsr/BevT4w5s/06F+QUCAfhlX0QF1+L5lg4lqCSnQKnvQnslSOChFZ9zVI4WrxAKqxQyU0SGwUA0yDGIQ+MKcr85+vhrPB9qlA6+/Ruy7cqQ8ZF38Y57KSAC7jXLiuOfm580bHHWd1k0ijgR/7j7FLvjF6JChcQJBAMTDloPI99mGkUzqRZ2Gwl9ArVdTWDZZxmuuOGYpSpif5zszDYoME6w4J+ldrmSQZEr9G01sZF5djwMC/air1GkCQQDDD6CY2zzKYSus2WSfBnREtcb6ktmo/3nXgmufesR40CVNKaLJB5ej+f6qtMfOdv80d43h1I7HAP9MNKYI7AgHAkBNkwcOYfdFbYZvmpVjq7OKNkeg/Bz1IKPX5FIcBP+B+NkDP/eAi45eAa3KlcKhp0PDRNK0zZ0sjxpJB67WBxixAkA+omH7M0rN4W3YzuWUesoS1hvSkhz6Oy6wmNxeFVnJQWz43gm7a4ixyrCPuAUAsw03l7wja9F87UENA0rdSo05AkEAvMVIUj61Uce6U9Z26YjexBll1DwWS5AMRXgvFiKtaf+DLog1c7c4XS9zxZapzbaRi0WxFX2bz1VLXEbq2ypINg=="
 	pubKey2 = "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAJXs/ovug1g4gu43I08QiyUSN9E4SSuWqFNe4qYNn6x6PhTTVDW1yatb8uE3aaFB+Jm9Pyh3eADQ9y8EFK9XN5fwJp7y3szeD/xl0HtiNk1xJKmRX+njEPZ3F6XMAL6wA6FFlif6FI9wj4bci0pk4g5xi28vQ6XBO50G71YUIhbfAgMBAAE="
 )
-
-func TestNet(t *testing.T) {
-	elog.Log.Debug("net test program...")
-	p2p.InitNetWork(context.Background(), "")
-	toPo := &common.ShardingTopo{}
-	errors.CheckErrorPanic(json.Unmarshal([]byte(toPoInfo), toPo))
-	event.Send(event.ActorNil, event.ActorP2P, toPo)
-
-	example.Wait()
-}
 
 func TestServer(t *testing.T) {
 	event.InitMsgDispatcher()

@@ -21,14 +21,9 @@ import (
 
 	"fmt"
 	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/common/message/mpb"
-	"github.com/ecoball/go-ecoball/consensus/dpos"
-	"github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/txpool"
 	"time"
 )
 
@@ -72,85 +67,13 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		}
 		end := time.Now().UnixNano()
 		log.Info("save block["+msg.ChainID.HexString()+"block hash:"+msg.Hash.HexString()+"]:", (end-begin)/1000, "us")
-	case shard.BlockInterface:
-		log.Info("receive a ", msg.Identify().String(), "block:", msg.Hash().HexString(), "height:", msg.GetHeight())
-		chain := l.ledger.ChainMap.Get(msg.GetChainID())
-		if chain == nil {
-			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.GetChainID().HexString()))
-			return
-		}
-		begin := time.Now().UnixNano()
-		if err := chain.SaveShardBlock(msg); err != nil {
-			log.Error("save block["+msg.GetChainID().HexString()+"] error:", err)
-			break
-		}
-		end := time.Now().UnixNano()
-		t := (end - begin) / 1000
-		log.Info("save ", msg.Identify().String(), "block["+msg.Hash().HexString()+"]:", t, "us")
-		if t > 50000 {
-			log.Error("save block maybe trouble:", t)
-			//os.Exit(-1)
-		}
-	case *dpos.DposBlock:
-		//TODO
-		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {
-			log.Error("send block to tx pool error:", err)
-		}
+
 	case *message.RegChain:
 		log.Info("add new chain:", msg.ChainID.HexString())
 		if err := l.ledger.NewTxChain(msg.ChainID, msg.Address); err != nil {
 			log.Error(err)
 		}
-	case message.ProducerBlock:
-		log.Debug("receive create block request")
-		begin := time.Now().UnixNano()
-		switch msg.Type {
-		case mpb.Identify_APP_MSG_MINOR_BLOCK:
-			if txpool.T == nil {
-				ctx.Sender().Tell(errors.New("create minor block err the txPool is nil"))
-				return
-			}
-			txs, err := txpool.T.GetTxsList(msg.ChainID)
-			if err != nil {
-				ctx.Sender().Tell(errors.New(fmt.Sprintf("create final block err:%s", err.Error())))
-				return
-			}
-		PACKAGE:
-			minorBlock, txs, err := l.ledger.NewMinorBlock(msg.ChainID, txs, time.Now().UnixNano())
-			if err != nil {
-				log.Warn(errors.New(fmt.Sprintf("create minor block err:%s", err.Error())))
-				if txs != nil {
-					goto PACKAGE
-				} else {
-					ctx.Sender().Tell(err)
-				}
-			}
-			end := time.Now().UnixNano()
-			t := (end - begin) / 1000
-			log.Info("create ", msg.Type.String(), "block["+minorBlock.Hashes.HexString()+"]:", t, "us")
-			ctx.Sender().Tell(minorBlock)
-		case mpb.Identify_APP_MSG_CM_BLOCK:
-			log.Warn("the cm block nonsupport create by actor")
-		case mpb.Identify_APP_MSG_FINAL_BLOCK:
-			block, err := l.ledger.NewFinalBlock(msg.ChainID, time.Now().UnixNano(), msg.Hashes)
-			if err != nil {
-				ctx.Sender().Tell(errors.New(fmt.Sprintf("create final block err:%s", err.Error())))
-				return
-			}
-			end := time.Now().UnixNano()
-			t := (end - begin) / 1000
-			log.Info("create ", msg.Type.String(), "block["+block.Hashes.HexString()+"]:", t, "us")
-			ctx.Sender().Tell(block)
-		default:
-			log.Error("unknown type:", msg.Type.String())
-		}
-	case message.CheckBlock:
-		result := message.CheckBlock{
-			Block:  msg.Block,
-			Result: nil,
-		}
-		//TODO
-		ctx.Sender().Tell(result)
+
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}

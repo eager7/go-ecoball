@@ -20,8 +20,6 @@ package address
 
 import (
 	"fmt"
-	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/sharding/common"
 	"sync"
 )
 
@@ -125,16 +123,4 @@ func (s *ShardInfo) Purge() {
 	for k := range s.shardMap {
 		delete(s.shardMap, k)
 	}
-}
-
-func (s *ShardInfo) Upgrading(info *common.ShardingTopo) {
-	s.Purge()
-	s.SetLocalId(uint32(info.ShardId))
-	s.SetLocalPub(info.Pubkey)
-	for sid, shard := range info.ShardingInfo {
-		for _, member := range shard {
-			s.AddShardNode(uint32(sid), member.Pubkey, member.Address, member.Port)
-		}
-	}
-	elog.Log.Info("the shard info is :", s.JsonString())
 }

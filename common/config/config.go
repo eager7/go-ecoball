@@ -27,11 +27,11 @@ import (
 
 	"strings"
 
+	"fmt"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/utils"
 	"path/filepath"
-	"fmt"
 )
 
 const VirtualBlockCpuLimit float64 = 200000000.0
@@ -58,9 +58,9 @@ http_port = "20678"          # client http port
 wallet_http_port = "20679"   # client wallet http port
 version = "1.0"              # system version
 onlooker_port = "9001"		 #port for browser
-root_dir = "/tmp/"        		 # level file location
+root_dir = "./"        		 # level file location
 log_level = 1                # debug level	
-consensus_algorithm = "SHARD" # can set as SOLO, DPOS, ABABFT, SHARD
+consensus_algorithm = "SOLO" # can set as SOLO, DPOS
 time_slot = 500              # block interval time, uint ms
 start_node = "true"
 root_privkey = "34a44d65ec3f517d6e7550ccb17839d391b69805ddd955e8442c32d38013c54e"
@@ -107,13 +107,6 @@ conn_mgr_graceperiod = 20
 #p2p local discovery config info
 enable_local_discovery = false
 disable_localdis_log   = true
-
-#dsn config
-dsn_storage = false
-dsn_path = "/tmp/storage"
-
-#sharding config info
-disable_sharding  = false
 
 log_dir = "/tmp/Log/"        	 		# log file location
 output_to_terminal = "true"  			# debug output type	 	
@@ -163,7 +156,6 @@ var (
 	LogDir               string
 	OutputToTerminal     bool
 	LogLevel             int
-	IpfsDir              string
 	ConsensusAlgorithm   string
 	StartNode            bool
 	Root                 account.Account
@@ -176,8 +168,6 @@ var (
 	SwarmConfig          SwarmConfigInfo
 	EnableLocalDiscovery bool
 	DisableLocalDisLog   bool
-	DsnStorage           bool
-	DisableSharding      bool
 )
 
 func SetConfig(filePath string) error {
@@ -232,11 +222,9 @@ func init() {
 	//set ecoball.toml dir
 	var configDir string
 	if flag.Lookup("test.v") == nil {
-		IpfsDir = "/tmp/storage"
 		configDir, _ = filepath.Abs(filepath.Dir(os.Args[0]))
 		configDir = strings.Replace(configDir, "\\", "/", -1)
 	} else {
-		IpfsDir = "/tmp/storage"
 		configDir = "/tmp/"
 	}
 	if err := SetConfig(configDir); err != nil {
@@ -287,7 +275,4 @@ func initVariable() {
 
 	EnableLocalDiscovery = viper.GetBool("enable_local_discovery")
 	DisableLocalDisLog = viper.GetBool("disable_localdis_log")
-	DsnStorage = viper.GetBool("dsn_storage")
-	IpfsDir = viper.GetString("dsn_path")
-	DisableSharding = viper.GetBool("disable_sharding")
 }
