@@ -72,38 +72,23 @@ output_to_terminal = true
 output_to_terminal = true
 ```
 ## key_generate.py
-Once the configuration file shard_setup.toml is configured, execute key_generation.py to generate public and private keys for the startup container
+Once the configuration file setup.toml is configured, execute key_generation.py to generate public and private keys for the startup container
 ```
 ./key_generate.py
 ```
 
-## share_shard.py 
-To start the sharding network, execute the share_shard.py script to start the shard container.
+## start_ecoball.py
 
-If the -b option is added, the eballscan container is started
-
-If the -w option is added, the ecowallet container is started
-
-```
-cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./share_shard.py -i ${HOST_IP} [-b] [-w]
-```
-Log generation for each node is under ./ecoball_log/shard/$DOCKERNAME/ 
-
-The wallet file is generated under ./wallet
-
-## share_committee.py
-
-After starting the shard container, execute the share_commitment.py script to start the committee node.
+After configuration setup.toml, execute the start_ecoball.py script to start node.
 
 If the -b option is added, the eballscan container is started
 
 If the -w option is added, the ecowallet container is started
 ```
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./share_committee.py -i ${HOST_IP}  [-b] [-w]
+./start_ecoball.py -i ${HOST_IP}  [-b] [-w]
 ```
-Log generation for each node is under ./ecoball_log/committee/$DOCKERNAME/ 
+Log generation for each node is under ./ecoball_log/$DOCKERNAME/ 
 
 The wallet file is generated under ./wallet
 

@@ -21,7 +21,7 @@ The ecoball.toml profile will be mirrored. Please configure the configuration it
 
 Add a new configuration item to the project's ecoball.toml, and be sure to copy the latest code-generated file ecoball.toml to the Docker directory.
 
-If the configuration items for a container require special customization, do the configuration in the shard_setup.toml file(Refer to the shard_setup.toml configuration file for details).
+If the configuration items for a container require special customization, do the configuration in the setup.toml file(Refer to the setup.toml configuration file for details).
 
 ### setup.toml
 Before starting, you need to configure start profile setup.toml
