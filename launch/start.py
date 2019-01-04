@@ -40,7 +40,7 @@ def main():
     parser.add_argument('-c', '--config', metavar='', help="Different configuration items for ecoball.toml")
 
     root_dir = os.path.split(os.path.realpath(__file__))[0]
-    with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
+    with open(os.path.join(root_dir, 'setup.toml')) as setup_file:
         all_config = pytoml.load(setup_file)
 
     #parse Arguments

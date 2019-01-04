@@ -58,7 +58,7 @@ def main():
 
     # get netwoek config
     root_dir = os.path.split(os.path.realpath(__file__))[0]
-    with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
+    with open(os.path.join(root_dir, 'setup.toml')) as setup_file:
         data = pytoml.load(setup_file)
 
     network = data["network"]
