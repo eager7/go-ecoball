@@ -70,13 +70,15 @@ def main():
     with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
         data = pytoml.load(setup_file)
 
+    bootstrap_address_list = []
     p2p_start_port = 9901
     http_start_port = 20681
     onlooker_start_port = 9001
     network = data["network"]
+    #  all node diff
     for one_ip in network:
         count_list = network[one_ip]
-        for i in range(3):
+        for i in range(2):
             count = 0
             while count < count_list[i]:
                 result_str, result_code = run_shell_output(key_gen)
@@ -86,18 +88,24 @@ def main():
                 result_list = result_str.split("\n")
                 private_str = ""
                 public_str = ""
+                id_str = ""
                 for one_str in result_list:
                     index = one_str.find("Private Key:")
                     if -1 != index:
                         private_str = one_str[index + len("Private Key:"):].strip()
                         continue
+
                     index = one_str.find("Public  Key:") 
                     if -1 != index:
                         public_str = one_str[index + len("Public  Key:"):].strip()
+                        continue
+                        
+                    index = one_str.find("Id Key:") 
+                    if -1 != index:
+                        id_str = one_str[index + len("Id Key:"):].strip()
+
                 if 1 == i:
-                    tail = count + count_list[0]
-                elif 2 == i:
-                    tail = count + count_list[0] + count_list[1]                    
+                    tail = count + count_list[0]               
                 else:
                     tail = count
                 one_config = one_ip + "_" + str(tail)
@@ -107,8 +115,25 @@ def main():
                 data[one_config]["p2p_peer_publickey"] = public_str
                 port = p2p_start_port + tail
                 data[one_config]["p2p_listen_address"] = ["/ip4/0.0.0.0/tcp/" + str(port), "/ip6/::/tcp/4013"]
+                bootstrap_address_list.append("/ip4/" + one_ip + "/tcp/" + str(port) + "/ipfs/" + id_str)
                 data[one_config]["http_port"] = str(http_start_port + tail)
                 data[one_config]["onlooker_port"] = str(onlooker_start_port + tail)
+                count += 1
+
+    # all node same
+    for one_ip in network:
+        count_list = network[one_ip]
+        for i in range(2):
+            count = 0
+            while count < count_list[i]:
+                if 1 == i:
+                    tail = count + count_list[0]                   
+                else:
+                    tail = count
+                one_config = one_ip + "_" + str(tail)
+                if one_config not in data:
+                    data[one_config] = {}            
+                data[one_config]["bootstrap_address"] = bootstrap_address_list
                 data[one_config]["log_dir"] = "./log/"
                 data[one_config]["root_dir"] = "./log/"
                 count += 1

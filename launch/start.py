@@ -51,58 +51,6 @@ def main():
     node_ip = []
     for ip in network:
         host_ip = ip
-        node_ip.append(ip)
-
-    start_port = 9901
-    committee = []
-    shard = []
-    candidate = []
-    list_count = []
-
-    for ip in node_ip:
-        port_index = 0
-        committee_count = network[ip][0]
-        shard_count = network[ip][1]
-        if len(network[ip]) > 2:
-            candidate_count = network[ip][2]
-        while port_index < committee_count + shard_count + candidate_count:
-            node_index = ip + "_" + str(port_index)
-            node = {
-                "Pubkey": all_config[node_index]["p2p_peer_publickey"], 
-                "Address": ip, 
-                "Port": str(start_port + port_index)
-            }
-            port_index += 1
-            if port_index <= committee_count:
-                committee.append(node)
-            elif port_index > committee_count + shard_count:
-                candidate.append(node)
-            else:
-                shard.append(node)
-        list_count.append(port_index)
-
-    ip_index = node_ip.index(args.host_ip)
-    i = 0
-    key_base = 0
-    while i < ip_index:
-        key_base += list_count[i]
-        i += 1
-
-    node_index = args.host_ip + "_" + str(args.number)
-    data = {
-        "size": str(args.size),
-        "Pubkey": all_config[node_index]["p2p_peer_publickey"],
-        "Address": args.host_ip,
-        "Port": str(start_port + args.number),
-        "Committee": committee,
-        "Shard": shard,
-        "Candidate": candidate
-    }
-
-    root_dir = os.path.split(os.path.realpath(__file__))[0]
-
-    with open(os.path.join(root_dir, 'sharding.json'), 'w') as json_file:
-        json.dump(data, json_file)
 
     #Generate the configuration toml files required for ecoball
     ecoball_config = {}

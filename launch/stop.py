@@ -68,17 +68,15 @@ def main():
     for ip in network:
         node_ip.append(ip)
 
-    committee_count = 0
-    shard_count = 0
+    producer_count = 0
     candidate_count = 0
     for ip in node_ip:
-        committee_count += network[ip][0]
-        shard_count += network[ip][1]
-        candidate_count += network[ip][2]
+        producer_count += network[ip][0]
+        candidate_count += network[ip][1]
 
     sysstr = platform.system()
     count = 0
-    while count < committee_count + shard_count + candidate_count:
+    while count < producer_count + candidate_count:
         # stop ecoball
         if sysstr == "Windows":
             command = "taskkill /im " + "ecoball_" + str(count) + ".exe /F"
