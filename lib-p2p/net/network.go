@@ -180,6 +180,7 @@ func (i *Instance) BroadcastToNeighbors(msg types.EcoMessage) error {
 		info := i.senderMap.Get(id)
 		if info == nil {
 			log.Error(fmt.Sprintf("the node is not connected:%s", id.Pretty()))
+			continue
 		} else {
 			if info.Stream != nil {
 				s = info.Stream
