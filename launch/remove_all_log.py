@@ -59,7 +59,7 @@ def get_config(num, host_ip, data):
 def main():
     # get netwoek config
     root_dir = os.path.split(os.path.realpath(__file__))[0]
-    with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
+    with open(os.path.join(root_dir, 'setup.toml')) as setup_file:
         data = pytoml.load(setup_file)
 
     network = data["network"]
@@ -68,33 +68,23 @@ def main():
     for ip in network:
         node_ip.append(ip)
 
-    committee_count = 0
-    shard_count = 0
+    producer_count = 0
     candidate_count = 0
     for ip in node_ip:
         host_ip = ip
-        committee_count += network[ip][0]
-        shard_count += network[ip][1]
-        if len(network[ip]) > 2:
-            candidate_count += network[ip][2]
+        producer_count += network[ip][0]
+        candidate_count += network[ip][1]
 
-    shard_dir = os.path.join(root_dir, 'ecoball_log/shard')
-    if not os.path.exists(shard_dir):
-        os.makedirs(shard_dir)        
-
-    committee_dir = os.path.join(root_dir, 'ecoball_log/committee')
-    if not os.path.exists(committee_dir):
-        os.makedirs(committee_dir)
+    ecoball_log_dir = os.path.join(root_dir, 'ecoball_log')
+    if not os.path.exists(ecoball_log_dir):
+        return        
 
     goPath = os.getenv("GOPATH")
 
-    count = committee_count + shard_count + candidate_count - 1
+    count = producer_count + candidate_count - 1
     while count >= 0:
         # mkdir and copy ecoball
-        if count < committee_count:
-            run_dir = os.path.join(committee_dir, 'ecoball_' + str(count))
-        else:
-            run_dir = os.path.join(shard_dir, 'ecoball_'+ str(count))
+        run_dir = os.path.join(ecoball_log_dir, 'ecoball_' + str(count))
         if not os.path.exists(run_dir):
             os.makedirs(run_dir)
 
