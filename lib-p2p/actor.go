@@ -65,7 +65,9 @@ func NewNetActor(n *netActor) (err error) {
 	if err != nil {
 		return err
 	}
-	event.RegisterActor(event.ActorP2P, n.pid)
+	if err := event.RegisterActor(event.ActorP2P, n.pid); err != nil {
+		return err
+	}
 	go n.Engine()
 	log.Debug("start net actor:", n.pid)
 

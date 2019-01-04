@@ -134,7 +134,9 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 				log.Error(err)
 				continue
 			}
-
+			if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 }

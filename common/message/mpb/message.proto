@@ -37,6 +37,7 @@ enum  Identify {
 
 
 message Message {
-    Identify    Identify   = 2;
-	bytes       Payload    = 4;
+    bytes       Hash            = 1;
+    Identify    Identify        = 2;
+	bytes       Payload         = 4;
 }

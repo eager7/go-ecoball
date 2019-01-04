@@ -32,8 +32,6 @@ proto:
 	make -C core/pb
 	make -C common/message/mpb
 	make -C client/protos
-	make -C net/message/pb
-	make -C net/gossip/protos
 
 tools:
 	@echo "\033[;32mbuild tools \033[0m"
