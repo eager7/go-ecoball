@@ -1,9 +1,6 @@
 package address
 
 import (
-	"fmt"
-
-	"github.com/ecoball/go-ecoball/common/errors"
 	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
 	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
 	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
@@ -37,14 +34,12 @@ func (p *SenderMap) Add(id peer.ID, s net.Stream, addr multiaddr.Multiaddr) {
 	p.Peers[id] = Sender{ID: id, Stream: s, PeerInfo: peerInfo}
 }
 
-func (p *SenderMap) Del(id peer.ID) error {
+func (p *SenderMap) Del(id peer.ID) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	if _, ok := p.Peers[id]; ok {
 		delete(p.Peers, id)
-		return nil
 	}
-	return errors.New(fmt.Sprintf("can't find stream by id:%s", id))
 }
 
 func (p *SenderMap) Get(id peer.ID) *Sender {
