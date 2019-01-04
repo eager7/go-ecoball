@@ -85,14 +85,18 @@ func (n *netActor) Receive(ctx actor.Context) {
 		n.exit <- struct{}{}
 		n.pid.Stop()
 	case *types.Transaction:
+		n.instance.MessageMarked(msg.Hash)
 		n.broadcastMessage <- BroadcastMessage{Message: msg}
 	case message.NetPacket:
 		n.singleMessage <- SingleMessage{PublicKey: msg.PublicKey, Address: msg.Address, Port: msg.Port, Message: msg.Message}
 	case *types.Block:
+		n.instance.MessageMarked(msg.Hash)
 		n.broadcastMessage <- BroadcastMessage{Message: msg}
 	case *mobsync.BlockRequest:
+		n.instance.MessageMarked(msg.Nonce)
 		n.broadcastMessage <- BroadcastMessage{Message: msg}
 	case *mobsync.BlockResponse:
+		n.instance.MessageMarked(msg.Nonce)
 		n.broadcastMessage <- BroadcastMessage{Message: msg}
 	default:
 		log.Error("unknown message type:", reflect.TypeOf(ctx.Message()))

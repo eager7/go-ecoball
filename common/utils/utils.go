@@ -18,18 +18,22 @@ package utils
 
 import (
 	"bytes"
+	cryptoRand "crypto/rand"
 	"errors"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"math/big"
+	"math/rand"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
-	"io/ioutil"
 	"syscall"
-	"os/signal"
-	"fmt"
 )
 
 // DisableCache will disable caching of the home directory. Caching is enabled
@@ -167,7 +171,7 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
-func FileRead(path string) ([]byte, error){
+func FileRead(path string) ([]byte, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -185,4 +189,13 @@ func Pause() {
 	defer signal.Stop(interrupt)
 	sig := <-interrupt
 	fmt.Println(" program received exit signal:", sig)
+}
+
+func RandomUint64() uint64 {
+	b := make([]byte, 8)
+	if _, err := io.ReadFull(cryptoRand.Reader, b); err == nil {
+		return new(big.Int).SetBytes(b).Uint64()
+	}
+	rand.Seed(rand.Int63())
+	return uint64(rand.Int63())
 }

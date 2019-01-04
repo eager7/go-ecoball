@@ -480,9 +480,11 @@ message QualPBLDKG {
 message BlockRequest {
     bytes   ChainId         = 1;
     uint64  BlockHeight     = 2;
+    uint64  Nonce           = 3;
 }
 
 message BlockResponse {
     bytes   ChainId         = 1;
     repeated Block Blocks   = 2;
+    uint64  Nonce           = 3;
 }

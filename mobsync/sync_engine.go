@@ -6,6 +6,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message/mpb"
+	"github.com/ecoball/go-ecoball/common/utils"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
@@ -41,7 +42,7 @@ func NewSyncEngine(ctx context.Context, ledger ledger.Ledger) (err error) {
 	periodic := func(worker goprocess.Process) {
 		//ctx := ptx.OnClosedContext(worker)
 		current := ledger.GetCurrentHeader(config.ChainHash)
-		if err := event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: current.Hash, BlockHeight: current.Height}); err != nil {
+		if err := event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: current.Hash, BlockHeight: current.Height, Nonce: utils.RandomUint64()}); err != nil {
 			log.Error(err)
 		}
 		<-doneWithRound

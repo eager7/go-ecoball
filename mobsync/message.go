@@ -12,23 +12,20 @@ import (
 type BlockRequest struct {
 	ChainId     common.Hash
 	BlockHeight uint64
+	Nonce       uint64
 }
 
 func (b *BlockRequest) Identify() mpb.Identify {
 	return mpb.Identify_APP_MSG_BLOCK_REQUEST
 }
 func (b *BlockRequest) String() string {
-	return fmt.Sprintf("chain hash:%s, height:%d", b.ChainId.String(), b.BlockHeight)
+	return fmt.Sprintf("chain hash:%s, height:%d, nonce:%d", b.ChainId.String(), b.BlockHeight, b.Nonce)
 }
 func (b *BlockRequest) GetInstance() interface{} {
 	return b
 }
 func (b *BlockRequest) Serialize() ([]byte, error) {
-	proto := pb.BlockRequest{
-		ChainId:     b.ChainId.Bytes(),
-		BlockHeight: b.BlockHeight,
-	}
-
+	proto := pb.BlockRequest{ChainId: b.ChainId.Bytes(), BlockHeight: b.BlockHeight, Nonce: b.Nonce}
 	data, err := proto.Marshal()
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("serialize block request message error:%s", err.Error()))
@@ -42,19 +39,21 @@ func (b *BlockRequest) Deserialize(data []byte) error {
 	}
 	b.ChainId = common.NewHash(proto.ChainId)
 	b.BlockHeight = proto.BlockHeight
+	b.Nonce = proto.Nonce
 	return nil
 }
 
 type BlockResponse struct {
 	ChainId common.Hash
 	Blocks  []*types.Block
+	Nonce   uint64
 }
 
 func (b *BlockResponse) Identify() mpb.Identify {
 	return mpb.Identify_APP_MSG_BLOCK_RESPONSE
 }
 func (b *BlockResponse) String() string {
-	return fmt.Sprintf("chain hash:%s, block number:%d", b.ChainId.String(), len(b.Blocks))
+	return fmt.Sprintf("chain hash:%s, block number:%d, nonce:%d", b.ChainId.String(), len(b.Blocks), b.Nonce)
 }
 func (b *BlockResponse) GetInstance() interface{} {
 	return b
@@ -68,10 +67,7 @@ func (b *BlockResponse) Serialize() ([]byte, error) {
 			pbBlocks = append(pbBlocks, pbBlock)
 		}
 	}
-	proto := pb.BlockResponse{
-		ChainId: b.ChainId.Bytes(),
-		Blocks:  pbBlocks,
-	}
+	proto := pb.BlockResponse{ChainId: b.ChainId.Bytes(), Blocks: pbBlocks, Nonce: b.Nonce}
 	data, err := proto.Marshal()
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("serialize block response message error:%s", err.Error()))
@@ -84,6 +80,7 @@ func (b *BlockResponse) Deserialize(data []byte) error {
 		return errors.New(fmt.Sprintf("deserialize block response message error:%s", err.Error()))
 	}
 	b.ChainId = common.NewHash(proto.ChainId)
+	b.Nonce = proto.Nonce
 	for _, pbBlock := range proto.Blocks {
 		if data, err := pbBlock.Marshal(); err != nil {
 			return errors.New(fmt.Sprintf("marshal pb block error:%s", err.Error()))
