@@ -31,9 +31,9 @@ def run(shell_command):
     If it fails, exit the program with an exit code of 1.
     '''
 
-    print('shared_start.py:', shell_command)
+    print('start_ecoball.py:', shell_command)
     if subprocess.call(shell_command, shell=True):
-        print('shared_start.py: exiting because of error')
+        print('start_ecoball.py: exiting because of error')
         sys.exit(1)
 
 
@@ -65,27 +65,20 @@ def main():
 
     # get netwoek config
     root_dir = os.path.split(os.path.realpath(__file__))[0]
-    with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
+    with open(os.path.join(root_dir, 'setup.toml')) as setup_file:
         data = pytoml.load(setup_file)
 
     network = data["network"]
     all_str = json.dumps(data)
 
     host_ip = args.host_ip
-    committee_count = network[host_ip][0]
-    shard_count = network[host_ip][1]
-    candidate_count = 0
-    if len(network[host_ip]) > 2:
-        candidate_count = network[host_ip][2]
+    producer_count = network[host_ip][0]
+    candidate_count = network[host_ip][1]
 
     #create directory
-    shard_log_dir = os.path.join(root_dir, 'ecoball_log/shard')
-    if not os.path.exists(shard_log_dir):
-        os.makedirs(shard_log_dir)        
-
-    committee_log_dir = os.path.join(root_dir, 'ecoball_log/committee')
-    if not os.path.exists(committee_log_dir):
-        os.makedirs(committee_log_dir)
+    ecoball_log_dir = os.path.join(root_dir, 'ecoball_log')
+    if not os.path.exists(ecoball_log_dir):
+        os.makedirs(ecoball_log_dir)        
 
     p2p_start = 9901
     ipfs_start = 5000
@@ -93,7 +86,7 @@ def main():
     PORT = 20681
     image = "registry.quachain.net:5000/ecoball:1.0.0"
 
-    count = committee_count + shard_count + candidate_count - 1
+    count = producer_count + candidate_count - 1
     while count >= 0:
         # start ecoball
         command = "docker run -d " + "--name=ecoball_" + str(count) + " -p "
@@ -101,10 +94,7 @@ def main():
         command += "-p " + str(ipfs_start + count) + ":5011 " 
         command += "-p " + str(ipfs_gateway + count) + ":7011 " 
         command += " -p " + str(p2p_start + count) + ":" + str(p2p_start + count)
-        if count < committee_count:
-            command += " -v " + committee_log_dir  + ":/var/ecoball_log "
-        else:
-            command += " -v " + shard_log_dir  + ":/var/ecoball_log "
+        command += " -v " + ecoball_log_dir  + ":/var/ecoball_log "
         command += image + " /ecoball/ecoball/start.py "
         command += "-o " + host_ip + " -n " + str(count) + " -a " + "'" + all_str + "'"
         exist, config = get_config(count, host_ip, data)
@@ -125,8 +115,8 @@ def main():
 
     if args.browser:
         # start eballscan
-        command = "docker run -d --name=eballscan --link=ecoball_" + str(committee_count) + ":ecoball_alias -p 20680:20680 "
-        command += image + " /ecoball/eballscan/eballscan_service.sh ecoball_" + str(committee_count)
+        command = "docker run -d --name=eballscan --link=ecoball_" + str(producer_count - 1) + ":ecoball_alias -p 20680:20680 "
+        command += image + " /ecoball/eballscan/eballscan_service.sh ecoball_" + str(producer_count - 1)
         run(command)
         sleep(2)
 
