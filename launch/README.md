@@ -26,7 +26,7 @@ If the configuration items for a container require special customization, do the
 ### shard_setup.toml
 Before starting shard mode, you need to configure shard start profile shard_setup.toml
 ```
-# Configuration file for shard network startup
+# Configuration file for network startup
 
 # Network host IP address list and the number of Producer and Candidate on each physical machine
 # The key string represents the host IP address 

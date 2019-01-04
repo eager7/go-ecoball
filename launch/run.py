@@ -64,7 +64,7 @@ def main():
 
     # get netwoek config
     root_dir = os.path.split(os.path.realpath(__file__))[0]
-    with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
+    with open(os.path.join(root_dir, 'setup.toml')) as setup_file:
         data = pytoml.load(setup_file)
 
     network = data["network"]
@@ -112,7 +112,7 @@ def main():
         elif sysstr == "Linux":            
             shutil.copy2(goPath + "/src/github.com/ecoball/go-ecoball/build/ecoball", os.path.join(run_dir, 'ecoball_' + str(count)))
         shutil.copy2("start.py", os.path.join(run_dir, 'start.py'))
-        shutil.copy2("shard_setup.toml", os.path.join(run_dir, 'shard_setup.toml'))
+        shutil.copy2("setup.toml", os.path.join(run_dir, 'setup.toml'))
         shutil.copy2("ecoball.toml", os.path.join(run_dir, 'ecoball.toml'))
 
         # start ecoball		

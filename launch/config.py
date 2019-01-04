@@ -21,8 +21,18 @@ import subprocess
 import os
 import sys
 import pytoml
-import share_shard
 import platform
+
+def run(shell_command):
+    '''
+    Execute shell command.
+    If it fails, exit the program with an exit code of 1.
+    '''
+
+    print('shared_start.py:', shell_command)
+    if subprocess.call(shell_command, shell=True):
+        print('shared_start.py: exiting because of error')
+        sys.exit(1)
 
 def run_shell_output(command, print_output=True, universal_newlines=True):
     p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, universal_newlines=universal_newlines)
@@ -59,15 +69,15 @@ def main():
     gen_file = goPath + "/src/github.com/ecoball/go-ecoball/test/rsakeygen/main.go"
     sysstr = platform.system()
     if sysstr == "Windows":
-        share_shard.run("cd " + tool_dir + "&& go build -o key_gen.exe " + gen_file)
+        run("cd " + tool_dir + "&& go build -o key_gen.exe " + gen_file)
         key_gen = os.path.join(tool_dir + "/key_gen.exe")
     elif sysstr == "Linux":
-        share_shard.run("cd " + tool_dir + "&& go build -o key_gen " + gen_file)
+        run("cd " + tool_dir + "&& go build -o key_gen " + gen_file)
         key_gen = os.path.join(tool_dir + "/key_gen")
 
     #get config
     data = {}
-    with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
+    with open(os.path.join(root_dir, 'setup.toml')) as setup_file:
         data = pytoml.load(setup_file)
 
     bootstrap_address_list = []
@@ -139,7 +149,7 @@ def main():
                 count += 1
 
     #new config
-    with open(os.path.join(root_dir, 'shard_setup.toml'), 'w') as setup_file:
+    with open(os.path.join(root_dir, 'setup.toml'), 'w') as setup_file:
         pytoml.dump(data, setup_file)
 
 
