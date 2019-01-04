@@ -601,12 +601,13 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		tx.Receipt.Result = common.CopyBytes(ret)
 	}
 
-	if err := s.RecoverResources(tx.From, timeStamp, cpuLimit, netLimit); err != nil {
+	//TODO:测试期间暂时关掉资源检测
+	/*if err := s.RecoverResources(tx.From, timeStamp, cpuLimit, netLimit); err != nil {
 		return nil, 0, 0, err
 	}
 	if err := s.SubResources(tx.From, cpu, net, cpuLimit, netLimit); err != nil {
 		return nil, 0, 0, err
-	}
+	}*/
 
 	return ret, cpu, net, nil
 }
