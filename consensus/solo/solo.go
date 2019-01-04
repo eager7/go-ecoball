@@ -44,7 +44,9 @@ type Solo struct {
 func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.Account) (solo *Solo, err error) {
 	solo = &Solo{ledger: l, stop: make(chan struct{}, 1), txPool: txPool, Chains: make(map[common.Hash]common.Address, 1), account: acc}
 	actor := &soloActor{solo: solo}
-	NewSoloActor(actor)
+	if actor.pid, err = NewSoloActor(actor); err != nil {
+		return nil, err
+	}
 
 	msg := []mpb.Identify{
 		mpb.Identify_APP_MSG_BLOCK,
@@ -64,12 +66,10 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.
 		return nil, err
 	}
 	for _, c := range chains {
-		m := message.RegChain{
-			ChainID: c.Hash,
-			Address: c.Address,
-			TxHash:  c.TxHash,
+		m := message.RegChain{ChainID: c.Hash, Address: c.Address, TxHash:  c.TxHash,}
+		if err := event.Send(event.ActorNil, event.ActorConsensusSolo, &m); err != nil {
+			log.Error("send reg chain message failed:", err)
 		}
-		event.Send(event.ActorNil, event.ActorConsensusSolo, &m)
 	}
 	return solo, nil
 }
@@ -103,7 +103,10 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 					panic(err)
 				}
 			}
-			block.SetSignature(&config.Root)
+			if err := block.SetSignature(&config.Root); err != nil {
+				log.Error("signature failed:", err)
+				continue
+			}
 			if err := solo.ledger.VerifyTxBlock(chainID, block); err != nil {
 				log.Warn(err)
 				continue
