@@ -474,3 +474,15 @@ message QualPBLDKG {
      int64                   epochNum  = 2;
      repeated    int32       QUAL      = 3;
 }
+
+//同步消息
+
+message BlockRequest {
+    bytes   ChainId         = 1;
+    uint64  BlockHeight     = 2;
+}
+
+message BlockResponse {
+    bytes   ChainId         = 1;
+    repeated Block Blocks   = 2;
+}

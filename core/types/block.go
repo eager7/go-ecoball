@@ -121,7 +121,7 @@ func (b *Block) GetTransaction(hash common.Hash) *Transaction {
  *  @return []byte - a sequence of characters
  */
 func (b *Block) Serialize() (data []byte, err error) {
-	p, err := b.proto()
+	p, err := b.Proto()
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (b *Block) GetInstance() interface{} {
 	return b
 }
 
-func (b *Block) proto() (*pb.Block, error) {
+func (b *Block) Proto() (*pb.Block, error) {
 	var block pb.Block
 	var err error
 	block.Header, err = b.Header.proto()
