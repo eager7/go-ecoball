@@ -3,6 +3,7 @@ package net
 import (
 	"context"
 	"fmt"
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/hashicorp/golang-lru"
 
 	"github.com/ecoball/go-ecoball/common/config"
@@ -248,8 +249,9 @@ func (i *Instance) receive(s net.Stream) {
 			}
 			return
 		}
-		log.Info("receive msg:", msg.Nonce, msg.Identify.String())
-		if i.MessageFilter(msg) {
+		hash := common.SingleHash(msg.Payload)
+		log.Info("receive msg:", hash.String(), msg.Identify.String())
+		if i.MessageFilter(hash) {
 			log.Info("the message is redundancy message, drop it!")
 			return
 		}
@@ -286,6 +288,8 @@ func (i *Instance) transmit(s net.Stream, sendMsg *mpb.Message) error {
 	if err := s.SetWriteDeadline(time.Time{}); err != nil {
 		log.Warn("error resetting deadline: ", err)
 	}
-	log.Info("transmit message finished:", sendMsg.Nonce, sendMsg.Identify)
+	hash := common.SingleHash(sendMsg.Payload)
+	i.MessageMarked(hash)
+	log.Info("transmit message finished:", hash.String(), sendMsg.Identify)
 	return nil
 }

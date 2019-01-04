@@ -12,7 +12,6 @@ func (i *Instance) NewMessage(msg types.EcoMessage) (*mpb.Message, error) {
 		return nil, err
 	}
 	nonce := utils.RandomUint64()
-	i.MessageMarked(nonce)
 	m := &mpb.Message{
 		Nonce:    nonce,
 		Identify: msg.Identify(),
@@ -21,8 +20,8 @@ func (i *Instance) NewMessage(msg types.EcoMessage) (*mpb.Message, error) {
 	return m, nil
 }
 
-func (i *Instance) MessageFilter(msg *mpb.Message) bool {
-	return i.msgFilter.Contains(msg.Nonce)
+func (i *Instance) MessageFilter(key interface{}) bool {
+	return i.msgFilter.Contains(key)
 }
 
 func (i *Instance) MessageMarked(key interface{}) {
