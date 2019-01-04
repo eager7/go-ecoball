@@ -186,6 +186,7 @@ func (i *Instance) BroadcastToNeighbors(msg types.EcoMessage) error {
 			} else if len(info.PeerInfo.Addrs) > 0 {
 				if s, err = i.newStream(info.ID, info.PeerInfo.Addrs[0]); err != nil {
 					log.Error("new stream error:", err)
+					continue
 				}
 			}
 		}
@@ -260,6 +261,10 @@ func (i *Instance) receive(s net.Stream) {
 }
 
 func (i *Instance) transmit(s net.Stream, sendMsg *mpb.Message) error {
+	if s == nil || sendMsg ==  nil {
+		log.Warn(s, sendMsg)
+		return errors.New("the param is invalid")
+	}
 	deadline := time.Now().Add(sendMessageTimeout)
 	if dl, ok := i.ctx.Deadline(); ok {
 		deadline = dl
