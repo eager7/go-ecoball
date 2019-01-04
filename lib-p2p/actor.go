@@ -22,6 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/lib-p2p/net"
+	"github.com/ecoball/go-ecoball/mobsync"
 	"reflect"
 )
 
@@ -88,6 +89,10 @@ func (n *netActor) Receive(ctx actor.Context) {
 	case message.NetPacket:
 		n.singleMessage <- SingleMessage{PublicKey: msg.PublicKey, Address: msg.Address, Port: msg.Port, Message: msg.Message}
 	case *types.Block:
+		n.broadcastMessage <- BroadcastMessage{Message: msg}
+	case *mobsync.BlockRequest:
+		n.broadcastMessage <- BroadcastMessage{Message: msg}
+	case *mobsync.BlockResponse:
 		n.broadcastMessage <- BroadcastMessage{Message: msg}
 	default:
 		log.Error("unknown message type:", reflect.TypeOf(ctx.Message()))

@@ -31,13 +31,15 @@ enum  Identify {
     APP_MSG_SYNC_RESPONSE       = 25;
     APP_MSG_STRING              = 26;
     APP_MSG_EBALLSCAN_HEIGHT    = 27;
+    APP_MSG_BLOCK_REQUEST       = 28;
+    APP_MSG_BLOCK_RESPONSE      = 29;
 
-    APP_MSG_UNDEFINED           = 28;
+    APP_MSG_UNDEFINED           = 30;
 }
 
 
 message Message {
-    bytes       Hash            = 1;
+    uint64      Nonce           = 1;
     Identify    Identify        = 2;
 	bytes       Payload         = 4;
 }

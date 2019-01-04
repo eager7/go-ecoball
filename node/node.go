@@ -17,6 +17,7 @@
 package main
 
 import (
+	"github.com/ecoball/go-ecoball/mobsync"
 	"os"
 	"os/signal"
 	"syscall"
@@ -146,7 +147,10 @@ func runNode(c *cli.Context) error {
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
-
+	if err := mobsync.NewSyncEngine(ctx, ledger.L); err != nil {
+		log.Error(err)
+		return err
+	}
 	//start block chain browser
 	ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)
