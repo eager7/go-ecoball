@@ -28,13 +28,10 @@ Before starting shard mode, you need to configure shard start profile shard_setu
 ```
 # Configuration file for shard network startup
 
-# Number of nodes per shard
-size = 2
-
-# Network host IP address list and the number of Committee and Shard on each physical machine
+# Network host IP address list and the number of Producer and Candidate on each physical machine
 # The key string represents the host IP address 
-# The first value represents the number of Committee nodes
-# The second value represents the number of Shard nodes
+# The first value represents the number of Producer nodes
+# The second value represents the number of Candidate nodes
 [network]
 "192.168.9.43" = [2, 4]
 
