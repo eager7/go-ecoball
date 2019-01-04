@@ -55,6 +55,8 @@ func NewSyncEngine(ctx context.Context, ledger ledger.Ledger) (err error) {
 	doneWithRound <- struct{}{}
 	close(doneWithRound)
 
+	go engine.handlerThread()
+
 	return nil
 }
 
