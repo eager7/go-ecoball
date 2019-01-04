@@ -1079,7 +1079,7 @@ func InvokeSingleContract(ledger ledger.Ledger) {
 	path := os.Getenv("GOPATH")
 
 	// contract file1 data
-	file, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/contract/testToken/token_api.wasm", os.O_RDONLY, 0666)
+	file, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/contract/token/token.wasm", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file inline_action.wasm failed")
 		return
@@ -1093,7 +1093,7 @@ func InvokeSingleContract(ledger ledger.Ledger) {
 	}
 
 	// abi file, common for contract file1 and file2
-	abifile, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/contract/testToken/simple_token.abi", os.O_RDONLY, 0666)
+	abifile, err := os.OpenFile(path+"/src/github.com/ecoball/go-ecoball/test/contract/token/token.abi", os.O_RDONLY, 0666)
 	if err != nil {
 		fmt.Println("open file simple_token.abi failed")
 		return
@@ -1176,7 +1176,7 @@ func InvokeSingleContract(ledger ledger.Ledger) {
 	errors.CheckErrorPanic(err)
 	invoke.SetSignature(&config.Worker)
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorTxPool, invoke))
-	time.Sleep(time.Millisecond * 2500)
+	time.Sleep(time.Millisecond * 3000)
 
 	// transfer
 	trans := []byte(`{"from": "worker1", "to": "worker2", "amount": "20", "token_id": "XYX"}`)
