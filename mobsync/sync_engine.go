@@ -110,8 +110,8 @@ func (e *Engine) SyncBlockChain(msg *mpb.Message) error {
 		return err
 	}
 	current := e.ledger.GetCurrentHeader(block.ChainID)
-	if current.Height < block.Height {
-		return event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: current.Hash, BlockHeight: current.Height, Nonce: utils.RandomUint64()})
+	if current != nil && current.Height < block.Height {
+		return event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: block.Hash, BlockHeight: current.Height, Nonce: utils.RandomUint64()})
 	}
 	return nil
 }
@@ -125,9 +125,9 @@ func (e *Engine) HandleBlockRequest(msg *mpb.Message) error {
 	if err := request.Deserialize(msg.Payload); err != nil {
 		return err
 	}
+	log.Debug("handle block request message:", request.ChainId.String(), request.BlockHeight)
 	current := e.ledger.GetCurrentHeader(request.ChainId)
-	log.Debug("handle block request message:", current.Height, request.BlockHeight)
-	if current.Height <= request.BlockHeight {
+	if current != nil && current.Height <= request.BlockHeight {
 		log.Info("our chain block is older than request:", current.Height, request.BlockHeight)
 		return nil
 	}
