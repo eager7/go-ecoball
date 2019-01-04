@@ -134,7 +134,7 @@ def main():
                 count += 1
 
     #new config
-    with open(os.path.join(root_dir, 'shard_setup.toml'), 'w') as setup_file:
+    with open(os.path.join(root_dir, 'setup.toml'), 'w') as setup_file:
         pytoml.dump(data, setup_file)
 
 
