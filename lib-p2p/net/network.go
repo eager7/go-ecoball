@@ -248,7 +248,7 @@ func (i *Instance) receive(s net.Stream) {
 			}
 			return
 		}
-		log.Info("receive msg:", msg.Identify.String())
+		log.Info("receive msg:", msg.Nonce, msg.Identify.String())
 		if i.MessageFilter(msg) {
 			log.Info("the message is redundancy message, drop it!")
 			return
@@ -286,6 +286,6 @@ func (i *Instance) transmit(s net.Stream, sendMsg *mpb.Message) error {
 	if err := s.SetWriteDeadline(time.Time{}); err != nil {
 		log.Warn("error resetting deadline: ", err)
 	}
-	log.Info("transmit message finished:", sendMsg.Identify)
+	log.Info("transmit message finished:", sendMsg.Nonce, sendMsg.Identify)
 	return nil
 }
