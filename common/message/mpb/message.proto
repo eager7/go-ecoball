@@ -37,7 +37,7 @@ enum  Identify {
 
 
 message Message {
-    bytes       Hash            = 1;
+    uint64      Nonce           = 1;
     Identify    Identify        = 2;
 	bytes       Payload         = 4;
 }
