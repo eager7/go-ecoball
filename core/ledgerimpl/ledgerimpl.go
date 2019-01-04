@@ -106,7 +106,7 @@ func (l *LedgerImpl) GetTxBlockByHeight(chainID common.Hash, height uint64) (*ty
 func (l *LedgerImpl) GetCurrentHeader(chainID common.Hash) *types.Header {
 	chain := l.ChainMap.Get(chainID)
 	if chain == nil {
-		errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+		log.Error(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 		return nil
 	}
 	return chain.CurrentHeader
@@ -114,7 +114,7 @@ func (l *LedgerImpl) GetCurrentHeader(chainID common.Hash) *types.Header {
 func (l *LedgerImpl) GetCurrentHeight(chainID common.Hash) uint64 {
 	chain := l.ChainMap.Get(chainID)
 	if chain == nil {
-		errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+		log.Error(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 		return 0
 	}
 	return chain.CurrentHeader.Height
