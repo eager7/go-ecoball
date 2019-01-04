@@ -61,6 +61,9 @@ func (i *Instance) bootStrapConnect(ctx context.Context, bsPeers []config.Bootst
 
 	var notConnected []peerstore.PeerInfo
 	for _, p := range bsPeers {
+		if p.ID() == i.ID {
+			continue
+		}
 		if i.Host.Network().Connectedness(p.ID()) != net.Connected {
 			protocols := len(p.Multiaddr().Protocols())
 			sep := "/" + p.Multiaddr().Protocols()[protocols-1].Name
@@ -82,10 +85,11 @@ func (i *Instance) bootStrapConnect(ctx context.Context, bsPeers []config.Bootst
 			defer wg.Done()
 			log.Debug(fmt.Sprintf("%s bootstrapping to %s", i.Host.ID().Pretty(), p.ID.Pretty()))
 			if err := i.Host.Connect(i.ctx, p); err != nil {
-				log.Error("failed to bootstrap with:", p.ID.Pretty(), err)
+				log.Error("failed to bootstrap with:dial to self attempted", p.ID.Pretty(), err)
 				return
 			}
 			log.Info("bootstrapped successfully with:", p.ID.Pretty())
+			i.senderMap.Add(p.ID, nil, p.Addrs[0])
 		}(p)
 	}
 	wg.Wait()

@@ -42,9 +42,11 @@ const (
 	pubKey1 = "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBANqQleuG0BmzpttZ1lfkGmxyKILudJEFLgFcnguSllgdN+6GoeZmByZLoiioTTVgexmXcLGDUdHz5wREhaEo/cx2RwdaUZES6Lewzc82vkmPmp1HMQB3d5s45SMuwqDVSgfvlzdUOXu9629hTgDE//wlq47Kgk6aDCyuLA7jlLGzAgMBAAE="
 	priKey2 = "CAAS4AQwggJcAgEAAoGBAJXs/ovug1g4gu43I08QiyUSN9E4SSuWqFNe4qYNn6x6PhTTVDW1yatb8uE3aaFB+Jm9Pyh3eADQ9y8EFK9XN5fwJp7y3szeD/xl0HtiNk1xJKmRX+njEPZ3F6XMAL6wA6FFlif6FI9wj4bci0pk4g5xi28vQ6XBO50G71YUIhbfAgMBAAECgYA6mk2RQuTiSgybsr/BevT4w5s/06F+QUCAfhlX0QF1+L5lg4lqCSnQKnvQnslSOChFZ9zVI4WrxAKqxQyU0SGwUA0yDGIQ+MKcr85+vhrPB9qlA6+/Ruy7cqQ8ZF38Y57KSAC7jXLiuOfm580bHHWd1k0ijgR/7j7FLvjF6JChcQJBAMTDloPI99mGkUzqRZ2Gwl9ArVdTWDZZxmuuOGYpSpif5zszDYoME6w4J+ldrmSQZEr9G01sZF5djwMC/air1GkCQQDDD6CY2zzKYSus2WSfBnREtcb6ktmo/3nXgmufesR40CVNKaLJB5ej+f6qtMfOdv80d43h1I7HAP9MNKYI7AgHAkBNkwcOYfdFbYZvmpVjq7OKNkeg/Bz1IKPX5FIcBP+B+NkDP/eAi45eAa3KlcKhp0PDRNK0zZ0sjxpJB67WBxixAkA+omH7M0rN4W3YzuWUesoS1hvSkhz6Oy6wmNxeFVnJQWz43gm7a4ixyrCPuAUAsw03l7wja9F87UENA0rdSo05AkEAvMVIUj61Uce6U9Z26YjexBll1DwWS5AMRXgvFiKtaf+DLog1c7c4XS9zxZapzbaRi0WxFX2bz1VLXEbq2ypINg=="
 	pubKey2 = "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAJXs/ovug1g4gu43I08QiyUSN9E4SSuWqFNe4qYNn6x6PhTTVDW1yatb8uE3aaFB+Jm9Pyh3eADQ9y8EFK9XN5fwJp7y3szeD/xl0HtiNk1xJKmRX+njEPZ3F6XMAL6wA6FFlif6FI9wj4bci0pk4g5xi28vQ6XBO50G71YUIhbfAgMBAAE="
+	p2p_peer_privatekey  = "CAAS4QQwggJdAgEAAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAECgYB+gMqNMdvqX89PQ7flaq7vRsM3gm5a0GeJf7GddMOc+XXMPUrW4S6hTzdwKgim0PGrcRJXr154G2qHHMZPImEY3ZBgI1k7wawJFiTpFq6KEK7kN1yh0Baj3XmtDVysa0x3gzkuKmDEgyoaXilOMYkDU1egJHQpm7Q1gL7lY4/iAQJBAN4OcEl83zFG2J4Yb/QOP1eshKMdEPVYN45jZLgkG0EKcM4QCTBLDNbnCnDKcxbYwBJGiwCtf+XSAHGtG5KYDuUCQQDWQ+Mr8/aHV/zFDROsF+zbfNOebTMp9pIBYouPp3bVj/0atlv1cMdquOM6vMMoNzHjXDVelgp5pwunTfbPweODAkEAzwvhcPQI29Z2FfstL/+02hfW2Iw6irkFnDNa70NjUiLdCZX0K15fC2YD2yU5aH0Toja6VxhvH6fOmC/TfL1hbQJBAJXG1uI+o7Jwey1zurCt+NBlLbitNPq8dcuqC0zcD2GySYeGujmUIJIltBG3KeTO0HzSVCxOTfxEHQ1SnpkUO+kCQGrAkPrA0qIGsYHe3Kk+FbvY6orzyiPBhRaAQphAx96gg2lUxi4NeM3qxlakHq+Vh8Y+xr1b7VZ2mw9bfJViLkY="
+	p2p_peer_publickey   = "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAE="
 )
 
-func TestServer(t *testing.T) {
+func xTestServer(t *testing.T) {
 	event.InitMsgDispatcher()
 	p2p.InitNetWork(context.Background(), priKey1, "/ip4/0.0.0.0/tcp/9011", "/ip4/0.0.0.0/tcp/9012")
 	time.Sleep(time.Second*1)
@@ -56,8 +58,16 @@ func TestServer(t *testing.T) {
 func TestClient(t *testing.T) {
 	event.InitMsgDispatcher()
 	p2p.InitNetWork(context.Background(), priKey2, "/ip4/0.0.0.0/tcp/9013", "/ip4/0.0.0.0/tcp/9014")
+	//m := example.Message("hello server, i am client")
+	//event.Send(event.ActorNil, event.ActorP2P, message.NetPacket{Address: "127.0.0.1", Port: "9012", PublicKey: pubKey1, Message: &m})
+	event.Send(event.ActorNil, event.ActorP2P, example.TestTransfer())
 	time.Sleep(time.Second*1)
-	m := example.Message("hello server, i am client")
-	event.Send(event.ActorNil, event.ActorP2P, message.NetPacket{Address: "127.0.0.1", Port: "9012", PublicKey: pubKey1, Message: &m})
+	//utils.Pause()
+}
+
+func TestBootstrap(t *testing.T) {
+	event.InitMsgDispatcher()
+	p2p.InitNetWork(context.Background())
 	utils.Pause()
 }
+

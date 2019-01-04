@@ -203,6 +203,7 @@ func wait(shutdown chan bool) {
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer signal.Stop(interrupt)
 	sig := <-interrupt
+	event.EventStop()
 	log.Info("ecoball received signal:", sig)
 	close(shutdown)
 }

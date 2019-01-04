@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
@@ -31,12 +32,13 @@ const (
 )
 
 type Instance struct {
-	ctx     context.Context
-	Host    host.Host
-	ID      peer.ID
-	Address []string
-	Peers   address.SenderMap
-	lock    sync.RWMutex
+	ctx          context.Context
+	Host         host.Host
+	ID           peer.ID
+	Address      []string
+	BootStrapper *BootStrap
+	senderMap    address.SenderMap
+	lock         sync.RWMutex
 }
 
 func NewInstance(ctx context.Context, b64Pri string, address ...string) (*Instance, error) {
@@ -44,7 +46,7 @@ func NewInstance(ctx context.Context, b64Pri string, address ...string) (*Instan
 		ctx = context.Background()
 	}
 	i := &Instance{ctx: ctx}
-	i.Peers.Initialize()
+	i.senderMap.Initialize()
 	i.Address = append(i.Address, address...)
 	if err := i.initNetwork(b64Pri); err != nil {
 		return nil, err
@@ -117,7 +119,16 @@ func (i *Instance) initNetwork(b64Pri string) (err error) {
 	}
 	fullAddr := addrM.Encapsulate(hostAddr)
 	log.Debug("I am ", fullAddr, i.Host.Peerstore().Addrs(i.ID))
+	log.Debug("start bootstrap nodes...")
+	i.BootStrapper = i.bootStrapInitialize(config.SwarmConfig.BootStrapAddr)
 	return nil
+}
+
+func (i *Instance) StopNetwork() {
+	if i.BootStrapper != nil {
+		i.BootStrapper.closer.Close()
+	}
+	i.Host.Network().StopNotify(i)
 }
 
 //多次发送只会触发一次这个回调函数，之后需要在线程中做收发
@@ -138,7 +149,7 @@ func (i *Instance) SendMessage(b64Pub, addr, port string, msg types.EcoMessage) 
 		return errors.New(err.Error())
 	}
 	var s net.Stream
-	info := i.Peers.Get(id)
+	info := i.senderMap.Get(id)
 	if info == nil || info.Stream == nil {
 		multiAddr, err := multiaddr.NewMultiaddr(address.NewAddrInfo(addr, port))
 		if err != nil {
@@ -166,7 +177,7 @@ func (i *Instance) BroadcastToNeighbors(msg types.EcoMessage) error {
 	for _, c := range i.Host.Network().Conns() {
 		id := c.RemotePeer()
 		var s net.Stream
-		info := i.Peers.Get(id)
+		info := i.senderMap.Get(id)
 		if info == nil {
 			log.Error(fmt.Sprintf("the node is not connected:%s", id.Pretty()))
 		} else {
@@ -205,12 +216,12 @@ func (i *Instance) connect(b64Pub, addr, port string) error {
 	if err := i.Host.Connect(i.ctx, pi); err != nil {
 		return errors.New(err.Error())
 	}
-	i.Peers.Add(id, nil, multiAddr)
+	i.senderMap.Add(id, nil, multiAddr)
 	return nil
 }
 
 func (i *Instance) newStream(id peer.ID, multiAddr multiaddr.Multiaddr) (net.Stream, error) {
-	if p := i.Peers.Get(id); p != nil {
+	if p := i.senderMap.Get(id); p != nil && p.Stream != nil {
 		log.Warn("the stream is created:", p.Stream)
 		return p.Stream, nil
 	}
@@ -223,7 +234,7 @@ func (i *Instance) newStream(id peer.ID, multiAddr multiaddr.Multiaddr) (net.Str
 		return nil, errors.New(err.Error())
 	}
 	log.Info("add stream:", s)
-	i.Peers.Add(id, s, multiAddr)
+	i.senderMap.Add(id, s, multiAddr)
 	return s, nil
 }
 
@@ -238,7 +249,7 @@ func (i *Instance) receive(s net.Stream) {
 			s.Reset()
 			return
 		}
-		log.Info("receive msg:", msg.String())
+		log.Info("receive msg:", msg.Identify.String())
 		if err := event.Publish(msg, msg.Identify); err != nil {
 			log.Error("event publish error:", err)
 			return
@@ -260,7 +271,7 @@ func (i *Instance) transmit(s net.Stream, sendMsg *mpb.Message) error {
 	err := writer.WriteMsg(sendMsg)
 	if err != nil {
 		s.Reset()
-		i.Peers.Del(s.Conn().RemotePeer())
+		i.senderMap.Del(s.Conn().RemotePeer())
 		return errors.New(err.Error())
 	}
 	if err := s.SetWriteDeadline(time.Time{}); err != nil {
