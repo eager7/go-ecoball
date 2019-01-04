@@ -3,6 +3,7 @@ package net
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/golang-lru"
 
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
@@ -37,6 +38,7 @@ type Instance struct {
 	ID           peer.ID
 	Address      []string
 	BootStrapper *BootStrap
+	msgFilter    *lru.Cache
 	senderMap    address.SenderMap
 	lock         sync.RWMutex
 }
@@ -46,6 +48,7 @@ func NewInstance(ctx context.Context, b64Pri string, address ...string) (*Instan
 		ctx = context.Background()
 	}
 	i := &Instance{ctx: ctx}
+	i.msgFilter, _ = lru.New(100000)
 	i.senderMap.Initialize()
 	i.Address = append(i.Address, address...)
 	if err := i.initNetwork(b64Pri); err != nil {
@@ -137,13 +140,11 @@ func (i *Instance) NetworkHandler(s net.Stream) {
 	go i.receive(s)
 }
 
-func (i *Instance) SendMessage(b64Pub, addr, port string, msg types.EcoMessage) error {
-	data, err := msg.Serialize()
-	if err != nil {
+func (i *Instance) SendMessage(b64Pub, addr, port string, msg types.EcoMessage) (err error) {
+	var sendMsg *mpb.Message
+	if sendMsg, err = i.NewMessage(msg); err != nil {
 		return err
 	}
-	sendMsg := &mpb.Message{Identify: msg.Identify(), Payload: data}
-
 	id, err := address.IdFromPublicKey(b64Pub)
 	if err != nil {
 		return errors.New(err.Error())
@@ -168,12 +169,11 @@ func (i *Instance) SendMessage(b64Pub, addr, port string, msg types.EcoMessage) 
 	return i.transmit(s, sendMsg)
 }
 
-func (i *Instance) BroadcastToNeighbors(msg types.EcoMessage) error {
-	data, err := msg.Serialize()
-	if err != nil {
+func (i *Instance) BroadcastToNeighbors(msg types.EcoMessage) (err error) {
+	var sendMsg *mpb.Message
+	if sendMsg, err = i.NewMessage(msg); err != nil {
 		return err
 	}
-	sendMsg := &mpb.Message{Identify: msg.Identify(), Payload: data}
 	for _, c := range i.Host.Network().Conns() {
 		id := c.RemotePeer()
 		var s net.Stream
@@ -249,6 +249,10 @@ func (i *Instance) receive(s net.Stream) {
 			return
 		}
 		log.Info("receive msg:", msg.Identify.String())
+		if i.MessageFilter(msg) {
+			log.Info("the message is redundancy message, drop it!")
+			return
+		}
 		if err := event.Publish(msg, msg.Identify); err != nil {
 			log.Error("event publish error:", err)
 			return
