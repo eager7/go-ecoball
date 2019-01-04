@@ -253,7 +253,7 @@ func (i *Instance) receive(s net.Stream) {
 		log.Info("receive msg:", hash.String(), msg.Identify.String())
 		if i.MessageFilter(hash) {
 			log.Info("the message is redundancy message, drop it!")
-			return
+			continue
 		}
 		if err := event.Publish(msg, msg.Identify); err != nil {
 			log.Error("event publish error:", err)
