@@ -111,7 +111,7 @@ func (e *Engine) SyncBlockChain(msg *mpb.Message) error {
 	}
 	current := e.ledger.GetCurrentHeader(block.ChainID)
 	if current != nil && current.Height < block.Height {
-		return event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: block.Hash, BlockHeight: current.Height, Nonce: utils.RandomUint64()})
+		return event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: block.ChainID, BlockHeight: current.Height, Nonce: utils.RandomUint64()})
 	}
 	return nil
 }
