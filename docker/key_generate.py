@@ -60,14 +60,16 @@ def main():
 
     #get config
     data = {}
-    with open(os.path.join(root_dir, 'shard_setup.toml')) as setup_file:
+    with open(os.path.join(root_dir, 'setup.toml')) as setup_file:
         data = pytoml.load(setup_file)
 
+    # node diff
     start_port = 9901
+    bootstrap_address_list = []
     network = data["network"]
     for one_ip in network:
         count_list = network[one_ip]
-        for i in range(3):
+        for i in range(2):
             count = 0
             while count < count_list[i]:
                 result_str, result_code = run_shell_output(key_gen)
@@ -82,13 +84,18 @@ def main():
                     if -1 != index:
                         private_str = one_str[index + len("Private Key:"):].strip()
                         continue
+
                     index = one_str.find("Public  Key:") 
                     if -1 != index:
                         public_str = one_str[index + len("Public  Key:"):].strip()
+                        continue
+
+                    index = one_str.find("Id Key:") 
+                    if -1 != index:
+                        id_str = one_str[index + len("Id Key:"):].strip()
+
                 if 1 == i:
-                    tail = count + count_list[0]
-                elif 2 == i:
-                    tail = count + count_list[0] + count_list[1]                    
+                    tail = count + count_list[0]                  
                 else:
                     tail = count
                 one_config = one_ip + "_" + str(tail)
@@ -98,6 +105,23 @@ def main():
                 data[one_config]["p2p_peer_publickey"] = public_str
                 port = start_port + tail
                 data[one_config]["p2p_listen_address"] = ["/ip4/0.0.0.0/tcp/" + str(port), "/ip6/::/tcp/4013"]
+                bootstrap_address_list.append("/ip4/" + one_ip + "/tcp/" + str(port) + "/ipfs/" + id_str)
+                count += 1
+
+    # all node same
+    for one_ip in network:
+        count_list = network[one_ip]
+        for i in range(2):
+            count = 0
+            while count < count_list[i]:
+                if 1 == i:
+                    tail = count + count_list[0]                   
+                else:
+                    tail = count
+                one_config = one_ip + "_" + str(tail)
+                if one_config not in data:
+                    data[one_config] = {}            
+                data[one_config]["bootstrap_address"] = bootstrap_address_list
                 count += 1
 
     #new config

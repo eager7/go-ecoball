@@ -21,15 +21,15 @@ COPY ecoball.toml /ecoball/ecoball/
 COPY start.py /ecoball/ecoball/
 
 #ipfs
-COPY swarm.key /tmp/storage/
+# COPY swarm.key /tmp/storage/
 
 #ecowallet
 COPY ecowallet /ecoball/ecowallet/
 
 #eballscan
-COPY cockroach /usr/local/bin
-COPY eballscan /ecoball/eballscan/build/
-COPY eballscan_service.sh /ecoball/eballscan/
+# COPY cockroach /usr/local/bin
+# COPY eballscan /ecoball/eballscan/build/
+# COPY eballscan_service.sh /ecoball/eballscan/
 
 EXPOSE 20678
 EXPOSE 20679
