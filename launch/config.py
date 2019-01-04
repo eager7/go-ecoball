@@ -29,9 +29,9 @@ def run(shell_command):
     If it fails, exit the program with an exit code of 1.
     '''
 
-    print('shared_start.py:', shell_command)
+    print('config.py:', shell_command)
     if subprocess.call(shell_command, shell=True):
-        print('shared_start.py: exiting because of error')
+        print('config.py: exiting because of error')
         sys.exit(1)
 
 def run_shell_output(command, print_output=True, universal_newlines=True):
