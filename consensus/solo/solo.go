@@ -66,7 +66,7 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.
 		return nil, err
 	}
 	for _, c := range chains {
-		m := message.RegChain{ChainID: c.Hash, Address: c.Address, TxHash:  c.TxHash,}
+		m := message.RegChain{ChainID: c.Hash, Address: c.Address, TxHash: c.TxHash}
 		if err := event.Send(event.ActorNil, event.ActorConsensusSolo, &m); err != nil {
 			log.Error("send reg chain message failed:", err)
 		}
@@ -81,7 +81,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 	root := common.AddressFromPubKey(solo.account.PublicKey)
 	startNode := root.Equals(&addr)
 	for {
-		t.Reset(time.Second * 2)
+		t.Reset(time.Millisecond * time.Duration(config.TimeSlot))
 		select {
 		case <-t.C:
 			if !startNode {
@@ -134,9 +134,7 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 				log.Error(err)
 				continue
 			}
-			if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
-				log.Fatal(err)
-			}
+
 		}
 	}
 }

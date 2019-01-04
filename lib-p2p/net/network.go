@@ -178,18 +178,13 @@ func (i *Instance) BroadcastToNeighbors(msg types.EcoMessage) error {
 		id := c.RemotePeer()
 		var s net.Stream
 		info := i.senderMap.Get(id)
-		if info == nil {
-			log.Error(fmt.Sprintf("the node is not connected:%s", id.Pretty()))
-			continue
-		} else {
-			if info.Stream != nil {
-				s = info.Stream
-			} else if len(info.PeerInfo.Addrs) > 0 {
-				if s, err = i.newStream(info.ID, info.PeerInfo.Addrs[0]); err != nil {
-					log.Error("new stream error:", err)
-					continue
-				}
+		if info == nil || info.Stream == nil {
+			if s, err = i.newStream(id, c.RemoteMultiaddr()); err != nil {
+				log.Warn("new stream error:", err)
+				continue
 			}
+		} else {
+			s = info.Stream
 		}
 		if err := i.transmit(s, sendMsg); err != nil {
 			log.Error("transmit err:", err)
@@ -262,7 +257,7 @@ func (i *Instance) receive(s net.Stream) {
 }
 
 func (i *Instance) transmit(s net.Stream, sendMsg *mpb.Message) error {
-	if s == nil || sendMsg ==  nil {
+	if s == nil || sendMsg == nil {
 		log.Warn(s, sendMsg)
 		return errors.New("the param is invalid")
 	}
