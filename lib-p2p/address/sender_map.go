@@ -27,7 +27,7 @@ func (p *SenderMap) Initialize() {
 func (p *SenderMap) Add(id peer.ID, s net.Stream, addr multiaddr.Multiaddr) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	if _, ok := p.Peers[id]; ok {
+	if info, ok := p.Peers[id]; ok && info.Stream != nil {
 		return
 	}
 	peerInfo := peerstore.PeerInfo{ID: id, Addrs: []multiaddr.Multiaddr{addr}}

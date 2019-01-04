@@ -59,9 +59,11 @@ func (i *Instance) bootStrapConnect(ctx context.Context, bsPeers []config.Bootst
 	ctx, cancel := context.WithTimeout(ctx, bootStrapTimeOut)
 	defer cancel()
 
+	log.Debug("bootstrap connect:", bsPeers)
 	var notConnected []peerstore.PeerInfo
 	for _, p := range bsPeers {
 		if p.ID() == i.ID {
+			log.Debug("skip self address")
 			continue
 		}
 		if i.Host.Network().Connectedness(p.ID()) != net.Connected {
@@ -73,7 +75,7 @@ func (i *Instance) bootStrapConnect(ctx context.Context, bsPeers []config.Bootst
 		}
 	}
 	if len(notConnected) < 1 {
-		log.Warn("not enough bootstrap peers to connect")
+		log.Warn("the bootstrap peers were connected already")
 		return nil
 	}
 
