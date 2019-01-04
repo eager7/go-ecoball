@@ -33,7 +33,7 @@ Before starting shard mode, you need to configure shard start profile shard_setu
 # The first value represents the number of Producer nodes
 # The second value represents the number of Candidate nodes
 [network]
-"192.168.9.43" = [2, 4]
+"192.168.9.43" = [4, 0]
 
 ```
 ## config.py
