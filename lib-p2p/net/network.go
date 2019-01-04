@@ -126,7 +126,7 @@ func (i *Instance) initNetwork(b64Pri string) (err error) {
 
 func (i *Instance) StopNetwork() {
 	if i.BootStrapper != nil {
-		i.BootStrapper.closer.Close()
+		log.Debug("close bootstrap:", i.BootStrapper.closer.Close())
 	}
 	i.Host.Network().StopNotify(i)
 }
@@ -226,7 +226,7 @@ func (i *Instance) newStream(id peer.ID, multiAddr multiaddr.Multiaddr) (net.Str
 		return p.Stream, nil
 	}
 
-	if len(i.Host.Peerstore().Addrs(id)) == 0 {
+	if len(i.Host.Peerstore().Addrs(id)) == 0 { // 将对端放入本节点host的peer列表中，否则无法connect
 		i.Host.Peerstore().AddAddr(id, multiAddr, time.Minute*10)
 	}
 	s, err := i.Host.NewStream(i.ctx, id, Protocol)
@@ -246,7 +246,9 @@ func (i *Instance) receive(s net.Stream) {
 		err := reader.ReadMsg(msg)
 		if err != nil {
 			log.Error("the peer ", s.Conn().RemotePeer().Pretty(), i.Host.Peerstore().Addrs(s.Conn().RemotePeer()), "is disconnected:", err)
-			s.Reset()
+			if err := s.Reset(); err != nil {
+				log.Error(err)
+			}
 			return
 		}
 		log.Info("receive msg:", msg.Identify.String())
@@ -270,7 +272,9 @@ func (i *Instance) transmit(s net.Stream, sendMsg *mpb.Message) error {
 	writer := io.NewDelimitedWriter(s)
 	err := writer.WriteMsg(sendMsg)
 	if err != nil {
-		s.Reset()
+		if err := s.Reset(); err != nil {
+			log.Error("stream reset error:", err)
+		}
 		i.senderMap.Del(s.Conn().RemotePeer())
 		return errors.New(err.Error())
 	}
