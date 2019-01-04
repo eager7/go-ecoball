@@ -48,7 +48,6 @@ def main():
 
     #Generate the configuration json files required for sharding
     network = all_config["network"]
-    node_ip = []
     for ip in network:
         host_ip = ip
 
