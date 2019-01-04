@@ -23,8 +23,8 @@ Add a new configuration item to the project's ecoball.toml, and be sure to copy 
 
 If the configuration items for a container require special customization, do the configuration in the shard_setup.toml file(Refer to the shard_setup.toml configuration file for details).
 
-### shard_setup.toml
-Before starting shard mode, you need to configure shard start profile setup.toml
+### setup.toml
+Before starting, you need to configure start profile setup.toml
 ```
 # Configuration file for network startup
 

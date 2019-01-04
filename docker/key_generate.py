@@ -21,8 +21,17 @@ import subprocess
 import os
 import sys
 import pytoml
-import share_shard
 
+def run(shell_command):
+    '''
+    Execute shell command.
+    If it fails, exit the program with an exit code of 1.
+    '''
+
+    print('key_generate.py:', shell_command)
+    if subprocess.call(shell_command, shell=True):
+        print('key_generate.py: exiting because of error')
+        sys.exit(1)
 
 def run_shell_output(command, print_output=True, universal_newlines=True):
     p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, universal_newlines=universal_newlines)
@@ -55,7 +64,7 @@ def main():
 
     # Generate the latest tools
     gen_file = os.path.join(root_dir, "../test/rsakeygen/main.go")
-    share_shard.run("cd " + tool_dir + "&& go build -o key_gen " + gen_file)
+    run("cd " + tool_dir + "&& go build -o key_gen " + gen_file)
     key_gen = os.path.join(tool_dir + "/key_gen")
 
     #get config
