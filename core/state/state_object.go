@@ -21,13 +21,13 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/common/mutex"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
 	"sort"
+	"sync"
 )
 
 type Account struct {
@@ -45,7 +45,7 @@ type Account struct {
 	db     Database
 	diskDb *store.LevelDBStore
 
-	mutex mutex.Mutex
+	mutex sync.RWMutex
 }
 
 /**
@@ -68,11 +68,12 @@ func NewAccount(path string, index common.AccountName, addr common.Address, time
 		Contract:    types.DeployInfo{},
 		Delegates:   nil,
 		Resource:    res,
+		Elector:     Elector{},
 		Hash:        common.Hash{},
 		trie:        nil,
 		db:          nil,
 		diskDb:      nil,
-		mutex:       mutex.Mutex{},
+		mutex:       sync.RWMutex{},
 	}
 	perm := NewPermission(Owner, "", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
@@ -82,8 +83,7 @@ func NewAccount(path string, index common.AccountName, addr common.Address, time
 	if err := acc.NewStoreTrie(path); err != nil {
 		return nil, err
 	}
-	acc.diskDb.Close()
-	return acc, nil
+	return acc, acc.diskDb.Close()
 }
 
 func (a *Account) NewStoreTrie(path string) error {
