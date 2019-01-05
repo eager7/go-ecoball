@@ -32,8 +32,10 @@ func TestBlockMap_Iterator(t *testing.T) {
 	if b := mm.Get(config.ChainHash); b != nil {
 		for block := range b.IteratorByHeight(config.ChainHash) {
 			fmt.Println(block.String())
+			b.Del(block.Height)
 		}
 	}
+	fmt.Println(mm.Get(config.ChainHash))
 }
 
 func TestInitiative(t *testing.T) {

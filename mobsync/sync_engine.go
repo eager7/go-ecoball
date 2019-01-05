@@ -93,6 +93,8 @@ func (e *Engine) handlerThread() {
 				case mpb.Identify_APP_MSG_BLOCK_REQUEST:
 					if err := e.HandleBlockRequest(in); err != nil {
 						log.Error("handle block sync request error:", err)
+					} else {
+						log.Debug("handle block sync request success")
 					}
 				case mpb.Identify_APP_MSG_BLOCK_RESPONSE:
 					if err := e.HandleBlockResponse(in); err != nil {
@@ -125,7 +127,7 @@ func (e *Engine) SyncBlockChain(msg *mpb.Message) error {
 	if current == nil {
 		return errors.New(fmt.Sprintf("can't find the current header:%s", block.ChainID.String()))
 	}
-	if current.Height < block.Height {
+	if current.Height+1 < block.Height {
 		log.Debug("send block request message:", block.ChainID.String(), current.Height)
 		return event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: block.ChainID, BlockHeight: current.Height, Nonce: utils.RandomUint64()})
 	}
@@ -154,9 +156,10 @@ func (e *Engine) HandleBlockRequest(msg *mpb.Message) error {
 }
 
 func (e *Engine) SendBlockResponse(chainId common.Hash, current, request uint64) error {
+	log.Debug("prepare sync block response message:", current, request)
 	var num int
 	response := &BlockResponse{ChainId: chainId, Nonce: utils.RandomUint64()}
-	for i := current; i < request; i++ {
+	for i := request; i < current; i++ {
 		block, err := e.ledger.GetTxBlockByHeight(chainId, i+1)
 		if err != nil {
 			return err
@@ -164,6 +167,7 @@ func (e *Engine) SendBlockResponse(chainId common.Hash, current, request uint64)
 		response.Blocks = append(response.Blocks, block)
 		num++
 		if num >= 10 {
+			log.Debug("send sync block response msg:", response.String())
 			if err := event.Send(event.ActorNil, event.ActorP2P, response); err != nil {
 				return err
 			}
@@ -172,6 +176,7 @@ func (e *Engine) SendBlockResponse(chainId common.Hash, current, request uint64)
 		}
 	}
 	if len(response.Blocks) > 0 {
+		log.Debug("send sync block response msg:", response.String())
 		if err := event.Send(event.ActorNil, event.ActorP2P, response); err != nil {
 			return err
 		}
@@ -201,9 +206,13 @@ func (e *Engine) HandleBlockResponse(msg *mpb.Message) error {
 			if current.Height+1 < b.Height {
 				return errors.New(fmt.Sprintf("the chain:%s maybe still lost blocks, current:%d, recive min:%d", chainId.String(), current.Height, b.Height))
 			}
+			if b.Height < current.Height+1 {
+				continue
+			}
 			if err := event.Send(event.ActorNil, event.ActorLedger, b); err != nil {
 				log.Error("send block to ledger error:", err)
 			}
+			chain.Del(b.Height)
 		}
 	}
 	return nil
