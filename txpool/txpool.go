@@ -37,8 +37,8 @@ type TxPool struct {
 	ctx        context.Context
 	netMsg     <-chan interface{}
 	ledger     ledger.Ledger
-	PendingTxs map[common.Hash]*types.TxsList //UnPackaged list of legitimate transactions
 	txsCache   *lru.Cache
+	PendingTxs map[common.Hash]*types.TxsList
 	StateDB    map[common.Hash]*state.State
 	stop       chan struct{}
 }
@@ -102,13 +102,10 @@ func (t *TxPool) Push(chainID common.Hash, tx *types.Transaction) error {
 	return nil
 }
 
-func (t *TxPool) Delete(chainID, txHash common.Hash) error {
-	list, ok := t.PendingTxs[chainID]
-	if !ok {
-		return errors.New(fmt.Sprintf("can't find this chain:%s", chainID.HexString()))
+func (t *TxPool) Delete(chainID, txHash common.Hash) {
+	if list, ok := t.PendingTxs[chainID]; ok {
+		list.Delete(txHash)
 	}
-	list.Delete(txHash)
-	return nil
 }
 
 func (t *TxPool) Subscribe() {
