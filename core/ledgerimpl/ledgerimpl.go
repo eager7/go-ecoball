@@ -109,7 +109,7 @@ func (l *LedgerImpl) GetCurrentHeader(chainID common.Hash) *types.Header {
 		log.Error(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 		return nil
 	}
-	return chain.CurrentHeader
+	return chain.CurrentHeader.Get()
 }
 func (l *LedgerImpl) GetCurrentHeight(chainID common.Hash) uint64 {
 	chain := l.ChainMap.Get(chainID)
@@ -117,7 +117,7 @@ func (l *LedgerImpl) GetCurrentHeight(chainID common.Hash) uint64 {
 		log.Error(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 		return 0
 	}
-	return chain.CurrentHeader.Height
+	return chain.CurrentHeader.Get().Height
 }
 func (l *LedgerImpl) VerifyTxBlock(chainID common.Hash, block *types.Block) error {
 	chain := l.ChainMap.Get(chainID)
@@ -165,7 +165,7 @@ func (l *LedgerImpl) PreHandleTransaction(chainID common.Hash, s *state.State, t
 		return nil, 0, 0, err
 	}
 	log.Notice("Handle Transaction:", tx.Type.String(), tx.Hash.HexString(), " in per handle DB")
-	return chain.HandleTransaction(s, tx, timeStamp, chain.CurrentHeader.Receipt.BlockCpu, chain.CurrentHeader.Receipt.BlockNet)
+	return chain.HandleTransaction(s, tx, timeStamp, chain.CurrentHeader.Get().Receipt.BlockCpu, chain.CurrentHeader.Get().Receipt.BlockNet)
 }
 func (l *LedgerImpl) AccountGet(chainID common.Hash, index common.AccountName) (*state.Account, error) {
 	chain := l.ChainMap.Get(chainID)
