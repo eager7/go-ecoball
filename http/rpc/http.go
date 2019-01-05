@@ -48,7 +48,7 @@ func StartHttpServer() (err error) {
 	router.POST("/newInvokeContract", newInvokeContract)
 	router.POST("/newDeployContract", newDeployContract)
 	//for invokContract
-	router.POST("/newContract", newContract)
+	//router.POST("/newContract", newContract)
 	router.POST("/getRequiredKeys", get_required_keys)
 	router.POST("/invokeContractForScan", invokeContractForScan)
 	//router.POST("/recieveFile", recieveFile)
@@ -154,87 +154,6 @@ func newInvokeContract(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": hex.EncodeToString(data)})
-}
-
-func newContract(c *gin.Context) {
-	chainId_str := c.PostForm("chainId")
-	contractName := c.PostForm("name")
-	contractMethod := c.PostForm("method")
-	contractParam := c.PostForm("params")
-	invoker := c.PostForm("invoker")
-
-	if "" == chainId_str || "" == contractName || "" == contractMethod ||
-		"" == contractParam {
-		c.JSON(http.StatusBadRequest, gin.H{"result": "invalid params"})
-		return
-	}
-
-	hash := new(innerCommon.Hash)
-	chainId := hash.FormHexString(chainId_str)
-
-	var parameters []string
-	if "new_account" == contractMethod {
-		parameter := strings.Split(contractParam, ",")
-		for _, v := range parameter {
-			if strings.Contains(v, "0x") {
-				parameters = append(parameters, innerCommon.AddressFromPubKey(innerCommon.FromHex(v)).HexString())
-			} else {
-				parameters = append(parameters, v)
-			}
-		}
-	} else if "pledge" == contractMethod || "reg_prod" == contractMethod || "vote" == contractMethod {
-		parameters = strings.Split(contractParam, ",")
-	} else if "set_account" == contractMethod {
-		parameters = strings.Split(contractParam, "--")
-	} else if "reg_chain" == contractMethod {
-		parameter := strings.Split(contractParam, ",")
-		if len(parameter) == 3 {
-			parameters = append(parameters, parameter[0])
-			parameters = append(parameters, parameter[1])
-			parameters = append(parameters, innerCommon.AddressFromPubKey(innerCommon.FromHex(parameter[2])).HexString())
-		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"result": "Invalid parameters"})
-			return
-		}
-	} else {
-		contract, err := ledger.L.GetContract(chainId, innerCommon.NameToIndex(contractName))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-			return
-		}
-
-		var abiDef abi.ABI
-		err = abi.UnmarshalBinary(contract.Abi, &abiDef)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-			return
-		}
-
-		//log.Debug("contractParam: ", contractParam)
-		argbyte, err := abi.CheckParam(abiDef, contractMethod, []byte(contractParam))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-			return
-		}
-
-		parameters = append(parameters, string(argbyte[:]))
-		abi.GetContractTable(contractName, "root", abiDef, "Account")
-	}
-
-	//time
-	time := time.Now().UnixNano()
-	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex(invoker), innerCommon.NameToIndex(contractName), chainId, "owner", contractMethod, parameters, 0, time)
-	if nil != err {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-		return
-	}
-
-	trx_data, err := transaction.Serialize()
-	if nil != err {
-		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
-	}
-
-	c.JSON(http.StatusOK, gin.H{"result": "success", "invoke": hex.EncodeToString(trx_data)})
 }
 
 func newDeployContract(c *gin.Context) {

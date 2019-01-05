@@ -93,14 +93,9 @@ type ABIErrorMessage struct {
 	Message string `json:"error_msg"`
 }
 
-type Param struct {
-	Ptype string `json:"type"`
-	Pval  string `json:"value"`
-}
-
 var log = elog.NewLogger("commands", elog.DebugLog)
 
-func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
+func CheckParam(abiDef ABI, method string, arg []byte) ([]string, error){
 	var fields []FieldDef
 	for _, action := range abiDef.Actions {
 		// first: find method
@@ -120,7 +115,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 		return nil, errors.New("can not find method " + method)
 	}
 
-	args := make([]Param, len(fields))
+	args := make([]string, 2 * len(fields))
 	if(arg[0] == '{') {		// Key-Value structure
 		var f interface{}
 
@@ -137,12 +132,12 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 		for i, field := range fields {
 			v := m[field.Name]
 			if v != nil {
-				args[i].Ptype = field.Type
+				args[2*i] = field.Type
 				switch vv := v.(type) {
 				case string:
 					switch field.Type {
 					case "string","account_name","asset":
-						args[i].Pval = vv
+						args[2*i+1] = vv
 					case "int8":
 						const INT8_MAX = int8(^uint8(0) >> 1)
 						const INT8_MIN = ^INT8_MAX
@@ -151,7 +146,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 							return nil, errors.New(fmt.Sprintln(vv, "is out of int8 range"))
 						}
 						if a >= int64(INT8_MIN) && a <= int64(INT8_MAX) {
-							args[i].Pval = vv
+							args[2*i+1] = vv
 						} else {
 							return nil, errors.New(fmt.Sprintln(vv, "is out of int8 range"))
 						}
@@ -163,7 +158,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 							return nil, errors.New(fmt.Sprintln(vv, "is out of int16 range"))
 						}
 						if a >= int64(INT16_MIN) && a <= int64(INT16_MAX) {
-							args[i].Pval = vv
+							args[2*i+1] = vv
 						} else {
 							return nil, errors.New(fmt.Sprintln(vv, "is out of int16 range"))
 						}
@@ -175,7 +170,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 							return nil, errors.New(fmt.Sprintln(vv, "is out of int32 range"))
 						}
 						if a >= int64(INT32_MIN) && a <= int64(INT32_MAX) {
-							args[i].Pval = vv
+							args[2*i+1] = vv
 						} else {
 							return nil, errors.New(fmt.Sprintln(vv, "is out of int32 range"))
 						}
@@ -187,7 +182,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 							return nil, errors.New(fmt.Sprintln(vv, "is out of int64 range"))
 						}
 						if a >= INT64_MIN && a <= INT64_MAX {
-							args[i].Pval = vv
+							args[2*i+1] = vv
 						} else {
 							return nil, errors.New(fmt.Sprintln(vv, "is out of int64 range"))
 						}
@@ -200,7 +195,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 							return nil, errors.New(fmt.Sprintln(vv, "is out of uint8 range"))
 						}
 						if a >= uint64(UINT8_MIN) && a <= uint64(UINT8_MAX) {
-							args[i].Pval = vv
+							args[2*i+1] = vv
 						} else {
 							return nil, errors.New(fmt.Sprintln(vv, "is out of uint8 range"))
 						}
@@ -212,7 +207,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 							return nil, errors.New(fmt.Sprintln(vv, "is out of uint16 range"))
 						}
 						if a >= uint64(UINT16_MIN) && a <= uint64(UINT16_MAX) {
-							args[i].Pval = vv
+							args[2*i+1] = vv
 						} else {
 							return nil, errors.New(fmt.Sprintln(vv, "is out of uint16 range"))
 						}
@@ -224,7 +219,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 							return nil, errors.New(fmt.Sprintln(vv, "is out of uint32 range"))
 						}
 						if a >= uint64(UINT32_MIN) && a <= uint64(UINT32_MAX) {
-							args[i].Pval = vv
+							args[2*i+1] = vv
 						} else {
 							return nil, errors.New(fmt.Sprintln(vv, "is out of uint32 range"))
 						}
@@ -236,7 +231,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 							return nil, errors.New(fmt.Sprintln(vv, "is out of uint64 range"))
 						}
 						if a >= UINT64_MIN && a <= UINT64_MAX {
-							args[i].Pval = vv
+							args[2*i+1] = vv
 						} else {
 							return nil, errors.New(fmt.Sprintln(vv, "is out of uint64 range"))
 						}
@@ -267,11 +262,11 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 		}
 
 		for i, field := range fields {
-			args[i].Ptype = field.Type
+			args[2*i] = field.Type
 			vv := f[i]
 			switch field.Type {
 			case "string","account_name","asset":
-				args[i].Pval = vv
+				args[2*i+1] = vv
 			case "int8":
 				const INT8_MAX = int8(^uint8(0) >> 1)
 				const INT8_MIN = ^INT8_MAX
@@ -280,7 +275,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 					return nil, errors.New(fmt.Sprintln(vv, "is out of int8 range"))
 				}
 				if a >= int64(INT8_MIN) && a <= int64(INT8_MAX) {
-					args[i].Pval = vv
+					args[2*i+1] = vv
 				} else {
 					return nil, errors.New(fmt.Sprintln(vv, "is out of int8 range"))
 				}
@@ -292,7 +287,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 					return nil, errors.New(fmt.Sprintln(vv, "is out of int16 range"))
 				}
 				if a >= int64(INT16_MIN) && a <= int64(INT16_MAX) {
-					args[i].Pval = vv
+					args[2*i+1] = vv
 				} else {
 					return nil, errors.New(fmt.Sprintln(vv, "is out of int16 range"))
 				}
@@ -304,7 +299,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 					return nil, errors.New(fmt.Sprintln(vv, "is out of int32 range"))
 				}
 				if a >= int64(INT32_MIN) && a <= int64(INT32_MAX) {
-					args[i].Pval = vv
+					args[2*i+1] = vv
 				} else {
 					return nil, errors.New(fmt.Sprintln(vv, "is out of int32 range"))
 				}
@@ -316,7 +311,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 					return nil, errors.New(fmt.Sprintln(vv, "is out of int64 range"))
 				}
 				if a >= INT64_MIN && a <= INT64_MAX {
-					args[i].Pval = vv
+					args[2*i+1] = vv
 				} else {
 					return nil, errors.New(fmt.Sprintln(vv, "is out of int64 range"))
 				}
@@ -329,7 +324,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 					return nil, errors.New(fmt.Sprintln(vv, "is out of uint8 range"))
 				}
 				if a >= uint64(UINT8_MIN) && a <= uint64(UINT8_MAX) {
-					args[i].Pval = vv
+					args[2*i+1] = vv
 				} else {
 					return nil, errors.New(fmt.Sprintln(vv, "is out of uint8 range"))
 				}
@@ -341,7 +336,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 					return nil, errors.New(fmt.Sprintln(vv, "is out of uint16 range"))
 				}
 				if a >= uint64(UINT16_MIN) && a <= uint64(UINT16_MAX) {
-					args[i].Pval = vv
+					args[2*i+1] = vv
 				} else {
 					return nil, errors.New(fmt.Sprintln(vv, "is out of uint16 range"))
 				}
@@ -353,7 +348,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 					return nil, errors.New(fmt.Sprintln(vv, "is out of uint32 range"))
 				}
 				if a >= uint64(UINT32_MIN) && a <= uint64(UINT32_MAX) {
-					args[i].Pval = vv
+					args[2*i+1] = vv
 				} else {
 					return nil, errors.New(fmt.Sprintln(vv, "is out of uint32 range"))
 				}
@@ -365,7 +360,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 					return nil, errors.New(fmt.Sprintln(vv, "is out of uint64 range"))
 				}
 				if a >= UINT64_MIN && a <= UINT64_MAX {
-					args[i].Pval = vv
+					args[2*i+1] = vv
 				} else {
 					return nil, errors.New(fmt.Sprintln(vv, "is out of uint64 range"))
 				}
@@ -378,11 +373,7 @@ func CheckParam(abiDef ABI, method string, arg []byte) ([]byte, error){
 		}
 	}
 
-	bs, err := json.Marshal(args)
-	if err != nil {
-		return nil, errors.New("json.Marshal failed")
-	}
-	return bs, nil
+	return args, nil
 }
 
 func GetContractTable(contractName string, accountName string, abiDef ABI, tableName string) ([]byte, error){

@@ -303,7 +303,7 @@ func invokeContract(c *cli.Context) error {
 		return err
 	}
 
-	var parameters []string
+	//var parameters []string
 
 	contract, err := getContract(chainHash, common.NameToIndex(contractName))
 	if err != nil {
@@ -317,13 +317,11 @@ func invokeContract(c *cli.Context) error {
 	}
 
 	//log.Debug("contractParam: ", contractParam)
-	argbyte, err := abi.CheckParam(abiDef, contractMethod, []byte(contractParam))
+	parameters, err := abi.CheckParam(abiDef, contractMethod, []byte(contractParam))
 	if err != nil {
 		fmt.Println(err.Error())
 		return errors.New("checkParam error")
 	}
-
-	parameters = append(parameters, string(argbyte[:]))
 
 	//contract address
 	invoker := c.String("invoker")

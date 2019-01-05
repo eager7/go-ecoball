@@ -28,8 +28,6 @@ import (
 	"github.com/ecoball/go-ecoball/vm/wasmvm/validate"
 	"github.com/ecoball/go-ecoball/vm/wasmvm/wasm"
 	"os"
-	"strings"
-	"encoding/json"
 	"strconv"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
 )
@@ -61,18 +59,22 @@ func NewWasmService(s state.InterfaceState, action *types.Action, context *conte
 		return nil, errors.New("contract is nil")
 	}
 
-	stringByte := strings.Join(invoke.Param, "\x20\x00") // x20 = space and x00 = null
+	//stringByte := strings.Join(invoke.Param, "\x20\x00") // x20 = space and x00 = null
+	//
+	//var args []ParamTV
+	//err1 := json.Unmarshal([]byte(stringByte), &args)
+	//if err1 != nil {
+	//	return nil, errors.New("json.Unmarshal failed")
+	//}
 
-	var args []ParamTV
-	err1 := json.Unmarshal([]byte(stringByte), &args)
-	if err1 != nil {
-		return nil, errors.New("json.Unmarshal failed")
+	var params []ParamTV
+	for i := 0; i < len(invoke.Param); i += 2 {
+		params = append(params, ParamTV{invoke.Param[i], invoke.Param[i+1]})
 	}
-	log.Debug("NewWasmService ", args)
 
-    num := len(args)
+    num := len(params)
     var param = Param{
-    	Arg:	args,
+    	Arg:	params,
     	Addrs:	make([]int64,num),
 	}
 
