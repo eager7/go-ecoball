@@ -88,6 +88,7 @@ func (i *Instance) bootStrapConnect(ctx context.Context, bsPeers []config.Bootst
 			log.Debug(fmt.Sprintf("%s bootstrapping to %s", i.Host.ID().Pretty(), p.ID.Pretty()))
 			if err := i.Host.Connect(i.ctx, p); err != nil {
 				log.Error("failed to bootstrap with:", p.ID.Pretty(), p.Addrs, err)
+				i.senderMap.Del(p.ID)
 				return
 			}
 			log.Info("bootstrapped successfully with:", p.ID.Pretty())
