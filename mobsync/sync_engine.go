@@ -83,11 +83,11 @@ func (e *Engine) handlerThread() {
 				continue
 			} else {
 				e.state = false //被动同步过程中,暂时关闭主动同步信号
-				log.Info("sync engine receive msg:", in.Identify.String())
+				log.Debug("sync engine receive msg:", in.Identify.String())
 				switch in.Identify {
 				case mpb.Identify_APP_MSG_TRANSACTION:
 				case mpb.Identify_APP_MSG_BLOCK:
-					if err := e.SyncBlockChain(in); err != nil {
+					if err := e.HandleBlockSync(in); err != nil {
 						log.Error("sync block failed:", err)
 					}
 				case mpb.Identify_APP_MSG_BLOCK_REQUEST:
@@ -105,7 +105,6 @@ func (e *Engine) handlerThread() {
 				}
 				e.state = true
 			}
-
 		case <-e.stop:
 			log.Info(e.process.Close())
 			log.Info("Stop Solo Mode")
@@ -118,7 +117,7 @@ func (e *Engine) handlerThread() {
 	}
 }
 
-func (e *Engine) SyncBlockChain(msg *mpb.Message) error {
+func (e *Engine) HandleBlockSync(msg *mpb.Message) error {
 	block := new(types.Block)
 	if err := block.Deserialize(msg.Payload); err != nil {
 		return err
@@ -127,6 +126,7 @@ func (e *Engine) SyncBlockChain(msg *mpb.Message) error {
 	if current == nil {
 		return errors.New(fmt.Sprintf("can't find the current header:%s", block.ChainID.String()))
 	}
+	log.Debug("handle block sync, receive block height is ", block.Height, "we need height is", current.Height+1)
 	if current.Height+1 < block.Height {
 		log.Debug("send block request message:", block.ChainID.String(), current.Height)
 		return event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: block.ChainID, BlockHeight: current.Height, Nonce: utils.RandomUint64()})

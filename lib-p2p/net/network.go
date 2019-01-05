@@ -252,9 +252,11 @@ func (i *Instance) receive(s net.Stream) {
 		hash := common.SingleHash(msg.Payload)
 		log.Info("receive msg:", hash.String(), msg.Identify.String())
 		if i.MessageFilter(hash) {
-			log.Info("the message is redundancy message, drop it!")
+			log.Debug("the message is redundancy message, drop it!")
 			continue
 		}
+		i.MessageMarked(hash)
+
 		if err := event.Publish(msg, msg.Identify); err != nil {
 			log.Error("event publish error:", err)
 			return
@@ -290,6 +292,6 @@ func (i *Instance) transmit(s net.Stream, sendMsg *mpb.Message) error {
 	}
 	hash := common.SingleHash(sendMsg.Payload)
 	i.MessageMarked(hash)
-	log.Info("transmit message finished:", hash.String(), sendMsg.Identify)
+	log.Info("transmit message finished, msg hash:", hash.String(), "msg type:", sendMsg.Identify, "msg destination:", s.Conn().RemoteMultiaddr())
 	return nil
 }
