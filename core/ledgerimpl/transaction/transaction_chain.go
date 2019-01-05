@@ -38,11 +38,6 @@ import (
 	"time"
 )
 
-const keyLastCm = "lastCmHeader"
-const keyLastMinor = "lastMinorHeader"
-const keyLastFinal = "lastFinalHeader"
-const keyLastVC = "lastVCHeader"
-
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
 
 type ChainTx struct {
@@ -112,7 +107,9 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
 		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].String())
-			event.Send(event.ActorLedger, event.ActorTxPool, message.DeleteTx{ChainID: txs[i].ChainID, Hash: txs[i].Hash})
+			if err := event.Send(event.ActorLedger, event.ActorTxPool, message.DeleteTx{ChainID: txs[i].ChainID, Hash: txs[i].Hash}); err != nil {
+				log.Warn("send transaction message failed:", err)
+			}
 			txs = append(txs[:i], txs[i+1:]...)
 			return nil, txs, err
 		} else {
@@ -162,7 +159,7 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 *  @brief  save a block into levelDB, then push this block to p2p and tx pool module, and commit mpt trie into levelDB
 *  @param  block - the block need to save
  */
-func (c *ChainTx) SaveBlock(block *types.Block) error {
+func (c *ChainTx) SaveBlock(block *types.Block) (err error) {
 	if block == nil {
 		return errors.New("block is nil")
 	}
@@ -170,19 +167,26 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		log.Warn("the block:", block.Height, "is existed")
 		return nil
 	}
+	if c.CurrentHeader.Height+1 != block.Height {
+		return errors.New(fmt.Sprintf("there maybe lost some blocks, the current block height is %d, the new block height is %d", c.CurrentHeader.Height, block.Height))
+	}
 
 	stateHashRoot := c.StateDB.GetHashRoot()
 	for i := 0; i < len(block.Transactions); i++ {
 		log.Notice("Handle Transaction:", block.Transactions[i].Type.String(), block.Transactions[i].Hash.HexString(), " in final DB")
-		if _, _, _, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+		if _, _, _, err = c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
 			log.Warn(block.Transactions[i].String())
-			c.StateDB.Reset(stateHashRoot)
+			if err := c.StateDB.Reset(stateHashRoot); err != nil {
+				log.Warn("reset state db failed:", err)
+			}
 			return err
 		}
 	}
 	if c.StateDB.GetHashRoot().HexString() != block.StateHash.HexString() {
 		log.Warn(block.String())
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return errors.New(fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.GetHashRoot().HexString(), block.Hash.HexString()))
 	}
 
@@ -190,43 +194,59 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		c.MapStore.BatchPut(t.Hash.Bytes(), block.Hash.Bytes())
 	}
 	if err := c.MapStore.BatchCommit(); err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 
 	payload, err := block.Header.Serialize()
 	if err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 	if err := c.HeaderStore.Put(block.Header.Hash.Bytes(), payload); err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 	payload, err = block.Serialize()
 	if err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 	c.BlockStore.BatchPut(block.Hash.Bytes(), payload)
 	if err := c.BlockStore.BatchCommit(); err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 	if err := c.StateDB.CommitToDB(); err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 	c.CurrentHeader = block.Header
 
 	if err := c.MapStore.Put(common.Uint64ToBytes(block.Height), block.Hash.Bytes()); err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 	log.Notice("save block finished, height:", block.Height, "transaction number:", len(block.Transactions), block.Header.String())
 
 	if block.Height != 1 {
-		connect.Notify(info.InfoBlock, block)
+		if err := connect.Notify(info.InfoBlock, block); err != nil {
+			log.Warn("notify browser failed:", err)
+		}
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, block); err != nil {
 			log.Warn(err)
 		}
@@ -234,8 +254,8 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 			log.Warn(err)
 		}
 	}
-
 	return nil
+
 }
 
 /**
