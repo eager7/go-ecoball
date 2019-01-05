@@ -133,7 +133,7 @@ func runNode(c *cli.Context) error {
 		log.Fatal(err)
 	}
 
-	txPool, err := txpool.Start(ledger.L)
+	txPool, err := txpool.Start(ctx, ledger.L)
 	if err != nil {
 		log.Fatal("start txPool error, ", err.Error())
 		os.Exit(1)

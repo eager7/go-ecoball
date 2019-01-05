@@ -46,8 +46,9 @@ func NewTxPoolActor(pool *TxPool, n uint8) (pid *actor.PID, err error) {
 	if pid, err = actor.SpawnNamed(props, "TxPoolActor"); nil != err {
 		return nil, err
 	}
-	event.RegisterActor(event.ActorTxPool, pid)
-
+	if err := event.RegisterActor(event.ActorTxPool, pid); err != nil {
+		return nil, err
+	}
 	return
 }
 

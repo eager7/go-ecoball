@@ -1,6 +1,7 @@
 package geneses_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
@@ -28,7 +29,7 @@ func TestGenesesBlockInit(t *testing.T) {
 	event.InitMsgDispatcher()
 	elog.Log.Info("genesis block")
 	ledger.L = example.Ledger("/tmp/genesis")
-	_, err := txpool.Start(ledger.L)
+	_, err := txpool.Start(context.Background(), ledger.L)
 	errors.CheckErrorPanic(err)
 
 	elog.Log.Info("new account block")

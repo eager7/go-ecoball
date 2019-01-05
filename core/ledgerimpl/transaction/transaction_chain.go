@@ -567,9 +567,8 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		} else {
 			tx.Receipt.Accounts[0] = data
 		}
-
 	case types.TxInvoke:
-		actionNew, _ := types.NewAction(tx)
+		actionNew := types.NewAction(tx)
 		trxContext, _ := context.NewTranscationContext(s, tx, cpuLimit, netLimit, timeStamp)
 		_, err = smartcontract.DispatchAction(trxContext, actionNew, 0)
 		if err != nil {

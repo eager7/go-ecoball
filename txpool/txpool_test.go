@@ -16,6 +16,7 @@
 package txpool_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -26,8 +27,8 @@ import (
 )
 
 func TestTxPool(t *testing.T) {
-	ledger := example.ShardLedger("/tmp/txPool")
-	_, err := txpool.Start(ledger)
+	ledger := example.Ledger("/tmp/txPool")
+	_, err := txpool.Start(context.Background(), ledger)
 	errors.CheckErrorPanic(err)
 
 	tx := example.TestTransfer()

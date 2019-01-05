@@ -17,6 +17,7 @@
 package txpool
 
 import (
+	"context"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
@@ -32,9 +33,8 @@ import (
 
 var log = elog.NewLogger("TxPool", elog.NoticeLog)
 
-var T *TxPool
-
 type TxPool struct {
+	ctx        context.Context
 	netMsg     <-chan interface{}
 	ledger     ledger.Ledger
 	PendingTxs map[common.Hash]*types.TxsList //UnPackaged list of legitimate transactions
@@ -44,38 +44,31 @@ type TxPool struct {
 }
 
 //start transaction pool
-func Start(ledger ledger.Ledger) (pool *TxPool, err error) {
+func Start(ctx context.Context, ledger ledger.Ledger) (pool *TxPool, err error) {
 	csc, err := lru.New(10000)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("New Lru error:%s", err.Error()))
 	}
 	//transaction pool
 	pool = &TxPool{
+		ctx:        ctx,
 		netMsg:     nil,
 		ledger:     ledger,
-		PendingTxs: nil,
+		PendingTxs: make(map[common.Hash]*types.TxsList, 1),
 		txsCache:   csc,
-		StateDB:    make(map[common.Hash]*state.State, 0),
+		StateDB:    make(map[common.Hash]*state.State, 1),
 		stop:       make(chan struct{}),
 	}
-	pool.PendingTxs = make(map[common.Hash]*types.TxsList, 1)
 	pool.AddTxsList(config.ChainHash)
-	topics := []mpb.Identify{
-		mpb.Identify_APP_MSG_TRANSACTION,
-	}
-	pool.netMsg, err = event.Subscribe(topics...)
-	if err != nil {
+	if pool.netMsg, err = event.Subscribe([]mpb.Identify{mpb.Identify_APP_MSG_TRANSACTION}...); err != nil {
 		return nil, errors.New(err.Error())
 	}
-	s, err := ledger.StateDB(config.ChainHash).CopyState()
-	if err != nil {
+	if pool.StateDB[config.ChainHash], err = ledger.StateDB(config.ChainHash).CopyState(); err != nil {
 		return nil, err
 	}
-	pool.StateDB[config.ChainHash] = s
-	if _, err = NewTxPoolActor(pool, 3); nil != err {
-		pool = nil
+	if _, err = NewTxPoolActor(pool, 3); err != nil {
+		return nil, err
 	}
-	T = pool
 	go pool.Subscribe()
 	return
 }
@@ -122,17 +115,18 @@ func (t *TxPool) Subscribe() {
 	for {
 		select {
 		case <-t.stop:
-			{
-				log.Info("stop tx pool")
-				return
-			}
+			log.Info("stop tx pool")
+			return
+		case <-t.ctx.Done():
+			log.Info("receive ctx done, stop tx pool")
+			return
 		case msg := <-t.netMsg:
 			in, ok := msg.(*mpb.Message)
 			if !ok {
-				log.Error("can't parse msg")
+				log.Error("tx pool can't parse msg")
 				continue
 			}
-			log.Info("receive msg:", in.Identify.String())
+			log.Info("tx pool receive msg:", in.Identify.String())
 			tx := new(types.Transaction)
 			if err := tx.Deserialize(in.Payload); err != nil {
 				log.Error(err)
