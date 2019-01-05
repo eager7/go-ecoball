@@ -19,5 +19,12 @@ func (l *LastHeader) Set(header *types.Header) {
 func (l *LastHeader) Get() *types.Header {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
-	return l.Header
+	if l.Header == nil {
+		return nil
+	}
+	if h, err := l.Header.Clone(); err != nil {
+		return l.Header
+	} else {
+		return h
+	}
 }
