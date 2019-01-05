@@ -98,15 +98,11 @@ func (ws *WasmService)inline_action(proc *exec.Process, contract, contractLen, a
 		return -3
 	}
 
-	argbyte, err := abi.CheckParam(abiDef, string(actionSlice), dataSlice)
+	issueParameters, err := abi.CheckParam(abiDef, string(actionSlice), dataSlice)
 	if err != nil {
 		fmt.Errorf("can not find UnmarshalBinary abi file")
 		return -4
 	}
-
-	var issueParameters []string
-
-	issueParameters = append(issueParameters, string(argbyte[:]))
 
 	invoke := &types.InvokeInfo{Method: actionSlice, Param: issueParameters}
 

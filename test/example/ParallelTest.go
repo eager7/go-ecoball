@@ -134,15 +134,11 @@ func Main(ledger ledger.Ledger) {
 	// second contract create
 	create := []byte(`["worker1", "800", "xxx"]`)
 
-	argbyte, err := abi.CheckParam(abiDef, "create", create)
+	parameters2, err := abi.CheckParam(abiDef, "create", create)
 	if err != nil {
 		fmt.Errorf("can not find UnmarshalBinary abi file")
 		return
 	}
-
-	var parameters2 []string
-
-	parameters2 = append(parameters2, string(argbyte[:]))
 
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "create", parameters2, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
@@ -153,15 +149,11 @@ func Main(ledger ledger.Ledger) {
 	// second contract issue
 	issue := []byte(`{"to": "worker1", "amount": "100", "token_id": "xxx"}`)
 
-	argbyte, err = abi.CheckParam(abiDef, "issue", issue)
+	issueParameters2, err := abi.CheckParam(abiDef, "issue", issue)
 	if err != nil {
 		fmt.Errorf("can not find UnmarshalBinary abi file")
 		return
 	}
-
-	var issueParameters2 []string
-
-	issueParameters2 = append(issueParameters2, string(argbyte[:]))
 
 	invoke, err = types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "issue", issueParameters2, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
@@ -188,15 +180,11 @@ func ParallelInvokeContract1(ledger ledger.Ledger) {
 
 	trans := []byte(`{"from": "worker1", "to": "worker2", "amount": "20", "token_id": "xxx"}`)
 
-	argbyte, err := abi.CheckParam(abiDef, "transfer", trans)
+	transferParameters, err := abi.CheckParam(abiDef, "transfer", trans)
 	if err != nil {
 		fmt.Errorf("can not find UnmarshalBinary abi file")
 		return
 	}
-
-	var transferParameters []string
-
-	transferParameters = append(transferParameters, string(argbyte[:]))
 
 	invoke, err := types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "transfer", transferParameters, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
@@ -223,15 +211,11 @@ func ParallelInvokeContract2(ledger ledger.Ledger) {
 
 	trans := []byte(`{"from": "worker1", "to": "worker2", "amount": "20", "token_id": "xxx"}`)
 
-	argbyte, err := abi.CheckParam(abiDef, "transfer", trans)
+	transferParameters, err := abi.CheckParam(abiDef, "transfer", trans)
 	if err != nil {
 		fmt.Errorf("can not find UnmarshalBinary abi file")
 		return
 	}
-
-	var transferParameters []string
-
-	transferParameters = append(transferParameters, string(argbyte[:]))
 
 	invoke, err := types.NewInvokeContract(common.NameToIndex("worker1"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "transfer", transferParameters, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
@@ -258,15 +242,11 @@ func ParallelInvokeContract3(ledger ledger.Ledger) {
 
 	trans := []byte(`{"from": "worker2", "to": "worker1", "amount": "20", "token_id": "xxx"}`)
 
-	argbyte, err := abi.CheckParam(abiDef, "transfer", trans)
+	transferParameters, err := abi.CheckParam(abiDef, "transfer", trans)
 	if err != nil {
 		fmt.Errorf("can not find UnmarshalBinary abi file")
 		return
 	}
-
-	var transferParameters []string
-
-	transferParameters = append(transferParameters, string(argbyte[:]))
 
 	invoke, err := types.NewInvokeContract(common.NameToIndex("worker2"), common.NameToIndex("worker"), config.ChainHash, state.Owner, "transfer", transferParameters, 0, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
