@@ -231,3 +231,15 @@ func (h *Header) Identify() mpb.Identify {
 func (h *Header) GetInstance() interface{} {
 	return h
 }
+
+func (h *Header) Clone() (*Header, error) {
+	header := new(Header)
+	data, err := h.Serialize()
+	if err != nil {
+		return nil, err
+	}
+	if err := header.Deserialize(data); err != nil {
+		return nil, err
+	}
+	return header, nil
+}
