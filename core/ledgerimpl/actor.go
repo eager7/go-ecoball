@@ -41,7 +41,9 @@ func NewLedgerActor(l *LedActor) (*actor.PID, error) {
 	if err != nil {
 		return nil, err
 	}
-	event.RegisterActor(event.ActorLedger, pid)
+	if err := event.RegisterActor(event.ActorLedger, pid); err != nil {
+		return nil, err
+	}
 	log.Debug("start ledger actor:", pid)
 
 	return pid, nil
@@ -54,7 +56,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		l.pid.Stop()
 	case *actor.Restarting:
 	case *types.Block:
-		log.Info("receive a block:", msg.Hash.HexString())
+		log.Info("receive a block, hash is:", msg.Hash.HexString())
 		chain := l.ledger.ChainMap.Get(msg.ChainID)
 		if chain == nil {
 			log.Error(fmt.Sprintf("the chain:%s is not existed", msg.ChainID.HexString()))

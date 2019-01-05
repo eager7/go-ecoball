@@ -167,7 +167,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) (err error) {
 		log.Warn("the block:", block.Height, "is existed")
 		return nil
 	}
-	if c.CurrentHeader.Height+1 != block.Height {
+	if c.CurrentHeader != nil && c.CurrentHeader.Height+1 != block.Height {
 		return errors.New(fmt.Sprintf("there maybe lost some blocks, the current block height is %d, the new block height is %d", c.CurrentHeader.Height, block.Height))
 	}
 

@@ -11,6 +11,7 @@ var L Ledger
 type Ledger interface {
 	GetTxBlock(chainID common.Hash, hash common.Hash) (*types.Block, error)
 	NewTxBlock(chainID common.Hash, txs []*types.Transaction, consData types.ConsData, timeStamp int64) (*types.Block, []*types.Transaction, error)
+	SaveTxBlock(chainID common.Hash, block *types.Block) error
 	VerifyTxBlock(chainID common.Hash, block *types.Block) error
 	GetTxBlockByHeight(chainID common.Hash, height uint64) (*types.Block, error)
 	CheckTransaction(chainID common.Hash, tx *types.Transaction) error
