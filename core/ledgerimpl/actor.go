@@ -75,7 +75,6 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		if err := l.ledger.NewTxChain(msg.ChainID, msg.Address); err != nil {
 			log.Error(err)
 		}
-
 	default:
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}

@@ -77,7 +77,6 @@ func NewNetActor(n *netActor) (err error) {
 
 func (n *netActor) Receive(ctx actor.Context) {
 	log.Debug("Actor receive msg:", reflect.TypeOf(ctx.Message()))
-
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 		log.Debug("NetActor started")
@@ -91,8 +90,10 @@ func (n *netActor) Receive(ctx actor.Context) {
 	case *types.Block:
 		n.broadcastMessage <- BroadcastMessage{Message: msg}
 	case *mobsync.BlockRequest:
+		log.Debug(msg.String())
 		n.broadcastMessage <- BroadcastMessage{Message: msg}
 	case *mobsync.BlockResponse:
+		log.Debug(msg.String())
 		n.broadcastMessage <- BroadcastMessage{Message: msg}
 	default:
 		log.Error("unknown message type:", reflect.TypeOf(ctx.Message()))
