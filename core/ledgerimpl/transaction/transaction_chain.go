@@ -283,7 +283,6 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
 	if len(headers) == 0 {
 		return nil, nil
 	}
-	log.Debug("The geneses block is existed:", len(headers))
 	var hash common.Hash
 	for _, v := range headers {
 		header := new(types.Header)

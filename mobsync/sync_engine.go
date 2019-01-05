@@ -192,6 +192,7 @@ func (e *Engine) HandleBlockResponse(msg *mpb.Message) error {
 	if len(response.Blocks) == 0 {
 		return nil
 	}
+	log.Debug("handle block sync response message:", response.String())
 	for _, block := range response.Blocks {
 		e.cache.Add(block.ChainID, block)
 	}
@@ -201,12 +202,15 @@ func (e *Engine) HandleBlockResponse(msg *mpb.Message) error {
 	if current == nil {
 		return errors.New(fmt.Sprintf("can't find the current header:%s", chainId.String()))
 	}
+	height := current.Height
+	min := true
 	if chain := e.cache.Get(chainId); chain != nil {
 		for b := range chain.IteratorByHeight(chainId) {
-			if current.Height+1 < b.Height {
+			if min && height+1 < b.Height { //检测最小块是否能链接到账本上
 				return errors.New(fmt.Sprintf("the chain:%s maybe still lost blocks, current:%d, recive min:%d", chainId.String(), current.Height, b.Height))
 			}
-			if b.Height < current.Height+1 {
+			min = false
+			if b.Height < height+1 { //如果收到区块比本地还短,直接跳过
 				continue
 			}
 			if err := event.Send(event.ActorNil, event.ActorLedger, b); err != nil {
