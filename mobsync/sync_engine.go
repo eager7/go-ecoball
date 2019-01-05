@@ -45,7 +45,7 @@ func NewSyncEngine(ctx context.Context, ledger ledger.Ledger) (err error) {
 	periodic := func(worker goprocess.Process) {
 		//ctx := ptx.OnClosedContext(worker)
 		current := ledger.GetCurrentHeader(config.ChainHash)
-		if err := event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: current.Hash, BlockHeight: current.Height, Nonce: utils.RandomUint64()}); err != nil {
+		if err := event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: current.ChainID, BlockHeight: current.Height, Nonce: utils.RandomUint64()}); err != nil {
 			log.Error(err)
 		}
 		<-doneWithRound
@@ -111,6 +111,7 @@ func (e *Engine) SyncBlockChain(msg *mpb.Message) error {
 	}
 	current := e.ledger.GetCurrentHeader(block.ChainID)
 	if current != nil && current.Height < block.Height {
+		log.Debug("send block request message:", block.ChainID.String(), current.Height)
 		return event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: block.ChainID, BlockHeight: current.Height, Nonce: utils.RandomUint64()})
 	}
 	return nil
