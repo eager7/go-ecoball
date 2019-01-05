@@ -94,3 +94,5 @@ func (b *BlockResponse) Deserialize(data []byte) error {
 	}
 	return nil
 }
+
+

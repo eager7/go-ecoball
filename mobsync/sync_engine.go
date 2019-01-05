@@ -2,9 +2,11 @@ package mobsync
 
 import (
 	"context"
+	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/common/utils"
@@ -20,6 +22,8 @@ var log = elog.Log
 
 type Engine struct {
 	ctx     context.Context
+	state   bool
+	cache   *ChainMap
 	ledger  ledger.Ledger
 	stop    chan struct{}
 	message <-chan interface{}
@@ -44,9 +48,11 @@ func NewSyncEngine(ctx context.Context, ledger ledger.Ledger) (err error) {
 	doneWithRound := make(chan struct{})
 	periodic := func(worker goprocess.Process) {
 		//ctx := ptx.OnClosedContext(worker)
-		current := ledger.GetCurrentHeader(config.ChainHash)
-		if err := event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: current.ChainID, BlockHeight: current.Height, Nonce: utils.RandomUint64()}); err != nil {
-			log.Error(err)
+		if engine.state {
+			current := ledger.GetCurrentHeader(config.ChainHash)
+			if err := event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: current.ChainID, BlockHeight: current.Height, Nonce: utils.RandomUint64()}); err != nil {
+				log.Error(err)
+			}
 		}
 		<-doneWithRound
 	}
@@ -63,6 +69,8 @@ func NewSyncEngine(ctx context.Context, ledger ledger.Ledger) (err error) {
 func (e *Engine) Initialize() *Engine {
 	e.stop = make(chan struct{}, 1)
 	e.message = make(chan interface{}, 100)
+	e.cache = new(ChainMap).Initialize()
+	e.state = true //启动后先同步一次
 	return e
 }
 
@@ -74,6 +82,7 @@ func (e *Engine) handlerThread() {
 				log.Error("can't parse msg")
 				continue
 			} else {
+				e.state = false //被动同步过程中,暂时关闭主动同步信号
 				log.Info("sync engine receive msg:", in.Identify.String())
 				switch in.Identify {
 				case mpb.Identify_APP_MSG_TRANSACTION:
@@ -83,13 +92,16 @@ func (e *Engine) handlerThread() {
 					}
 				case mpb.Identify_APP_MSG_BLOCK_REQUEST:
 					if err := e.HandleBlockRequest(in); err != nil {
-						log.Error("handle block request error:", err)
+						log.Error("handle block sync request error:", err)
 					}
 				case mpb.Identify_APP_MSG_BLOCK_RESPONSE:
-
+					if err := e.HandleBlockResponse(in); err != nil {
+						log.Error("handle block sync response error:", err)
+					}
 				default:
 					log.Warn("unsupported sync message:", in.Identify.String())
 				}
+				e.state = true
 			}
 
 		case <-e.stop:
@@ -110,7 +122,10 @@ func (e *Engine) SyncBlockChain(msg *mpb.Message) error {
 		return err
 	}
 	current := e.ledger.GetCurrentHeader(block.ChainID)
-	if current != nil && current.Height < block.Height {
+	if current == nil {
+		return errors.New(fmt.Sprintf("can't find the current header:%s", block.ChainID.String()))
+	}
+	if current.Height < block.Height {
 		log.Debug("send block request message:", block.ChainID.String(), current.Height)
 		return event.Send(event.ActorNil, event.ActorP2P, &BlockRequest{ChainId: block.ChainID, BlockHeight: current.Height, Nonce: utils.RandomUint64()})
 	}
@@ -128,7 +143,10 @@ func (e *Engine) HandleBlockRequest(msg *mpb.Message) error {
 	}
 	log.Debug("handle block request message:", request.ChainId.String(), request.BlockHeight)
 	current := e.ledger.GetCurrentHeader(request.ChainId)
-	if current != nil && current.Height <= request.BlockHeight {
+	if current == nil {
+		return errors.New(fmt.Sprintf("can't find the current header:%s", request.ChainId.String()))
+	}
+	if current.Height <= request.BlockHeight {
 		log.Info("our chain block is older than request:", current.Height, request.BlockHeight)
 		return nil
 	}
@@ -166,9 +184,26 @@ func (e *Engine) HandleBlockResponse(msg *mpb.Message) error {
 	if err := response.Deserialize(msg.Payload); err != nil {
 		return err
 	}
+	if len(response.Blocks) == 0 {
+		return nil
+	}
 	for _, block := range response.Blocks {
-		if err := event.Send(event.ActorNil, event.ActorLedger, block); err != nil {
-			log.Error("send block to ledger error:", err)
+		e.cache.Add(block.ChainID, block)
+	}
+
+	chainId := response.Blocks[0].ChainID
+	current := e.ledger.GetCurrentHeader(chainId)
+	if current == nil {
+		return errors.New(fmt.Sprintf("can't find the current header:%s", chainId.String()))
+	}
+	if chain := e.cache.Get(chainId); chain != nil {
+		for b := range chain.IteratorByHeight(chainId) {
+			if current.Height+1 < b.Height {
+				return errors.New(fmt.Sprintf("the chain:%s maybe still lost blocks, current:%d, recive min:%d", chainId.String(), current.Height, b.Height))
+			}
+			if err := event.Send(event.ActorNil, event.ActorLedger, b); err != nil {
+				log.Error("send block to ledger error:", err)
+			}
 		}
 	}
 	return nil
