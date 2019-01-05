@@ -38,24 +38,16 @@ import (
 	"time"
 )
 
-const keyLastCm = "lastCmHeader"
-const keyLastMinor = "lastMinorHeader"
-const keyLastFinal = "lastFinalHeader"
-const keyLastVC = "lastVCHeader"
-
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
 
 type ChainTx struct {
 	ledger          ledger.Ledger
+	CurrentHeader   LastHeader
 	BlockStoreCache store.Storage
 	BlockStore      store.Storage
 	HeaderStore     store.Storage
 	MapStore        store.Storage
-	CurrentHeader   *types.Header
-	Geneses         *types.Header
 	StateDB         *state.State
-
-	shardId uint32
 }
 
 func NewTransactionChain(path string, ledger ledger.Ledger, option ...bool) (c *ChainTx, err error) {
@@ -80,7 +72,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger, option ...bool) (c *
 		return nil, err
 	}
 	if existed {
-		if c.StateDB, err = state.NewState(path+config.StringState, c.CurrentHeader.StateHash); err != nil {
+		if c.StateDB, err = state.NewState(path+config.StringState, c.CurrentHeader.Get().StateHash); err != nil {
 			return nil, err
 		}
 	} else {
@@ -110,9 +102,11 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 	var cpu, net float64
 	for i := 0; i < len(txs); i++ {
 		log.Notice("Handle Transaction:", txs[i].Type.String(), txs[i].Hash.HexString(), " in Copy DB")
-		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+		if _, cp, n, err := c.HandleTransaction(s, txs[i], timeStamp, c.CurrentHeader.Get().Receipt.BlockCpu, c.CurrentHeader.Get().Receipt.BlockNet); err != nil {
 			log.Warn(txs[i].String())
-			event.Send(event.ActorLedger, event.ActorTxPool, message.DeleteTx{ChainID: txs[i].ChainID, Hash: txs[i].Hash})
+			if err := event.Send(event.ActorLedger, event.ActorTxPool, message.DeleteTx{ChainID: txs[i].ChainID, Hash: txs[i].Hash}); err != nil {
+				log.Warn("send transaction message failed:", err)
+			}
 			txs = append(txs[:i], txs[i+1:]...)
 			return nil, txs, err
 		} else {
@@ -120,7 +114,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 			net += n
 		}
 	}
-	block, err := types.NewBlock(c.CurrentHeader.ChainID, c.CurrentHeader, s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
+	block, err := types.NewBlock(c.CurrentHeader.Get().ChainID, c.CurrentHeader.Get(), s.GetHashRoot(), consensusData, txs, cpu, net, timeStamp)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -132,7 +126,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 *  @param  hash - the root hash of mpt trie which need to reset
  */
 func (c *ChainTx) ResetStateDB(header *types.Header) error {
-	c.CurrentHeader = header
+	c.CurrentHeader.Set(header)
 	return c.StateDB.Reset(header.StateHash)
 }
 
@@ -162,7 +156,7 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 *  @brief  save a block into levelDB, then push this block to p2p and tx pool module, and commit mpt trie into levelDB
 *  @param  block - the block need to save
  */
-func (c *ChainTx) SaveBlock(block *types.Block) error {
+func (c *ChainTx) SaveBlock(block *types.Block) (err error) {
 	if block == nil {
 		return errors.New("block is nil")
 	}
@@ -170,19 +164,26 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		log.Warn("the block:", block.Height, "is existed")
 		return nil
 	}
+	if c.CurrentHeader.Get() != nil && c.CurrentHeader.Get().Height+1 != block.Height {
+		return errors.New(fmt.Sprintf("there maybe lost some blocks, the current block height is %d, the new block height is %d", c.CurrentHeader.Get().Height, block.Height))
+	}
 
 	stateHashRoot := c.StateDB.GetHashRoot()
 	for i := 0; i < len(block.Transactions); i++ {
 		log.Notice("Handle Transaction:", block.Transactions[i].Type.String(), block.Transactions[i].Hash.HexString(), " in final DB")
-		if _, _, _, err := c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Receipt.BlockCpu, c.CurrentHeader.Receipt.BlockNet); err != nil {
+		if _, _, _, err = c.HandleTransaction(c.StateDB, block.Transactions[i], block.TimeStamp, c.CurrentHeader.Get().Receipt.BlockCpu, c.CurrentHeader.Get().Receipt.BlockNet); err != nil {
 			log.Warn(block.Transactions[i].String())
-			c.StateDB.Reset(stateHashRoot)
+			if err := c.StateDB.Reset(stateHashRoot); err != nil {
+				log.Warn("reset state db failed:", err)
+			}
 			return err
 		}
 	}
 	if c.StateDB.GetHashRoot().HexString() != block.StateHash.HexString() {
 		log.Warn(block.String())
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return errors.New(fmt.Sprintf("hash mismatch:%s, %s", c.StateDB.GetHashRoot().HexString(), block.Hash.HexString()))
 	}
 
@@ -190,43 +191,59 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		c.MapStore.BatchPut(t.Hash.Bytes(), block.Hash.Bytes())
 	}
 	if err := c.MapStore.BatchCommit(); err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 
 	payload, err := block.Header.Serialize()
 	if err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 	if err := c.HeaderStore.Put(block.Header.Hash.Bytes(), payload); err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 	payload, err = block.Serialize()
 	if err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 	c.BlockStore.BatchPut(block.Hash.Bytes(), payload)
 	if err := c.BlockStore.BatchCommit(); err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 	if err := c.StateDB.CommitToDB(); err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
-	c.CurrentHeader = block.Header
+	c.CurrentHeader.Set(block.Header)
 
 	if err := c.MapStore.Put(common.Uint64ToBytes(block.Height), block.Hash.Bytes()); err != nil {
-		c.StateDB.Reset(stateHashRoot)
+		if err := c.StateDB.Reset(stateHashRoot); err != nil {
+			log.Warn("reset state db failed:", err)
+		}
 		return err
 	}
 	log.Notice("save block finished, height:", block.Height, "transaction number:", len(block.Transactions), block.Header.String())
 
 	if block.Height != 1 {
-		connect.Notify(info.InfoBlock, block)
+		if err := connect.Notify(info.InfoBlock, block); err != nil {
+			log.Warn("notify browser failed:", err)
+		}
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, block); err != nil {
 			log.Warn(err)
 		}
@@ -234,15 +251,8 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 			log.Warn(err)
 		}
 	}
-
 	return nil
-}
 
-/**
-*  @brief  return the highest block's hash
- */
-func (c *ChainTx) GetTailBlockHash() common.Hash {
-	return c.CurrentHeader.Hash
 }
 
 /**
@@ -273,7 +283,6 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
 	if len(headers) == 0 {
 		return nil, nil
 	}
-	log.Debug("The geneses block is existed:", len(headers))
 	var hash common.Hash
 	for _, v := range headers {
 		header := new(types.Header)
@@ -295,8 +304,8 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
 *  @brief  create a genesis block with built-in account and contract, then save this block into block chain
  */
 func (c *ChainTx) GenesesBlockInit(chainID common.Hash, addr common.Address) error {
-	if c.CurrentHeader != nil {
-		log.Debug("geneses block is existed:", c.CurrentHeader.Height)
+	if c.CurrentHeader.Get() != nil {
+		log.Debug("geneses block is existed:", c.CurrentHeader.Get().Height)
 		return nil
 	}
 
@@ -358,10 +367,10 @@ func (c *ChainTx) RestoreCurrentHeader() (bool, error) {
 		}
 		if header.Height > h {
 			h = header.Height
-			c.CurrentHeader = header
+			c.CurrentHeader.Set(header)
 		}
 	}
-	log.Info("the block height is:", h, "hash:", c.CurrentHeader.Hash.HexString())
+	log.Info("the block height is:", h, "hash:", c.CurrentHeader.Get().Hash.HexString())
 	return true, nil
 }
 

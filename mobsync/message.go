@@ -53,7 +53,11 @@ func (b *BlockResponse) Identify() mpb.Identify {
 	return mpb.Identify_APP_MSG_BLOCK_RESPONSE
 }
 func (b *BlockResponse) String() string {
-	return fmt.Sprintf("chain hash:%s, block number:%d, nonce:%d", b.ChainId.String(), len(b.Blocks), b.Nonce)
+	ret := fmt.Sprintf("chain hash:%s, block number:%d, nonce:%d", b.ChainId.String(), len(b.Blocks), b.Nonce)
+	for _, b := range b.Blocks {
+		ret += fmt.Sprintf(" height:%d", b.Height)
+	}
+	return ret
 }
 func (b *BlockResponse) GetInstance() interface{} {
 	return b
@@ -94,3 +98,5 @@ func (b *BlockResponse) Deserialize(data []byte) error {
 	}
 	return nil
 }
+
+

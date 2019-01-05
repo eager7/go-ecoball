@@ -65,7 +65,9 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 		Chains:    new(ChainsMap).Initialize(),
 		mutex:     sync.RWMutex{},
 	}
-	st.Accounts.Initialize()
+	if err := st.Accounts.Initialize(); err != nil {
+		return nil, err
+	}
 	st.diskDb, err = store.NewLevelDBStore(path, 0, 0)
 	if err != nil {
 		log.Error(err)
@@ -100,8 +102,7 @@ func (s *State) CopyState() (*State, error) {
 		Producers: s.Producers.Clone(),
 		Chains:    s.Chains.Clone(),
 	}
-	stateCp.Accounts.Initialize()
-	return stateCp, nil
+	return stateCp, stateCp.Accounts.Initialize()
 }
 
 /**
@@ -134,12 +135,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
 	if err != nil {
 		return nil, err
 	}
-	//s.accMutex.Lock()
-	//defer s.accMutex.Unlock()
-	//s.Accounts[index.String()] = *acc
-
-	s.commitParam(addr.HexString(), uint64(index))
-	return acc, nil
+	return acc, s.commitParam(addr.HexString(), uint64(index))
 }
 
 /**
@@ -249,22 +245,6 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
 			return nil, errors.New(fmt.Sprintf("the address:%s is not register be an account", addr.HexString()))
 		}
 		return s.GetAccountByName(common.AccountName(value))
-	}
-	s.mutex.Lock()
-	fData, err := s.trie.TryGet(addr.Bytes())
-	s.mutex.Unlock()
-	if err != nil {
-		return nil, err
-	} else {
-		if fData == nil {
-			return nil, errors.New(fmt.Sprintf("can't find this account by address:%s", addr.HexString()))
-		} else {
-			acc, err := s.GetAccountByName(common.IndexSetBytes(fData))
-			if err != nil {
-				return nil, err
-			}
-			return acc, nil
-		}
 	}
 }
 

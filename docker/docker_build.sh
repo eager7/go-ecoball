@@ -101,25 +101,6 @@ echo -e "\033[;32mget ecowallet succeed. \033[0m"
 echo
 echo
 
-# build eballscan
-echo -e "\033[;34mbuild eballscan with the makefile. \033[0m"
-if ! make -C ${SOURCE_DIR}/../../eballscan eballscan
-then
-    echo  -e "\033[;31mcompile eballscan failed!!! \033[0m"
-    exit 1
-fi
-
-if ! cp ${SOURCE_DIR}/../../eballscan/build/eballscan ${SOURCE_DIR}
-then
-    echo  -e "\033[;31mcopy eballscan failed!!! \033[0m"
-    exit 1
-fi
-
-if ! cp ${SOURCE_DIR}/../../eballscan/eballscan_service.sh ${SOURCE_DIR}
-then
-    echo  -e "\033[;31mcopy eballscan_service.sh failed!!! \033[0m"
-    exit 1
-fi
 
 echo -e "\033[;32mget eballscan and eballscan_service.sh succeed. \033[0m"
 echo
