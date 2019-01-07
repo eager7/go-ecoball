@@ -34,7 +34,7 @@ func (a AccountName) String() string {
 }
 
 func (a AccountName) Bytes() []byte {
-	return IndexToBytes(a)
+	return indexToBytes(a)
 }
 func (a AccountName) Number() uint64 {
 	return uint64(a)
@@ -91,7 +91,7 @@ func IndexToName(index AccountName) string {
  *  @brief convert a uint64 name to byte type for mpt trie's key
  *  @param index - the account name index
  */
-func IndexToBytes(index AccountName) []byte {
+func indexToBytes(index AccountName) []byte {
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, uint64(index))
 	return b

@@ -111,9 +111,8 @@ func (s *State) CopyState() (*State, error) {
  *  @param addr - account's address convert from public key
  */
 func (s *State) AddAccount(index common.AccountName, addr common.Address, timeStamp int64) (*Account, error) {
-	key := common.IndexToBytes(index)
 	s.mutex.RLock()
-	data, err := s.trie.TryGet(key)
+	data, err := s.trie.TryGet(index.Bytes())
 	s.mutex.RUnlock()
 	if err != nil {
 		return nil, err
@@ -130,7 +129,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
 	}
 	//save the mapping of addr and index
 	s.mutex.Lock()
-	err = s.trie.TryUpdate(addr.Bytes(), common.IndexToBytes(acc.Index))
+	err = s.trie.TryUpdate(addr.Bytes(), acc.Index.Bytes())
 	s.mutex.Unlock()
 	if err != nil {
 		return nil, err
@@ -215,9 +214,8 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	if acc != nil {
 		return acc, nil
 	}
-	key := common.IndexToBytes(index)
 	s.mutex.Lock()
-	fData, err := s.trie.TryGet(key)
+	fData, err := s.trie.TryGet(index.Bytes())
 	s.mutex.Unlock()
 	if err != nil {
 		return nil, err
@@ -262,7 +260,7 @@ func (s *State) CommitAccount(acc *Account) error {
 	}
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	if err := s.trie.TryUpdate(common.IndexToBytes(acc.Index), d); err != nil {
+	if err := s.trie.TryUpdate(acc.Index.Bytes(), d); err != nil {
 		return err
 	}
 	s.Accounts.Add(acc)
