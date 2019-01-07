@@ -67,8 +67,8 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 	if err != nil {
 		return err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
 	if from == to {
 		acc.AddResourceLimits(true, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum, cpuLimit, netLimit)
 	} else {
@@ -77,8 +77,8 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 		if err != nil {
 			return err
 		}
-		accTo.mutex.Lock()
-		defer accTo.mutex.Unlock()
+		accTo.lock.Lock()
+		defer accTo.lock.Unlock()
 		accTo.AddResourceLimits(false, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum, cpuLimit, netLimit)
 		if err := s.CommitAccount(accTo); err != nil {
 			return err
@@ -96,7 +96,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
 		return err
 	}
 	acc.addVotes(cpuStaked + netStaked)
-	if err := s.updateElectedProducers(acc, acc.Votes.Staked-cpuStaked-netStaked); err != nil {
+	if err := s.updateElectedProducers(acc, acc.Resource.Votes.Staked-cpuStaked-netStaked); err != nil {
 		return err
 	}
 	return s.CommitAccount(acc)
@@ -121,8 +121,8 @@ func (s *State) SubResources(index common.AccountName, cpu, net float64, cpuLimi
 	if err != nil {
 		return err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
 	if err := acc.SubResourceLimits(cpu, net, cpuStakedSum, netStakedSum, cpuLimit, netLimit); err != nil {
 		return err
 	}
@@ -153,16 +153,16 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 	if err != nil {
 		return err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
 
 	if from != to {
 		accTo, err := s.GetAccountByName(to)
 		if err != nil {
 			return err
 		}
-		accTo.mutex.Lock()
-		defer accTo.mutex.Unlock()
+		accTo.lock.Lock()
+		defer accTo.lock.Unlock()
 		if err := acc.CancelDelegateOther(accTo, cpuStaked, netStaked, cpuStakedSum, netStakedSum, cpuLimit, netLimit); err != nil {
 			return err
 		}
@@ -190,10 +190,12 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
 	if err := s.updateElectedProducers(acc, valueOld); err != nil {
 		return err
 	}
-	if acc.Votes.Staked < VotesLimit {
+	if acc.Resource.Votes.Staked < VotesLimit {
 		s.Producers.Del(acc.Index)
 	}
-	s.commitProducersList()
+	if err := s.commitProducersList(); err != nil {
+		return err
+	}
 	return s.CommitAccount(acc)
 }
 
@@ -208,8 +210,8 @@ func (s *State) RecoverResources(index common.AccountName, timeStamp int64, cpuL
 	if err != nil {
 		return err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
 	cpuStakedSum, err := s.getParam(cpuAmount)
 	if err != nil {
 		return err
@@ -218,7 +220,9 @@ func (s *State) RecoverResources(index common.AccountName, timeStamp int64, cpuL
 	if err != nil {
 		return err
 	}
-	acc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit)
+	if err := acc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit); err != nil {
+		return err
+	}
 	return s.CommitAccount(acc)
 }
 
@@ -244,10 +248,12 @@ func (s *State) RequireResources(index common.AccountName, cpuLimit, netLimit fl
 	if err != nil {
 		return 0, 0, err
 	}
-	nAcc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit)
-	log.Debug("cpu:", nAcc.Cpu.Used, nAcc.Cpu.Available, nAcc.Cpu.Limit)
-	log.Debug("net:", nAcc.Net.Used, nAcc.Net.Available, nAcc.Net.Limit)
-	return nAcc.Cpu.Available, nAcc.Net.Available, nil
+	if err := nAcc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit); err != nil {
+		return 0, 0, err
+	}
+	log.Debug("cpu:", nAcc.Resource.Cpu.Used, nAcc.Resource.Cpu.Available, nAcc.Resource.Cpu.Limit)
+	log.Debug("net:", nAcc.Resource.Net.Used, nAcc.Resource.Net.Available, nAcc.Resource.Net.Limit)
+	return nAcc.Resource.Cpu.Available, nAcc.Resource.Net.Available, nil
 }
 
 /**
@@ -328,22 +334,22 @@ func (s *State) GetChainList() ([]Chain, error) {
  */
 func (a *Account) AddResourceLimits(self bool, cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) {
 	if self {
-		a.Cpu.Staked += cpuStaked
-		a.Net.Staked += netStaked
+		a.Resource.Cpu.Staked += cpuStaked
+		a.Resource.Net.Staked += netStaked
 	} else {
-		a.Cpu.Delegated += cpuStaked
-		a.Net.Delegated += netStaked
+		a.Resource.Cpu.Delegated += cpuStaked
+		a.Resource.Net.Delegated += netStaked
 	}
 	a.updateResource(cpuStakedSum, netStakedSum, cpuLimit, netLimit)
 }
 func (a *Account) CancelDelegateSelf(cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) {
-	a.Cpu.Staked -= cpuStaked
-	a.Net.Staked -= netStaked
+	a.Resource.Cpu.Staked -= cpuStaked
+	a.Resource.Net.Staked -= netStaked
 	a.updateResource(cpuStakedSum, netStakedSum, cpuLimit, netLimit)
 }
 func (a *Account) CancelOthersDelegate(cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) {
-	a.Cpu.Delegated -= cpuStaked
-	a.Net.Delegated -= netStaked
+	a.Resource.Cpu.Delegated -= cpuStaked
+	a.Resource.Net.Delegated -= netStaked
 	a.updateResource(cpuStakedSum, netStakedSum, cpuLimit, netLimit)
 }
 func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) error {
@@ -351,10 +357,10 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 	for i := 0; i < len(a.Delegates); i++ {
 		if a.Delegates[i].Index == acc.Index {
 			done = true
-			if acc.Cpu.Delegated < cpuStaked {
+			if acc.Resource.Cpu.Delegated < cpuStaked {
 				return errors.New(fmt.Sprintf("the account:%s cpu amount is not enough", acc.Index.String()))
 			}
-			if acc.Net.Delegated < netStaked {
+			if acc.Resource.Net.Delegated < netStaked {
 				return errors.New(fmt.Sprintf("the account:%s net amount is not enough", acc.Index.String()))
 			}
 			acc.CancelOthersDelegate(cpuStaked, netStaked, cpuStakedSum, netStakedSum, cpuLimit, netLimit)
@@ -372,15 +378,15 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 	return nil
 }
 func (a *Account) SubResourceLimits(cpu, net float64, cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) error {
-	if a.Cpu.Available < cpu {
+	if a.Resource.Cpu.Available < cpu {
 		log.Warn(a.JsonString())
-		return errors.New(fmt.Sprintf("the account:%s cpu avaiable[%f] is not enough", a.Index.String(), a.Cpu.Available))
+		return errors.New(fmt.Sprintf("the account:%s cpu avaiable[%f] is not enough", a.Index.String(), a.Resource.Cpu.Available))
 	}
-	if a.Net.Available < net {
-		return errors.New(fmt.Sprintf("the account:%s net avaiable[%f] is not enough", a.Index.String(), a.Net.Available))
+	if a.Resource.Net.Available < net {
+		return errors.New(fmt.Sprintf("the account:%s net avaiable[%f] is not enough", a.Index.String(), a.Resource.Net.Available))
 	}
-	a.Cpu.Used += cpu
-	a.Net.Used += net
+	a.Resource.Cpu.Used += cpu
+	a.Resource.Net.Used += net
 	a.updateResource(cpuStakedSum, netStakedSum, cpuLimit, netLimit)
 	return nil
 }
@@ -396,10 +402,10 @@ func (a *Account) SetDelegateInfo(index common.AccountName, cpuStaked, netStaked
 	a.Delegates = append(a.Delegates, d)
 }
 func (a *Account) updateResource(cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) {
-	a.Cpu.Limit = float64(a.Cpu.Staked+a.Cpu.Delegated) / float64(cpuStakedSum) * cpuLimit
-	a.Cpu.Available = a.Cpu.Limit - a.Cpu.Used
-	a.Net.Limit = float64(a.Net.Staked+a.Net.Delegated) / float64(netStakedSum) * netLimit
-	a.Net.Available = a.Net.Limit - a.Net.Used
+	a.Resource.Cpu.Limit = float64(a.Resource.Cpu.Staked+a.Resource.Cpu.Delegated) / float64(cpuStakedSum) * cpuLimit
+	a.Resource.Cpu.Available = a.Resource.Cpu.Limit - a.Resource.Cpu.Used
+	a.Resource.Net.Limit = float64(a.Resource.Net.Staked+a.Resource.Net.Delegated) / float64(netStakedSum) * netLimit
+	a.Resource.Net.Available = a.Resource.Net.Limit - a.Resource.Net.Used
 }
 func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64, timeStamp int64, cpuLimit, netLimit float64) error {
 	if timeStamp < a.TimeStamp {
@@ -409,14 +415,14 @@ func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64, timeStamp 
 	t := (timeStamp - a.TimeStamp) / (1000 * 1000)
 	interval := 100.0 * float64(t) / (24.0 * 60.0 * 60.0 * 1000)
 	if interval >= 100 {
-		a.Cpu.Used = 0
-		a.Net.Used = 0
+		a.Resource.Cpu.Used = 0
+		a.Resource.Net.Used = 0
 	}
-	if a.Cpu.Used != 0 {
-		a.Cpu.Used -= a.Cpu.Used * interval
+	if a.Resource.Cpu.Used != 0 {
+		a.Resource.Cpu.Used -= a.Resource.Cpu.Used * interval
 	}
-	if a.Net.Used != 0 {
-		a.Net.Used -= a.Net.Used * interval
+	if a.Resource.Net.Used != 0 {
+		a.Resource.Net.Used -= a.Resource.Net.Used * interval
 	}
 	a.updateResource(cpuStakedSum, netStakedSum, cpuLimit, netLimit)
 	a.TimeStamp = timeStamp

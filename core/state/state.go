@@ -150,8 +150,8 @@ func (s *State) SetContract(index common.AccountName, t types.VmType, des, code,
 	if err != nil {
 		return err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
 	if err := acc.SetContract(t, des, code, abi); err != nil {
 		return err
 	}
@@ -167,8 +167,8 @@ func (s *State) GetContract(index common.AccountName) (*types.DeployInfo, error)
 	if err != nil {
 		return nil, err
 	}
-	acc.mutex.RLock()
-	defer acc.mutex.RUnlock()
+	acc.lock.RLock()
+	defer acc.lock.RUnlock()
 	return acc.GetContract()
 }
 func (s *State) StoreSet(index common.AccountName, key, value []byte) (err error) {
@@ -176,8 +176,8 @@ func (s *State) StoreSet(index common.AccountName, key, value []byte) (err error
 	if err != nil {
 		return err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
 	if err := acc.StoreSet(s.path, key, value); err != nil {
 		return err
 	}
@@ -188,8 +188,8 @@ func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, er
 	if err != nil {
 		return nil, err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
 	return acc.StoreGet(s.path, key)
 }
 

@@ -32,20 +32,18 @@ import (
 
 type Account struct {
 	Index       common.AccountName    `json:"index"`
-	TimeStamp   int64                 `json:"timestamp"`
-	Tokens      map[string]Token      `json:"token"`       //map[token name]Token
-	Permissions map[string]Permission `json:"permissions"` //map[perm name]Permission
+	Tokens      map[string]Token      `json:"token"` //map[token name]Token
+	Elector     Elector               `json:"elector"`
+	Resource    Resource              `json:"resource"`
 	Contract    types.DeployInfo      `json:"contract"`
+	TimeStamp   int64                 `json:"timestamp"`
 	Delegates   []Delegate            `json:"delegate"`
-	Resource    `json:"resource"`
-	Elector     Elector
-
-	Hash   common.Hash `json:"hash"`
-	trie   Trie
-	db     Database
-	diskDb *store.LevelDBStore
-
-	mutex sync.RWMutex
+	Permissions map[string]Permission `json:"permissions"` //map[perm name]Permission
+	Hash        common.Hash           `json:"hash"`
+	trie        Trie
+	db          Database
+	diskDb      *store.LevelDBStore
+	lock        sync.RWMutex
 }
 
 /**
@@ -73,7 +71,7 @@ func NewAccount(path string, index common.AccountName, addr common.Address, time
 		trie:        nil,
 		db:          nil,
 		diskDb:      nil,
-		mutex:       sync.RWMutex{},
+		lock:        sync.RWMutex{},
 	}
 	perm := NewPermission(Owner, "", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
@@ -132,7 +130,11 @@ func (a *Account) StoreSet(path string, key, value []byte) (err error) {
 	if err := a.NewStoreTrie(path); err != nil {
 		return err
 	}
-	defer a.diskDb.Close()
+	defer func() {
+		if err := a.diskDb.Close(); err != nil {
+			log.Error("disk db close err:", err)
+		}
+	}()
 	log.Debug("StoreSet key:", string(key), "value:", value)
 	if err := a.trie.TryUpdate(key, value); err != nil {
 		return err
@@ -151,7 +153,11 @@ func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
 	if err := a.NewStoreTrie(path); err != nil {
 		return nil, err
 	}
-	defer a.diskDb.Close()
+	defer func() {
+		if err := a.diskDb.Close(); err != nil {
+			log.Error("disk db close err:", err)
+		}
+	}()
 	value, err = a.trie.TryGet(key)
 	if err != nil {
 		return nil, err
@@ -249,7 +255,7 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 	}
 	sort.Float64s(keysVotes)
 	for _, v := range keysVotes {
-		producer := pb.Producer{AccountName: uint64(v), Amount: a.Votes.Producers[common.AccountName(v)]}
+		producer := pb.Producer{AccountName: uint64(v), Amount: a.Resource.Votes.Producers[common.AccountName(v)]}
 		producers = append(producers, &producer)
 	}
 	pbAcc := pb.Account{
@@ -265,21 +271,21 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 		},
 		Delegates: delegates,
 		Cpu: &pb.Res{
-			Staked:    a.Cpu.Staked,
-			Delegated: a.Cpu.Delegated,
-			Used:      a.Cpu.Used,
-			Available: a.Cpu.Available,
-			Limit:     a.Cpu.Limit,
+			Staked:    a.Resource.Cpu.Staked,
+			Delegated: a.Resource.Cpu.Delegated,
+			Used:      a.Resource.Cpu.Used,
+			Available: a.Resource.Cpu.Available,
+			Limit:     a.Resource.Cpu.Limit,
 		},
 		Net: &pb.Res{
-			Staked:    a.Net.Staked,
-			Delegated: a.Net.Delegated,
-			Used:      a.Net.Used,
-			Available: a.Net.Available,
-			Limit:     a.Net.Limit,
+			Staked:    a.Resource.Net.Staked,
+			Delegated: a.Resource.Net.Delegated,
+			Used:      a.Resource.Net.Used,
+			Available: a.Resource.Net.Available,
+			Limit:     a.Resource.Net.Limit,
 		},
 		Votes: &pb.Votes{
-			Staked:    a.Votes.Staked,
+			Staked:    a.Resource.Votes.Staked,
 			Producers: producers,
 		},
 		Elector: &pb.Elector{
@@ -310,26 +316,26 @@ func (a *Account) Deserialize(data []byte) error {
 	a.Index = common.AccountName(pbAcc.Index)
 	a.TimeStamp = pbAcc.TimeStamp
 
-	a.Cpu.Staked = pbAcc.Cpu.Staked
-	a.Cpu.Delegated = pbAcc.Cpu.Delegated
-	a.Cpu.Used = pbAcc.Cpu.Used
-	a.Cpu.Available = pbAcc.Cpu.Available
-	a.Cpu.Limit = pbAcc.Cpu.Limit
-	a.Net.Staked = pbAcc.Net.Staked
-	a.Net.Delegated = pbAcc.Net.Delegated
-	a.Net.Used = pbAcc.Net.Used
-	a.Net.Available = pbAcc.Net.Available
-	a.Net.Limit = pbAcc.Net.Limit
-	a.Votes.Staked = pbAcc.Votes.Staked
+	a.Resource.Cpu.Staked = pbAcc.Cpu.Staked
+	a.Resource.Cpu.Delegated = pbAcc.Cpu.Delegated
+	a.Resource.Cpu.Used = pbAcc.Cpu.Used
+	a.Resource.Cpu.Available = pbAcc.Cpu.Available
+	a.Resource.Cpu.Limit = pbAcc.Cpu.Limit
+	a.Resource.Net.Staked = pbAcc.Net.Staked
+	a.Resource.Net.Delegated = pbAcc.Net.Delegated
+	a.Resource.Net.Used = pbAcc.Net.Used
+	a.Resource.Net.Available = pbAcc.Net.Available
+	a.Resource.Net.Limit = pbAcc.Net.Limit
+	a.Resource.Votes.Staked = pbAcc.Votes.Staked
 	a.Elector.Index = common.AccountName(pbAcc.Elector.Index)
 	a.Elector.Payee = common.AccountName(pbAcc.Elector.Payee)
 	a.Elector.B64Pub = pbAcc.Elector.B64Pub
 	a.Elector.Address = pbAcc.Elector.Address
 	a.Elector.Port = pbAcc.Elector.Port
 	a.Elector.Amount = pbAcc.Elector.Amount
-	a.Votes.Producers = make(map[common.AccountName]uint64, 1)
+	a.Resource.Votes.Producers = make(map[common.AccountName]uint64, 1)
 	for _, v := range pbAcc.Votes.Producers {
-		a.Votes.Producers[common.AccountName(v.AccountName)] = v.Amount
+		a.Resource.Votes.Producers[common.AccountName(v.AccountName)] = v.Amount
 	}
 
 	a.Hash = common.NewHash(pbAcc.Hash)

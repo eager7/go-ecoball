@@ -44,15 +44,15 @@ func TestResourceRecover(t *testing.T) {
 	elog.Log.Debug(common.JsonString(acc.Resource))
 
 	acc.SubResourceLimits(1.0, 1.0, 100, 100, config.BlockCpuLimit, config.BlockNetLimit)
-	available := acc.Net.Available
+	available := acc.Resource.Net.Available
 	elog.Log.Debug(common.JsonString(acc.Resource))
 
 	time.Sleep(time.Microsecond * 100)
 	ti := time.Now().UnixNano()
 	errors.CheckErrorPanic(acc.RecoverResources(100, 100, ti, config.BlockCpuLimit, config.BlockNetLimit))
 	elog.Log.Debug(common.JsonString(acc.Resource))
-	if acc.Net.Available < available {
-		elog.Log.Error(acc.Net.Available, available)
+	if acc.Resource.Net.Available < available {
+		elog.Log.Error(acc.Resource.Net.Available, available)
 		t.Fatal("recover failed")
 	}
 

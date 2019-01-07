@@ -135,8 +135,8 @@ func (s *State) AddPermission(index common.AccountName, perm Permission) error {
 	if err != nil {
 		return err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
 	acc.AddPermission(perm)
 	return s.CommitAccount(acc)
 }
@@ -153,8 +153,8 @@ func (s *State) CheckPermission(index common.AccountName, name string, hash comm
 	if err != nil {
 		return err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
 	var sig []common.Signature
 	for _, v := range signatures {
 		result, err := secp256k1.Verify(hash.Bytes(), v.SigData, v.PubKey)
@@ -181,8 +181,8 @@ func (s *State) CheckAccountPermission(host common.AccountName, guest common.Acc
 	if err != nil {
 		return err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
 	return acc.checkAccountPermission(s, guest.String(), permission)
 }
 
@@ -196,8 +196,8 @@ func (s *State) FindPermission(index common.AccountName, name string) (string, e
 	if err != nil {
 		return "", err
 	}
-	acc.mutex.RLock()
-	defer acc.mutex.RUnlock()
+	acc.lock.RLock()
+	defer acc.lock.RUnlock()
 	if str, err := acc.findPermission(name); err != nil {
 		return "", err
 	} else {

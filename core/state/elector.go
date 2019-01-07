@@ -79,8 +79,8 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 	if err != nil {
 		return err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
 	if acc.Resource.Votes.Staked == 0 {
 		return errors.New(fmt.Sprintf("the account:%s has no enough vote", index.String()))
 	}
@@ -120,9 +120,9 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 		if err != nil {
 			return err
 		}
-		root.mutex.Lock()
+		root.lock.Lock()
 		root.AddPermission(perm)
-		root.mutex.Unlock()
+		root.lock.Unlock()
 	}
 	return s.CommitAccount(acc)
 }
@@ -136,21 +136,21 @@ func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountNa
 	if err := s.initProducersList(); err != nil {
 		return err
 	}
-	for index := range acc.Votes.Producers { //为防止重复投票，在更新票数前先把之前投的票作废
+	for index := range acc.Resource.Votes.Producers { //为防止重复投票，在更新票数前先把之前投的票作废
 		if producer := s.Producers.Get(index); producer != nil {
-			s.Producers.Add(index, producer.Amount-acc.Votes.Producers[index])
+			s.Producers.Add(index, producer.Amount-acc.Resource.Votes.Producers[index])
 		}
-		delete(acc.Votes.Producers, index)
+		delete(acc.Resource.Votes.Producers, index)
 	}
 	for _, a := range accounts {
 		if err := s.checkAccountCertification(a, VotesLimit); err != nil {
 			return err
 		}
-		acc.Votes.Producers[a] = acc.Votes.Staked
+		acc.Resource.Votes.Producers[a] = acc.Resource.Votes.Staked
 		if producer := s.Producers.Get(a); producer == nil {
 			return errors.New(fmt.Sprintf("the account:%s is not a candidata node", a.String()))
 		} else {
-			s.Producers.Add(a, producer.Amount+acc.Votes.Staked)
+			s.Producers.Add(a, producer.Amount+acc.Resource.Votes.Staked)
 		}
 	}
 	return s.commitProducersList()
@@ -165,10 +165,10 @@ func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
 	if err := s.initProducersList(); err != nil {
 		return err
 	}
-	for k := range acc.Votes.Producers {
-		acc.Votes.Producers[k] = acc.Votes.Staked
+	for k := range acc.Resource.Votes.Producers {
+		acc.Resource.Votes.Producers[k] = acc.Resource.Votes.Staked
 		if producer := s.Producers.Get(k); producer != nil {
-			s.Producers.Add(k, producer.Amount-votesOld+acc.Votes.Staked)
+			s.Producers.Add(k, producer.Amount-votesOld+acc.Resource.Votes.Staked)
 		} else {
 			return errors.New(fmt.Sprintf("the account:%s is exit candidata nodes list", k.String()))
 		}
@@ -185,8 +185,8 @@ func (s *State) checkAccountCertification(index common.AccountName, votes uint64
 	if err != nil {
 		return err
 	}
-	if acc.Votes.Staked < votes {
-		return errors.New(fmt.Sprintf("the account:%s has no enough staked:%d", index.String(), acc.Votes.Staked))
+	if acc.Resource.Votes.Staked < votes {
+		return errors.New(fmt.Sprintf("the account:%s has no enough staked:%d", index.String(), acc.Resource.Votes.Staked))
 	}
 	return nil
 }
@@ -245,9 +245,9 @@ func (s *State) GetProducerList() ([]Elector, error) {
 		if err != nil {
 			return nil, err
 		}
-		acc.mutex.RLock()
+		acc.lock.RLock()
 		electors = append(electors, acc.Elector)
-		acc.mutex.RUnlock()
+		acc.lock.RUnlock()
 	}
 	return electors, nil
 }
@@ -302,8 +302,8 @@ func (s *State) RegisterProducer(index common.AccountName, b64Pub, addr string, 
 	if err != nil {
 		return err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
 	acc.Elector.Index = index
 	acc.Elector.B64Pub = b64Pub
 	acc.Elector.Address = addr
