@@ -71,7 +71,7 @@ type Transaction struct {
 	Payload    EcoMessage            `json:"payload"`
 	Signatures []common.Signature `json:"signatures"`
 	Hash       common.Hash        `json:"hash"`
-	Receipt    TransactionReceipt
+	Receipt    TrxReceipt
 }
 
 func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash, perm string, payload EcoMessage, nonce uint64, time int64) (*Transaction, error) {
@@ -90,7 +90,7 @@ func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash
 		Payload:    payload,
 		Signatures: nil,
 		Hash:       common.Hash{},
-		Receipt: TransactionReceipt{
+		Receipt: TrxReceipt{
 			From:      from,
 			To:        addr,
 			TokenName: "",
@@ -287,7 +287,7 @@ func (t *Transaction) String() string {
 		Payload    string             `json:"payload"`
 		Signatures []common.Signature `json:"signatures"`
 		Hash       string             `json:"hash"`
-		Receipt    TransactionReceipt `json:"receipt"`
+		Receipt    TrxReceipt         `json:"receipt"`
 	}{Version: t.Version, ChainID: t.ChainID.HexString(), Type: t.Type.String(), From: t.From.String(),
 		Permission: t.Permission, Addr: t.Addr.String(), Nonce: t.Nonce,
 		TimeStamp: t.TimeStamp, Payload: t.Payload.String(), Signatures: t.Signatures,
