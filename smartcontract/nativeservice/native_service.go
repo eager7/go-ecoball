@@ -213,8 +213,8 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		fromAccount.Tokens[state.AbaToken] = balance
 
 		if from == to {
-			fromAccount.Cpu.Staked = cpu
-			fromAccount.Net.Staked = net
+			fromAccount.Resource.Cpu.Staked = cpu
+			fromAccount.Resource.Net.Staked = net
 
 			data, err := fromAccount.Serialize()
 			if err != nil {
@@ -224,8 +224,8 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 
 		} else {
 			fromAccount.Delegates = accFrom.Delegates
-			toAccount.Cpu.Delegated = cpu
-			toAccount.Net.Delegated = net
+			toAccount.Resource.Cpu.Delegated = cpu
+			toAccount.Resource.Net.Delegated = net
 
 			data, err := fromAccount.Serialize()
 			if err != nil {
@@ -286,8 +286,8 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		fromAccount.Tokens[state.AbaToken] = balance
 
 		if from == to {
-			fromAccount.Cpu.Staked = 0 - cpu
-			fromAccount.Net.Staked = 0 - net
+			fromAccount.Resource.Cpu.Staked = 0 - cpu
+			fromAccount.Resource.Net.Staked = 0 - net
 
 			data, err := fromAccount.Serialize()
 			if err != nil {
@@ -296,8 +296,8 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			ns.tx.Receipt.Accounts[0] = data
 		} else {
 			fromAccount.Delegates = accFrom.Delegates
-			toAccount.Cpu.Delegated = 0 - cpu
-			toAccount.Net.Delegated = 0 - net
+			toAccount.Resource.Cpu.Delegated = 0 - cpu
+			toAccount.Resource.Net.Delegated = 0 - net
 
 			data, err := fromAccount.Serialize()
 			if err != nil {

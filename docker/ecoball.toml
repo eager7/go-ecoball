@@ -4,9 +4,11 @@ wallet_http_port = "20679"   # client wallet http port
 version = "1.0"              # system version
 onlooker_port = "9001"		 #port for browser
 root_dir = "./"        		 # level file location
+log_dir = "/tmp/Log/"        # log file location
+output_to_terminal = "true"  # debug output type	 
 log_level = 1                # debug level	
 consensus_algorithm = "SOLO" # can set as SOLO, DPOS
-time_slot = 5000              # block interval time, uint ms
+time_slot = 5000             # block interval time, uint ms
 start_node = "true"
 root_privkey = "34a44d65ec3f517d6e7550ccb17839d391b69805ddd955e8442c32d38013c54e"
 root_pubkey = "04de18b1a406bfe6fb95ef37f21c875ffc9f6f59e71fea8efad482b82746da148e0f154d708001810b52fb1762d737fec40508b492628f86c605391a891a61ad0b" # used to chain ID
@@ -31,30 +33,24 @@ worker_privkey = "8bbd547fe9d9e867721c6fa643fbe637fc3d955e588358a45c11d63dd5a250
 worker_pubkey = "041a0a2b0bfce1d624c125d2a9fcca16c5b2b96bc78ab827e1c23818df4a70a4441c9665850268d48ab23e102cf1dc6864596a19e748c0867dce400a3f219e3f62"
 
 
-peer_list = [ "120202c924ed1a67fd1719020ce599d723d09d48362376836e04b0be72dfe825e24d810000", 
-              "120202935fb8d28b70706de6014a937402a30ae74a56987ed951abbe1ac9eeda56f0160000" ]
-peer_index = [ "1", "2" ]
-
-#p2p swarm config info
+[p2p] #p2p swarm config info
 p2p_peer_privatekey  = "CAAS4QQwggJdAgEAAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAECgYB+gMqNMdvqX89PQ7flaq7vRsM3gm5a0GeJf7GddMOc+XXMPUrW4S6hTzdwKgim0PGrcRJXr154G2qHHMZPImEY3ZBgI1k7wawJFiTpFq6KEK7kN1yh0Baj3XmtDVysa0x3gzkuKmDEgyoaXilOMYkDU1egJHQpm7Q1gL7lY4/iAQJBAN4OcEl83zFG2J4Yb/QOP1eshKMdEPVYN45jZLgkG0EKcM4QCTBLDNbnCnDKcxbYwBJGiwCtf+XSAHGtG5KYDuUCQQDWQ+Mr8/aHV/zFDROsF+zbfNOebTMp9pIBYouPp3bVj/0atlv1cMdquOM6vMMoNzHjXDVelgp5pwunTfbPweODAkEAzwvhcPQI29Z2FfstL/+02hfW2Iw6irkFnDNa70NjUiLdCZX0K15fC2YD2yU5aH0Toja6VxhvH6fOmC/TfL1hbQJBAJXG1uI+o7Jwey1zurCt+NBlLbitNPq8dcuqC0zcD2GySYeGujmUIJIltBG3KeTO0HzSVCxOTfxEHQ1SnpkUO+kCQGrAkPrA0qIGsYHe3Kk+FbvY6orzyiPBhRaAQphAx96gg2lUxi4NeM3qxlakHq+Vh8Y+xr1b7VZ2mw9bfJViLkY="
 p2p_peer_publickey   = "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAE="
 p2p_listen_address   = ["/ip4/0.0.0.0/tcp/4013","/ip6/::/tcp/4013"]
 announce_address     = []
 no_announce_address  = []
-bootstrap_address    = ["/ip4/192.168.8.35/tcp/4013/ipfs/QmUTyDE2SGS1kmZYZqKtHn87CYwWcyjwL72WRVU4xJCScw",]
+bootstrap_address    = ["/ip4/192.168.8.35/tcp/4013/ipfs/QmUTyDE2SGS1kmZYZqKtHn87CYwWcyjwL72WRVU4xJCScw","/ip4/192.168.8.140/tcp/4013/ipfs/QmXbAYKPLHDdRb9GyFf8QtapherBWCsM787CuZr8g3CcWd"]
 disable_nat_port_map = false
 disable_relay        = false
 enable_relay_hop     = false
 conn_mgr_lowwater    = 600
 conn_mgr_highwater   = 900
 conn_mgr_graceperiod = 20
-
 #p2p local discovery config info
 enable_local_discovery = false
 disable_localdis_log   = true
 
-log_dir = "/tmp/Log/"        	 		# log file location
-output_to_terminal = "true"  			# debug output type	 	
+	
 [logbunny]
 debug_level=0                           # 0: debug 1: info 2: warn 3: error 4: panic 5: fatal
 logger_type=0                           # 0: zap 1: logrus

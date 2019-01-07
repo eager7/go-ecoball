@@ -50,7 +50,7 @@ func GetNodePrivateKey(b64Pri string) (crypto.PrivKey, error) {
 /**
 ** 从配置文件中获取白名单和黑名单，并生成地址过滤器，然后返回过滤器函数，地址可以用此函数过滤
  */
-func MakeAddressesFactory(cfg config.SwarmConfigInfo) (basichost.AddrsFactory, error) {
+func MakeAddressesFactory(cfg config.P2pConfig) (basichost.AddrsFactory, error) {
 	var annAdds []multiaddr.Multiaddr
 	for _, addr := range cfg.AnnounceAddr {
 		mAddr, err := multiaddr.NewMultiaddr(addr)
@@ -113,7 +113,7 @@ func FilterRelayAddresses(addresses []multiaddr.Multiaddr) []multiaddr.Multiaddr
 ** 组装过滤器函数
  */
 func ComposeAddressesFactory(f, g basichost.AddrsFactory) basichost.AddrsFactory {
-	if !config.SwarmConfig.DisableRelay {
+	if !config.PConfig.DisableRelay {
 		return func(addresses []multiaddr.Multiaddr) []multiaddr.Multiaddr {
 			return f(g(addresses))
 		}

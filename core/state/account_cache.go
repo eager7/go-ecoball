@@ -2,7 +2,7 @@ package state
 
 import (
 	"fmt"
-	"github.com/ecoball/go-ecoball/common"
+	. "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/hashicorp/golang-lru"
 	"sync"
@@ -26,14 +26,14 @@ func (a *AccountCache) Add(acc *Account) {
 	a.AccountCache.Add(acc.Index, acc)
 }
 
-func (a *AccountCache) Get(index common.AccountName) *Account {
+func (a *AccountCache) Get(index AccountName) *Account {
 	if value, ok := a.AccountCache.Get(index); ok {
 		return value.(*Account)
 	}
 	return nil
 }
 
-func (a *AccountCache) Contains(index common.AccountName) bool {
+func (a *AccountCache) Contains(index AccountName) bool {
 	return a.AccountCache.Contains(index)
 }
 

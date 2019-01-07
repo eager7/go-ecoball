@@ -43,8 +43,8 @@ func NewBlock(chainID common.Hash, prev *Header, stateHash common.Hash, consensu
 	for _, t := range txs {
 		hashes = append(hashes, t.Hash)
 		Bloom.Add(t.Hash.Bytes())
-		Bloom.Add(common.IndexToBytes(t.From))
-		Bloom.Add(common.IndexToBytes(t.Addr))
+		Bloom.Add(t.From.Bytes())
+		Bloom.Add(t.Addr.Bytes())
 	}
 	merkleHash, err := trie.GetMerkleRoot(hashes)
 	if err != nil {

@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	channelSize = 16
+	channelCapacity = 49 //可以推送的信道数量,当前数量表示可以推送50个主题,每个主题可以推送50条消息,当消息达到阈值后,pub将会阻塞
 )
 
 var errorStr = errors.New("dispatcher is not ready")
@@ -34,7 +34,7 @@ var (
 func InitMsgDispatcher() {
 	if dispatcher == nil {
 		dispatcher = &Dispatcher{
-			pubsub.New(channelSize),
+			pubsub.New(channelCapacity),
 		}
 	}
 }

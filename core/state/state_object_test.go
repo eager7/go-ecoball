@@ -30,7 +30,7 @@ func TestStateObject(t *testing.T) {
 
 	acc2 := new(state.Account)
 	errors.CheckErrorPanic(acc2.Deserialize(data))
-	errors.CheckEqualPanic(acc.JsonString() == acc2.JsonString())
+	errors.CheckEqualPanic(acc.String() == acc2.String())
 }
 
 func TestResourceRecover(t *testing.T) {
@@ -44,15 +44,15 @@ func TestResourceRecover(t *testing.T) {
 	elog.Log.Debug(common.JsonString(acc.Resource))
 
 	acc.SubResourceLimits(1.0, 1.0, 100, 100, config.BlockCpuLimit, config.BlockNetLimit)
-	available := acc.Net.Available
+	available := acc.Resource.Net.Available
 	elog.Log.Debug(common.JsonString(acc.Resource))
 
 	time.Sleep(time.Microsecond * 100)
 	ti := time.Now().UnixNano()
 	errors.CheckErrorPanic(acc.RecoverResources(100, 100, ti, config.BlockCpuLimit, config.BlockNetLimit))
 	elog.Log.Debug(common.JsonString(acc.Resource))
-	if acc.Net.Available < available {
-		elog.Log.Error(acc.Net.Available, available)
+	if acc.Resource.Net.Available < available {
+		elog.Log.Error(acc.Resource.Net.Available, available)
 		t.Fatal("recover failed")
 	}
 
@@ -60,7 +60,7 @@ func TestResourceRecover(t *testing.T) {
 	errors.CheckErrorPanic(err)
 	accNew := new(state.Account)
 	errors.CheckErrorPanic(accNew.Deserialize(data))
-	errors.CheckEqualPanic(acc.JsonString() == accNew.JsonString())
+	errors.CheckEqualPanic(acc.String() == accNew.String())
 
 	errors.CheckErrorPanic(acc.SubResourceLimits(1, 1, 100, 100, config.BlockCpuLimit, config.BlockNetLimit))
 }

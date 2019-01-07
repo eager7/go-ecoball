@@ -28,7 +28,6 @@ import (
 func TestConfig(t *testing.T) {
 	fmt.Println(config.HttpLocalPort)
 	fmt.Println(config.ConsensusAlgorithm)
-	fmt.Println(config.PeerList)
 	fmt.Println(config.StartNode)
 
 	fmt.Println("worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString())
@@ -38,4 +37,6 @@ func TestConfig(t *testing.T) {
 
 	fmt.Println("chain Id:", config.ChainHash.HexString())
 	fmt.Println("root dir:", config.RootDir)
+
+	fmt.Println("p2p config:", config.PConfig)
 }
