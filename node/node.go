@@ -17,6 +17,7 @@
 package main
 
 import (
+	"github.com/ecoball/go-ecoball/mobsync"
 	"os"
 	"os/signal"
 	"syscall"
@@ -133,7 +134,7 @@ func runNode(c *cli.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	
 	var sdActor *sharding.ShardingActor
 	//if !config.DisableSharding {
 	if (false) {
@@ -143,7 +144,9 @@ func runNode(c *cli.Context) error {
 	}
 	fmt.Println(sdActor)
 
-	txPool, err := txpool.Start(ledger.L)
+
+	txPool, err := txpool.Start(ctx, ledger.L)
+
 	if err != nil {
 		log.Fatal("start txPool error, ", err.Error())
 		os.Exit(1)
@@ -157,7 +160,10 @@ func runNode(c *cli.Context) error {
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
-
+	if err := mobsync.NewSyncEngine(ctx, ledger.L); err != nil {
+		log.Error(err)
+		return err
+	}
 	//start block chain browser
 	ecoballGroup.Go(func() error {
 		errChan := make(chan error, 1)

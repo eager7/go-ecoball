@@ -48,11 +48,7 @@ func NewSoloConsensusServer(l ledger.Ledger, txPool *txpool.TxPool, acc account.
 		return nil, err
 	}
 
-	msg := []mpb.Identify{
-		mpb.Identify_APP_MSG_BLOCK,
-	}
-
-	solo.msg, err = event.Subscribe(msg...)
+	solo.msg, err = event.Subscribe([]mpb.Identify{mpb.Identify_APP_MSG_BLOCK}...)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -128,12 +124,12 @@ func ConsensusWorkerThread(chainID common.Hash, solo *Solo, addr common.Address)
 				log.Error("can't parse msg")
 				continue
 			}
-			log.Info("receive msg:", in.Identify.String())
 			block := new(types.Block)
 			if err := block.Deserialize(in.Payload); err != nil {
 				log.Error(err)
 				continue
 			}
+			log.Info("solo receive msg:", in.Identify.String(), block.Height)
 			if err := event.Send(event.ActorConsensusSolo, event.ActorLedger, block); err != nil {
 				log.Fatal(err)
 			}

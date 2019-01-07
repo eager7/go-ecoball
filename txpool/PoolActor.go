@@ -19,7 +19,6 @@ package txpool
 import (
 	"fmt"
 	"github.com/AsynkronIT/protoactor-go/actor"
-	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
@@ -28,9 +27,7 @@ import (
 	"sync"
 )
 
-const magicNum = 999
-
-var CurrentTxN = 0
+var counter = 0
 
 type PoolActor struct {
 	txPool *TxPool
@@ -39,30 +36,31 @@ type PoolActor struct {
 }
 
 func NewTxPoolActor(pool *TxPool, n uint8) (pid *actor.PID, err error) {
-	props := actor.FromProducer(func() actor.Actor {
-		return &PoolActor{txPool: pool}
-	})
-
+	props := actor.FromProducer(func() actor.Actor { return &PoolActor{txPool: pool} })
 	if pid, err = actor.SpawnNamed(props, "TxPoolActor"); nil != err {
 		return nil, err
 	}
-	event.RegisterActor(event.ActorTxPool, pid)
-
+	if err := event.RegisterActor(event.ActorTxPool, pid); err != nil {
+		return nil, err
+	}
 	return
 }
 
 func (p *PoolActor) Receive(ctx actor.Context) {
-	log.Notice("receive type message:", reflect.TypeOf(ctx.Message()))
+	log.Notice("tx pool receive message:", reflect.TypeOf(ctx.Message()))
 	switch msg := ctx.Message().(type) {
 	case *actor.Started:
 	case *actor.Restarting:
 	case *types.Transaction:
-		log.Debug("receive tx:", CurrentTxN, "type:", msg.Type.String(), "Hash:", msg.Hash.HexString())
-		CurrentTxN++
-		go p.handleTransaction(msg)
+		log.Debug("receive tx:", counter, "type:", msg.Type.String(), "Hash:", msg.Hash.HexString())
+		counter++
+		if err := p.HandleTransaction(msg); err != nil {
+			log.Error("pre handle transaction in tx pool failed:", err)
+			log.Warn(msg.String())
+		}
 	case *types.Block:
 		log.Debug("new block delete transactions")
-		go p.handleNewBlock(msg)
+		p.handleNewBlock(msg)
 	case *message.RegChain:
 		log.Debug("Add New TxList:", msg.ChainID.HexString())
 		p.txPool.AddTxsList(msg.ChainID)
@@ -73,34 +71,33 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 	}
 }
 
-//Determine whether a transaction already exists
-func (p *PoolActor) isSameTransaction(hash common.Hash) bool {
-	if p.txPool.txsCache.Contains(hash) {
-		return true
-	}
-	return false
-}
-
-func (p *PoolActor) handleTransaction(tx *types.Transaction) error {
+func (p *PoolActor) HandleTransaction(tx *types.Transaction) error {
 	if p.txPool.txsCache.Contains(tx.Hash) {
-		log.Warn("transaction already in the txn pool" + tx.Hash.HexString())
+		log.Info("transaction already in the tx pool" + tx.Hash.HexString())
 		return nil
 	}
-	txClone, err := tx.Clone()
-	if err != nil {
-		event.PublishCustom(err.Error(), tx.Hash.String())
-		return err
-	}
-	if ret, err := p.preHandleTransaction(txClone); err != nil {
-		event.PublishCustom(err.Error(), tx.Hash.String())
-		log.Error(err)
+	var retString string
+	defer func() {
+		if err := event.PublishCustom(string(retString), tx.Hash.String()); err != nil {
+			log.Warn("publish transaction failed:", err)
+		}
+	}()
+	if txClone, err := tx.Clone(); err != nil {
+		retString = err.Error()
 		return err
 	} else {
-		event.PublishCustom(string(ret), tx.Hash.String())
+		if ret, err := p.preHandleTransaction(txClone); err != nil {
+			retString = err.Error()
+			return err
+		} else {
+			retString = string(ret)
+		}
+	}
+	if err := p.txPool.Push(tx.ChainID, tx); err != nil {
+		retString = err.Error()
+		return err
 	}
 	p.txPool.txsCache.Add(tx.Hash, nil)
-
-	p.txPool.Push(tx.ChainID, tx)
 
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
 		log.Warn("broadcast transaction failed:", err.Error(), tx.Hash.HexString())
@@ -114,6 +111,7 @@ func (p *PoolActor) handleNewBlock(block *types.Block) {
 		log.Debug("Delete tx:", v.Hash.HexString())
 		p.txPool.Delete(block.ChainID, v.Hash)
 	}
+
 }
 
 func (p *PoolActor) preHandleTransaction(tx *types.Transaction) (ret []byte, err error) {
@@ -121,11 +119,8 @@ func (p *PoolActor) preHandleTransaction(tx *types.Transaction) (ret []byte, err
 	if !ok {
 		return nil, errors.New(fmt.Sprintf("can't find the chain:%s", tx.ChainID.HexString()))
 	}
-
-	ret, _, _, err = p.txPool.ledger.PreHandleTransaction(tx.ChainID, s, tx, tx.TimeStamp)
-	if err != nil {
+	if ret, _, _, err = p.txPool.ledger.PreHandleTransaction(tx.ChainID, s, tx, tx.TimeStamp); err != nil {
 		return nil, err
 	}
-
 	return ret, nil
 }

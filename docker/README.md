@@ -37,7 +37,7 @@ The ecoball.toml profile will be mirrored. Please configure the configuration it
 
 Add a new configuration item to the project's ecoball.toml, and be sure to copy the latest code-generated file ecoball.toml to the Docker directory.
 
-If the configuration items for a container require special customization, do the configuration in the shard_setup.toml file(Refer to the shard_setup.toml configuration file for details).
+If the configuration items for a container require special customization, do the configuration in the setup.toml file(Refer to the setup.toml configuration file for details).
 
 ### docker_build.sh
 You need to use docker_build.sh first to create the image
@@ -48,22 +48,17 @@ This script will call the Makefile of go-ecoball to generate the latest executab
 ./docker_build.sh
 ```
 
-### shard_setup.toml
-Before starting shard mode, you need to configure shard start profile shard_setup.toml
+### setup.toml
+Before starting, you need to configure shard start profile setup.toml
 ```
-# Configuration file for shard network startup
+# Configuration file for network startup
 
-# Number of nodes per shard
-size = 5
-
-# Network host IP address list and the number of Committee and Shard on each physical machine
+# Network host IP address list and the number of Producer and Candidate on each physical machine
 # The key string represents the host IP address 
-# The first value represents the number of Committee nodes
-# The second value represents the number of Shard nodes
+# The first value represents the number of Producer nodes
+# The second value represents the number of Candidate nodes
 [network]
-"192.168.8.58" = [0, 5]
-"192.168.8.60" = [0, 5]
-"192.168.8.62" = [5, 0]
+"192.168.8.58" = [4, 0]
 
 
 # Different configuration items for ecoball.toml
@@ -77,38 +72,23 @@ output_to_terminal = true
 output_to_terminal = true
 ```
 ## key_generate.py
-Once the configuration file shard_setup.toml is configured, execute key_generation.py to generate public and private keys for the startup container
+Once the configuration file setup.toml is configured, execute key_generation.py to generate public and private keys for the startup container
 ```
 ./key_generate.py
 ```
 
-## share_shard.py 
-To start the sharding network, execute the share_shard.py script to start the shard container.
+## start_ecoball.py
 
-If the -b option is added, the eballscan container is started
-
-If the -w option is added, the ecowallet container is started
-
-```
-cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./share_shard.py -i ${HOST_IP} [-b] [-w]
-```
-Log generation for each node is under ./ecoball_log/shard/$DOCKERNAME/ 
-
-The wallet file is generated under ./wallet
-
-## share_committee.py
-
-After starting the shard container, execute the share_commitment.py script to start the committee node.
+After configuration setup.toml, execute the start_ecoball.py script to start node.
 
 If the -b option is added, the eballscan container is started
 
 If the -w option is added, the ecowallet container is started
 ```
 cd $GOPATH/src/github.com/ecoball/go-ecoball/Docker
-./share_committee.py -i ${HOST_IP}  [-b] [-w]
+./start_ecoball.py -i ${HOST_IP}  [-b] [-w]
 ```
-Log generation for each node is under ./ecoball_log/committee/$DOCKERNAME/ 
+Log generation for each node is under ./ecoball_log/$DOCKERNAME/ 
 
 The wallet file is generated under ./wallet
 

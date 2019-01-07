@@ -21,7 +21,7 @@ func TestRunMain(t *testing.T) {
 
 	ledger.L = example.Ledger("/tmp/node_test")
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
-	txPool, err := txpool.Start(ledger.L)
+	txPool, err := txpool.Start(context.Background(), ledger.L)
 	errors.CheckErrorPanic(err)
 
 	switch config.ConsensusAlgorithm {
@@ -42,7 +42,7 @@ func TestRunNode(t *testing.T) {
 
 	ledger.L = example.Ledger("/tmp/node_test")
 	elog.Log.Info("consensus", config.ConsensusAlgorithm)
-	txPool, err := txpool.Start(ledger.L)
+	txPool, err := txpool.Start(context.Background(), ledger.L)
 	errors.CheckErrorPanic(err)
 
 	switch config.ConsensusAlgorithm {
@@ -52,7 +52,7 @@ func TestRunNode(t *testing.T) {
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
 	if config.StartNode {
-		go example.InvokeSingleContract(ledger.L)
+		go example.InlineAction(ledger.L)
 	}
 	utils.Pause()
 }

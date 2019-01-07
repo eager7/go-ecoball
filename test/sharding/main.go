@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/errors"
@@ -20,7 +21,7 @@ func main() {
 	L, err := ledgerimpl.NewLedger("shard", config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey))
 	errors.CheckErrorPanic(err)
 
-	_, err = txpool.Start(L)
+	_, err = txpool.Start(context.Background(), L)
 	if err != nil {
 		panic("txpool error")
 	}
