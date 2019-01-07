@@ -3,7 +3,7 @@ package state
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ecoball/go-ecoball/common"
+	. "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"math/big"
 	"sort"
@@ -35,15 +35,15 @@ type Resource struct {
 		Limit     float64 `json:"limit_ms, omitempty"`      //uint ms
 	}
 	Votes struct {
-		Staked    uint64                        `json:"staked_aba, omitempty"` //total stake delegated, uint ABA
-		Producers map[common.AccountName]uint64 `json:"producers, omitempty"`  //support nodes' list
+		Staked    uint64                 `json:"staked_aba, omitempty"` //total stake delegated, uint ABA
+		Producers map[AccountName]uint64 `json:"producers, omitempty"`  //support nodes' list
 	}
 }
 
 type Delegate struct {
-	Index     common.AccountName `json:"index"`
-	CpuStaked uint64             `json:"cpu_aba"`
-	NetStaked uint64             `json:"net_aba"`
+	Index     AccountName `json:"index"`
+	CpuStaked uint64      `json:"cpu_aba"`
+	NetStaked uint64      `json:"net_aba"`
 }
 
 /**
@@ -53,7 +53,7 @@ type Delegate struct {
  *  @param cpuStaked - stake delegated cpu
  *  @param netStaked - stake delegated net
  */
-func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netStaked uint64, cpuLimit, netLimit float64) error {
+func (s *State) SetResourceLimits(from, to AccountName, cpuStaked, netStaked uint64, cpuLimit, netLimit float64) error {
 	cpuStakedSum, err := s.getParam(cpuAmount)
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpuStaked, netSta
  *  @param cpu - the amount of cpu spend
  *  @param net - the amount of net spend
  */
-func (s *State) SubResources(index common.AccountName, cpu, net float64, cpuLimit, netLimit float64) error {
+func (s *State) SubResources(index AccountName, cpu, net float64, cpuLimit, netLimit float64) error {
 	cpuStakedSum, err := s.getParam(cpuAmount)
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func (s *State) SubResources(index common.AccountName, cpu, net float64, cpuLimi
  *  @param cpuStaked - stake delegated cpu
  *  @param netStaked - stake delegated net
  */
-func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked uint64, cpuLimit, netLimit float64) error {
+func (s *State) CancelDelegate(from, to AccountName, cpuStaked, netStaked uint64, cpuLimit, netLimit float64) error {
 	votingSum, err := s.getParam(votingAmount)
 	if err != nil {
 		return err
@@ -204,7 +204,7 @@ func (s *State) CancelDelegate(from, to common.AccountName, cpuStaked, netStaked
  *  @param index - account's index
  *  @param timeStamp - current time
  */
-func (s *State) RecoverResources(index common.AccountName, timeStamp int64, cpuLimit, netLimit float64) error {
+func (s *State) RecoverResources(index AccountName, timeStamp int64, cpuLimit, netLimit float64) error {
 	log.Debug("recover resource:", timeStamp)
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
@@ -231,7 +231,7 @@ func (s *State) RecoverResources(index common.AccountName, timeStamp int64, cpuL
  *  @param index - account's index
  *  @param timeStamp - current time
  */
-func (s *State) RequireResources(index common.AccountName, cpuLimit, netLimit float64, timeStamp int64) (float64, float64, error) {
+func (s *State) RequireResources(index AccountName, cpuLimit, netLimit float64, timeStamp int64) (float64, float64, error) {
 	cpuStakedSum, err := s.getParam(cpuAmount)
 	if err != nil {
 		return 0, 0, err
@@ -260,7 +260,7 @@ func (s *State) RequireResources(index common.AccountName, cpuLimit, netLimit fl
  *  @brief register a new transaction chain
  *  @param index - account's index
  */
-func (s *State) RegisterChain(index common.AccountName, hash, txHash common.Hash, addr common.Address) error {
+func (s *State) RegisterChain(index AccountName, hash, txHash Hash, addr Address) error {
 	if _, err := s.GetChainList(); err != nil {
 		return err
 	}
@@ -286,7 +286,7 @@ func (s *State) commitChains() error {
 	sort.Strings(Keys)
 	var List []*Chain
 	for _, v := range Keys {
-		hash := common.HexToHash(v)
+		hash := HexToHash(v)
 		List = append(List, s.Chains.Get(hash))
 	}
 
@@ -379,7 +379,7 @@ func (a *Account) CancelDelegateOther(acc *Account, cpuStaked, netStaked, cpuSta
 }
 func (a *Account) SubResourceLimits(cpu, net float64, cpuStakedSum, netStakedSum uint64, cpuLimit, netLimit float64) error {
 	if a.Resource.Cpu.Available < cpu {
-		log.Warn(a.JsonString())
+		log.Warn(a.String())
 		return errors.New(fmt.Sprintf("the account:%s cpu avaiable[%f] is not enough", a.Index.String(), a.Resource.Cpu.Available))
 	}
 	if a.Resource.Net.Available < net {
@@ -390,7 +390,7 @@ func (a *Account) SubResourceLimits(cpu, net float64, cpuStakedSum, netStakedSum
 	a.updateResource(cpuStakedSum, netStakedSum, cpuLimit, netLimit)
 	return nil
 }
-func (a *Account) SetDelegateInfo(index common.AccountName, cpuStaked, netStaked uint64) {
+func (a *Account) SetDelegateInfo(index AccountName, cpuStaked, netStaked uint64) {
 	for i, d := range a.Delegates {
 		if d.Index == index {
 			a.Delegates[i].CpuStaked += cpuStaked

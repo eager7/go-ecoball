@@ -2,25 +2,25 @@ package state
 
 import (
 	"encoding/json"
+	errIn "errors"
 	"fmt"
-	"github.com/ecoball/go-ecoball/common"
+	. "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
-	errIn "errors"
 )
 
 var Owner = "owner"
 var Active = "active"
 
 type AccFactor struct {
-	Actor      common.AccountName `json:"actor"`
-	Weight     uint32             `json:"weight"`
-	Permission string             `json:"permission"`
+	Actor      AccountName `json:"actor"`
+	Weight     uint32      `json:"weight"`
+	Permission string      `json:"permission"`
 }
 
 type KeyFactor struct {
-	Actor  common.Address `json:"actor"`
-	Weight uint32         `json:"weight"`
+	Actor  Address `json:"actor"`
+	Weight uint32  `json:"weight"`
 }
 
 type Permission struct {
@@ -62,11 +62,11 @@ func NewPermission(name, parent string, threshold uint32, addr []KeyFactor, acc 
  *  @param state - the mpt trie, used to search account
  *  @param signatures - the transaction's signatures list
  */
-func (p *Permission) checkPermission(state *State, signatures []common.Signature) error {
-	Keys := make(map[common.Address][]byte, 1)
+func (p *Permission) checkPermission(state *State, signatures []Signature) error {
+	Keys := make(map[Address][]byte, 1)
 	Accounts := make(map[string][]byte, 1)
 	for _, s := range signatures {
-		addr := common.AddressFromPubKey(s.PubKey)
+		addr := AddressFromPubKey(s.PubKey)
 		acc, err := state.GetAccountByAddr(addr)
 		if err == nil {
 			Accounts[acc.Index.String()] = s.SigData
@@ -130,7 +130,7 @@ func (p *Permission) checkAccountPermission(state *State, guest string, permissi
  *  @brief add a permission object into account, then update to mpt trie
  *  @param perm - the permission object
  */
-func (s *State) AddPermission(index common.AccountName, perm Permission) error {
+func (s *State) AddPermission(index AccountName, perm Permission) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -148,14 +148,14 @@ func (s *State) AddPermission(index common.AccountName, perm Permission) error {
  *  @param name - the permission names
  *  @param signatures - the signatures list
  */
-func (s *State) CheckPermission(index common.AccountName, name string, hash common.Hash, signatures []common.Signature) error {
+func (s *State) CheckPermission(index AccountName, name string, hash Hash, signatures []Signature) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
 	}
 	acc.lock.Lock()
 	defer acc.lock.Unlock()
-	var sig []common.Signature
+	var sig []Signature
 	for _, v := range signatures {
 		result, err := secp256k1.Verify(hash.Bytes(), v.SigData, v.PubKey)
 		if err == nil && result == true {
@@ -173,7 +173,7 @@ func (s *State) CheckPermission(index common.AccountName, name string, hash comm
  *  @param guest - the guest account
  *  @param permission - the permission names
  */
-func (s *State) CheckAccountPermission(host common.AccountName, guest common.AccountName, permission string) error {
+func (s *State) CheckAccountPermission(host AccountName, guest AccountName, permission string) error {
 	if guest == host {
 		return nil
 	}
@@ -191,7 +191,7 @@ func (s *State) CheckAccountPermission(host common.AccountName, guest common.Acc
  *  @param index - the account index
  *  @param name - the permission names
  */
-func (s *State) FindPermission(index common.AccountName, name string) (string, error) {
+func (s *State) FindPermission(index AccountName, name string) (string, error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return "", err
@@ -219,7 +219,7 @@ func (a *Account) AddPermission(perm Permission) {
  *  @param name - the permission name
  *  @param signatures - the transaction's signatures list
  */
-func (a *Account) checkPermission(state *State, name string, signatures []common.Signature) error {
+func (a *Account) checkPermission(state *State, name string, signatures []Signature) error {
 	if perm, ok := a.Permissions[name]; !ok {
 		return errors.New(fmt.Sprintf("can't find this permission in account:%s", name))
 	} else {
@@ -229,7 +229,7 @@ func (a *Account) checkPermission(state *State, name string, signatures []common
 			}
 		}
 		if err := perm.checkPermission(state, signatures); err != nil {
-			log.Error(fmt.Sprintf("account:%s", a.JsonString()))
+			log.Error(fmt.Sprintf("account:%s", a.String()))
 			return err
 		}
 	}
@@ -252,7 +252,7 @@ func (a *Account) checkAccountPermission(state *State, guest string, permission 
 			}
 		}
 		if err := perm.checkAccountPermission(state, guest, permission); err != nil {
-			log.Error(fmt.Sprintf("account:%s", a.JsonString()))
+			log.Error(fmt.Sprintf("account:%s", a.String()))
 			return err
 		}
 	}

@@ -3,7 +3,7 @@ package state
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ecoball/go-ecoball/common"
+	. "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"sort"
@@ -11,18 +11,18 @@ import (
 
 //存储选举出来的节点列表
 type Producer struct {
-	Index  common.AccountName
+	Index  AccountName
 	Amount uint64
 }
 
 //存储参选节点信息
 type Elector struct {
-	Index   common.AccountName
+	Index   AccountName
 	Amount  uint64
 	B64Pub  string
 	Address string
 	Port    uint32
-	Payee   common.AccountName
+	Payee   AccountName
 }
 
 func (e *Elector) Serialize() ([]byte, error) {
@@ -45,11 +45,11 @@ func (e *Elector) Deserialize(data []byte) error {
 	if err := pbE.Unmarshal(data); err != nil {
 		return errors.New(err.Error())
 	}
-	e.Index = common.AccountName(pbE.Index)
+	e.Index = AccountName(pbE.Index)
 	e.Amount = pbE.Amount
 	e.Address = pbE.Address
 	e.Port = pbE.Port
-	e.Payee = common.AccountName(pbE.Payee)
+	e.Payee = AccountName(pbE.Payee)
 	return nil
 }
 
@@ -57,7 +57,7 @@ func (e *Elector) Deserialize(data []byte) error {
  *  @brief 取消参选，会将账号从候选列表中删除，但是不会删除其他人为之投票的信息
  *  @param index - account's index
  */
-func (s *State) UnRegisterProducer(index common.AccountName) error {
+func (s *State) UnRegisterProducer(index AccountName) error {
 	if err := s.initProducersList(); err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (s *State) UnRegisterProducer(index common.AccountName) error {
  *  @param index - account index
  *  @param accounts - candidate node list
  */
-func (s *State) ElectionToVote(index common.AccountName, accounts []common.AccountName) error {
+func (s *State) ElectionToVote(index AccountName, accounts []AccountName) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -116,7 +116,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 			accFactors = append(accFactors, accFactor)
 		}
 		perm := NewPermission(Active, Owner, 2, []KeyFactor{}, accFactors)
-		root, err := s.GetAccountByName(common.NameToIndex("root"))
+		root, err := s.GetAccountByName(NameToIndex("root"))
 		if err != nil {
 			return err
 		}
@@ -132,7 +132,7 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
  *  @param acc - account struct
  *  @param accounts - candidate node list
  */
-func (s *State) changeElectedProducers(acc *Account, accounts []common.AccountName) error {
+func (s *State) changeElectedProducers(acc *Account, accounts []AccountName) error {
 	if err := s.initProducersList(); err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
  *  @brief 检查账户是否具有参选资格，需要至少抵押200个代币才能具备参选资格
  *  @param index - account's index
  */
-func (s *State) checkAccountCertification(index common.AccountName, votes uint64) error {
+func (s *State) checkAccountCertification(index AccountName, votes uint64) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -195,7 +195,7 @@ func (s *State) checkAccountCertification(index common.AccountName, votes uint64
  *  @brief 将候选人列表存到levelDB中，以备程序重启时可以重新获取数据
  */
 func (s *State) commitProducersList() error {
-	var Keys []common.AccountName
+	var Keys []AccountName
 	for producer := range s.Producers.Iterator() {
 		Keys = append(Keys, producer.Index)
 	}
@@ -280,7 +280,7 @@ func (s *State) initProducersList() error {
  *  @brief 注册成为一个候选节点，票数为零，需等待其他节点投票给自己
  *  @param index - account's index
  */
-func (s *State) RegisterProducer(index common.AccountName, b64Pub, addr string, port uint32, payee common.AccountName) error {
+func (s *State) RegisterProducer(index AccountName, b64Pub, addr string, port uint32, payee AccountName) error {
 	if _, err := s.GetAccountByName(payee); err != nil {
 		return err
 	}

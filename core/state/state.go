@@ -18,7 +18,7 @@ package state
 
 import (
 	"fmt"
-	"github.com/ecoball/go-ecoball/common"
+	. "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
@@ -51,7 +51,7 @@ type State struct {
  *  @param path - the levelDB store path
  *  @param root - the root of mpt trie, this value decide the state of trie
  */
-func NewState(path string, root common.Hash) (st *State, err error) {
+func NewState(path string, root Hash) (st *State, err error) {
 	st = &State{
 		Type:      0,
 		path:      path,
@@ -77,7 +77,7 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	log.Notice("Open Trie Hash:", root.HexString())
 	st.trie, err = st.db.OpenTrie(root)
 	if err != nil {
-		st.trie, _ = st.db.OpenTrie(common.Hash{})
+		st.trie, _ = st.db.OpenTrie(Hash{})
 	}
 	return st, nil
 }
@@ -110,7 +110,7 @@ func (s *State) CopyState() (*State, error) {
  *  @param index - account's index
  *  @param addr - account's address convert from public key
  */
-func (s *State) AddAccount(index common.AccountName, addr common.Address, timeStamp int64) (*Account, error) {
+func (s *State) AddAccount(index AccountName, addr Address, timeStamp int64) (*Account, error) {
 	s.mutex.RLock()
 	data, err := s.trie.TryGet(index.Bytes())
 	s.mutex.RUnlock()
@@ -145,7 +145,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address, timeSt
  *  @param code - the code of contract
  *  @param abi  - the abi of contract
  */
-func (s *State) SetContract(index common.AccountName, t types.VmType, des, code, abi []byte) error {
+func (s *State) SetContract(index AccountName, t types.VmType, des, code, abi []byte) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -162,7 +162,7 @@ func (s *State) SetContract(index common.AccountName, t types.VmType, des, code,
  *  @brief get the code of account
  *  @param index - account's index
  */
-func (s *State) GetContract(index common.AccountName) (*types.DeployInfo, error) {
+func (s *State) GetContract(index AccountName) (*types.DeployInfo, error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func (s *State) GetContract(index common.AccountName) (*types.DeployInfo, error)
 	defer acc.lock.RUnlock()
 	return acc.GetContract()
 }
-func (s *State) StoreSet(index common.AccountName, key, value []byte) (err error) {
+func (s *State) StoreSet(index AccountName, key, value []byte) (err error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -183,7 +183,7 @@ func (s *State) StoreSet(index common.AccountName, key, value []byte) (err error
 	}
 	return s.CommitAccount(acc)
 }
-func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, err error) {
+func (s *State) StoreGet(index AccountName, key []byte) (value []byte, err error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return nil, err
@@ -197,7 +197,7 @@ func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, er
 *  @brief get the abi of contract
 *  @param index - account's index
  */
-func (s *State) GetContractAbi(index common.AccountName) ([]byte, error) {
+func (s *State) GetContractAbi(index AccountName) ([]byte, error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ func (s *State) GetContractAbi(index common.AccountName) ([]byte, error) {
  *  @brief search the account by name index
  *  @param index - the account index
  */
-func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
+func (s *State) GetAccountByName(index AccountName) (*Account, error) {
 	acc := s.Accounts.Get(index)
 	if acc != nil {
 		return acc, nil
@@ -235,14 +235,14 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
  *  @brief search the account by address
  *  @param addr - the account address
  */
-func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
+func (s *State) GetAccountByAddr(addr Address) (*Account, error) {
 	if value, err := s.getParam(addr.HexString()); err != nil {
 		return nil, err
 	} else {
 		if value == 0 {
 			return nil, errors.New(fmt.Sprintf("the address:%s is not register be an account", addr.HexString()))
 		}
-		return s.GetAccountByName(common.AccountName(value))
+		return s.GetAccountByName(AccountName(value))
 	}
 }
 
@@ -275,7 +275,7 @@ func (s *State) CommitAccount(acc *Account) error {
 func (s *State) commitParam(key string, value uint64) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	if err := s.trie.TryUpdate([]byte(key), common.Uint64ToBytes(value)); err != nil {
+	if err := s.trie.TryUpdate([]byte(key), Uint64ToBytes(value)); err != nil {
 		return err
 	}
 	s.Params.Add(key, value)
@@ -301,7 +301,7 @@ func (s *State) getParam(key string) (uint64, error) {
 	if len(data) == 0 {
 		return 0, nil
 	}
-	value := common.Uint64SetBytes(data)
+	value := Uint64SetBytes(data)
 	s.Params.Add(key, value)
 	return value, nil
 }
@@ -309,8 +309,8 @@ func (s *State) getParam(key string) (uint64, error) {
 /**
  *  @brief get the trie root hash
  */
-func (s *State) GetHashRoot() common.Hash {
-	return common.NewHash(s.trie.Hash().Bytes())
+func (s *State) GetHashRoot() Hash {
+	return NewHash(s.trie.Hash().Bytes())
 }
 
 /**
@@ -341,7 +341,7 @@ func (s *State) CommitToDB() error {
  *  @brief reset the mpt state by root hash
  *  @param hash - the hash of mpt witch state will be reset
  */
-func (s *State) Reset(hash common.Hash) error {
+func (s *State) Reset(hash Hash) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	if err := s.diskDb.Close(); err != nil {

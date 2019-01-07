@@ -3,7 +3,7 @@ package state
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ecoball/go-ecoball/common"
+	. "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"math/big"
@@ -12,11 +12,11 @@ import (
 const AbaTotal = 2100000000
 
 type TokenInfo struct {
-	Symbol    string             `json:"symbol"`
-	MaxSupply *big.Int           `json:"max_supply"`
-	Supply    *big.Int           `json:"supply"`
-	Creator   common.AccountName `json:"issuer"`
-	Issuer    common.AccountName `json:"issuer"`
+	Symbol    string      `json:"symbol"`
+	MaxSupply *big.Int    `json:"max_supply"`
+	Supply    *big.Int    `json:"supply"`
+	Creator   AccountName `json:"issuer"`
+	Issuer    AccountName `json:"issuer"`
 }
 
 type Token struct {
@@ -24,7 +24,7 @@ type Token struct {
 	Balance *big.Int `json:"balance, omitempty"`
 }
 
-func NewToken(symbol string, maxSupply, supply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error) {
+func NewToken(symbol string, maxSupply, supply *big.Int, creator, issuer AccountName) (*TokenInfo, error) {
 	stat := &TokenInfo{
 		Symbol:    symbol,
 		MaxSupply: maxSupply,
@@ -75,8 +75,8 @@ func (info *TokenInfo) Deserialize(data []byte) error {
 	info.Symbol = status.Symbol
 	info.MaxSupply = maxSupply
 	info.Supply = supply
-	info.Creator = common.AccountName(status.Creator)
-	info.Issuer = common.AccountName(status.Issuer)
+	info.Creator = AccountName(status.Creator)
+	info.Issuer = AccountName(status.Issuer)
 
 	return nil
 }
@@ -97,7 +97,7 @@ func (info *TokenInfo) JsonString(format bool) string {
 	}
 }
 
-func (s *State) AccountGetBalance(index common.AccountName, token string) (*big.Int, error) {
+func (s *State) AccountGetBalance(index AccountName, token string) (*big.Int, error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func (s *State) AccountGetBalance(index common.AccountName, token string) (*big.
 	defer acc.lock.RUnlock()
 	return acc.Balance(token)
 }
-func (s *State) AccountSubBalance(index common.AccountName, token string, value *big.Int) error {
+func (s *State) AccountSubBalance(index AccountName, token string, value *big.Int) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func (s *State) AccountSubBalance(index common.AccountName, token string, value 
 	}
 	return nil
 }
-func (s *State) AccountAddBalance(index common.AccountName, token string, value *big.Int) error {
+func (s *State) AccountAddBalance(index AccountName, token string, value *big.Int) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -174,7 +174,7 @@ func (s *State) TokenExisted(name string) bool {
 }
 
 func (s *State) GetTokenInfo(symbol string) (*TokenInfo, error) {
-	if err := common.TokenNameCheck(symbol); err != nil {
+	if err := TokenNameCheck(symbol); err != nil {
 		return nil, errors.New(err.Error())
 	}
 
@@ -221,8 +221,8 @@ func (s *State) CommitToken(token *TokenInfo) error {
 	return nil
 }
 
-func (s *State) CreateToken(symbol string, maxSupply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error) {
-	if err := common.TokenNameCheck(symbol); err != nil {
+func (s *State) CreateToken(symbol string, maxSupply *big.Int, creator, issuer AccountName) (*TokenInfo, error) {
+	if err := TokenNameCheck(symbol); err != nil {
 		return nil, err
 	}
 
@@ -243,8 +243,8 @@ func (s *State) CreateToken(symbol string, maxSupply *big.Int, creator, issuer c
 }
 
 // for token contract api
-func (s *State) SetTokenInfo(symbol string, maxSupply, supply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error) {
-	if err := common.TokenNameCheck(symbol); err != nil {
+func (s *State) SetTokenInfo(symbol string, maxSupply, supply *big.Int, creator, issuer AccountName) (*TokenInfo, error) {
+	if err := TokenNameCheck(symbol); err != nil {
 		return nil, err
 	}
 
@@ -260,7 +260,7 @@ func (s *State) SetTokenInfo(symbol string, maxSupply, supply *big.Int, creator,
 	return token, nil
 }
 
-func (s *State) IssueToken(to common.AccountName, amount *big.Int, symbol string) error {
+func (s *State) IssueToken(to AccountName, amount *big.Int, symbol string) error {
 	token, err := s.GetTokenInfo(symbol)
 	if err != nil {
 		return err
