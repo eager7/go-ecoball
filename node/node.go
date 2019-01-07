@@ -36,6 +36,8 @@ import (
 	"github.com/ecoball/go-ecoball/spectator"
 	"golang.org/x/net/context"
 	"golang.org/x/sync/errgroup"
+	"fmt"
+	"github.com/ecoball/go-ecoball/sharding"
 )
 
 var (
@@ -131,6 +133,15 @@ func runNode(c *cli.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var sdActor *sharding.ShardingActor
+	//if !config.DisableSharding {
+	if (false) {
+		log.Info("start sharding")
+		sdActor, _ = sharding.NewShardingActor(ledger.L)
+		sdActor.SetNet()
+	}
+	fmt.Println(sdActor)
 
 	txPool, err := txpool.Start(ledger.L)
 	if err != nil {
