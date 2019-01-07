@@ -34,8 +34,9 @@ enum  Identify {
     APP_MSG_BLOCK_REQUEST       = 28;
     APP_MSG_BLOCK_RESPONSE      = 29;
     APP_MSG_STATE_OBJECT        = 30;
+    APP_MSG_TRANSACTION_RECEIPT = 31;
 
-    APP_MSG_UNDEFINED           = 31;
+    APP_MSG_UNDEFINED           = 32;
 }
 
 
