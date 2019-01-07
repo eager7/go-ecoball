@@ -121,12 +121,8 @@ func (s *State) ElectionToVote(index common.AccountName, accounts []common.Accou
 			return err
 		}
 		root.mutex.Lock()
-		defer root.mutex.Unlock()
 		root.AddPermission(perm)
-		//if config.ConsensusAlgorithm != "SOLO" {
-		//	log.Info(event.Send(event.ActorNil, event.ActorConsensusSolo, &message.SoloStop{}))
-		//	log.Info(event.Send(event.ActorNil, event.ActorConsensus, &message.ABABFTStart{}))
-		//}
+		root.mutex.Unlock()
 	}
 	return s.CommitAccount(acc)
 }
