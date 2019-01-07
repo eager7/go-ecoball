@@ -9,7 +9,7 @@ import (
 	"sort"
 )
 
-type TransactionReceipt struct {
+type TrxReceipt struct {
 	From   		common.AccountName
 	To     		common.AccountName
 	TokenName	string
@@ -28,7 +28,7 @@ type BlockReceipt struct {
 	BlockNet float64
 }
 
-func (r *TransactionReceipt) Serialize() ([]byte, error) {
+func (r *TrxReceipt) Serialize() ([]byte, error) {
 	amount, err := r.Amount.GobEncode()
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (r *TransactionReceipt) Serialize() ([]byte, error) {
 	return b, nil
 }
 
-func (r *TransactionReceipt) Deserialize(data []byte) (error) {
+func (r *TrxReceipt) Deserialize(data []byte) (error) {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")
 	}

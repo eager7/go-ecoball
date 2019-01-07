@@ -29,7 +29,7 @@ import (
 
 func TestTransfer(t *testing.T) {
 	tx := example.TestTransfer()
-	receipt := types.TransactionReceipt{
+	receipt := types.TrxReceipt{
 		From:      common.NameToIndex("root"),
 		To:        common.NameToIndex("root"),
 		TokenName: "",

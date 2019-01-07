@@ -19,19 +19,17 @@ var log = elog.NewLogger("native", elog.NoticeLog)
 
 type NativeService struct {
 	state     state.InterfaceState
-	tx        *types.Transaction
+	trx       *types.Transaction
 	context   *context.ApplyContext
 	cpuLimit  float64
 	netLimit  float64
 	timeStamp int64
 }
 
-func NewNativeService(s state.InterfaceState, tx *types.Transaction, context *context.ApplyContext, cpuLimit, netLimit float64, timeStamp int64) (*NativeService, error) {
+func NewNativeService(s state.InterfaceState, trx *types.Transaction, context *context.ApplyContext, cpuLimit, netLimit float64, timeStamp int64) (*NativeService, error) {
 	ns := &NativeService{
-		state: s,
-		tx:    tx,
-		//method:    method,
-		//params:    params,
+		state:     s,
+		trx:       trx,
 		context:   context,
 		cpuLimit:  cpuLimit,
 		netLimit:  netLimit,
@@ -41,13 +39,12 @@ func NewNativeService(s state.InterfaceState, tx *types.Transaction, context *co
 }
 
 func (ns *NativeService) Execute() ([]byte, error) {
-	switch ns.tx.Addr {
+	switch ns.trx.Addr {
 	case common.NameToIndex("root"):
 		return ns.RootExecute()
 	default:
 		return nil, errors.New("unknown native contract's owner")
 	}
-	return nil, nil
 }
 
 func (ns *NativeService) Println(s string) {
@@ -55,8 +52,8 @@ func (ns *NativeService) Println(s string) {
 }
 
 func (ns *NativeService) RootExecute() ([]byte, error) {
-	method := string(ns.tx.Payload.GetInstance().(*types.InvokeInfo).Method)
-	params := ns.tx.Payload.GetInstance().(*types.InvokeInfo).Param
+	method := string(ns.trx.Payload.GetInstance().(*types.InvokeInfo).Method)
+	params := ns.trx.Payload.GetInstance().(*types.InvokeInfo).Param
 	switch method {
 	case "new_account":
 		if len(params) != 2 {
@@ -69,15 +66,13 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			ns.Println(err.Error())
 			return nil, errors.New(err.Error())
 		}
-
 		ns.Println(fmt.Sprint("create account success"))
-
 		// generate trx receipt
 		data, err := acc.Serialize()
 		if err != nil {
 			return nil, err
 		}
-		ns.tx.Receipt.Accounts[0] = data
+		ns.trx.Receipt.Accounts[0] = data
 	case "set_account":
 		if len(params) != 2 {
 			return nil, errors.New("the param is error, please input two param for set_account like ``")
@@ -93,23 +88,18 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			ns.Println(err.Error())
 			return nil, errors.New(err.Error())
 		}
-
 		ns.Println(fmt.Sprint("set account success"))
-
 		// generate trx receipt
 		acc := state.Account{
 			Index:       index,
 			Permissions: make(map[string]state.Permission, 1),
 		}
 		acc.Permissions[perm.PermName] = perm
-
-		var err error
 		data, err := acc.Serialize()
 		if err != nil {
 			return nil, err
 		}
-		ns.tx.Receipt.Accounts[0] = data
-
+		ns.trx.Receipt.Accounts[0] = data
 	case "reg_prod": //注册成为候选节点，需要5个参数，分别为注册账号，节点公钥，地址，端口号，以及付款账号，如: root,CAASogEwgZ8....,192.168.1.1,1001,root
 		if len(params) != 5 {
 			return nil, errors.New("the param is error, please input 5 param for reg_prod like [root,CAASogEwgZ8....,192.168.1.1,1001,root]")
@@ -128,18 +118,18 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			return nil, errors.New(err.Error())
 		}
 		// generate trx receipt
-		ns.tx.Receipt.Producer = uint64(index)
-
+		ns.trx.Receipt.Producer = uint64(index)
 		ns.Println(fmt.Sprint("register producer success"))
-
 	case "vote":
 		from := common.NameToIndex(params[0])
 		var accounts []common.AccountName
 		for i := 1; i < len(params); i++ {
 			accounts = append(accounts, common.NameToIndex(params[i]))
 		}
-		ns.state.ElectionToVote(from, accounts)
-
+		if err := ns.state.ElectionToVote(from, accounts); err != nil {
+			log.Error(err)
+			return nil, err
+		}
 		ns.Println(fmt.Sprint("vote success"))
 	case "reg_chain":
 		if len(params) != 3 {
@@ -150,22 +140,25 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		addr := common.AddressFormHexString(params[2])
 		data := []byte(index.String() + consensus + addr.HexString())
 		hash := common.SingleHash(data)
-		if err := ns.state.RegisterChain(index, hash, ns.tx.Hash, addr); err != nil {
+		if err := ns.state.RegisterChain(index, hash, ns.trx.Hash, addr); err != nil {
 			ns.Println(err.Error())
 			return nil, errors.New(err.Error())
 		}
 		if ns.state.StateType() == state.FinalType {
 			if consensus == "solo" {
-				msg := &message.RegChain{ChainID: hash, TxHash: ns.tx.Hash, Address: addr}
-				event.Send(event.ActorNil, event.ActorConsensusSolo, msg)
+				msg := &message.RegChain{ChainID: hash, TxHash: ns.trx.Hash, Address: addr}
+				if err := event.Send(event.ActorNil, event.ActorConsensusSolo, msg); err != nil {
+					log.Error(err)
+				}
 			} else if consensus == "ababft" {
-				msg := &message.RegChain{ChainID: hash, TxHash: ns.tx.Hash, Address: addr}
-				event.Send(event.ActorNil, event.ActorConsensus, msg)
+				msg := &message.RegChain{ChainID: hash, TxHash: ns.trx.Hash, Address: addr}
+				if err := event.Send(event.ActorNil, event.ActorConsensus, msg); err != nil {
+					log.Error(err)
+				}
 			} else {
 				log.Warn("not support now")
 			}
 		}
-
 	case "pledge": //抵押代币以获取CPU，net资源，需要4个参数，分别为支付代币账号，获取资源账号，cpu数量，net数量，如： root,root,100,100
 		if len(params) != 4 {
 			return nil, errors.New("the param is error, please input 4 param for pledge like `contract invoke -n root -i root -m pledge -p root,user3,1000,1000`")
@@ -183,14 +176,11 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			return nil, err
 		}
 
-		//log.Debug(from, to, cpu, net)
 		if err := ns.state.SetResourceLimits(from, to, cpu, net, ns.cpuLimit, ns.netLimit); err != nil {
 			ns.Println(err.Error())
 			return nil, err
 		}
-
 		ns.Println("pledge success!")
-
 		// generate trx receipt
 		accFrom, err := ns.state.GetAccountByName(from)
 		if err != nil {
@@ -220,7 +210,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			ns.tx.Receipt.Accounts[0] = data
+			ns.trx.Receipt.Accounts[0] = data
 
 		} else {
 			fromAccount.Delegates = accFrom.Delegates
@@ -231,13 +221,13 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			ns.tx.Receipt.Accounts[0] = data
+			ns.trx.Receipt.Accounts[0] = data
 
 			data1, err := toAccount.Serialize()
 			if err != nil {
 				return nil, err
 			}
-			ns.tx.Receipt.Accounts[1] = data1
+			ns.trx.Receipt.Accounts[1] = data1
 		}
 
 	case "cancel_pledge":
@@ -293,7 +283,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			ns.tx.Receipt.Accounts[0] = data
+			ns.trx.Receipt.Accounts[0] = data
 		} else {
 			fromAccount.Delegates = accFrom.Delegates
 			toAccount.Resource.Cpu.Delegated = 0 - cpu
@@ -303,13 +293,13 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			ns.tx.Receipt.Accounts[0] = data
+			ns.trx.Receipt.Accounts[0] = data
 
 			data1, err := toAccount.Serialize()
 			if err != nil {
 				return nil, err
 			}
-			ns.tx.Receipt.Accounts[1] = data1
+			ns.trx.Receipt.Accounts[1] = data1
 		}
 	default:
 		ns.Println(fmt.Sprintf("unknown method:%s", method))

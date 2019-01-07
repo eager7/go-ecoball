@@ -1146,7 +1146,7 @@ func RecepitTest(ledger ledger.Ledger) {
 	accounts[0] = account
 	accounts[1] = account
 
-	receipt := types.TransactionReceipt{
+	receipt := types.TrxReceipt{
 		TokenName: "ABA",
 		Amount:    big.NewInt(100),
 		Hash:      common.NewHash(account),
@@ -1158,7 +1158,7 @@ func RecepitTest(ledger ledger.Ledger) {
 
 	data, err := receipt.Serialize()
 	errors.CheckErrorPanic(err)
-	newReceipt := types.TransactionReceipt{}
+	newReceipt := types.TrxReceipt{}
 	err = newReceipt.Deserialize(data)
 	errors.CheckErrorPanic(err)
 

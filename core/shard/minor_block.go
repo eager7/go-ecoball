@@ -169,7 +169,7 @@ func (h *MinorBlockHeader) Deserialize(data []byte) error {
 
 type AccountMinor struct {
 	Type    types.TxType
-	Receipt types.TransactionReceipt
+	Receipt types.TrxReceipt
 }
 
 func (a *AccountMinor) proto() (*pb.AccountMinor, error) {
@@ -363,7 +363,7 @@ func (b *MinorBlock) Deserialize(data []byte) error {
 	}
 
 	for _, acc := range pbBlock.StateDelta {
-		receipt := types.TransactionReceipt{}
+		receipt := types.TrxReceipt{}
 		if err := receipt.Deserialize(acc.AccountData); err != nil {
 			return err
 		}
