@@ -124,7 +124,7 @@ func (i *Instance) initNetwork(b64Pri string) (err error) {
 	fullAddr := addrM.Encapsulate(hostAddr)
 	log.Debug("I am ", fullAddr, i.Host.Peerstore().Addrs(i.ID))
 	log.Debug("start bootstrap nodes...")
-	i.BootStrapper = i.bootStrapInitialize(config.SwarmConfig.BootStrapAddr)
+	i.BootStrapper = i.bootStrapInitialize(config.PConfig.BootStrapAddr)
 	return nil
 }
 

@@ -39,10 +39,6 @@ const VirtualBlockNetLimit float64 = 1048576000.0
 const BlockCpuLimit float64 = 200000.0
 const BlockNetLimit float64 = 1048576.0 //1M
 
-// peer list
-var PeerList []string
-var PeerIndex []string
-
 const (
 	StringBlock      = "/Block"
 	StringBlockCache = "/BlockCache"
@@ -59,6 +55,8 @@ wallet_http_port = "20679"   # client wallet http port
 version = "1.0"              # system version
 onlooker_port = "9001"		 #port for browser
 root_dir = "./"        		 # level file location
+log_dir = "/tmp/Log/"        # log file location
+output_to_terminal = "true"  # debug output type	 
 log_level = 1                # debug level	
 consensus_algorithm = "SOLO" # can set as SOLO, DPOS
 time_slot = 5000             # block interval time, uint ms
@@ -86,11 +84,7 @@ worker_privkey = "8bbd547fe9d9e867721c6fa643fbe637fc3d955e588358a45c11d63dd5a250
 worker_pubkey = "041a0a2b0bfce1d624c125d2a9fcca16c5b2b96bc78ab827e1c23818df4a70a4441c9665850268d48ab23e102cf1dc6864596a19e748c0867dce400a3f219e3f62"
 
 
-peer_list = [ "120202c924ed1a67fd1719020ce599d723d09d48362376836e04b0be72dfe825e24d810000", 
-              "120202935fb8d28b70706de6014a937402a30ae74a56987ed951abbe1ac9eeda56f0160000" ]
-peer_index = [ "1", "2" ]
-
-#p2p swarm config info
+[p2p] #p2p swarm config info
 p2p_peer_privatekey  = "CAAS4QQwggJdAgEAAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAECgYB+gMqNMdvqX89PQ7flaq7vRsM3gm5a0GeJf7GddMOc+XXMPUrW4S6hTzdwKgim0PGrcRJXr154G2qHHMZPImEY3ZBgI1k7wawJFiTpFq6KEK7kN1yh0Baj3XmtDVysa0x3gzkuKmDEgyoaXilOMYkDU1egJHQpm7Q1gL7lY4/iAQJBAN4OcEl83zFG2J4Yb/QOP1eshKMdEPVYN45jZLgkG0EKcM4QCTBLDNbnCnDKcxbYwBJGiwCtf+XSAHGtG5KYDuUCQQDWQ+Mr8/aHV/zFDROsF+zbfNOebTMp9pIBYouPp3bVj/0atlv1cMdquOM6vMMoNzHjXDVelgp5pwunTfbPweODAkEAzwvhcPQI29Z2FfstL/+02hfW2Iw6irkFnDNa70NjUiLdCZX0K15fC2YD2yU5aH0Toja6VxhvH6fOmC/TfL1hbQJBAJXG1uI+o7Jwey1zurCt+NBlLbitNPq8dcuqC0zcD2GySYeGujmUIJIltBG3KeTO0HzSVCxOTfxEHQ1SnpkUO+kCQGrAkPrA0qIGsYHe3Kk+FbvY6orzyiPBhRaAQphAx96gg2lUxi4NeM3qxlakHq+Vh8Y+xr1b7VZ2mw9bfJViLkY="
 p2p_peer_publickey   = "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALna9LG/OdOImFPZ19WXzpCnCegonngYny888RvEUl/YcMpNQ1Rclpo/rtNiBlcxuXW7TepW/afQ0Y1yq8aRuRe7526RUQ8sLWc2mfCvV/HL6b1614qH8Q9HODnHTNIKzya+0PZuLNsS4Rug5dwMJHMKW8sAQK7TVvz5sdU+qa4vAgMBAAE="
 p2p_listen_address   = ["/ip4/0.0.0.0/tcp/4013","/ip6/::/tcp/4013"]
@@ -103,13 +97,11 @@ enable_relay_hop     = false
 conn_mgr_lowwater    = 600
 conn_mgr_highwater   = 900
 conn_mgr_graceperiod = 20
-
 #p2p local discovery config info
 enable_local_discovery = false
 disable_localdis_log   = true
 
-log_dir = "/tmp/Log/"        	 		# log file location
-output_to_terminal = "true"  			# debug output type	 	
+	
 [logbunny]
 debug_level=0                           # 0: debug 1: info 2: warn 3: error 4: panic 5: fatal
 logger_type=0                           # 0: zap 1: logrus
@@ -130,44 +122,44 @@ http_port=":50015"                      # RESTFul API to change logout level dyn
 rolling_time_pattern="0 0 0 * * *"      # rolling the log everyday at 00:00:00
 `
 
-type SwarmConfigInfo struct {
-	PrivateKey        string
-	PublicKey         string
-	ListenAddress     []string
-	AnnounceAddr      []string
-	NoAnnounceAddr    []string
-	BootStrapAddr     []string
-	DisableNatPortMap bool
-	DisableRelay      bool
-	EnableRelayHop    bool
-	ConnLowWater      int
-	ConnHighWater     int
-	ConnGracePeriod   int
+type P2pConfig struct {
+	PrivateKey           string
+	PublicKey            string
+	ListenAddress        []string
+	AnnounceAddr         []string
+	NoAnnounceAddr       []string
+	BootStrapAddr        []string
+	DisableNatPortMap    bool
+	DisableRelay         bool
+	EnableRelayHop       bool
+	ConnLowWater         int
+	ConnHighWater        int
+	ConnGracePeriod      int
+	EnableLocalDiscovery bool
+	DisableLocalDisLog   bool
 }
 
 var (
-	ChainHash            common.Hash
-	TimeSlot             int
-	HttpLocalPort        string
-	WalletHttpPort       string
-	OnlookerPort         string
-	EcoVersion           string
-	RootDir              string
-	LogDir               string
-	OutputToTerminal     bool
-	LogLevel             int
-	ConsensusAlgorithm   string
-	StartNode            bool
-	Root                 account.Account
-	User                 account.Account
-	Delegate             account.Account
-	Worker               account.Account
-	Worker1              account.Account
-	Worker2              account.Account
-	Worker3              account.Account
-	SwarmConfig          SwarmConfigInfo
-	EnableLocalDiscovery bool
-	DisableLocalDisLog   bool
+	ChainHash          common.Hash
+	TimeSlot           int
+	HttpLocalPort      string
+	WalletHttpPort     string
+	OnlookerPort       string
+	EcoVersion         string
+	RootDir            string
+	LogDir             string
+	OutputToTerminal   bool
+	LogLevel           int
+	ConsensusAlgorithm string
+	StartNode          bool
+	Root               account.Account
+	User               account.Account
+	Delegate           account.Account
+	Worker             account.Account
+	Worker1            account.Account
+	Worker2            account.Account
+	Worker3            account.Account
+	PConfig            P2pConfig
 )
 
 func SetConfig(filePath string) error {
@@ -253,26 +245,23 @@ func initVariable() {
 	Worker3 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker3_privkey")), PublicKey: common.FromHex(viper.GetString("worker3_pubkey")), Alg: 0}
 	Delegate = account.Account{PrivateKey: common.FromHex(viper.GetString("delegate_privkey")), PublicKey: common.FromHex(viper.GetString("delegate_pubkey")), Alg: 0}
 	Worker = account.Account{PrivateKey: common.FromHex(viper.GetString("worker_privkey")), PublicKey: common.FromHex(viper.GetString("worker_pubkey")), Alg: 0}
-	PeerList = viper.GetStringSlice(ListPeers)
-	PeerIndex = viper.GetStringSlice(IndexPeers)
 	ChainHash = common.SingleHash(common.FromHex(viper.GetString("root_pubkey")))
 
 	//init p2p swarm configuration
-	SwarmConfig = SwarmConfigInfo{
-		PrivateKey:        viper.GetString("p2p_peer_privatekey"),
-		PublicKey:         viper.GetString("p2p_peer_publickey"),
-		ListenAddress:     viper.GetStringSlice("p2p_listen_address"),
-		AnnounceAddr:      viper.GetStringSlice("announce_address"),
-		NoAnnounceAddr:    viper.GetStringSlice("no_announce_address"),
-		BootStrapAddr:     viper.GetStringSlice("bootstrap_address"),
-		DisableNatPortMap: viper.GetBool("disable_nat_port_map"),
-		DisableRelay:      viper.GetBool("disable_relay"),
-		EnableRelayHop:    viper.GetBool("enable_relay_hop"),
-		ConnLowWater:      viper.GetInt("conn_mgr_lowwater"),
-		ConnHighWater:     viper.GetInt("conn_mgr_highwater"),
-		ConnGracePeriod:   viper.GetInt("conn_mgr_graceperiod"),
+	PConfig = P2pConfig{
+		PrivateKey:           viper.GetString("p2p.p2p_peer_privatekey"),
+		PublicKey:            viper.GetString("p2p.p2p_peer_publickey"),
+		ListenAddress:        viper.GetStringSlice("p2p.p2p_listen_address"),
+		AnnounceAddr:         viper.GetStringSlice("p2p.announce_address"),
+		NoAnnounceAddr:       viper.GetStringSlice("p2p.no_announce_address"),
+		BootStrapAddr:        viper.GetStringSlice("p2p.bootstrap_address"),
+		DisableNatPortMap:    viper.GetBool("p2p.disable_nat_port_map"),
+		DisableRelay:         viper.GetBool("p2p.disable_relay"),
+		EnableRelayHop:       viper.GetBool("p2p.enable_relay_hop"),
+		ConnLowWater:         viper.GetInt("p2p.conn_mgr_lowwater"),
+		ConnHighWater:        viper.GetInt("p2p.conn_mgr_highwater"),
+		ConnGracePeriod:      viper.GetInt("p2p.conn_mgr_graceperiod"),
+		EnableLocalDiscovery: viper.GetBool("p2p.enable_local_discovery"),
+		DisableLocalDisLog:   viper.GetBool("p2p.disable_localdis_log"),
 	}
-
-	EnableLocalDiscovery = viper.GetBool("enable_local_discovery")
-	DisableLocalDisLog = viper.GetBool("disable_localdis_log")
 }
