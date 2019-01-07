@@ -52,7 +52,7 @@ func TestRunNode(t *testing.T) {
 		elog.Log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
 	if config.StartNode {
-		go example.InvokeSingleContract(ledger.L)
+		go example.InlineAction(ledger.L)
 	}
 	utils.Pause()
 }
