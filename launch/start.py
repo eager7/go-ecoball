@@ -30,6 +30,13 @@ def get_config(num, host_ip, data):
             return True, data[ip_index]
     return False, ""
 
+def get_config_p2p(num, host_ip, data):
+    ip_index = host_ip + "_" + str(num) + "_p2p"
+    for one in data:
+        if one == ip_index:
+            return True, data[ip_index]
+    return False, ""
+
 def main():
     # Command Line Arguments
     parser = argparse.ArgumentParser()
@@ -62,6 +69,11 @@ def main():
         _, config = get_config(args.number, host_ip, all_config)
         for one in config:
             ecoball_config[one] = config[one]
+
+        _, config = get_config_p2p(args.number, host_ip, all_config)
+        for one in config:
+            ecoball_config["p2p"][one] = config[one]
+
         pytoml.dump(ecoball_config, ecoball_file)
 
     #start ecoball

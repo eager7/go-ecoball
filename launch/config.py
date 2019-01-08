@@ -121,10 +121,15 @@ def main():
                 one_config = one_ip + "_" + str(tail)
                 if one_config not in data:
                     data[one_config] = {}
-                data[one_config]["p2p_peer_privatekey"] = private_str
-                data[one_config]["p2p_peer_publickey"] = public_str
+
+                one_config_p2p = one_config + "_p2p"
+                if one_config_p2p not in data:
+                    data[one_config_p2p] = {}
+
+                data[one_config_p2p]["p2p_peer_privatekey"] = private_str
+                data[one_config_p2p]["p2p_peer_publickey"] = public_str
                 port = p2p_start_port + tail
-                data[one_config]["p2p_listen_address"] = ["/ip4/0.0.0.0/tcp/" + str(port), "/ip6/::/tcp/4013"]
+                data[one_config_p2p]["p2p_listen_address"] = ["/ip4/0.0.0.0/tcp/" + str(port), "/ip6/::/tcp/4013"]
                 bootstrap_address_list.append("/ip4/" + one_ip + "/tcp/" + str(port) + "/ipfs/" + id_str)
                 data[one_config]["http_port"] = str(http_start_port + tail)
                 data[one_config]["onlooker_port"] = str(onlooker_start_port + tail)
@@ -141,9 +146,10 @@ def main():
                 else:
                     tail = count
                 one_config = one_ip + "_" + str(tail)
+                one_config_p2p = one_ip + "_" + str(tail) + "_p2p"
                 if one_config not in data:
                     data[one_config] = {}            
-                data[one_config]["bootstrap_address"] = bootstrap_address_list
+                data[one_config_p2p]["bootstrap_address"] = bootstrap_address_list
                 data[one_config]["log_dir"] = "./log/"
                 data[one_config]["root_dir"] = "./log/"
                 count += 1
