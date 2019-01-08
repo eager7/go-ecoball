@@ -18,6 +18,7 @@ RUN pip3 install pytoml
 #ecoball
 COPY ecoball /ecoball/ecoball/
 COPY ecoball.toml /ecoball/ecoball/
+COPY setup.toml /ecoball/ecoball/
 COPY start.py /ecoball/ecoball/
 
 #ipfs

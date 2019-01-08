@@ -107,7 +107,7 @@ def main():
                     tail = count + count_list[0]                  
                 else:
                     tail = count
-                one_config = one_ip + "_" + str(tail)
+                one_config = one_ip + "_" + str(tail) + "_p2p"
                 if one_config not in data:
                     data[one_config] = {}
                 data[one_config]["p2p_peer_privatekey"] = private_str
@@ -127,7 +127,7 @@ def main():
                     tail = count + count_list[0]                   
                 else:
                     tail = count
-                one_config = one_ip + "_" + str(tail)
+                one_config = one_ip + "_" + str(tail) + "_p2p"
                 if one_config not in data:
                     data[one_config] = {}            
                 data[one_config]["bootstrap_address"] = bootstrap_address_list

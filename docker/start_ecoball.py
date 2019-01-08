@@ -55,7 +55,7 @@ def get_config(num, host_ip, data):
     return False, ""
 
 def get_config_p2p(num, host_ip, data):
-    ip_index = host_ip + "_" + str(num) + "p2p"
+    ip_index = host_ip + "_" + str(num) + "_p2p"
     for one in data:
         if one == ip_index:
             return True, data[ip_index]
@@ -75,7 +75,6 @@ def main():
         data = pytoml.load(setup_file)
 
     network = data["network"]
-    all_str = json.dumps(data)
 
     host_ip = args.host_ip
     producer_count = network[host_ip][0]
@@ -102,25 +101,25 @@ def main():
         command += " -p " + str(p2p_start + count) + ":" + str(p2p_start + count)
         command += " -v " + ecoball_log_dir  + ":/var/ecoball_log "
         command += image + " /ecoball/ecoball/start.py "
-        command += "-o " + host_ip + " -n " + str(count) + " -a " + "'" + all_str + "'"
-        exist, config = get_config(count, host_ip, data)
-        if not exist:
-            config = {"log_dir": "/var/ecoball_log/ecoball_" + str(count) + "/",
-            "root_dir": "/var/ecoball_log/ecoball_" + str(count) + "/"}
-        if exist:
-            config["log_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
-            config["root_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
+        command += "-o " + host_ip + " -n " + str(count)
+        # exist, config = get_config(count, host_ip, data)
+        # if not exist:
+        config = {"log_dir": "/var/ecoball_log/ecoball_" + str(count) + "/",
+        "root_dir": "/var/ecoball_log/ecoball_" + str(count) + "/"}
+        # if exist:
+        #     config["log_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
+        #     config["root_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
         command += " -c " + "'" + json.dumps(config) + "'"
 
-        exist, config = get_config_p2p(count, host_ip, data)
-        if not exist:
-            config = {"log_dir": "/var/ecoball_log/ecoball_" + str(count) + "/",
-            "root_dir": "/var/ecoball_log/ecoball_" + str(count) + "/"}
-        if exist:
-            config["log_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
-            config["root_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
-        command += " -c " + "'" + json.dumps(config) + "'"
-                
+        # exist, config = get_config_p2p(count, host_ip, data)
+        # if not exist:
+        #     config = {"log_dir": "/var/ecoball_log/ecoball_" + str(count) + "/",
+        #     "root_dir": "/var/ecoball_log/ecoball_" + str(count) + "/"}
+        # if exist:
+        #     config["log_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
+        #     config["root_dir"] = "/var/ecoball_log/ecoball_" + str(count) + "/"
+        # command += " -c " + "'" + json.dumps(config) + "'"
+
         if "size" in data:
             command += " -s " + str(data["size"])
 
