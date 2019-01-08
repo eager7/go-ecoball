@@ -13,8 +13,13 @@ type AccountCache struct {
 	AccountCache *lru.Cache
 }
 
+func EvictCallBack(key interface{}, value interface{}) {
+	acc, _ := value.(*Account)
+	acc.TrieClose()
+}
+
 func (a *AccountCache) Initialize() error {
-	csc, err := lru.New(10000)
+	csc, err := lru.NewWithEvict(10000, EvictCallBack)
 	if err != nil {
 		return errors.New(fmt.Sprintf("New Lru error:%s", err.Error()))
 	}

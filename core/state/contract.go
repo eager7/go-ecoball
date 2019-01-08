@@ -106,7 +106,6 @@ func (a *Account) StoreSet(path string, key, value []byte) (err error) {
 	if err := a.TrieOpen(path); err != nil {
 		return err
 	}
-	defer a.TrieClose()
 	log.Debug("StoreSet key:", string(key), "value:", value)
 	if err := a.mpt.Put(key, value); err != nil {
 		return err
@@ -122,7 +121,6 @@ func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
 	if err := a.TrieOpen(path); err != nil {
 		return nil, err
 	}
-	defer a.TrieClose()
 	value, err = a.mpt.Get(key)
 	if err != nil {
 		return nil, err
@@ -143,6 +141,9 @@ func (a *Account) TrieOpen(path string) (err error) {
 }
 
 func (a *Account) TrieClose() {
+	if a.mpt == nil {
+		return
+	}
 	if err := a.mpt.Close(); err != nil {
 		log.Error("disk db close err:", err)
 	}
