@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"math/big"
 )
@@ -21,6 +22,18 @@ type TrxReceipt struct {
 type BlockReceipt struct {
 	BlockCpu float64
 	BlockNet float64
+}
+
+func (r *TrxReceipt) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_TRANSACTION_RECEIPT
+}
+
+func (r *TrxReceipt) GetInstance() interface{} {
+	return r
+}
+
+func (r *TrxReceipt) String() string {
+	return common.JsonString(r)
 }
 
 func (r *TrxReceipt) Serialize() ([]byte, error) {
