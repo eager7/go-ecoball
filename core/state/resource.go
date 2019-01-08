@@ -5,6 +5,7 @@ import (
 	"fmt"
 	. "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"math/big"
 	"sort"
 )
@@ -38,6 +39,13 @@ type Resource struct {
 		Staked    uint64                 `json:"staked_aba, omitempty"` //total stake delegated, uint ABA
 		Producers map[AccountName]uint64 `json:"producers, omitempty"`  //support nodes' list
 	}
+}
+
+func (r *Resource) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_ACCOUNT_RESOURCE
+}
+func (r *Resource) GetInstance() interface{} {
+	return r
 }
 
 type Delegate struct {
@@ -80,7 +88,7 @@ func (s *State) SetResourceLimits(from, to AccountName, cpuStaked, netStaked uin
 		accTo.lock.Lock()
 		defer accTo.lock.Unlock()
 		accTo.AddResourceLimits(false, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum, cpuLimit, netLimit)
-		if err := s.CommitAccount(accTo); err != nil {
+		if err := s.commitAccount(accTo); err != nil {
 			return err
 		}
 	}
@@ -99,7 +107,7 @@ func (s *State) SetResourceLimits(from, to AccountName, cpuStaked, netStaked uin
 	if err := s.updateElectedProducers(acc, acc.Resource.Votes.Staked-cpuStaked-netStaked); err != nil {
 		return err
 	}
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**
@@ -126,7 +134,7 @@ func (s *State) SubResources(index AccountName, cpu, net float64, cpuLimit, netL
 	if err := acc.SubResourceLimits(cpu, net, cpuStakedSum, netStakedSum, cpuLimit, netLimit); err != nil {
 		return err
 	}
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**
@@ -166,7 +174,7 @@ func (s *State) CancelDelegate(from, to AccountName, cpuStaked, netStaked uint64
 		if err := acc.CancelDelegateOther(accTo, cpuStaked, netStaked, cpuStakedSum, netStakedSum, cpuLimit, netLimit); err != nil {
 			return err
 		}
-		if err := s.CommitAccount(accTo); err != nil {
+		if err := s.commitAccount(accTo); err != nil {
 			return err
 		}
 	} else {
@@ -196,7 +204,7 @@ func (s *State) CancelDelegate(from, to AccountName, cpuStaked, netStaked uint64
 	if err := s.commitProducersList(); err != nil {
 		return err
 	}
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**
@@ -223,7 +231,7 @@ func (s *State) RecoverResources(index AccountName, timeStamp int64, cpuLimit, n
 	if err := acc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpuLimit, netLimit); err != nil {
 		return err
 	}
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**

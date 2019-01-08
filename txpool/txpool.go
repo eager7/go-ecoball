@@ -63,7 +63,7 @@ func Start(ctx context.Context, ledger ledger.Ledger) (pool *TxPool, err error) 
 	if pool.netMsg, err = event.Subscribe([]mpb.Identify{mpb.Identify_APP_MSG_TRANSACTION}...); err != nil {
 		return nil, errors.New(err.Error())
 	}
-	if pool.StateDB[config.ChainHash], err = ledger.StateDB(config.ChainHash).CopyState(); err != nil {
+	if pool.StateDB[config.ChainHash], err = ledger.StateDB(config.ChainHash).StateCopy(); err != nil {
 		return nil, err
 	}
 	if _, err = NewTxPoolActor(pool, 3); err != nil {

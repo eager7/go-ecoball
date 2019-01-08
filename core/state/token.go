@@ -123,7 +123,7 @@ func (s *State) AccountSubBalance(index AccountName, token string, value *big.In
 	if err := acc.SubBalance(token, value); err != nil {
 		return err
 	}
-	if err := s.CommitAccount(acc); err != nil {
+	if err := s.commitAccount(acc); err != nil {
 		return err
 	}
 	return nil
@@ -141,7 +141,7 @@ func (s *State) AccountAddBalance(index AccountName, token string, value *big.In
 	if err := acc.AddBalance(token, value); err != nil {
 		return err
 	}
-	if err := s.CommitAccount(acc); err != nil {
+	if err := s.commitAccount(acc); err != nil {
 		return err
 	}
 

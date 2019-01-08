@@ -6,7 +6,11 @@ import (
 	"fmt"
 	. "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
+	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
+	"github.com/gogo/protobuf/proto"
+	"sort"
 )
 
 var Owner = "owner"
@@ -58,75 +62,6 @@ func NewPermission(name, parent string, threshold uint32, addr []KeyFactor, acc 
 }
 
 /**
- *  @brief check that the signatures meets the permission requirement
- *  @param state - the mpt trie, used to search account
- *  @param signatures - the transaction's signatures list
- */
-func (p *Permission) checkPermission(state *State, signatures []Signature) error {
-	Keys := make(map[Address][]byte, 1)
-	Accounts := make(map[string][]byte, 1)
-	for _, s := range signatures {
-		addr := AddressFromPubKey(s.PubKey)
-		acc, err := state.GetAccountByAddr(addr)
-		if err == nil {
-			Accounts[acc.Index.String()] = s.SigData
-		} else {
-			log.Warn("permission", p.PermName, "error:", err) //allow mixed with invalid account, just have enough weight
-		}
-		Keys[addr] = s.SigData
-	}
-	var weightKey uint32
-	for addr := range Keys {
-		if key, ok := p.Keys[addr.HexString()]; ok {
-			weightKey += key.Weight
-		}
-		if weightKey >= p.Threshold {
-			return nil
-		}
-	}
-	var weightAcc uint32
-	for acc := range Accounts {
-		if a, ok := p.Accounts[acc]; ok {
-			weightAcc += a.Weight
-			if next, err := state.GetAccountByName(a.Actor); err != nil {
-				return err
-			} else {
-				perm := next.Permissions[a.Permission]
-				if err := perm.checkPermission(state, signatures); err != nil {
-					return err
-				}
-			}
-		}
-		if weightAcc >= p.Threshold {
-			return nil
-		}
-	}
-
-	return errors.New(fmt.Sprintf("weight is not enough, keys weight:%d, accounts weight:%d", weightKey, weightAcc))
-}
-
-/**
- *  @brief check if guest has host permission, this method will not modified mpt trie
- *  @param state - the mpt trie, used to search account
- *  @param guest - the guest account
- *  @param permission - the permission names
- */
-func (p *Permission) checkAccountPermission(state *State, guest string, permission string) error {
-	var weightAcc uint32
-	if a, ok := p.Accounts[guest]; ok {
-		weightAcc += a.Weight
-		if _, err := state.GetAccountByName(a.Actor); err != nil {
-			return err
-		}
-	}
-	if weightAcc >= p.Threshold {
-		return nil
-	}
-
-	return errIn.New(fmt.Sprintf("%s@%s  weight is not enough, accounts weight:%d", guest, permission, weightAcc))
-}
-
-/**
  *  @brief add a permission object into account, then update to mpt trie
  *  @param perm - the permission object
  */
@@ -138,7 +73,7 @@ func (s *State) AddPermission(index AccountName, perm Permission) error {
 	acc.lock.Lock()
 	defer acc.lock.Unlock()
 	acc.AddPermission(perm)
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**
@@ -279,4 +214,139 @@ func (a *Account) findPermission(name string) (str string, err error) {
 		}
 	}
 	return string(str), nil
+}
+
+func (p *Permission) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_ACCOUNT_PERMISSION
+}
+func (p *Permission) GetInstance() interface{} {
+	return p
+}
+func (p *Permission) Serialize() ([]byte, error) {
+	data, err := proto.Marshal(p.proto())
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("permission marshal error:%s", err.Error()))
+	}
+	return data, nil
+}
+func (p *Permission) Deserialize(data []byte) error {
+	var pbPerm pb.Permission
+	if err := pbPerm.Unmarshal(data); err != nil {
+		return errors.New(fmt.Sprintf("permission unmarshal error:%s", err.Error()))
+	}
+	p.Keys = make(map[string]KeyFactor, 1)
+	for _, pbKey := range pbPerm.Keys {
+		key := KeyFactor{Actor: NewAddress(pbKey.Actor), Weight: pbKey.Weight}
+		p.Keys[NewAddress(pbKey.Actor).HexString()] = key
+	}
+	p.Accounts = make(map[string]AccFactor, 1)
+	for _, pbAcc := range pbPerm.Accounts {
+		acc := AccFactor{Actor: AccountName(pbAcc.Actor), Weight: pbAcc.Weight, Permission: string(pbAcc.Permission)}
+		p.Accounts[AccountName(pbAcc.Actor).String()] = acc
+	}
+	p.PermName = string(pbPerm.PermName)
+	p.Parent = string(pbPerm.Parent)
+	p.Threshold = pbPerm.Threshold
+	return nil
+}
+func (p *Permission) proto() *pb.Permission {
+	var keysKeys []string
+	var pbKeys []*pb.KeyWeight
+	for k := range p.Keys {
+		keysKeys = append(keysKeys, k)
+	}
+	sort.Strings(keysKeys)
+	for _, k := range keysKeys {
+		key := p.Keys[k]
+		pbKey := &pb.KeyWeight{Actor: key.Actor.Bytes(), Weight: key.Weight}
+		pbKeys = append(pbKeys, pbKey)
+	}
+
+	var keysAccount []string
+	var pbAccounts []*pb.AccountWeight
+	for k := range p.Accounts {
+		keysAccount = append(keysAccount, k)
+	}
+	sort.Strings(keysAccount)
+	for _, k := range keysAccount {
+		acc := p.Accounts[k]
+		pbAccount := &pb.AccountWeight{Actor: uint64(acc.Actor), Weight: acc.Weight, Permission: []byte(acc.Permission)}
+		pbAccounts = append(pbAccounts, pbAccount)
+	}
+	return &pb.Permission{
+		PermName:  []byte(p.PermName),
+		Parent:    []byte(p.Parent),
+		Threshold: p.Threshold,
+		Keys:      pbKeys,
+		Accounts:  pbAccounts,
+	}
+}
+
+/**
+ *  @brief check that the signatures meets the permission requirement
+ *  @param state - the mpt trie, used to search account
+ *  @param signatures - the transaction's signatures list
+ */
+func (p *Permission) checkPermission(state *State, signatures []Signature) error {
+	Keys := make(map[Address][]byte, 1)
+	Accounts := make(map[string][]byte, 1)
+	for _, s := range signatures {
+		addr := AddressFromPubKey(s.PubKey)
+		acc, err := state.GetAccountByAddr(addr)
+		if err == nil {
+			Accounts[acc.Index.String()] = s.SigData
+		} else {
+			log.Warn("permission", p.PermName, "error:", err) //allow mixed with invalid account, just have enough weight
+		}
+		Keys[addr] = s.SigData
+	}
+	var weightKey uint32
+	for addr := range Keys {
+		if key, ok := p.Keys[addr.HexString()]; ok {
+			weightKey += key.Weight
+		}
+		if weightKey >= p.Threshold {
+			return nil
+		}
+	}
+	var weightAcc uint32
+	for acc := range Accounts {
+		if a, ok := p.Accounts[acc]; ok {
+			weightAcc += a.Weight
+			if next, err := state.GetAccountByName(a.Actor); err != nil {
+				return err
+			} else {
+				perm := next.Permissions[a.Permission]
+				if err := perm.checkPermission(state, signatures); err != nil {
+					return err
+				}
+			}
+		}
+		if weightAcc >= p.Threshold {
+			return nil
+		}
+	}
+
+	return errors.New(fmt.Sprintf("weight is not enough, keys weight:%d, accounts weight:%d", weightKey, weightAcc))
+}
+
+/**
+ *  @brief check if guest has host permission, this method will not modified mpt trie
+ *  @param state - the mpt trie, used to search account
+ *  @param guest - the guest account
+ *  @param permission - the permission names
+ */
+func (p *Permission) checkAccountPermission(state *State, guest string, permission string) error {
+	var weightAcc uint32
+	if a, ok := p.Accounts[guest]; ok {
+		weightAcc += a.Weight
+		if _, err := state.GetAccountByName(a.Actor); err != nil {
+			return err
+		}
+	}
+	if weightAcc >= p.Threshold {
+		return nil
+	}
+
+	return errIn.New(fmt.Sprintf("%s@%s  weight is not enough, accounts weight:%d", guest, permission, weightAcc))
 }

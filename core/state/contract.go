@@ -8,6 +8,72 @@ import (
 )
 
 /**
+ *  @brief store the smart contract of account, every account only has one contract
+ *  @param index - account's index
+ *  @param t - the virtual machine type
+ *  @param des - the description of contract
+ *  @param code - the code of contract
+ *  @param abi  - the abi of contract
+ */
+func (s *State) SetContract(index AccountName, t types.VmType, des, code, abi []byte) error {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
+	if err := acc.SetContract(t, des, code, abi); err != nil {
+		return err
+	}
+	return s.commitAccount(acc)
+}
+
+/**
+ *  @brief get the code of account
+ *  @param index - account's index
+ */
+func (s *State) GetContract(index AccountName) (*types.DeployInfo, error) {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return nil, err
+	}
+	acc.lock.RLock()
+	defer acc.lock.RUnlock()
+	return acc.GetContract()
+}
+func (s *State) StoreSet(index AccountName, key, value []byte) (err error) {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
+	if err := acc.StoreSet(s.path, key, value); err != nil {
+		return err
+	}
+	return s.commitAccount(acc)
+}
+func (s *State) StoreGet(index AccountName, key []byte) (value []byte, err error) {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return nil, err
+	}
+	acc.lock.Lock()
+	defer acc.lock.Unlock()
+	return acc.StoreGet(s.path, key)
+}
+/**
+*  @brief get the abi of contract
+*  @param index - account's index
+ */
+func (s *State) GetContractAbi(index AccountName) ([]byte, error) {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return nil, err
+	}
+	return acc.Contract.Abi, err
+}
+/**
  *  @brief add a smart contract into a account data
  *  @param t - the type of virtual machine
  *  @param des - the description of smart contract
@@ -32,7 +98,7 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 }
 
 func (a *Account) StoreSet(path string, key, value []byte) (err error) {
-	if err := a.NewMptTrie(path); err != nil {
+	if err := a.newTrie(path); err != nil {
 		return err
 	}
 	defer func() {
@@ -55,7 +121,7 @@ func (a *Account) StoreSet(path string, key, value []byte) (err error) {
 }
 
 func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
-	if err := a.NewMptTrie(path); err != nil {
+	if err := a.newTrie(path); err != nil {
 		return nil, err
 	}
 	defer func() {

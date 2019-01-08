@@ -23,7 +23,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/store"
-	"github.com/ecoball/go-ecoball/core/types"
 	"sync"
 )
 
@@ -89,7 +88,7 @@ func (s *State) StateType() TypeState {
 /**
  *  @brief copy a new trie into memory
  */
-func (s *State) CopyState() (*State, error) {
+func (s *State) StateCopy() (*State, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -124,7 +123,7 @@ func (s *State) AddAccount(index AccountName, addr Address, timeStamp int64) (*A
 	if err != nil {
 		return nil, err
 	}
-	if err := s.CommitAccount(acc); err != nil {
+	if err := s.commitAccount(acc); err != nil {
 		return nil, err
 	}
 	//save the mapping of addr and index
@@ -138,81 +137,13 @@ func (s *State) AddAccount(index AccountName, addr Address, timeStamp int64) (*A
 }
 
 /**
- *  @brief store the smart contract of account, every account only has one contract
- *  @param index - account's index
- *  @param t - the virtual machine type
- *  @param des - the description of contract
- *  @param code - the code of contract
- *  @param abi  - the abi of contract
- */
-func (s *State) SetContract(index AccountName, t types.VmType, des, code, abi []byte) error {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return err
-	}
-	acc.lock.Lock()
-	defer acc.lock.Unlock()
-	if err := acc.SetContract(t, des, code, abi); err != nil {
-		return err
-	}
-	return s.CommitAccount(acc)
-}
-
-/**
- *  @brief get the code of account
- *  @param index - account's index
- */
-func (s *State) GetContract(index AccountName) (*types.DeployInfo, error) {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return nil, err
-	}
-	acc.lock.RLock()
-	defer acc.lock.RUnlock()
-	return acc.GetContract()
-}
-func (s *State) StoreSet(index AccountName, key, value []byte) (err error) {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return err
-	}
-	acc.lock.Lock()
-	defer acc.lock.Unlock()
-	if err := acc.StoreSet(s.path, key, value); err != nil {
-		return err
-	}
-	return s.CommitAccount(acc)
-}
-func (s *State) StoreGet(index AccountName, key []byte) (value []byte, err error) {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return nil, err
-	}
-	acc.lock.Lock()
-	defer acc.lock.Unlock()
-	return acc.StoreGet(s.path, key)
-}
-
-/**
-*  @brief get the abi of contract
-*  @param index - account's index
- */
-func (s *State) GetContractAbi(index AccountName) ([]byte, error) {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return nil, err
-	}
-	return acc.Contract.Abi, err
-}
-
-/**
- *  @brief search the account by name index
+ *  @brief 通过用户名返回账户结构体,返回的是对象的拷贝,这样可以避免资源竞争
  *  @param index - the account index
  */
 func (s *State) GetAccountByName(index AccountName) (*Account, error) {
 	acc := s.Accounts.Get(index)
 	if acc != nil {
-		return acc, nil
+		return acc.Clone()
 	}
 	s.mutex.Lock()
 	fData, err := s.trie.TryGet(index.Bytes())
@@ -228,7 +159,7 @@ func (s *State) GetAccountByName(index AccountName) (*Account, error) {
 	if err = acc.Deserialize(fData); err != nil {
 		return nil, err
 	}
-	return acc, nil
+	return acc.Clone()
 }
 
 /**
@@ -247,10 +178,76 @@ func (s *State) GetAccountByAddr(addr Address) (*Account, error) {
 }
 
 /**
+ *  @brief get the trie root hash
+ */
+func (s *State) GetHashRoot() Hash {
+	return NewHash(s.trie.Hash().Bytes())
+}
+
+/**
+ *  @brief save the information of mpt trie into levelDB
+ */
+func (s *State) CommitToDB() error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	if err := s.commitToMemory(); err != nil {
+		return err
+	}
+	return s.db.TrieDB().Commit(s.trie.Hash(), false)
+}
+
+/**
+ *  @brief reset the mpt state by root hash
+ *  @param hash - the hash of mpt witch state will be reset
+ */
+func (s *State) Reset(hash Hash) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	if err := s.diskDb.Close(); err != nil {
+		return err
+	}
+	diskDb, err := store.NewLevelDBStore(s.path, 0, 0)
+	if err != nil {
+		return err
+	}
+	s.db = NewDatabase(diskDb)
+	s.trie, err = s.db.OpenTrie(hash)
+	if err != nil {
+		return err
+	}
+	s.Accounts.Purge()
+	s.Producers.Purge()
+	s.Chains.Purge()
+	s.Tokens.Purge()
+	s.Params.Purge()
+	log.Info("Open Trie Hash:", hash.HexString())
+	return nil
+}
+
+/**
+ *  @brief close level db
+ */
+func (s *State) Close() error {
+	return s.diskDb.Close()
+}
+
+/**
+ *  @brief commit the trie into past trie list
+ */
+func (s *State) commitToMemory() error {
+	root, err := s.trie.Commit(nil)
+	if err != nil {
+		return err
+	}
+	log.Debug("commit state db to memory:", root.HexString())
+	return nil
+}
+
+/**
  *  @brief update the account's information into trie
  *  @param acc - account object
  */
-func (s *State) CommitAccount(acc *Account) error {
+func (s *State) commitAccount(acc *Account) error {
 	if acc == nil {
 		return errors.New("param acc is nil")
 	}
@@ -304,77 +301,4 @@ func (s *State) getParam(key string) (uint64, error) {
 	value := Uint64SetBytes(data)
 	s.Params.Add(key, value)
 	return value, nil
-}
-
-/**
- *  @brief get the trie root hash
- */
-func (s *State) GetHashRoot() Hash {
-	return NewHash(s.trie.Hash().Bytes())
-}
-
-/**
- *  @brief commit the trie into past trie list
- */
-func (s *State) CommitToMemory() error {
-	root, err := s.trie.Commit(nil)
-	if err != nil {
-		return err
-	}
-	log.Debug("commit state db to memory:", root.HexString())
-	return nil
-}
-
-/**
- *  @brief save the information of mpt trie into levelDB
- */
-func (s *State) CommitToDB() error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if err := s.CommitToMemory(); err != nil {
-		return err
-	}
-	return s.db.TrieDB().Commit(s.trie.Hash(), false)
-}
-
-/**
- *  @brief reset the mpt state by root hash
- *  @param hash - the hash of mpt witch state will be reset
- */
-func (s *State) Reset(hash Hash) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if err := s.diskDb.Close(); err != nil {
-		return err
-	}
-	diskDb, err := store.NewLevelDBStore(s.path, 0, 0)
-	if err != nil {
-		return err
-	}
-	s.db = NewDatabase(diskDb)
-	s.trie, err = s.db.OpenTrie(hash)
-	if err != nil {
-		return err
-	}
-	s.Accounts.Purge()
-	s.Producers.Purge()
-	s.Chains.Purge()
-	s.Tokens.Purge()
-	s.Params.Purge()
-	log.Info("Open Trie Hash:", hash.HexString())
-	return nil
-}
-
-/**
- *  @brief close level db
- */
-func (s *State) Close() error {
-	return s.diskDb.Close()
-}
-
-/**
- *  @brief get the trie
- */
-func (s *State) Trie() Trie {
-	return s.trie
 }

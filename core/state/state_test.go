@@ -175,7 +175,6 @@ func TestStateDBCopy(t *testing.T) {
 	os.RemoveAll("/tmp/state_copy/")
 	s, err := state.NewState("/tmp/state_copy", common.HexToHash(""))
 	errors.CheckErrorPanic(err)
-	s.CommitToMemory()
 	if _, err := s.AddAccount(indexAcc, addr, time.Now().UnixNano()); err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +187,7 @@ func TestStateDBCopy(t *testing.T) {
 	elog.Log.Info(value)
 	errors.CheckEqualPanic(value.Uint64() == 80)
 
-	copy, err := s.CopyState()
+	copy, err := s.StateCopy()
 	errors.CheckErrorPanic(err)
 	origin, _ := copy.GetAccountByName(common.NameToIndex("pct"))
 	errors.CheckEqualPanic(s.Accounts.Get(common.NameToIndex("pct")).String() == origin.String())

@@ -124,7 +124,7 @@ func (s *State) ElectionToVote(index AccountName, accounts []AccountName) error 
 		root.AddPermission(perm)
 		root.lock.Unlock()
 	}
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }
 
 /**
@@ -310,5 +310,5 @@ func (s *State) RegisterProducer(index AccountName, b64Pub, addr string, port ui
 	acc.Elector.Port = port
 	acc.Elector.Amount = 0
 	acc.Elector.Payee = payee
-	return s.CommitAccount(acc)
+	return s.commitAccount(acc)
 }

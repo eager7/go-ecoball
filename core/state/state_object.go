@@ -69,13 +69,13 @@ func NewAccount(path string, index AccountName, addr Address, timeStamp int64) (
 	perm = NewPermission(Active, Owner, 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
 
-	if err := acc.NewMptTrie(path); err != nil {
+	if err := acc.newTrie(path); err != nil {
 		return nil, err
 	}
 	return acc, acc.diskDb.Close()
 }
 
-func (a *Account) NewMptTrie(path string) error {
+func (a *Account) newTrie(path string) error {
 	diskDb, err := store.NewLevelDBStore(path+"/"+a.Index.String(), 0, 0)
 	if err != nil {
 		return err
@@ -312,6 +312,8 @@ func (a *Account) String() string {
 	return string(data)
 }
 func (a *Account) Clone() (*Account, error) {
+	a.lock.RLock()
+	defer a.lock.RUnlock()
 	n := new(Account)
 	data, err := a.Serialize()
 	if err != nil {
@@ -324,3 +326,4 @@ func (a *Account) Clone() (*Account, error) {
 	}
 	return n, nil
 }
+

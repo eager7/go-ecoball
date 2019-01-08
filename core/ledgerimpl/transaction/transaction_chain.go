@@ -92,7 +92,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger, option ...bool) (c *
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsData, timeStamp int64) (*types.Block, []*types.Transaction, error) {
-	s, err := c.StateDB.CopyState()
+	s, err := c.StateDB.StateCopy()
 	if err != nil {
 		return nil, nil, err
 	}
