@@ -64,9 +64,9 @@ func (l *LedgerImpl) NewTxChain(chainID common.Hash, addr common.Address, option
 		return err
 	}
 
-		if err := ChainTx.GenesesBlockInit(chainID, addr); err != nil {
-			return err
-		}
+	if err := ChainTx.GenesesBlockInit(chainID, addr); err != nil {
+		return err
+	}
 
 	l.ChainMap.Add(chainID, ChainTx)
 	log.Info("Chains:", l.ChainMap)
@@ -167,20 +167,6 @@ func (l *LedgerImpl) PreHandleTransaction(chainID common.Hash, s *state.State, t
 	log.Notice("Handle Transaction:", tx.Type.String(), tx.Hash.HexString(), " in per handle DB")
 	return chain.HandleTransaction(s, tx, timeStamp, chain.CurrentHeader.Get().Receipt.BlockCpu, chain.CurrentHeader.Get().Receipt.BlockNet)
 }
-func (l *LedgerImpl) AccountGet(chainID common.Hash, index common.AccountName) (*state.Account, error) {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return nil, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.StateDB.GetAccountByName(index)
-}
-func (l *LedgerImpl) AccountAdd(chainID common.Hash, index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error) {
-	chain := l.ChainMap.Get(chainID)
-	if chain == nil {
-		return nil, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
-	}
-	return chain.StateDB.AddAccount(index, addr, timeStamp)
-}
 func (l *LedgerImpl) StoreSet(chainID common.Hash, index common.AccountName, key, value []byte) (err error) {
 	chain := l.ChainMap.Get(chainID)
 	if chain == nil {
@@ -237,12 +223,19 @@ func (l *LedgerImpl) CheckPermission(chainID common.Hash, index common.AccountNa
 	}
 	return chain.StateDB.CheckPermission(index, name, hash, sig)
 }
-func (l *LedgerImpl) RequireResources(chainID common.Hash, index common.AccountName, timeStamp int64) (float64, float64, error) {
+func (l *LedgerImpl) QueryResources(chainID common.Hash, index common.AccountName, timeStamp int64) (float64, float64, error) {
 	chain := l.ChainMap.Get(chainID)
 	if chain == nil {
 		return 0, 0, errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
 	}
 	return chain.StateDB.RequireResources(index, config.BlockCpuLimit, config.BlockNetLimit, timeStamp)
+}
+func (l *LedgerImpl) QueryAccountInfo(chainID common.Hash, index common.AccountName, timeStamp int64) (string, error) {
+	chain := l.ChainMap.Get(chainID)
+	if chain == nil {
+		return "", errors.New(fmt.Sprintf("the chain:%s is not existed", chainID.HexString()))
+	}
+	return chain.StateDB.QueryAccountInfo(index, config.BlockCpuLimit, config.BlockNetLimit, timeStamp)
 }
 func (l *LedgerImpl) GetProducerList(chainID common.Hash) ([]state.Elector, error) {
 	chain := l.ChainMap.Get(chainID)

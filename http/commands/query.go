@@ -20,6 +20,7 @@ import (
 	//"fmt"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	innerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
@@ -81,7 +82,7 @@ func GetAccountInfo(c *gin.Context) {
 		return
 	}
 
-	data, err := ledger.L.AccountGet(account.ChainHash, innerCommon.NameToIndex(account.Name))
+	data, err := ledger.L.QueryAccountInfo(account.ChainHash, innerCommon.NameToIndex(account.Name), time.Now().UnixNano())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

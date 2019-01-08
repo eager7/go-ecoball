@@ -128,33 +128,33 @@ func TestStateDBCopy(t *testing.T) {
 
 func TestStateDBReset(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	indexAcc := common.NameToIndex("pct")
+	acc := common.NameToIndex("pct")
 	_ = os.RemoveAll("/tmp/state_copy/")
 	s, err := state.NewState("/tmp/state_copy", common.HexToHash(""))
 	errors.CheckErrorPanic(err)
 	tm, err := time.Parse("02/01/2006 15:04:05 PM", "21/02/1990 00:00:00 AM")
 	errors.CheckErrorPanic(err)
 	timeStamp := tm.UnixNano()
-	_, err = s.AddAccount(indexAcc, addr, timeStamp)
+	_, err = s.AddAccount(acc, addr, timeStamp)
 	errors.CheckErrorPanic(err)
 
-	_, _ = s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), indexAcc, indexAcc)
-	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetInt64(100)))
+	_, _ = s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), acc, acc)
+	errors.CheckErrorPanic(s.AccountAddBalance(acc, state.AbaToken, new(big.Int).SetInt64(100)))
 	_ = s.CommitToDB()
 
-	checkBalance(100, indexAcc, s)
+	checkBalance(100, acc, s)
 
 	prevHash := s.GetHashRoot()
 	elog.Log.Info(prevHash.HexString())
 
-	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetInt64(100)))
+	errors.CheckErrorPanic(s.AccountAddBalance(acc, state.AbaToken, new(big.Int).SetInt64(100)))
 	_ = s.CommitToDB()
 
-	checkBalance(200, indexAcc, s)
+	checkBalance(200, acc, s)
 
 	errors.CheckErrorPanic(s.Reset(prevHash))
 
-	checkBalance(100, indexAcc, s)
+	checkBalance(100, acc, s)
 }
 
 func checkBalance(value uint64, index common.AccountName, s *state.State) {
@@ -162,4 +162,20 @@ func checkBalance(value uint64, index common.AccountName, s *state.State) {
 	errors.CheckErrorPanic(err)
 	elog.Log.Info(balance)
 	errors.CheckEqualPanic(balance.Uint64() == value)
+}
+
+func TestState_Store(t *testing.T) {
+	acc := common.NameToIndex("pct")
+	_ = os.RemoveAll("/tmp/state_store/")
+	s, err := state.NewState("/tmp/state_store", common.HexToHash(""))
+	errors.CheckErrorPanic(err)
+	_, err = s.AddAccount(acc, common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330")), time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+
+	errors.CheckErrorPanic(s.StoreSet(acc, []byte("key"), []byte("value")))
+	value, err := s.StoreGet(acc, []byte("key"))
+	errors.CheckErrorPanic(err)
+	if string(value) != "value" {
+		t.Fatal("must be value:", value)
+	}
 }

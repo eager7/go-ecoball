@@ -111,14 +111,36 @@ func (s *State) AddAccount(index AccountName, addr Address, timeStamp int64) (*A
  *  @brief 通过用户名返回账户结构体,返回的是对象的拷贝,这样可以避免资源竞争
  *  @param index - the account index
  */
-func (s *State) GetAccountByName(index AccountName) (*Account, error) {
+func (s *State) CheckAccountName(index AccountName) bool {
+	_, err := s.getAccountByName(index)
+	if err != nil {
+		return false
+	}
+	return true
+}
+func (s *State) QueryAccountInfo(index AccountName, cpu, net float64, timeStamp int64) (string, error) {
+	cpuStakedSum, err := s.getParam(cpuAmount)
+	if err != nil {
+		return "", err
+	}
+	netStakedSum, err := s.getParam(netAmount)
+	if err != nil {
+		return "", err
+	}
 	acc, err := s.getAccountByName(index)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	acc.lock.RLock()
 	defer acc.lock.RUnlock()
-	return acc.Clone()
+	nAcc, err := acc.Clone()
+	if err != nil {
+		return "", err
+	}
+	if err := nAcc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpu, net); err != nil {
+		return "", err
+	}
+	return nAcc.String(), nil
 }
 func (s *State) getAccountByName(index AccountName) (*Account, error) {
 	acc := s.Accounts.Get(index)
@@ -138,16 +160,6 @@ func (s *State) getAccountByName(index AccountName) (*Account, error) {
 		return nil, err
 	}
 	return acc, nil
-}
-func (s *State) GetAccountByAddr(addr Address) (*Account, error) {
-	if value, err := s.getParam(addr.HexString()); err != nil {
-		return nil, err
-	} else {
-		if value == 0 {
-			return nil, errors.New(fmt.Sprintf("the address:%s is not register be an account", addr.HexString()))
-		}
-		return s.GetAccountByName(AccountName(value))
-	}
 }
 func (s *State) getAccountByAddr(addr Address) (*Account, error) {
 	if value, err := s.getParam(addr.HexString()); err != nil {

@@ -23,11 +23,11 @@ type Ledger interface {
 	ResetStateDB(chainID common.Hash, header *types.Header) error
 	SetContract(chainID common.Hash, index common.AccountName, t types.VmType, des, code []byte, abi []byte) error
 	GetContract(chainID common.Hash, index common.AccountName) (*types.DeployInfo, error)
-	AccountGet(chainID common.Hash, index common.AccountName) (*state.Account, error)
 	FindPermission(chainID common.Hash, index common.AccountName, name string) (string, error)
 	CheckPermission(chainID common.Hash, index common.AccountName, name string, hash common.Hash, sig []common.Signature) error
 	GetChainList(chainID common.Hash) ([]state.Chain, error)
-	RequireResources(chainID common.Hash, index common.AccountName, timeStamp int64) (float64, float64, error)
+	QueryResources(chainID common.Hash, index common.AccountName, timeStamp int64) (float64, float64, error)
+	QueryAccountInfo(chainID common.Hash, index common.AccountName, timeStamp int64) (string, error)
 	GetProducerList(chainID common.Hash) ([]state.Elector, error)
 	AccountAddBalance(chainID common.Hash, index common.AccountName, token string, value uint64) error
 	StoreGet(chainID common.Hash, index common.AccountName, key []byte) (value []byte, err error)

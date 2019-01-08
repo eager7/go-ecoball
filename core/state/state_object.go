@@ -67,7 +67,7 @@ func NewAccount(path string, index AccountName, addr Address, timeStamp int64) (
 	perm = NewPermission(Active, Owner, 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
 
-	if err := acc.newTrie(path); err != nil {
+	if err := acc.newMptTrie(path); err != nil {
 		return nil, err
 	}
 	return acc, acc.mpt.Close()

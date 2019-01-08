@@ -103,7 +103,7 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 }
 
 func (a *Account) StoreSet(path string, key, value []byte) (err error) {
-	if err := a.newTrie(path); err != nil {
+	if err := a.newMptTrie(path); err != nil {
 		return err
 	}
 	defer func() {
@@ -123,7 +123,7 @@ func (a *Account) StoreSet(path string, key, value []byte) (err error) {
 }
 
 func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
-	if err := a.newTrie(path); err != nil {
+	if err := a.newMptTrie(path); err != nil {
 		return nil, err
 	}
 	defer func() {
@@ -135,11 +135,11 @@ func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("StoreGet key:", string(key), "value:", value)
+	log.Debug("StoreGet key:", string(key), "value:", string(value))
 	return value, nil
 }
 
-func (a *Account) newTrie(path string) (err error) {
+func (a *Account) newMptTrie(path string) (err error) {
 	a.mpt, err = trie.NewMptTrie(path+"/"+a.Index.String(), a.Hash)
 	if err != nil {
 		return err

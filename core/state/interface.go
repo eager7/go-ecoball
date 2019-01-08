@@ -38,9 +38,6 @@ type InterfaceState interface {
 	GetContract(index common.AccountName) (*types.DeployInfo, error)
 	StoreSet(index common.AccountName, key, value []byte) (err error)
 	StoreGet(index common.AccountName, key []byte) (value []byte, err error)
-	GetAccountByName(index common.AccountName) (*Account, error)
-	GetAccountByAddr(addr common.Address) (*Account, error)
+	CheckAccountName(index common.AccountName) bool
 	GetHashRoot() common.Hash
-	CommitToDB() error
-	Reset(hash common.Hash) error
 }
