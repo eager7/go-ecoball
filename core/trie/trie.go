@@ -49,7 +49,7 @@ func (t *Trie) resolveHash(n hashNode, prefix []byte) (node, error) {
 
 	enc, err := t.db.Node(hash)
 	if err != nil || enc == nil {
-		return nil, errors.New(fmt.Sprintf("missing trie node %x (path %x)", hash, prefix))
+		return nil, errors.New(fmt.Sprintf("missing trie node %s (path %x)", hash.String(), prefix))
 	}
 	return mustDecodeNode(n, enc, t.cacheGen), nil
 }

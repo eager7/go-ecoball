@@ -153,9 +153,7 @@ func (s *State) TokenExisted(name string) bool {
 		return true
 	}
 
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	data, err := s.trie.TryGet([]byte(name))
+	data, err := s.Mpt.Get([]byte(name))
 	if err != nil {
 		log.Error(err)
 		return false
@@ -182,9 +180,7 @@ func (s *State) GetTokenInfo(symbol string) (*TokenInfo, error) {
 		return token, nil
 	}
 
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	data, err := s.trie.TryGet([]byte(symbol))
+	data, err := s.Mpt.Get([]byte(symbol))
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -212,9 +208,7 @@ func (s *State) CommitToken(token *TokenInfo) error {
 	if err != nil {
 		return err
 	}
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if err := s.trie.TryUpdate([]byte(token.Symbol), d); err != nil {
+	if err := s.Mpt.Put([]byte(token.Symbol), d); err != nil {
 		return err
 	}
 	s.Tokens.Add(token.Symbol, *token)

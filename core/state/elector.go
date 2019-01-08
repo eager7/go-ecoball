@@ -212,7 +212,7 @@ func (s *State) commitProducersList() error {
 	if err != nil {
 		return errors.New(fmt.Sprintf("error convert to json string:%s", err.Error()))
 	}
-	if err := s.trie.TryUpdate([]byte(prodsList), data); err != nil {
+	if err := s.Mpt.Put([]byte(prodsList), data); err != nil {
 		return errors.New(fmt.Sprintf("error update trie:%s", err.Error()))
 	}
 	return nil
@@ -258,9 +258,7 @@ func (s *State) GetProducerList() ([]Elector, error) {
  */
 func (s *State) initProducersList() error {
 	if s.Producers.Len() == 0 {
-		s.mutex.RLock()
-		defer s.mutex.RUnlock()
-		data, err := s.trie.TryGet([]byte(prodsList))
+		data, err := s.Mpt.Get([]byte(prodsList))
 		if err != nil {
 			return errors.New(fmt.Sprintf("can't get ProdList from DB:%s", err.Error()))
 		}

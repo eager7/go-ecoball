@@ -4,6 +4,7 @@ import (
 	"fmt"
 	. "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/core/trie"
 	"github.com/ecoball/go-ecoball/core/types"
 )
 
@@ -48,7 +49,7 @@ func (s *State) StoreSet(index AccountName, key, value []byte) (err error) {
 	}
 	acc.lock.Lock()
 	defer acc.lock.Unlock()
-	if err := acc.StoreSet(s.path, key, value); err != nil {
+	if err := acc.StoreSet(s.Mpt.Path(), key, value); err != nil {
 		return err
 	}
 	return s.commitAccount(acc)
@@ -60,8 +61,9 @@ func (s *State) StoreGet(index AccountName, key []byte) (value []byte, err error
 	}
 	acc.lock.Lock()
 	defer acc.lock.Unlock()
-	return acc.StoreGet(s.path, key)
+	return acc.StoreGet(s.Mpt.Path(), key)
 }
+
 /**
 *  @brief get the abi of contract
 *  @param index - account's index
@@ -75,6 +77,7 @@ func (s *State) GetContractAbi(index AccountName) ([]byte, error) {
 	defer acc.lock.RUnlock()
 	return acc.Contract.Abi, err
 }
+
 /**
  *  @brief add a smart contract into a account data
  *  @param t - the type of virtual machine
@@ -104,21 +107,18 @@ func (a *Account) StoreSet(path string, key, value []byte) (err error) {
 		return err
 	}
 	defer func() {
-		if err := a.diskDb.Close(); err != nil {
+		if err := a.mpt.Close(); err != nil {
 			log.Error("disk db close err:", err)
 		}
 	}()
 	log.Debug("StoreSet key:", string(key), "value:", value)
-	if err := a.trie.TryUpdate(key, value); err != nil {
+	if err := a.mpt.Put(key, value); err != nil {
 		return err
 	}
-	if _, err := a.trie.Commit(nil); err != nil {
+	if err := a.mpt.Commit(); err != nil {
 		return err
 	}
-	if err := a.db.TrieDB().Commit(a.trie.Hash(), false); err != nil {
-		return err
-	}
-	a.Hash = a.trie.Hash()
+	a.Hash = a.mpt.Hash()
 	return nil
 }
 
@@ -127,14 +127,22 @@ func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
 		return nil, err
 	}
 	defer func() {
-		if err := a.diskDb.Close(); err != nil {
+		if err := a.mpt.Close(); err != nil {
 			log.Error("disk db close err:", err)
 		}
 	}()
-	value, err = a.trie.TryGet(key)
+	value, err = a.mpt.Get(key)
 	if err != nil {
 		return nil, err
 	}
 	log.Debug("StoreGet key:", string(key), "value:", value)
 	return value, nil
+}
+
+func (a *Account) newTrie(path string) (err error) {
+	a.mpt, err = trie.NewMptTrie(path+"/"+a.Index.String(), a.Hash)
+	if err != nil {
+		return err
+	}
+	return nil
 }
