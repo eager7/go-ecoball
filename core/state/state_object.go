@@ -69,13 +69,13 @@ func NewAccount(path string, index AccountName, addr Address, timeStamp int64) (
 	perm = NewPermission(Active, Owner, 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
 
-	if err := acc.NewStoreTrie(path); err != nil {
+	if err := acc.NewMptTrie(path); err != nil {
 		return nil, err
 	}
 	return acc, acc.diskDb.Close()
 }
 
-func (a *Account) NewStoreTrie(path string) error {
+func (a *Account) NewMptTrie(path string) error {
 	diskDb, err := store.NewLevelDBStore(path+"/"+a.Index.String(), 0, 0)
 	if err != nil {
 		return err

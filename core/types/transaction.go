@@ -71,7 +71,7 @@ type Transaction struct {
 	Payload    EcoMessage         `json:"payload"`
 	Signatures []common.Signature `json:"signatures"`
 	Hash       common.Hash        `json:"hash"`
-	Receipt    TrxReceipt
+	Receipt    *TrxReceipt        `json:"receipt"`
 }
 
 func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash, perm string, payload EcoMessage, nonce uint64, time int64) (*Transaction, error) {
@@ -88,7 +88,7 @@ func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash
 		Nonce:      nonce,
 		TimeStamp:  time,
 		Payload:    payload,
-		Receipt:    TrxReceipt{From: from, Addr: addr, Amount: new(big.Int).SetUint64(0)},
+		Receipt:    &TrxReceipt{From: from, Addr: addr, Amount: new(big.Int).SetUint64(0)},
 	}
 	if tx.Permission == "" {
 		tx.Permission = "active"
@@ -228,6 +228,7 @@ func (t *Transaction) Deserialize(data []byte) error {
 	t.Nonce = txPb.Payload.Nonce
 	t.TimeStamp = txPb.Payload.Timestamp
 
+	t.Receipt = new(TrxReceipt)
 	if err := t.Receipt.Deserialize(txPb.Receipt); err != nil {
 		return err
 	}
@@ -271,7 +272,7 @@ func (t *Transaction) String() string {
 		Payload    string             `json:"payload"`
 		Signatures []common.Signature `json:"signatures"`
 		Hash       string             `json:"hash"`
-		Receipt    TrxReceipt         `json:"receipt"`
+		Receipt    *TrxReceipt        `json:"receipt"`
 	}{Version: t.Version, ChainID: t.ChainID.HexString(), Type: t.Type.String(), From: t.From.String(),
 		Permission: t.Permission, Addr: t.Addr.String(), Nonce: t.Nonce,
 		TimeStamp: t.TimeStamp, Payload: t.Payload.String(), Signatures: t.Signatures,

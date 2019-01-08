@@ -32,7 +32,7 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 }
 
 func (a *Account) StoreSet(path string, key, value []byte) (err error) {
-	if err := a.NewStoreTrie(path); err != nil {
+	if err := a.NewMptTrie(path); err != nil {
 		return err
 	}
 	defer func() {
@@ -55,7 +55,7 @@ func (a *Account) StoreSet(path string, key, value []byte) (err error) {
 }
 
 func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
-	if err := a.NewStoreTrie(path); err != nil {
+	if err := a.NewMptTrie(path); err != nil {
 		return nil, err
 	}
 	defer func() {

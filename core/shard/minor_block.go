@@ -205,7 +205,7 @@ func NewMinorBlock(header MinorBlockHeader, prevHeader *MinorBlockHeader, txs []
 	var hashes []common.Hash
 	var sDelta []*AccountMinor
 	for _, tx := range txs {
-		delta := AccountMinor{Type: tx.Type, Receipt: tx.Receipt}
+		delta := AccountMinor{Type: tx.Type, Receipt: *tx.Receipt}
 		if h, err := delta.Hash(); err != nil {
 			return nil, err
 		} else {

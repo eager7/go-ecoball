@@ -18,25 +18,25 @@ package types_test
 
 import (
 	"fmt"
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/test/example"
-	"testing"
-	"github.com/ecoball/go-ecoball/common"
 	"math/big"
+	"testing"
 )
 
 func TestTransfer(t *testing.T) {
 	tx := example.TestTransfer()
-	receipt := types.TrxReceipt{
-		From:     common.NameToIndex("root"),
-		Addr:     common.NameToIndex("root"),
-		Token:    "",
-		Amount:   new(big.Int).SetUint64(0),
-		Cpu:      10,
-		Net:      20,
-		Result:   []byte("result"),
+	receipt := &types.TrxReceipt{
+		From:   common.NameToIndex("root"),
+		Addr:   common.NameToIndex("root"),
+		Token:  "",
+		Amount: new(big.Int).SetUint64(0),
+		Cpu:    10,
+		Net:    20,
+		Result: []byte("result"),
 	}
 	tx.Receipt = receipt
 	result, err := tx.VerifySignature()
