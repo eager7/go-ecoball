@@ -110,11 +110,9 @@ func TestStateDBCopy(t *testing.T) {
 
 	copyS, err := s.StateCopy()
 	errors.CheckErrorPanic(err)
-	origin, err := copyS.GetAccountByName(acc)
+	origin, err := copyS.QueryAccountInfo(acc, 0, 0, 0)
 	errors.CheckErrorPanic(err)
-	elog.Log.Info(s.Accounts.Get(acc).String())
-	elog.Log.Warn(origin.String())
-	errors.CheckEqualPanic(s.Accounts.Get(acc).String() == origin.String())
+	errors.CheckEqualPanic(s.Accounts.Get(acc).String() == origin)
 
 	_ = copyS.AccountAddBalance(acc, state.AbaToken, new(big.Int).SetUint64(300))
 	balance, err := copyS.AccountGetBalance(acc, state.AbaToken)

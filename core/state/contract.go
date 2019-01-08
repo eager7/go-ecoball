@@ -103,14 +103,10 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 }
 
 func (a *Account) StoreSet(path string, key, value []byte) (err error) {
-	if err := a.newMptTrie(path); err != nil {
+	if err := a.TrieOpen(path); err != nil {
 		return err
 	}
-	defer func() {
-		if err := a.mpt.Close(); err != nil {
-			log.Error("disk db close err:", err)
-		}
-	}()
+	defer a.TrieClose()
 	log.Debug("StoreSet key:", string(key), "value:", value)
 	if err := a.mpt.Put(key, value); err != nil {
 		return err
@@ -123,14 +119,10 @@ func (a *Account) StoreSet(path string, key, value []byte) (err error) {
 }
 
 func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
-	if err := a.newMptTrie(path); err != nil {
+	if err := a.TrieOpen(path); err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := a.mpt.Close(); err != nil {
-			log.Error("disk db close err:", err)
-		}
-	}()
+	defer a.TrieClose()
 	value, err = a.mpt.Get(key)
 	if err != nil {
 		return nil, err
@@ -139,10 +131,20 @@ func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
 	return value, nil
 }
 
-func (a *Account) newMptTrie(path string) (err error) {
+func (a *Account) TrieOpen(path string) (err error) {
+	if a.mpt != nil {
+		return nil
+	}
 	a.mpt, err = trie.NewMptTrie(path+"/"+a.Index.String(), a.Hash)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (a *Account) TrieClose() {
+	if err := a.mpt.Close(); err != nil {
+		log.Error("disk db close err:", err)
+	}
+	a.mpt = nil
 }

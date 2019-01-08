@@ -40,9 +40,9 @@ type Account struct {
 	TimeStamp   int64                 `json:"timestamp"`
 	Delegates   []Delegate            `json:"delegate"`
 	Permissions map[string]Permission `json:"permissions"` //map[perm name]Permission
-	Hash        Hash                  `json:"hash"`
-	mpt         *trie.Mpt
-	lock        sync.RWMutex //用于整个结构体的锁,在调用getAccountByName后上锁,不对单独成员变量上锁
+	Hash        Hash                  `json:"hash"`        //此哈希是mpt树的根哈希
+	mpt         *trie.Mpt             //用于存储合约数据,通过store set和get接口操作
+	lock        sync.RWMutex          //用于整个结构体的锁,在调用getAccountByName后上锁,不对单独成员变量上锁
 }
 
 /**
@@ -67,10 +67,7 @@ func NewAccount(path string, index AccountName, addr Address, timeStamp int64) (
 	perm = NewPermission(Active, Owner, 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
 
-	if err := acc.newMptTrie(path); err != nil {
-		return nil, err
-	}
-	return acc, acc.mpt.Close()
+	return acc, nil
 }
 
 func (a *Account) proto() (*pb.Account, error) {

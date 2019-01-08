@@ -119,14 +119,6 @@ func (s *State) CheckAccountName(index AccountName) bool {
 	return true
 }
 func (s *State) QueryAccountInfo(index AccountName, cpu, net float64, timeStamp int64) (string, error) {
-	cpuStakedSum, err := s.getParam(cpuAmount)
-	if err != nil {
-		return "", err
-	}
-	netStakedSum, err := s.getParam(netAmount)
-	if err != nil {
-		return "", err
-	}
 	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return "", err
@@ -137,8 +129,18 @@ func (s *State) QueryAccountInfo(index AccountName, cpu, net float64, timeStamp 
 	if err != nil {
 		return "", err
 	}
-	if err := nAcc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpu, net); err != nil {
-		return "", err
+	if timeStamp != 0 {
+		cpuStakedSum, err := s.getParam(cpuAmount)
+		if err != nil {
+			return "", err
+		}
+		netStakedSum, err := s.getParam(netAmount)
+		if err != nil {
+			return "", err
+		}
+		if err := nAcc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpu, net); err != nil {
+			return "", err
+		}
 	}
 	return nAcc.String(), nil
 }

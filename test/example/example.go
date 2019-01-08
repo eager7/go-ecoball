@@ -1137,21 +1137,19 @@ func QueryContractData(ledger ledger.Ledger) {
 
 func RecepitTest(ledger ledger.Ledger) {
 
-	acc, err := ledger.StateDB(config.ChainHash).GetAccountByName(common.NameToIndex("root"))
-	errors.CheckErrorPanic(err)
-	account, err := acc.Serialize()
+	account, err := ledger.StateDB(config.ChainHash).QueryAccountInfo(common.NameToIndex("root"), 0, 0, 0)
 	errors.CheckErrorPanic(err)
 
 	accounts := make(map[int][]byte)
-	accounts[0] = account
-	accounts[1] = account
+	accounts[0] = []byte(account)
+	accounts[1] = []byte(account)
 
 	receipt := types.TrxReceipt{
 		Token:    "ABA",
 		Amount:   big.NewInt(100),
 		Cpu:      10.0,
 		Net:      20.5,
-		Result:   account,
+		Result:   []byte(account),
 	}
 
 	data, err := receipt.Serialize()
