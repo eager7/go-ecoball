@@ -455,14 +455,6 @@ func (c *ChainTx) CheckPermission(index common.AccountName, name string, hash co
 	return c.StateDB.CheckPermission(index, name, hash, sig)
 }
 
-/**
-*  @brief  create a new account in mpt tree
-*  @param  index - the uuid of account
-*  @param  addr - the public key of account
- */
-func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address, timeStamp int64) (*state.Account, error) {
-	return c.StateDB.AddAccount(index, addr, timeStamp)
-}
 func (c *ChainTx) StoreSet(index common.AccountName, key, value []byte) (err error) {
 	return c.StateDB.StoreSet(index, key, value)
 }

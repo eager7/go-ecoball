@@ -304,16 +304,14 @@ func (s *State) commitChains() error {
 	if err != nil {
 		return errors.New(fmt.Sprintf("error convert to json string:%s", err.Error()))
 	}
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if err := s.trie.TryUpdate([]byte(chainList), data); err != nil {
+	if err := s.Mpt.Put([]byte(chainList), data); err != nil {
 		return errors.New(fmt.Sprintf("error update trie:%s", err.Error()))
 	}
 	return nil
 }
 func (s *State) GetChainList() ([]Chain, error) {
 	if s.Chains.Len() == 0 {
-		data, err := s.trie.TryGet([]byte(chainList))
+		data, err := s.Mpt.Get([]byte(chainList))
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("can't get chainList from DB:%s", err.Error()))
 		}

@@ -69,6 +69,8 @@ func (p *ParamsMap) Purge() {
 }
 
 func (p *ParamsMap) Clone() ParamsMap {
+	p.lock.RLock()
+	defer p.lock.RUnlock()
 	n := ParamsMap{}
 	n.Initialize()
 	for k, v := range p.Params {
@@ -150,6 +152,8 @@ func (p *ProducersMap) Purge() {
 }
 
 func (p *ProducersMap) Clone() ProducersMap {
+	p.lock.RLock()
+	defer p.lock.RUnlock()
 	n := ProducersMap{}
 	n.Initialize()
 	for k, v := range p.Producers {
@@ -231,6 +235,8 @@ func (t *TokensMap) Purge() {
 }
 
 func (t *TokensMap) Clone() TokensMap {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
 	n := TokensMap{}
 	n.Initialize()
 	for k, v := range t.Tokens {
@@ -319,6 +325,8 @@ func (c *ChainsMap) Purge() {
 }
 
 func (c *ChainsMap) Clone() ChainsMap {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	n := ChainsMap{}
 	n.Initialize()
 	for k, v := range c.Chains {

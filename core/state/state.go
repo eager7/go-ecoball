@@ -22,27 +22,20 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
-	"github.com/ecoball/go-ecoball/core/store"
-	"sync"
+	"github.com/ecoball/go-ecoball/core/trie"
 )
 
 var log = elog.NewLogger("state", config.LogLevel)
 var AbaToken = "ABA"
 
 type State struct {
-	Type   TypeState
-	path   string
-	trie   Trie
-	db     Database
-	diskDb *store.LevelDBStore
-
+	Type      TypeState
+	Mpt       *trie.Mpt
 	Tokens    TokensMap
 	Accounts  AccountCache
 	Params    ParamsMap
 	Producers ProducersMap
 	Chains    ChainsMap
-
-	mutex sync.RWMutex
 }
 
 /**
@@ -52,31 +45,17 @@ type State struct {
  */
 func NewState(path string, root Hash) (st *State, err error) {
 	st = &State{
-		Type:      0,
-		path:      path,
-		trie:      nil,
-		db:        nil,
-		diskDb:    nil,
 		Tokens:    new(TokensMap).Initialize(),
-		Accounts:  AccountCache{},
 		Params:    new(ParamsMap).Initialize(),
 		Producers: new(ProducersMap).Initialize(),
 		Chains:    new(ChainsMap).Initialize(),
-		mutex:     sync.RWMutex{},
 	}
 	if err := st.Accounts.Initialize(); err != nil {
 		return nil, err
 	}
-	st.diskDb, err = store.NewLevelDBStore(path, 0, 0)
+	st.Mpt, err = trie.NewMptTrie(path, root)
 	if err != nil {
-		log.Error(err)
 		return nil, err
-	}
-	st.db = NewDatabase(st.diskDb)
-	log.Notice("Open Trie Hash:", root.HexString())
-	st.trie, err = st.db.OpenTrie(root)
-	if err != nil {
-		st.trie, _ = st.db.OpenTrie(Hash{})
 	}
 	return st, nil
 }
@@ -89,12 +68,8 @@ func (s *State) StateType() TypeState {
  *  @brief copy a new trie into memory
  */
 func (s *State) StateCopy() (*State, error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	stateCp := &State{
-		path:      s.path,
-		trie:      s.db.CopyTrie(s.trie),
+		Mpt:       s.Mpt.Clone(),
 		Tokens:    s.Tokens.Clone(),
 		Accounts:  AccountCache{},
 		Params:    s.Params.Clone(),
@@ -110,16 +85,14 @@ func (s *State) StateCopy() (*State, error) {
  *  @param addr - account's address convert from public key
  */
 func (s *State) AddAccount(index AccountName, addr Address, timeStamp int64) (*Account, error) {
-	s.mutex.RLock()
-	data, err := s.trie.TryGet(index.Bytes())
-	s.mutex.RUnlock()
+	data, err := s.Mpt.Get(index.Bytes())
 	if err != nil {
 		return nil, err
 	}
 	if data != nil {
 		return nil, errors.New("reduplicate name")
 	}
-	acc, err := NewAccount(s.path, index, addr, timeStamp)
+	acc, err := NewAccount(s.Mpt.Path(), index, addr, timeStamp)
 	if err != nil {
 		return nil, err
 	}
@@ -127,9 +100,7 @@ func (s *State) AddAccount(index AccountName, addr Address, timeStamp int64) (*A
 		return nil, err
 	}
 	//save the mapping of addr and index
-	s.mutex.Lock()
-	err = s.trie.TryUpdate(addr.Bytes(), acc.Index.Bytes())
-	s.mutex.Unlock()
+	err = s.Mpt.Put(addr.Bytes(), acc.Index.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -140,23 +111,43 @@ func (s *State) AddAccount(index AccountName, addr Address, timeStamp int64) (*A
  *  @brief 通过用户名返回账户结构体,返回的是对象的拷贝,这样可以避免资源竞争
  *  @param index - the account index
  */
-func (s *State) GetAccountByName(index AccountName) (*Account, error) {
+func (s *State) CheckAccountName(index AccountName) bool {
+	_, err := s.getAccountByName(index)
+	if err != nil {
+		return false
+	}
+	return true
+}
+func (s *State) QueryAccountInfo(index AccountName, cpu, net float64, timeStamp int64) (string, error) {
+	cpuStakedSum, err := s.getParam(cpuAmount)
+	if err != nil {
+		return "", err
+	}
+	netStakedSum, err := s.getParam(netAmount)
+	if err != nil {
+		return "", err
+	}
 	acc, err := s.getAccountByName(index)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	acc.lock.RLock()
 	defer acc.lock.RUnlock()
-	return acc.Clone()
+	nAcc, err := acc.Clone()
+	if err != nil {
+		return "", err
+	}
+	if err := nAcc.RecoverResources(cpuStakedSum, netStakedSum, timeStamp, cpu, net); err != nil {
+		return "", err
+	}
+	return nAcc.String(), nil
 }
 func (s *State) getAccountByName(index AccountName) (*Account, error) {
 	acc := s.Accounts.Get(index)
 	if acc != nil {
 		return acc, nil
 	}
-	s.mutex.Lock()
-	fData, err := s.trie.TryGet(index.Bytes())
-	s.mutex.Unlock()
+	fData, err := s.Mpt.Get(index.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -169,16 +160,6 @@ func (s *State) getAccountByName(index AccountName) (*Account, error) {
 		return nil, err
 	}
 	return acc, nil
-}
-func (s *State) GetAccountByAddr(addr Address) (*Account, error) {
-	if value, err := s.getParam(addr.HexString()); err != nil {
-		return nil, err
-	} else {
-		if value == 0 {
-			return nil, errors.New(fmt.Sprintf("the address:%s is not register be an account", addr.HexString()))
-		}
-		return s.GetAccountByName(AccountName(value))
-	}
 }
 func (s *State) getAccountByAddr(addr Address) (*Account, error) {
 	if value, err := s.getParam(addr.HexString()); err != nil {
@@ -195,19 +176,14 @@ func (s *State) getAccountByAddr(addr Address) (*Account, error) {
  *  @brief get the trie root hash
  */
 func (s *State) GetHashRoot() Hash {
-	return NewHash(s.trie.Hash().Bytes())
+	return s.Mpt.Hash()
 }
 
 /**
  *  @brief save the information of mpt trie into levelDB
  */
 func (s *State) CommitToDB() error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if err := s.commitToMemory(); err != nil {
-		return err
-	}
-	return s.db.TrieDB().Commit(s.trie.Hash(), false)
+	return s.Mpt.Commit()
 }
 
 /**
@@ -215,18 +191,7 @@ func (s *State) CommitToDB() error {
  *  @param hash - the hash of mpt witch state will be reset
  */
 func (s *State) Reset(hash Hash) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if err := s.diskDb.Close(); err != nil {
-		return err
-	}
-	diskDb, err := store.NewLevelDBStore(s.path, 0, 0)
-	if err != nil {
-		return err
-	}
-	s.db = NewDatabase(diskDb)
-	s.trie, err = s.db.OpenTrie(hash)
-	if err != nil {
+	if err := s.Mpt.RollBack(hash); err != nil {
 		return err
 	}
 	s.Accounts.Purge()
@@ -234,7 +199,6 @@ func (s *State) Reset(hash Hash) error {
 	s.Chains.Purge()
 	s.Tokens.Purge()
 	s.Params.Purge()
-	log.Info("Open Trie Hash:", hash.HexString())
 	return nil
 }
 
@@ -242,19 +206,7 @@ func (s *State) Reset(hash Hash) error {
  *  @brief close level db
  */
 func (s *State) Close() error {
-	return s.diskDb.Close()
-}
-
-/**
- *  @brief commit the trie into past trie list
- */
-func (s *State) commitToMemory() error {
-	root, err := s.trie.Commit(nil)
-	if err != nil {
-		return err
-	}
-	log.Debug("commit state db to memory:", root.HexString())
-	return nil
+	return s.Mpt.Close()
 }
 
 /**
@@ -269,9 +221,7 @@ func (s *State) commitAccount(acc *Account) error {
 	if err != nil {
 		return err
 	}
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if err := s.trie.TryUpdate(acc.Index.Bytes(), d); err != nil {
+	if err := s.Mpt.Put(acc.Index.Bytes(), d); err != nil {
 		return err
 	}
 	s.Accounts.Add(acc)
@@ -284,9 +234,7 @@ func (s *State) commitAccount(acc *Account) error {
  *  @param value - param value
  */
 func (s *State) commitParam(key string, value uint64) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	if err := s.trie.TryUpdate([]byte(key), Uint64ToBytes(value)); err != nil {
+	if err := s.Mpt.Put([]byte(key), Uint64ToBytes(value)); err != nil {
 		return err
 	}
 	s.Params.Add(key, value)
@@ -302,9 +250,7 @@ func (s *State) getParam(key string) (uint64, error) {
 	if param != nil {
 		return param.Value, nil
 	}
-	s.mutex.Lock()
-	data, err := s.trie.TryGet([]byte(key))
-	s.mutex.Unlock()
+	data, err := s.Mpt.Get([]byte(key))
 	if err != nil {
 		s.Params.Add(key, 0)
 		return 0, errors.New(fmt.Sprintf("mpt tree get error:%s", err.Error()))

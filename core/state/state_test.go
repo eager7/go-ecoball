@@ -23,7 +23,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/core/state"
-	"github.com/ecoball/go-ecoball/core/store"
 	"math/big"
 	"os"
 	"testing"
@@ -31,142 +30,64 @@ import (
 )
 
 func TestStateNew(t *testing.T) {
-	indexAcc := common.NameToIndex("root")
-	os.RemoveAll("/tmp/state/")
+	acc := common.NameToIndex("root")
+	_ = os.RemoveAll("/tmp/state/")
 	s, err := state.NewState("/tmp/state", common.Hash{})
 	errors.CheckErrorPanic(err)
 	fmt.Println("Trie Root:", s.GetHashRoot().HexString())
 
 	addr := common.AddressFromPubKey(config.Root.PublicKey)
-	_, err = s.AddAccount(indexAcc, addr, time.Now().UnixNano())
+	_, err = s.AddAccount(acc, addr, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
-	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), indexAcc, indexAcc)
-	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetUint64(90000)))
+	_, _ = s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), acc, acc)
+	errors.CheckErrorPanic(s.AccountAddBalance(acc, state.AbaToken, new(big.Int).SetUint64(90000)))
 
-	balance, err := s.AccountGetBalance(indexAcc, state.AbaToken)
+	balance, err := s.AccountGetBalance(acc, state.AbaToken)
 	errors.CheckErrorPanic(err)
 	fmt.Println("Value From:", balance)
 
 	value := new(big.Int).SetUint64(100)
-	if err := s.AccountAddBalance(indexAcc, state.AbaToken, value); err != nil {
+	if err := s.AccountAddBalance(acc, state.AbaToken, value); err != nil {
 		fmt.Println("Update Error:", err)
 	}
 
 	fmt.Println("Hash Root:", s.GetHashRoot().HexString())
-	s.CommitToDB()
-	balance, err = s.AccountGetBalance(indexAcc, state.AbaToken)
+	_ = s.CommitToDB()
+	balance, err = s.AccountGetBalance(acc, state.AbaToken)
 	errors.CheckErrorPanic(err)
 	fmt.Println("Value:", balance)
 }
 
 func TestStateRoot(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	indexAcc := common.NameToIndex("pct")
-	indexToken := state.AbaToken
-	os.RemoveAll("/tmp/state_root/")
-	s, err := state.NewState("/tmp/state_root", common.HexToHash("cf4bfc19264aa4bbd6898c0ef43ce5465c794fd587e622fccc19980e634cd9f2"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := s.AddAccount(indexAcc, addr, time.Now().UnixNano()); err != nil {
-		t.Fatal(err)
-	}
-	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), indexAcc, indexAcc)
-	if err := s.AccountAddBalance(indexAcc, indexToken, new(big.Int).SetInt64(100)); err != nil {
-		t.Fatal(err)
-	}
-	value, err := s.AccountGetBalance(indexAcc, indexToken)
-	if err != nil {
-		t.Fatal(err)
-	}
+	acc := common.NameToIndex("pct")
+	token := state.AbaToken
+	_ = os.RemoveAll("/tmp/state_root/")
+	s, err := state.NewState("/tmp/state_root", common.Hash{})
+	errors.CheckErrorPanic(err)
+
+	_, err = s.AddAccount(acc, addr, time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+	_, err = s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), acc, acc)
+	errors.CheckErrorPanic(err)
+
+	errors.CheckErrorPanic(s.AccountAddBalance(acc, token, new(big.Int).SetInt64(100)))
+
+	value, err := s.AccountGetBalance(acc, token)
+	errors.CheckErrorPanic(err)
 	fmt.Println("value:", value)
 	fmt.Println("root:", s.GetHashRoot().HexString())
+	errors.CheckEqualPanic(value.Uint64() == 100)
 
-	if err := s.AccountAddBalance(indexAcc, indexToken, new(big.Int).SetInt64(150)); err != nil {
-		t.Fatal(err)
-	}
-	value, err = s.AccountGetBalance(indexAcc, indexToken)
-	if err != nil {
-		t.Fatal(err)
-	}
+	errors.CheckErrorPanic(s.AccountAddBalance(acc, token, new(big.Int).SetInt64(150)))
+
+	value, err = s.AccountGetBalance(acc, token)
+	errors.CheckErrorPanic(err)
+
 	fmt.Println("value:", value)
 	fmt.Println("root:", s.GetHashRoot().HexString())
-	s.CommitToDB()
-}
-
-func TestHashRoot(t *testing.T) {
-	os.RemoveAll("/tmp/state_hash/")
-	diskDb, _ := store.NewLevelDBStore("/tmp/state_hash", 0, 0)
-	Db := state.NewDatabase(diskDb)
-
-	root := common.HexToHash("c9a4c610b1068a32f091a091ee46836b5425d9dfc9dc58c32a70e2b5e5d67a7b")
-	fmt.Println("open trie with root:", root.HexString())
-	tree, err := Db.OpenTrie(root)
-	if err != nil {
-		fmt.Println("can't open trie:", err)
-		tree, _ = Db.OpenTrie(common.Hash{})
-	}
-	fmt.Println("Root0:", tree.Hash().HexString())
-	value, err := tree.TryGet([]byte("dog"))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("dog1 value:", string(value))
-
-	tree.TryUpdate([]byte("doe"), []byte("reindeer"))
-	fmt.Println("root1:", tree.Hash().HexString())
-
-	tree.TryUpdate([]byte("dog"), []byte("puppy"))
-	fmt.Println("update dog to puppy, root2:", tree.Hash().HexString())
-
-	value, err = tree.TryGet([]byte("dog"))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("dog value:", string(value))
-
-	tree.TryUpdate([]byte("dogglesworth"), []byte("cat"))
-	fmt.Println("root3:", tree.Hash().HexString())
-
-	tree.TryUpdate([]byte("dogglesworth"), []byte("cat"))
-	fmt.Println("root4:", tree.Hash().HexString())
-
-	fmt.Println("Commit DB")
-	tree.Commit(nil)
-	lDB := Db.TrieDB()
-	lDB.Commit(tree.Hash(), true)
-	hash := tree.Hash()
-
-	tree.TryUpdate([]byte("dog"), []byte("puppy2"))
-	fmt.Println("update dog to puppy2, root5:", tree.Hash().HexString())
-
-	value, err = tree.TryGet([]byte("dog"))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("dog value:", string(value))
-
-	fmt.Println("ReOpen trie with hash:", hash.HexString())
-	tree, err = Db.OpenTrie(hash)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println("root5:", tree.Hash().HexString())
-
-	value, err = tree.TryGet([]byte("dog"))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("dog value:", string(value))
-	tree.Commit(nil)
-	lDB = Db.TrieDB()
-	lDB.Commit(tree.Hash(), true)
-	fmt.Println("root6:", tree.Hash().HexString())
-
+	errors.CheckEqualPanic(value.Uint64() == 250)
+	_ = s.CommitToDB()
 }
 
 func TestStateDBCopy(t *testing.T) {
@@ -207,33 +128,33 @@ func TestStateDBCopy(t *testing.T) {
 
 func TestStateDBReset(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	indexAcc := common.NameToIndex("pct")
-	os.RemoveAll("/tmp/state_copy/")
+	acc := common.NameToIndex("pct")
+	_ = os.RemoveAll("/tmp/state_copy/")
 	s, err := state.NewState("/tmp/state_copy", common.HexToHash(""))
 	errors.CheckErrorPanic(err)
 	tm, err := time.Parse("02/01/2006 15:04:05 PM", "21/02/1990 00:00:00 AM")
 	errors.CheckErrorPanic(err)
 	timeStamp := tm.UnixNano()
-	_, err = s.AddAccount(indexAcc, addr, timeStamp)
+	_, err = s.AddAccount(acc, addr, timeStamp)
 	errors.CheckErrorPanic(err)
 
-	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), indexAcc, indexAcc)
-	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetInt64(100)))
-	s.CommitToDB()
+	_, _ = s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), acc, acc)
+	errors.CheckErrorPanic(s.AccountAddBalance(acc, state.AbaToken, new(big.Int).SetInt64(100)))
+	_ = s.CommitToDB()
 
-	checkBalance(100, indexAcc, s)
+	checkBalance(100, acc, s)
 
 	prevHash := s.GetHashRoot()
 	elog.Log.Info(prevHash.HexString())
 
-	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetInt64(100)))
-	s.CommitToDB()
+	errors.CheckErrorPanic(s.AccountAddBalance(acc, state.AbaToken, new(big.Int).SetInt64(100)))
+	_ = s.CommitToDB()
 
-	checkBalance(200, indexAcc, s)
+	checkBalance(200, acc, s)
 
 	errors.CheckErrorPanic(s.Reset(prevHash))
 
-	checkBalance(100, indexAcc, s)
+	checkBalance(100, acc, s)
 }
 
 func checkBalance(value uint64, index common.AccountName, s *state.State) {
@@ -241,4 +162,20 @@ func checkBalance(value uint64, index common.AccountName, s *state.State) {
 	errors.CheckErrorPanic(err)
 	elog.Log.Info(balance)
 	errors.CheckEqualPanic(balance.Uint64() == value)
+}
+
+func TestState_Store(t *testing.T) {
+	acc := common.NameToIndex("pct")
+	_ = os.RemoveAll("/tmp/state_store/")
+	s, err := state.NewState("/tmp/state_store", common.HexToHash(""))
+	errors.CheckErrorPanic(err)
+	_, err = s.AddAccount(acc, common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330")), time.Now().UnixNano())
+	errors.CheckErrorPanic(err)
+
+	errors.CheckErrorPanic(s.StoreSet(acc, []byte("key"), []byte("value")))
+	value, err := s.StoreGet(acc, []byte("key"))
+	errors.CheckErrorPanic(err)
+	if string(value) != "value" {
+		t.Fatal("must be value:", value)
+	}
 }

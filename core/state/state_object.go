@@ -23,7 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"github.com/ecoball/go-ecoball/core/store"
+	"github.com/ecoball/go-ecoball/core/trie"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
@@ -41,9 +41,7 @@ type Account struct {
 	Delegates   []Delegate            `json:"delegate"`
 	Permissions map[string]Permission `json:"permissions"` //map[perm name]Permission
 	Hash        Hash                  `json:"hash"`
-	trie        Trie
-	db          Database
-	diskDb      *store.LevelDBStore
+	mpt         *trie.Mpt
 	lock        sync.RWMutex //用于整个结构体的锁,在调用getAccountByName后上锁,不对单独成员变量上锁
 }
 
@@ -69,29 +67,12 @@ func NewAccount(path string, index AccountName, addr Address, timeStamp int64) (
 	perm = NewPermission(Active, Owner, 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
 
-	if err := acc.newTrie(path); err != nil {
+	if err := acc.newMptTrie(path); err != nil {
 		return nil, err
 	}
-	return acc, acc.diskDb.Close()
+	return acc, acc.mpt.Close()
 }
 
-func (a *Account) newTrie(path string) error {
-	diskDb, err := store.NewLevelDBStore(path+"/"+a.Index.String(), 0, 0)
-	if err != nil {
-		return err
-	}
-	a.diskDb = diskDb
-	a.db = NewDatabase(diskDb)
-	a.trie, err = a.db.OpenTrie(a.Hash)
-	if err != nil {
-		log.Warn(a.Index.String(), "open nil trie")
-		a.trie, err = a.db.OpenTrie(Hash{})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
 func (a *Account) proto() (*pb.Account, error) {
 	var tokens []*pb.Token
 	var keysToken []string
@@ -324,4 +305,3 @@ func (a *Account) Clone() (*Account, error) {
 	}
 	return n, nil
 }
-
