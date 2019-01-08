@@ -16,7 +16,7 @@ import (
  *  @param abi  - the abi of contract
  */
 func (s *State) SetContract(index AccountName, t types.VmType, des, code, abi []byte) error {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func (s *State) SetContract(index AccountName, t types.VmType, des, code, abi []
  *  @param index - account's index
  */
 func (s *State) GetContract(index AccountName) (*types.DeployInfo, error) {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (s *State) GetContract(index AccountName) (*types.DeployInfo, error) {
 	return acc.GetContract()
 }
 func (s *State) StoreSet(index AccountName, key, value []byte) (err error) {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (s *State) StoreSet(index AccountName, key, value []byte) (err error) {
 	return s.commitAccount(acc)
 }
 func (s *State) StoreGet(index AccountName, key []byte) (value []byte, err error) {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return nil, err
 	}
@@ -67,10 +67,12 @@ func (s *State) StoreGet(index AccountName, key []byte) (value []byte, err error
 *  @param index - account's index
  */
 func (s *State) GetContractAbi(index AccountName) ([]byte, error) {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return nil, err
 	}
+	acc.lock.RLock()
+	defer acc.lock.RUnlock()
 	return acc.Contract.Abi, err
 }
 /**

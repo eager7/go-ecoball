@@ -44,7 +44,7 @@ type Account struct {
 	trie        Trie
 	db          Database
 	diskDb      *store.LevelDBStore
-	lock        sync.RWMutex
+	lock        sync.RWMutex //用于整个结构体的锁,在调用getAccountByName后上锁,不对单独成员变量上锁
 }
 
 /**
@@ -312,8 +312,6 @@ func (a *Account) String() string {
 	return string(data)
 }
 func (a *Account) Clone() (*Account, error) {
-	a.lock.RLock()
-	defer a.lock.RUnlock()
 	n := new(Account)
 	data, err := a.Serialize()
 	if err != nil {

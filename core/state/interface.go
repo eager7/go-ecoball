@@ -32,7 +32,7 @@ type InterfaceState interface {
 	GetTokenInfo(symbol string) (*TokenInfo, error)
 	TokenExisted(name string) bool
 	SetTokenInfo(symbol string, maxSupply, supply *big.Int, creator, issuer common.AccountName) (*TokenInfo, error)
-	CopyState() (*State, error)
+	StateCopy() (*State, error)
 	AddAccount(index common.AccountName, addr common.Address, timeStamp int64) (*Account, error)
 	SetContract(index common.AccountName, t types.VmType, des, code, abi[]byte) error
 	GetContract(index common.AccountName) (*types.DeployInfo, error)

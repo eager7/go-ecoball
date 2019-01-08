@@ -141,9 +141,18 @@ func (s *State) AddAccount(index AccountName, addr Address, timeStamp int64) (*A
  *  @param index - the account index
  */
 func (s *State) GetAccountByName(index AccountName) (*Account, error) {
+	acc, err := s.getAccountByName(index)
+	if err != nil {
+		return nil, err
+	}
+	acc.lock.RLock()
+	defer acc.lock.RUnlock()
+	return acc.Clone()
+}
+func (s *State) getAccountByName(index AccountName) (*Account, error) {
 	acc := s.Accounts.Get(index)
 	if acc != nil {
-		return acc.Clone()
+		return acc, nil
 	}
 	s.mutex.Lock()
 	fData, err := s.trie.TryGet(index.Bytes())
@@ -159,13 +168,8 @@ func (s *State) GetAccountByName(index AccountName) (*Account, error) {
 	if err = acc.Deserialize(fData); err != nil {
 		return nil, err
 	}
-	return acc.Clone()
+	return acc, nil
 }
-
-/**
- *  @brief search the account by address
- *  @param addr - the account address
- */
 func (s *State) GetAccountByAddr(addr Address) (*Account, error) {
 	if value, err := s.getParam(addr.HexString()); err != nil {
 		return nil, err
@@ -174,6 +178,16 @@ func (s *State) GetAccountByAddr(addr Address) (*Account, error) {
 			return nil, errors.New(fmt.Sprintf("the address:%s is not register be an account", addr.HexString()))
 		}
 		return s.GetAccountByName(AccountName(value))
+	}
+}
+func (s *State) getAccountByAddr(addr Address) (*Account, error) {
+	if value, err := s.getParam(addr.HexString()); err != nil {
+		return nil, err
+	} else {
+		if value == 0 {
+			return nil, errors.New(fmt.Sprintf("the address:%s is not register be an account", addr.HexString()))
+		}
+		return s.getAccountByName(AccountName(value))
 	}
 }
 

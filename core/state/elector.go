@@ -75,7 +75,7 @@ func (s *State) UnRegisterProducer(index AccountName) error {
  *  @param accounts - candidate node list
  */
 func (s *State) ElectionToVote(index AccountName, accounts []AccountName) error {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (s *State) ElectionToVote(index AccountName, accounts []AccountName) error 
 			accFactors = append(accFactors, accFactor)
 		}
 		perm := NewPermission(Active, Owner, 2, []KeyFactor{}, accFactors)
-		root, err := s.GetAccountByName(NameToIndex("root"))
+		root, err := s.getAccountByName(NameToIndex("root"))
 		if err != nil {
 			return err
 		}
@@ -181,10 +181,11 @@ func (s *State) updateElectedProducers(acc *Account, votesOld uint64) error {
  *  @param index - account's index
  */
 func (s *State) checkAccountCertification(index AccountName, votes uint64) error {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return err
 	}
+	//如果投票给自己会导致死锁,因此这个地方不用上锁
 	if acc.Resource.Votes.Staked < votes {
 		return errors.New(fmt.Sprintf("the account:%s has no enough staked:%d", index.String(), acc.Resource.Votes.Staked))
 	}
@@ -241,7 +242,7 @@ func (s *State) GetProducerList() ([]Elector, error) {
 	}
 	var electors []Elector
 	for producer := range s.Producers.Iterator() {
-		acc, err := s.GetAccountByName(producer.Index)
+		acc, err := s.getAccountByName(producer.Index)
 		if err != nil {
 			return nil, err
 		}
@@ -281,7 +282,7 @@ func (s *State) initProducersList() error {
  *  @param index - account's index
  */
 func (s *State) RegisterProducer(index AccountName, b64Pub, addr string, port uint32, payee AccountName) error {
-	if _, err := s.GetAccountByName(payee); err != nil {
+	if _, err := s.getAccountByName(payee); err != nil {
 		return err
 	}
 	if err := s.initProducersList(); err != nil {
@@ -298,7 +299,7 @@ func (s *State) RegisterProducer(index AccountName, b64Pub, addr string, port ui
 		return err
 	}
 
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return err
 	}

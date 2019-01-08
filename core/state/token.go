@@ -98,7 +98,7 @@ func (info *TokenInfo) JsonString(format bool) string {
 }
 
 func (s *State) AccountGetBalance(index AccountName, token string) (*big.Int, error) {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (s *State) AccountGetBalance(index AccountName, token string) (*big.Int, er
 	return acc.Balance(token)
 }
 func (s *State) AccountSubBalance(index AccountName, token string, value *big.Int) error {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (s *State) AccountSubBalance(index AccountName, token string, value *big.In
 	return nil
 }
 func (s *State) AccountAddBalance(index AccountName, token string, value *big.Int) error {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return err
 	}

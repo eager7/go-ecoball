@@ -89,7 +89,7 @@ func TestTransfer() *types.Transaction {
 }
 
 func Ledger(path string) ledger.Ledger {
-	os.RemoveAll(path)
+	_ = os.RemoveAll(path)
 	l, err := ledgerimpl.NewLedger(path, config.ChainHash, common.AddressFromPubKey(config.Root.PublicKey), false)
 	errors.CheckErrorPanic(err)
 	return l
@@ -100,7 +100,7 @@ func SaveBlock(ledger ledger.Ledger, txs []*types.Transaction, chainID common.Ha
 	errors.CheckErrorPanic(err)
 	block, _, err := ledger.NewTxBlock(chainID, txs, *con, time.Now().UnixNano())
 	errors.CheckErrorPanic(err)
-	block.SetSignature(&config.Root)
+	_ = block.SetSignature(&config.Root)
 	errors.CheckErrorPanic(ledger.VerifyTxBlock(block.ChainID, block))
 	errors.CheckErrorPanic(event.Send(event.ActorNil, event.ActorLedger, block))
 	time.Sleep(time.Millisecond * 500)

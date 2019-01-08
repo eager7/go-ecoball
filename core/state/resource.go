@@ -71,7 +71,7 @@ func (s *State) SetResourceLimits(from, to AccountName, cpuStaked, netStaked uin
 		return err
 	}
 	log.Debug("SetResourceLimits:", from, to, cpuStaked, netStaked, cpuStakedSum, netStakedSum)
-	acc, err := s.GetAccountByName(from)
+	acc, err := s.getAccountByName(from)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (s *State) SetResourceLimits(from, to AccountName, cpuStaked, netStaked uin
 		acc.AddResourceLimits(true, cpuStaked, netStaked, cpuStaked+cpuStakedSum, netStaked+netStakedSum, cpuLimit, netLimit)
 	} else {
 		acc.SetDelegateInfo(to, cpuStaked, netStaked)
-		accTo, err := s.GetAccountByName(to)
+		accTo, err := s.getAccountByName(to)
 		if err != nil {
 			return err
 		}
@@ -125,7 +125,7 @@ func (s *State) SubResources(index AccountName, cpu, net float64, cpuLimit, netL
 	if err != nil {
 		return err
 	}
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func (s *State) CancelDelegate(from, to AccountName, cpuStaked, netStaked uint64
 	if err != nil {
 		return err
 	}
-	acc, err := s.GetAccountByName(from)
+	acc, err := s.getAccountByName(from)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (s *State) CancelDelegate(from, to AccountName, cpuStaked, netStaked uint64
 	defer acc.lock.Unlock()
 
 	if from != to {
-		accTo, err := s.GetAccountByName(to)
+		accTo, err := s.getAccountByName(to)
 		if err != nil {
 			return err
 		}
@@ -214,7 +214,7 @@ func (s *State) CancelDelegate(from, to AccountName, cpuStaked, netStaked uint64
  */
 func (s *State) RecoverResources(index AccountName, timeStamp int64, cpuLimit, netLimit float64) error {
 	log.Debug("recover resource:", timeStamp)
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return err
 	}
@@ -248,10 +248,12 @@ func (s *State) RequireResources(index AccountName, cpuLimit, netLimit float64, 
 	if err != nil {
 		return 0, 0, err
 	}
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return 0, 0, err
 	}
+	acc.lock.RLock()
+	defer acc.lock.RUnlock()
 	nAcc, err := acc.Clone()
 	if err != nil {
 		return 0, 0, err

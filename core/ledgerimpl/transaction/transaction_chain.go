@@ -33,6 +33,7 @@ import (
 	"github.com/ecoball/go-ecoball/smartcontract/context"
 	"github.com/ecoball/go-ecoball/spectator/connect"
 	"github.com/ecoball/go-ecoball/spectator/info"
+	"github.com/gin-gonic/gin/json"
 	"math/big"
 	"time"
 )
@@ -562,6 +563,10 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		_, err = smartcontract.DispatchAction(trxContext, actionNew, 0)
 		if err != nil {
 			return nil, 0, 0, errors.New(err.Error())
+		}
+		ret, err = json.Marshal(trxContext.Trace)
+		if err != nil {
+			return nil, 0, 0, errors.New(fmt.Sprintf("marshal trxContext.Trace failed:%d", err.Error()))
 		}
 	default:
 		return nil, 0, 0, errors.New("the transaction's type error")

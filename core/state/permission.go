@@ -66,7 +66,7 @@ func NewPermission(name, parent string, threshold uint32, addr []KeyFactor, acc 
  *  @param perm - the permission object
  */
 func (s *State) AddPermission(index AccountName, perm Permission) error {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (s *State) AddPermission(index AccountName, perm Permission) error {
  *  @param signatures - the signatures list
  */
 func (s *State) CheckPermission(index AccountName, name string, hash Hash, signatures []Signature) error {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (s *State) CheckAccountPermission(host AccountName, guest AccountName, perm
 	if guest == host {
 		return nil
 	}
-	acc, err := s.GetAccountByName(host)
+	acc, err := s.getAccountByName(host)
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (s *State) CheckAccountPermission(host AccountName, guest AccountName, perm
  *  @param name - the permission names
  */
 func (s *State) FindPermission(index AccountName, name string) (string, error) {
-	acc, err := s.GetAccountByName(index)
+	acc, err := s.getAccountByName(index)
 	if err != nil {
 		return "", err
 	}
@@ -292,7 +292,7 @@ func (p *Permission) checkPermission(state *State, signatures []Signature) error
 	Accounts := make(map[string][]byte, 1)
 	for _, s := range signatures {
 		addr := AddressFromPubKey(s.PubKey)
-		acc, err := state.GetAccountByAddr(addr)
+		acc, err := state.getAccountByAddr(addr)
 		if err == nil {
 			Accounts[acc.Index.String()] = s.SigData
 		} else {
@@ -313,7 +313,7 @@ func (p *Permission) checkPermission(state *State, signatures []Signature) error
 	for acc := range Accounts {
 		if a, ok := p.Accounts[acc]; ok {
 			weightAcc += a.Weight
-			if next, err := state.GetAccountByName(a.Actor); err != nil {
+			if next, err := state.getAccountByName(a.Actor); err != nil {
 				return err
 			} else {
 				perm := next.Permissions[a.Permission]
@@ -340,7 +340,7 @@ func (p *Permission) checkAccountPermission(state *State, guest string, permissi
 	var weightAcc uint32
 	if a, ok := p.Accounts[guest]; ok {
 		weightAcc += a.Weight
-		if _, err := state.GetAccountByName(a.Actor); err != nil {
+		if _, err := state.getAccountByName(a.Actor); err != nil {
 			return err
 		}
 	}

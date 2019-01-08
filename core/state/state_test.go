@@ -171,35 +171,38 @@ func TestHashRoot(t *testing.T) {
 
 func TestStateDBCopy(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	indexAcc := common.NameToIndex("pct")
-	os.RemoveAll("/tmp/state_copy/")
+	acc := common.NameToIndex("pct")
+	_ = os.RemoveAll("/tmp/state_copy/")
 	s, err := state.NewState("/tmp/state_copy", common.HexToHash(""))
 	errors.CheckErrorPanic(err)
-	if _, err := s.AddAccount(indexAcc, addr, time.Now().UnixNano()); err != nil {
+	if _, err := s.AddAccount(acc, addr, time.Now().UnixNano()); err != nil {
 		t.Fatal(err)
 	}
-	s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), indexAcc, indexAcc)
-	errors.CheckErrorPanic(s.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetInt64(100)))
-	errors.CheckErrorPanic(s.SetResourceLimits(indexAcc, indexAcc, 10, 10, config.BlockCpuLimit, config.BlockNetLimit))
-	s.CommitToDB()
-	value, err := s.AccountGetBalance(indexAcc, state.AbaToken)
+	_, _ = s.CreateToken(state.AbaToken, new(big.Int).SetUint64(state.AbaTotal), acc, acc)
+	errors.CheckErrorPanic(s.AccountAddBalance(acc, state.AbaToken, new(big.Int).SetInt64(100)))
+	errors.CheckErrorPanic(s.SetResourceLimits(acc, acc, 10, 10, config.BlockCpuLimit, config.BlockNetLimit))
+	_ = s.CommitToDB()
+	value, err := s.AccountGetBalance(acc, state.AbaToken)
 	errors.CheckErrorPanic(err)
 	elog.Log.Info(value)
 	errors.CheckEqualPanic(value.Uint64() == 80)
 
-	copy, err := s.StateCopy()
+	copyS, err := s.StateCopy()
 	errors.CheckErrorPanic(err)
-	origin, _ := copy.GetAccountByName(common.NameToIndex("pct"))
-	errors.CheckEqualPanic(s.Accounts.Get(common.NameToIndex("pct")).String() == origin.String())
+	origin, err := copyS.GetAccountByName(acc)
+	errors.CheckErrorPanic(err)
+	elog.Log.Info(s.Accounts.Get(acc).String())
+	elog.Log.Warn(origin.String())
+	errors.CheckEqualPanic(s.Accounts.Get(acc).String() == origin.String())
 
-	copy.AccountAddBalance(indexAcc, state.AbaToken, new(big.Int).SetUint64(300))
-	balance, err := copy.AccountGetBalance(indexAcc, state.AbaToken)
+	_ = copyS.AccountAddBalance(acc, state.AbaToken, new(big.Int).SetUint64(300))
+	balance, err := copyS.AccountGetBalance(acc, state.AbaToken)
 	errors.CheckErrorPanic(err)
 	elog.Log.Info(balance)
 	errors.CheckEqualPanic(balance.Uint64() == 380)
 
-	errors.CheckErrorPanic(copy.SubResources(indexAcc, 1, 1, config.BlockCpuLimit, config.BlockNetLimit))
-	elog.Log.Debug(copy.RequireResources(indexAcc, config.BlockCpuLimit, config.BlockNetLimit, time.Now().UnixNano()))
+	errors.CheckErrorPanic(copyS.SubResources(acc, 1, 1, config.BlockCpuLimit, config.BlockNetLimit))
+	elog.Log.Debug(copyS.RequireResources(acc, config.BlockCpuLimit, config.BlockNetLimit, time.Now().UnixNano()))
 }
 
 func TestStateDBReset(t *testing.T) {
