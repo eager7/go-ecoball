@@ -18,6 +18,7 @@ package rpc
 
 import (
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -131,6 +132,7 @@ func newInvokeContract(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
 		return
 	}
+	fmt.Println(max_cpu_usage_ms, max_net_usage)
 
 	creatorAccount := innerCommon.NameToIndex(creator)
 	timeStamp := time.Now().UnixNano()
@@ -144,9 +146,9 @@ func newInvokeContract(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"result": err.Error()})
 		return
 	}
-
-	invoke.Receipt.Cpu = max_cpu_usage_ms
-	invoke.Receipt.Net = max_net_usage
+	//最大值不是放到收据,不知道谁写的代码,暂时屏蔽-PCT
+	//invoke.Receipt.Cpu = max_cpu_usage_ms
+	//invoke.Receipt.Net = max_net_usage
 
 	data, err := invoke.Serialize()
 	if nil != err {

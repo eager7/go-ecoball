@@ -17,7 +17,6 @@
 package transaction
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
@@ -544,7 +543,7 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		if err := s.AccountAddBalance(tx.Addr, state.AbaToken, payload.Value); err != nil {
 			return nil, 0, 0, err
 		}
-		tx.Receipt.TokenName = state.AbaToken
+		tx.Receipt.Token = state.AbaToken
 		tx.Receipt.Amount = payload.Value
 	case types.TxDeploy:
 		if err := s.CheckPermission(tx.Addr, state.Active, tx.Hash, tx.Signatures); err != nil {
@@ -557,28 +556,10 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		if err := s.SetContract(tx.Addr, payload.TypeVm, payload.Describe, payload.Code, payload.Abi); err != nil {
 			return nil, 0, 0, err
 		}
-
-		acc := state.Account{ // generate trx receipt
-			Index:    tx.Addr,
-			Contract: *payload,
-		}
-		if data, err := acc.Serialize(); err != nil {
-			return nil, 0, 0, err
-		} else {
-			tx.Receipt.Accounts[0] = data
-		}
 	case types.TxInvoke:
 		actionNew := types.NewAction(tx)
 		trxContext, _ := context.NewTranscationContext(s, tx, cpuLimit, netLimit, timeStamp)
 		_, err = smartcontract.DispatchAction(trxContext, actionNew, 0)
-		if err != nil {
-			return nil, 0, 0, errors.New(err.Error())
-		}
-		// update state change in trx receipt
-		for i, acc := range trxContext.Accounts {
-			tx.Receipt.Accounts[i] = trxContext.AccountDelta[acc]
-		}
-		ret, err = json.Marshal(trxContext.Trace)
 		if err != nil {
 			return nil, 0, 0, errors.New(err.Error())
 		}
@@ -601,9 +582,6 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		tx.Receipt.Net = net
 	} else {
 		net = tx.Receipt.Net
-	}
-	if tx.Receipt.Hash.IsNil() {
-		tx.Receipt.Hash = tx.Hash
 	}
 	if tx.Receipt.Result == nil {
 		tx.Receipt.Result = common.CopyBytes(ret)

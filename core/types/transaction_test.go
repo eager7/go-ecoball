@@ -30,17 +30,13 @@ import (
 func TestTransfer(t *testing.T) {
 	tx := example.TestTransfer()
 	receipt := types.TrxReceipt{
-		From:      common.NameToIndex("root"),
-		To:        common.NameToIndex("root"),
-		TokenName: "",
-		Amount:    new(big.Int).SetUint64(0),
-		Hash:      tx.Hash,
-		Cpu:       10,
-		Net:       20,
-		NewToken:  nil,
-		Accounts:  make(map[int][]byte, 1),
-		Producer:  0,
-		Result:    []byte("result"),
+		From:     common.NameToIndex("root"),
+		Addr:     common.NameToIndex("root"),
+		Token:    "",
+		Amount:   new(big.Int).SetUint64(0),
+		Cpu:      10,
+		Net:      20,
+		Result:   []byte("result"),
 	}
 	tx.Receipt = receipt
 	result, err := tx.VerifySignature()

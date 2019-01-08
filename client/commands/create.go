@@ -167,9 +167,9 @@ func newAccount(c *cli.Context) error {
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	transaction.Receipt.Cpu = max_cpu_usage_ms
-	transaction.Receipt.Net = max_net_usage
+	//最大值不是放到收据,不知道谁写的代码,暂时屏蔽-PCT
+	//transaction.Receipt.Cpu = max_cpu_usage_ms
+	//transaction.Receipt.Net = max_net_usage
 
 	requiredKeys, err := getRequiredKeys(chainHash, permission, creator)
 	if err != nil {

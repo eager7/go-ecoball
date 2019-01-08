@@ -1147,13 +1147,11 @@ func RecepitTest(ledger ledger.Ledger) {
 	accounts[1] = account
 
 	receipt := types.TrxReceipt{
-		TokenName: "ABA",
-		Amount:    big.NewInt(100),
-		Hash:      common.NewHash(account),
-		Cpu:       10.0,
-		Net:       20.5,
-		Accounts:  accounts,
-		Result:    account,
+		Token:    "ABA",
+		Amount:   big.NewInt(100),
+		Cpu:      10.0,
+		Net:      20.5,
+		Result:   account,
 	}
 
 	data, err := receipt.Serialize()
@@ -1166,8 +1164,6 @@ func RecepitTest(ledger ledger.Ledger) {
 	log.Info(common.JsonString(newReceipt))
 	errors.CheckEqualPanic(common.JsonString(receipt) == common.JsonString(newReceipt))
 
-	accstate := state.Account{}
-	err = accstate.Deserialize(newReceipt.Accounts[0])
 	errors.CheckErrorPanic(err)
 }
 

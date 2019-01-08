@@ -107,17 +107,17 @@ message Transfer {
 }
 
 message TransactionReceipt {
-    bytes       Hash        = 1;
+    //bytes       Hash        = 1;
     double      Cpu         = 2;
     double      Net         = 3;
     bytes       Result      = 4;
     uint64      From        = 5;
-    uint64      To          = 6;
-    string      TokenName   = 7;
+    uint64      Addr        = 6;
+    string      Token       = 7;
     bytes       Amount      = 10;
-    bytes       NewToken    = 9;
-    repeated bytes Accounts     = 8;
-    uint64      Producer    = 11;
+    //bytes       NewToken    = 9;
+    //repeated bytes Accounts     = 8;
+    //uint64      Producer    = 11;
 }
 
 /**

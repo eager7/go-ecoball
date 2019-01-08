@@ -11,7 +11,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract/context"
-	"math/big"
 	"strconv"
 )
 
@@ -66,13 +65,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			ns.Println(err.Error())
 			return nil, errors.New(err.Error())
 		}
-		ns.Println(fmt.Sprint("create account success"))
-		// generate trx receipt
-		data, err := acc.Serialize()
-		if err != nil {
-			return nil, err
-		}
-		ns.trx.Receipt.Accounts[0] = data
+		ns.Println(fmt.Sprint("create account success:", acc))
 	case "set_account":
 		if len(params) != 2 {
 			return nil, errors.New("the param is error, please input two param for set_account like ``")
@@ -89,17 +82,6 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			return nil, errors.New(err.Error())
 		}
 		ns.Println(fmt.Sprint("set account success"))
-		// generate trx receipt
-		acc := state.Account{
-			Index:       index,
-			Permissions: make(map[string]state.Permission, 1),
-		}
-		acc.Permissions[perm.PermName] = perm
-		data, err := acc.Serialize()
-		if err != nil {
-			return nil, err
-		}
-		ns.trx.Receipt.Accounts[0] = data
 	case "reg_prod": //注册成为候选节点，需要5个参数，分别为注册账号，节点公钥，地址，端口号，以及付款账号，如: root,CAASogEwgZ8....,192.168.1.1,1001,root
 		if len(params) != 5 {
 			return nil, errors.New("the param is error, please input 5 param for reg_prod like [root,CAASogEwgZ8....,192.168.1.1,1001,root]")
@@ -117,8 +99,6 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			ns.Println(err.Error())
 			return nil, errors.New(err.Error())
 		}
-		// generate trx receipt
-		ns.trx.Receipt.Producer = uint64(index)
 		ns.Println(fmt.Sprint("register producer success"))
 	case "vote":
 		from := common.NameToIndex(params[0])
@@ -182,54 +162,6 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		}
 		ns.Println("pledge success!")
 		// generate trx receipt
-		accFrom, err := ns.state.GetAccountByName(from)
-		if err != nil {
-			return nil, err
-		}
-
-		fromAccount := state.Account{
-			Index:  from,
-			Tokens: make(map[string]state.Token),
-		}
-
-		toAccount := state.Account{
-			Index: to,
-		}
-
-		balance := state.Token{
-			Name:    state.AbaToken,
-			Balance: big.NewInt(int64(0 - (cpu + net))),
-		}
-		fromAccount.Tokens[state.AbaToken] = balance
-
-		if from == to {
-			fromAccount.Resource.Cpu.Staked = cpu
-			fromAccount.Resource.Net.Staked = net
-
-			data, err := fromAccount.Serialize()
-			if err != nil {
-				return nil, err
-			}
-			ns.trx.Receipt.Accounts[0] = data
-
-		} else {
-			fromAccount.Delegates = accFrom.Delegates
-			toAccount.Resource.Cpu.Delegated = cpu
-			toAccount.Resource.Net.Delegated = net
-
-			data, err := fromAccount.Serialize()
-			if err != nil {
-				return nil, err
-			}
-			ns.trx.Receipt.Accounts[0] = data
-
-			data1, err := toAccount.Serialize()
-			if err != nil {
-				return nil, err
-			}
-			ns.trx.Receipt.Accounts[1] = data1
-		}
-
 	case "cancel_pledge":
 		if len(params) != 4 {
 			return nil, errors.New("the param is error, please input two param for cancel_pledge")
@@ -255,52 +187,6 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		ns.Println("cancel pledge")
 
 		// generate trx receipt
-		accFrom, err := ns.state.GetAccountByName(from)
-		if err != nil {
-			return nil, err
-		}
-
-		fromAccount := state.Account{
-			Tokens: make(map[string]state.Token),
-			Index:  from,
-		}
-
-		toAccount := state.Account{
-			Index: to,
-		}
-
-		balance := state.Token{
-			Name:    state.AbaToken,
-			Balance: big.NewInt(int64(cpu + net)),
-		}
-		fromAccount.Tokens[state.AbaToken] = balance
-
-		if from == to {
-			fromAccount.Resource.Cpu.Staked = 0 - cpu
-			fromAccount.Resource.Net.Staked = 0 - net
-
-			data, err := fromAccount.Serialize()
-			if err != nil {
-				return nil, err
-			}
-			ns.trx.Receipt.Accounts[0] = data
-		} else {
-			fromAccount.Delegates = accFrom.Delegates
-			toAccount.Resource.Cpu.Delegated = 0 - cpu
-			toAccount.Resource.Net.Delegated = 0 - net
-
-			data, err := fromAccount.Serialize()
-			if err != nil {
-				return nil, err
-			}
-			ns.trx.Receipt.Accounts[0] = data
-
-			data1, err := toAccount.Serialize()
-			if err != nil {
-				return nil, err
-			}
-			ns.trx.Receipt.Accounts[1] = data1
-		}
 	default:
 		ns.Println(fmt.Sprintf("unknown method:%s", method))
 		return nil, errors.New(fmt.Sprintf("unknown method:%s", method))

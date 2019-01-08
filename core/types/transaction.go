@@ -23,10 +23,10 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"math/big"
-	"github.com/ecoball/go-ecoball/common/message/mpb"
 )
 
 const VersionTx = 1
@@ -68,7 +68,7 @@ type Transaction struct {
 	Addr       common.AccountName `json:"addr"`
 	Nonce      uint64             `json:"nonce"`
 	TimeStamp  int64              `json:"timeStamp"`
-	Payload    EcoMessage            `json:"payload"`
+	Payload    EcoMessage         `json:"payload"`
 	Signatures []common.Signature `json:"signatures"`
 	Hash       common.Hash        `json:"hash"`
 	Receipt    TrxReceipt
@@ -88,21 +88,7 @@ func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash
 		Nonce:      nonce,
 		TimeStamp:  time,
 		Payload:    payload,
-		Signatures: nil,
-		Hash:       common.Hash{},
-		Receipt: TrxReceipt{
-			From:      from,
-			To:        addr,
-			TokenName: "",
-			Amount:    new(big.Int).SetUint64(0),
-			Hash:      common.Hash{},
-			Cpu:       0,
-			Net:       0,
-			NewToken:  nil,
-			Accounts:  make(map[int][]byte, 1),
-			Producer:  0,
-			Result:    nil,
-		},
+		Receipt:    TrxReceipt{From: from, Addr: addr, Amount: new(big.Int).SetUint64(0)},
 	}
 	if tx.Permission == "" {
 		tx.Permission = "active"
@@ -115,7 +101,6 @@ func NewTransaction(t TxType, from, addr common.AccountName, chainID common.Hash
 	if err != nil {
 		return nil, err
 	}
-	tx.Receipt.Hash = tx.Hash
 	return &tx, nil
 }
 
@@ -135,7 +120,7 @@ func (t *Transaction) AddSignature(pubKey, sigData []byte) error {
 	if pubKey == nil || sigData == nil {
 		return errors.New(fmt.Sprintf("the input param is nil, %s, %s", pubKey, sigData))
 	}
-	t.Signatures = append(t.Signatures, common.Signature{PubKey:pubKey, SigData:sigData})
+	t.Signatures = append(t.Signatures, common.Signature{PubKey: pubKey, SigData: sigData})
 	return nil
 }
 
@@ -197,8 +182,8 @@ func (t *Transaction) ProtoBuf() (*pb.Transaction, error) {
 			Nonce:      t.Nonce,
 			Timestamp:  t.TimeStamp,
 		},
-		Sign: sig,
-		Hash: t.Hash.Bytes(),
+		Sign:    sig,
+		Hash:    t.Hash.Bytes(),
 		Receipt: receipt,
 	}
 	return p, nil
@@ -242,7 +227,6 @@ func (t *Transaction) Deserialize(data []byte) error {
 	t.Addr = common.AccountName(txPb.Payload.Addr)
 	t.Nonce = txPb.Payload.Nonce
 	t.TimeStamp = txPb.Payload.Timestamp
-
 
 	if err := t.Receipt.Deserialize(txPb.Receipt); err != nil {
 		return err
