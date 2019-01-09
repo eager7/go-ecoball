@@ -106,7 +106,7 @@ message Transfer {
     bytes  Value = 2;
 }
 
-message TransactionReceipt {
+message TrxReceipt {
     //bytes       Hash        = 1;
     double      Cpu         = 2;
     double      Net         = 3;
@@ -115,6 +115,7 @@ message TransactionReceipt {
     uint64      Addr        = 6;
     string      Token       = 7;
     bytes       Amount      = 10;
+    bytes       Hash        = 11;
     //bytes       NewToken    = 9;
     //repeated bytes Accounts     = 8;
     //uint64      Producer    = 11;

@@ -82,10 +82,10 @@ func (p *PoolActor) HandleTransaction(tx *types.Transaction) error {
 			log.Warn("publish transaction failed:", err)
 		}
 	}()
-	if tx.Receipt != nil {
+	/*if tx.Receipt.IsBeSet() {
 		retString = fmt.Sprintf("the trx's receipt is not empty:%s", tx.Receipt.String())
 		return errors.New(retString)
-	}
+	}*/
 	if txClone, err := tx.Clone(); err != nil {
 		retString = err.Error()
 		return err

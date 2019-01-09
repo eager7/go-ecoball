@@ -536,8 +536,10 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		if err := s.AccountAddBalance(tx.Addr, state.AbaToken, payload.Value); err != nil {
 			return nil, 0, 0, err
 		}
-		tx.Receipt.Token = state.AbaToken
-		tx.Receipt.Amount = payload.Value
+		if !tx.Receipt.IsBeSet() {
+			tx.Receipt.Token = state.AbaToken
+			tx.Receipt.Amount = payload.Value
+		}
 	case types.TxDeploy:
 		if err := s.CheckPermission(tx.Addr, state.Active, tx.Hash, tx.Signatures); err != nil {
 			return nil, 0, 0, err
@@ -564,23 +566,21 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction, timeS
 		return nil, 0, 0, errors.New("the transaction's type error")
 	}
 	end := time.Now().UnixNano()
-	if tx.Receipt.Cpu == 0 {
+	if !tx.Receipt.IsBeSet() {
 		cpu = float64(end-start) / 1000000.0
 		tx.Receipt.Cpu = cpu
-	} else {
-		cpu = tx.Receipt.Cpu
-	}
-	if tx.Receipt.Net == 0 {
 		data, err := tx.Serialize()
 		if err != nil {
 			return nil, 0, 0, err
 		}
 		net = float64(len(data))
 		tx.Receipt.Net = net
+		if err := tx.Receipt.ComputeHash(); err != nil {
+			return nil, 0, 0, err
+		}
 	} else {
+		cpu = tx.Receipt.Cpu
 		net = tx.Receipt.Net
-	}
-	if tx.Receipt.Result == nil {
 		tx.Receipt.Result = common.CopyBytes(ret)
 	}
 

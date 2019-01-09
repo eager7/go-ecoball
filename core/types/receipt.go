@@ -17,11 +17,33 @@ type TrxReceipt struct {
 	Cpu    float64
 	Net    float64
 	Result []byte
+	Hash   common.Hash
 }
 
 type BlockReceipt struct {
 	BlockCpu float64
 	BlockNet float64
+}
+
+func (r *TrxReceipt) ComputeHash() error {
+	p, err := r.proto()
+	if err != nil {
+		return err
+	}
+	p.Hash = nil
+	data, err := p.Marshal()
+	if err != nil {
+		return err
+	}
+	r.Hash, err = common.DoubleHash(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *TrxReceipt) IsBeSet() bool {
+	return !r.Hash.Equals(&common.Hash{})
 }
 
 func (r *TrxReceipt) Identify() mpb.Identify {
@@ -37,18 +59,9 @@ func (r *TrxReceipt) String() string {
 }
 
 func (r *TrxReceipt) Serialize() ([]byte, error) {
-	amount, err := r.Amount.GobEncode()
+	p, err := r.proto()
 	if err != nil {
 		return nil, err
-	}
-	p := &pb.TransactionReceipt{
-		From:   uint64(r.From),
-		Addr:   uint64(r.Addr),
-		Token:  r.Token,
-		Amount: amount,
-		Cpu:    r.Cpu,
-		Net:    r.Net,
-		Result: common.CopyBytes(r.Result),
 	}
 	b, err := p.Marshal()
 	if err != nil {
@@ -57,11 +70,28 @@ func (r *TrxReceipt) Serialize() ([]byte, error) {
 	return b, nil
 }
 
+func (r *TrxReceipt) proto() (*pb.TrxReceipt, error) {
+	amount, err := r.Amount.GobEncode()
+	if err != nil {
+		return nil, err
+	}
+	return &pb.TrxReceipt{
+		Cpu:    r.Cpu,
+		Net:    r.Net,
+		Result: common.CopyBytes(r.Result),
+		From:   uint64(r.From),
+		Addr:   uint64(r.Addr),
+		Token:  r.Token,
+		Amount: amount,
+		Hash:   r.Hash.Bytes(),
+	}, nil
+}
+
 func (r *TrxReceipt) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")
 	}
-	var receipt pb.TransactionReceipt
+	var receipt pb.TrxReceipt
 	if err := receipt.Unmarshal(data); err != nil {
 		return err
 	}
@@ -76,5 +106,6 @@ func (r *TrxReceipt) Deserialize(data []byte) error {
 	r.Cpu = receipt.Cpu
 	r.Net = receipt.Net
 	r.Result = common.CopyBytes(receipt.Result)
+	r.Hash = common.NewHash(receipt.Hash)
 	return nil
 }
