@@ -54,9 +54,15 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 	case *types.Transaction:
 		log.Debug("receive tx:", counter, "type:", msg.Type.String(), "Hash:", msg.Hash.HexString())
 		counter++
-		if err := p.HandleTransaction(msg); err != nil {
+		if ret, err := p.HandleTransaction(msg); err != nil {
 			log.Error("pre handle transaction in tx pool failed:", err)
-			log.Warn(msg.String())
+			if ctx.Sender() != nil {
+				ctx.Sender().Tell(err.Error())
+			}
+		} else {
+			if ctx.Sender() != nil {
+				ctx.Sender().Tell(string(ret))
+			}
 		}
 	case *types.Block:
 		log.Debug("new block delete transactions")
@@ -71,43 +77,27 @@ func (p *PoolActor) Receive(ctx actor.Context) {
 	}
 }
 
-func (p *PoolActor) HandleTransaction(tx *types.Transaction) error {
+func (p *PoolActor) HandleTransaction(tx *types.Transaction) (ret []byte, err error) {
 	if p.txPool.txsCache.Contains(tx.Hash) {
 		log.Info("transaction already in the tx pool" + tx.Hash.HexString())
-		return nil
+		return nil, nil
 	}
-	var retString string
-	defer func() {
-		if err := event.PublishCustom(string(retString), tx.Hash.String()); err != nil {
-			log.Warn("publish transaction failed:", err)
-		}
-	}()
-	/*if tx.Receipt.IsBeSet() {
-		retString = fmt.Sprintf("the trx's receipt is not empty:%s", tx.Receipt.String())
-		return errors.New(retString)
-	}*/
 	if txClone, err := tx.Clone(); err != nil {
-		retString = err.Error()
-		return err
+		return nil, err
 	} else {
-		if ret, err := p.preHandleTransaction(txClone); err != nil {
-			retString = err.Error()
-			return err
-		} else {
-			retString = string(ret)
+		if ret, err = p.preHandleTransaction(txClone); err != nil {
+			return nil, err
 		}
 	}
 	if err := p.txPool.Push(tx.ChainID, tx); err != nil {
-		retString = err.Error()
-		return err
+		return nil, err
 	}
 	p.txPool.txsCache.Add(tx.Hash, nil)
 
 	if err := event.Send(event.ActorNil, event.ActorP2P, tx); nil != err {
 		log.Warn("broadcast transaction failed:", err.Error(), tx.Hash.HexString())
 	}
-
-	return nil
+	return ret, nil
 }
 
 func (p *PoolActor) handleNewBlock(block *types.Block) {
@@ -115,7 +105,6 @@ func (p *PoolActor) handleNewBlock(block *types.Block) {
 		log.Debug("Delete tx:", v.Hash.HexString())
 		p.txPool.Delete(block.ChainID, v.Hash)
 	}
-
 }
 
 func (p *PoolActor) preHandleTransaction(tx *types.Transaction) (ret []byte, err error) {
