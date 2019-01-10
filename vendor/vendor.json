@@ -981,10 +981,10 @@
 			"revisionTime": "2018-12-18T19:16:01Z"
 		},
 		{
-			"checksumSHA1": "0fTe/BLsKnBm98L24VlQKVCC21w=",
+			"checksumSHA1": "/9MHzNRNVVEdHeU3uDGoxfg0qYM=",
 			"path": "github.com/libp2p/go-libp2p-metrics",
-			"revision": "2e91117d783799237709d7f5165eb55c86b623a1",
-			"revisionTime": "2018-08-22T00:08:44Z"
+			"revision": "623fc2e95e2bd3143caa442b03121b60cc45b76d",
+			"revisionTime": "2018-12-07T22:34:46Z"
 		},
 		{
 			"checksumSHA1": "0M6QCXpFTwEEpKxBmOUuq5+YDpY=",
