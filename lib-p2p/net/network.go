@@ -41,6 +41,7 @@ type Instance struct {
 	ID           peer.ID
 	Address      []string
 	BootStrapper *BootStrap
+	RouteTable   *RouteTable
 	msgFilter    *lru.Cache
 	senderMap    address.SenderMap
 	lock         sync.RWMutex

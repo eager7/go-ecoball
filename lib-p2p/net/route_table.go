@@ -1,6 +1,10 @@
 package net
 
 import (
+	"fmt"
+	"github.com/ecoball/go-ecoball/common/errors"
+	"github.com/ecoball/go-ecoball/common/message/mpb"
+	"github.com/ecoball/go-ecoball/common/utils"
 	"github.com/libp2p/go-libp2p-host"
 	"github.com/libp2p/go-libp2p-kbucket"
 	"github.com/libp2p/go-libp2p-net"
@@ -63,3 +67,45 @@ func (r *RouteTable) FindNearestPeer(id peer.ID) peerstore.PeerInfo {
 	return r.host.Peerstore().PeerInfo(r.route.Find(id))
 }
 
+type RelayMessage struct {
+	id  peer.ID
+	msg *mpb.Message
+}
+
+func (r *RelayMessage) Identify() mpb.Identify {
+	return mpb.Identify_APP_MSG_LIB_P2P_RELAY
+}
+func (r *RelayMessage) GetInstance() interface{} {
+	return r
+}
+func (r *RelayMessage) Serialize() ([]byte, error) {
+	//TODO
+	return nil, nil
+}
+func (r *RelayMessage) Deserialize(data []byte) error {
+	//TODO
+	return nil
+}
+func (r *RelayMessage) String() string {
+	return ""
+}
+
+func (i *Instance) SendRelayMessage(id peer.ID, msg *mpb.Message) (err error) {
+	des := i.RouteTable.FindNearestPeer(id)
+	desInfo := i.senderMap.Get(des.ID)
+	if desInfo == nil {
+		return errors.New("can't find nearest node")
+	}
+	if desInfo.Stream == nil && len(des.Addrs) != 0 {
+		if desInfo.Stream, err = i.newStream(id, des.Addrs[0]); err != nil {
+			return errors.New(fmt.Sprintf("new stream error:%s", err))
+		}
+	}
+	relayMsg := &RelayMessage{id: id, msg: msg}
+	data, err := relayMsg.Serialize()
+	if err != nil {
+		return err
+	}
+	sendMsg := &mpb.Message{Nonce: utils.RandomUint64(), Identify: relayMsg.Identify(), Payload: data}
+	return i.transmit(desInfo.Stream, sendMsg)
+}

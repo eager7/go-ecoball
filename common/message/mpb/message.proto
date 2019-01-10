@@ -37,8 +37,9 @@ enum  Identify {
     APP_MSG_TRANSACTION_RECEIPT = 31;
     APP_MSG_ACCOUNT_PERMISSION  = 32;
     APP_MSG_ACCOUNT_RESOURCE    = 33;
+    APP_MSG_LIB_P2P_RELAY       = 34;
 
-    APP_MSG_UNDEFINED           = 34;
+    APP_MSG_UNDEFINED           = 35;
 }
 
 
