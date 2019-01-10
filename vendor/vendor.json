@@ -1251,10 +1251,10 @@
 			"revisionTime": "2018-04-17T22:28:18Z"
 		},
 		{
-			"checksumSHA1": "w63fRMe5UoLtcWH/OMdgLlfTWjk=",
+			"checksumSHA1": "KXSEkzhEaX660Oiqoo29PQirOmc=",
 			"path": "github.com/multiformats/go-multiaddr",
-			"revision": "de7d6d81956bd35b2b64ca4244b3abb6489827ec",
-			"revisionTime": "2018-09-14T16:00:47Z"
+			"revision": "152990b98bf9dce961ca2aefb1002cd96cfff6cb",
+			"revisionTime": "2018-12-27T22:37:46Z"
 		},
 		{
 			"checksumSHA1": "hKfMf22+N8+ATd+OOcuIPoYf890=",
