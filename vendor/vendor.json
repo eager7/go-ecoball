@@ -1263,10 +1263,10 @@
 			"revisionTime": "2018-12-04T22:48:21Z"
 		},
 		{
-			"checksumSHA1": "EUHOIK1wpTE/QO0uqg+WGhukZ60=",
+			"checksumSHA1": "K/OAp3pEYCcs4KfA+btq1TELKQc=",
 			"path": "github.com/multiformats/go-multiaddr-net",
-			"revision": "ceed2dc9f0152198ccf8745f5a17c81ff4ae6bd4",
-			"revisionTime": "2018-09-15T21:07:34Z"
+			"revision": "c75d1cac17a0d84dbf8b2c53c61f0ebf0575183a",
+			"revisionTime": "2018-12-04T22:51:49Z"
 		},
 		{
 			"checksumSHA1": "I4iSQGh6z1XdjIAaAzRKGRhKtrg=",
