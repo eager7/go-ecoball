@@ -4,7 +4,16 @@ import (
 	"context"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/gogo/protobuf/io"
 	"github.com/hashicorp/golang-lru"
+	"github.com/libp2p/go-libp2p"
+	"github.com/libp2p/go-libp2p-connmgr"
+	"github.com/libp2p/go-libp2p-host"
+	"github.com/libp2p/go-libp2p-net"
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peerstore"
+	"github.com/libp2p/go-libp2p-peerstore/pstoremem"
+	"github.com/multiformats/go-multiaddr"
 
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
@@ -13,14 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/message/mpb"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/lib-p2p/address"
-	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
-	"gx/ipfs/QmY51bqSM5XgxQZqsBrQcRkKTnCb8EKpJpR9K6Qax7Njco/go-libp2p"
-	"gx/ipfs/QmYAL9JsqVVPFWwM1ZzHNsofmTzRYQHJ2KqQaBmFJjJsNx/go-libp2p-connmgr"
-	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
-	"gx/ipfs/QmZ4Qi3GaRbjcx28Sme5eMH7RQjGkt8wHxt2a65oLaeFEV/gogo-protobuf/io"
-	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
-	"gx/ipfs/Qmb8T6YBBsjYsVGfrihQLfCJveczZnneSBqBKkYEBWDjge/go-libp2p-host"
-	"gx/ipfs/QmdVrMn1LhB4ybb8hMVaMLXnA8XRSewMnK6YqXKXoTcRvN/go-libp2p-peer"
+
 	"strings"
 	"sync"
 	"time"
@@ -80,7 +82,7 @@ func (i *Instance) initNetwork(b64Pri string) (err error) {
 	mgr := connmgr.NewConnManager(600, 900, grace)
 	options = append(options, libp2p.ConnectionManager(mgr))
 
-	ps := peerstore.NewPeerstore()
+	ps := peerstore.NewPeerstore(pstoremem.NewKeyBook(), pstoremem.NewAddrBook(), pstoremem.NewPeerMetadata())
 	if err := ps.AddPrivKey(i.ID, private); err != nil {
 		return errors.New(err.Error())
 	}

@@ -3,13 +3,13 @@ package net
 import (
 	"context"
 	"fmt"
-	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
-	"gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess"
-	ptx "gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/context"
-	"gx/ipfs/QmSF8fPo3jgVBAy8fpdjjYqgG87dkJgUprRBHRd2tmfgpP/goprocess/periodic"
-	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
-	"gx/ipfs/QmYyFh6g1C9uieTpH8CR8PpWBUQjvMDJTsRhJWx5qkXy39/go-ipfs-config"
-	"gx/ipfs/QmZR2XWVVBCtbgBWnQhWk2xcQfaR3W8faQPriAiaaj7rsr/go-libp2p-peerstore"
+	"github.com/ecoball/go-ecoball/lib-p2p/go-ipfs-addr"
+	"github.com/jbenet/goprocess"
+	ptx "github.com/jbenet/goprocess/context"
+	"github.com/jbenet/goprocess/periodic"
+	"github.com/libp2p/go-libp2p-net"
+	"github.com/libp2p/go-libp2p-peerstore"
+	"github.com/multiformats/go-multiaddr"
 	"io"
 	"math/rand"
 	"strings"
@@ -25,14 +25,18 @@ const (
 
 type BootStrap struct {
 	closer  io.Closer
-	bsPeers []config.BootstrapPeer
+	bsPeers []ipfsaddr.IPFSAddr
 }
 
 func (i *Instance) bootStrapInitialize(bsAddress []string) *BootStrap {
-	bsPeers, err := config.ParseBootstrapPeers(bsAddress)
-	if err != nil || len(bsPeers) == 0 {
-		log.Error("failed to parse bootstrap address:", err)
-		return nil
+	var bsPeers []ipfsaddr.IPFSAddr
+	for _, addr := range bsAddress {
+		if bsPeer, err := ipfsaddr.ParseString(addr); err != nil {
+			log.Error("failed to parse bootstrap address:", addr, err)
+			return nil
+		} else {
+			bsPeers = append(bsPeers, bsPeer)
+		}
 	}
 	connected := i.Host.Network().Peers()
 	if len(connected) > minPeerThreshold {
@@ -55,7 +59,7 @@ func (i *Instance) bootStrapInitialize(bsAddress []string) *BootStrap {
 	return &BootStrap{closer: process, bsPeers: bsPeers}
 }
 
-func (i *Instance) bootStrapConnect(ctx context.Context, bsPeers []config.BootstrapPeer, numToDial int) error {
+func (i *Instance) bootStrapConnect(ctx context.Context, bsPeers []ipfsaddr.IPFSAddr, numToDial int) error {
 	ctx, cancel := context.WithTimeout(ctx, bootStrapTimeOut)
 	defer cancel()
 

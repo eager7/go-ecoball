@@ -1,8 +1,8 @@
 package net
 
 import (
-	"gx/ipfs/QmPjvxTpVH8qJyQDnxnsxF9kv9jezKD1kozz1hs3fCGsNh/go-libp2p-net"
-	"gx/ipfs/QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7/go-multiaddr"
+	"github.com/libp2p/go-libp2p-net"
+	"github.com/multiformats/go-multiaddr"
 )
 
 func (i *Instance) Listen(n net.Network, a multiaddr.Multiaddr)      { log.Debug("Listen...") }
