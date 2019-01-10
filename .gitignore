@@ -19,7 +19,6 @@ cscope*
 glide.lock
 *.iml
 *.test/
-*.pb.go
 *.pyc
 ./ecoball.toml
 /eballscan/build/*
