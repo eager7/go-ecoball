@@ -156,7 +156,7 @@ func runNode(c *cli.Context) error {
 	//start consensus
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
-		solo.NewSoloConsensusServer(ledger.L, txPool, config.User)
+		_, _ = solo.NewSoloConsensusServer(ledger.L, txPool, config.User)
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}

@@ -3,8 +3,8 @@ package committee
 import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/message"
-	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/common/message/mpb"
+	cs "github.com/ecoball/go-ecoball/core/shard"
 	"github.com/ecoball/go-ecoball/sharding/cell"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 	"github.com/ecoball/go-ecoball/sharding/consensus"
@@ -37,17 +37,17 @@ const (
 )
 
 type committee struct {
-	ns            *cell.Cell		// all static info, include shardinfo and all blocks
-	fsm           *sc.Fsm			// state machine
-	actorc        chan interface{}		// process actor msg
-	ppc           chan *sc.CsPacket		// process verified block serially in one routine
+	ns     *cell.Cell        // all static info, include shardinfo and all blocks
+	fsm    *sc.Fsm           // state machine
+	actorc chan interface{}  // process actor msg
+	ppc    chan *sc.CsPacket // process verified block serially in one routine
 	// it is most suitable for leader recieve responsed consensus packet
 	// TODO: There is a question, one node recieve new minor block before final block, it may verify failed
-	pvc           <-chan interface{}	// verify block concurrently in many routine, it can't verfy height because concurrently verify
+	pvc           <-chan interface{} // verify block concurrently in many routine, it can't verfy height because concurrently verify
 	stateTimer    *sc.Stimer
-	retransTimer  *sc.Stimer			// retransfer timer
-	fullVoteTimer *sc.Stimer			// wait some time for receive full vote
-	vccount       uint16			// When view change block could not get enough sign, count it
+	retransTimer  *sc.Stimer // retransfer timer
+	fullVoteTimer *sc.Stimer // wait some time for receive full vote
+	vccount       uint16     // When view change block could not get enough sign, count it
 	cs            *consensus.Consensus
 
 	//sync *datasync.Sync

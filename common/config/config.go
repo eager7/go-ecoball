@@ -120,6 +120,22 @@ fatal_log_filename="ecoball.log"  	 	# or 'stdout' / 'stderr'
 #error_log_filename="stdout"            # or 'stdout' / 'stderr'
 http_port=":50015"                      # RESTFul API to change logout level dynamically
 rolling_time_pattern="0 0 0 * * *"      # rolling the log everyday at 00:00:00
+
+[consensus]
+Pubkey1  = "CAAS4AQwggJcAgEAAoGBALjW6cjkZl/mqR8L1zY/8swFAvnwFCUJdVAz52a61UGhgeLegT01Rh4YexoXizQNnDLRLN991Sza2GTSpPJKj0SQ1ofj/MOhPULcxUeK+1Py2Dgq8VIoKFl/D9Lv7Dx59fMl2NpQiax+RansJJtSeiSlqj0oJPqnCFvnq8vLsG+zAgMBAAECgYEAh0kNPXMmFuT9PXLuJo+xhm/YmNSF+gGtMnF62W6/rVSne0Q9tW3rjxV97D/1K7kWbP86Z61yvGzE2y5tecTmjBtBDXeTS0wWJvTy1iWNhvRogjrbhiMjE9Y6aLEO7NOIUpEUboTkBdCvvCe9PpsuarCcsAbGlOih7GFLdkMwWvECQQDbr00Mu86XgKojnFBZgokMlZ8+Zv8HAPHLIaCLds8Oy/EGZeBQCWCc8qYtnjnGO5pB3+cc2cXM1tzsUeOCSfB7AkEA12UEj2cnoB1yaerU6rypGGChbz6tlpJ55oCpH0mw+NFp3IHSJ3gUON07sINef4VQtROE3lZC1Yj4LF9WZBUEKQJAdjGuxrcUw7ZZ06b6I+5zRe4KK0zG0UHU1XFWKzLU3CUlnEebk/Q3orl6ZvjGJL1UlTSd54vTPA4t9odoXGTjmQJAentsG2uqQcdc71PlHVKIyV7xjcPTjCLhBK02/p617teOXiDIcz86KJfNQHODgfo6Sa2+yXu955VKoljYVHMK+QJAcTe4VTuUXsodOL+mu3zfBgle2B8BcFnaaQINn4+S5t/Rgn+qqMpykXTlidL28ulKWmJFMFBvwm4Z50vqS8REXA=="
+Private1 = "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALjW6cjkZl/mqR8L1zY/8swFAvnwFCUJdVAz52a61UGhgeLegT01Rh4YexoXizQNnDLRLN991Sza2GTSpPJKj0SQ1ofj/MOhPULcxUeK+1Py2Dgq8VIoKFl/D9Lv7Dx59fMl2NpQiax+RansJJtSeiSlqj0oJPqnCFvnq8vLsG+zAgMBAAE="
+Address1 = "127.0.0.1"
+Port1    = "8001"
+
+Pubkey2  = "CAAS4QQwggJdAgEAAoGBAMzzmP5b/eHZQJZfp9657Tyh7T8shzxCVNavPTveqpgOkVGIT432rBm7eqwizikVq3U/pRzRYr9A1nD5L0WjMd3PUFhIb0sy26d9zpI02ROUhAi1ZPkzh8eKrfrqw8N23XB8In6gjC498bbH1iPyXjuRlF8MaSqsR3Q2ukcF/dp/AgMBAAECgYAkxtF9UySLkmB0m1WUMejQKH5aB7N8rKpsm6VxSNNz1ald6AfegZUASRQKL3SvCqRptbH7Kdd+WjQgsZY5+L7JrEJUkQFtQTsqhdrMIZEkjbsqnqk0QKn9Y8rGcJofGh4d5VzTobs9R8Phr+dwDGlBFpO6R7EmfquvQU7n/xUBgQJBAPKbw4vmsbcfaVPICybQPRqK+DKugCCua09vqQegJRVfgWQRHyP1vWX8S9Coqyj+RP6rxn5E6joQ0q+DaU3ZMOMCQQDYQ7bME5vdE2j7lfvQceQVqzZC5AlnLP6WUfNAH3IN9ew7XGjsEWl2wgMXBcRIpl/DkM5LBPG8AWLmVw4tPK61AkEArb8d+Vh7F9GYJhdS3TYvPI4gGHPecQlY8ufd3wcy566hRN/6NE+ul5ZrWYEiK1aGZPjyS8XhFTqtGGN9i/IqzwJBAKCgCpEgr09QL1VNXK7BKIr/k1mzTViYjq7PR0CFGo1L7p1YUYWkmRRfnTPoUJU1HUN/tfj6PyFIVlCGsDzhKVECQECUWqEjHSVTM0mz8p3vgWZSN5F5x1qpQTxRArEfCfmjzlseW/ZUBgE8ABRHraJ75AAM0Y2TCodtwt5y4jVyHuc="
+Private2 = "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAMzzmP5b/eHZQJZfp9657Tyh7T8shzxCVNavPTveqpgOkVGIT432rBm7eqwizikVq3U/pRzRYr9A1nD5L0WjMd3PUFhIb0sy26d9zpI02ROUhAi1ZPkzh8eKrfrqw8N23XB8In6gjC498bbH1iPyXjuRlF8MaSqsR3Q2ukcF/dp/AgMBAAE="
+Address2 = "127.0.0.1"
+Port2    = "8002"
+
+Pubkey3  = "CAAS4AQwggJcAgEAAoGBALXF5CCvkjnK4cSEdF7wTtZui85X6X3+tox0omWr+rEU97DFkL+Z5n2GoRZ0xnSJ22v5uMwHf9Vo8DL9ncoccZH3OI842Do+7RON1+jxLuNdVIc1neuaQULniLVLpnl1Hd3MljZNelPtBMZWW7vzekbWGx3arvodeTlMExxFUszdAgMBAAECgYBC4eeIp1FUdnQPzPTMoftAJzjF2c8ODxS4JYpDgr4hPifNIUSbW1NVyJ2pF5qV8suLtTzrxa6hpZUMDglq/oBCqAwGg/IwD18oSqT92H7bZ4ZWhMwotG+xtwe6EJTQmL485QrqeV2CWOD7Z/p7UDeJZmKBvpihCEie8cZPM6sNeQJBAOOwD7LzLIF3nfRWQXcQAuQg3avX6nw5VXBzpoXv4mvMM21hJncJMqZ6BTw4NPbjkhfpA1NT/d1uJVEp199LxMsCQQDMYDxCQwdPsfm7QKKZWJvo4ytiS4pr4uAUvUVhBP0wyATqMnSVMdbJs8BOahGw6Di5kWoz2BdP2AsZyoiOFyf3AkEAjR8W2+d08lndgQ/lS5KU+CiWvGf7Yjt3BVfpIqLoR8AtL+JDIQyGZEDE9eowicXLSx6VfRRWCOS4JHI25qPjuQJAAgVRkzYmdFtGJNvWv71ojTzxyN8GV1q+7HWSogrylfDkW4x0KqV7gjMMy7mwwxcIuIz/h9OzJ07zjSW7g+wmsQJARWsoCMt+TOYd7jwFTZP/27MIgd41OMbVgaLgZTkl71mm08wwQSm7g3O8xqRQrjpK+aHwmo8Z+yQSFEGF+DqYtA=="
+Private3 = "CAASogEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALXF5CCvkjnK4cSEdF7wTtZui85X6X3+tox0omWr+rEU97DFkL+Z5n2GoRZ0xnSJ22v5uMwHf9Vo8DL9ncoccZH3OI842Do+7RON1+jxLuNdVIc1neuaQULniLVLpnl1Hd3MljZNelPtBMZWW7vzekbWGx3arvodeTlMExxFUszdAgMBAAE="
+Address3 = "127.0.0.1"
+Port3    = "8003"
 `
 
 type P2pConfig struct {
@@ -137,6 +153,20 @@ type P2pConfig struct {
 	ConnGracePeriod      int
 	EnableLocalDiscovery bool
 	DisableLocalDisLog   bool
+}
+type Producer struct {
+	Pubkey  string
+	Address string
+	Port    string
+}
+type ConsConfig struct {
+	Pubkey    string
+	Address   string
+	Port      string
+	Size      string
+	Committee []Producer
+	Shard     []Producer
+	Candidate []Producer
 }
 
 var (
@@ -160,6 +190,7 @@ var (
 	Worker2            account.Account
 	Worker3            account.Account
 	PConfig            P2pConfig
+	CConfig            ConsConfig
 )
 
 func SetConfig(filePath string) error {
@@ -263,5 +294,18 @@ func initVariable() {
 		ConnGracePeriod:      viper.GetInt("p2p.conn_mgr_graceperiod"),
 		EnableLocalDiscovery: viper.GetBool("p2p.enable_local_discovery"),
 		DisableLocalDisLog:   viper.GetBool("p2p.disable_localdis_log"),
+	}
+	CConfig = ConsConfig{
+		Pubkey:  viper.GetString("consensus.Pubkey1"),
+		Address: viper.GetString("consensus.Address1"),
+		Port:    viper.GetString("consensus.Port1"),
+		Size:    "",
+		Committee: []Producer{{
+			Pubkey:  viper.GetString("consensus.Pubkey1"),
+			Address: viper.GetString("consensus.Address1"),
+			Port:    viper.GetString("consensus.Port1"),
+		}},
+		Shard:     nil,
+		Candidate: nil,
 	}
 }
