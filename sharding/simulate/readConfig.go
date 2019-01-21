@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"strconv"
 
+	cc "github.com/ecoball/go-ecoball/common/config"
 	sc "github.com/ecoball/go-ecoball/sharding/common"
 )
 
@@ -51,30 +52,56 @@ func LoadConfig(path string) {
 }
 
 func GetNodeInfo() (self sc.Worker) {
-	self.Pubkey = cfg.Pubkey
-	self.Address = cfg.Address
-	self.Port = cfg.Port
+	//self.Pubkey = cfg.Pubkey
+	//self.Address = cfg.Address
+	//self.Port = cfg.Port
+
+	self.Pubkey = cc.CConfig.Pubkey
+	self.Address = cc.CConfig.Address
+	self.Port = cc.CConfig.Port
 
 	return
 }
 
 func GetCommittee() []sc.Worker {
-	return cfg.Committee
+	//return cfg.Committee
+	var w []sc.Worker
+	w = append(w, sc.Worker{
+		Pubkey:  cc.CConfig.Committee[0].Pubkey,
+		Address: cc.CConfig.Committee[0].Address,
+		Port:    cc.CConfig.Committee[0].Port,
+	})
+	return w
 }
 
 func GetShards() []sc.Worker {
-	return cfg.Shard
+	//return cfg.Shard
+	var w []sc.Worker
+	w = append(w, sc.Worker{
+		Pubkey:  cc.CConfig.Shard[0].Pubkey,
+		Address: cc.CConfig.Shard[0].Address,
+		Port:    cc.CConfig.Shard[0].Port,
+	})
+	return w
 }
 
 func GetCandidate() []sc.Worker {
-	return cfg.Candidate
+	//return cfg.Candidate
+	var w []sc.Worker
+	w = append(w, sc.Worker{
+		Pubkey:  cc.CConfig.Candidate[0].Pubkey,
+		Address: cc.CConfig.Candidate[0].Address,
+		Port:    cc.CConfig.Candidate[0].Port,
+	})
+	return w
 }
 
 func GetShardSize() int {
 	if cfg.Size == "" {
 		return 5
 	} else {
-		i, err := strconv.Atoi(cfg.Size)
+		//i, err := strconv.Atoi(cfg.Size)
+		i, err := strconv.Atoi(cc.CConfig.Size)
 		if err != nil {
 			panic("error")
 		}

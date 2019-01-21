@@ -305,7 +305,15 @@ func initVariable() {
 			Address: viper.GetString("consensus.Address1"),
 			Port:    viper.GetString("consensus.Port1"),
 		}},
-		Shard:     nil,
-		Candidate: nil,
+		Shard:     []Producer{{
+			Pubkey:  viper.GetString("consensus.Pubkey1"),
+			Address: viper.GetString("consensus.Address1"),
+			Port:    viper.GetString("consensus.Port1"),
+		}},
+		Candidate: []Producer{{
+			Pubkey:  viper.GetString("consensus.Pubkey1"),
+			Address: viper.GetString("consensus.Address1"),
+			Port:    viper.GetString("consensus.Port1"),
+		}},
 	}
 }
